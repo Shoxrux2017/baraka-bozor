@@ -5,16 +5,16 @@
 | Field | Value |
 |---|---|
 | Roadmap stage | `Stage 1 — Authentication & Role-Based Entry` |
-| Stage status | `Draft` |
+| Stage status | `Approved` |
 | Verification model | `Workflow v3 — Lean Verification` |
-| Decomposition approved on | `Not approved` |
+| Decomposition approved on | `2026-09-07` |
 | Implementation started | `No` |
 | Backend checkpoint | `Not started` |
 | Frontend checkpoint | `Not started` |
 | Integration gate | `Not started` |
 | Stage closed | `No` |
 
-Implementation must not start until Stage 0 is explicitly closed on real `origin/main`.
+Stage 0 is closed. The approved implementation baseline is `origin/main` commit `3311191e1ec20fabcda2990b6512917547e3e640`. Detailed task contracts are still prepared/hardened one at a time before implementation.
 
 ## 2. Goal and Boundary
 
@@ -41,11 +41,20 @@ Allow all six approved user roles to authenticate securely and enter only their 
 - Staff-management product UI beyond controlled bootstrap/fixtures required for Stage 1.
 - Custom roles, multi-role account switching, 2FA, device-management center.
 
-## 3. External Gate
+## 3. Entry Gate
+
+- [x] Stage 0 is explicitly closed.
+- [x] Locked `docs/01–09` are present on the audited `origin/main`.
+- [x] Repository/engineering workflow baseline is delivered.
+- [x] Stage scope and task order were reviewed against the locked Roadmap/Auth/API contract.
+- [x] Provider-independent first task has no unresolved product/architecture/API/database/security/lifecycle decision.
+- [ ] SMS provider documentation/credentials are available — not required for `S01-BE-001`; this remains a later provider-task/Stage-closure gate.
+
+## 4. External Gate
 
 **SMS provider documentation/credentials are still required.** Provider-independent Auth tasks may proceed after Stage 0 closes, but Stage 1 cannot close until an approved real/sandbox SMS integration path exists.
 
-## 4. Proposed Task Order
+## 5. Proposed Task Order
 
 | Order | Task ID | Area | Short outcome | Depends on | Status | Delivery | Contract |
 |---:|---|---|---|---|---|---|---|
@@ -67,7 +76,7 @@ Allow all six approved user roles to authenticate securely and enter only their 
 
 Detailed implementation contracts will be created/hardened one task at a time after Stage 0 closes and decomposition is approved.
 
-## 5. Stage Acceptance Map
+## 6. Stage Acceptance Map
 
 | Criterion | Implemented by | Final evidence |
 |---|---|---|
@@ -81,7 +90,7 @@ Detailed implementation contracts will be created/hardened one task at a time af
 | Logout/account switching does not leak prior account state | `S01-FE-002`, `S01-FE-005` | Frontend + Integration |
 | External SMS path is actually verified before closure | `S01-BE-006`, `S01-INT-002` | Sandbox/real integration evidence |
 
-## 6. Stop Conditions
+## 7. Stop Conditions
 
 - Stage 0 not closed.
 - Current `origin/main` not clean/synchronized.
