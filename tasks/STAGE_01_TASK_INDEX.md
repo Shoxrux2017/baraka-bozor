@@ -1,4 +1,4 @@
-# Stage 1 Task Index — Authentication & Role-Based Entry
+﻿# Stage 1 Task Index — Authentication & Role-Based Entry
 
 ## 1. Stage Metadata
 
@@ -14,7 +14,7 @@
 | Integration gate | `Not started` |
 | Stage closed | `No` |
 
-Stage 0 is closed. The approved implementation baseline is `origin/main` commit `3311191e1ec20fabcda2990b6512917547e3e640`. Detailed task contracts are still prepared/hardened one at a time before implementation.
+Stage 0 is closed. Every detailed implementation task must start from the latest clean, synchronized `origin/main` and verify the actual SHA during Git preflight rather than relying on a stale hash recorded in this index. Detailed task contracts are still prepared/hardened one at a time before implementation.
 
 ## 2. Goal and Boundary
 
