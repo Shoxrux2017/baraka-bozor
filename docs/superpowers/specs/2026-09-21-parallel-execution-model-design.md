@@ -11,7 +11,7 @@
 | Amends | `docs/06-roadmap.md` §1, §2, §4, §10, §16 (unit only), §17; `AGENTS.md` §8, §11, §13 (clarification); `tasks/README.md` §3, §4, §5, §7, §9–§11, §14; `docs/07-architecture.md` §23, §33, §36; `README.md`; the stage-named files in `tasks/templates/` |
 | Leaves untouched | `docs/01`, `02`, `03`, `04`, `05`, `08`, `09`; `AGENTS.md` §6, §7; all product, security and financial rules |
 
-Decisions `D-1`–`D-7` in §3 were made by the Project Owner during the 2026-09-21 design session. Decisions `D-8` and `D-9` are **proposed and not yet decided**: they fall under the "cross-feature architecture" reservation in `AGENTS.md` §3 and need the Project Owner's explicit sign-off before the tasks that depend on them can be approved. This document decides no product question.
+Decisions `D-1`–`D-9` in §3 were all made by the Project Owner during the 2026-09-21 design session. `D-8` and `D-9` fall under the "cross-feature architecture" reservation in `AGENTS.md` §3; the independent review of this document found that the agent had decided them on its own, so they were separated out, put to the Project Owner explicitly, and approved the same day. This document decides no product question.
 
 ## 1. Problem
 
@@ -61,14 +61,14 @@ Four serializers, ordered by cost:
 | `D-6` | "Demonstrable MVP on fake providers" is an explicit milestone, defined in §10, reached at the end of `W4`. |
 | `D-7` | Tracks run as separate Claude Code sessions, one per git worktree. Each session is an independent implementing agent under `AGENTS.md`. |
 
-### Proposed, not yet decided
+### Cross-feature architecture, decided by the Project Owner, 2026-09-21
 
-These are cross-feature architecture decisions reserved to the Project Owner by `AGENTS.md` §3. The waves that depend on them cannot start until they are decided.
+These two are reserved to the Project Owner by `AGENTS.md` §3. They were raised as separate decisions for that reason and approved in the same session.
 
-| ID | Proposal | Depends on it |
+| ID | Decision | Depends on it |
 |---|---|---|
 | `D-8` | Module registries: backend routes live in `routes/api/v1/<module>.php` collected by one loop; Flutter feature route fragments are collected by one registry. Neither `docs/07` §3 nor §29 specifies a layout either way, so this is a new architectural pattern, not a derivation. | the `W0` registry task, and the no-collision property every later wave relies on |
-| `D-9` | A shared fixture directory derived from `docs/09` response and error examples, asserted from both sides: backend feature tests assert the API emits them, frontend tests assert the client parses them. `docs/07` §33 defines the testing architecture and does not contain this cross-cutting obligation. | the contract-first frontend in §7 |
+| `D-9` | A shared fixture directory derived from `docs/09` response and error examples, asserted from both sides: backend feature tests assert the API emits them, frontend tests assert the client parses them. `docs/07` §33 defines the testing architecture and does not contain this cross-cutting obligation, so §11 amends it. | the contract-first frontend in §7 |
 
 A consequence of `D-2` that the Project Owner should see stated once: **no legal entity exists yet.** Company registration blocks the SMS contract and all merchant agreements, therefore it blocks MVP production launch. It does not block development, and under `D-6` it does not block a demonstrable system.
 
@@ -101,8 +101,8 @@ Source stages, covering stages 1–12 exactly once:
 Six decisions make this graph possible:
 
 1. **Schema is one task per wave with one owner.** Feature tasks add no migrations. Migrations are the only genuinely shared serial resource, and this removes the largest collision source. Per wave, not the whole MVP at once — that distinction is what keeps this inside the spirit of `AGENTS.md` §8.
-2. **Module registries are written once in `W0`** — subject to `D-8`. Feature tracks then never edit `routes/api.php`, `bootstrap/app.php`, the root GoRouter or the root Riverpod providers. This removes the second largest collision source.
-3. **Frontend runs against the locked contract, not against backend code** (§7), subject to `D-9`.
+2. **Module registries are written once in `W0`** (`D-8`). Feature tracks then never edit `routes/api.php`, `bootstrap/app.php`, the root GoRouter or the root Riverpod providers. This removes the second largest collision source.
+3. **Frontend runs against the locked contract, not against backend code** (§7), guarded by the shared fixtures of `D-9`.
 4. **Dependency-free slices of stages 9 and 10 move into `W1`**: Staff management, settings and provider enablement, FCM device registration. They need only auth. Everything in stage 9 that depends on the Order lifecycle — the operational board, exception handling, cancellation decisions and price correction — stays in `W3`.
 5. **Payment adapters are built in `W2` on fakes; real credentials are wired in `W5`.**
 6. **Decisions and procurement are a non-code track.** A wave's decision package is resolved at its entry gate and then **frozen for the wave**. Changing a decision mid-wave makes parallel tracks redo each other's work, which is the fastest way to lose the entire benefit of parallelism.
@@ -151,15 +151,13 @@ Shared-caretaker paths — `routes/api.php`, `bootstrap/app.php`, `composer.json
 
 ## 7. Contract-First Frontend
 
-**This section depends on `D-9` and must not be used until `D-9` is decided.**
-
 Frontend tracks build against `docs/09-api-contracts.md`, using the strict DTO and repository layering already fixed by `docs/07` §27, in parallel with the backend track that implements the same contract. Real wiring happens at the wave integration gate.
 
-The guard against silent divergence is the shared fixture directory proposed as `D-9`: the response and error examples from `docs/09` live in one place, backend feature tests assert that the API emits them, frontend tests assert that the client parses them. A divergence turns into a red CI run rather than a surprise at integration.
+The guard against silent divergence is the shared fixture directory approved as `D-9`: the response and error examples from `docs/09` live in one place, backend feature tests assert that the API emits them, frontend tests assert that the client parses them. A divergence turns into a red CI run rather than a surprise at integration.
 
-Two preconditions, both real:
+Two preconditions remain, both real:
 
-- without that guard the contract-first approach is not safe and must not be used;
+- the fixture guard must exist before the first contract-first frontend task, not alongside it; without it this approach is not safe and must not be used;
 - a wave's frontend track may start only after that wave's fixture surface is actually decided. For `W0` this means `S-3`, `S-16` and `S-17` must be resolved, because the error envelope in `docs/09` §3 is incomplete without them and error fixtures cannot be written from it as it stands.
 
 ## 8. Quality Gates
@@ -180,7 +178,6 @@ The wave verdict replaces the stage closure verdict of `tasks/README.md` §14 an
 | Gate | Owner | Needed by | Requires legal entity |
 |---|---|---|---|
 | Specification decisions for the wave | Project Owner | wave entry | no |
-| `D-8` module registries, `D-9` shared fixtures | Project Owner | `W0` | no |
 | Flutter SDK installed | Project Owner | `W0` frontend track | no |
 | Flutter map/tile provider and package | Project Owner | `W2` map-picker task | no |
 | Provider selection — which SMS aggregator, which payment providers | Project Owner | `W2` adapter tasks | no |
@@ -227,7 +224,7 @@ Reaching this milestone before company registration is the point of `D-6`: a sys
 | `tasks/README.md` §14 | Stage Closure becomes Wave Closure with the renamed verdicts of §8. |
 | `tasks/templates/STAGE_TASK_INDEX_TEMPLATE.md`, `STAGE_CLOSURE_REVIEW_TEMPLATE.md` | Renamed to their wave equivalents. The Roadmap Acceptance Matrix in the index template keeps every criterion; only its unit changes. `BLOCK_REVIEW_TEMPLATE.md` and `TASK_TEMPLATE.md` need no structural change beyond making "allowed files/areas" mandatory. |
 | `docs/07-architecture.md` §23 | "actual SMS vendor is Stage 1 external gate" becomes `W5` under `D-4`. The rule that production OTP is never logged is unchanged and §10 above strengthens it. |
-| `docs/07-architecture.md` §33 | Testing Architecture gains the `D-9` shared-fixture obligation, if `D-9` is approved. |
+| `docs/07-architecture.md` §33 | Testing Architecture gains the `D-9` shared-fixture obligation. |
 | `docs/07-architecture.md` §36 | External Integration Gates restated per §9, including the map/tile provider and the conditional APNs gate. |
 | `docs/07-architecture.md` §3 | Repository Baseline records the `docs/superpowers/specs/` tree, which this document introduces and which no baseline currently lists. |
 | `tasks/STAGE_01_TASK_INDEX.md` | Folds into `WAVE_00_TASK_INDEX.md`; its §4 and §6 SMS closure criterion moves to `W5` under `D-4`. Precondition: the index still records Stage status `In Progress` and `S01-BE-001` as `In Review`, and local `main` is behind `origin/main`. Bring both current, and let `S01-BE-001` reach `Accepted` per `tasks/README.md` §7, before folding. |
@@ -240,7 +237,7 @@ Reaching this milestone before company registration is the point of `D-6`: a sys
 | Risk | Mitigation |
 |---|---|
 | The Project Owner becomes the bottleneck | Cap of 5 open pull requests, small single-contract diffs, two merge windows, independent review carried in the PR. If two windows stop clearing the queue, reduce width — do not accelerate. |
-| Frontend silently diverges from the real API | The `D-9` shared fixture directory asserted from both sides (§7). If `D-9` is not approved, contract-first frontend work does not start. |
+| Frontend silently diverges from the real API | The `D-9` shared fixture directory asserted from both sides (§7). The fixture guard must land before the first contract-first frontend task, and the wave's fixture surface must be decided first — for `W0` that means `S-3`, `S-16` and `S-17`. |
 | Adapters written from published documentation diverge from the contractual protocol | Adapter is transport, signing and parsing only. Obligations, attempts, idempotency, reconciliation and refunds stay provider-agnostic, so divergence rewrites a thin layer, not the payment core. |
 | Rework from slices pulled forward out of stages 9 and 10 | Only lifecycle-independent slices moved: Staff management, settings and provider enablement, device registration. |
 | Financial invariants fragment across waves | One designated money track per wave, exclusive ownership of money paths in the ownership map, written handover at each wave boundary, Project Owner owning cross-wave continuity (§5). |
@@ -252,7 +249,7 @@ Reaching this milestone before company registration is the point of `D-6`: a sys
 
 ## 13. Startup Sequence
 
-**Step 0 — unblock.** `S01-BE-001` is merged, so what remains is: install the Flutter SDK; hold one decision session. That session resolves the `W0` package — `S-1`, `S-2`, `S-3`, `S-4`, `S-5`, `S-16`, `S-17` — plus `D-8` and `D-9`, plus provider selection for SMS and payments, which is needed early only because the `W2` adapter tasks depend on knowing whose protocol to implement. The Firebase project takes minutes and is needed only by `W4`.
+**Step 0 — unblock.** `S01-BE-001` is merged and `D-8`/`D-9` are decided, so what remains is: install the Flutter SDK; hold one decision session. That session resolves the `W0` package — `S-1`, `S-2`, `S-3`, `S-4`, `S-5`, `S-16`, `S-17` — plus provider selection for SMS and payments, which is needed early only because the `W2` adapter tasks depend on knowing whose protocol to implement. The Firebase project takes minutes and is needed only by `W4`.
 
 Later waves' decisions are resolved at their own entry gates, per §4.6. The selection rule is explicit: **a decision must be resolved before the wave whose schema task or public contract depends on it.** By that rule `S-6`, `S-7` and `S-9` belong to the `W3` entry gate, `S-10`, `S-11` and `S-13` to `W2`, `S-14` and `S-15` to `W1`, `S-8` to `W4`, `S-12` to `W4`. The Project Owner may pull any of them forward; none may slip past its wave.
 
@@ -264,7 +261,6 @@ Later waves' decisions are resolved at their own entry gates, per §4.6. The sel
 
 ## 14. Open Items
 
-- `D-8` and `D-9` are proposed, not decided. `W0` cannot start without them.
 - How a human demonstrator obtains an OTP for a live demonstration of the `W4` milestone. Any client-visible mechanism amends `AGENTS.md` §6 and is the Project Owner's decision (§10).
 - Provider selection for SMS and payments, required before the `W2` adapter tasks.
 - Whether iOS is in the platform set (`S-2`); if it is, Apple Developer Program membership and macOS hardware are additional external gates with their own lead times.
@@ -293,6 +289,6 @@ P3 findings 1, 2, 3, 4, 5 and 7 were also fixed: width figures harmonised with `
 
 P3-6 was fixed by a different route than proposed: rather than defending the front-loading of `S-6`/`S-9`/`S-10`/`S-11`/`S-14`, §13 now states the selection rule and assigns every open decision to the wave that needs it, which removes the tension with `D-3` and §4.6 and supplies the criterion the reviewer found missing.
 
-Both overreach findings were accepted: the module registries and the shared fixture contract are now `D-8` and `D-9` in §3, marked proposed and not yet decided, with the work that depends on them blocked until the Project Owner decides.
+Both overreach findings were accepted: the module registries and the shared fixture contract were taken out of the agent's hands, raised as `D-8` and `D-9` in §3, and put to the Project Owner, who approved both on 2026-09-21. `W0` is therefore no longer blocked on them.
 
 The reviewer also recorded what it checked and found accurate, including every repository-state claim in §1, the backlog arithmetic, and all citations except the one corrected as P1. Those checks are why this revision could be narrow.
