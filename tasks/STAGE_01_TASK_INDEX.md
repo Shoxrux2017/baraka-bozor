@@ -9,7 +9,7 @@
 | Verification model | `Workflow v4 — Two-Party` |
 | Decomposition approved on | `2026-09-07` |
 | Decomposition revised on | `2026-09-21` |
-| Implementation started | `No — S01-BE-001 contract approved` |
+| Implementation started | `Yes — S01-BE-001 in review` |
 | Backend checkpoint | `Not started` |
 | Frontend checkpoint | `Not started` |
 | Integration gate | `Not started` |
@@ -59,17 +59,17 @@ Allow all six approved user roles to authenticate securely and enter only their 
 
 **Continuous integration.** CI arrives in `S01-INT-002`, so `S01-BE-001` and `S01-INT-001` merge on locally-run checks only. Their evidence is the verification output recorded in each pull request. Once CI exists, make its check required on `main`.
 
-**Specification decisions.** `S-1` (role immutability versus unique phone) blocks `S01-BE-002`. `S-2` (what Desktop means) blocks `S01-FE-001`. `S-3` (locale) blocks `S01-FE-003` and `S01-FE-004`. `S-4` (staff login hardening, token lifetime) blocks `S01-BE-003`. `S-5` (Cart on OTP verify) blocks `S01-BE-004`. Each must be decided with the Project Owner before its task is approved.
+**Specification decisions.** `S-1` (role immutability versus unique phone) blocks `S01-BE-002`. `S-2` (what Desktop means) blocks `S01-FE-001`. `S-3` (locale) blocks `S01-FE-003` and `S01-FE-004`. `S-4` (staff login hardening, token lifetime) blocks `S01-BE-003`. `S-5` (Cart on OTP verify) blocks `S01-BE-004`. `S-16` (machine codes for 400, 502 and 503) also blocks `S01-BE-003`, because that task adds the first real endpoint and `S01-BE-001` currently renders those statuses under an interim rule. Each must be decided with the Project Owner before its task is approved.
 
 ## 5. Task Order
 
 | Order | Task ID | Area | Short outcome | Depends on | Status | Contract |
 |---:|---|---|---|---|---|---|
-| 1 | `S01-BE-001` | Backend | Laravel `/api/v1` scaffold, error and quality foundation | Stage 0 closed | Approved | `backend/stage-01/S01-BE-001-laravel-api-scaffold-quality-foundation.md` |
+| 1 | `S01-BE-001` | Backend | Laravel `/api/v1` scaffold, error and quality foundation | Stage 0 closed | In Review | `backend/stage-01/S01-BE-001-laravel-api-scaffold-quality-foundation.md` |
 | 2 | `S01-INT-001` | Integration | Local Laravel + PostgreSQL dev/test runtime | `S01-BE-001` | Draft | Not created |
 | 3 | `S01-INT-002` | Integration | GitHub Actions running backend tests, Pint, PHPStan against PostgreSQL | `S01-INT-001` | Draft | Not created |
 | 4 | `S01-BE-002` | Backend | Users/roles/Sanctum persistence + initial Admin CLI bootstrap | `S01-INT-001`, `S-1` | Blocked | Not created |
-| 5 | `S01-BE-003` | Backend | Staff login/logout/me, blocking, first-login password gate | `S01-BE-002`, `S-4` | Blocked | Not created |
+| 5 | `S01-BE-003` | Backend | Staff login/logout/me, blocking, first-login password gate | `S01-BE-002`, `S-4`, `S-16` | Blocked | Not created |
 | 6 | `S01-BE-004` | Backend | Customer OTP domain/API with strict challenge/rate-limit contract + fake gateway | `S01-BE-002`, `S-5` | Blocked | Not created |
 | 7 | `S01-BE-005` | Backend | Six-role authorization foundation, scope-safe protected probe endpoints/tests | `S01-BE-003`, `S01-BE-004` | Draft | Not created |
 | 8 | `S01-BE-006` | Backend | Approved production/sandbox SMS provider adapter | `S01-BE-004`, external SMS gate | Blocked | Not created |
