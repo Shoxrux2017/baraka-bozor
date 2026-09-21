@@ -138,4 +138,4 @@ PASS requires all required entry/verification checks passing, P1=0, P2=0, no unr
 
 ## 9. Follow-Up
 
-If NOT ACCEPTED: preserve this review; ChatGPT creates focused fix contract(s); Codex implements focused fix + focused verification; Project Owner delivers; ChatGPT decides minimum invalidated checkpoint reruns before new verdict.
+If NOT ACCEPTED: preserve this review; create focused fix contract(s); implement the focused fix plus focused verification; open a PR for Project Owner merge; decide the minimum invalidated checkpoint reruns before a new verdict.

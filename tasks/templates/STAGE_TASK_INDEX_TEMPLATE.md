@@ -6,7 +6,7 @@
 |---|---|
 | Roadmap stage | `[Stage exact name]` |
 | Stage status | `Draft` |
-| Verification model | `Workflow v3 — Lean Verification` |
+| Verification model | `Workflow v4 — Two-Party` |
 | Decomposition approved on | `[YYYY-MM-DD / Not approved]` |
 | Implementation started | `No` |
 | Backend checkpoint | `Not started` |
@@ -47,7 +47,7 @@ Valid Stage statuses: `Draft`, `Approved`, `In Progress`, `Blocked`, `Closed`.
 
 - [ ] Previous Stage explicitly closed.
 - [ ] Current origin/main verified and local main synchronized/clean.
-- [ ] Relevant locked contracts reviewed by ChatGPT.
+- [ ] Relevant locked contracts reviewed.
 - [ ] Relevant implementation/tests inspected.
 - [ ] External provider/dependency gates identified.
 - [ ] Stage decomposition/order approved.
@@ -57,9 +57,9 @@ Valid Stage statuses: `Draft`, `Approved`, `In Progress`, `Blocked`, `Closed`.
 
 ## 5. Approved Task Order
 
-| Order | Task ID | Area | Short outcome | Depends on | Task status | Delivery status | Contract file |
-|---:|---|---|---|---|---|---|---|
-| 1 | `[S00-BE-001]` | Backend | `[outcome]` | None | Draft | Not started | Not created |
+| Order | Task ID | Area | Short outcome | Depends on | Status | Contract file |
+|---:|---|---|---|---|---|---|
+| 1 | `[S00-BE-001]` | Backend | `[outcome]` | None | Draft | Not created |
 
 Detailed contracts are prepared/hardened in execution order.
 
@@ -81,9 +81,9 @@ Detailed contracts are prepared/hardened in execution order.
 
 ## 8. Verification Map
 
-| Task ID | Focused tests | Static/format | Direct regression | Manual check | Executor | Delivery owner | diff check |
-|---|---|---|---|---|---|---|---|
-| `[Task]` | `[command]` | `[command]` | `[command/None]` | `[steps/N/A]` | Codex | Project Owner | Required |
+| Task ID | Focused tests | Static/format | Direct regression | Manual check | diff check |
+|---|---|---|---|---|---|
+| `[Task]` | `[command]` | `[command]` | `[command/None]` | `[steps/N/A]` | Required |
 
 ## 9. External Gates / Risks
 

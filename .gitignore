@@ -7,6 +7,12 @@
 *.p12
 *.pfx
 
+# Local databases. The Laravel installer creates database/database.sqlite and
+# migrates it during scaffolding; it must never be tracked.
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+
 # Laravel / PHP
 backend/vendor/
 backend/node_modules/
