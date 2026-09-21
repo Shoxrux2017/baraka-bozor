@@ -1,0 +1,25 @@
+# Repository-wide editor defaults.
+# backend/ and frontend/ may add their own framework-generated .editorconfig,
+# which takes precedence for paths underneath them.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.md]
+# Markdown uses two trailing spaces for a hard line break.
+trim_trailing_whitespace = false
+
+[*.{yml,yaml,json}]
+indent_size = 2
+
+[*.dart]
+indent_size = 2
+
+[*.bat]
+end_of_line = crlf

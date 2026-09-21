@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Architecture Goals
 
@@ -19,6 +19,7 @@ Laravel Sanctum
 PostgreSQL
 PHPUnit
 Laravel Pint
+Larastan (PHPStan)
 ```
 
 ### Frontend
@@ -320,4 +321,4 @@ No microservices, Kafka/RabbitMQ, Kubernetes, mandatory Redis, Elasticsearch, Gr
 
 ## 36. External Integration Gates
 
-Provider facts remain explicit implementation gates: selected SMS vendor, Flutter map/tile provider, Firebase config, and official Payme/Paynet/xazna/Click merchant protocols/credentials. Codex must not invent protocols or fake production success.
+Provider facts remain explicit implementation gates: selected SMS vendor, Flutter map/tile provider, Firebase config, and official Payme/Paynet/xazna/Click merchant protocols/credentials. The implementing agent must not invent protocols or fake production success.

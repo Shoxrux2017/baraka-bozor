@@ -32,16 +32,20 @@ docs/
 
 ## Engineering model
 
-The project follows the same controlled implementation model used in TestLabUz:
+The project is built by two parties under `AGENTS.md` and `tasks/README.md`:
 
 ```text
-ChatGPT       = requirements, architecture, task design, review, Stage closure
-Codex         = approved implementation contract + focused verification
-Project Owner = routine Git/GitHub delivery, checkpoint execution, real-stack smoke
-CI            = checkpoint/integration execution when configured
+Implementing agent = requirements analysis, task contracts, implementation,
+                     focused verification, branches and PRs;
+                     obtains an independent review before every PR
+Project Owner      = product decisions, approval, PR review and merge,
+                     real-stack execution, manual smoke, Stage closure
+CI                 = checkpoint/integration execution when configured
 ```
 
-Codex implements one approved task at a time. It does not redesign product behavior, API, database, security, lifecycle, money rules, concurrency, or UX.
+One approved task at a time. The implementing agent does not decide product behavior, API semantics, database contracts, security or lifecycle rules, money rules, concurrency policy, dependency strategy, or UX. Those belong to the Project Owner, and so does every change to the locked specification.
+
+Because one agent both plans and implements, an independent reviewer with no implementation context reviews each diff before its pull request is opened.
 
 ## Technical baseline
 
@@ -69,7 +73,7 @@ Laravel and Flutter production scaffolds are intentionally not created in Stage 
 ## Current Stage status
 
 - Locked `docs/01–09`: PASS.
-- Engineering workflow: prepared.
-- Repository foundation: prepared locally.
-- GitHub baseline delivery: pending an empty GitHub repository and writable GitHub connection.
-- Stage 1 implementation must not begin until Stage 0 Closure Review passes on real `origin/main`.
+- Stage 0: CLOSED. Baseline delivered to `origin/main`.
+- Stage 1 (Authentication & Role-Based Entry): approved, implementation starting.
+- Open specification questions are tracked in `docs/SPEC_DECISIONS_BACKLOG.md`.
+- External gate: the SMS provider is still required before Stage 1 can close.

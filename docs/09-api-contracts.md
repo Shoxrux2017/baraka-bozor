@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-019, AUD-020); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. General Contract
 
@@ -606,7 +606,9 @@ Backend uses current locked state. Stale Flutter mutation receives 409 stable st
 
 ## 54. Common
 
-`validation_failed`, `authentication_required`, `forbidden`, `resource_not_found`, `business_conflict`, `rate_limited`, `idempotency_key_required`, `idempotency_key_reused`.
+`validation_failed`, `authentication_required`, `forbidden`, `resource_not_found`, `business_conflict`, `rate_limited`, `idempotency_key_required`, `idempotency_key_reused`, `server_error`.
+
+`server_error` accompanies HTTP `500` for an unexpected server failure. Its `errors` object is empty and its `message` never carries exception text, stack traces, SQL, filesystem paths, class internals, or configuration values.
 
 ## 55. Auth
 
@@ -634,4 +636,4 @@ Never expose raw provider HTTP errors, signatures, merchant secrets, SQL, stack 
 
 ## 61. External Integration Gates
 
-Exact provider-specific callback/payment-action protocol is finalized only from official integration material. This does not authorize Codex to invent/generalize protocol. Missing external access blocks provider-specific implementation task/Stage closure.
+Exact provider-specific callback/payment-action protocol is finalized only from official integration material. This does not authorize the implementing agent to invent or generalize a protocol. Missing external access blocks provider-specific implementation task/Stage closure.

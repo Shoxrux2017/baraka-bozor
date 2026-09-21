@@ -1,0 +1,33 @@
+# Check out and commit all text files with LF, on every platform.
+# This overrides core.autocrlf. Without it a Windows checkout produces CRLF,
+# and `artisan` then fails inside the Linux container that S01-INT-001
+# introduces, because its shebang line ends in a stray carriage return.
+* text=auto eol=lf
+
+# Windows-only scripts must keep CRLF.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+
+# Executable scripts must keep LF even on Windows checkouts.
+*.sh    text eol=lf
+artisan text eol=lf
+
+# Diff hints.
+*.php   diff=php
+*.md    diff=markdown
+*.css   diff=css
+*.html  diff=html
+
+# Binary assets: never normalize, never diff as text.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.ttf  binary
+*.otf  binary
+*.woff  binary
+*.woff2 binary

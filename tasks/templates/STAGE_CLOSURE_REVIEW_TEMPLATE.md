@@ -6,7 +6,7 @@
 |---|---|
 | Stage | `[number/name]` |
 | Review mode | `Read-only` |
-| Verification model | `Workflow v3 — Lean Verification` |
+| Verification model | `Workflow v4 — Two-Party` |
 | Review date | `[YYYY-MM-DD]` |
 | Stage index | `[path]` |
 | Audited `origin/main` | `[SHA]` |
@@ -59,7 +59,7 @@ Verify complete approved scope, no missing task, no hidden feature/refactor, non
 
 ## 6. Evidence Validity
 
-Reuse fresh PASS checkpoint/integration evidence unless later changes materially affected it. Record invalidated surfaces and exact minimum reruns selected by ChatGPT.
+Reuse fresh PASS checkpoint/integration evidence unless later changes materially affected it. Record invalidated surfaces and the exact minimum reruns selected.
 
 ## 7. Complete Working Scenario
 
