@@ -38,7 +38,8 @@ Not urgent. Each is listed against the Stage whose planning gate must resolve it
 | S-13 | Open | 9 | **Price correction must mutate an unpaid obligation.** An Admin correction before the final payment lock (`BR-PRICE-006`, `09` §47) changes `final_total_uzs`, so an unpaid `final` or `additional` payment's `amount_uzs` must change with it. No document specifies mutating a payment obligation. |
 | S-14 | Open | 3 | **Cart status `abandoned` is never produced.** `08` §9 defines it; no rule in `03`, `04` or `05` creates it. Either define the transition or drop the value. |
 | S-15 | Open | 2 | **Product image delivery to the client.** `07` §10 covers storage. How Flutter fetches the bytes (public disk URL, signed URL, or an API endpoint) is unspecified, and it affects whether images are protected. |
-| S-16 | Open | 2–7 | **Machine codes missing for `400`, `502` and `503`.** `09` §3 assigns HTTP `400` to a malformed protocol request and `502`/`503` to an external provider problem, but §54–§59 define no stable `code` for any of them, so a client cannot branch on them. `AUD-019` closed the same gap for `500` only. `400` becomes reachable with the first real request body; `502`/`503` with the first provider call. |
+| S-16 | Open | 1 | **Machine codes missing for `400`, `502` and `503`.** `09` §3 assigns HTTP `400` to a malformed protocol request and `502`/`503` to an external provider problem, but §54–§59 define no stable `code` for any of them, so a client cannot branch on them. `AUD-019` closed the same gap for `500` only. `400` becomes reachable with the first real request body; `502`/`503` with the first provider call. **Blocks `S01-BE-003`**, the first task to add a real endpoint. Until it is resolved, `S01-BE-001` renders any unmapped client error as a scope-safe `404 resource_not_found` and any unmapped server error with `server_error`. |
+| S-17 | Open | 2 | **`request_id` is in the locked envelope but nothing emits it.** `09` Section 3 defines the error envelope as four keys including `request_id`. `S01-BE-001` emits the other three; adding the fourth needs a correlation-ID source, and no document says where one comes from or whether it is required. Decide before clients start reporting errors by reference. |
 
 ## Change Log
 
@@ -46,3 +47,4 @@ Not urgent. Each is listed against the Stage whose planning gate must resolve it
 |---|---|
 | 2026-09-21 | Register created from the repository review. S-1 to S-15 opened. |
 | 2026-09-21 | S-16 opened during independent review of the workflow change. |
+| 2026-09-21 | S-16 raised to Stage 1 and made a blocker for `S01-BE-003`; S-17 opened during independent review of `S01-BE-001`. |

@@ -69,8 +69,12 @@ Cite, do not copy.
 | 5 | Keep the skeleton's own `.gitattributes` and `.editorconfig` in `backend/`. | They are part of a genuine Laravel application. The skeleton's `.gitattributes` pins `eol=lf`, which keeps `artisan` executable inside the Linux container that `S01-INT-001` introduces. The repository root also has its own copies; the nested ones win for paths beneath them. |
 | 6 | Delete the skeleton's asset-build and demo-web half: `package.json`, `package-lock.json`, `vite.config.js`, `resources/js/`, `resources/css/`, and `resources/views/welcome.blade.php`. Leave `routes/web.php` present but with no route registered. | The Laravel 13 skeleton ships Vite, Tailwind and a `welcome` view. `docs/07-architecture.md` §2 and §27 make Flutter the only client, so this backend serves JSON only. Keeping an unused Node toolchain would contradict the "no Node/NPM" acceptance criterion and add a dependency surface nothing builds. `routes/web.php` stays so the framework's web middleware group keeps a home, which also keeps the session decision in row 2 meaningful. |
 
+| 7 | Every failure under `/api/v1` leaves through `ApiExceptionRenderer`; nothing falls through to the framework renderer. A status with no approved machine code is normalized: a client error becomes a scope-safe `404 resource_not_found`, a server error keeps its status and carries `server_error`. | The framework renderer echoes the exception message, and with `APP_DEBUG=true` a full stack trace, which `docs/09-api-contracts.md` Section 60 forbids. Independent review reproduced both under `/api/v1` for `405`, `400` and an aborted request carrying a message. Normalizing to `404` also stops the `Allow` header disclosing which methods a path accepts. This is interim: the real codes for `400`, `502` and `503` are `S-16`, which now blocks `S01-BE-003`, the first task to add a real endpoint. |
+| 8 | Drop the skeleton's own `AGENTS.md` and `CLAUDE.md`. | Laravel 13 now ships agent-instruction files. They are generic boilerplate that, among other things, tells an agent to install PHP system-wide, which root `AGENTS.md` Section 13 forbids. `backend/AGENTS.md` is the approved backend rules file and governs this directory. |
+
 ## Implementation Notes
 
+- **The skeleton ships `AGENTS.md` and `CLAUDE.md`.** They are identical Laravel boilerplate and must not reach `backend/`, where our own `AGENTS.md` governs. Delete both from the scaffold before moving it.
 - **Scaffold safely.** `backend/` already contains `AGENTS.md`. Create the app in a temporary directory outside the repository, verify it, then move the contents in. Preserve `backend/AGENTS.md` byte for byte. Ensure no nested `backend/.git/` survives, and remove the temporary directory afterwards.
 - **Use the official tooling.** Composer plus the Laravel installer, then the supported API install mechanism for this Laravel version. Do not hand-build a Laravel tree.
 - **Identity migration.** Delete the skeleton's `0001_01_01_000000_create_users_table.php` outright; it is the demo identity schema and `S01-BE-002` owns the real one. Keep the cache and jobs migrations. A minimal framework `User` model may remain, with no BarakaBozor role or account fields added.
@@ -98,7 +102,11 @@ Cite, do not copy.
 - [ ] An unknown `/api/v1/...` path returns `404 resource_not_found`, `errors` `{}`.
 - [ ] Throttling returns `429 rate_limited`, `errors` `{}`.
 - [ ] With debug disabled, an unexpected failure returns `500 server_error`, `errors` `{}`, and no exception message, stack trace, SQL, path, class internal, or configuration value.
-- [ ] `errors` is a JSON object in every error response.
+- [ ] `errors` is a JSON object in every error response, including statuses outside the approved six.
+- [ ] No response under `/api/v1` carries an exception message, class name, stack frame or file path, with `APP_DEBUG` either true or false.
+- [ ] A `429` response still carries `Retry-After` and the `X-RateLimit-*` headers.
+- [ ] `php artisan db:seed` does not reference a table that does not exist.
+- [ ] No `composer` script invokes `npm` or recreates `database/database.sqlite`.
 - [ ] Tests use test-only routes, need no network, and need no database.
 - [ ] `backend/database/database.sqlite` does not exist and is not tracked.
 - [ ] `package.json`, `vite.config.js`, `resources/js/`, `resources/css/` and `welcome.blade.php` are absent; `routes/web.php` registers no route.
@@ -190,8 +198,19 @@ The implementing agent commits, pushes and opens the PR, and does not merge. The
 
 ## Independent Review
 
-Filled in before the PR is opened.
+Performed before the PR was opened, by a reviewer with no implementation context.
 
 | ID | Severity | Finding | Resolution |
 |---|---|---|---|
-| | | | |
+| R-01 | P2 | Statuses outside the code map fell through to the framework renderer: no `code`, no `errors`, the raw exception message passed through, and with `APP_DEBUG=true` a full stack trace with absolute paths. Reproduced for `405`, `400`, `503` and an aborted request carrying a message. | Fixed. Decision 7 added; the renderer now normalizes every status. Four new tests cover unmapped client and server errors and the aborted-message case. |
+| R-02 | P2 | `429` lost `Retry-After` and `X-RateLimit-*` because the render callback discarded the exception headers, so a client could not back off. | Fixed. Headers are carried through when the status survives normalization, and asserted in the throttle test. |
+| R-03 | P2 | Seeding failed: the seeder and `UserFactory` referenced the deleted `users` table and columns `S01-BE-002` will not create. | Fixed. Seeder emptied with a pointer to `S01-BE-002`, `UserFactory` deleted, `User` reduced to a framework placeholder. |
+| R-04 | P2 | `composer setup` still ran `npm install` and `npm run build` with no `package.json`, and the post-create script still recreated `database/database.sqlite`. | Fixed. Both npm steps and the sqlite step removed; package renamed to `barakabozor/backend`. |
+| R-05 | P3 | Unreachable branches for `AuthorizationException` and `ModelNotFoundException`; the framework converts both before render callbacks run. | Fixed. Both removed. |
+| R-06 | P3 | An `errors` assertion also passed when the key was absent, so the `429` and `500` cases had no real assertion. | Fixed. One envelope helper now asserts the exact key set, the raw empty object, and the absence of leak markers. |
+| R-07 | P3 | `SESSION_TABLE` still defaulted to `sessions`, so `S01-INT-001` could silently reopen the failure Decision 2 closed. | Fixed by documentation: comments in `config/session.php` and `.env.example` state that the database driver is unavailable. |
+| R-08 | P3 | Vite, Node and Blade residue in `.env.example`, `backend/.gitignore` and `backend/.gitattributes`. | Fixed. Removed. |
+| R-09 | P3 | The `Unit` testsuite was empty, so running that suite alone exited 1, which `S01-INT-002` continuous integration could hit. | Fixed by adding real unit coverage of the status-to-code table rather than by deleting the suite. |
+| R-10 | P3 | `request_id` from the locked envelope is never emitted and nothing recorded the omission. | Not fixed; out of scope. Recorded as `S-17` in `docs/SPEC_DECISIONS_BACKLOG.md`. |
+| R-11 | P3 | Stock Laravel README recommending an unapproved package. | Fixed. Replaced with a short backend README. |
+| R-12 | P3 | The Sanctum cookie and SPA surface is left live in a bearer-token API. | Not fixed; deliberately. Whether SPA cookie mode is needed depends on `S-2`, the unresolved Desktop-target decision. Removing it now could have to be undone. |
