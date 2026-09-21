@@ -105,7 +105,7 @@ One Flutter codebase provides all role-aware shells.
 
 **Desktop means an installed Windows application**, not a browser surface. Operator, Admin and Manager are company staff at a workstation, and a native surface keeps the bearer token in platform-secured storage as `07` Section 8 requires, which a browser cannot offer. No web build is part of the MVP, and no CORS configuration is therefore needed.
 
-**Mobile means Android and iOS from the same codebase.** Android is the required release target for Waves 0 to 4. An iOS release build becomes a required target in Wave 5, because building and signing for iOS needs macOS and an Apple Developer Program membership, neither of which the project has yet. iOS-specific code is written from the start; only the obligation to produce and verify an iOS build is deferred.
+**Mobile means Android and iOS from the same codebase.** Android and Windows are required release targets from Wave 0. An iOS release build becomes a required target in Wave 5, because building and signing for iOS needs macOS and an Apple Developer Program membership, neither of which the project has yet. iOS-specific code is written from the start; only the obligation to produce and verify an iOS build is deferred.
 
 ## 11. Field Visibility
 
@@ -119,7 +119,7 @@ One Flutter codebase provides all role-aware shells.
 
 Blocked Staff cannot create a new session and cannot continue normal protected use through an old token. Historical records remain preserved.
 
-An account may not be unblocked while another **active** account holds the same phone. Without this an unblock would produce two active accounts for one number and break the invariant in `08` Section 3. Resolving such a case is an operational decision — block the newer account first — not something unblocking may do implicitly.
+An account may not be unblocked while another **active** account holds the same phone. Without this an unblock would produce two active accounts for one number and break the invariant in `08` Section 3. Resolving such a case is an Admin operational decision, not something unblocking may do implicitly. Note that the obvious remedy — blocking the newer account — is unavailable when that account is the last active Admin, which `BR-ROLE-008` protects; another active Admin must exist first.
 
 ## 13. Core Security Invariants
 

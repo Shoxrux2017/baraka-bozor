@@ -59,7 +59,7 @@ Framework tables: Sanctum tokens, queue tables, migrations.
 | created_at | timestamptz | no |
 | updated_at | timestamptz | no |
 
-Constraints: `phone` unique **among active accounts only** — a partial unique index on `(phone) WHERE status = 'active'`, not a plain unique constraint. A blocked account keeps its real phone, so a role change can create a new active account for the same person without rewriting history. The invariant is: at most one `active` account per phone. Enforcement is the database's, not the application's. Roles six approved; status active/blocked; Customer password null + no change gate; Staff password non-null. Index `(role,status)`, `lower(full_name)`. No hard-delete historical users.
+Constraints: `phone` unique **among active accounts only** — a partial unique index on `(phone) WHERE status = 'active'`, not a plain unique constraint. A blocked account keeps its real phone, so a role change can create a new active account for the same person without rewriting history. The invariant is: at most one `active` account per phone. The constraint is enforced by the database. The API additionally validates the phone, so a duplicate on Staff creation returns `422 validation_failed` per `09` Section 3 rather than surfacing a constraint violation as a server failure. Roles six approved; status active/blocked; Customer password null + no change gate; Staff password non-null. Index `(role,status)`, `lower(full_name)`. No hard-delete historical users.
 
 ## 4. `customer_otp_challenges`
 
@@ -281,7 +281,7 @@ Prefer RESTRICT/NO ACTION for business-history FKs. Archive/block/deactivate cur
 
 ## 31. Database vs Application Enforcement
 
-Database structural enforcement: FK, unique phone/order/source Cart, one active Cart, one current assignments, one pending Approval/cancellation, pricing shape, positive values, one pending/successful Payment Attempt, provider-event and idempotency uniqueness.
+Database structural enforcement: FK, phone unique among active accounts as a partial unique index (Section 3), unique order/source Cart, one active Cart, one current assignments, one pending Approval/cancellation, pricing shape, positive values, one pending/successful Payment Attempt, provider-event and idempotency uniqueness.
 
 Application enforcement: roles, ownership/assignment, unit precision, lifecycle transitions, price semantics, Approval necessity, substitution compatibility, rounding formulas, Payment/refund aggregate limits, analytics definitions.
 

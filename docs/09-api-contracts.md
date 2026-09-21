@@ -97,7 +97,7 @@ POST /api/v1/auth/staff/login
 
 Customer account is not accepted. Success returns token + authoritative role/status/gate. Codes `invalid_credentials`, `account_blocked`.
 
-The phone identifies the **active** account, per `BR-ROLE-010`; a blocked account that shares the phone is never the login target. Credentials that match only a blocked account return `account_blocked`, and an unknown phone returns `invalid_credentials` — the two must not be distinguishable by timing or message beyond these codes.
+The phone identifies the **active** account, per `BR-ROLE-010`; a blocked account that shares the phone is never the login target.
 
 ## 9. Current Identity
 

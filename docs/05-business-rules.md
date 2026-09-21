@@ -44,7 +44,7 @@ Existing Order snapshots must not be rewritten by later Catalog, Address, fee, o
 
 **BR-ROLE-009** — First Admin is created through controlled one-time backend CLI/bootstrap, never public API.
 
-**BR-ROLE-010** — At most one active account exists per phone. Authentication resolves the active account for a phone; an account may not be unblocked while another active account holds the same phone.
+**BR-ROLE-010** — At most one active account exists per phone. Staff login resolves the active account for a phone. An account may not be unblocked while another active account holds the same phone.
 
 # 3. Catalog Rules
 

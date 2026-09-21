@@ -86,7 +86,7 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 |---:|---|---|---|---|---|---|---|
 | 1 | `S01-BE-001` | Backend | `wave-owner` | Laravel `/api/v1` scaffold, error and quality foundation | Stage 0 closed | **Accepted** | `backend/stage-01/S01-BE-001-laravel-api-scaffold-quality-foundation.md` |
 | 2 | `W0-INT-001` | Integration | `wave-owner` | Local Laravel + PostgreSQL dev/test runtime in Docker | `S01-BE-001` | Draft | Not created |
-| 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | Draft | `integration/wave-00/W0-INT-002-github-actions-backend-checks.md` |
+| 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | Draft | Not created |
 | 4 | `W0-BE-010` | Backend | `wave-owner` | Module route registry and Flutter route-fragment registry (`D-8`) | `W0-INT-002` | Draft | Not created |
 | 5 | `W0-BE-011` | Backend | `wave-owner` | Identity schema: users, six roles, Sanctum tokens, initial Admin CLI bootstrap | `W0-BE-010` | Draft | Not created |
 | 6 | `W0-BE-012` | Backend | `wave-owner` | Shared API fixture directory (`D-9`): the `docs/09` response and error examples both sides assert against | `W0-BE-010`, `S-3`, `S-16`, `S-17` | Blocked | Not created |
@@ -108,7 +108,7 @@ The wave's financial-invariant owner is: **none — Wave 0 contains no money, qu
 
 Concurrency in Wave 0 is narrow by nature: tasks 2, 3 and 4 are a serial chain owned by one track, because CI needs the runtime and the registries should land under CI. Real width begins once `W0-BE-011` is Accepted, after which `auth-backend` and `client-foundation` run alongside `wave-owner`.
 
-`S01-FE-001` depends on the Flutter SDK and on `S-2`, not on backend code. Once both are satisfied it runs in parallel with the backend track; the Frontend Phase 2 checkpoint still waits for backend PASS.
+`S01-FE-001` depends on the Flutter SDK, not on backend code. Once the SDK is installed it runs in parallel with the backend track; the Frontend Phase 2 checkpoint still waits for backend PASS.
 
 ## 6. Implementation Readiness
 
@@ -153,7 +153,7 @@ Filled in per task when its contract is written. `git diff --check` is required 
 
 | Gate/risk | Affected task | Required input | Status |
 |---|---|---|---|
-| Flutter SDK absent from the development machine | `S01-FE-001` and every later frontend task | installation | **Open — now the only thing blocking the frontend track** |
+| Flutter SDK absent from the development machine | `S01-FE-001` and every later frontend task | installation | **Open — the only thing blocking `S01-FE-001`.** Tasks 11 to 13 additionally await `S-3`, `S-16`, `S-17` and `W0-BE-012` |
 | `S-1` role immutability versus unique phone | `W0-BE-011` | decision | **Resolved 2026-09-21** — partial unique index over active accounts, `BR-ROLE-010` |
 | `S-2` what Desktop means, platform set | `S01-FE-001` | decision | **Resolved 2026-09-21** — Desktop is an installed Windows application; targets Android, iOS, Windows; iOS release required from Wave 5 |
 | `S-3` locale and message language | `W0-BE-012`, `S01-FE-002`, `S01-FE-003`, `S01-FE-004` | decision | Open |
@@ -199,3 +199,4 @@ Filled in per task when its contract is written. `git diff --check` is required 
 | 2026-09-07 | Stage 1 decomposition approved | Stage 0 closure | Project Owner |
 | 2026-09-21 | Moved to Workflow v4; `S01-BE-001` approved and later merged as PR #2 | Two-party working model | Project Owner |
 | 2026-09-21 | Folded into Wave 0. `S01-BE-001` set `Accepted`. The former `S01-INT-001`, `S01-INT-002` and `S01-INT-003` renamed `W0-INT-001`, `W0-INT-002`, `W0-INT-003`; registry, fixture and identity-schema tasks added as `W0-BE-010`, `W0-BE-012`, `W0-BE-011`; the former `S01-BE-002` is superseded by `W0-BE-011`. The SMS provider adapter task and the SMS closure criterion moved to Wave 5 under `D-4`. Tracks and the ownership map set and approved. | Adoption of the wave execution model, `AUD-022` | Project Owner |
+| 2026-09-21 | `S-1` and `S-2` resolved, `AUD-023`. `W0-BE-011` no longer blocked by a decision and moves to `Draft`; `S01-FE-001` drops `S-2` and stays `Blocked` on the absent Flutter SDK. | Wave 0 planning gate | Project Owner |

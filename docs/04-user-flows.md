@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Main End-to-End Flow
 
@@ -196,7 +196,7 @@ Derived attention when `on_the_way` exceeds snapshotted threshold; Order remains
 
 ## 31. Admin Staff Creation
 
-Admin creates Staff with name, phone, role. Backend validates unique phone/allowed role, generates temporary password, `must_change_password=true`, returns temporary password once. Admin cannot block self/last active Admin; existing role cannot be edited.
+Admin creates Staff with name, phone, role. Backend validates that no **active** account holds the phone — a blocked account may share it, per `08` Section 3 and `BR-ROLE-010` — validates the allowed role, generates temporary password, `must_change_password=true`, returns temporary password once. Admin cannot block self/last active Admin; existing role cannot be edited.
 
 ## 32. Reorder
 
