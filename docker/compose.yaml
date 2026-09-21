@@ -1,0 +1,49 @@
+name: baraka-bozor
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: baraka_bozor
+      POSTGRES_USER: baraka
+      # Local development only. Production credentials come from the server
+      # environment and are never committed. See docker/README.md.
+      POSTGRES_PASSWORD: baraka_local_dev
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    ports:
+      # Exposed so a database client on the host can connect. The application
+      # reaches the database as host "db" on the Compose network.
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U baraka -d baraka_bozor"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/app.Dockerfile
+    working_dir: /app
+    volumes:
+      - ../backend:/app
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: baraka_bozor
+      DB_USERNAME: baraka
+      DB_PASSWORD: baraka_local_dev
+    depends_on:
+      db:
+        condition: service_healthy
+    # Keeps the container alive so `docker compose exec app ...` works. The task
+    # contract keeps a web server out of Wave 0; use `php artisan serve` inside
+    # the container when an HTTP entry point is needed.
+    command: ["tail", "-f", "/dev/null"]
+
+volumes:
+  db-data:

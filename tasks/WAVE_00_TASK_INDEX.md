@@ -85,7 +85,7 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 | Order | Task ID | Area | Track | Short outcome | Depends on | Status | Contract file |
 |---:|---|---|---|---|---|---|---|
 | 1 | `S01-BE-001` | Backend | `wave-owner` | Laravel `/api/v1` scaffold, error and quality foundation | Stage 0 closed | **Accepted** | `backend/stage-01/S01-BE-001-laravel-api-scaffold-quality-foundation.md` |
-| 2 | `W0-INT-001` | Integration | `wave-owner` | Local Laravel + PostgreSQL dev/test runtime in Docker | `S01-BE-001` | Draft | Not created |
+| 2 | `W0-INT-001` | Integration | `wave-owner` | Local PostgreSQL and PHP runtime in Docker | `S01-BE-001` | In Review | `integration/wave-00/W0-INT-001-local-postgresql-runtime.md` |
 | 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | Draft | Not created |
 | 4 | `W0-BE-010` | Backend | `wave-owner` | Module route registry and Flutter route-fragment registry (`D-8`) | `W0-INT-002` | Draft | Not created |
 | 5 | `W0-BE-011` | Backend | `wave-owner` | Identity schema: users, six roles, Sanctum tokens, initial Admin CLI bootstrap | `W0-BE-010`, `S-1` | Blocked | Not created |
@@ -115,7 +115,7 @@ Concurrency in Wave 0 is narrow by nature: tasks 2, 3 and 4 are a serial chain o
 | Task ID | Scope/non-goals | Behavior/API/UI | Persistence/lifecycle | Auth/scope/security | Money/concurrency/edge | Tests/verification | Ready |
 |---|---|---|---|---|---|---|---|
 | `S01-BE-001` | Yes | Yes | Yes | Yes | N/A | Yes | Accepted |
-| `W0-INT-001` | No | No | No | No | N/A | No | No |
+| `W0-INT-001` | Yes | Yes | Yes | N/A | N/A | Yes | Approved |
 | `W0-INT-002` | No | No | No | No | N/A | No | No |
 | `W0-BE-010` | No | No | No | No | N/A | No | No |
 | `W0-BE-011` | No | No | No | No | N/A | No | No |
@@ -164,6 +164,7 @@ Filled in per task when its contract is written. `git diff --check` is required 
 | Contract-first frontend may not start before its fixture surface is decided | `S01-FE-002` onward | `S-3`, `S-16`, `S-17` resolved and `W0-BE-012` Accepted | **Enforced by the task rows above** |
 | Real SMS path | **Wave 5**, not Wave 0 | vendor contract, alpha-name, credentials, legal entity | Deferred by `D-4` |
 | CI absent until `W0-INT-002` | `W0-INT-001` merges on locally-run checks | verification output recorded in the PR | Accepted risk |
+| Host PHP cannot load `pdo_pgsql` | every task that touches the database | resolved by `W0-INT-001`: PHP and the suite run in a container | **Closed 2026-09-21** |
 
 ## 10. Roadmap Acceptance Matrix
 
@@ -198,4 +199,5 @@ Filled in per task when its contract is written. `git diff --check` is required 
 |---|---|---|---|
 | 2026-09-07 | Stage 1 decomposition approved | Stage 0 closure | Project Owner |
 | 2026-09-21 | Moved to Workflow v4; `S01-BE-001` approved and later merged as PR #2 | Two-party working model | Project Owner |
+| 2026-09-21 | `W0-INT-001` contract approved and implemented: PostgreSQL 17 plus a PHP 8.4 container, tests moved off SQLite onto a separate PostgreSQL test database. The ownership map enumeration of backend paths replaced by "all of `backend/**` except what `auth-backend` owns". | Wave 0 foundation | Project Owner |
 | 2026-09-21 | Folded into Wave 0. `S01-BE-001` set `Accepted`. The former `S01-INT-001`, `S01-INT-002` and `S01-INT-003` renamed `W0-INT-001`, `W0-INT-002`, `W0-INT-003`; registry, fixture and identity-schema tasks added as `W0-BE-010`, `W0-BE-012`, `W0-BE-011`; the former `S01-BE-002` is superseded by `W0-BE-011`. The SMS provider adapter task and the SMS closure criterion moved to Wave 5 under `D-4`. Tracks and the ownership map set and approved. | Adoption of the wave execution model, `AUD-022` | Project Owner |

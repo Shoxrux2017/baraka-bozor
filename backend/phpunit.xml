@@ -23,8 +23,16 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <!-- The suite runs against the PostgreSQL test database created by
+             docker/initdb/01-create-test-database.sql. Never SQLite: it diverges
+             on column types, partial unique indexes and transaction behavior.
+             See docs/07-architecture.md Section 33. -->
+        <env name="DB_CONNECTION" value="pgsql"/>
+        <env name="DB_HOST" value="db"/>
+        <env name="DB_PORT" value="5432"/>
+        <env name="DB_DATABASE" value="baraka_bozor_test"/>
+        <env name="DB_USERNAME" value="baraka"/>
+        <env name="DB_PASSWORD" value="baraka_local_dev"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
