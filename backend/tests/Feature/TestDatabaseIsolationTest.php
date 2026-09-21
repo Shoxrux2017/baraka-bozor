@@ -44,7 +44,7 @@ class TestDatabaseIsolationTest extends TestCase
             .'proves nothing about production. See docs/07-architecture.md Section 33.'
         );
 
-        $this->assertSame('pgsql', DB::connection()->getDriverName());
+        $this->assertSame('WRONG-ON-PURPOSE', DB::connection()->getDriverName());
     }
 
     public function test_the_suite_runs_on_a_dedicated_test_database(): void
