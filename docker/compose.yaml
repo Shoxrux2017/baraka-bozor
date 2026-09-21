@@ -1,4 +1,9 @@
-name: baraka-bozor
+# One stack per git worktree. COMPOSE_PROJECT_NAME must differ per worktree, or
+# `up` from a second worktree recreates the first one's containers against the
+# second one's code and they end up sharing one database. DB_HOST_PORT must
+# differ too, since two stacks cannot publish the same host port.
+# See "Several worktrees at once" in docker/README.md.
+name: ${COMPOSE_PROJECT_NAME:-baraka-bozor}
 
 services:
   db:
@@ -13,11 +18,16 @@ services:
       - db-data:/var/lib/postgresql/data
       - ./initdb:/docker-entrypoint-initdb.d:ro
     ports:
-      # Exposed so a database client on the host can connect. The application
-      # reaches the database as host "db" on the Compose network.
-      - "5432:5432"
+      # Loopback only: the password is published in this repository, so the
+      # database must not be reachable from the rest of the network. A database
+      # client on this machine still connects to 127.0.0.1.
+      - "127.0.0.1:${DB_HOST_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U baraka -d baraka_bozor"]
+      # Over TCP, not the unix socket. While the image runs the scripts in
+      # initdb/ it has a temporary server up with listen_addresses='' — socket
+      # only — so a socket check can report healthy before the test database
+      # exists.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U baraka -d baraka_bozor"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -25,24 +35,28 @@ services:
 
   app:
     build:
-      context: ..
-      dockerfile: docker/app.Dockerfile
+      # The Dockerfile copies nothing from the build context, so the context is
+      # this directory rather than the repository root. Pointing it at the root
+      # would ship backend/vendor to the daemon on every rebuild.
+      context: .
+      dockerfile: app.Dockerfile
     working_dir: /app
     volumes:
       - ../backend:/app
-    environment:
-      DB_CONNECTION: pgsql
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_DATABASE: baraka_bozor
-      DB_USERNAME: baraka
-      DB_PASSWORD: baraka_local_dev
+    # No DB_* variables here. A container environment variable overrides the
+    # <env> entries in backend/phpunit.xml unless they are forced, which would
+    # silently point the test suite at the development database. Non-test
+    # commands read backend/.env, which docker/README.md requires.
     depends_on:
       db:
         condition: service_healthy
-    # Keeps the container alive so `docker compose exec app ...` works. The task
-    # contract keeps a web server out of Wave 0; use `php artisan serve` inside
-    # the container when an HTTP entry point is needed.
+    # tini, so SIGTERM reaches PID 1 and `down` does not wait out the full grace
+    # period before killing the container.
+    init: true
+    # Keeps the container alive so `docker compose exec app ...` works. A web
+    # server is out of scope for Wave 0; when an HTTP entry point is needed, run
+    # `php artisan serve --host 0.0.0.0` inside the container and publish a port
+    # for this service.
     command: ["tail", "-f", "/dev/null"]
 
 volumes:

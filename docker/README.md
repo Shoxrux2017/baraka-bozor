@@ -37,6 +37,22 @@ exercise nothing, which is worse than a red run. Install dependencies inside the
 container rather than on the host, so the tree is built by the same Linux PHP
 that will execute it.
 
+## Several worktrees at once
+
+The wave model runs one git worktree per track, so two stacks can be wanted at
+the same time. Give each worktree its own project name and host port, in a
+`.env` file next to `docker/compose.yaml` or exported in the shell:
+
+```text
+COMPOSE_PROJECT_NAME=bb-auth
+DB_HOST_PORT=5433
+```
+
+Without this, `up` from a second worktree does not start a second stack: Compose
+recognises the same project name, recreates the `app` container with the new bind
+mount, and the first worktree's running environment silently starts serving the
+second worktree's code — with one shared database underneath.
+
 ## Run the test suite
 
 ```text
@@ -44,7 +60,10 @@ docker compose -f docker/compose.yaml exec app php artisan test
 ```
 
 The suite uses the separate `baraka_bozor_test` database, so it never touches
-development data. `backend/phpunit.xml` pins that connection.
+development data. `backend/phpunit.xml` pins that connection with `force="true"`,
+which is load-bearing: without it PHPUnit would defer to any `DB_*` already in
+the environment and the suite would quietly run against `baraka_bozor`. For the
+same reason the `app` service deliberately sets no `DB_*` variables.
 
 Other checks, same shape:
 
@@ -94,5 +113,20 @@ database client on the host.
 ## Credentials
 
 The values in `compose.yaml` and `backend/.env.example` are local development
-defaults and are deliberately not secret. Production credentials come from the
-server environment and are never committed — `AGENTS.md` Section 13.
+defaults and are deliberately not secret. The database is published on
+`127.0.0.1` only, so those defaults are not reachable from the network.
+Production credentials come from the server environment and are never
+committed — `AGENTS.md` Section 13.
+
+## Two things to know about the bind mount
+
+**File ownership.** The `app` container runs as root, so files it creates through
+the mount — `vendor/`, `.env`, `storage/logs/*`, `bootstrap/cache/*` — are
+root-owned. Docker Desktop on Windows and macOS hides this. On Linux it means you
+may be unable to edit or clean your own tree; run the commands with
+`--user "$(id -u):$(id -g)"` there.
+
+**Do not run `config:cache`.** Nothing here needs it, and it would bake absolute
+paths — `/app/...` inside the container, `G:\project\...` on the host — so a
+cache written on one side breaks the other. If one gets written by accident,
+`php artisan config:clear` removes it.

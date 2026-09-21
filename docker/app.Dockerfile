@@ -18,8 +18,12 @@ RUN apt-get update \
         git \
         unzip \
     && docker-php-ext-install pdo_pgsql intl \
-    && apt-get purge -y --auto-remove \
     && rm -rf /var/lib/apt/lists/*
+
+# The -dev packages stay installed on purpose. The official images' trick for
+# dropping them needs the matching apt-mark pair around the build; half of it
+# alone removes nothing, and this is a development image where a smaller layer
+# buys nothing.
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
