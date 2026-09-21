@@ -59,7 +59,14 @@ Framework tables: Sanctum tokens, queue tables, migrations.
 | created_at | timestamptz | no |
 | updated_at | timestamptz | no |
 
-Constraints: `phone` unique **among active accounts only** — a partial unique index on `(phone) WHERE status = 'active'`, not a plain unique constraint. A blocked account keeps its real phone, so a role change can create a new active account for the same person without rewriting history. The invariant is: at most one `active` account per phone. The constraint is enforced by the database. The API additionally validates the phone, so a duplicate on Staff creation returns `422 validation_failed` per `09` Section 3 rather than surfacing a constraint violation as a server failure. Roles six approved; status active/blocked; Customer password null + no change gate; Staff password non-null. Index `(role,status)`, `lower(full_name)`. No hard-delete historical users.
+Constraints: `phone` is **not** plainly unique. Two partial unique indexes instead, one per account family:
+
+```sql
+UNIQUE (phone) WHERE status = 'active' AND role = 'customer'
+UNIQUE (phone) WHERE status = 'active' AND role <> 'customer'
+```
+
+So the invariant is: **at most one active Customer account and at most one active Staff account per phone.** Two consequences, both intended. A blocked account keeps its real phone, so a role change creates a new active Staff account for the same person without rewriting history. And one person may hold an active Staff account and an active Customer account on one number, so a company employee can order as a Customer; the two never collide because Staff authenticate with a password and Customers with an OTP. The constraint is enforced by the database. The API additionally validates the phone, so a duplicate on Staff creation returns `422 validation_failed` per `09` Section 3 rather than surfacing a constraint violation as a server failure. Roles six approved; status active/blocked; Customer password null + no change gate; Staff password non-null. Index `(role,status)`, `lower(full_name)`. No hard-delete historical users.
 
 ## 4. `customer_otp_challenges`
 

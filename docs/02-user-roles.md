@@ -42,7 +42,9 @@ The first Admin is created by a controlled one-time Laravel/Artisan bootstrap co
 
 Staff role is immutable in MVP. To change a person's operational role, block the old account and create a new account so historical assignments remain attached to the original identity.
 
-The new account uses the **same phone**. This is possible because `phone` is unique only among active accounts — see `08` Section 3 — so the blocked account keeps its real phone and nothing is rewritten. A role change therefore does not require the person to obtain a second number.
+The new account uses the **same phone**. This is possible because `phone` uniqueness is scoped to active accounts within an account family — see `08` Section 3 — so the blocked account keeps its real phone and nothing is rewritten. A role change therefore does not require the person to obtain a second number.
+
+The same scoping means a person may hold an active Staff account and an active Customer account on one number. A company employee can order as a Customer; the surfaces never collide because Staff authenticate with a password and Customers with an OTP.
 
 ## 4. Customer
 
@@ -119,7 +121,9 @@ One Flutter codebase provides all role-aware shells.
 
 Blocked Staff cannot create a new session and cannot continue normal protected use through an old token. Historical records remain preserved.
 
-An account may not be unblocked while another **active** account holds the same phone. Without this an unblock would produce two active accounts for one number and break the invariant in `08` Section 3. Resolving such a case is an Admin operational decision, not something unblocking may do implicitly. Note that the obvious remedy — blocking the newer account — is unavailable when that account is the last active Admin, which `BR-ROLE-008` protects; another active Admin must exist first.
+An account may not be unblocked while another active account **of its own family** holds the same phone — Staff against Staff, Customer against Customer. Without this an unblock would produce two active accounts in one family for one number and break the invariant in `08` Section 3. An active Customer account never blocks unblocking a Staff account, or the reverse.
+
+The refusal is `409 phone_already_active`, defined in `09` Section 59. Resolving such a case is an Admin operational decision, not something unblocking may do implicitly. Note that the obvious remedy — blocking the newer account — is unavailable when that account is the last active Admin, which `BR-ROLE-008` protects; another active Admin must exist first.
 
 ## 13. Core Security Invariants
 
