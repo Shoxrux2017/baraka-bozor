@@ -7,9 +7,9 @@
 | Roadmap wave | `Wave 0 — Foundation` |
 | Wave status | `In Progress` |
 | Verification model | `Workflow v5 — Concurrent Tracks` |
-| Declared track width | `3 — proposed` |
-| Ownership map approved | `No — pending Project Owner` |
-| Decomposition approved on | `2026-09-07 as Stage 1; Wave 0 re-decomposition NOT YET APPROVED` |
+| Declared track width | `3` |
+| Ownership map approved | `Yes — tasks/OWNERSHIP.md, 2026-09-21` |
+| Decomposition approved on | `2026-09-07 as Stage 1; re-approved as Wave 0 on 2026-09-21` |
 | Implementation started | `Yes — S01-BE-001 Accepted` |
 | Backend checkpoint | `Not started` |
 | Frontend checkpoint | `Not started` |
@@ -76,7 +76,7 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 - [x] Scope and task order reviewed against the locked roadmap, auth and API contracts.
 - [x] Execution model approved (2026-09-21, `AUD-022`).
 - [x] `D-8` module registries and `D-9` shared fixtures decided (2026-09-21).
-- [ ] **This Wave 0 decomposition, its three-track split and `tasks/OWNERSHIP.md` approved by the Project Owner.** `D-1`–`D-9` approved the execution model, not this particular decomposition. `tasks/README.md` Section 5 step 7 requires a separate sign-off, and no task of this wave may be set `Approved` before it.
+- [x] This Wave 0 decomposition, its three-track split and `tasks/OWNERSHIP.md` approved by the Project Owner on 2026-09-21, separately from the execution model itself, as `tasks/README.md` Section 5 step 7 requires. Individual task contracts still each need their own sign-off.
 - [ ] Wave 0 specification decisions `S-1`, `S-2`, `S-3`, `S-4`, `S-5`, `S-16`, `S-17` resolved — see `docs/SPEC_DECISIONS_BACKLOG.md`. Not required for the runtime, CI or registry tasks; required before the tasks named against them below.
 - [ ] Flutter SDK installed on the development machine — required before the first frontend task, absent as of 2026-09-21.
 
@@ -198,4 +198,4 @@ Filled in per task when its contract is written. `git diff --check` is required 
 |---|---|---|---|
 | 2026-09-07 | Stage 1 decomposition approved | Stage 0 closure | Project Owner |
 | 2026-09-21 | Moved to Workflow v4; `S01-BE-001` approved and later merged as PR #2 | Two-party working model | Project Owner |
-| 2026-09-21 | Folded into Wave 0. `S01-BE-001` set `Accepted`. The former `S01-INT-001`, `S01-INT-002` and `S01-INT-003` renamed `W0-INT-001`, `W0-INT-002`, `W0-INT-003`; registry, fixture and identity-schema tasks added as `W0-BE-010`, `W0-BE-012`, `W0-BE-011`; the former `S01-BE-002` is superseded by `W0-BE-011`. The SMS provider adapter task and the SMS closure criterion moved to Wave 5 under `D-4`. Tracks and the ownership map proposed. | Adoption of the wave execution model, `AUD-022` | **Proposed — awaiting Project Owner** |
+| 2026-09-21 | Folded into Wave 0. `S01-BE-001` set `Accepted`. The former `S01-INT-001`, `S01-INT-002` and `S01-INT-003` renamed `W0-INT-001`, `W0-INT-002`, `W0-INT-003`; registry, fixture and identity-schema tasks added as `W0-BE-010`, `W0-BE-012`, `W0-BE-011`; the former `S01-BE-002` is superseded by `W0-BE-011`. The SMS provider adapter task and the SMS closure criterion moved to Wave 5 under `D-4`. Tracks and the ownership map set and approved. | Adoption of the wave execution model, `AUD-022` | Project Owner |
