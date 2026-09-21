@@ -52,7 +52,7 @@ Where the original twelve stages went:
 | 9 Operator & Admin Operations | 1 (Staff administration, settings, provider enablement), 3 (Order board, exceptions, cancellation decisions, audited price correction) |
 | 10 Notifications, History & Reorder | 1 (device registration, notification infrastructure), 4 (events, history, Reorder) |
 | 11 Manager Analytics | 4 |
-| 12 MVP Integration & Pilot Readiness | 4 (fake-provider scenarios), 5 (provider sandbox, release build, performance, security review, pilot) |
+| 12 MVP Integration & Pilot Readiness | 4 (fake-provider scenarios), 5 (provider sandbox, release build, PostgreSQL migration checks, performance checks, security and financial integrity review, implementation-versus-documentation review, pilot) |
 
 Sections 3–15 below define the content of each original stage. They remain the authoritative description of **what** must be built and are unchanged except where a provider gate moved. Section 2 maps that content onto waves; `tasks/WAVE_<N>_TASK_INDEX.md` defines execution order inside a wave.
 
@@ -126,9 +126,9 @@ Includes full backend/frontend suites, required release build, PostgreSQL migrat
 
 Wave closes only when approved behavior is implemented, backend security/business rules are enforced, required Flutter uses real API, tasks accepted/delivered, checkpoints/integration pass, no P1/P2 remains, docs/bookkeeping current, accepted result on `origin/main`, local `main` synchronized/clean.
 
-Two additions the wave model requires: the wave's financial-invariant handover is recorded (Section 1), and every task in the wave was merged on a green CI run of the head that was actually merged.
+Nothing in this definition is relaxed by running tracks concurrently, and nothing is added to it. Only its unit changed from Stage to Wave.
 
-Nothing in this definition is relaxed by running tracks concurrently. Only its unit changed from Stage to Wave.
+The obligations the wave model does add — a green CI run on the head that is actually merged, and the wave's financial-invariant handover — are enforced where they belong, in `tasks/README.md` Sections 8 and 14, not by widening this clause. Wave 0 is a deliberate exception to the CI obligation, because the tasks that build the runtime and CI must themselves merge before CI can exist; that exception is recorded in `WAVE_00_TASK_INDEX.md` Section 9 and ends when `W0-INT-002` is Accepted.
 
 ## 17. Task Planning Rule
 

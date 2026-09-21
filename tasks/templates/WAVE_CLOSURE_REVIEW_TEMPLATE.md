@@ -6,7 +6,7 @@
 |---|---|
 | Wave | `[number/name]` |
 | Review mode | `Read-only` |
-| Verification model | `Workflow v4 — Two-Party` |
+| Verification model | `Workflow v5 — Concurrent Tracks` |
 | Review date | `[YYYY-MM-DD]` |
 | Wave index | `[path]` |
 | Audited `origin/main` | `[SHA]` |

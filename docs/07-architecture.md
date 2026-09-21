@@ -44,6 +44,7 @@ baraka-bozor/
   docs/superpowers/specs/
   tasks/
   tasks/OWNERSHIP.md
+  tests/fixtures/api/
   backend/AGENTS.md
   backend/...
   frontend/AGENTS.md

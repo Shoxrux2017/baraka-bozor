@@ -79,4 +79,4 @@ The Laravel scaffold arrived through the first approved Wave 0 task. The Flutter
 - Execution model: six waves with concurrent tracks, approved 2026-09-21. Recorded in `docs/06-roadmap.md` Sections 1–2 and in `docs/superpowers/specs/2026-09-21-parallel-execution-model-design.md`.
 - Wave 0 (Foundation): in progress. `S01-BE-001` Laravel API foundation is Accepted; the PostgreSQL runtime, required CI, module registries and auth core follow.
 - Open specification questions are tracked in `docs/SPEC_DECISIONS_BACKLOG.md`, grouped by the wave that must resolve them.
-- External gates: a real SMS path and merchant credentials are Wave 5 requirements and both depend on a registered legal entity, which does not yet exist. Waves 0–4 run behind fake providers and reach a demonstrable MVP without it.
+- External gates: a real SMS path and merchant credentials are Wave 5 requirements and both depend on a registered legal entity, which does not yet exist. Waves 0–4 reach a demonstrable MVP without it, running behind a fake SMS gateway and a fake payment provider; push notifications reach a real Firebase integration in Wave 4, which needs no legal entity.

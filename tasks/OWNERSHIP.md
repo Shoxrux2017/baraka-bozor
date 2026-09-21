@@ -18,12 +18,15 @@ The primary checkout stays on `main` and clean. It is the Project Owner's review
 
 Declared width: 3 concurrent tracks.
 
+Every path below is repository-relative and resolves to a real location on disk. The Laravel application lives under `backend/` and the Flutter application under `frontend/`; a path written without that prefix would own nothing.
+
 | Track | Owns (modify) | Notes |
 |---|---|---|
-| `wave-owner` | `database/migrations/**`, `routes/api.php`, `bootstrap/app.php`, `backend/composer.json`, `backend/composer.lock`, `frontend/pubspec.yaml`, `frontend/pubspec.lock`, `backend/config/**`, `.github/workflows/**`, `docker/**`, `tasks/**`, `docs/**` | The schema task, the module registries (`D-8`), the runtime, CI, and all bookkeeping. One task at a time, never concurrent with itself. |
+| `wave-owner` | `backend/database/migrations/**`, `backend/routes/api.php`, `backend/bootstrap/app.php`, `backend/composer.json`, `backend/composer.lock`, `backend/config/**`, `frontend/pubspec.yaml`, `frontend/pubspec.lock`, `frontend/lib/app/router.dart`, `frontend/lib/app/providers.dart`, `tests/fixtures/api/**`, `.github/workflows/**`, `docker/**`, `tasks/**`, `docs/**` | The schema task, the module registries (`D-8`), the shared fixture directory (`D-9`), the runtime, CI, and all bookkeeping. One task at a time, never concurrent with itself. |
 | `auth-backend` | `backend/app/Modules/Auth/**`, `backend/routes/api/v1/auth.php`, `backend/tests/Feature/Api/V1/Auth/**`, `backend/tests/Unit/Auth/**` | Six-role identity, Staff login, first-login gate, blocking, Customer OTP behind the fake `SmsGateway`. |
-| `client-foundation` | `frontend/lib/**` except `frontend/lib/app/router.dart` and `frontend/lib/app/providers.dart`, `frontend/test/**` | Flutter scaffold, Dio/secure storage, auth UX, role shells. Root router and root providers belong to `wave-owner` until the `D-8` registry task lands; afterwards each feature owns its own route fragment. |
-| shared, no single owner | `tests/fixtures/api/**` (`D-9` shared fixtures) | Created by `wave-owner`. Afterwards a fixture file is owned by whichever track owns the endpoint it describes; both the backend and the frontend side of that endpoint assert against it. |
+| `client-foundation` | `frontend/lib/**` **except** `frontend/lib/app/router.dart` and `frontend/lib/app/providers.dart`, which `wave-owner` owns; `frontend/test/**` | Flutter scaffold, Dio/secure storage, auth UX, role shells. Once the `D-8` registry task lands, each feature owns its own route fragment and still never edits the root router or root providers. |
+
+`tests/fixtures/api/**` is created by `wave-owner`. From Wave 1 onward a fixture file is owned by whichever track owns the endpoint it describes, and both the backend and the frontend side of that endpoint assert against it. In Wave 0 it stays with `wave-owner`.
 
 Wave 0 exception: until the `D-8` registry task is Accepted, per-module route files do not exist yet, so `auth-backend` routes are added by `wave-owner` on request rather than by the track itself. This exception exists only in Wave 0 and must not be carried forward.
 

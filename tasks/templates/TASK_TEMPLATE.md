@@ -120,7 +120,7 @@ Changes outside these areas need a concrete necessity within scope and must be r
 
 Do not modify: `[paths]`.
 
-Shared-caretaker paths — `routes/api.php`, `bootstrap/app.php`, `composer.json`, `pubspec.yaml`, `database/migrations/**`, the root router and the root providers — belong to the wave owner and change only through a dedicated task. Unless this **is** that task, list them under `Do not modify`.
+Shared-caretaker paths — `backend/routes/api.php`, `backend/bootstrap/app.php`, `backend/composer.json`, `backend/database/migrations/**`, `frontend/pubspec.yaml`, `frontend/lib/app/router.dart`, `frontend/lib/app/providers.dart` — belong to the wave owner and change only through a dedicated task. Unless this **is** that task, list them under `Do not modify`.
 
 ## Delivery
 

@@ -185,7 +185,7 @@ Never:
 
 - commit or push directly to `main`;
 - merge a pull request;
-- force-push or rewrite history on any branch, shared or task-owned — a branch that has fallen behind is brought up to date by merging `main` forward into it, never by rebasing a branch that has been pushed;
+- force-push any branch, or rewrite history that has been pushed — a branch that has fallen behind is brought up to date by merging `main` forward into it, never by rebasing. Amending or reordering commits that exist only locally and have never been pushed is not a rewrite of shared history and is allowed;
 - use destructive `git reset --hard`/`git clean` as routine workflow;
 - bypass checks with `--no-verify`;
 - modify global Git configuration;

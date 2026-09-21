@@ -94,7 +94,7 @@ W1-FE-004-customer-catalog-browse.md
 
 Area codes: `BE`, `FE`, `INT`.
 
-Tasks named under the earlier `S<stage>-...` scheme are **not renamed**. `S01-BE-001` keeps its ID, its contract path and its history; `WAVE_00_TASK_INDEX.md` records it with that name and states which wave it belongs to. Renaming delivered work would break the audit trail for no benefit.
+A task that already has a written contract or delivered work keeps its earlier `S<stage>-...` ID. `S01-BE-001` keeps its ID, its contract path and its history; `WAVE_00_TASK_INDEX.md` records it under that name. Renaming delivered work would break the audit trail for no benefit. A task that was only a planned row with no contract may be renamed into the wave scheme — `S01-INT-001`, `S01-INT-002` and `S01-INT-003` became `W0-INT-001`, `W0-INT-002` and `W0-INT-003` that way, and the wave index records the mapping.
 
 ## 5. Wave Planning
 
@@ -108,6 +108,10 @@ Before implementation begins:
 6. wave task decomposition, track split and order are proposed, including which track owns the wave's schema task and which track owns its financial invariants;
 7. Project Owner approves the decomposition, the declared track width, and the ownership map;
 8. the wave index records tasks, dependencies, tracks, checkpoints, integration, risks, and acceptance mapping; `OWNERSHIP.md` records the path assignment.
+
+**Path ownership.** `OWNERSHIP.md` gives every modifiable path exactly one owning track, and a task contract's **Allowed Areas** section must agree with it. A path absent from the map is owned by nobody and must not be modified without a Project Owner decision. Paths are repository-relative and must resolve to real locations — the Laravel application lives under `backend/` and the Flutter application under `frontend/`.
+
+Shared-caretaker paths belong to the wave owner and change only through a dedicated task and pull request: `backend/routes/api.php`, `backend/bootstrap/app.php`, `backend/composer.json`, `backend/database/migrations/**`, `frontend/pubspec.yaml`, `frontend/lib/app/router.dart`, `frontend/lib/app/providers.dart`. Feature tracks list them under `Do not modify`. Reassignment is a wave-level event: if work turns out to need a path another track owns, stop and raise it, do not negotiate it between agents.
 
 Detailed task contracts are prepared in execution order, not speculatively for the whole wave.
 
@@ -180,7 +184,7 @@ task/<task-id-lowercase>-<short-description>
 Worktree layout. The primary checkout stays on `main` and clean — it is the Project Owner's review and merge surface, never a track workspace. Each track works in a sibling worktree:
 
 ```text
-git worktree add ../bb-<track> -b task/<task-id-lowercase>-<short> main
+git worktree add ../bb-<track> -b task/<task-id-lowercase>-<short> origin/main
 ```
 
 ### B — Implementation
