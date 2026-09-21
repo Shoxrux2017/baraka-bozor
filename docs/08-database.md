@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Baseline
 
@@ -59,7 +59,7 @@ Framework tables: Sanctum tokens, queue tables, migrations.
 | created_at | timestamptz | no |
 | updated_at | timestamptz | no |
 
-Constraints: unique phone; roles six approved; status active/blocked; Customer password null + no change gate; Staff password non-null. Index `(role,status)`, `lower(full_name)`. No hard-delete historical users.
+Constraints: `phone` unique **among active accounts only** — a partial unique index on `(phone) WHERE status = 'active'`, not a plain unique constraint. A blocked account keeps its real phone, so a role change can create a new active account for the same person without rewriting history. The invariant is: at most one `active` account per phone. Enforcement is the database's, not the application's. Roles six approved; status active/blocked; Customer password null + no change gate; Staff password non-null. Index `(role,status)`, `lower(full_name)`. No hard-delete historical users.
 
 ## 4. `customer_otp_challenges`
 

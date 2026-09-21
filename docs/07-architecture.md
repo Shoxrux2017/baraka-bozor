@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021, AUD-022); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021, AUD-022, AUD-023); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Architecture Goals
 
@@ -34,6 +34,8 @@ Material 3
 ```
 
 One Flutter codebase supports mobile Customer/Shopper/Courier and desktop Operator/Admin/Manager surfaces.
+
+Build targets: **Android**, **iOS**, and **Windows desktop**. No web target — `02` Section 10 fixes Desktop as an installed Windows application, so no browser surface and no CORS configuration exist in the MVP. Android and Windows are required release targets from Wave 0; an iOS release build becomes required in Wave 5, since it needs macOS and an Apple Developer Program membership. iOS code is written throughout.
 
 ## 3. Repository Baseline
 
@@ -118,7 +120,9 @@ Staff: `phone + password → Staff role → Sanctum token`.
 
 Admin-created Staff begins `must_change_password=true`; backend blocks normal actions until password change, allowing only `/auth/me`, password change, logout.
 
-Flutter stores bearer token using secure platform storage. Backend re-reads current user role/status; valid token never overrides `blocked`.
+Flutter stores bearer token using secure platform storage. Every MVP target — Android, iOS, Windows — provides one, which is part of why `02` Section 10 rules out a browser surface. Sanctum therefore runs in bearer-token mode on every surface; there is no SPA-cookie mode and no CSRF surface.
+
+Backend re-reads current user role/status; valid token never overrides `blocked`. Authentication resolves the single active account for a phone, per `BR-ROLE-010`.
 
 ## 9. Authorization Layers
 

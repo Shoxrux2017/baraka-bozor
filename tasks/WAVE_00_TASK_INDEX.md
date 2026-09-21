@@ -77,7 +77,7 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 - [x] Execution model approved (2026-09-21, `AUD-022`).
 - [x] `D-8` module registries and `D-9` shared fixtures decided (2026-09-21).
 - [x] This Wave 0 decomposition, its three-track split and `tasks/OWNERSHIP.md` approved by the Project Owner on 2026-09-21, separately from the execution model itself, as `tasks/README.md` Section 5 step 7 requires. Individual task contracts still each need their own sign-off.
-- [ ] Wave 0 specification decisions `S-1`, `S-2`, `S-3`, `S-4`, `S-5`, `S-16`, `S-17` resolved — see `docs/SPEC_DECISIONS_BACKLOG.md`. Not required for the runtime, CI or registry tasks; required before the tasks named against them below.
+- [ ] Wave 0 specification decisions `S-3`, `S-4`, `S-5`, `S-16`, `S-17` resolved. `S-1` and `S-2` resolved 2026-09-21, `AUD-023` — see `docs/SPEC_DECISIONS_BACKLOG.md`. Not required for the runtime, CI or registry tasks; required before the tasks named against them below.
 - [ ] Flutter SDK installed on the development machine — required before the first frontend task, absent as of 2026-09-21.
 
 ## 5. Approved Task Order
@@ -86,15 +86,15 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 |---:|---|---|---|---|---|---|---|
 | 1 | `S01-BE-001` | Backend | `wave-owner` | Laravel `/api/v1` scaffold, error and quality foundation | Stage 0 closed | **Accepted** | `backend/stage-01/S01-BE-001-laravel-api-scaffold-quality-foundation.md` |
 | 2 | `W0-INT-001` | Integration | `wave-owner` | Local Laravel + PostgreSQL dev/test runtime in Docker | `S01-BE-001` | Draft | Not created |
-| 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | Draft | Not created |
+| 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | Draft | `integration/wave-00/W0-INT-002-github-actions-backend-checks.md` |
 | 4 | `W0-BE-010` | Backend | `wave-owner` | Module route registry and Flutter route-fragment registry (`D-8`) | `W0-INT-002` | Draft | Not created |
-| 5 | `W0-BE-011` | Backend | `wave-owner` | Identity schema: users, six roles, Sanctum tokens, initial Admin CLI bootstrap | `W0-BE-010`, `S-1` | Blocked | Not created |
+| 5 | `W0-BE-011` | Backend | `wave-owner` | Identity schema: users, six roles, Sanctum tokens, initial Admin CLI bootstrap | `W0-BE-010` | Draft | Not created |
 | 6 | `W0-BE-012` | Backend | `wave-owner` | Shared API fixture directory (`D-9`): the `docs/09` response and error examples both sides assert against | `W0-BE-010`, `S-3`, `S-16`, `S-17` | Blocked | Not created |
 | 7 | `S01-BE-003` | Backend | `auth-backend` | Staff login/logout/me, blocking, first-login password gate | `W0-BE-011`, `S-4`, `S-16` | Blocked | Not created |
 | 8 | `S01-BE-004` | Backend | `auth-backend` | Customer OTP domain/API with strict challenge and rate-limit contract, fake `SmsGateway` | `W0-BE-011`, `S-5` | Blocked | Not created |
 | 9 | `S01-BE-005` | Backend | `auth-backend` | Six-role authorization foundation, scope-safe protected probe endpoints and tests | `S01-BE-003`, `S01-BE-004` | Draft | Not created |
 | — | `Wave 0 Backend Phase 2` | Review | — | Backend auth/security block checkpoint | all backend tasks Accepted | Not started | Review later |
-| 10 | `S01-FE-001` | Frontend | `client-foundation` | Flutter scaffold plus Riverpod/GoRouter/Dio/secure storage foundation | Flutter SDK, `S-2` | Blocked | Not created |
+| 10 | `S01-FE-001` | Frontend | `client-foundation` | Flutter scaffold plus Riverpod/GoRouter/Dio/secure storage foundation | Flutter SDK | Blocked | Not created |
 | 11 | `S01-FE-002` | Frontend | `client-foundation` | Typed auth repository, session bootstrap, account-switch isolation | `S01-FE-001`, `W0-BE-012`, `S-3`, `S-16`, `S-17` | Blocked | Not created |
 | 12 | `S01-FE-003` | Frontend | `client-foundation` | Customer OTP request/verify UX | `S01-FE-002`, `S-3` | Blocked | Not created |
 | 13 | `S01-FE-004` | Frontend | `client-foundation` | Staff login plus mandatory first-password-change UX | `S01-FE-002`, `S-3` | Blocked | Not created |
@@ -153,9 +153,9 @@ Filled in per task when its contract is written. `git diff --check` is required 
 
 | Gate/risk | Affected task | Required input | Status |
 |---|---|---|---|
-| Flutter SDK absent from the development machine | `S01-FE-001` and every later frontend task | installation | **Open** |
-| `S-1` role immutability versus unique phone | `W0-BE-011` | decision | Open |
-| `S-2` what Desktop means, platform set | `S01-FE-001` | decision | Open |
+| Flutter SDK absent from the development machine | `S01-FE-001` and every later frontend task | installation | **Open — now the only thing blocking the frontend track** |
+| `S-1` role immutability versus unique phone | `W0-BE-011` | decision | **Resolved 2026-09-21** — partial unique index over active accounts, `BR-ROLE-010` |
+| `S-2` what Desktop means, platform set | `S01-FE-001` | decision | **Resolved 2026-09-21** — Desktop is an installed Windows application; targets Android, iOS, Windows; iOS release required from Wave 5 |
 | `S-3` locale and message language | `W0-BE-012`, `S01-FE-002`, `S01-FE-003`, `S01-FE-004` | decision | Open |
 | `S-4` staff login hardening, token lifetime | `S01-BE-003` | decision | Open |
 | `S-5` OTP verify and Cart creation | `S01-BE-004` | decision | Open |

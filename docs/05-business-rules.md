@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## Rule Language
 
@@ -28,7 +28,7 @@ Existing Order snapshots must not be rewritten by later Catalog, Address, fee, o
 
 **BR-ROLE-001** — Roles are exactly `customer`, `shopper`, `courier`, `operator`, `admin`, `manager`.
 
-**BR-ROLE-002** — One primary role per account; role is immutable in MVP.
+**BR-ROLE-002** — One primary role per account; role is immutable in MVP. A role change blocks the old account and creates a new one reusing the same phone, which `08` Section 3 permits by scoping phone uniqueness to active accounts.
 
 **BR-ROLE-003** — Customer authenticates with phone + SMS OTP and has no password.
 
@@ -43,6 +43,8 @@ Existing Order snapshots must not be rewritten by later Catalog, Address, fee, o
 **BR-ROLE-008** — Admin may not block self or the last active Admin account.
 
 **BR-ROLE-009** — First Admin is created through controlled one-time backend CLI/bootstrap, never public API.
+
+**BR-ROLE-010** — At most one active account exists per phone. Authentication resolves the active account for a phone; an account may not be unblocked while another active account holds the same phone.
 
 # 3. Catalog Rules
 
