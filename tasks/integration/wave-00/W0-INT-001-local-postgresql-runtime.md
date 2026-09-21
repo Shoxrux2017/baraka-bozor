@@ -58,6 +58,7 @@ Start only when Status is `Approved` and the Git preflight in `tasks/README.md` 
 | 1 | PHP and the test suite run **inside a container**, not on the host. | The host PHP is Herd-lite: `php -m` shows only `pdo_mysql` and `pdo_sqlite`, extensions are compiled in, there is no `ext/` directory, and `extension_dir` points at a path that does not exist. `pdo_pgsql` cannot be enabled there. Running in a container also makes local, CI and production behave identically, which the merge queue depends on. |
 | 2 | Tests run against a **separate PostgreSQL database**, not a separate instance, and not SQLite. | `docs/07` §33 requires the real engine. SQLite diverges on column types, partial unique indexes and transaction behavior — `S-1` is about a partial unique index, which SQLite does not support, and `S01-BE-001` already hit a SQLite/PostgreSQL type mismatch on `personal_access_tokens`. |
 | 3 | PostgreSQL **17**, pinned in Compose rather than floating on `latest`. | A floating tag makes the runtime non-reproducible and can change behavior between two agents' machines. 17 is the current stable branch, so a new project starts on it rather than migrating within its first year. This is the engine production will run. |
+| 5 | **Amendment, 2026-09-21.** `backend/tests/**` is opened for exactly one new guard test, after the independent review showed acceptance criterion 6 was provable only by inspection. | A misconfigured test connection destroys the developer schema on the first `RefreshDatabase`, which arrives in `W0-BE-011`. The guard belongs before that task, not with it. The Project Owner chose this over deferring the assertion. |
 | 4 | The `app` image is built from an official `php:8.4-cli` base with `pdo_pgsql` added. | 8.4 matches the host version already in use and satisfies `docs/07` §2's `PHP 8.3+`. |
 
 ## Implementation Notes
@@ -77,7 +78,7 @@ Start only when Status is `Approved` and the Git preflight in `tasks/README.md` 
 - [ ] `docker compose exec app php artisan migrate --force` succeeds against PostgreSQL with only the three existing migrations.
 - [ ] `docker compose exec app php artisan test` passes, and the suite's active connection is `pgsql`.
 - [ ] `backend/phpunit.xml` contains no `sqlite` and no `:memory:`.
-- [ ] Development and test databases are separate; running the suite leaves development data untouched.
+- [ ] Development and test databases are separate; running the suite leaves development data untouched, **and the suite itself asserts this** — see `TestDatabaseIsolationTest`.
 - [ ] No `.sqlite` file exists anywhere in the repository or working tree after a full run.
 - [ ] `backend/.env.example` documents the Compose connection and contains no real secret.
 - [ ] `backend/.gitignore` still ignores `.env`; no `.env` is committed.
@@ -152,13 +153,14 @@ Track: `wave-owner`
 | `backend/.env.example` | Modify | PostgreSQL connection defaults, no secret |
 | `backend/config/database.php` | Modify | default connection becomes `pgsql` |
 | `backend/phpunit.xml` | Modify | suite runs against the PostgreSQL test database |
+| `backend/tests/Feature/TestDatabaseIsolationTest.php` | Create | **Contract amendment, Project Owner, 2026-09-21.** One guard asserting the suite runs on PostgreSQL and on a `_test` database, so acceptance criterion 6 is enforced by the suite instead of by inspection. Nothing else under `backend/tests/**` may change under this contract. |
 | `backend/.gitignore` | Inspect | confirm `.env` and `*.sqlite` stay ignored |
 | `tasks/OWNERSHIP.md` | Modify | approved simplification: `wave-owner` owns `backend/**` except the Auth trees |
 | `tasks/WAVE_00_TASK_INDEX.md` | Modify | task status bookkeeping |
 
 Changes outside these areas need a concrete necessity within scope and must be reported.
 
-Do not modify: `backend/database/migrations/**`, `backend/routes/**`, `backend/app/**`, `backend/tests/**`, `backend/bootstrap/app.php`, `backend/composer.json`, `backend/composer.lock`, `frontend/**`, `docs/01`–`docs/09`.
+Do not modify: `backend/database/migrations/**`, `backend/routes/**`, `backend/app/**`, `backend/bootstrap/app.php`, `backend/composer.json`, `backend/composer.lock`, `frontend/**`, `docs/01`–`docs/09`. Under `backend/tests/**` only the one new file named above may be created; the two existing test files and `TestCase.php` stay byte-identical.
 
 ## Delivery
 
