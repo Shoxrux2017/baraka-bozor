@@ -164,6 +164,8 @@ Filled in per task when its contract is written. `git diff --check` is required 
 | Contract-first frontend may not start before its fixture surface is decided | `S01-FE-002` onward | `S-3`, `S-16`, `S-17` resolved and `W0-BE-012` Accepted | **Enforced by the task rows above** |
 | Real SMS path | **Wave 5**, not Wave 0 | vendor contract, alpha-name, credentials, legal entity | Deferred by `D-4` |
 | CI absent until `W0-INT-002` | `W0-INT-001` merges on locally-run checks | verification output recorded in the PR | Accepted risk |
+| `backend/phpunit.xml` has no `failOnEmptyTestSuite`, so a suite that stops discovering tests would still report green | every wave | one attribute; `backend/**` was out of scope for `W0-INT-002` | Open — follow-up task |
+| `backend/phpunit.xml` `DB_URL` lacks `force="true"` and Laravel prefers it over the discrete `DB_*` values | every wave | guarded today by `TestDatabaseIsolationTest`, which asks the server for `current_database()`; worth closing anyway | Open — follow-up task |
 | Host PHP cannot load `pdo_pgsql` | every task that touches the database | `W0-INT-001` runs PHP and the suite in a container | Addressed on the `W0-INT-001` branch; closes when that task is `Accepted` |
 
 ## 10. Roadmap Acceptance Matrix

@@ -40,9 +40,9 @@ that will execute it.
 ## CI runs these same commands
 
 `.github/workflows/backend.yml` brings up this same stack from this same
-Dockerfile and runs the commands below verbatim: `composer install`, the `.env`
+Dockerfile and runs the same commands as below — `composer install`, the `.env`
 and key steps, `migrate`, then `php artisan test`, `vendor/bin/pint --test` and
-`vendor/bin/phpstan analyse`.
+`vendor/bin/phpstan analyse` — with the non-interactive flags a runner needs.
 
 That is deliberate. It keeps local, CI and production on one runtime, and it
 makes this document continuously tested. **A change here and a change in that

@@ -104,7 +104,7 @@ The same commands CI will run, so a local failure is caught before a runner minu
 
 **Project Owner manual step, after merge**
 
-In the repository settings, add a branch protection rule on `main` requiring this workflow's check to pass before merging. The agent cannot and must not change repository settings. Until this is done the check is advisory, and `tasks/README.md` §8F is not yet satisfied.
+In the repository settings, add a branch protection rule on `main` requiring this workflow's check to pass before merging. **The string to select is the job name, `Tests, Pint, PHPStan on PostgreSQL`, not the workflow name `Backend checks`** — a rule set on the workflow name never reports and silently protects nothing. The agent cannot and must not change repository settings. Until this is done the check is advisory, and `tasks/README.md` §8F is not yet satisfied.
 
 ## Allowed Areas
 
@@ -129,7 +129,21 @@ After merge the Project Owner adds the branch protection rule. The task becomes 
 
 ## Independent Review
 
-Filled in before the pull request is opened.
+Reviewed 2026-09-21 by an agent with no implementation context, which read the full logs of all three runs. Result: 0 P1, 1 P2, 6 P3.
+
+**Process deviation, recorded rather than hidden:** this review ran *after* the pull request was opened, while `AGENTS.md` §14 and `tasks/README.md` §8E put it before. The pull request was opened first so that GitHub would produce the run this task is verified by — the contract's Verification section makes the CI run the verification, and no run exists until a pull request exists. The ordering is a consequence of a self-verifying task, not a shortcut, and it must not become the norm for ordinary tasks.
 
 | ID | Severity | Finding | Resolution |
 |---|---|---|---|
+| R-01 | **P2** | The pull request body quoted only local output and said the deliberate failure "will" be demonstrated, when it already had been. Two acceptance criteria and the Verification section require both CI logs quoted in the pull request. | **Fixed.** Body rewritten with the green log, the red log, all three run links, and the breaking and reverting commits. |
+| R-02 | P3 | `php -m \| grep -E '^pdo_pgsql$\|^intl$'` is an alternation, so the step passed with either extension present. `intl` is exactly the divergence Decision 1 names, and nothing else in the job exercises it. | **Fixed.** One `grep -qx` per extension, on separate lines. |
+| R-03 | P3 | The only piped step ran under `bash -e` without `pipefail`, so a failing `php` would have been judged by `grep`'s status. | **Fixed.** `shell: bash` on that step, which GitHub runs with `-eo pipefail`. |
+| R-04 | P3 | No `permissions:` block. The token arrives read-only today only because that is the repository default. | **Fixed.** `permissions: contents: read` pinned at workflow level. |
+| R-05 | P3 | `docker/README.md` claimed CI runs the documented commands "verbatim"; CI adds non-interactive flags and two `php` calls the README does not list. | **Fixed.** Reworded to "the same commands, with the non-interactive flags a runner needs". |
+| R-06 | P3 | Neither the contract nor the pull request named the status-check string the Project Owner must select. GitHub exposes the **job** name, not the workflow name, and a rule set on the wrong string never reports. | **Fixed.** The Delivery section and the pull request body now name `Tests, Pint, PHPStan on PostgreSQL` exactly. |
+| R-07 | P3 | The independent review ran after the pull request was opened. | **Not fixable retroactively.** Recorded above with the reason, and the findings are in this table before the merge window, which is what §8E protects. |
+
+**Found outside this contract's scope and reported, not acted on.** `backend/**` is on this contract's Do-not-modify list, so both belong to a follow-up task and are recorded as risks in `tasks/WAVE_00_TASK_INDEX.md` §9:
+
+- `backend/phpunit.xml` sets no `failOnEmptyTestSuite="true"`. A change that stopped discovering tests would print `No tests executed` and the job would still be green — a real green-while-broken vector.
+- `backend/phpunit.xml`'s `DB_URL` entry is the one `DB_*` without `force="true"`, and Laravel prefers `DB_URL` over the discrete values. Currently guarded, because `TestDatabaseIsolationTest` asks the server for `current_database()` and would go red, but worth closing.

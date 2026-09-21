@@ -16,6 +16,9 @@ concurrency:
   group: backend-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions:
+  contents: read
+
 jobs:
   backend:
     name: Tests, Pint, PHPStan on PostgreSQL
@@ -34,11 +37,18 @@ jobs:
 
       # No artisan here: vendor/ does not exist yet, so artisan cannot even
       # bootstrap. Everything in this step must be answerable by PHP alone.
+      # One assertion per extension. An alternation would pass with either one
+      # present, and intl is exactly the divergence this job exists to catch —
+      # nothing else here exercises it, since db:show is not part of CI.
+      # shell: bash adds pipefail, so a failing php is not judged by grep.
       - name: Show the runtime
+        shell: bash
         run: |
           docker compose -f docker/compose.yaml ps
           docker compose -f docker/compose.yaml exec -T app php -v
-          docker compose -f docker/compose.yaml exec -T app php -m | grep -E '^pdo_pgsql$|^intl$'
+          docker compose -f docker/compose.yaml exec -T app php -m | grep -qx pdo_pgsql
+          docker compose -f docker/compose.yaml exec -T app php -m | grep -qx intl
+          echo 'pdo_pgsql and intl both present'
 
       # vendor/ and .env are gitignored, so a fresh checkout has neither, just
       # as a fresh worktree does. Without .env the feature tests do not fail —
