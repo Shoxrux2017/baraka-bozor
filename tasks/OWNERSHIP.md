@@ -9,7 +9,7 @@ Rules:
 1. **One owner per path.** Two tracks never own the same path. A path absent from this file is owned by nobody and must not be modified without a Project Owner decision.
 2. **Shared-caretaker paths belong to the wave owner**, listed once per wave below, and change only through a dedicated task and pull request. Feature tracks list them under `Do not modify`.
 3. **Read is always allowed.** Ownership restricts modification, never inspection.
-4. **The map is approved at the wave planning gate**, together with the decomposition and the declared track width (`tasks/README.md` Section 5).
+4. **The map is approved at the wave planning gate**, together with the decomposition and the declared track width (`tasks/README.md` Section 5). Approving the map does not close the rest of that gate: a wave may have an approved map while its specification decisions are still open, and the wave index records which entry-gate items remain unchecked.
 5. **Reassignment is a wave-level event.** If work turns out to need a path another track owns, stop and raise it; do not negotiate it between agents.
 
 The primary checkout stays on `main` and clean. It is the Project Owner's review and merge surface, never a track workspace.
@@ -18,11 +18,11 @@ The primary checkout stays on `main` and clean. It is the Project Owner's review
 
 Declared width: 3 concurrent tracks. Approved by the Project Owner on 2026-09-21.
 
-Every path below is repository-relative and resolves to a real location on disk. The Laravel application lives under `backend/` and the Flutter application under `frontend/`; a path written without that prefix would own nothing.
+Every path below is repository-relative and carries the correct prefix — the Laravel application lives under `backend/`, the Flutter application under `frontend/`, and a path written without that prefix would own nothing. Many of these paths do not exist yet: the whole `frontend/` tree, `tests/fixtures/api/**`, `.github/workflows/**` and the Auth module are created by later Wave 0 tasks. Each resolves to its real location once its owning task creates it.
 
 | Track | Owns (modify) | Notes |
 |---|---|---|
-| `wave-owner` | `backend/database/migrations/**`, `backend/routes/api.php`, `backend/bootstrap/app.php`, `backend/composer.json`, `backend/composer.lock`, `backend/config/**`, `frontend/pubspec.yaml`, `frontend/pubspec.lock`, `frontend/lib/app/router.dart`, `frontend/lib/app/providers.dart`, `tests/fixtures/api/**`, `.github/workflows/**`, `docker/**`, `tasks/**`, `docs/**` | The schema task, the module registries (`D-8`), the shared fixture directory (`D-9`), the runtime, CI, and all bookkeeping. One task at a time, never concurrent with itself. |
+| `wave-owner` | `backend/app/**` **except** `backend/app/Modules/Auth/**`; `backend/tests/**` **except** `backend/tests/Feature/Api/V1/Auth/**` and `backend/tests/Unit/Auth/**`; `backend/database/migrations/**`, `backend/routes/api.php`, `backend/bootstrap/app.php`, `backend/composer.json`, `backend/composer.lock`, `backend/config/**`, `frontend/pubspec.yaml`, `frontend/pubspec.lock`, `frontend/lib/app/router.dart`, `frontend/lib/app/providers.dart`, `tests/fixtures/api/**`, `.github/workflows/**`, `docker/**`, `tasks/**`, `docs/**` | The schema task, the module registries (`D-8`), the shared fixture directory (`D-9`), the runtime, CI, and all bookkeeping. One task at a time, never concurrent with itself. |
 | `auth-backend` | `backend/app/Modules/Auth/**`, `backend/routes/api/v1/auth.php`, `backend/tests/Feature/Api/V1/Auth/**`, `backend/tests/Unit/Auth/**` | Six-role identity, Staff login, first-login gate, blocking, Customer OTP behind the fake `SmsGateway`. |
 | `client-foundation` | `frontend/lib/**` **except** `frontend/lib/app/router.dart` and `frontend/lib/app/providers.dart`, which `wave-owner` owns; `frontend/test/**` | Flutter scaffold, Dio/secure storage, auth UX, role shells. Once the `D-8` registry task lands, each feature owns its own route fragment and still never edits the root router or root providers. |
 
@@ -40,3 +40,4 @@ Filled in at each wave planning gate, before the first task of that wave is appr
 |---|---|---|
 | 2026-09-21 | File created with the Wave 0 map | Adoption of the wave execution model, `AUD-022` |
 | 2026-09-21 | Wave 0 map approved by the Project Owner | Wave 0 planning gate, `tasks/README.md` Section 5 step 7 |
+| 2026-09-21 | `backend/app/**` and `backend/tests/**`, both excluding the Auth trees, assigned to `wave-owner` | Independent review found them unowned while `W0-BE-011` must modify the existing `backend/app/Models/User.php` and most tasks need tests outside `Auth/`. Project Owner approved the assignment with the map. |
