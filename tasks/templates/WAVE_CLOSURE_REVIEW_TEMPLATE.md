@@ -1,14 +1,14 @@
-# Stage [Number] Closure Review — [Stage Name]
+# Wave [Number] Closure Review — [Wave Name]
 
 ## 1. Metadata
 
 | Field | Value |
 |---|---|
-| Stage | `[number/name]` |
+| Wave | `[number/name]` |
 | Review mode | `Read-only` |
 | Verification model | `Workflow v4 — Two-Party` |
 | Review date | `[YYYY-MM-DD]` |
-| Stage index | `[path]` |
+| Wave index | `[path]` |
 | Audited `origin/main` | `[SHA]` |
 | Local `main` | `[SHA]` |
 | Ahead/behind | `[0/0]` |
@@ -21,16 +21,16 @@ During review: no implementation edits/fixes/staging/commit/push/merge/bookkeepi
 
 | Condition | Result | Evidence |
 |---|---|---|
-| Previous Stage closed | `[Pass/N/A/Fail]` | `[reference]` |
+| Previous Wave closed | `[Pass/N/A/Fail]` | `[reference]` |
 | Decomposition approved | `[Pass/Fail]` | `[index]` |
 | Every approved task Accepted/Delivered | `[Pass/Fail]` | `[IDs/PRs]` |
 | Backend checkpoint PASS/N/A | `[Pass/N/A/Fail]` | `[review]` |
 | Frontend checkpoint PASS/N/A | `[Pass/N/A/Fail]` | `[review]` |
 | Integration PASS/N/A | `[Pass/N/A/Fail]` | `[evidence]` |
-| Complete accepted Stage on origin/main | `[Pass/Fail]` | `[SHA]` |
+| Complete accepted Wave on origin/main | `[Pass/Fail]` | `[SHA]` |
 | Local main == origin/main, 0/0, clean | `[Pass/Fail]` | `[evidence]` |
 
-## 3. Stage Scope / Delivery Audit
+## 3. Wave Scope / Delivery Audit
 
 Verify complete approved scope, no missing task, no hidden feature/refactor, non-goals excluded, locked contracts unchanged without approval, delivery records coherent, no placeholder/workaround remains.
 
@@ -84,7 +84,7 @@ Do not claim PASS unless actually run.
 
 | Check | Expected | Actual | Result |
 |---|---|---|---|
-| origin/main | accepted Stage | `[SHA]` | `[Pass/Fail]` |
+| origin/main | accepted Wave | `[SHA]` | `[Pass/Fail]` |
 | local main | same SHA | `[SHA]` | `[Pass/Fail]` |
 | ahead/behind | 0/0 | `[value]` | `[Pass/Fail]` |
 | worktree | clean | `[value]` | `[Pass/Fail]` |
@@ -99,7 +99,7 @@ Do not claim PASS unless actually run.
 Choose one:
 
 ```text
-STAGE CLOSED
+WAVE CLOSED
 FIXES REQUIRED BEFORE CLOSURE
 CLOSURE BLOCKED
 ```

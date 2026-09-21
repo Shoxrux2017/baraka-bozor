@@ -20,11 +20,13 @@ Implementing agent = requirements analysis, task contracts, implementation,
                      focused verification, branches and PRs;
                      obtains an independent review before every PR
 Project Owner      = product decisions, approval, PR review and merge,
-                     real-stack execution, manual smoke, Stage closure
+                     real-stack execution, manual smoke, Wave closure
 CI                 = checkpoint/integration verification when configured
 ```
 
 The implementing agent never merges its own work. The Project Owner owns `main`.
+
+Several implementing agents may work at once, one per track, each in its own git worktree and on its own branch. Each of them holds one approved task at a time and edits only the paths its task contract and `tasks/OWNERSHIP.md` assign to its track. Concurrency changes nothing about authority, verification, security, financial integrity or the review obligations below — it only means more than one of these agents exists.
 
 ## 3. Authority
 
@@ -124,12 +126,18 @@ Do not:
 
 - add unrelated functionality;
 - perform unrelated refactors or formatting churn;
-- create speculative infrastructure for later Stages;
+- create speculative infrastructure for later waves;
 - add/change packages unless explicitly required;
 - change unrelated API/schema/routes/serialization;
-- edit locked docs or Stage bookkeeping unless explicitly required;
+- edit locked docs or wave bookkeeping unless explicitly required;
 - manually edit generated files;
-- change lockfiles without a real approved dependency change.
+- change lockfiles without a real approved dependency change;
+- edit a path owned by another track in `tasks/OWNERSHIP.md`.
+
+Two things are permitted that read like speculative infrastructure and are not, because the wave model requires them and each needs its own approved contract:
+
+- the current wave's schema task may create the tables that wave's features need, so that feature tasks add no migrations of their own — the current wave only, never the whole MVP;
+- the module registries approved as `D-8` — per-module backend route files collected by one loop, and Flutter feature route fragments collected by one registry — so that concurrent tracks never edit the same shared file.
 
 If an unrelated defect is found, report it separately unless it blocks the task.
 
@@ -155,9 +163,11 @@ Per-task verification is proportional and defined by the task contract:
 - `git diff --check`;
 - complete focused scope/diff self-review.
 
-Do not independently run full backend/frontend suites, full builds, broad E2E, Phase 2, or Stage closure verification unless the current task contract explicitly requires a broader check for a concrete risk.
+Do not independently run full backend/frontend suites, full builds, broad E2E, Phase 2, or wave closure verification unless the current task contract explicitly requires a broader check for a concrete risk.
 
-Backend/frontend Phase 2, real-stack integration, and manual smoke are Project Owner/CI owned by default. See `tasks/README.md`.
+Backend/frontend Phase 2, real-stack integration, and manual smoke are Project Owner/CI owned by default, and their unit is the wave. See `tasks/README.md`.
+
+When a task branch takes in a merged migration or a merged shared-infrastructure change, re-run that task's focused verification before delivery. Evidence gathered before that merge does not cover the head that will be merged.
 
 Never claim a command passed if it was not run and observed passing. Quote the observed output.
 
@@ -175,7 +185,7 @@ Never:
 
 - commit or push directly to `main`;
 - merge a pull request;
-- force-push or rewrite shared history;
+- force-push or rewrite history on any branch, shared or task-owned — a branch that has fallen behind is brought up to date by merging `main` forward into it, never by rebasing a branch that has been pushed;
 - use destructive `git reset --hard`/`git clean` as routine workflow;
 - bypass checks with `--no-verify`;
 - modify global Git configuration;

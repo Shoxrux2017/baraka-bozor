@@ -4,39 +4,57 @@
 
 **Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07.
 
+**Amended 2026-09-21** by Project Owner approval: Sections 1, 2, 4, 10, 16, 17 and 18 move execution from twelve serial stages to six waves with concurrent tracks. See `AUD-022` in `CONTRACT_ALIGNMENT_REPORT.md`. Stage **content** in Sections 3–15 is unchanged apart from the two provider gates named in Sections 4 and 10.
+
 ## 1. Roadmap Principle
 
-Build vertically:
+Build in waves. Each wave runs several vertical tracks concurrently, then closes as one unit:
 
 ```text
-planning gate
-→ backend tasks
-→ backend checkpoint
-→ Flutter tasks
-→ frontend checkpoint
-→ integration
-→ Stage closure
+wave planning gate (decisions resolved, then frozen for the wave)
+→ concurrent tracks, each carrying backend and frontend for its own feature
+→ backend block review + frontend block review
+→ wave integration gate
+→ wave closure
 ```
 
-Later Stage does not begin until current Stage is explicitly closed.
+A later wave does not begin until the current wave is explicitly closed. Inside a wave, concurrency is bounded by the wave's declared width and by the path ownership map in `tasks/OWNERSHIP.md`.
 
-## 2. MVP Stages
+Frontend work does not wait for backend code. Both sides implement the same locked contract in `09-api-contracts.md`, guarded by the shared fixtures required in `07-architecture.md` Section 33.
 
-| Stage | Name | Main outcome |
-|---:|---|---|
-| 0 | Product & Engineering Foundation | locked contracts + repo/workflow baseline |
-| 1 | Authentication & Role-Based Entry | six secure role entries |
-| 2 | Catalog & Pricing | Admin Catalog + Customer read/search |
-| 3 | Customer Profile, Address & Cart | checkout-ready Customer shopping preparation |
-| 4 | Checkout, Fees & Order Core | stable Order snapshots/lifecycle foundation |
-| 5 | Shopper Assignment & Market Purchase | real market Shopping |
-| 6 | Availability, Substitution & Approval | real exception/Customer decision workflow |
-| 7 | Online Payments & Refunds | Payme/Paynet/xazna/Click financial flow |
-| 8 | Courier Delivery | paid Order through physical delivery |
-| 9 | Operator & Admin Operations | production operational workspace |
-| 10 | Notifications, History & Reorder | complete Customer post-order experience |
-| 11 | Manager Analytics | read-only business KPI |
-| 12 | MVP Integration & Pilot Readiness | production-like E2E/security/quality gate |
+What this model deliberately keeps serial — the Cart to Order to purchase to Approval chain, and financial-invariant work under one owner per wave — its rationale and its risks are recorded in `docs/superpowers/specs/2026-09-21-parallel-execution-model-design.md`, approved by the Project Owner on 2026-09-21.
+
+## 2. MVP Waves
+
+| Wave | Name | Main outcome | Max concurrent tracks |
+|---:|---|---|---:|
+| 0 | Foundation | runnable stack, required CI, six secure role entries | 3 |
+| 1 | Catalog and Account | Admin Catalog, Customer read/search, Customer profile and Addresses, Staff administration | 5 |
+| 2 | Cart, Order and Money | checkout-ready Cart, stable Order snapshots/lifecycle foundation, payment adapters on published protocols | 3 |
+| 3 | Fulfilment and Exceptions | real market Shopping, real exception/Customer decision workflow, physical delivery, operational workspace | 4 |
+| 4 | Demonstrable MVP | complete Customer post-order experience, read-only business KPI, full end-to-end scenarios on fake providers | 3 |
+| 5 | Providers and Launch | Payme/Paynet/xazna/Click financial flow, production-like E2E/security/quality gate, pilot readiness | 2 |
+
+Stage 0 — Product & Engineering Foundation — is closed and is not a wave.
+
+Where the original twelve stages went:
+
+| Original stage | Wave |
+|---|---|
+| 1 Authentication & Role-Based Entry | 0 |
+| 2 Catalog & Pricing | 1 |
+| 3 Customer Profile, Address & Cart | 1 (profile, Addresses), 2 (Cart, map picker) |
+| 4 Checkout, Fees & Order Core | 2 |
+| 5 Shopper Assignment & Market Purchase | 2 (assignment abstraction), 3 (market purchase) |
+| 6 Availability, Substitution & Approval | 3 |
+| 7 Online Payments & Refunds | 2 (adapters on published protocols), 5 (real merchant integration, live reconciliation) |
+| 8 Courier Delivery | 2 (assignment abstraction), 3 (delivery) |
+| 9 Operator & Admin Operations | 1 (Staff administration, settings, provider enablement), 3 (Order board, exceptions, cancellation decisions, audited price correction) |
+| 10 Notifications, History & Reorder | 1 (device registration, notification infrastructure), 4 (events, history, Reorder) |
+| 11 Manager Analytics | 4 |
+| 12 MVP Integration & Pilot Readiness | 4 (fake-provider scenarios), 5 (provider sandbox, release build, performance, security review, pilot) |
+
+Sections 3–15 below define the content of each original stage. They remain the authoritative description of **what** must be built and are unchanged except where a provider gate moved. Section 2 maps that content onto waves; `tasks/WAVE_<N>_TASK_INDEX.md` defines execution order inside a wave.
 
 ## 3. Stage 0 — Product & Engineering Foundation
 
@@ -50,7 +68,7 @@ Backend: Laravel/PostgreSQL foundation, users/Sanctum, Customer OTP, Staff login
 
 Flutter: Riverpod/GoRouter/Dio/secure-storage foundation, Customer OTP UI, Staff login/password-change, role shells, session/account-switch isolation.
 
-**External gate:** selected SMS vendor documentation/credentials. Core Auth may proceed, but Stage cannot close without approved real/sandbox SMS integration path.
+**External gate:** selected SMS vendor documentation/credentials. Core Auth proceeds behind the `SmsGateway` abstraction with a fake gateway, and Wave 0 closes on that fake. The approved real or sandbox SMS integration path is a **Wave 5** closure requirement, because the vendor contract and alpha-name registration require a registered legal entity that does not yet exist. The debt is recorded, not dropped.
 
 ## 5. Stage 2 — Catalog & Pricing
 
@@ -78,7 +96,7 @@ Unavailable workflows, range-over-max, reduced quantity, substitution Approval, 
 
 Payment obligations/Attempts, persisted idempotency, Payme/Paynet/xazna/Click adapters, official callback authentication, provider-event deduplication, reconciliation, prepaid/deferred/additional Payment, partial/full Refund, retry/reconciliation, client pending/failed/unknown/success UX.
 
-**External gates:** official merchant documentation and valid sandbox/test credentials or approved provider test path. Missing access = `BLOCKED`, never fake success.
+**External gates:** official merchant documentation, and valid sandbox/test credentials or an approved provider test path. These two are now separated. Official **published** protocol documentation is enough to implement the thin adapter in Wave 2; the adapter carries transport, signing and response parsing only, while obligations, attempts, idempotency, reconciliation and refunds stay provider-agnostic. **Credentials remain mandatory** for verification and for Wave 5 closure. Missing access = `BLOCKED`, never fake success, and no invented protocol.
 
 ## 11. Stage 8 — Courier Delivery
 
@@ -104,14 +122,18 @@ Real scenarios: fixed prepaid, deferred dynamic, range Approval, substitution/re
 
 Includes full backend/frontend suites, required release build, PostgreSQL migrations, provider sandbox checks, manual role smoke, security/financial integrity review, performance checks, and implementation-vs-doc review.
 
-## 16. Standard Stage Definition of Done
+## 16. Standard Wave Definition of Done
 
-Stage closes only when approved behavior is implemented, backend security/business rules are enforced, required Flutter uses real API, tasks accepted/delivered, checkpoints/integration pass, no P1/P2 remains, docs/bookkeeping current, accepted result on `origin/main`, local `main` synchronized/clean.
+Wave closes only when approved behavior is implemented, backend security/business rules are enforced, required Flutter uses real API, tasks accepted/delivered, checkpoints/integration pass, no P1/P2 remains, docs/bookkeeping current, accepted result on `origin/main`, local `main` synchronized/clean.
+
+Two additions the wave model requires: the wave's financial-invariant handover is recorded (Section 1), and every task in the wave was merged on a green CI run of the head that was actually merged.
+
+Nothing in this definition is relaxed by running tracks concurrently. Only its unit changed from Stage to Wave.
 
 ## 17. Task Planning Rule
 
-Roadmap defines Stage boundary; `STAGE_<NN>_TASK_INDEX.md` defines execution order. Detailed implementation contracts are prepared/hardened in execution order, not speculatively for whole project.
+Roadmap defines the wave boundary; `WAVE_<N>_TASK_INDEX.md` defines execution order and each track's declared width. Detailed implementation contracts are prepared/hardened in execution order, not speculatively for the whole project. A wave's specification decisions are resolved at its planning gate and then frozen for the wave.
 
 ## 18. Post-MVP Boundary
 
-Do not pull into earlier Stages: multiple markets/cities, Seller marketplace, live GPS, automatic dispatch, AI/voice/Telegram, bonus/cashback/subscriptions, complex promotions, warehouse/inventory planning, custom roles, post-delivery claims/returns.
+Do not pull into any wave: multiple markets/cities, Seller marketplace, live GPS, automatic dispatch, AI/voice/Telegram, bonus/cashback/subscriptions, complex promotions, warehouse/inventory planning, custom roles, post-delivery claims/returns.

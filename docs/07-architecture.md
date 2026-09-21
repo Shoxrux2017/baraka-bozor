@@ -2,11 +2,11 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021, AUD-022); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Architecture Goals
 
-The MVP architecture must provide backend-authoritative business/financial state, historical Order stability, strong role/ownership/assignment/lifecycle authorization, transaction-safe quantity/payment/refund behavior, vertical Stage development, and simple deployment without speculative distributed infrastructure.
+The MVP architecture must provide backend-authoritative business/financial state, historical Order stability, strong role/ownership/assignment/lifecycle authorization, transaction-safe quantity/payment/refund behavior, vertical feature development inside waves of concurrent tracks, and simple deployment without speculative distributed infrastructure.
 
 ## 2. Technology Baseline
 
@@ -41,13 +41,21 @@ One Flutter codebase supports mobile Customer/Shopper/Courier and desktop Operat
 baraka-bozor/
   AGENTS.md
   docs/01–09
+  docs/superpowers/specs/
   tasks/
+  tasks/OWNERSHIP.md
   backend/AGENTS.md
   backend/...
   frontend/AGENTS.md
   frontend/...
   docker/
 ```
+
+`docs/01–09` is the locked specification. `docs/superpowers/specs/` holds approved engineering design records that are **not** part of the locked specification; each carries its own status line and is authority only for what that line claims. `tasks/OWNERSHIP.md` assigns repository paths to concurrent tracks.
+
+Backend routes are declared per module in `routes/api/v1/<module>.php` and collected by one loop; Flutter feature route fragments are collected by one registry. This keeps concurrent tracks out of the same shared file and is decision `D-8`.
+
+One git worktree per concurrent track, as siblings of the primary checkout. The primary checkout stays on `main` and clean.
 
 ## 4. System Context
 
@@ -130,7 +138,7 @@ Product image metadata is PostgreSQL, bytes through Laravel Filesystem. One curr
 
 ## 11. Customer Address / Map
 
-Backend stores structured address + coordinates and remains map-vendor neutral. Flutter map point-picker is selected during Stage 3 planning. Automatic geocoding is optional and not authoritative delivery requirement.
+Backend stores structured address + coordinates and remains map-vendor neutral. The Flutter map point-picker package is selected at the Wave 2 planning gate. Automatic geocoding is optional and not authoritative delivery requirement.
 
 ## 12. Order Aggregate Boundary
 
@@ -243,7 +251,11 @@ Refund is first-class entity with provider Attempts. Successful refund total is 
 
 ## 23. SMS OTP Architecture
 
-Domain uses `SmsGateway` abstraction. OTP generation/hash/expiry/attempts/rate limit are backend responsibilities. Production OTP is never logged. Exact OTP policy is fixed in API; actual SMS vendor is Stage 1 external gate.
+Domain uses `SmsGateway` abstraction. OTP generation/hash/expiry/attempts/rate limit are backend responsibilities. Exact OTP policy is fixed in API.
+
+**OTP values are never emitted.** Not in an API response, not in a log line, not in a response header, in any environment. Root `AGENTS.md` Section 6 states this without an environment qualifier and this document adds none. A fake `SmsGateway` used before a real vendor exists records the issued OTP only in a test-only in-process sink that backend feature tests assert against.
+
+The actual SMS vendor is a **Wave 5** external gate: the vendor contract and alpha-name registration require a registered legal entity. Wave 0 implements and verifies the full OTP flow behind the fake gateway and closes on it, with the real path recorded as explicit debt (`06-roadmap.md` Section 4, decision `D-4`).
 
 ## 24. Notification Architecture
 
@@ -302,6 +314,10 @@ Frontend: strict DTOs, request construction/failure mapping, Riverpod transition
 
 Integration: real Flutter → Laravel → PostgreSQL plus provider sandbox/test checks at relevant gates.
 
+**Shared API fixtures (`D-9`).** Frontend and backend implement the same locked contract concurrently, so the response and error examples from `09-api-contracts.md` live in one shared fixture directory. Backend feature tests assert that the API emits them; frontend tests assert that the client parses them. A divergence fails CI instead of surfacing at integration. A frontend track may only build against a fixture surface that is actually decided — an endpoint whose error envelope still has an open specification question has no writable fixture yet.
+
+**Fake providers.** Where a wave runs behind a fake provider, its tests must exercise failure and unknown-outcome paths, not only success, and must assert that no code path presents a fake provider success as a real payment.
+
 ## 34. Production Topology
 
 ```text
@@ -322,3 +338,8 @@ No microservices, Kafka/RabbitMQ, Kubernetes, mandatory Redis, Elasticsearch, Gr
 ## 36. External Integration Gates
 
 Provider facts remain explicit implementation gates: selected SMS vendor, Flutter map/tile provider, Firebase config, and official Payme/Paynet/xazna/Click merchant protocols/credentials. The implementing agent must not invent protocols or fake production success.
+
+Two refinements from the wave model, with the full table in `tasks/README.md` Section 16:
+
+- **Published documentation and credentials are separate gates.** Official published protocol documentation is enough to implement a thin adapter — transport, signing and response parsing only. Credentials remain mandatory for verification and for Wave 5 closure. Obligations, attempts, idempotency, reconciliation and refunds stay provider-agnostic, so a divergence between published and contractual protocol rewrites the thin adapter and not the payment core.
+- **Some gates need a registered legal entity and some do not.** The SMS contract with its alpha-name, and every merchant agreement, do. Provider selection, the Flutter map/tile package and the Firebase project do not. Firebase therefore reaches a real integration in Wave 4, while SMS and merchant integration wait for Wave 5.

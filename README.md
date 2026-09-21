@@ -39,11 +39,13 @@ Implementing agent = requirements analysis, task contracts, implementation,
                      focused verification, branches and PRs;
                      obtains an independent review before every PR
 Project Owner      = product decisions, approval, PR review and merge,
-                     real-stack execution, manual smoke, Stage closure
+                     real-stack execution, manual smoke, Wave closure
 CI                 = checkpoint/integration execution when configured
 ```
 
-One approved task at a time. The implementing agent does not decide product behavior, API semantics, database contracts, security or lifecycle rules, money rules, concurrency policy, dependency strategy, or UX. Those belong to the Project Owner, and so does every change to the locked specification.
+Work runs in waves. Inside a wave several tracks run concurrently, each as its own implementing agent in its own git worktree, and each holding **one approved task at a time**. Track count is bounded by the wave's declared width in `tasks/WAVE_<N>_TASK_INDEX.md`, and the paths each track may touch are fixed in `tasks/OWNERSHIP.md`.
+
+The implementing agent does not decide product behavior, API semantics, database contracts, security or lifecycle rules, money rules, concurrency policy, cross-feature architecture, dependency strategy, or UX. Those belong to the Project Owner, and so does every change to the locked specification.
 
 Because one agent both plans and implements, an independent reviewer with no implementation context reviews each diff before its pull request is opened.
 
@@ -68,12 +70,13 @@ baraka-bozor/
   frontend/
 ```
 
-Laravel and Flutter production scaffolds are intentionally not created in Stage 0. They are introduced through approved Stage 1 tasks.
+The Laravel scaffold arrived through the first approved Wave 0 task. The Flutter scaffold is introduced through a later Wave 0 task.
 
-## Current Stage status
+## Current status
 
 - Locked `docs/01–09`: PASS.
 - Stage 0: CLOSED. Baseline delivered to `origin/main`.
-- Stage 1 (Authentication & Role-Based Entry): approved, implementation starting.
-- Open specification questions are tracked in `docs/SPEC_DECISIONS_BACKLOG.md`.
-- External gate: the SMS provider is still required before Stage 1 can close.
+- Execution model: six waves with concurrent tracks, approved 2026-09-21. Recorded in `docs/06-roadmap.md` Sections 1–2 and in `docs/superpowers/specs/2026-09-21-parallel-execution-model-design.md`.
+- Wave 0 (Foundation): in progress. `S01-BE-001` Laravel API foundation is Accepted; the PostgreSQL runtime, required CI, module registries and auth core follow.
+- Open specification questions are tracked in `docs/SPEC_DECISIONS_BACKLOG.md`, grouped by the wave that must resolve them.
+- External gates: a real SMS path and merchant credentials are Wave 5 requirements and both depend on a registered legal entity, which does not yet exist. Waves 0–4 run behind fake providers and reach a demonstrable MVP without it.
