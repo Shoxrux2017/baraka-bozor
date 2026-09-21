@@ -1,14 +1,14 @@
-# Phase 2 Read-Only Block Review — [Stage / Backend or Frontend]
+# Phase 2 Read-Only Block Review — [Wave / Backend or Frontend]
 
 ## 1. Metadata
 
 | Field | Value |
 |---|---|
-| Stage | `[Stage number/name]` |
+| Wave | `[Wave number/name]` |
 | Block | `[Backend / Frontend]` |
 | Review mode | `Read-only` |
 | Review date | `[YYYY-MM-DD]` |
-| Stage index | `[path]` |
+| Wave index | `[path]` |
 | Audited `origin/main` | `[SHA]` |
 | Local `main` | `[SHA]` |
 | Ahead/behind | `[0/0 expected]` |
@@ -31,7 +31,7 @@ During review: no implementation edits, fixes, staging, commit, push, merge, or 
 
 Confirm:
 
-- approved Stage scope only;
+- approved Wave scope only;
 - no hidden feature/refactor/dependency churn;
 - locked API/DB/business contracts preserved;
 - task contracts compose without contradiction;
@@ -93,7 +93,7 @@ Any unresolved security/privacy/financial-integrity defect is blocking.
 | Full backend regression | `[command]` | `[observed]` | `[Pass/Fail/N/A]` |
 | Format/static | `[command]` | `[observed]` | `[Pass/Fail/N/A]` |
 | Migration/schema verification | `[command/method]` | `[observed]` | `[Pass/Fail/N/A]` |
-| Stage security/financial checks | `[command/method]` | `[observed]` | `[Pass/Fail/N/A]` |
+| Wave security/financial checks | `[command/method]` | `[observed]` | `[Pass/Fail/N/A]` |
 
 ### Frontend
 
@@ -102,9 +102,9 @@ Any unresolved security/privacy/financial-integrity defect is blocking.
 | Full Flutter tests | `[command]` | `[observed]` | `[Pass/Fail/N/A]` |
 | Analyze/format | `[command]` | `[observed]` | `[Pass/Fail/N/A]` |
 | Required target build | `[command]` | `[observed]` | `[Pass/Fail/N/A]` |
-| Stage routing/session/accessibility checks | `[method]` | `[observed]` | `[Pass/Fail/N/A]` |
+| Wave routing/session/accessibility checks | `[method]` | `[observed]` | `[Pass/Fail/N/A]` |
 
-## 6. Cross-Task / Prior-Stage Regression
+## 6. Cross-Task / Prior-Wave Regression
 
 | Surface | Expected | Evidence | Result |
 |---|---|---|---|

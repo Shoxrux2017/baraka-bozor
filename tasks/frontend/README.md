@@ -1,3 +1,3 @@
 # Frontend Task Contracts
 
-Store approved Flutter implementation contracts under `stage-<NN>/` in execution order.
+Store approved Flutter implementation contracts under `wave-<N>/` in execution order.

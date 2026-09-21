@@ -1,20 +1,22 @@
-# Stage [Number] Task Index — [Stage Name]
+# Wave [Number] Task Index — [Wave Name]
 
-## 1. Stage Metadata
+## 1. Wave Metadata
 
 | Field | Value |
 |---|---|
-| Roadmap stage | `[Stage exact name]` |
-| Stage status | `Draft` |
-| Verification model | `Workflow v4 — Two-Party` |
+| Roadmap wave | `[Wave exact name]` |
+| Wave status | `Draft` |
+| Verification model | `Workflow v5 — Concurrent Tracks` |
+| Declared track width | `[max concurrent tracks]` |
+| Ownership map approved | `No` |
 | Decomposition approved on | `[YYYY-MM-DD / Not approved]` |
 | Implementation started | `No` |
 | Backend checkpoint | `Not started` |
 | Frontend checkpoint | `Not started` |
 | Integration gate | `Not started` |
-| Stage closed | `No` |
+| Wave closed | `No` |
 
-Valid Stage statuses: `Draft`, `Approved`, `In Progress`, `Blocked`, `Closed`.
+Valid Wave statuses: `Draft`, `Approved`, `In Progress`, `Blocked`, `Closed`.
 
 ## 2. Goal and Boundary
 
@@ -24,17 +26,17 @@ Valid Stage statuses: `Draft`, `Approved`, `In Progress`, `Blocked`, `Closed`.
 
 ### Included
 
-- [Stage capability]
+- [Wave capability]
 
 ### Excluded
 
-- [Adjacent future Stage/Post-MVP/non-goal]
+- [Adjacent future Wave/Post-MVP/non-goal]
 
 ## 3. Authoritative Planning Inputs
 
 | Source | Section/reference | Why it governs |
 |---|---|---|
-| `docs/06-roadmap.md` | `[Stage]` | scope/DoD |
+| `docs/06-roadmap.md` | `[Wave]` | scope/DoD |
 | relevant `docs/0X` | `[section]` | business/role/flow |
 | `docs/07-architecture.md` | `[section]` | architecture |
 | `docs/08-database.md` | `[section]` | persistence |
@@ -45,23 +47,25 @@ Valid Stage statuses: `Draft`, `Approved`, `In Progress`, `Blocked`, `Closed`.
 
 ## 4. Entry Gate
 
-- [ ] Previous Stage explicitly closed.
+- [ ] Previous Wave explicitly closed.
 - [ ] Current origin/main verified and local main synchronized/clean.
 - [ ] Relevant locked contracts reviewed.
 - [ ] Relevant implementation/tests inspected.
 - [ ] External provider/dependency gates identified.
-- [ ] Stage decomposition/order approved.
+- [ ] Wave decomposition/order approved.
 - [ ] Backend/frontend/integration boundaries explicit.
 - [ ] Every roadmap criterion mapped.
 - [ ] No unresolved product/API/DB/security/ownership/lifecycle/money/concurrency/idempotency/UX decision blocks first task.
 
 ## 5. Approved Task Order
 
-| Order | Task ID | Area | Short outcome | Depends on | Status | Contract file |
-|---:|---|---|---|---|---|---|
-| 1 | `[S00-BE-001]` | Backend | `[outcome]` | None | Draft | Not created |
+| Order | Task ID | Area | Track | Short outcome | Depends on | Status | Contract file |
+|---:|---|---|---|---|---|---|---|
+| 1 | `[W0-BE-001]` | Backend | `[track]` | `[outcome]` | None | Draft | Not created |
 
-Detailed contracts are prepared/hardened in execution order.
+Detailed contracts are prepared/hardened in execution order. `Order` is the dependency order, not a queue: tasks with no dependency between them and no shared owned path may run concurrently, up to the declared track width. The `Track` column must match `tasks/OWNERSHIP.md`.
+
+The wave's financial-invariant owner is: `[track]`. The wave's schema and shared-caretaker owner is: `[track]`.
 
 ## 6. Implementation Readiness
 

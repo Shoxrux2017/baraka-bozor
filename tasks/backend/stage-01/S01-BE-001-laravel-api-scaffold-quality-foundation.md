@@ -7,7 +7,7 @@
 | Task ID | `S01-BE-001` |
 | Stage | `Stage 1 — Authentication & Role-Based Entry` |
 | Area | `Backend` |
-| Status | `Approved` |
+| Status | `Accepted` — merged as PR #2 on 2026-09-21; bookkeeping now lives in `tasks/WAVE_00_TASK_INDEX.md` |
 | Depends on | `Stage 0 — CLOSED` |
 | Blocks | `S01-INT-001` |
 | Branch | `task/s01-be-001-laravel-api-foundation` |
@@ -184,7 +184,7 @@ Then inspect the complete diff: every file necessary for the scaffold; no change
 | `backend/routes/web.php` | Modify | Keep the file, register no route |
 | `backend/package.json`, `backend/vite.config.js`, `backend/resources/js/`, `backend/resources/css/`, `backend/resources/views/welcome.blade.php` | Delete | Decision 6; Flutter is the only client |
 | `backend/tests/Feature/Api/V1/ApiFoundationTest.php` | Create | Focused contract evidence |
-| `tasks/STAGE_01_TASK_INDEX.md` | Bookkeeping | Task status and contract path |
+| `tasks/WAVE_00_TASK_INDEX.md` | Bookkeeping | Task status and contract path. `tasks/STAGE_01_TASK_INDEX.md` held this before the wave fold and is now frozen |
 
 Do not modify: `docs/`, `frontend/`, `docker/`, root `.gitignore`, root `.gitattributes`.
 

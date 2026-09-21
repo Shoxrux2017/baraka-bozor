@@ -4,8 +4,8 @@
 
 | Field | Value |
 |---|---|
-| Task ID | `[S00-AREA-000]` |
-| Stage | `[number and exact name]` |
+| Task ID | `[W0-AREA-000]` |
+| Wave | `[number and exact name]` |
 | Area | `[Backend / Frontend / Integration]` |
 | Status | `Draft` |
 | Depends on | `[Task IDs or None]` |
@@ -108,13 +108,19 @@ git status --short
 
 ## Allowed Areas
 
+**Mandatory.** This section may not be left blank or generic. With several tracks running concurrently it is what keeps two agents out of the same file, and it must agree with this track's row in `tasks/OWNERSHIP.md`.
+
+Track: `[track name exactly as it appears in tasks/OWNERSHIP.md]`
+
 | Path or area | Action | Reason |
 |---|---|---|
 | `[path]` | `[Inspect/Modify/Create/Test]` | `[reason]` |
 
-Changes outside these areas need a concrete necessity within scope and must be reported.
+Changes outside these areas need a concrete necessity within scope and must be reported. A path owned by another track is never one of them — if the task genuinely needs it, stop and raise it with the Project Owner.
 
 Do not modify: `[paths]`.
+
+Shared-caretaker paths — `backend/routes/api.php`, `backend/bootstrap/app.php`, `backend/composer.json`, `backend/database/migrations/**`, `frontend/pubspec.yaml`, `frontend/lib/app/router.dart`, `frontend/lib/app/providers.dart` — belong to the wave owner and change only through a dedicated task. Unless this **is** that task, list them under `Do not modify`.
 
 ## Delivery
 

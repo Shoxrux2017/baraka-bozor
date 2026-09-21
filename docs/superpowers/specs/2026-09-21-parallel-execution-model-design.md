@@ -4,11 +4,12 @@
 
 | Field | Value |
 |---|---|
-| Status | `PROPOSED — awaiting Project Owner approval` |
+| Status | `APPROVED — Project Owner, 2026-09-21, merged as PR #3` |
 | Date | `2026-09-21` |
 | Produced by | implementing agent, design session |
 | Independent review | 2026-09-21, reviewer with no implementation context; findings and resolutions in §15 |
-| Amends | `docs/06-roadmap.md` §1, §2, §4, §10, §16 (unit only), §17; `AGENTS.md` §8, §11, §13 (clarification); `tasks/README.md` §3, §4, §5, §7, §9–§11, §14; `docs/07-architecture.md` §23, §33, §36; `README.md`; the stage-named files in `tasks/templates/` |
+| Implemented by | `AUD-022`. Two deviations found by the review of that implementation are recorded in §16 |
+| Amends | `docs/06-roadmap.md` §1, §2, §4, §10, §16 (unit only), §17, §18; `AGENTS.md` §8, §11, §13 (clarification); `tasks/README.md` §3, §4, §5, §7, §9–§11, §14; `docs/07-architecture.md` §1, §3, §11, §23, §33, §36; `README.md`; the stage-named files in `tasks/templates/` |
 | Leaves untouched | `docs/01`, `02`, `03`, `04`, `05`, `08`, `09`; `AGENTS.md` §6, §7; all product, security and financial rules |
 
 Decisions `D-1`–`D-9` in §3 were all made by the Project Owner during the 2026-09-21 design session. `D-8` and `D-9` fall under the "cross-feature architecture" reservation in `AGENTS.md` §3; the independent review of this document found that the agent had decided them on its own, so they were separated out, put to the Project Owner explicitly, and approved the same day. This document decides no product question.
@@ -292,3 +293,12 @@ P3-6 was fixed by a different route than proposed: rather than defending the fro
 Both overreach findings were accepted: the module registries and the shared fixture contract were taken out of the agent's hands, raised as `D-8` and `D-9` in §3, and put to the Project Owner, who approved both on 2026-09-21. `W0` is therefore no longer blocked on them.
 
 The reviewer also recorded what it checked and found accurate, including every repository-state claim in §1, the backlog arithmetic, and all citations except the one corrected as P1. Those checks are why this revision could be narrow.
+
+## 16. Deviations Found While Implementing This Record
+
+`AUD-022` carried §11 into the repository. Its own independent review found no P1 and no silent weakening, and confirmed all 24 rows of §11 were executed. Two places where this record was wrong, rather than the implementation, are corrected here:
+
+- **§2 Non-Goals and the §11 Definition-of-Done row were mutually inconsistent in practice.** Adding "merged on a green CI run" to `docs/06-roadmap.md` §16 would have been a substantive addition to a locked clause, and Wave 0 cannot satisfy it — the tasks that build the runtime and CI must merge before CI exists. The obligation now lives in `tasks/README.md` §8 and §14, and §16 keeps its original substance. The non-goal stands as written.
+- **§13's decision-to-wave assignment was wrong for two entries.** `S-14` (Cart `abandoned`) was assigned to `W1` while §4 puts Cart in `W2`; `S-9` (enum vocabularies) was assigned to `W3` while the Order, assignment and refund tables whose columns it defines are created in `W2`. Both moved to `W2`. §14 already labelled that grouping a proposal to be confirmed at the adopting gate, so this is the confirmation, not a change of decision.
+
+Two further edits went beyond §11's letter and are disclosed in `AUD-022`: `docs/06-roadmap.md` §18 and `docs/07-architecture.md` §1 and §11 needed unit renames to stay coherent. No item list, criterion or rule changed in any of them.
