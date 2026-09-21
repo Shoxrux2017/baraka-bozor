@@ -86,7 +86,7 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 |---:|---|---|---|---|---|---|---|
 | 1 | `S01-BE-001` | Backend | `wave-owner` | Laravel `/api/v1` scaffold, error and quality foundation | Stage 0 closed | **Accepted** | `backend/stage-01/S01-BE-001-laravel-api-scaffold-quality-foundation.md` |
 | 2 | `W0-INT-001` | Integration | `wave-owner` | Local PostgreSQL and PHP runtime in Docker | `S01-BE-001` | In Review | `integration/wave-00/W0-INT-001-local-postgresql-runtime.md` |
-| 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | Draft | Not created |
+| 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | In Review | `integration/wave-00/W0-INT-002-github-actions-backend-checks.md` |
 | 4 | `W0-BE-010` | Backend | `wave-owner` | Module route registry and Flutter route-fragment registry (`D-8`) | `W0-INT-002` | Draft | Not created |
 | 5 | `W0-BE-011` | Backend | `wave-owner` | Identity schema: users, six roles, Sanctum tokens, initial Admin CLI bootstrap | `W0-BE-010`, `S-1` | Blocked | Not created |
 | 6 | `W0-BE-012` | Backend | `wave-owner` | Shared API fixture directory (`D-9`): the `docs/09` response and error examples both sides assert against | `W0-BE-010`, `S-3`, `S-16`, `S-17` | Blocked | Not created |
@@ -116,7 +116,7 @@ Concurrency in Wave 0 is narrow by nature: tasks 2, 3 and 4 are a serial chain o
 |---|---|---|---|---|---|---|---|
 | `S01-BE-001` | Yes | Yes | Yes | Yes | N/A | Yes | Accepted |
 | `W0-INT-001` | Yes | Yes | Yes | N/A | N/A | Yes | Approved |
-| `W0-INT-002` | No | No | No | No | N/A | No | No |
+| `W0-INT-002` | Yes | Yes | N/A | N/A | N/A | Yes | Approved |
 | `W0-BE-010` | No | No | No | No | N/A | No | No |
 | `W0-BE-011` | No | No | No | No | N/A | No | No |
 | `W0-BE-012` | No | No | N/A | No | N/A | No | No |
