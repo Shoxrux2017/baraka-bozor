@@ -16,7 +16,7 @@ The primary checkout stays on `main` and clean. It is the Project Owner's review
 
 ## Wave 0 — Foundation
 
-Declared width: 3 concurrent tracks.
+Declared width: 3 concurrent tracks. Approved by the Project Owner on 2026-09-21.
 
 Every path below is repository-relative and resolves to a real location on disk. The Laravel application lives under `backend/` and the Flutter application under `frontend/`; a path written without that prefix would own nothing.
 
@@ -39,3 +39,4 @@ Filled in at each wave planning gate, before the first task of that wave is appr
 | Date | Change | Reason |
 |---|---|---|
 | 2026-09-21 | File created with the Wave 0 map | Adoption of the wave execution model, `AUD-022` |
+| 2026-09-21 | Wave 0 map approved by the Project Owner | Wave 0 planning gate, `tasks/README.md` Section 5 step 7 |
