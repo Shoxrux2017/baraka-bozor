@@ -28,7 +28,7 @@ Existing Order snapshots must not be rewritten by later Catalog, Address, fee, o
 
 **BR-ROLE-001** — Roles are exactly `customer`, `shopper`, `courier`, `operator`, `admin`, `manager`.
 
-**BR-ROLE-002** — One primary role per account; role is immutable in MVP. A role change blocks the old account and creates a new one reusing the same phone, which `08` Section 3 permits by scoping phone uniqueness to active accounts.
+**BR-ROLE-002** — One primary role per account; role is immutable in MVP. A role change blocks the old account and creates a new one reusing the same phone, which `08` Section 3 permits by scoping phone uniqueness to active accounts within an account family.
 
 **BR-ROLE-003** — Customer authenticates with phone + SMS OTP and has no password.
 

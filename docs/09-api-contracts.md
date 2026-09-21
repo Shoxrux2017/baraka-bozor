@@ -85,7 +85,7 @@ POST /api/v1/auth/customer/otp/verify
 
 Success creates Customer if absent, ensures active Cart, issues token. Codes: `otp_invalid`, `otp_expired`, `otp_attempts_exhausted`.
 
-This endpoint resolves or creates the **Customer** account for the phone and never a Staff account, per `BR-ROLE-010`. A phone held by an active Staff account is not a conflict: the Customer account is created alongside it. No OTP path can ever issue a Staff session — `02` Section 13 invariant 1.
+This endpoint resolves or creates the **Customer** account for the phone and never a Staff account, per `BR-ROLE-010`. A phone held by an active Staff account is not a conflict: the Customer account is created alongside it. No OTP path can ever issue a Staff session, per `02` Sections 2 and 4 and the "Customer account is not accepted" rule in Section 8 of this document.
 
 ## 8. Staff Login
 
@@ -99,7 +99,7 @@ POST /api/v1/auth/staff/login
 
 Customer account is not accepted. Success returns token + authoritative role/status/gate. Codes `invalid_credentials`, `account_blocked`.
 
-The phone identifies the **active** account, per `BR-ROLE-010`; a blocked account that shares the phone is never the login target.
+The phone identifies the active **Staff** account, per `BR-ROLE-010`. A blocked Staff account that shares the phone is never the login target, and neither is an active Customer account on the same phone.
 
 ## 9. Current Identity
 

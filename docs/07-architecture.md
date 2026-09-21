@@ -122,7 +122,7 @@ Admin-created Staff begins `must_change_password=true`; backend blocks normal ac
 
 Flutter stores bearer token using secure platform storage. Every MVP target — Android, iOS, Windows — provides one, which is part of why `02` Section 10 rules out a browser surface. Sanctum therefore runs in bearer-token mode on every surface; there is no SPA-cookie mode and no CSRF surface.
 
-Backend re-reads current user role/status; valid token never overrides `blocked`. Authentication resolves the single active account for a phone, per `BR-ROLE-010`.
+Backend re-reads current user role/status; valid token never overrides `blocked`. Each authentication path resolves the active account of its own family: Customer OTP verify the active Customer account, Staff login the active Staff account, per `BR-ROLE-010`.
 
 ## 9. Authorization Layers
 

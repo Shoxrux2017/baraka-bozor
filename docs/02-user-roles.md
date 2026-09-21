@@ -46,6 +46,8 @@ The new account uses the **same phone**. This is possible because `phone` unique
 
 The same scoping means a person may hold an active Staff account and an active Customer account on one number. A company employee can order as a Customer; the surfaces never collide because Staff authenticate with a password and Customers with an OTP.
 
+A third consequence follows and is **not yet resolved**: one human can now stand on both sides of one Order — propose a substitution or quantity change as the Shopper and grant the Customer Approval for it, making the financial consent required by root `AGENTS.md` Section 7 self-granted. Plain phone uniqueness made this impossible, so no rule addresses it. Tracked as `S-18` in `SPEC_DECISIONS_BACKLOG.md`, to be decided before the Wave 2 assignment task.
+
 ## 4. Customer
 
 Customer may authenticate, manage own profile/Addresses, browse/search Catalog, manage own Cart, create own Order, respond to own Approvals, initiate/retry own Payments, view own Refunds, request cancellation, track delivery, view history, and Reorder.
