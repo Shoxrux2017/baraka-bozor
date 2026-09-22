@@ -29,12 +29,12 @@ Fixed-only Order is prepaid before Shopping. Any `range`/`at_purchase` Item uses
 2. Backend validates/normalizes it.
 3. Backend creates OTP challenge and sends SMS through configured gateway.
 4. Customer enters OTP.
-5. Backend validates challenge.
+5. Backend validates challenge. A failure here returns its own code and stops, whatever the account status.
 6. The active `customer` account for the phone is authenticated, or a new one is created when none is active. A blocked Customer account is refused with `account_blocked` and never bypassed.
 7. Sanctum token is issued.
 8. Flutter bootstraps authoritative identity via `/auth/me`.
 
-No Cart is created here. The Cart is created lazily on first Cart access, so one place owns the one-active-Cart rule and this flow does not change when the Cart arrives — see `09` Section 7.
+No Cart is created here. The Cart is created lazily on first Cart access, so the Cart module owns the one-active-Cart rule and no authentication path touches it; this flow does not change when the Cart arrives — see `09` Section 7.
 
 Invalid/expired/exhausted OTP never creates session.
 
