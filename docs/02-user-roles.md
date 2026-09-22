@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Role Model
 
@@ -41,6 +41,12 @@ The first Admin is created by a controlled one-time Laravel/Artisan bootstrap co
 ## 3. Role Immutability
 
 Staff role is immutable in MVP. To change a person's operational role, block the old account and create a new account so historical assignments remain attached to the original identity.
+
+The new account uses the **same phone**. This is possible because `phone` uniqueness is scoped to active accounts within an account family — see `08` Section 3 — so the blocked account keeps its real phone and nothing is rewritten. A role change therefore does not require the person to obtain a second number.
+
+The same scoping means a person may hold an active Staff account and an active Customer account on one number. A company employee can order as a Customer; the surfaces never collide because Staff authenticate with a password and Customers with an OTP.
+
+A third consequence follows and is **not yet resolved**: one human can now stand on both sides of one Order — propose a substitution or quantity change as the Shopper and grant the Customer Approval for it, making the financial consent required by root `AGENTS.md` Section 7 self-granted. Plain phone uniqueness made this impossible, so no rule addresses it. Tracked as `S-18` in `SPEC_DECISIONS_BACKLOG.md`, to be decided before the Wave 2 assignment task.
 
 ## 4. Customer
 
@@ -99,7 +105,11 @@ Manager is read-only and may access approved KPI/analytics data only. Manager do
 | Admin | Desktop |
 | Manager | Desktop |
 
-One Flutter codebase may provide all role-aware shells.
+One Flutter codebase provides all role-aware shells.
+
+**Desktop means an installed Windows application**, not a browser surface. Operator, Admin and Manager are company staff at a workstation, and a native surface keeps the bearer token in platform-secured storage as `07` Section 8 requires, which a browser cannot offer. No web build is part of the MVP, and no CORS configuration is therefore needed.
+
+**Mobile means Android and iOS from the same codebase.** Android and Windows are required release targets from Wave 0. An iOS release build becomes a required target in Wave 5, because building and signing for iOS needs macOS and an Apple Developer Program membership, neither of which the project has yet. iOS-specific code is written from the start; only the obligation to produce and verify an iOS build is deferred.
 
 ## 11. Field Visibility
 
@@ -112,6 +122,10 @@ One Flutter codebase may provide all role-aware shells.
 ## 12. Account Status
 
 Blocked Staff cannot create a new session and cannot continue normal protected use through an old token. Historical records remain preserved.
+
+An account may not be unblocked while another active account **of its own family** holds the same phone — Staff against Staff, Customer against Customer. Without this an unblock would produce two active accounts in one family for one number and break the invariant in `08` Section 3. An active Customer account never blocks unblocking a Staff account, or the reverse.
+
+The refusal is `409 phone_already_active`, defined in `09` Section 59. Resolving such a case is an Admin operational decision, not something unblocking may do implicitly. Note that the obvious remedy — blocking the newer account — is unavailable when that account is the last active Admin, which `BR-ROLE-008` protects; another active Admin must exist first.
 
 ## 13. Core Security Invariants
 

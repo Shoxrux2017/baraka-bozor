@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-019, AUD-020); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-019, AUD-020, AUD-023); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. General Contract
 
@@ -85,6 +85,8 @@ POST /api/v1/auth/customer/otp/verify
 
 Success creates Customer if absent, ensures active Cart, issues token. Codes: `otp_invalid`, `otp_expired`, `otp_attempts_exhausted`.
 
+This endpoint resolves or creates the **Customer** account for the phone and never a Staff account, per `BR-ROLE-010`. A phone held by an active Staff account is not a conflict: the Customer account is created alongside it. No OTP path can ever issue a Staff session, per `02` Sections 2 and 4 and the "Customer account is not accepted" rule in Section 8 of this document.
+
 ## 8. Staff Login
 
 ```text
@@ -96,6 +98,8 @@ POST /api/v1/auth/staff/login
 ```
 
 Customer account is not accepted. Success returns token + authoritative role/status/gate. Codes `invalid_credentials`, `account_blocked`.
+
+The phone identifies the active **Staff** account, per `BR-ROLE-010`. A blocked Staff account that shares the phone is never the login target, and neither is an active Customer account on the same phone.
 
 ## 9. Current Identity
 
@@ -508,6 +512,10 @@ POST /api/v1/admin/staff/{user}/reset-password
 
 Create body `{"full_name":"...","phone":"+998...","role":"shopper"}`. Allowed Staff roles only. Create/reset returns generated temporary password once and sets gate. PATCH does not accept role. Admin cannot block self/last active Admin. Admin resets another Staff; self uses auth change-password.
 
+Create rejects a phone already held by an active Staff account with `422 validation_failed`; an active Customer account on that phone is not a conflict, per `BR-ROLE-010`.
+
+`activate` rejects an unblock whose phone is already held by another active Staff account with `409 phone_already_active`. An active Customer account on that phone is not a conflict.
+
 ## 45. Business Settings
 
 ```text
@@ -628,7 +636,7 @@ Backend uses current locked state. Stale Flutter mutation receives 409 stable st
 
 ## 59. Delivery/Admin
 
-`courier_not_assigned`, `delivery_not_ready`, `delivery_state_conflict`, `last_active_admin_required`, `self_block_not_allowed`, `price_correction_locked`.
+`courier_not_assigned`, `delivery_not_ready`, `delivery_state_conflict`, `last_active_admin_required`, `self_block_not_allowed`, `phone_already_active`, `price_correction_locked`.
 
 ## 60. External Provider Safety
 
