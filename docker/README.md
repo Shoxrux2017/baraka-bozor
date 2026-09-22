@@ -11,6 +11,36 @@ is what makes a green check on a pull request mean something.
 This stack is for development and tests only. It is not a deployment target; see
 `docs/07-architecture.md` Section 34 for production topology.
 
+## PHP configuration is set explicitly
+
+The `php:8.4-cli` base image ships **no active `php.ini`**. It places
+`php.ini-development` and `php.ini-production` in `/usr/local/etc/php/` and
+expects the build to choose one. Choosing neither is not a neutral default —
+every process then runs under PHP's compiled-in fallbacks.
+
+`docker/php.ini` is therefore copied into the image, and it is the one place any
+value this project sets deliberately belongs. Nothing repeats those values: not
+`compose.yaml`, not `.github/workflows/backend.yml`, not a flag on any command.
+Two copies of a number drift silently.
+
+What is in it, and why, is in the file's own comments. It currently sets one
+value, `memory_limit`: PHPStan's parallel worker was peaking at `114 MB` against
+the fallback ceiling of `128M`, and single-process analysis exceeded it outright.
+The test suite ran under the same ceiling and would have reached it in a later
+wave, where a fatal error in a forked worker surfaces only as
+`Child process error (exit code 255)`, naming no file.
+
+To see what is active:
+
+```text
+docker compose -f docker/compose.yaml exec app php --ini
+docker compose -f docker/compose.yaml exec app php -r 'echo ini_get("memory_limit"), PHP_EOL;'
+```
+
+A change to `docker/php.ini` or to `docker/app.Dockerfile` needs
+`up -d --build`. Without `--build` Compose keeps the existing image and the
+change appears to have done nothing.
+
 ## Start
 
 ```text
