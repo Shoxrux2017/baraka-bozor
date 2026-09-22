@@ -87,26 +87,27 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 | 1 | `S01-BE-001` | Backend | `wave-owner` | Laravel `/api/v1` scaffold, error and quality foundation | Stage 0 closed | **Accepted** | `backend/stage-01/S01-BE-001-laravel-api-scaffold-quality-foundation.md` |
 | 2 | `W0-INT-001` | Integration | `wave-owner` | Local PostgreSQL and PHP runtime in Docker | `S01-BE-001` | **Accepted** | `integration/wave-00/W0-INT-001-local-postgresql-runtime.md` |
 | 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | **Accepted** | `integration/wave-00/W0-INT-002-github-actions-backend-checks.md` |
-| 4 | `W0-BE-010` | Backend | `wave-owner` | Module route registry and Flutter route-fragment registry (`D-8`) | `W0-INT-002` | Draft | Not created |
-| 5 | `W0-BE-011` | Backend | `wave-owner` | Identity schema: users, six roles, Sanctum tokens, initial Admin CLI bootstrap | `W0-BE-010` | Draft | Not created |
-| 6 | `W0-BE-012` | Backend | `wave-owner` | Shared API fixture directory (`D-9`): the `docs/09` response and error examples both sides assert against | `W0-BE-010` | Draft | Not created |
-| 7 | `S01-BE-003` | Backend | `auth-backend` | Staff login/logout/me, blocking, first-login password gate | `W0-BE-011` | Draft | Not created |
-| 8 | `S01-BE-004` | Backend | `auth-backend` | Customer OTP domain/API with strict challenge and rate-limit contract, fake `SmsGateway` | `W0-BE-011`, `S-28` | Blocked | Not created |
-| 9 | `S01-BE-005` | Backend | `auth-backend` | Six-role authorization foundation, scope-safe protected probe endpoints and tests | `S01-BE-003`, `S01-BE-004` | Draft | Not created |
+| 4 | `W0-INT-004` | Integration | `wave-owner` | Explicit PHP configuration in the container runtime: PHPStan's peak straddles PHP's default 128M ceiling, so the one mode that names a crashing file was itself crashing | `W0-INT-002` | **Approved** — Project Owner, 2026-09-22 | `integration/wave-00/W0-INT-004-container-php-memory-limit.md` |
+| 5 | `W0-BE-010` | Backend | `wave-owner` | Module route registry and Flutter route-fragment registry (`D-8`) | `W0-INT-002`, `W0-INT-004` | Draft | Not created |
+| 6 | `W0-BE-011` | Backend | `wave-owner` | Identity schema: users, six roles, Sanctum tokens, initial Admin CLI bootstrap | `W0-BE-010` | Draft | Not created |
+| 7 | `W0-BE-012` | Backend | `wave-owner` | Shared API fixture directory (`D-9`): the `docs/09` response and error examples both sides assert against | `W0-BE-010` | Draft | Not created |
+| 8 | `S01-BE-003` | Backend | `auth-backend` | Staff login/logout/me, blocking, first-login password gate | `W0-BE-011` | Draft | Not created |
+| 9 | `S01-BE-004` | Backend | `auth-backend` | Customer OTP domain/API with strict challenge and rate-limit contract, fake `SmsGateway` | `W0-BE-011`, `S-28` | Blocked | Not created |
+| 10 | `S01-BE-005` | Backend | `auth-backend` | Six-role authorization foundation, scope-safe protected probe endpoints and tests | `S01-BE-003`, `S01-BE-004` | Draft | Not created |
 | — | `Wave 0 Backend Phase 2` | Review | — | Backend auth/security block checkpoint | all backend tasks Accepted | Not started | Review later |
-| 10 | `S01-FE-001` | Frontend | `client-foundation` | Flutter scaffold plus Riverpod/GoRouter/Dio/secure storage foundation | Flutter SDK | Blocked | Not created |
-| 11 | `S01-FE-002` | Frontend | `client-foundation` | Typed auth repository, session bootstrap, account-switch isolation | `S01-FE-001`, `W0-BE-012` | Draft | Not created |
-| 12 | `S01-FE-003` | Frontend | `client-foundation` | Customer OTP request/verify UX | `S01-FE-002` | Draft | Not created |
-| 13 | `S01-FE-004` | Frontend | `client-foundation` | Staff login plus mandatory first-password-change UX | `S01-FE-002` | Draft | Not created |
-| 14 | `S01-FE-005` | Frontend | `client-foundation` | Six role/device shells, route guards, logout and session isolation | `S01-FE-003`, `S01-FE-004`, `S01-BE-005` | Draft | Not created |
+| 11 | `S01-FE-001` | Frontend | `client-foundation` | Flutter scaffold plus Riverpod/GoRouter/Dio/secure storage foundation | Flutter SDK | Blocked | Not created |
+| 12 | `S01-FE-002` | Frontend | `client-foundation` | Typed auth repository, session bootstrap, account-switch isolation | `S01-FE-001`, `W0-BE-012` | Draft | Not created |
+| 13 | `S01-FE-003` | Frontend | `client-foundation` | Customer OTP request/verify UX | `S01-FE-002` | Draft | Not created |
+| 14 | `S01-FE-004` | Frontend | `client-foundation` | Staff login plus mandatory first-password-change UX | `S01-FE-002` | Draft | Not created |
+| 15 | `S01-FE-005` | Frontend | `client-foundation` | Six role/device shells, route guards, logout and session isolation | `S01-FE-003`, `S01-FE-004`, `S01-BE-005` | Draft | Not created |
 | — | `Wave 0 Frontend Phase 2` | Review | — | Frontend auth/session/router/build block checkpoint | all frontend tasks Accepted | Not started | Review later |
-| 15 | `W0-INT-003` | Integration | `wave-owner` | Real Laravel/PostgreSQL/Flutter auth E2E on the fake `SmsGateway` | Backend and Frontend PASS | Draft | Not created |
+| 16 | `W0-INT-003` | Integration | `wave-owner` | Real Laravel/PostgreSQL/Flutter auth E2E on the fake `SmsGateway` | Backend and Frontend PASS | Draft | Not created |
 
 Detailed contracts are prepared/hardened in execution order. `Order` is dependency order, not a queue.
 
 The wave's financial-invariant owner is: **none — Wave 0 contains no money, quantity, pricing or payment code.** The wave's schema and shared-caretaker owner is: `wave-owner`.
 
-Concurrency in Wave 0 is narrow by nature: tasks 2, 3 and 4 are a serial chain owned by one track, because CI needs the runtime and the registries should land under CI. Real width begins once `W0-BE-011` is Accepted, after which `auth-backend` and `client-foundation` run alongside `wave-owner`.
+Concurrency in Wave 0 is narrow by nature: tasks 2 to 5 are a serial chain owned by one track, because CI needs the runtime, the runtime has to be configured for the checks CI runs, and the registries should land under a green CI. Real width begins once `W0-BE-011` is Accepted, after which `auth-backend` and `client-foundation` run alongside `wave-owner`.
 
 `S01-FE-001` depends on the Flutter SDK, not on backend code. Once the SDK is installed it runs in parallel with the backend track; the Frontend Phase 2 checkpoint still waits for backend PASS.
 
@@ -117,6 +118,7 @@ Concurrency in Wave 0 is narrow by nature: tasks 2, 3 and 4 are a serial chain o
 | `S01-BE-001` | Yes | Yes | Yes | Yes | N/A | Yes | Accepted |
 | `W0-INT-001` | Yes | Yes | Yes | N/A | N/A | Yes | Accepted |
 | `W0-INT-002` | Yes | Yes | N/A | N/A | N/A | Yes | Accepted |
+| `W0-INT-004` | Yes | Yes | N/A | N/A | N/A | Yes | Yes |
 | `W0-BE-010` | No | No | No | No | N/A | No | No |
 | `W0-BE-011` | No | No | No | No | N/A | No | No |
 | `W0-BE-012` | No | No | N/A | No | N/A | No | No |
@@ -136,6 +138,7 @@ Concurrency in Wave 0 is narrow by nature: tasks 2, 3 and 4 are a serial chain o
 |---|---|---|
 | `W0-INT-001` Accepted | any task that touches the database | runtime task PR |
 | `W0-INT-002` Accepted and required on `main` | the first concurrent wave tracks | CI run visible on a PR |
+| `W0-INT-004` Accepted | diagnosing any PHPStan crash, because `--debug` is what names the file and it did not fit under the old ceiling | memory-limit task PR |
 | `W0-BE-010` Accepted | per-track route ownership | registry task PR |
 | `W0-BE-011` Accepted | `S01-BE-003`, `S01-BE-004` | identity schema PR |
 | `W0-BE-012` Accepted | `S01-FE-002` and every later contract-first frontend task | fixture task PR |
@@ -159,6 +162,7 @@ Filled in per task when its contract is written. `git diff --check` is required 
 | `S-19` Customer OTP verify when the only Customer account is blocked | `W0-BE-011`, `S01-BE-004` | decision | **Resolved 2026-09-22** — partial index permits a blocked Customer row; verify resolves only the active one and returns `account_blocked` |
 | `S-28` does the staff-login rate limit cover `/auth/change-password` | `S01-BE-004` | decision | **Open** — opened by the independent review of `AUD-024`; the only Wave 0 decision still open |
 | Stale `S-16` comment and the surviving interim rule in `ApiExceptionRenderer` | `S01-BE-003` | `backend/app/Exceptions/ApiExceptionRenderer.php` still says the codes for 400, 502 and 503 are an open decision, which `AUD-024` closed, and `CODE_BY_STATUS` still lacks `409` so `405` and `409` keep folding to a scope-safe `404` although `business_conflict` exists in `09` §54. Housekeeping, tracked so it is not forgotten | Open |
+| PHPStan fails in CI on `W0-BE-010` with `Child process error (exit code 255)` | `W0-BE-010` and every task behind it | a CI run that names the failing file, which needs `--debug` in `.github/workflows/backend.yml` | **Open — cause unknown.** The memory ceiling was investigated and can be neither confirmed nor excluded: in parallel mode, which is what CI runs, the worker peak observed across nineteen samples spans 60–114 MB against the old 128M ceiling, so the margin is somewhere between 68 MB and 14 MB and nothing here explains the variation. An earlier entry named the ceiling the leading cause on a single 114 MB sample; withdrawn. The CI-identical invocation could not be made to fail at 128M here — cold cache (5 runs), worker count forced to four (3 runs), container restricted to four CPUs (3 runs), all green. `W0-INT-004` raises the ceiling to 512M, which makes `--debug` usable on that tree, where at 128M it crashed before reporting anything. Needs its own task |
 | Inert Sanctum SPA-cookie configuration | none blocking | `backend/config/sanctum.php` still carries Laravel default stateful domains, unused since `S-2` ruled out a browser surface. Housekeeping, tracked so it is not forgotten | Open |
 | `S-3` locale and message language | `W0-BE-012`, `S01-FE-002`, `S01-FE-003`, `S01-FE-004` | decision | **Resolved 2026-09-22** — Uzbek and Russian client; `message` is developer-facing English; no backend locale negotiation |
 | `S-4` staff login hardening, token lifetime | `S01-BE-003` | decision | **Resolved 2026-09-22** — rate limit 5 per phone and 20 per IP per minute, no lockout, sliding 30-day token, double revocation on block |
@@ -212,3 +216,4 @@ Filled in per task when its contract is written. `git diff --check` is required 
 | 2026-09-21 | `S-1` and `S-2` resolved, `AUD-023`. `W0-BE-011` no longer blocked by a decision and moves to `Draft`; `S01-FE-001` drops `S-2` and stays `Blocked` on the absent Flutter SDK. | Wave 0 planning gate | Project Owner |
 | 2026-09-22 | `S-3`, `S-4`, `S-5`, `S-16`, `S-17` and `S-19` resolved, `AUD-024`. Wave 0 has no open specification decision left. `W0-BE-011`, `W0-BE-012`, `S01-BE-003`, `S01-BE-004`, `S01-FE-002`, `S01-FE-003` and `S01-FE-004` are no longer blocked by a decision; what remains is task order and the absent Flutter SDK. | Wave 0 decision package complete | Project Owner |
 | 2026-09-22 | Independent review of `AUD-024`: ten `P2` and eighteen `P3` findings, no `P1`, all verified and accepted. Eight `P2` fixed by edit. **Wave 0 reopened by `S-28`**, which blocks `S01-BE-004`; `S-25` to `S-27` and `S-29` to `S-31` recorded for Waves 1 and 2, three of them decisions the amendment made without authority. | Review findings resolved before delivery | Project Owner |
+| 2026-09-22 | `W0-INT-004` inserted into the approved task order as order 4; former 4–15 renumbered 5–16. `W0-BE-010` now also depends on it. | `phpstan --debug` was observed at 170.5 MB against PHP’s default 128M ceiling and crashed on `W0-BE-010`’s tree, so the one mode that names a crashing file was itself unusable. Contract approved 2026-09-22. | Project Owner |
