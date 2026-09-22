@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023) and 2026-09-22 (AUD-024); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Main End-to-End Flow
 
@@ -30,10 +30,11 @@ Fixed-only Order is prepaid before Shopping. Any `range`/`at_purchase` Item uses
 3. Backend creates OTP challenge and sends SMS through configured gateway.
 4. Customer enters OTP.
 5. Backend validates challenge.
-6. Existing Customer is authenticated or new `customer` account is created.
-7. Backend ensures one active Cart.
-8. Sanctum token is issued.
-9. Flutter bootstraps authoritative identity via `/auth/me`.
+6. The active `customer` account for the phone is authenticated, or a new one is created when none is active. A blocked Customer account is refused with `account_blocked` and never bypassed.
+7. Sanctum token is issued.
+8. Flutter bootstraps authoritative identity via `/auth/me`.
+
+No Cart is created here. The Cart is created lazily on first Cart access, so one place owns the one-active-Cart rule and this flow does not change when the Cart arrives — see `09` Section 7.
 
 Invalid/expired/exhausted OTP never creates session.
 

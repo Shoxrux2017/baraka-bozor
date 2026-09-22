@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023) and 2026-09-22 (AUD-024); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Baseline
 
@@ -83,11 +83,13 @@ Checks valid coordinates, non-empty street/house. Index `(customer_id,is_active)
 
 ## 6. `categories`
 
-`id, name, description?, sort_order, is_active, archived_at?, created_by_user_id, timestamps`. Index active/sort and lower(name).
+`id, name_uz, name_ru, description_uz?, description_ru?, sort_order, is_active, archived_at?, created_by_user_id, timestamps`. Index active/sort, and `lower(name_uz)` and `lower(name_ru)` — a single-language index would make Customer search miss a Category in the other language.
 
 ## 7. `products`
 
-`id, category_id, name, description?, unit_code, price_mode, fixed_price_uzs?, min_price_uzs?, max_price_uzs?, is_active, sort_order, archived_at?, created_by_user_id, timestamps`.
+`id, category_id, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, fixed_price_uzs?, min_price_uzs?, max_price_uzs?, is_active, sort_order, archived_at?, created_by_user_id, timestamps`.
+
+Category and Product names and descriptions are **bilingual, Uzbek and Russian**, because `02` Section 10 fixes both as MVP languages and a Customer reading one should not be shown the other. Four questions this raises are **not yet decided** and are tracked as `S-21` to `S-24` in `SPEC_DECISIONS_BACKLOG.md`: whether both languages are required, what a Customer sees when their language is empty, which name enters the historical Order snapshot required by Section 13, and whether search matches across both languages.
 
 Units: `kg, gram, piece, liter, package, box, bundle, meter`.
 
