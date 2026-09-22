@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021, AUD-022, AUD-023) and 2026-09-22 (AUD-024); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021, AUD-022, AUD-023) and 2026-09-22 (AUD-024, AUD-026); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Architecture Goals
 
@@ -294,6 +294,27 @@ Presentation
 ```
 
 Widgets never call Dio or parse raw JSON directly. Logical features: auth, catalog, profile, addresses, cart, orders, shopper, approvals, payments, courier, operator, admin, notifications, history, analytics.
+
+**Directory layout**, fixed once for the whole client so no wave has to renegotiate it:
+
+```text
+lib/
+  app/                      root router and root providers
+  core/                     everything no single feature owns:
+                            network (the one configured Dio client),
+                            theme, error-envelope parsing, the
+                            code-to-text mapping, localization
+  features/
+    <feature>/
+      data/                 DTOs, data sources
+      domain/               entities, repository contracts
+      application/          Riverpod controllers and notifiers
+      presentation/         screens and widgets
+```
+
+One feature per directory under `features/`, named from the list above. The four layer directories are the boundaries `frontend/AGENTS.md` Section 2 already requires, made concrete; a feature uses the ones that carry real ownership rather than creating empty folders. `lib/app/` holds only the root router and root providers, which the `D-8` registry collects from per-feature fragments, and which `tasks/OWNERSHIP.md` keeps out of every feature track's hands from Wave 1 onward.
+
+Nothing cross-feature belongs anywhere but `core/`. A second home for shared code is how a codebase ends up with two Dio clients, which Section 2 of `frontend/AGENTS.md` forbids.
 
 MVP client languages are **Uzbek and Russian**. No English UI. How the language is selected, defaulted and persisted is **not yet decided** and is tracked as `S-27`; no feature list, wave or table in this specification carries a language-selection surface today.
 
