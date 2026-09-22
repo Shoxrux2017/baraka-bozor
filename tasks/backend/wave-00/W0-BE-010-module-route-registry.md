@@ -8,7 +8,7 @@
 | Wave | `0 — Foundation` |
 | Area | `Backend` |
 | Status | `Approved` — Project Owner, 2026-09-22 |
-| Depends on | `W0-INT-002` — Accepted, PR #7 |
+| Depends on | `W0-INT-002` — Accepted, PR #7; `W0-INT-004` — merged as PR #11 |
 | Blocks | every feature task in every wave |
 | Track | `wave-owner` |
 | Branch | `task/w0-be-010-module-route-registry` |
@@ -124,27 +124,44 @@ No file was named, because `255` is PHP's exit code for a fatal error and
 PHPStan's parallel mode does not surface a dead worker's output. Five runs, five
 failures, while the same commands passed locally.
 
-The cause was PHP's default `memory_limit` of `128M`, which the container was
-running under because the `php:8.4-cli` image activates no `php.ini`. It is fixed
-by `W0-INT-004`, merged as PR #11, and **confirmed on this branch**: run
-`35711716471` on head `8919161`, with `main` merged forward, passes every step
-including PHPStan.
+`W0-INT-004`, merged as PR #11, raised the ceiling from PHP's default `128M` to
+`512M`. The container was on the default because the `php:8.4-cli` image activates
+no `php.ini`.
 
-The confirmation matters because the diagnosis was not straightforward, and two
-statements made along the way were wrong. First a local run of `5/5 green` was
-offered as evidence that the analysis was sound; it proved nothing, because this
-machine has 12 cores against the runner's 4 and PHPStan sizes its workers from
-the CPU count. Then a `114 MB` worker peak was reported as a measured fact and
-used to argue the memory ceiling was the cause; the independent review of
-`W0-INT-004` measured `60 MB`, re-measurement found the figure ranges `60`-`114 MB`
-across runs, and the claim was withdrawn as unproven before that PR was opened.
+**What that establishes.** The forward merge changes nothing under `backend/**`
+— independently verified byte-identical — so the memory ceiling is the only
+variable between the five failing heads and the two passing ones (`35711716471`
+on `8919161` and `35712055267` on `b50d896`, every step green, PHPStan included).
+On this tree at `128M`, `phpstan analyse --debug` dies outright with
+`Allowed memory size of 134217728 bytes exhausted`. The ceiling was binding.
 
-What actually holds, measured on this tree after the fix: `phpstan analyse --debug`
-completes and peaks at `190.5 MB`. Against a `128M` ceiling. The workload needed
-half again as much memory as it was allowed, which is why nothing about worker
-counts or result caches ever mattered. The conclusion was right and the evidence
-offered for it, at the time it was offered, was not — recorded here because the
-second half is the part worth remembering.
+**What it does not establish**, and this record previously deleted: the mechanism
+inside the parallel worker was never reproduced outside CI. Thirteen local runs at
+`128M` refused to fail — cold result cache (5), worker count forced to four (3),
+container restricted to four CPUs (3), and two more by the second reviewer. All
+green. `--debug` is single-process, as `docker/php.ini` says, so its crash cannot
+show what a worker did. Why the ceiling binds in CI's parallel run and not in this
+machine's is still unknown. `.github/workflows/backend.yml` runs bare
+`phpstan analyse`, so the next dead worker will name no file either; that is
+tracked as a Wave 0 risk.
+
+**Peak figures, with sample counts, because that is the lesson here.** On this tree
+at `512M`, `--debug` reports `128.5 MB` (5 samples), `138.5 MB` (1) and `190.5 MB`
+(1). The modal figure is barely over the old `128 MiB` ceiling, which is consistent
+with a crash at `128M` but is not the comfortable margin an earlier draft of this
+section claimed.
+
+**Three statements made during this diagnosis were unsound, and the third was in
+the first draft of this very section.** A local run of `5/5 green` was offered as
+evidence the analysis was fine; it proved nothing, because this machine has 12
+cores (measured) against a standard hosted runner's 4 (documented, not measured
+here) and PHPStan sizes its workers from the CPU count. A `114 MB` worker peak was
+reported as measured fact; the independent review of `W0-INT-004` measured `60 MB`,
+re-measurement gave a `60`-`114 MB` range, and the claim was withdrawn before that
+PR opened. Then `190.5 MB` was written here as the confirming measurement, in a
+section whose own point was not to do that; re-measurement gives it once in seven
+samples. The conclusion held each time. The evidence offered for it did not, and
+that is the part worth remembering.
 
 ## Allowed Areas
 
@@ -169,7 +186,9 @@ PR title: `W0-BE-010 — Module route registry`, target `main`. The agent commit
 
 ## Independent Review
 
-Reviewed 2026-09-22 by an agent with no implementation context, which reproduced every quoted number and tested the loader against a real bootstrapped application. Result: 0 P1, 1 P2, 7 P3.
+Reviewed 2026-09-22 by an agent with no implementation context, which reproduced every number quoted **at that time** and tested the loader against a real bootstrapped application. Result: 0 P1, 1 P2, 7 P3.
+
+A second reviewer checked the forward merge of `main` and the CI-history section below, both of which postdate the review above: 0 P1, 2 P2, 7 P3. It verified the merge resolution exhaustively and found nothing lost from either side. Its two `P2`s were the stale `Depends on` cell corrected above, and an overstatement in the CI-history section, corrected there.
 
 | ID | Severity | Finding | Resolution |
 |---|---|---|---|
@@ -180,7 +199,7 @@ Reviewed 2026-09-22 by an agent with no implementation context, which reproduced
 | R-05 | P3 | The reachability test called `load()` outside any group, so fixture routes landed at `fixture/first` rather than `/api/v1/fixture/first`. The property every feature task depends on, prefix and `api` middleware inherited and applied once, was untested. | **Fixed.** Fixtures now load inside `Route::middleware('api')->prefix('api/v1')->group(...)`, and the test asserts the URI, the middleware and a real request to `/api/v1/fixture/first`. |
 | R-06 | P3 | A comment about empty directories sat above the `sort()` call, which has nothing to do with emptiness. | **Fixed.** Moved to the return. |
 | R-07 | P3 | Both new files omitted `declare(strict_types=1)` and the test class was not `final`, unlike the hand-written classes already in the repository. | **Fixed** on both new files. |
-| R-08 | P3 | The wave index still described this task as including the Flutter route-fragment registry, so accepting it would leave the Flutter half of `D-8` with no carrier anywhere. | **Fixed.** Row 4 now covers the backend registry only, row 10 carries the Flutter half, and the change log records the move. |
+| R-08 | P3 | The wave index still described this task as including the Flutter route-fragment registry, so accepting it would leave the Flutter half of `D-8` with no carrier anywhere. | **Fixed.** `W0-BE-010` now covers the backend registry only, `S01-FE-001` carries the Flutter half, and the change log records the move. (Named by task ID rather than order number, because `W0-INT-004` later renumbered them to 5 and 11.) |
 
 **Reported, not acted on.**
 
