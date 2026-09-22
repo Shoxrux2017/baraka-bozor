@@ -87,7 +87,7 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 | 1 | `S01-BE-001` | Backend | `wave-owner` | Laravel `/api/v1` scaffold, error and quality foundation | Stage 0 closed | **Accepted** | `backend/stage-01/S01-BE-001-laravel-api-scaffold-quality-foundation.md` |
 | 2 | `W0-INT-001` | Integration | `wave-owner` | Local PostgreSQL and PHP runtime in Docker | `S01-BE-001` | In Review | `integration/wave-00/W0-INT-001-local-postgresql-runtime.md` |
 | 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | In Review | `integration/wave-00/W0-INT-002-github-actions-backend-checks.md` |
-| 4 | `W0-BE-010` | Backend | `wave-owner` | Module route registry and Flutter route-fragment registry (`D-8`) | `W0-INT-002` | Draft | Not created |
+| 4 | `W0-BE-010` | Backend | `wave-owner` | Module route registry and Flutter route-fragment registry (`D-8`) | `W0-INT-002` | In Review | `backend/wave-00/W0-BE-010-module-route-registry.md` |
 | 5 | `W0-BE-011` | Backend | `wave-owner` | Identity schema: users, six roles, Sanctum tokens, initial Admin CLI bootstrap | `W0-BE-010`, `S-1` | Blocked | Not created |
 | 6 | `W0-BE-012` | Backend | `wave-owner` | Shared API fixture directory (`D-9`): the `docs/09` response and error examples both sides assert against | `W0-BE-010`, `S-3`, `S-16`, `S-17` | Blocked | Not created |
 | 7 | `S01-BE-003` | Backend | `auth-backend` | Staff login/logout/me, blocking, first-login password gate | `W0-BE-011`, `S-4`, `S-16` | Blocked | Not created |
@@ -117,7 +117,7 @@ Concurrency in Wave 0 is narrow by nature: tasks 2, 3 and 4 are a serial chain o
 | `S01-BE-001` | Yes | Yes | Yes | Yes | N/A | Yes | Accepted |
 | `W0-INT-001` | Yes | Yes | Yes | N/A | N/A | Yes | Approved |
 | `W0-INT-002` | Yes | Yes | N/A | N/A | N/A | Yes | Approved |
-| `W0-BE-010` | No | No | No | No | N/A | No | No |
+| `W0-BE-010` | Yes | Yes | N/A | N/A | N/A | Yes | Approved |
 | `W0-BE-011` | No | No | No | No | N/A | No | No |
 | `W0-BE-012` | No | No | N/A | No | N/A | No | No |
 | `S01-BE-003` | No | No | No | No | No | No | No |
@@ -181,7 +181,7 @@ Filled in per task when its contract is written. `git diff --check` is required 
 | Direct-route and wrong-role protected access are denied | `S01-BE-005`, `S01-FE-005` | Backend/Frontend + Integration | `[reference]` | Not started |
 | Logout and account switching do not leak prior account state | `S01-FE-002`, `S01-FE-005` | Frontend + Integration | `[reference]` | Not started |
 | Backend checks run automatically on every pull request | `W0-INT-002` | CI run on a PR | `[reference]` | Not started |
-| Concurrent tracks cannot collide on shared files | `W0-BE-010`, `tasks/OWNERSHIP.md` | registry task plus wave closure | `[reference]` | Not started |
+| Concurrent tracks cannot collide on shared files | `W0-BE-010`, `tasks/OWNERSHIP.md` | registry task plus wave closure | `W0-BE-010` PR | In review |
 | The fake `SmsGateway` never emits an OTP to a client, log or header | `S01-BE-004` | Backend security tests + Integration | `[reference]` | Not started |
 | The external SMS path is actually verified | Wave 5 | Wave 5 closure | Wave 5 record | Deferred by `D-4` |
 

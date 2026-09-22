@@ -1,12 +1,21 @@
 <?php
 
+use App\Support\Routing\ModuleRouteLoader;
+
 /*
 |--------------------------------------------------------------------------
 | Client API routes
 |--------------------------------------------------------------------------
 |
-| Mounted under /api/v1 by bootstrap/app.php. Endpoints are added by the
-| Stage tasks that own them; authentication arrives in S01-BE-003 and
-| S01-BE-004. Nothing is registered here yet, on purpose.
+| Mounted under /api/v1 by bootstrap/app.php. This file declares no endpoint of
+| its own: each module declares its endpoints in routes/api/v1/<module>.php and
+| the loader below requires them all, in sorted filename order.
+|
+| That is decision D-8 of the execution-model design record. It exists so that
+| concurrent tracks never edit one shared route file — a feature task adds its
+| own module file and leaves this one alone. A module file must not repeat the
+| /api/v1 prefix; bootstrap/app.php already applies it.
 |
 */
+
+ModuleRouteLoader::load(__DIR__.'/api/v1');
