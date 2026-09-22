@@ -1,2 +1,0 @@
-Intentionally holds no route file: the loader must treat an empty directory as a
-legitimate no-op.
