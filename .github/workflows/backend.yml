@@ -1,0 +1,77 @@
+name: Backend checks
+
+# Runs the same commands docker/README.md documents, through the same Compose
+# stack and the same image. A separately configured PHP would have a different
+# extension set, and a green check here would stop meaning what a local run
+# means. See tasks/integration/wave-00/W0-INT-002-github-actions-backend-checks.md
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# A new push supersedes the previous run on the same ref. Runs on main are not
+# cancelled, because main's history is what later evidence refers back to.
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Tests, Pint, PHPStan on PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # docker/compose.yaml gates app on the db healthcheck, so this returns
+      # only once PostgreSQL is accepting TCP connections. No sleep is needed
+      # and none may be added — AGENTS.md Section 10 forbids arbitrary waits.
+      - name: Start the stack
+        run: docker compose -f docker/compose.yaml up -d --build
+
+      # No artisan here: vendor/ does not exist yet, so artisan cannot even
+      # bootstrap. Everything in this step must be answerable by PHP alone.
+      # One assertion per extension. An alternation would pass with either one
+      # present, and intl is exactly the divergence this job exists to catch —
+      # nothing else here exercises it, since db:show is not part of CI.
+      # shell: bash adds pipefail, so a failing php is not judged by grep.
+      - name: Show the runtime
+        shell: bash
+        run: |
+          docker compose -f docker/compose.yaml ps
+          docker compose -f docker/compose.yaml exec -T app php -v
+          docker compose -f docker/compose.yaml exec -T app php -m | grep -qx pdo_pgsql
+          docker compose -f docker/compose.yaml exec -T app php -m | grep -qx intl
+          echo 'pdo_pgsql and intl both present'
+
+      # vendor/ and .env are gitignored, so a fresh checkout has neither, just
+      # as a fresh worktree does. Without .env the feature tests do not fail —
+      # they warn and exercise nothing, which is worse than a red run.
+      - name: Prepare the application
+        run: |
+          docker compose -f docker/compose.yaml exec -T app composer install --no-interaction --no-progress
+          docker compose -f docker/compose.yaml exec -T app cp .env.example .env
+          docker compose -f docker/compose.yaml exec -T app php artisan key:generate --no-interaction
+          docker compose -f docker/compose.yaml exec -T app php artisan --version
+
+      - name: Migrate
+        run: docker compose -f docker/compose.yaml exec -T app php artisan migrate --force
+
+      - name: Tests
+        run: docker compose -f docker/compose.yaml exec -T app php artisan test
+
+      - name: Pint
+        run: docker compose -f docker/compose.yaml exec -T app vendor/bin/pint --test
+
+      - name: PHPStan
+        run: docker compose -f docker/compose.yaml exec -T app vendor/bin/phpstan analyse
+
+      - name: Stack logs on failure
+        if: failure()
+        run: docker compose -f docker/compose.yaml logs --no-color --tail 200

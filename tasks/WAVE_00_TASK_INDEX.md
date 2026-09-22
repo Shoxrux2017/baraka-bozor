@@ -85,8 +85,8 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 | Order | Task ID | Area | Track | Short outcome | Depends on | Status | Contract file |
 |---:|---|---|---|---|---|---|---|
 | 1 | `S01-BE-001` | Backend | `wave-owner` | Laravel `/api/v1` scaffold, error and quality foundation | Stage 0 closed | **Accepted** | `backend/stage-01/S01-BE-001-laravel-api-scaffold-quality-foundation.md` |
-| 2 | `W0-INT-001` | Integration | `wave-owner` | Local PostgreSQL and PHP runtime in Docker | `S01-BE-001` | In Review — merged as PR #6; awaiting the Project Owner acceptance mark | `integration/wave-00/W0-INT-001-local-postgresql-runtime.md` |
-| 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | Draft | Not created |
+| 2 | `W0-INT-001` | Integration | `wave-owner` | Local PostgreSQL and PHP runtime in Docker | `S01-BE-001` | **Accepted** | `integration/wave-00/W0-INT-001-local-postgresql-runtime.md` |
+| 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | **Accepted** | `integration/wave-00/W0-INT-002-github-actions-backend-checks.md` |
 | 4 | `W0-BE-010` | Backend | `wave-owner` | Module route registry and Flutter route-fragment registry (`D-8`) | `W0-INT-002` | Draft | Not created |
 | 5 | `W0-BE-011` | Backend | `wave-owner` | Identity schema: users, six roles, Sanctum tokens, initial Admin CLI bootstrap | `W0-BE-010`, `S-19` | Blocked | Not created |
 | 6 | `W0-BE-012` | Backend | `wave-owner` | Shared API fixture directory (`D-9`): the `docs/09` response and error examples both sides assert against | `W0-BE-010`, `S-3`, `S-16`, `S-17` | Blocked | Not created |
@@ -115,8 +115,8 @@ Concurrency in Wave 0 is narrow by nature: tasks 2, 3 and 4 are a serial chain o
 | Task ID | Scope/non-goals | Behavior/API/UI | Persistence/lifecycle | Auth/scope/security | Money/concurrency/edge | Tests/verification | Ready |
 |---|---|---|---|---|---|---|---|
 | `S01-BE-001` | Yes | Yes | Yes | Yes | N/A | Yes | Accepted |
-| `W0-INT-001` | Yes | Yes | Yes | N/A | N/A | Yes | Approved |
-| `W0-INT-002` | No | No | No | No | N/A | No | No |
+| `W0-INT-001` | Yes | Yes | Yes | N/A | N/A | Yes | Accepted |
+| `W0-INT-002` | Yes | Yes | N/A | N/A | N/A | Yes | Accepted |
 | `W0-BE-010` | No | No | No | No | N/A | No | No |
 | `W0-BE-011` | No | No | No | No | N/A | No | No |
 | `W0-BE-012` | No | No | N/A | No | N/A | No | No |
@@ -165,8 +165,10 @@ Filled in per task when its contract is written. `git diff --check` is required 
 | `S-17` `request_id` source | `W0-BE-012`, `S01-FE-002` | decision | Open |
 | Contract-first frontend may not start before its fixture surface is decided | `S01-FE-002` onward | `S-3`, `S-16`, `S-17` resolved and `W0-BE-012` Accepted | **Enforced by the task rows above** |
 | Real SMS path | **Wave 5**, not Wave 0 | vendor contract, alpha-name, credentials, legal entity | Deferred by `D-4` |
-| CI absent until `W0-INT-002` | `W0-INT-001` merges on locally-run checks | verification output recorded in the PR | Accepted risk |
-| Host PHP cannot load `pdo_pgsql` | every task that touches the database | `W0-INT-001` runs PHP and the suite in a container | Addressed by PR #6, merged; closes when the Project Owner marks that task `Accepted` |
+| CI absent until `W0-INT-002` | `W0-INT-001` merges on locally-run checks | verification output recorded in the PR | **Closed 2026-09-22** — CI is a required check on `main` |
+| `backend/phpunit.xml` has no `failOnEmptyTestSuite`, so a suite that stops discovering tests would still report green | every wave | one attribute; `backend/**` was out of scope for `W0-INT-002` | Open — follow-up task |
+| `backend/phpunit.xml` `DB_URL` lacks `force="true"` and Laravel prefers it over the discrete `DB_*` values | every wave | guarded today by `TestDatabaseIsolationTest`, which asks the server for `current_database()`; worth closing anyway | Open — follow-up task |
+| Host PHP cannot load `pdo_pgsql` | every task that touches the database | `W0-INT-001` runs PHP and the suite in a container | **Closed 2026-09-22** — `W0-INT-001` Accepted |
 
 ## 10. Roadmap Acceptance Matrix
 
@@ -203,5 +205,6 @@ Filled in per task when its contract is written. `git diff --check` is required 
 | 2026-09-07 | Stage 1 decomposition approved | Stage 0 closure | Project Owner |
 | 2026-09-21 | Moved to Workflow v4; `S01-BE-001` approved and later merged as PR #2 | Two-party working model | Project Owner |
 | 2026-09-21 | Folded into Wave 0. `S01-BE-001` set `Accepted`. The former `S01-INT-001`, `S01-INT-002` and `S01-INT-003` renamed `W0-INT-001`, `W0-INT-002`, `W0-INT-003`; registry, fixture and identity-schema tasks added as `W0-BE-010`, `W0-BE-012`, `W0-BE-011`; the former `S01-BE-002` is superseded by `W0-BE-011`. The SMS provider adapter task and the SMS closure criterion moved to Wave 5 under `D-4`. Tracks and the ownership map set and approved. | Adoption of the wave execution model, `AUD-022` | Project Owner |
+| 2026-09-22 | `W0-INT-001` and `W0-INT-002` marked `Accepted` on the Project Owner's instruction; both merged, as PR #6 and PR #7. CI is a required check on `main` — job `Tests, Pint, PHPStan on PostgreSQL`, strict — so the pre-CI risk and the host-PHP risk are closed. | Wave 0 entry cost paid | Project Owner |
 | 2026-09-21 | `W0-INT-001` contract approved by the Project Owner and implemented on its task branch: PostgreSQL 17 plus a PHP 8.4 container, the suite moved off SQLite onto a separate PostgreSQL test database. The ownership map enumeration of backend paths replaced by "all of `backend/**` except what `auth-backend` owns". Status is `In Review` until the pull request is merged. | Wave 0 foundation | contract approved by Project Owner; implemented by the implementing agent |
 | 2026-09-21 | `S-1` and `S-2` resolved, `AUD-023`. `W0-BE-011` no longer blocked by a decision and moves to `Draft`; `S01-FE-001` drops `S-2` and stays `Blocked` on the absent Flutter SDK. | Wave 0 planning gate | Project Owner |
