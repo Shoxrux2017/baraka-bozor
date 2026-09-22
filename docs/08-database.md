@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Baseline
 
@@ -59,7 +59,17 @@ Framework tables: Sanctum tokens, queue tables, migrations.
 | created_at | timestamptz | no |
 | updated_at | timestamptz | no |
 
-Constraints: unique phone; roles six approved; status active/blocked; Customer password null + no change gate; Staff password non-null. Index `(role,status)`, `lower(full_name)`. No hard-delete historical users.
+Constraints: `phone` is **not** plainly unique. Two partial unique indexes instead, one per account family — PostgreSQL expresses a conditional uniqueness only as an index, not as a table constraint:
+
+```sql
+CREATE UNIQUE INDEX users_phone_active_customer_unique
+    ON users (phone) WHERE status = 'active' AND role = 'customer';
+
+CREATE UNIQUE INDEX users_phone_active_staff_unique
+    ON users (phone) WHERE status = 'active' AND role <> 'customer';
+```
+
+Invariant: **at most one active Customer account and at most one active Staff account per phone.** `role` and `status` are both `NOT NULL`, so neither predicate can be evaded. Rationale and consequences are in `02` Section 3 and in `AUD-023`. The constraint is enforced by the database. The API additionally validates the phone, so a duplicate on Staff creation returns `422 validation_failed` per `09` Section 3 rather than surfacing a constraint violation as a server failure. Roles six approved; status active/blocked; Customer password null + no change gate; Staff password non-null. Index `(role,status)`, `lower(full_name)`. No hard-delete historical users.
 
 ## 4. `customer_otp_challenges`
 
@@ -281,7 +291,7 @@ Prefer RESTRICT/NO ACTION for business-history FKs. Archive/block/deactivate cur
 
 ## 31. Database vs Application Enforcement
 
-Database structural enforcement: FK, unique phone/order/source Cart, one active Cart, one current assignments, one pending Approval/cancellation, pricing shape, positive values, one pending/successful Payment Attempt, provider-event and idempotency uniqueness.
+Database structural enforcement: FK, phone unique per account family among active accounts, as two partial unique indexes (Section 3), unique order/source Cart, one active Cart, one current assignments, one pending Approval/cancellation, pricing shape, positive values, one pending/successful Payment Attempt, provider-event and idempotency uniqueness.
 
 Application enforcement: roles, ownership/assignment, unit precision, lifecycle transitions, price semantics, Approval necessity, substitution compatibility, rounding formulas, Payment/refund aggregate limits, analytics definitions.
 

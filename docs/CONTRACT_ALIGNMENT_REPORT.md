@@ -46,6 +46,32 @@ Changes applied after the 2026-09-07 lock. Each required Project Owner approval.
 
     Rationale, what the model deliberately keeps serial, and its risks: `docs/superpowers/specs/2026-09-21-parallel-execution-model-design.md`.
 
+23. **AUD-023 Phone uniqueness and the Desktop surface** (2026-09-21) — closed `S-1` and `S-2` from `SPEC_DECISIONS_BACKLOG.md`. Project Owner decided both.
+
+    **`S-1`.** `02` Section 3 required a role change to block the old account and create a new one, while `08` Section 3 made `phone` plainly unique and the person keeps the same number — so the new account could not exist.
+
+    Changed: `08` Section 3 replaces plain uniqueness with **two** partial unique indexes, one per account family — `(phone) WHERE status = 'active' AND role = 'customer'` and `(phone) WHERE status = 'active' AND role <> 'customer'` — so the invariant is at most one active Customer account and at most one active Staff account per phone. The Project Owner decided that one person may hold both, so a company employee can order as a Customer; the families never collide because Staff authenticate with a password and Customers with an OTP, on separate endpoints. `08` Section 3 also records that the API still validates the phone so a duplicate returns `422 validation_failed` rather than a constraint violation. `08` Section 31's enforcement checklist follows, naming both indexes. `02` Section 3 states the new account reuses the same phone; `02` Section 12 forbids unblocking while another active account **of the same family** holds it and notes that the obvious remedy is unavailable when the conflicting account is the last active Admin. `05` gains `BR-ROLE-010`, which states the per-family invariant, that staff login resolves the active Staff account and Customer OTP verify the active Customer account, and that an unblock is refused only by another active account of the same family. `BR-ROLE-002` cites `08` Section 3. `04` Section 31's Admin-creates-Staff flow now validates against active **Staff** accounts only, and records that an active Customer account on the phone is not a conflict. `09` Section 8 states that staff login targets the active **Staff** account, and that neither a blocked Staff account nor an active Customer account on the same phone is the login target. `09` Section 7 records that Customer OTP verify resolves or creates the Customer account and never a Staff one, so no OTP path can issue a Staff session — `02` Section 13 invariant 1. `09` Section 44 gives Staff creation a `422 validation_failed` on a phone held by an active Staff account, and `activate` a `409 phone_already_active` when an unblock would break the invariant; Section 59 adds that code.
+
+    Two alternatives rejected: releasing the phone on block destroys historical data, which root `AGENTS.md` Section 7 forbids; requiring a different phone would make a promotion depend on the person obtaining a second number.
+
+    **Changed, by category.** A **database/schema contract**: plain uniqueness becomes two partial unique indexes. A **lifecycle rule**: unblocking is now refusable, as `409 phone_already_active`, which the Project Owner assigned. **Account existence**: one phone may now carry two active accounts in different families, which no previous text allowed.
+
+    **Not changed**: no money, quantity or rounding rule; no Order, Approval, Payment, Refund or Delivery lifecycle state; no concurrency, idempotency or replay policy; no role capability, ownership or assignment scope; no existence-privacy behavior — both new refusals sit on Admin-only surfaces and neither can be used to probe Customer existence, because an active Customer account is explicitly not a conflict.
+
+    **Evidence validity** per `tasks/README.md` Section 13: nothing is invalidated. There is no `users` migration, no authentication endpoint and no fixture in `tests/fixtures/api/` yet, so no existing PASS evidence covers the changed surface.
+
+    **Three consequences were not foreseen when the decision was taken** and are opened as backlog rows rather than decided here: `S-18`, whether a Shopper or Courier may be assigned to an Order placed by a Customer account sharing their phone, which otherwise lets one human self-grant financial consent; `S-19`, what Customer OTP verify does when the only Customer account for a phone is blocked; and `S-20`, what `activate` returns on a write-time index rejection or two racing activations.
+
+    **`S-2`.** `02` Section 10 gave Operator, Admin and Manager a "Desktop" surface without saying whether that meant a browser or an installed application, leaving build targets, CORS and the Sanctum mode undefined.
+
+    Changed: `02` Section 10 defines Desktop as an installed Windows application and records that mobile means Android and iOS from one codebase. `07` Section 2 fixes the target set as Android, iOS and Windows with no web target. `07` Section 8 records that bearer-token mode applies on every surface, with no SPA-cookie mode and no CSRF surface. Android and Windows are required release targets from Wave 0; an iOS release build becomes required in Wave 5, because it needs macOS and an Apple Developer Program membership. iOS code is written from the start, so nothing is rewritten later.
+
+    Deciding against a browser surface preserves the platform-secured token storage `07` Section 8 already required, which no browser provides, and removes CORS from the MVP entirely.
+
+    Not changed by this half: no product behavior, money or quantity rule, rounding rule, lifecycle rule, concurrency or idempotency policy, and no API semantic. `backend/config/sanctum.php` still carries Laravel's default stateful-domain block, now inert; pruning it is a follow-up outside this amendment.
+
+    **Bookkeeping.** `tasks/WAVE_00_TASK_INDEX.md` records both resolutions: `W0-BE-011` is no longer blocked by a decision, and `S01-FE-001` drops `S-2` and remains blocked on the absent Flutter SDK. Document status lines stamped on `02`, `04`, `05`, `07`, `08`, `09`.
+
 ## External Integration Gates
 
 Not unresolved business-contract defects: concrete SMS vendor, Flutter map/tile provider, Firebase credentials, official Payme/Paynet/xazna/Click merchant protocols/credentials. These are provider implementation gates. The implementing agent must not invent them; missing material causes `BLOCKED`.
