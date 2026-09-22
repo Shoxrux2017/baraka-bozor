@@ -30,6 +30,8 @@ Every path below is repository-relative and carries the correct prefix — the L
 
 Wave 0 exception: until the `D-8` registry task is Accepted, per-module route files do not exist yet, so `auth-backend` routes are added by `wave-owner` on request rather than by the track itself. This exception exists only in Wave 0 and must not be carried forward.
 
+Wave 0 exception: `S01-FE-001` creates `frontend/pubspec.yaml`, `frontend/pubspec.lock`, `frontend/lib/app/router.dart` and `frontend/lib/app/providers.dart`, although the table above gives them to `wave-owner`. It has to: `flutter create` writes the pubspec, and the task's own scope includes the Flutter route-fragment registry, which **is** the root router. The table is written for Wave 1 and later, where several feature tracks run at once and none of them may edit the root router or root providers — each adds its own fragment instead. In Wave 0 there is one frontend track and it is the track that brings these files into existence. **From Wave 1 the four paths revert to `wave-owner` with no further note**, exactly as the table states. Approved by the Project Owner on 2026-09-22, after the conflict was found while preparing the two tracks rather than during implementation.
+
 ## Wave 1 and later
 
 Filled in at each wave planning gate, before the first task of that wave is approved. An empty section means the wave has not been planned yet, not that ownership is unrestricted.
