@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-22 (AUD-024); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. MVP Feature Overview
 
@@ -57,7 +57,7 @@ MVP requires map-point selection but no specific map vendor.
 
 Admin-managed dynamic Categories and Products with Customer active-list/search access.
 
-Product fields include name, description, Category, unit, availability/archive state, one current image, and pricing.
+Product fields include name and description in both MVP languages (`08` Section 7), Category, unit, availability/archive state, one current image, and pricing.
 
 Product image: JPEG/PNG/WebP, maximum 5 MB, backend-authoritative validation.
 
@@ -86,7 +86,7 @@ Ordered, purchased, and billable quantities remain distinct.
 
 ## 8. Cart
 
-One active Cart per Customer. Customer can add a Product once, change quantity, update note/substitution policy, remove an Item, and review current pricing state. Cart is not historical.
+At most one active Cart per Customer, created on first Cart access. Customer can add a Product once, change quantity, update note/substitution policy, remove an Item, and review current pricing state. Cart is not historical.
 
 ## 9. Checkout Preview
 

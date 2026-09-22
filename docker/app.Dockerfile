@@ -25,6 +25,14 @@ RUN apt-get update \
 # alone removes nothing, and this is a development image where a smaller layer
 # buys nothing.
 
+# Without this the image runs with no php.ini at all: the base image ships
+# php.ini-development and php.ini-production but activates neither, so PHP falls
+# back to its compiled-in defaults. conf.d/ is read alphabetically after the
+# main php.ini, and the zz- prefix puts this file after the extension files
+# docker-php-ext-install writes there, so its precedence is deliberate rather
+# than accidental.
+COPY php.ini /usr/local/etc/php/conf.d/zz-baraka-bozor.ini
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app

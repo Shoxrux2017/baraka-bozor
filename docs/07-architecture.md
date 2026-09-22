@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021, AUD-022, AUD-023); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021, AUD-022, AUD-023) and 2026-09-22 (AUD-024); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Architecture Goals
 
@@ -123,6 +123,12 @@ Admin-created Staff begins `must_change_password=true`; backend blocks normal ac
 Flutter stores bearer token using secure platform storage. Every MVP target — Android, iOS, Windows — provides one, which is part of why `02` Section 10 rules out a browser surface. Sanctum therefore runs in bearer-token mode on every surface; there is no SPA-cookie mode and no CSRF surface.
 
 Backend re-reads current user role/status; valid token never overrides `blocked`. Each authentication path resolves the active account of its own family: Customer OTP verify the active Customer account, Staff login the active Staff account, per `BR-ROLE-010`.
+
+**Token lifetime is 30 days, sliding — renewed by use.** A token is invalid once it has gone 30 days unused, measured from `last_used_at` and from creation when never used. Not 30 days from issue: an active Shopper or Courier is never signed out mid-Order, while a lost or forgotten phone stops working within a month. Sanctum's absolute `expiration` setting measures from issue and is therefore not what implements this.
+
+**Any account may hold several valid tokens at once** — a Shopper on two phones, a Customer on a phone and a tablet. No cap, and no device-management surface in the MVP.
+
+**Blocking revokes access two independent ways, deliberately redundant.** Every token belonging to the account is deleted at the moment it is blocked, *and* account status is re-checked on every authenticated request. If a later change ever misses one barrier the other still holds, and the person being blocked may hold Order, assignment and money capabilities, so defence in depth is proportionate here. A valid token on a blocked account returns `401 account_blocked`.
 
 ## 9. Authorization Layers
 
@@ -289,6 +295,10 @@ Presentation
 
 Widgets never call Dio or parse raw JSON directly. Logical features: auth, catalog, profile, addresses, cart, orders, shopper, approvals, payments, courier, operator, admin, notifications, history, analytics.
 
+MVP client languages are **Uzbek and Russian**. No English UI. How the language is selected, defaulted and persisted is **not yet decided** and is tracked as `S-27`; no feature list, wave or table in this specification carries a language-selection surface today.
+
+**The client owns every user-facing string.** It renders text from the machine `code` an API error carries, in the user's language, and never displays the API `message`, which is developer-facing English. A `code` with no client text is a frontend defect, not a backend one. Machine values — `customer`, `shopping`, `payme`, `kg`, `piece` — are likewise never displayed raw; the client maps them to labels, so no `unit_label` column or translated enum belongs in the database.
+
 ## 28. Flutter Async Safety
 
 Session/target/operation identity prevents stale async completion from leaking prior Customer/Order/account into current UI. High-risk Payment/Approval/Order operations suppress duplicate submissions and reconcile server state after uncertain outcomes.
@@ -300,6 +310,8 @@ Role-aware areas: `/auth`, `/customer`, `/shopper`, `/courier`, `/operator`, `/a
 ## 30. API Style
 
 Versioned JSON REST `/api/v1`. Success/error envelopes, strict request shape, pagination, error codes, idempotency headers, and endpoints are in `09-api-contracts.md`.
+
+**The backend performs no locale negotiation.** It does not read `Accept-Language`, holds no translation files, and never chooses a language on the client's behalf: prose it emits is English for developers, and data held in both languages is returned in both for the client to select. Because the client renders user-facing text from the error `code` (Section 27), there is nothing for the server to translate, and a value a message would need must reach the client as data rather than inside prose (`09` Section 3, where the envelope slot for it is still open as `S-31`). Do not add locale handling to the backend out of habit.
 
 ## 31. PII and Logging
 
