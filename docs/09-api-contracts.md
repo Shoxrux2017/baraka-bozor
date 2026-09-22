@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-019, AUD-020, AUD-023) and 2026-09-22 (AUD-024); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-019, AUD-020, AUD-023) and 2026-09-22 (AUD-024, AUD-025); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. General Contract
 
@@ -115,7 +115,7 @@ The phone identifies the active **Staff** account, per `BR-ROLE-010`. A blocked 
 
 Rate limit: **5 failed attempts per phone per minute** and **20 failed attempts per IP per minute**, both returning `429 rate_limited`. Both limits are required and bound different attacks: the per-phone limit bounds guessing against one known phone, and the per-IP limit bounds one source walking a list of phones, which the per-phone limit alone does not slow at all. `20` is deliberately loose so that a shared address does not deny service, but note the residual: Shopper and Courier are Staff on mobile (`02` Section 10), and behind carrier-grade NAT an address is shared with strangers whose failures consume the same counter. A successful login clears the phone counter and does not clear the IP counter, so a legitimate user cannot clear it either.
 
-Whether this limit extends to `/auth/change-password`, which verifies `current_password` and carries no limit today, is **not yet decided** and is tracked as `S-28`.
+The same per-account limit applies to `/auth/change-password`, which also verifies a password; see Section 10.
 
 There is **no account lockout**. Locking an account after repeated failures would let anyone who knows an Admin's phone number disable that Admin, routing around the protection `BR-ROLE-008` gives the last active Admin. Rate limiting delays an attacker without handing anyone that power.
 
@@ -142,6 +142,12 @@ POST /api/v1/auth/change-password
 ```
 
 Password 10–128 chars. Generated temporary password at least 12 random chars. First successful change clears `must_change_password`; endpoint also supports later Staff self-change.
+
+Rate limit: **5 failed `current_password` checks per account per minute**, returning `429 rate_limited` — the same number and the same code as Section 8, deliberately, so there is one rule to implement and one to remember. A successful change clears the counter. Only failed `current_password` checks count; a rejected `new_password` is a validation failure and does not.
+
+The limit is per **account**, not per IP. Section 8's per-IP limit exists because an unauthenticated caller can walk a list of phones; here the caller has already presented a valid token, so the account is the thing being attacked and the thing to bound.
+
+This endpoint needs the limit for a reason Section 8 does not: a stolen token already grants access, but not the password. Without a limit the holder of a stolen token could guess `current_password` as fast as the network allows, against a rule that constrains only length, and turn temporary access into the credential itself.
 
 ## 11. Logout
 

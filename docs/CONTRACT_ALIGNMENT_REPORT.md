@@ -119,6 +119,20 @@ Changes applied after the 2026-09-07 lock. Each required Project Owner approval.
 
     **This entry reopened Wave 0.** `S-28` — whether the new rate limit extends to `/auth/change-password` — blocks `S01-BE-004`, so the statement that Wave 0 held no open specification decision was true only until the review read the amendment.
 
+25. **AUD-025 `S-28` change-password rate limit** (2026-09-22) — Project Owner decided. `AUD-024` put a rate limit on `09` §8 staff login and said nothing about §10 `change-password`, which also verifies a password. The independent review of `AUD-024` raised it and it was opened as `S-28`, the one open Wave 0 decision.
+
+    **Resolved as: the same limit, 5 failed `current_password` checks per account per minute, `429 rate_limited`.** The same number and code as §8 on purpose — one rule to implement, one to remember, and no second threshold to get wrong. A successful change clears the counter. A rejected `new_password` is a validation failure and does not count.
+
+    **Why this endpoint needs it for a different reason than §8.** A stolen token already grants access; it does not grant the password. Unlimited `current_password` attempts let whoever holds a stolen token convert temporary access into the credential itself — usable elsewhere, and surviving token revocation. `09` §10 constrains only length (10–128) with no complexity rule, which makes the unbounded case worse rather than better.
+
+    **Per account, not per IP.** §8 needs a per-IP limit because an unauthenticated caller can walk a list of phones. Here the caller has already presented a valid token, so the account is what is under attack and what to bound. An IP limit would add a second counter that bounds nothing extra and can be consumed by unrelated users behind shared addresses — the residual `AUD-024` recorded for §8.
+
+    **Changed, by category.** **API semantics**: one endpoint gains a rate limit and an existing error code. No new code was needed; `rate_limited` is already in §54. No database or schema contract; no money, quantity or rounding rule; no Order, Approval, Payment, Refund or Delivery lifecycle state; no concurrency, idempotency or replay policy; no role capability, ownership, assignment or existence-privacy rule.
+
+    **Evidence validity** per `tasks/README.md` §13. Nothing is invalidated. `/auth/change-password` does not exist yet — `S01-BE-003` builds it — so no test, fixture or accepted PASS evidence covers it. Distinct from `AUD-024`, which did invalidate accepted error-envelope assertions.
+
+    **Bookkeeping.** Status line stamped on `09`. `tasks/WAVE_00_TASK_INDEX.md`: `S01-BE-004` returns to `Draft`, the entry gate records every Wave 0 decision resolved, and the `S-28` risk row closes. `docs/SPEC_DECISIONS_BACKLOG.md` marks the row Resolved. **Wave 0 again has no open specification decision** — and this time the claim is made after a review of the amendment that opened the last one, not before.
+
 ## External Integration Gates
 
 Not unresolved business-contract defects: concrete SMS vendor, Flutter map/tile provider, Firebase credentials, official Payme/Paynet/xazna/Click merchant protocols/credentials. These are provider implementation gates. The implementing agent must not invent them; missing material causes `BLOCKED`.
