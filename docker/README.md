@@ -37,6 +37,18 @@ exercise nothing, which is worse than a red run. Install dependencies inside the
 container rather than on the host, so the tree is built by the same Linux PHP
 that will execute it.
 
+## CI runs these same commands
+
+`.github/workflows/backend.yml` brings up this same stack from this same
+Dockerfile and runs the same commands as below — `composer install`, the `.env`
+and key steps, `migrate`, then `php artisan test`, `vendor/bin/pint --test` and
+`vendor/bin/phpstan analyse` — with the non-interactive flags a runner needs.
+
+That is deliberate. It keeps local, CI and production on one runtime, and it
+makes this document continuously tested. **A change here and a change in that
+workflow must be made together** — if the procedure below drifts from what CI
+runs, CI goes red instead of a new developer discovering it later.
+
 ## Several worktrees at once
 
 The wave model runs one git worktree per track, so two stacks can be wanted at

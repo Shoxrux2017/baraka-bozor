@@ -86,7 +86,7 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 |---:|---|---|---|---|---|---|---|
 | 1 | `S01-BE-001` | Backend | `wave-owner` | Laravel `/api/v1` scaffold, error and quality foundation | Stage 0 closed | **Accepted** | `backend/stage-01/S01-BE-001-laravel-api-scaffold-quality-foundation.md` |
 | 2 | `W0-INT-001` | Integration | `wave-owner` | Local PostgreSQL and PHP runtime in Docker | `S01-BE-001` | In Review | `integration/wave-00/W0-INT-001-local-postgresql-runtime.md` |
-| 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | Draft | Not created |
+| 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | In Review | `integration/wave-00/W0-INT-002-github-actions-backend-checks.md` |
 | 4 | `W0-BE-010` | Backend | `wave-owner` | Module route registry and Flutter route-fragment registry (`D-8`) | `W0-INT-002` | Draft | Not created |
 | 5 | `W0-BE-011` | Backend | `wave-owner` | Identity schema: users, six roles, Sanctum tokens, initial Admin CLI bootstrap | `W0-BE-010`, `S-1` | Blocked | Not created |
 | 6 | `W0-BE-012` | Backend | `wave-owner` | Shared API fixture directory (`D-9`): the `docs/09` response and error examples both sides assert against | `W0-BE-010`, `S-3`, `S-16`, `S-17` | Blocked | Not created |
@@ -116,7 +116,7 @@ Concurrency in Wave 0 is narrow by nature: tasks 2, 3 and 4 are a serial chain o
 |---|---|---|---|---|---|---|---|
 | `S01-BE-001` | Yes | Yes | Yes | Yes | N/A | Yes | Accepted |
 | `W0-INT-001` | Yes | Yes | Yes | N/A | N/A | Yes | Approved |
-| `W0-INT-002` | No | No | No | No | N/A | No | No |
+| `W0-INT-002` | Yes | Yes | N/A | N/A | N/A | Yes | Approved |
 | `W0-BE-010` | No | No | No | No | N/A | No | No |
 | `W0-BE-011` | No | No | No | No | N/A | No | No |
 | `W0-BE-012` | No | No | N/A | No | N/A | No | No |
@@ -164,6 +164,8 @@ Filled in per task when its contract is written. `git diff --check` is required 
 | Contract-first frontend may not start before its fixture surface is decided | `S01-FE-002` onward | `S-3`, `S-16`, `S-17` resolved and `W0-BE-012` Accepted | **Enforced by the task rows above** |
 | Real SMS path | **Wave 5**, not Wave 0 | vendor contract, alpha-name, credentials, legal entity | Deferred by `D-4` |
 | CI absent until `W0-INT-002` | `W0-INT-001` merges on locally-run checks | verification output recorded in the PR | Accepted risk |
+| `backend/phpunit.xml` has no `failOnEmptyTestSuite`, so a suite that stops discovering tests would still report green | every wave | one attribute; `backend/**` was out of scope for `W0-INT-002` | Open — follow-up task |
+| `backend/phpunit.xml` `DB_URL` lacks `force="true"` and Laravel prefers it over the discrete `DB_*` values | every wave | guarded today by `TestDatabaseIsolationTest`, which asks the server for `current_database()`; worth closing anyway | Open — follow-up task |
 | Host PHP cannot load `pdo_pgsql` | every task that touches the database | `W0-INT-001` runs PHP and the suite in a container | Addressed on the `W0-INT-001` branch; closes when that task is `Accepted` |
 
 ## 10. Roadmap Acceptance Matrix
