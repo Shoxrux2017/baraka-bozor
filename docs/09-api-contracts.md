@@ -115,7 +115,7 @@ The phone identifies the active **Staff** account, per `BR-ROLE-010`. A blocked 
 
 Rate limit: **5 failed attempts per phone per minute** and **20 failed attempts per IP per minute**, both returning `429 rate_limited`. Both limits are required and bound different attacks: the per-phone limit bounds guessing against one known phone, and the per-IP limit bounds one source walking a list of phones, which the per-phone limit alone does not slow at all. `20` is deliberately loose so that a shared address does not deny service, but note the residual: Shopper and Courier are Staff on mobile (`02` Section 10), and behind carrier-grade NAT an address is shared with strangers whose failures consume the same counter. A successful login clears the phone counter and does not clear the IP counter, so a legitimate user cannot clear it either.
 
-The same per-account limit applies to `/auth/change-password`, which also verifies a password; see Section 10.
+The same threshold and the same code apply to `/auth/change-password`, which also verifies a password, but counted **per token** rather than per phone or per IP, and for a reason that matters; see Section 10.
 
 There is **no account lockout**. Locking an account after repeated failures would let anyone who knows an Admin's phone number disable that Admin, routing around the protection `BR-ROLE-008` gives the last active Admin. Rate limiting delays an attacker without handing anyone that power.
 
@@ -143,11 +143,49 @@ POST /api/v1/auth/change-password
 
 Password 10–128 chars. Generated temporary password at least 12 random chars. First successful change clears `must_change_password`; endpoint also supports later Staff self-change.
 
-Rate limit: **5 failed `current_password` checks per account per minute**, returning `429 rate_limited` — the same number and the same code as Section 8, deliberately, so there is one rule to implement and one to remember. A successful change clears the counter. Only failed `current_password` checks count; a rejected `new_password` is a validation failure and does not.
+Rate limit: **5 failed `current_password` checks per bearer token per minute**, returning
+`429 rate_limited` — the same threshold and the same code as Section 8. A successful change
+clears that token's counter. Only failed `current_password` checks count: `new_password` is
+validated first, so a request whose `new_password` is rejected never reaches the
+`current_password` check and never consumes the counter.
 
-The limit is per **account**, not per IP. Section 8's per-IP limit exists because an unauthenticated caller can walk a list of phones; here the caller has already presented a valid token, so the account is the thing being attacked and the thing to bound.
+This endpoint needs a limit for a reason Section 8 does not. A stolen token already grants
+access, but not the password. Without a limit its holder could guess `current_password` as
+fast as the network allows, against a rule that constrains only length (above), and turn
+temporary access into the credential itself — usable elsewhere, and surviving the token
+revocation that blocking performs.
 
-This endpoint needs the limit for a reason Section 8 does not: a stolen token already grants access, but not the password. Without a limit the holder of a stolen token could guess `current_password` as fast as the network allows, against a rule that constrains only length, and turn temporary access into the credential itself.
+**The counter is keyed to the token, not to the account, and that is load-bearing.** Keyed to
+the account, the holder of a stolen token could keep the counter saturated at five failures a
+minute and the legitimate owner would never be able to change their password — the one action
+that takes the credential away from the attacker. No escape exists in this contract: Section 11
+logout revokes only the caller's own token, so a foreign token cannot be evicted; every token
+is deleted only when the account is **blocked** (`07` Section 8), and `BR-ROLE-008` forbids
+blocking the last active Admin; an Admin password reset sets the gate and routes the victim
+back to this endpoint (Section 44); and while the gate is set only `/auth/me`,
+`/auth/change-password` and `/auth/logout` are reachable at all. For the last active Admin that
+is a permanent lockout with no remedy — the same weapon the no-lockout decision in Section 8
+rejects, with "holds a token" in place of "knows the phone".
+
+Keying to the token costs no protection. A token is issued only by staff login, which requires
+the password being guessed, so an attacker cannot widen their own budget; five failures a
+minute is what one stolen token gets either way. The residual it accepts: an attacker holding
+several stolen tokens for one account gets five a minute **each**. Compromise of several tokens
+for one account is a larger breach than this limit is meant to address, and the per-account key
+that would cap it is what creates the lockout above.
+
+No per-IP limit applies here. Section 8 needs one because an unauthenticated caller can walk a
+list of phones; reaching this endpoint requires a valid token, which cannot be obtained without
+the password. An attacker holding tokens for many accounts is the analogous case and a per-IP
+limit would cap it — that case is judged not worth a second counter, because it presupposes
+mass token theft, and because a per-IP counter here would inherit the shared-address residual
+Section 8 records.
+
+**Codes are not specified for this endpoint** and this amendment deliberately did not invent
+them. Which code a wrong `current_password` returns — `invalid_credentials` by analogy with
+Section 8 is the obvious reading, and an obvious reading is not a decision — must be settled by
+the `S01-BE-003` task contract or raised with the Project Owner there. Tracked as a Wave 0 risk
+rather than guessed here.
 
 ## 11. Logout
 
