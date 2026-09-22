@@ -87,8 +87,8 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 | 1 | `S01-BE-001` | Backend | `wave-owner` | Laravel `/api/v1` scaffold, error and quality foundation | Stage 0 closed | **Accepted** | `backend/stage-01/S01-BE-001-laravel-api-scaffold-quality-foundation.md` |
 | 2 | `W0-INT-001` | Integration | `wave-owner` | Local PostgreSQL and PHP runtime in Docker | `S01-BE-001` | **Accepted** | `integration/wave-00/W0-INT-001-local-postgresql-runtime.md` |
 | 3 | `W0-INT-002` | Integration | `wave-owner` | GitHub Actions running backend tests, Pint and PHPStan against PostgreSQL; required check on `main` | `W0-INT-001` | **Accepted** | `integration/wave-00/W0-INT-002-github-actions-backend-checks.md` |
-| 4 | `W0-INT-004` | Integration | `wave-owner` | Explicit PHP configuration in the container runtime: PHPStan's peak straddles PHP's default 128M ceiling, so the one mode that names a crashing file was itself crashing | `W0-INT-002` | **Approved** — Project Owner, 2026-09-22 | `integration/wave-00/W0-INT-004-container-php-memory-limit.md` |
-| 5 | `W0-BE-010` | Backend | `wave-owner` | Module route registry, the backend half of `D-8` | `W0-INT-002`, `W0-INT-004` | In Review | `backend/wave-00/W0-BE-010-module-route-registry.md` |
+| 4 | `W0-INT-004` | Integration | `wave-owner` | Explicit PHP configuration in the container runtime: PHPStan's peak straddles PHP's default 128M ceiling, so the one mode that names a crashing file was itself crashing | `W0-INT-002` | **Accepted** | `integration/wave-00/W0-INT-004-container-php-memory-limit.md` |
+| 5 | `W0-BE-010` | Backend | `wave-owner` | Module route registry, the backend half of `D-8` | `W0-INT-002`, `W0-INT-004` | **Accepted** | `backend/wave-00/W0-BE-010-module-route-registry.md` |
 | 6 | `W0-BE-011` | Backend | `wave-owner` | Identity schema: users, six roles, Sanctum tokens, initial Admin CLI bootstrap | `W0-BE-010` | Draft | Not created |
 | 7 | `W0-BE-012` | Backend | `wave-owner` | Shared API fixture directory (`D-9`): the `docs/09` response and error examples both sides assert against | `W0-BE-010` | Draft | Not created |
 | 8 | `S01-BE-003` | Backend | `auth-backend` | Staff login/logout/me, blocking, first-login password gate | `W0-BE-011` | Draft | Not created |
@@ -118,8 +118,8 @@ Concurrency in Wave 0 is narrow by nature: tasks 2 to 5 are a serial chain owned
 | `S01-BE-001` | Yes | Yes | Yes | Yes | N/A | Yes | Accepted |
 | `W0-INT-001` | Yes | Yes | Yes | N/A | N/A | Yes | Accepted |
 | `W0-INT-002` | Yes | Yes | N/A | N/A | N/A | Yes | Accepted |
-| `W0-INT-004` | Yes | Yes | N/A | N/A | N/A | Yes | Approved |
-| `W0-BE-010` | Yes | Yes | N/A | N/A | N/A | Yes | Approved |
+| `W0-INT-004` | Yes | Yes | N/A | N/A | N/A | Yes | Accepted |
+| `W0-BE-010` | Yes | Yes | N/A | N/A | N/A | Yes | Accepted |
 | `W0-BE-011` | No | No | No | No | N/A | No | No |
 | `W0-BE-012` | No | No | N/A | No | N/A | No | No |
 | `S01-BE-003` | No | No | No | No | No | No | No |
@@ -192,7 +192,7 @@ Filled in per task when its contract is written. `git diff --check` is required 
 | Direct-route and wrong-role protected access are denied | `S01-BE-005`, `S01-FE-005` | Backend/Frontend + Integration | `[reference]` | Not started |
 | Logout and account switching do not leak prior account state | `S01-FE-002`, `S01-FE-005` | Frontend + Integration | `[reference]` | Not started |
 | Backend checks run automatically on every pull request | `W0-INT-002` | CI run on a PR | `[reference]` | Not started |
-| Concurrent tracks cannot collide on shared files | `W0-BE-010`, `tasks/OWNERSHIP.md` | registry task plus wave closure | `W0-BE-010` PR | In review |
+| Concurrent tracks cannot collide on shared files | `W0-BE-010`, `tasks/OWNERSHIP.md` | registry task plus wave closure | `W0-BE-010` PR #9, merged | **Closed for routes 2026-09-22** — module route files are collected by one loop and a duplicate route name stops the boot. Ownership beyond routes is still enforced by `tasks/OWNERSHIP.md` alone and is re-checked at wave closure |
 | The fake `SmsGateway` never emits an OTP to a client, log or header | `S01-BE-004` | Backend security tests + Integration | `[reference]` | Not started |
 | The external SMS path is actually verified | Wave 5 | Wave 5 closure | Wave 5 record | Deferred by `D-4` |
 
@@ -221,4 +221,5 @@ Filled in per task when its contract is written. `git diff --check` is required 
 | 2026-09-22 | Independent review of `AUD-024`: ten `P2` and eighteen `P3` findings, no `P1`, all verified and accepted. Eight `P2` fixed by edit. **Wave 0 reopened by `S-28`**, which blocks `S01-BE-004`; `S-25` to `S-27` and `S-29` to `S-31` recorded for Waves 1 and 2, three of them decisions the amendment made without authority. | Review findings resolved before delivery | Project Owner |
 | 2026-09-22 | `W0-INT-004` inserted into the approved task order as order 4; former 4–15 renumbered 5–16. `W0-BE-010` now also depends on it. | `phpstan --debug` was observed at 170.5 MB against PHP’s default 128M ceiling and crashed on `W0-BE-010`’s tree, so the one mode that names a crashing file was itself unusable. Contract approved 2026-09-22. | Project Owner |
 | 2026-09-22 | `main` merged forward into `W0-BE-010`, and the CI failure that held it closed: `memory_limit` was the binding constraint, raised by `W0-INT-004`, with two green runs on the merged head. The mechanism inside the parallel worker remains unexplained and is tracked as a separate risk. | Re-verification after taking in merged shared infrastructure, root `AGENTS.md` §11 | Implementing agent; task acceptance remains the Project Owner’s |
+| 2026-09-22 | `W0-INT-004` and `W0-BE-010` set `Accepted`. Both are on `origin/main` (PR #11 and PR #9), local `main` is synchronized and clean, and CI is green on each merged head. | Acceptance assigned by the Project Owner and recorded on their instruction, per root `AGENTS.md` §15 | Project Owner |
 | 2026-09-22 | `S-28` resolved, `AUD-025`: 5 failed `current_password` checks per minute on `/auth/change-password`, counted **per token**. No task row changed — the decision had been recorded against `S01-BE-004` in error, and `S01-BE-003`, which builds the endpoint, was already `Draft`. Every Wave 0 specification decision is now resolved; two Wave 0 gaps remain in Section 9 as risks rather than decisions. | The last Wave 0 decision, opened by the independent review of `AUD-024`; its own review then changed the answer | Project Owner |

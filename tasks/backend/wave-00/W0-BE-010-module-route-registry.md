@@ -8,7 +8,7 @@
 | Wave | `0 — Foundation` |
 | Area | `Backend` |
 | Status | `Approved` — Project Owner, 2026-09-22 |
-| Depends on | `W0-INT-002` — Accepted, PR #7; `W0-INT-004` — merged as PR #11 |
+| Depends on | `W0-INT-002` — Accepted, PR #7; `W0-INT-004` — Accepted, PR #11 |
 | Blocks | every feature task in every wave |
 | Track | `wave-owner` |
 | Branch | `task/w0-be-010-module-route-registry` |
