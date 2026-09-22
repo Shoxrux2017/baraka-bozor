@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023) and 2026-09-22 (AUD-024); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Baseline
 
@@ -83,11 +83,17 @@ Checks valid coordinates, non-empty street/house. Index `(customer_id,is_active)
 
 ## 6. `categories`
 
-`id, name, description?, sort_order, is_active, archived_at?, created_by_user_id, timestamps`. Index active/sort and lower(name).
+`id, name_uz, name_ru, description_uz?, description_ru?, sort_order, is_active, archived_at?, created_by_user_id, timestamps`. Index active/sort, and `lower(name_uz)` and `lower(name_ru)` — a single-language index would make Customer search miss a Category in the other language.
 
 ## 7. `products`
 
-`id, category_id, name, description?, unit_code, price_mode, fixed_price_uzs?, min_price_uzs?, max_price_uzs?, is_active, sort_order, archived_at?, created_by_user_id, timestamps`.
+`id, category_id, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, fixed_price_uzs?, min_price_uzs?, max_price_uzs?, is_active, sort_order, archived_at?, created_by_user_id, timestamps`.
+
+Category and Product names and descriptions are **bilingual, Uzbek and Russian**, because `07` Section 27 fixes both as MVP client languages. `AUD-024` is the first place the language set is fixed anywhere in `01`—`09`; nothing before it said anything about language.
+
+**The paired-column representation is a schema contract awaiting the Project Owner's sign-off.** The decision recorded in `AUD-024` is that the catalog is bilingual; two columns per field is one way to hold that, a JSONB map or a `translations` table are others, and the choice decides whether a third language is later a migration of every catalog table and index. Tracked as `S-25`.
+
+Five further questions are **not yet decided** and are tracked in `SPEC_DECISIONS_BACKLOG.md`: `S-21` whether both languages are required, `S-22` what a Customer sees when their language is empty, `S-23` whether search matches across both, `S-24` which name enters the historical Order snapshots in Sections 14 and 17 required by `07` Section 13, and `S-26` whether the Catalog API returns both values and accepts both on write.
 
 Units: `kg, gram, piece, liter, package, box, bundle, meter`.
 
@@ -99,7 +105,7 @@ range: fixed null; min>0; max>=min
 at_purchase: all price fields null
 ```
 
-Indexes Category/active, active/sort, lower(name), price_mode.
+Indexes Category/active, active/sort, `lower(name_uz)`, `lower(name_ru)`, price_mode.
 
 ## 8. `product_images`
 
