@@ -145,6 +145,22 @@ Changes applied after the 2026-09-07 lock. Each required Project Owner approval.
 
     **Bookkeeping.** Status line stamped on `09`. `docs/SPEC_DECISIONS_BACKLOG.md`: row marked Resolved, `Blocks` corrected to `S01-BE-003`, one change-log row. `tasks/WAVE_00_TASK_INDEX.md`: the entry gate records every Wave 0 decision resolved, the `S-28` risk row closes, a new risk row tracks the missing §10 codes, and one change-log row. No task row needed unblocking: `S01-BE-004` was never the dependency and `S01-BE-003` was already `Draft`.
 
+26. **AUD-026 Flutter directory layout** (2026-09-22) — Project Owner decided. `07` §27 named the layers and the features but not the directories, so the first frontend task would have chosen a layout for the whole client as a side effect of scaffolding, and every later wave would have inherited it without anyone deciding it.
+
+    **Resolved as: `lib/features/<feature>/{data,domain,application,presentation}` for features, `lib/core/` for everything no single feature owns, `lib/app/` for the root router and root providers.**
+
+    The layer names are not new — `frontend/AGENTS.md` §2 already requires `data/domain/application/presentation` boundaries "where they provide real ownership". This fixes where they sit. `lib/app/` is not new either: `tasks/OWNERSHIP.md` already names `frontend/lib/app/router.dart` and `frontend/lib/app/providers.dart`. What was genuinely undecided was `features/` versus a flat tree, and whether cross-feature code has one home or several.
+
+    **One home for shared code, `core/`, and the reason is concrete.** `frontend/AGENTS.md` §7 requires one configured API client for base URL, bearer token, timeouts, envelope parsing and safe logging. Two plausible homes for shared code is how a codebase acquires a second Dio client, which §2 forbids outright. `core/` holds network, theme, error-envelope parsing, the `code`-to-text mapping the client owns under §27, and localization.
+
+    **Decided before the scaffold rather than inside it.** Renaming a layout later touches every feature at once, and in a wave model that means every frontend track simultaneously. Raised while preparing the `S01-FE-001` worktree.
+
+    **Changed, by category.** **Cross-feature architecture**, which root `AGENTS.md` §3 reserves to the Project Owner. No API semantics; no database or schema contract; no money, quantity or rounding rule; no lifecycle state; no concurrency, idempotency or replay policy; no role capability, ownership, assignment or existence-privacy rule; no backend behaviour of any kind.
+
+    **Evidence validity** per `tasks/README.md` §13: nothing is invalidated. No Flutter project exists — `frontend/` holds only `AGENTS.md` — so there is no test, build or accepted evidence to reach. `S01-FE-001` is the first task that touches it and has not started.
+
+    **Bookkeeping.** Status line stamped on `07`. No task row changes: `S01-FE-001` was already unblocked by the Flutter SDK being installed, and this removes an open choice from its contract rather than a dependency.
+
 ## External Integration Gates
 
 Not unresolved business-contract defects: concrete SMS vendor, Flutter map/tile provider, Firebase credentials, official Payme/Paynet/xazna/Click merchant protocols/credentials. These are provider implementation gates. The implementing agent must not invent them; missing material causes `BLOCKED`.
