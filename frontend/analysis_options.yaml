@@ -1,0 +1,19 @@
+# Static analysis for the BarakaBozor client.
+#
+# This is the frontend counterpart to Pint and PHPStan on the backend. The
+# strict-* modes are analyzer settings rather than a package, so they add no
+# dependency; they are adopted here, on an empty tree, because retrofitting them
+# across five features later is what makes teams abandon them. Task S01-FE-001,
+# decision D-6.
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-raw-types: true
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - windows/**
