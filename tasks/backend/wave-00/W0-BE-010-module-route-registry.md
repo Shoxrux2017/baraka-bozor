@@ -112,6 +112,40 @@ git status --short
 
 CI runs the same commands on the pull request and is now a required check.
 
+### CI history on this branch
+
+Every run from 2026-09-22 04:35 to 05:01 failed, and always at the same step:
+
+```text
+Child process error (exit code 255):  while running parallel worker
+```
+
+No file was named, because `255` is PHP's exit code for a fatal error and
+PHPStan's parallel mode does not surface a dead worker's output. Five runs, five
+failures, while the same commands passed locally.
+
+The cause was PHP's default `memory_limit` of `128M`, which the container was
+running under because the `php:8.4-cli` image activates no `php.ini`. It is fixed
+by `W0-INT-004`, merged as PR #11, and **confirmed on this branch**: run
+`35711716471` on head `8919161`, with `main` merged forward, passes every step
+including PHPStan.
+
+The confirmation matters because the diagnosis was not straightforward, and two
+statements made along the way were wrong. First a local run of `5/5 green` was
+offered as evidence that the analysis was sound; it proved nothing, because this
+machine has 12 cores against the runner's 4 and PHPStan sizes its workers from
+the CPU count. Then a `114 MB` worker peak was reported as a measured fact and
+used to argue the memory ceiling was the cause; the independent review of
+`W0-INT-004` measured `60 MB`, re-measurement found the figure ranges `60`-`114 MB`
+across runs, and the claim was withdrawn as unproven before that PR was opened.
+
+What actually holds, measured on this tree after the fix: `phpstan analyse --debug`
+completes and peaks at `190.5 MB`. Against a `128M` ceiling. The workload needed
+half again as much memory as it was allowed, which is why nothing about worker
+counts or result caches ever mattered. The conclusion was right and the evidence
+offered for it, at the time it was offered, was not — recorded here because the
+second half is the part worth remembering.
+
 ## Allowed Areas
 
 Track: `wave-owner`
