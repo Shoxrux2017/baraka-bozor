@@ -13,29 +13,33 @@ This stack is for development and tests only. It is not a deployment target; see
 
 ## PHP configuration is set explicitly
 
-The `php:8.4-cli` base image ships **no active `php.ini`**. It places
-`php.ini-development` and `php.ini-production` in `/usr/local/etc/php/` and
-expects the build to choose one. Choosing neither is not a neutral default —
-every process then runs under PHP's compiled-in fallbacks.
-
-`docker/php.ini` is therefore copied into the image, and it is the one place any
-value this project sets deliberately belongs. Nothing repeats those values: not
+`docker/php.ini` is copied into the image as
+`/usr/local/etc/php/conf.d/zz-baraka-bozor.ini`, and it is the one place any value
+this project sets deliberately belongs. Nothing repeats those values: not
 `compose.yaml`, not `.github/workflows/backend.yml`, not a flag on any command.
 Two copies of a number drift silently.
 
-What is in it, and why, is in the file's own comments. It currently sets one
-value, `memory_limit`: PHPStan's parallel worker was peaking at `114 MB` against
-the fallback ceiling of `128M`, and single-process analysis exceeded it outright.
-The test suite ran under the same ceiling and would have reached it in a later
-wave, where a fatal error in a forked worker surfaces only as
-`Child process error (exit code 255)`, naming no file.
-
-To see what is active:
+**The main `php.ini` stays absent by design.** The `php:8.4-cli` image activates
+none — it ships `php.ini-development` and `php.ini-production` and expects the
+build to pick one — and both of those set `memory_limit = 128M` themselves,
+identical to PHP's compiled-in fallback, so picking one would have changed
+nothing. A small file in `conf.d/` holding only what this project sets is
+reviewable instead. So `php --ini` reports `Loaded Configuration File: (none)`,
+which is correct and does **not** mean the settings are missing; look under
+`Additional .ini files parsed`:
 
 ```text
 docker compose -f docker/compose.yaml exec app php --ini
 docker compose -f docker/compose.yaml exec app php -r 'echo ini_get("memory_limit"), PHP_EOL;'
 ```
+
+What is set, and why, is in the file's own comments. It currently sets one value,
+`memory_limit`, because PHPStan's peak straddled the `128M` default — observed at
+`170.5 MB` with the ceiling raised, and pinned at `126.5 MB` whenever `128M` was
+the limit. `--debug` is the one mode that names the file PHPStan died on, so the
+tool you reach for when the analyser crashes was itself crashing. These peaks move
+with container state; the task contract `W0-INT-004` records the ranges rather
+than one figure.
 
 A change to `docker/php.ini` or to `docker/app.Dockerfile` needs
 `up -d --build`. Without `--build` Compose keeps the existing image and the
