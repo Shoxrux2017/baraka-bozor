@@ -1,0 +1,11 @@
+Module route files live here, one per module: <module>.php.
+
+Collected by App\Support\Routing\ModuleRouteLoader, which routes/api.php calls.
+Do not add endpoints to routes/api.php — that is what this directory is for, and
+it is why two concurrent tracks never edit the same route file (decision D-8).
+
+Files are loaded in sorted filename order. Do not repeat the /api/v1 prefix;
+bootstrap/app.php already applies it.
+
+This placeholder keeps the directory in git. The loader collects *.php only, so
+it is never mistaken for a route file.
