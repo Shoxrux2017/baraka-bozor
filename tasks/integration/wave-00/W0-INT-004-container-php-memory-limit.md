@@ -209,6 +209,7 @@ Nothing outside this table may be created, modified or deleted.
 |---|---|---|
 | `docker/php.ini` | Create | the explicit configuration |
 | `docker/app.Dockerfile` | Modify | copy it into the image |
+| `docker/compose.yaml` | Modify | one comment, which the Dockerfile change made false — added to this table by the Project Owner on 2026-09-22 after the independent review raised it |
 | `docker/README.md` | Modify | one section recording what is set and why |
 | `tasks/integration/wave-00/W0-INT-004-container-php-memory-limit.md` | Create | this contract |
 | `tasks/WAVE_00_TASK_INDEX.md` | Modify | task row, readiness row, risk row, dependency map, change log |
@@ -216,14 +217,13 @@ Nothing outside this table may be created, modified or deleted.
 Explicitly outside: `backend/**`, `.github/workflows/**`, `frontend/**`,
 `docs/**`.
 
-**Known gap, reported rather than acted on.** `docker/app.Dockerfile` now copies
-from the build context, which makes a comment in `docker/compose.yaml` false — it
-says the Dockerfile "copies nothing from the build context". The rest of that
-comment, that pointing the context at the repository root would ship
-`backend/vendor` to the daemon, remains true, and `context: .` is now
-load-bearing rather than merely convenient. `docker/compose.yaml` is
-`wave-owner`'s path but is not in this table, so it is left untouched and raised
-with the Project Owner instead of edited.
+**One path was added after sign-off.** `docker/app.Dockerfile` now copies from the
+build context, which made a comment in `docker/compose.yaml` false — it said the
+Dockerfile "copies nothing from the build context". The independent review raised
+it; the file is `wave-owner`'s but was outside this table, so it was reported
+rather than edited, and the Project Owner widened the table for it on 2026-09-22.
+The comment now states both reasons the context is this directory, including that
+`context: .` is load-bearing rather than merely convenient.
 
 ## Delivery
 
@@ -245,7 +245,7 @@ container before acting; none was wrong.
 | P2-1 | `P2` | "Single-process analysis exceeded `128M`" was attributed to `main`, where it completes at `126.5 MB`. The crash belongs to `W0-BE-010`'s tree. | Confirmed, 3 runs, `126.5 MB` every time. Corrected in all four places. The crash is now attributed to the tree it happens on, and what shows `128M` was insufficient is not a margin but that the same analysis reports `170.5 MB` once the ceiling is raised and `126.5 MB` whenever the ceiling binds. |
 | P2-2 | `P2` | Three statements still asserted the CI causation the same contract called unproven, including a Scope bullet promising proof that criterion 3 said could not be produced. | Confirmed by reading. All three rewritten, and the contract now has a section stating what it does not claim. |
 | P2-3 | `P2` | Criterion 4 required an observation that is false on this branch. | Confirmed. Rewritten to require the control's *observed* result, and to say that reporting a failure here would be false. |
-| P2-4 | `P2` | The diff makes a comment in `docker/compose.yaml` false, and that file is not in Allowed Areas. | Confirmed by reading the file. **Not acted on** — editing outside the approved Allowed Areas is what `AGENTS.md` §8 forbids. Recorded above as a known gap, for the Project Owner to take as a follow-up or to widen this task's Allowed Areas for. |
+| P2-4 | `P2` | The diff makes a comment in `docker/compose.yaml` false, and that file is not in Allowed Areas. | Confirmed by reading the file. Reported rather than edited, since `AGENTS.md` §8 forbids editing outside the approved table; the Project Owner then widened the table and the comment is fixed. It now gives both reasons for `context: .`, the second of which is new: the build fails without it. |
 | P2-5 | `P2` | Contract said `Approved`; the index said `Draft` and "Awaiting sign-off". | The approval is real, given 2026-09-22 before implementation began. The index cells were written before it and were stale. Corrected there. |
 | P2-6 | `P2` | The renumbering left `W0-BE-010` depending only on `W0-INT-002`, contradicting the new prose. | Confirmed. `W0-BE-010`'s dependency cell updated. |
 | P3-1 | `P3` | "Choosing neither is not a neutral default" is misleading: both shipped `php.ini-*` files also set `memory_limit = 128M`. | **Confirmed in the container** — `php.ini-development:433` and `php.ini-production:435` are both `128M`, and `php -n` is also `128M`. This mattered: the missing `php.ini` is not why the ceiling was `128M`. Reframed in Decision 2, `docker/php.ini` and `docker/README.md`. |
