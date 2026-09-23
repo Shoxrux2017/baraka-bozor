@@ -161,6 +161,18 @@ Changes applied after the 2026-09-07 lock. Each required Project Owner approval.
 
     **Bookkeeping.** Status line stamped on `07`. No task row changes: `S01-FE-001` was already unblocked by the Flutter SDK being installed, and this removes an open choice from its contract rather than a dependency.
 
+27. **AUD-027 `core/` subdirectories are examples, not a closed list** (2026-09-23) — Project Owner decided. `AUD-026` illustrated `lib/core/` with "network, theme, error-envelope parsing, the code-to-text mapping, localization". `S01-FE-001` delivered `core/storage/`, `core/config/` and `core/routing/` as well, and its independent review raised the gap as `R-09`.
+
+    **The rule was never broken.** `AUD-026`'s rule is that nothing cross-feature lives outside `core/`, and all three sit inside it. None belongs to a single feature: the token store is read by every request, the API configuration owns one client for the whole app, and the routing directory is the `D-8` registry that collects fragments from every feature. What misled was the illustration, which could be read as exhaustive.
+
+    **Resolved as:** the names in `07` §27 are examples. The test for a new `core/` subdirectory is whether one feature owns the thing — if one does it belongs to that feature, if none does it belongs in `core/` — and a track needs no approval to add one that passes. Recorded so the next frontend track does not stop and ask the same question.
+
+    **Changed, by category.** **Cross-feature architecture**, reserved by root `AGENTS.md` §3, clarified rather than altered: no directory moves and no code changes. Nothing else.
+
+    **Evidence validity** per `tasks/README.md` §13: nothing is invalidated. The wording is brought in line with an implementation that already satisfied the rule.
+
+    **Bookkeeping.** Status line stamped on `07`. No task row or ownership change; `S01-FE-001` records `R-09` as resolved in its own review table.
+
 ## External Integration Gates
 
 Not unresolved business-contract defects: concrete SMS vendor, Flutter map/tile provider, Firebase credentials, official Payme/Paynet/xazna/Click merchant protocols/credentials. These are provider implementation gates. The implementing agent must not invent them; missing material causes `BLOCKED`.
