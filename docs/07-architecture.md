@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021, AUD-022, AUD-023) and 2026-09-22 (AUD-024, AUD-026) and 2026-09-23 (AUD-027); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021, AUD-022, AUD-023) and 2026-09-22 (AUD-024, AUD-026) and 2026-09-23 (AUD-027, AUD-028); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Architecture Goals
 
@@ -127,6 +127,8 @@ Backend re-reads current user role/status; valid token never overrides `blocked`
 **Token lifetime is 30 days, sliding — renewed by use.** A token is invalid once it has gone 30 days unused, measured from `last_used_at` and from creation when never used. Not 30 days from issue: an active Shopper or Courier is never signed out mid-Order, while a lost or forgotten phone stops working within a month. Sanctum's absolute `expiration` setting measures from issue and is therefore not what implements this.
 
 **Any account may hold several valid tokens at once** — a Shopper on two phones, a Customer on a phone and a tablet. No cap, and no device-management surface in the MVP.
+
+**One device may hold two sessions for one person** — the Staff session and the Customer session of a Shopper or Courier who holds both accounts on one phone number, for the Customer mode of `02` Section 10. The client keeps them in separate secure-storage slots and sends with each request the token of the mode that issued it, so a request queued or retried across a switch still acts on the account that made it. They are never exchanged for one another: the Customer session is issued only by Customer OTP verify and the Staff session only by Staff login, so no password ever opens a Customer account and no OTP ever opens a Staff one. When one token is refused — for instance because that account was blocked — the client discards that token alone and, if the other session is stored, continues in its mode (`09` Section 8). What logging out of one mode does to the other is not yet decided (`S-37`). The session foundation (`S01-FE-002`) stores both from the start. The storage key is treated as a contract: changing it before any client is installed costs nothing, while after release the same change would need a migration in every installed client. The switch control itself is built later, with the Catalog and Cart.
 
 **Blocking revokes access two independent ways, deliberately redundant.** Every token belonging to the account is deleted at the moment it is blocked, *and* account status is re-checked on every authenticated request. If a later change ever misses one barrier the other still holds, and the person being blocked may hold Order, assignment and money capabilities, so defence in depth is proportionate here. A valid token on a blocked account returns `401 account_blocked`.
 
@@ -272,6 +274,8 @@ The actual SMS vendor is a **Wave 5** external gate: the vendor contract and alp
 
 Use `NotificationService` abstraction with FCM adapter for MVP mobile push. Domain emits semantic intents, not Firebase calls. Notification delivery is asynchronous/secondary and failure never rolls back valid Order/Payment transition.
 
+For a Shopper's current Order the Project Owner chose polling over push: the Order screen refreshes itself every few seconds while the app is open. Mobile operating systems do not allow polling that often in the background, so while the phone is locked or in a pocket the Shopper receives nothing — neither a new assignment nor a Customer's answer to an Approval. The gap is recorded in `AUD-028`; polling does not close it. Push for other Staff roles is not decided here.
+
 ## 25. Queue and Scheduler
 
 Baseline may use Laravel database queue with PostgreSQL to avoid mandatory Redis.
@@ -325,6 +329,8 @@ MVP client languages are **Uzbek and Russian**. No English UI. How the language 
 ## 28. Flutter Async Safety
 
 Session/target/operation identity prevents stale async completion from leaking prior Customer/Order/account into current UI. High-risk Payment/Approval/Order operations suppress duplicate submissions and reconcile server state after uncertain outcomes.
+
+Switching between Staff and Customer mode (`02` Section 10) is a session change under this rule: a result requested in one mode is discarded if it completes after the switch, and no screen state crosses from one mode into the other.
 
 ## 29. Navigation
 
