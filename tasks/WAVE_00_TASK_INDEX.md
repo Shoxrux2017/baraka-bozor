@@ -78,7 +78,7 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 - [x] `D-8` module registries and `D-9` shared fixtures decided (2026-09-21).
 - [x] This Wave 0 decomposition, its three-track split and `tasks/OWNERSHIP.md` approved by the Project Owner on 2026-09-21, separately from the execution model itself, as `tasks/README.md` Section 5 step 7 requires. Individual task contracts still each need their own sign-off.
 - [x] Wave 0 specification decisions all resolved. `S-1` and `S-2` on 2026-09-21 (`AUD-023`); `S-3`, `S-4`, `S-5`, `S-16`, `S-17` and `S-19` on 2026-09-22 (`AUD-024`); `S-28` on 2026-09-22 (`AUD-025`). Resolving `S-1` opened `S-19`; `S-3` opened `S-21` to `S-24`; the independent review of `AUD-024` opened `S-25` to `S-31`, of which `S-28` was the only Wave 0 row. The rest are filed against Waves 1 and 2 and are resolved at those gates — see `docs/SPEC_DECISIONS_BACKLOG.md`. Note that `S-29`, password strength and failed-attempt alerting, is filed in Wave 1 but reaches `09` §8 and §10, which Wave 0 builds; `AUD-025`’s reasoning depends on §10 constraining only length, which is what `S-29` may change.
-- [ ] Flutter SDK installed on the development machine — required before the first frontend task, absent as of 2026-09-21.
+- [x] Flutter SDK installed on the development machine — verified 2026-09-22, `flutter doctor` reports `No issues found!` on Flutter 3.47.5 / Dart 3.13.4, with the Android SDK 37.0.0 and Visual Studio Community 2026 plus the Windows 10 SDK both present. iOS cannot be built on this machine, which Wave 0 does not require; `02` Section 10 defers that to Wave 5.
 
 ## 5. Approved Task Order
 
@@ -95,7 +95,7 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 | 9 | `S01-BE-004` | Backend | `auth-backend` | Customer OTP domain/API with strict challenge and rate-limit contract, fake `SmsGateway` | `W0-BE-011` | Draft | Not created |
 | 10 | `S01-BE-005` | Backend | `auth-backend` | Six-role authorization foundation, scope-safe protected probe endpoints and tests | `S01-BE-003`, `S01-BE-004` | Draft | Not created |
 | — | `Wave 0 Backend Phase 2` | Review | — | Backend auth/security block checkpoint | all backend tasks Accepted | Not started | Review later |
-| 11 | `S01-FE-001` | Frontend | `client-foundation` | Flutter scaffold plus Riverpod/GoRouter/Dio/secure storage foundation, **and the Flutter feature route-fragment registry, the other half of `D-8`** | Flutter SDK | Blocked | Not created |
+| 11 | `S01-FE-001` | Frontend | `client-foundation` | Flutter scaffold plus Riverpod/GoRouter/Dio/secure storage foundation, **and the Flutter feature route-fragment registry, the other half of `D-8`** | Flutter SDK — satisfied | In Review | `frontend/wave-00/S01-FE-001-flutter-scaffold.md` |
 | 12 | `S01-FE-002` | Frontend | `client-foundation` | Typed auth repository, session bootstrap, account-switch isolation | `S01-FE-001`, `W0-BE-012` | Draft | Not created |
 | 13 | `S01-FE-003` | Frontend | `client-foundation` | Customer OTP request/verify UX | `S01-FE-002` | Draft | Not created |
 | 14 | `S01-FE-004` | Frontend | `client-foundation` | Staff login plus mandatory first-password-change UX | `S01-FE-002` | Draft | Not created |
@@ -125,7 +125,7 @@ Concurrency in Wave 0 is narrow by nature: tasks 2 to 5 are a serial chain owned
 | `S01-BE-003` | No | No | No | No | No | No | No |
 | `S01-BE-004` | No | No | No | No | No | No | No |
 | `S01-BE-005` | No | No | No | No | N/A | No | No |
-| `S01-FE-001` | No | No | N/A | No | N/A | No | No |
+| `S01-FE-001` | Yes | Yes | N/A | Yes | N/A | Yes | Yes |
 | `S01-FE-002` | No | No | N/A | No | N/A | No | No |
 | `S01-FE-003` | No | No | N/A | No | N/A | No | No |
 | `S01-FE-004` | No | No | N/A | No | N/A | No | No |
@@ -156,7 +156,7 @@ Filled in per task when its contract is written. `git diff --check` is required 
 
 | Gate/risk | Affected task | Required input | Status |
 |---|---|---|---|
-| Flutter SDK absent from the development machine | `S01-FE-001` and every later frontend task | installation | **Open — the only thing blocking `S01-FE-001`.** Later frontend tasks carry their own dependencies; see Section 5 |
+| Flutter SDK absent from the development machine | `S01-FE-001` and every later frontend task | installation | **Closed 2026-09-22** — Flutter 3.47.5 installed, `flutter doctor` clean, Android and Windows toolchains both present |
 | `S-1` role immutability versus unique phone | `W0-BE-011` | decision | **Resolved 2026-09-21** — partial unique index over active accounts, `BR-ROLE-010` |
 | `S-2` what Desktop means, platform set | `S01-FE-001` | decision | **Resolved 2026-09-21** — Desktop is an installed Windows application; targets Android, iOS, Windows; iOS release required from Wave 5 |
 | `S-19` Customer OTP verify when the only Customer account is blocked | `W0-BE-011`, `S01-BE-004` | decision | **Resolved 2026-09-22** — partial index permits a blocked Customer row; verify resolves only the active one and returns `account_blocked` |
@@ -223,3 +223,4 @@ Filled in per task when its contract is written. `git diff --check` is required 
 | 2026-09-22 | `main` merged forward into `W0-BE-010`, and the CI failure that held it closed: `memory_limit` was the binding constraint, raised by `W0-INT-004`, with two green runs on the merged head. The mechanism inside the parallel worker remains unexplained and is tracked as a separate risk. | Re-verification after taking in merged shared infrastructure, root `AGENTS.md` §11 | Implementing agent; task acceptance remains the Project Owner’s |
 | 2026-09-22 | `W0-INT-004` and `W0-BE-010` set `Accepted`. Both are on `origin/main` (PR #11 and PR #9), local `main` is synchronized and clean, and CI is green on each merged head. | Acceptance assigned by the Project Owner and recorded on their instruction, per root `AGENTS.md` §15 | Project Owner |
 | 2026-09-22 | `S-28` resolved, `AUD-025`: 5 failed `current_password` checks per minute on `/auth/change-password`, counted **per token**. No task row changed — the decision had been recorded against `S01-BE-004` in error, and `S01-BE-003`, which builds the endpoint, was already `Draft`. Every Wave 0 specification decision is now resolved; two Wave 0 gaps remain in Section 9 as risks rather than decisions. | The last Wave 0 decision, opened by the independent review of `AUD-024`; its own review then changed the answer | Project Owner |
+| 2026-09-22 | `S01-FE-001` contract approved and implemented. The Flutter SDK gate closes, so the entry gate in Section 4 is complete. The Wave 0 ownership exception widens to the whole `frontend/` tree for this one task, because `flutter create` writes seven paths the map never listed; `tasks/OWNERSHIP.md` records it. | First frontend task of the wave | contract approved by the Project Owner; implemented by the implementing agent |
