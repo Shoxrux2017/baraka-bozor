@@ -14,9 +14,10 @@ class DatabaseSeeder extends Seeder
     /**
      * Seed the application's database.
      *
-     * Nothing is seeded at this Stage. There is no BarakaBozor business table
-     * yet, and the initial Admin is created by a controlled one-time CLI
-     * bootstrap in S01-BE-002, never by a seeder.
+     * Nothing is seeded here, and the first Admin in particular is not. It is
+     * created by `bootstrap:first-admin`, a controlled one-time CLI — BR-ROLE-009
+     * — never by a seeder and never by a public API. A seeder runs unattended and
+     * would have to carry a password in the repository to do it.
      */
     public function run(): void
     {
