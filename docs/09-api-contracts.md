@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-019, AUD-020, AUD-023) and 2026-09-22 (AUD-024, AUD-025); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-019, AUD-020, AUD-023) and 2026-09-22 (AUD-024, AUD-025) and 2026-09-23 (AUD-028); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. General Contract
 
@@ -121,7 +121,7 @@ There is **no account lockout**. Locking an account after repeated failures woul
 
 The residual this accepts, recorded rather than left implicit: with no lockout, `5` per minute is 7,200 attempts per day sustained indefinitely against any known Staff phone, against a password rule that is length-only (Section 10), with no failed-attempt notification and no alerting anywhere in `01`—`09`. Whether to add a strength rule, a breach-list check or alerting is **not yet decided** and is tracked as `S-29`.
 
-A request carrying a token that has gone 30 days unused returns `401 authentication_required`, per the Section 3 baseline; token lifetime itself is in `07` Section 8. A request whose token is valid but whose account has since been blocked returns `401 account_blocked`. `401` is what a client acts on by discarding the token and returning to the sign-in screen; `403` would invite it to keep a dead token and retry forever.
+A request carrying a token that has gone 30 days unused returns `401 authentication_required`, per the Section 3 baseline; token lifetime itself is in `07` Section 8. A request whose token is valid but whose account has since been blocked returns `401 account_blocked`. `401` is what a client acts on by discarding the token and returning to the sign-in screen; `403` would invite it to keep a dead token and retry forever. On a device that also holds the same person's other session — the Customer mode of `02` Section 10 — only the refused token is discarded, and the client continues in the other mode instead of the sign-in screen.
 
 ## 9. Current Identity
 

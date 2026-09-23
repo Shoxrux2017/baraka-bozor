@@ -19,7 +19,7 @@ manager
 
 Each account has exactly one primary role. No custom roles, multi-role accounts, role switching, or user-created permission sets.
 
-Moving between two accounts is not role switching. A person who holds a Staff account and a Customer account on one phone (Section 3) may move between them in the mobile app, as Section 10 describes. Each account keeps exactly its own role, and each session is issued only by its own account family's authentication path. What stays excluded is one account acting under a role it does not have.
+Moving between two accounts is not role switching. A Shopper or Courier who holds a Customer account on the same phone number (Section 3) may move between their two accounts in the mobile app, as Section 10 describes. Each account keeps exactly its own role, and each session is issued only by its own account family's authentication path. What stays excluded is one account acting under a role it does not have.
 
 Backend is authoritative for role, account status, record ownership, assignment scope, and lifecycle permissions.
 
@@ -115,7 +115,7 @@ One Flutter codebase provides all role-aware shells.
 
 **Shoppers use their personal phone.** The MVP issues them no company device.
 
-**Customer mode.** A Shopper or Courier who also holds a Customer account on the same phone reaches it from inside the Staff interface rather than by signing out. The first entry requires the Customer SMS OTP of `09` Section 7 — never the Staff password alone, which would open a person's addresses, Orders and Payments to anyone who knows or has seen that password. After that the app keeps both sessions and switches between them in one step. The active mode is always visually unmistakable, so a Staff action is never taken from Customer mode or the reverse. Blocking either account ends only that account's session. Customer mode exists only on mobile; the Windows application has none, because Customers have no Desktop surface. The switch ships with the first Customer surface that has content — the Catalog and the Cart — and not before; the session foundation it relies on is built first, per `07` Section 8.
+**Customer mode.** A Shopper or Courier reaches their own Customer account from inside the Staff interface rather than by signing out. The client cannot tell whether that Customer account exists — `09` Section 6 discloses nothing — so the entry is offered to every Shopper and Courier. Entering it verifies a Customer SMS OTP sent to the Staff account's own phone number, and `09` Section 7 then resolves the existing Customer account or creates one. The Staff password alone never opens it; that would expose a person's addresses, Orders and Payments to anyone who knows or has seen the password. Once verified, the app keeps both sessions and switches between them in one step. The OTP is needed again only when no valid Customer session is stored, for instance after 30 days unused (`07` Section 8). The active mode is always visually unmistakable, so a Staff action is never taken from Customer mode or the reverse. If the Staff account is blocked, the app discards the Staff session only and stays in Customer mode. The switch control ships with the Catalog and the Cart, once Customer mode has something to show (`S-37`); the session foundation it relies on is built first, per `07` Section 8. Customer mode belongs to the mobile Shopper and Courier interface. Whether any Customer surface appears on Windows, and what a Shopper or Courier sees there at all, is `S-32`.
 
 ## 11. Field Visibility
 
