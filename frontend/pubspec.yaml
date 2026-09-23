@@ -1,0 +1,26 @@
+name: baraka_bozor
+description: "BarakaBozor client — one Flutter codebase for the Customer, Shopper and Courier mobile surfaces and the Operator, Admin and Manager Windows desktop surface."
+# Private application. Never published to pub.dev.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.4
+
+# Runtime dependencies are fixed by docs/07-architecture.md section 2 and may not
+# be extended without an approved contract — frontend/AGENTS.md section 13.
+dependencies:
+  flutter:
+    sdk: flutter
+  dio: ^5.11.1
+  flutter_riverpod: ^3.4.3
+  flutter_secure_storage: ^11.2.0
+  go_router: ^18.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
