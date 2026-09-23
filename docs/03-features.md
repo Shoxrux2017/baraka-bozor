@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-22 (AUD-024); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-22 (AUD-024) and 2026-09-23 (AUD-029); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. MVP Feature Overview
 
@@ -203,6 +203,8 @@ Catalog/pricing/image management; all-Order view/history; assignment before work
 ## 22. Notifications
 
 Minimum Customer notification events: Order accepted, approval required, Payment required, Courier started, Order delivered. FCM is the approved mobile push mechanism behind an abstraction. Notification failure does not change authoritative Order state.
+
+Shopper notification events: Order assigned, and Customer answered an Approval. They complement the Shopper's in-app polling rather than replacing it — see `07` Section 24 and `AUD-029`.
 
 ## 23. History and Reorder
 

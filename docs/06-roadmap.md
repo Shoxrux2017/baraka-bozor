@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-022) and 2026-09-23 (AUD-029); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 **Amended 2026-09-21** by Project Owner approval: Sections 1, 2, 4, 10, 16, 17 and 18 move execution from twelve serial stages to six waves with concurrent tracks. See `AUD-022` in `CONTRACT_ALIGNMENT_REPORT.md`. Stage **content** in Sections 3–15 is unchanged apart from the two provider gates named in Sections 4 and 10.
 
@@ -108,7 +108,7 @@ Operational Order board, attention filters, no-response/expired Approval, Paymen
 
 ## 13. Stage 10 — Notifications, History & Reorder
 
-FCM device registration, required Customer events, notification retry state, history, Reorder original Product + current Catalog, duplicate/unavailable reporting.
+FCM device registration, required Customer events, the two Shopper events (`AUD-029`), notification retry state, history, Reorder original Product + current Catalog, duplicate/unavailable reporting.
 
 **External gate:** Firebase project/config before notification integration closure.
 

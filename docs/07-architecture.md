@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021, AUD-022, AUD-023) and 2026-09-22 (AUD-024, AUD-026) and 2026-09-23 (AUD-027, AUD-028); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021, AUD-022, AUD-023) and 2026-09-22 (AUD-024, AUD-026) and 2026-09-23 (AUD-027, AUD-028, AUD-029); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Architecture Goals
 
@@ -274,7 +274,13 @@ The actual SMS vendor is a **Wave 5** external gate: the vendor contract and alp
 
 Use `NotificationService` abstraction with FCM adapter for MVP mobile push. Domain emits semantic intents, not Firebase calls. Notification delivery is asynchronous/secondary and failure never rolls back valid Order/Payment transition.
 
-For a Shopper's current Order the Project Owner chose polling over push: the Order screen refreshes itself every few seconds while the app is open. Mobile operating systems do not allow polling that often in the background, so while the phone is locked or in a pocket the Shopper receives nothing — neither a new assignment nor a Customer's answer to an Approval. The gap is recorded in `AUD-028`; polling does not close it. Push for other Staff roles is not decided here.
+For a Shopper the client uses **polling and push together**, each for the case the other cannot cover (`AUD-029`). While the app is in the foreground the current Order refreshes itself every few seconds. Mobile operating systems do not allow polling that often in the background, so for two events the backend also sends a push through the same FCM `NotificationService` Customers use: **a new Order assigned to the Shopper**, and **a Customer's answer to an Approval**.
+
+The backend always sends the push for those two events; it does not know, and must not try to track, whether the phone is in a hand or a pocket. The client decides what to show: in the foreground it suppresses the banner, because polling has already refreshed the screen; in the background the operating system shows it, and opening it resumes the app and its polling.
+
+Push is best-effort, not guaranteed. On devices whose vendor firmware restricts background work aggressively — common on the phones Shoppers are likely to carry — delivery can be delayed or suppressed until the app is allowed to autostart and is exempt from battery optimisation. That is a device setting given to the Shopper with their access, not behaviour the client can guarantee. Polling while the app is open does not depend on it.
+
+Push for the Courier is not decided here and is tracked as `S-40`.
 
 ## 25. Queue and Scheduler
 

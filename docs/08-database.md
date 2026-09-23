@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023) and 2026-09-22 (AUD-024); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023) and 2026-09-22 (AUD-024) and 2026-09-23 (AUD-029); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Baseline
 
@@ -268,7 +268,7 @@ Partial unique one current assignment. `delay_at` snapshots start + configured t
 
 ## 27. `notification_deliveries`
 
-`id, user_id, push_device_id?, order_id?, type, status queued|sent|failed, attempt_count, sent_at?, last_error_code?, timestamps`. Required five Customer notification types. Never controls Order state.
+`id, user_id, push_device_id?, order_id?, type, status queued|sent|failed, attempt_count, sent_at?, last_error_code?, timestamps`. Required five Customer notification types and two Shopper notification types (`AUD-029`). Never controls Order state.
 
 ## 28. `idempotency_keys`
 
