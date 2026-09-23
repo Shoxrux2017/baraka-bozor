@@ -289,22 +289,27 @@ Found while reading, outside this scope, not fixed here:
   forward `ALTER` is one migration. Raised for a Project Owner decision rather than folded in,
   per `AGENTS.md` §8.
 
-- **`BR-ROLE-002` role immutability is enforced nowhere.** `UPDATE users SET role = 'admin'`
-  on a `shopper` row is accepted by the database, and `role` being kept out of the model's
-  `$fillable` is the only thing standing in the way. `08` §3 names no such constraint, so
-  adding one is a schema contract change reserved to the Project Owner, and no later Wave 0
-  or Wave 1 task in the index owns the enforcement. Found by the independent review (`R-14`).
+- **`BR-ROLE-002` role immutability — decided by the Project Owner on 2026-09-23: an
+  application-layer rule, proven by a test.** `UPDATE users SET role = 'admin'` on a `shopper`
+  row is accepted by the database; today what stands in the way is `role` being kept out of the
+  model's `$fillable`. The enforcement is already specified where it belongs: `09` §44 says
+  PATCH does not accept a role, and the Wave 1 Staff administration task builds that endpoint.
+  No database constraint is added — anyone able to write to the database directly could drop
+  one as easily. Instead that Wave 1 task must carry a test that fails if the refusal is
+  removed. Filed for Wave 1 as `S-38` in `docs/SPEC_DECISIONS_BACKLOG.md` (`AUD-028`). (`R-14`)
 
-- **A Staff row with `password = ''` is accepted.** `08` §3 requires only a non-null Staff
-  password. An empty string is non-null and is not a credential. Only reachable by raw SQL —
-  the model hashes on assignment — so it is a hardening question rather than a defect, and
-  tightening `non-null` to `non-empty` is again the Project Owner's to decide (`R-14`).
+- **A Staff row with `password = ''` is accepted — accepted by the Project Owner on
+  2026-09-23, not a defect.** `08` §3 requires only a non-null Staff password. An empty string
+  is reachable only by raw SQL: the model hashes on assignment, and a hash is never empty. The
+  length rule for a chosen password belongs to `09` §10 and `S01-BE-003`. No schema change.
+  (`R-14`)
 
-- **The one-time bootstrap guard is not atomic.** `bootstrap:first-admin` reads then writes
-  with no lock, so two runs racing on different phones could both create an Admin. No database
-  constraint can close it, because several Admins are legitimate once the first exists; it
-  needs an advisory lock or a serializable transaction. Contrived for a CLI an operator runs by
-  hand, but the contract calls the one-time property load-bearing (`R-7`).
+- **The one-time bootstrap guard is not atomic — accepted by the Project Owner on 2026-09-23
+  as a known risk.** `bootstrap:first-admin` reads then writes with no lock, so two runs racing
+  on different phones at the same moment could both create an Admin. The realistic threat — a
+  second run after the first — is refused and tested. Closing the race would take an advisory
+  lock whose correctness no deterministic test can show, for a command the Project Owner runs by
+  hand, once. (`R-7`)
 
 ## Delivery
 
@@ -318,7 +323,7 @@ PR; the Project Owner merges.
 | Migrations are `2026_09_23_*`, not `2026_09_22_*` | Written on the 23rd. Ordering is unaffected; both still sort after the delivered Sanctum migration. Allowed Areas corrected above. |
 | Fixture root is `tests/Fixtures/Modules/**`, capital `M` | PSR-4 maps `Tests\` to `tests/`, so the directory name *is* the namespace segment. A lowercase directory would not autoload. Allowed Areas corrected above. |
 | A second fixture root, `tests/Fixtures/ModulesWithNonProvider/**` | The "named like a provider but is not one" case has to live in a root of its own, or every well-formed fixture test would trip over it. Allowed Areas corrected above. |
-| The password prompt asks a second time to confirm | The prompt shows nothing back and this account cannot be reset by anybody, so a typo would lock the platform's first Admin out permanently. Decision 2 said "hidden interactive prompt" without ruling on confirmation. Raised for the Project Owner to strike if unwanted. |
+| The password prompt asks a second time to confirm | The prompt shows nothing back and this account cannot be reset by anybody, so a typo would lock the platform's first Admin out permanently. Decision 2 said "hidden interactive prompt" without ruling on confirmation. **Approved by the Project Owner on 2026-09-23.** |
 
 ## Independent Review
 
@@ -334,14 +339,14 @@ Fourteen findings: one `P1`, four `P2`, nine `P3`. Every `P1` and `P2` is fixed.
 | `R-4` | **P2** | `test_a_password_that_is_already_hashed_is_not_hashed_a_second_time` set an unrelated field, and Eloquent writes only dirty columns — `password` was never in the statement, so the guard it claimed to protect was never exercised. | **Fixed.** The test now reassigns the stored hash, which is what ordinary read-modify-save code does and what would destroy every Staff password without the guard. |
 | `R-5` | **P2** | Discovery matched only `<Module>/*ServiceProvider.php`. A provider one directory deeper — the `Auth/Providers/` layout several Laravel packages use — was skipped in silence, against the class's own promise that every failure is loud. | **Fixed.** A provider found anywhere below its module directory now throws, naming the file and the expected location. A module with no provider at all stays legal; plenty have routes and no bindings. The docblock now also states the one case that cannot be caught. |
 | `R-6` | P3 | `secret()` used Laravel's default fallback, so where hidden input is unavailable Symfony falls back to **visible** input and echoes the password. | **Fixed.** `secret($question, false)` — it refuses rather than echoes. |
-| `R-7` | P3 | The one-time guard is a read-then-write with no lock, so two concurrent runs on different phones could both create an Admin. | **Not fixed; reported.** Contrived for an operator CLI. Closing it means an advisory lock or a serializable transaction, and no database constraint can help since several Admins are legitimate. See *Reported Separately*. |
+| `R-7` | P3 | The one-time guard is a read-then-write with no lock, so two concurrent runs on different phones could both create an Admin. | **Not fixed; accepted by the Project Owner on 2026-09-23** as a known risk. Contrived for an operator CLI, and closing it would take an advisory lock or a serializable transaction that no deterministic test can prove. See *Reported Separately*. |
 | `R-8` | P3 | The mass-assignment test omitted `must_change_password`, one of the four fields deliberately kept out of `$fillable`; it gates `BR-ROLE-006`. | **Fixed.** Added to the guarded list the test walks. |
 | `R-9` | P3 | `tests/Fixtures/ModulesWithNonProvider/**` is a fixture root the contract did not list. | **Fixed by recording it.** Added to Allowed Areas and to *Deviations* above. |
 | `R-10` | P3 | `UserFactory::definition()` defaulted to `Role::Admin`, so a bare `User::factory()->create()` produced the most privileged account — and silently closed the one-time bootstrap in any test that used it. | **Fixed.** The default is `Role::Operator`. |
 | `R-11` | P3 | `test_the_locked_indexes_exist` asserted index *names*, so an index that kept its name while losing `UNIQUE` or its `WHERE` would still pass. | **Fixed.** The definitions are read from `pg_indexes` and both partial predicates are asserted. |
 | `R-12` | P3 | The blocked-plus-active-on-one-phone case was tested for the Staff family only; the Customer family's index was never exercised in the accepting direction. | **Fixed.** `test_a_blocked_and_an_active_customer_may_share_one_phone` added. |
 | `R-13` | P3 | The two tests proving the command refuses *before* prompting queued no question, which the reviewer read as a risk of hanging CI. | **Investigated; worse than reported, and resolved.** It does not hang — but `test_it_refuses_before_asking_for_a_password_when_an_admin_exists` could not fail at all: with no expectation queued the prompt yields nothing, the command refuses the empty password, and the exit code is identical. Asserting the message did not discriminate either, because the message is still printed after a prompt; nor did asserting the prompt's absence, because Laravel does not surface an unexpected question in captured output. The ordering is simply not observable through `$this->artisan()`, so the test was **removed** rather than left as decoration. The behaviour and its reason stay in the command. The phone check keeps its test, which was confirmed to fail when the check is removed. |
-| `R-14` | P3 | Nothing enforces `BR-ROLE-002` role immutability — `UPDATE users SET role=…` is accepted — and the database accepts a Staff row with `password = ''`. | **Not fixed; reported.** Neither is a locked-document violation: `08` §3 requires only a non-null Staff password and names no immutability constraint. Both are schema contract questions, reserved to the Project Owner by `AGENTS.md` §3. See *Reported Separately*. |
+| `R-14` | P3 | Nothing enforces `BR-ROLE-002` role immutability — `UPDATE users SET role=…` is accepted — and the database accepts a Staff row with `password = ''`. | **Not fixed; decided by the Project Owner on 2026-09-23.** Role immutability stays an application-layer rule — `09` §44, built by the Wave 1 Staff administration task — proven by a test that fails without the refusal, filed as `S-38`. The empty-string password is accepted as not a defect. See *Reported Separately*. |
 
 What the reviewer attacked and could not break: the phone `CHECK` against
 trailing-newline and whitespace bypasses; the family and uniqueness invariants on
