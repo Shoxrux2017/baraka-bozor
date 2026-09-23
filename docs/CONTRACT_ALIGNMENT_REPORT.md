@@ -192,7 +192,7 @@ Changes applied after the 2026-09-07 lock. Each required Project Owner approval.
 
     **Raised in priority, not decided.** `S-18` — may a Shopper be assigned to an Order placed from their own phone's Customer account — was already due before the Wave 2 assignment task. The switch puts a Shopper two taps away from approving a change on their own Order, so that deadline is now firm.
 
-    **Opened and deferred by the Project Owner.** `S-32` to `S-35`: what a role sees on a device that is not its surface, whether an Operator may assign, Shopper input under poor connectivity, and a typo guard for `at_purchase` prices. `S-32` blocks `S01-FE-005`, so it reopens Wave 0.
+    **Opened.** `S-32` to `S-35`. The Project Owner deferred `S-34`, Shopper input under poor connectivity, and `S-35`, a typo guard for `at_purchase` prices. `S-32`, what a role sees on a device that is not its surface, and `S-33`, whether an Operator may assign, were raised and not yet taken up. `S-32` blocks `S01-FE-005`, so it reopens Wave 0.
 
     **Evidence validity** per `tasks/README.md` §13: docs and bookkeeping only; no evidence is invalidated. `S01-FE-001`'s single-slot token store in PR #16 remains correct for that task — `S01-FE-002` extends it. `W0-BE-011`'s schema in PR #17 already implements the per-family indexes this record reaffirms.
 
