@@ -199,11 +199,13 @@ Changes applied after the 2026-09-07 lock. Each required Project Owner approval.
 
     `S-32` blocks `S01-FE-005`, so it reopens Wave 0. `S-18` stays due before the Wave 2 assignment task, now with the switch putting self-approval on one's own Order two taps away.
 
+    **Also decided in the same session: how role immutability is enforced (`S-38`).** Raised by `W0-BE-011`'s independent review: `BR-ROLE-002` holds nowhere in the database. The Project Owner kept it an application-layer rule — `09` §44 already refuses a role in PATCH — and requires the Wave 1 Staff administration task to prove it with a test that fails if the refusal is removed. No database constraint and no locked document change. The other three questions from that review concern only `W0-BE-011` and are recorded in its contract.
+
     **Evidence validity and rework** per `tasks/README.md` §13 and §5 step 5. Docs and bookkeeping only: no test, build or accepted evidence is invalidated. The one rework is a known reshape. PR #16's `frontend/lib/core/storage/token_store.dart` offers a single-token interface under the key `bb_auth_token`, documented as treated as a contract. That is correct for `S01-FE-001`. `S01-FE-002` reshapes it into two slots before any client is installed, when the change costs nothing; after release the same change would need a migration in every installed client. `W0-BE-011`'s schema in PR #17 already implements the per-family indexes this record reaffirms, and needs nothing.
 
     **Bookkeeping.**
     - Status lines stamped on `02`, `07` and `09`.
-    - `SPEC_DECISIONS_BACKLOG.md`: an `S-18` note, rows `S-32` to `S-37`, and a change-log row.
+    - `SPEC_DECISIONS_BACKLOG.md`: an `S-18` note, open rows `S-32` to `S-37`, the resolved row `S-38`, and change-log rows.
     - `WAVE_00_TASK_INDEX.md`: the Included and Excluded lists name the two-session foundation, `S01-FE-002` carries it, `S01-FE-005` depends on `S-32`, the specification entry gate is unticked, Section 9 gains an `S-32` risk row, and the change log records the reopening.
 
     **Independent review.** One reviewer with no implementation context, given the Project Owner's words verbatim: two `P1`, eleven `P2`, eight `P3`. Every finding was re-verified in the documents before acting.
