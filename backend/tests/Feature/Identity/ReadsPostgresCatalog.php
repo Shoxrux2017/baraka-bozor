@@ -18,19 +18,29 @@ use Illuminate\Support\Facades\DB;
 trait ReadsPostgresCatalog
 {
     /**
-     * The names of every index PostgreSQL actually holds on $table.
+     * Every index PostgreSQL actually holds on $table, name => definition.
      *
-     * @return list<string>
+     * The definition and not just the name, because an index keeping its name
+     * while losing its `WHERE` predicate or its `UNIQUE` is exactly the change
+     * that would go unnoticed.
+     *
+     * @return array<string, string>
      */
     private function indexesOn(string $table): array
     {
-        /** @var list<object{indexname: string}> $rows */
+        /** @var list<object{indexname: string, indexdef: string}> $rows */
         $rows = DB::select(
-            'select indexname from pg_indexes where schemaname = current_schema() and tablename = ?',
+            'select indexname, indexdef from pg_indexes where schemaname = current_schema() and tablename = ?',
             [$table]
         );
 
-        return array_map(static fn (object $row): string => (string) $row->indexname, $rows);
+        $byName = [];
+
+        foreach ($rows as $row) {
+            $byName[(string) $row->indexname] = (string) $row->indexdef;
+        }
+
+        return $byName;
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Console\Command;
+use Throwable;
 
 /**
  * Creates the platform's first Admin — `BR-ROLE-009`, the controlled one-time
@@ -22,6 +23,14 @@ use Illuminate\Console\Command;
  * The prompt asks twice because it shows nothing back, and because this one
  * account cannot be reset by anybody: a typo would lock the platform's first
  * Admin out permanently.
+ *
+ * The write is guarded for the same reason. An unhandled `QueryException` from
+ * `save()` carries the whole statement, and the statement carries the bcrypt
+ * hash of the password just chosen — Laravel would print it and write it to
+ * `storage/logs/laravel.log`, a plaintext file with looser access control than
+ * the database and one that is routinely shipped off-host. So nothing derived
+ * from the credential leaves this command on any path, and `AGENTS.md` Section 9
+ * keeps the SQL and the trace out of the operator's terminal too.
  *
  * No password policy is imposed here beyond refusing an empty one. None is
  * locked in `docs/01`–`09`, and inventing a rule the change-password endpoint
@@ -66,7 +75,18 @@ final class BootstrapFirstAdminCommand extends Command
             return self::FAILURE;
         }
 
-        $password = (string) $this->secret('Password');
+        // Checked before the prompt as well, so the likeliest failure of the
+        // write is met with an explanation rather than with a discarded password
+        // — and never reaches a statement carrying the hash.
+        if (User::query()->where('phone', $phone)->where('status', UserStatus::Active->value)->exists()) {
+            $this->error("An active account already exists for {$phone}, so it cannot take another one.");
+
+            return self::FAILURE;
+        }
+
+        // `false` disables Symfony's fallback to visible input when hidden input
+        // is unavailable. Echoing the password would be worse than refusing.
+        $password = (string) $this->secret('Password', false);
 
         if ($password === '') {
             $this->error('The password was empty; no account was created.');
@@ -74,7 +94,7 @@ final class BootstrapFirstAdminCommand extends Command
             return self::FAILURE;
         }
 
-        if ($password !== (string) $this->secret('Confirm password')) {
+        if ($password !== (string) $this->secret('Confirm password', false)) {
             $this->error('The two passwords did not match; no account was created.');
 
             return self::FAILURE;
@@ -104,7 +124,20 @@ final class BootstrapFirstAdminCommand extends Command
             'created_by_user_id' => null,
         ]);
 
-        $admin->save();
+        try {
+            $admin->save();
+        } catch (Throwable) {
+            // Deliberately nothing from the exception: not its message, not the
+            // statement, not the trace. The statement holds the hash, and the
+            // operator is standing at the terminal and can simply retry.
+            $this->error(
+                'The account could not be created, and nothing was written. Check that the '
+                .'database is reachable, that the name is at most 160 characters, and that no '
+                .'active account already holds this phone.'
+            );
+
+            return self::FAILURE;
+        }
 
         $this->info("Admin created for {$phone}.");
 

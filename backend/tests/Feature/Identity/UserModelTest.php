@@ -102,12 +102,16 @@ final class UserModelTest extends TestCase
 
     public function test_a_password_that_is_already_hashed_is_not_hashed_a_second_time(): void
     {
-        // Otherwise every save of an unrelated field would re-hash the stored
-        // hash, and the account would lose its password without anyone touching
-        // it.
+        // The hash has to be reassigned, not merely left alone: Eloquent writes
+        // only the attributes that are dirty, so touching an unrelated field
+        // would prove nothing — the column would not be in the statement at all.
+        // Code that reads a user, sets `password` from what it already holds and
+        // saves is ordinary, and without the guard it would re-hash the hash and
+        // destroy the account's password with nobody touching it.
         $user = $this->staff();
         $first = (string) DB::table('users')->where('id', $user->id)->value('password');
 
+        $user->password = $first;
         $user->full_name = 'Renamed';
         $user->save();
 
@@ -166,7 +170,7 @@ final class UserModelTest extends TestCase
             'phone' => '+998901234567',
         ]);
 
-        foreach (['role', 'status', 'created_by_user_id'] as $field) {
+        foreach (['role', 'status', 'must_change_password', 'created_by_user_id'] as $field) {
             $this->assertNull(
                 $user->getAttribute($field),
                 sprintf('%s was set by mass assignment; it is the server\'s to decide.', $field)

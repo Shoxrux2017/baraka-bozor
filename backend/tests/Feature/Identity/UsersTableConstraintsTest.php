@@ -271,11 +271,38 @@ final class UsersTableConstraintsTest extends TestCase
             'users_role_status_index',
             'users_full_name_lower_index',
         ] as $expected) {
-            $this->assertContains(
+            $this->assertArrayHasKey(
                 $expected,
                 $indexes,
                 sprintf('Index %s is missing; 08 Section 3 names it.', $expected)
             );
         }
+
+        // The definitions, not only the names. An index that kept its name while
+        // losing `UNIQUE` or losing its `WHERE` would pass a name check and quietly
+        // stop enforcing anything — and the partial predicates are the whole reason
+        // these two indexes exist instead of one plain unique on `phone`.
+        $this->assertMatchesRegularExpression(
+            "/CREATE UNIQUE INDEX .*\(phone\) WHERE .*'active'.*AND.*'customer'/s",
+            $indexes['users_phone_active_customer_unique']
+        );
+
+        $this->assertMatchesRegularExpression(
+            "/CREATE UNIQUE INDEX .*\(phone\) WHERE .*'active'.*AND.*<> *'customer'/s",
+            $indexes['users_phone_active_staff_unique']
+        );
+
+        $this->assertStringContainsString('lower(', $indexes['users_full_name_lower_index']);
+    }
+
+    public function test_a_blocked_and_an_active_customer_may_share_one_phone(): void
+    {
+        // The Customer half of the same rule. Tested separately because the two
+        // families have separate indexes with separate predicates, and one of them
+        // being right says nothing about the other.
+        $this->insert($this->customerRow(['status' => 'blocked', 'blocked_at' => now()]));
+        $this->insert($this->customerRow());
+
+        $this->assertSame(2, DB::table('users')->where('phone', '+998901234567')->count());
     }
 }

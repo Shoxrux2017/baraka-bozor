@@ -81,16 +81,79 @@ final class ModuleProviderRegistryTest extends TestCase
 
     public function test_providers_register_in_sorted_order(): void
     {
-        // Pinned against the implementation, not against the filesystem: byte
-        // order is what `sort(SORT_STRING)` gives, and an implementation that
-        // reversed it, left it to directory order, or sorted through the runtime
-        // locale's collation would each produce a different list and fail here.
-        // Route and binding precedence must not depend on which machine booted.
         foreach (ModuleProviderRegistry::discover($this->fixtures(), self::FIXTURE_NAMESPACE) as $provider) {
             $this->app->register($provider);
         }
 
+        // End to end, but weak on its own: Alpha, Beta and Zeta are same-case and
+        // differ at the first letter, so byte order, locale collation and raw
+        // directory order all agree on them. What it does catch is a reversed or
+        // shuffled implementation. The guarantee that actually matters is pinned
+        // by the test below.
         $this->assertSame(['Alpha', 'Beta', 'Zeta'], RegistrationLog::$registered);
+    }
+
+    public function test_the_registration_order_is_the_same_on_every_platform(): void
+    {
+        // This cannot be tested through the filesystem, and that is why the
+        // ordering is a function of its own.
+        //
+        // Sorting full paths puts the directory separator into the comparison.
+        // On Linux `/` is 0x2F, below every letter, so `Auth/...` sorts before
+        // `AuthExtra/...`. On Windows `\` is 0x5C, above every uppercase letter,
+        // so the two swap. One module name being a prefix of another is all it
+        // takes, and the suite runs only on Linux — the machine that would notice
+        // is the developer host, where nobody runs it.
+        //
+        // So the order is taken over the segments, never over the joined path.
+        $this->assertSame(
+            [
+                ['Auth', 'AuthServiceProvider'],
+                ['AuthExtra', 'AuthExtraServiceProvider'],
+                ['Catalog', 'CatalogEventServiceProvider'],
+                ['Catalog', 'CatalogServiceProvider'],
+            ],
+            ModuleProviderRegistry::inRegistrationOrder([
+                ['Catalog', 'CatalogServiceProvider'],
+                ['AuthExtra', 'AuthExtraServiceProvider'],
+                ['Catalog', 'CatalogEventServiceProvider'],
+                ['Auth', 'AuthServiceProvider'],
+            ])
+        );
+    }
+
+    public function test_a_provider_below_its_module_directory_is_a_loud_failure(): void
+    {
+        // The registry looks one level down and no further. A provider tucked
+        // into `Auth/Providers/` — the layout several Laravel packages use — would
+        // otherwise be skipped in silence, and its module's bindings would simply
+        // not exist. What surfaces then is a BindingResolutionException at request
+        // time, nowhere near the cause.
+        File::makeDirectory($this->temporaryRoot.'/Auth/Providers', 0755, true);
+        File::put(
+            $this->temporaryRoot.'/Auth/Providers/AuthServiceProvider.php',
+            "<?php
+
+namespace App\Modules\Auth\Providers;
+
+class AuthServiceProvider {}
+"
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Auth'.DIRECTORY_SEPARATOR.'Providers');
+
+        ModuleProviderRegistry::discover($this->temporaryRoot, 'App\Modules');
+    }
+
+    public function test_a_module_that_declares_no_provider_is_allowed(): void
+    {
+        // Not every module needs one. A module with routes and no bindings is
+        // ordinary, and refusing it would make the registry harder to live with
+        // than the shared file it replaces.
+        File::makeDirectory($this->temporaryRoot.'/RoutesOnly', 0755, true);
+
+        $this->assertSame([], ModuleProviderRegistry::discover($this->temporaryRoot, 'App\Modules'));
     }
 
     public function test_an_empty_module_directory_registers_nothing_and_raises_nothing(): void

@@ -35,7 +35,12 @@ final class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'role' => Role::Admin,
+            // Operator, not Admin. This factory is a public contract for the
+            // auth-backend track, and a default that grants the most privileged
+            // role would let an under-specified test pass for the wrong reason —
+            // besides silently closing the one-time bootstrap in any test that
+            // creates a default user.
+            'role' => Role::Operator,
             'phone' => $this->phone(),
             'full_name' => fake()->name(),
 

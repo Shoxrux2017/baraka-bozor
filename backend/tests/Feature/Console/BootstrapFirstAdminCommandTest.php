@@ -9,6 +9,7 @@ use App\Models\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Command\Command;
@@ -63,6 +64,7 @@ final class BootstrapFirstAdminCommandTest extends TestCase
         $existing = User::factory()->role(Role::Admin)->create();
 
         $this->artisan(self::COMMAND, ['phone' => self::PHONE])
+            ->expectsOutputToContain('An Admin account already exists')
             ->assertExitCode(Command::FAILURE);
 
         $this->assertSame(
@@ -73,18 +75,6 @@ final class BootstrapFirstAdminCommandTest extends TestCase
         );
 
         $this->assertTrue(User::query()->whereKey($existing->id)->exists());
-    }
-
-    public function test_it_refuses_before_asking_for_a_password_when_an_admin_exists(): void
-    {
-        // The order matters: a prompt that appears and is then discarded invites
-        // the operator to type a real password into a session that will not use
-        // it. `expectsQuestion` is deliberately not set here, so the test fails
-        // if the command asks.
-        User::factory()->role(Role::Admin)->create();
-
-        $this->artisan(self::COMMAND, ['phone' => self::PHONE])
-            ->assertExitCode(Command::FAILURE);
     }
 
     public function test_a_blocked_admin_still_counts_as_an_existing_admin(): void
@@ -156,6 +146,62 @@ final class BootstrapFirstAdminCommandTest extends TestCase
         }
     }
 
+    public function test_it_refuses_when_the_phone_already_holds_an_active_account(): void
+    {
+        // Caught by the command rather than left to the unique index, so the
+        // operator gets an explanation and the failure never reaches a statement
+        // carrying the hash. The message is what carries this: without the check
+        // the run still fails, but on the generic save error instead. Removing
+        // the check makes this test fail.
+        User::factory()->role(Role::Operator)->create(['phone' => self::PHONE]);
+
+        $this->artisan(self::COMMAND, ['phone' => self::PHONE])
+            ->expectsOutputToContain('An active account already exists')
+            ->assertExitCode(Command::FAILURE);
+
+        $this->assertSame(1, User::query()->count());
+    }
+
+    public function test_a_failure_while_saving_never_reveals_the_credential(): void
+    {
+        $log = Log::spy();
+
+        // An over-long name overflows `full_name`'s varchar(160) at insert time,
+        // which is the general case: any failure of the write itself. An
+        // unhandled QueryException would put the whole statement — including the
+        // bcrypt hash of the password just chosen — into the output and into
+        // storage/logs/laravel.log, which is exactly what Decision 2 exists to
+        // prevent and what AGENTS.md Section 9 forbids.
+        // The failed insert poisons the transaction RefreshDatabase holds open, so
+        // the command runs inside a savepoint and anything asked afterwards —
+        // here, that no account was created — still gets an answer rather than
+        // 25P02. Production runs in no such transaction; this is the test harness
+        // paying for its own isolation.
+        DB::beginTransaction();
+
+        try {
+            $this->artisan(self::COMMAND, [
+                'phone' => self::PHONE,
+                '--name' => str_repeat('a', 200),
+            ])
+                ->expectsQuestion('Password', self::PASSWORD)
+                ->expectsQuestion('Confirm password', self::PASSWORD)
+                ->doesntExpectOutputToContain(self::PASSWORD)
+                ->doesntExpectOutputToContain('$2y$')
+                ->doesntExpectOutputToContain('insert into')
+                ->assertExitCode(Command::FAILURE)
+                ->run();
+        } finally {
+            DB::rollBack();
+        }
+
+        $this->assertSame(0, User::query()->count());
+
+        foreach (['log', 'info', 'debug', 'notice', 'warning', 'error', 'critical'] as $level) {
+            $log->shouldNotHaveReceived($level);
+        }
+    }
+
     public function test_it_refuses_when_the_confirmation_does_not_match(): void
     {
         // A hidden prompt shows nothing back, and this account cannot be reset by
@@ -183,6 +229,7 @@ final class BootstrapFirstAdminCommandTest extends TestCase
         // what is wrong instead of a constraint violation — and before being
         // asked for a password the command will throw away.
         $this->artisan(self::COMMAND, ['phone' => '998901234567'])
+            ->expectsOutputToContain('is not a valid phone')
             ->assertExitCode(Command::FAILURE);
 
         $this->assertSame(0, User::query()->count());

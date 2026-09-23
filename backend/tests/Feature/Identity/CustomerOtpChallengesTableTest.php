@@ -200,7 +200,7 @@ final class CustomerOtpChallengesTableTest extends TestCase
 
     public function test_the_locked_indexes_exist(): void
     {
-        $indexes = $this->indexesOn(self::TABLE);
+        $indexes = array_keys($this->indexesOn(self::TABLE));
 
         foreach ([
             'customer_otp_challenges_phone_created_at_index',
