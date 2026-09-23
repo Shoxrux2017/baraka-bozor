@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023) and 2026-09-23 (AUD-028); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Role Model
 
@@ -18,6 +18,8 @@ manager
 ```
 
 Each account has exactly one primary role. No custom roles, multi-role accounts, role switching, or user-created permission sets.
+
+Moving between two accounts is not role switching. A person who holds a Staff account and a Customer account on one phone (Section 3) may move between them in the mobile app, as Section 10 describes. Each account keeps exactly its own role, and each session is issued only by its own account family's authentication path. What stays excluded is one account acting under a role it does not have.
 
 Backend is authoritative for role, account status, record ownership, assignment scope, and lifecycle permissions.
 
@@ -110,6 +112,10 @@ One Flutter codebase provides all role-aware shells.
 **Desktop means an installed Windows application**, not a browser surface. Operator, Admin and Manager are company staff at a workstation, and a native surface keeps the bearer token in platform-secured storage as `07` Section 8 requires, which a browser cannot offer. No web build is part of the MVP, and no CORS configuration is therefore needed.
 
 **Mobile means Android and iOS from the same codebase.** Android and Windows are required release targets from Wave 0. An iOS release build becomes a required target in Wave 5, because building and signing for iOS needs macOS and an Apple Developer Program membership, neither of which the project has yet. iOS-specific code is written from the start; only the obligation to produce and verify an iOS build is deferred.
+
+**Shoppers use their personal phone.** The MVP issues them no company device.
+
+**Customer mode.** A Shopper or Courier who also holds a Customer account on the same phone reaches it from inside the Staff interface rather than by signing out. The first entry requires the Customer SMS OTP of `09` Section 7 — never the Staff password alone, which would open a person's addresses, Orders and Payments to anyone who knows or has seen that password. After that the app keeps both sessions and switches between them in one step. The active mode is always visually unmistakable, so a Staff action is never taken from Customer mode or the reverse. Blocking either account ends only that account's session. Customer mode exists only on mobile; the Windows application has none, because Customers have no Desktop surface. The switch ships with the first Customer surface that has content — the Catalog and the Cart — and not before; the session foundation it relies on is built first, per `07` Section 8.
 
 ## 11. Field Visibility
 

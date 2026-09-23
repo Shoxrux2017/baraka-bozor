@@ -49,7 +49,7 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 - Catalog, Products, Cart, Orders, Shopper market workflow, payments, delivery, operational dashboards, analytics.
 - Staff-management product UI beyond the controlled bootstrap and fixtures Wave 0 requires. Staff administration is Wave 1.
 - A real SMS provider adapter. Provider selection is a Wave 2 gate; the contract, alpha-name and live verification are Wave 5.
-- Custom roles, multi-role account switching, 2FA, device-management center.
+- Custom roles, multi-role account switching, 2FA, device-management center. Moving between a person's own Staff and Customer accounts is not this (`AUD-028`); Wave 0 builds only its two-session foundation, in `S01-FE-002`, and the switch control comes with the Catalog and Cart.
 - Any schema table beyond identity. Later waves own their own schema tasks.
 
 ## 3. Authoritative Planning Inputs
@@ -77,7 +77,7 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 - [x] Execution model approved (2026-09-21, `AUD-022`).
 - [x] `D-8` module registries and `D-9` shared fixtures decided (2026-09-21).
 - [x] This Wave 0 decomposition, its three-track split and `tasks/OWNERSHIP.md` approved by the Project Owner on 2026-09-21, separately from the execution model itself, as `tasks/README.md` Section 5 step 7 requires. Individual task contracts still each need their own sign-off.
-- [x] Wave 0 specification decisions all resolved. `S-1` and `S-2` on 2026-09-21 (`AUD-023`); `S-3`, `S-4`, `S-5`, `S-16`, `S-17` and `S-19` on 2026-09-22 (`AUD-024`); `S-28` on 2026-09-22 (`AUD-025`). Resolving `S-1` opened `S-19`; `S-3` opened `S-21` to `S-24`; the independent review of `AUD-024` opened `S-25` to `S-31`, of which `S-28` was the only Wave 0 row. The rest are filed against Waves 1 and 2 and are resolved at those gates — see `docs/SPEC_DECISIONS_BACKLOG.md`. Note that `S-29`, password strength and failed-attempt alerting, is filed in Wave 1 but reaches `09` §8 and §10, which Wave 0 builds; `AUD-025`’s reasoning depends on §10 constraining only length, which is what `S-29` may change.
+- [ ] Wave 0 specification decisions all resolved. **Reopened 2026-09-23:** `S-32`, what a role sees on a device that is not its surface, is open and blocks `S01-FE-005`; no other Wave 0 task is affected (`AUD-028`). Before that: `S-1` and `S-2` on 2026-09-21 (`AUD-023`); `S-3`, `S-4`, `S-5`, `S-16`, `S-17` and `S-19` on 2026-09-22 (`AUD-024`); `S-28` on 2026-09-22 (`AUD-025`). Resolving `S-1` opened `S-19`; `S-3` opened `S-21` to `S-24`; the independent review of `AUD-024` opened `S-25` to `S-31`, of which `S-28` was the only Wave 0 row. The rest are filed against Waves 1 and 2 and are resolved at those gates — see `docs/SPEC_DECISIONS_BACKLOG.md`. Note that `S-29`, password strength and failed-attempt alerting, is filed in Wave 1 but reaches `09` §8 and §10, which Wave 0 builds; `AUD-025`’s reasoning depends on §10 constraining only length, which is what `S-29` may change.
 - [ ] Flutter SDK installed on the development machine — required before the first frontend task, absent as of 2026-09-21.
 
 ## 5. Approved Task Order
@@ -96,10 +96,10 @@ A runnable, verifiable stack plus six secure role entries: local PostgreSQL runt
 | 10 | `S01-BE-005` | Backend | `auth-backend` | Six-role authorization foundation, scope-safe protected probe endpoints and tests | `S01-BE-003`, `S01-BE-004` | Draft | Not created |
 | — | `Wave 0 Backend Phase 2` | Review | — | Backend auth/security block checkpoint | all backend tasks Accepted | Not started | Review later |
 | 11 | `S01-FE-001` | Frontend | `client-foundation` | Flutter scaffold plus Riverpod/GoRouter/Dio/secure storage foundation, **and the Flutter feature route-fragment registry, the other half of `D-8`** | Flutter SDK | Blocked | Not created |
-| 12 | `S01-FE-002` | Frontend | `client-foundation` | Typed auth repository, session bootstrap, account-switch isolation | `S01-FE-001`, `W0-BE-012` | Draft | Not created |
+| 12 | `S01-FE-002` | Frontend | `client-foundation` | Typed auth repository, session bootstrap, account-switch isolation, and **storage for two sessions — Staff and Customer — for one person on one phone** (`AUD-028`) | `S01-FE-001`, `W0-BE-012` | Draft | Not created |
 | 13 | `S01-FE-003` | Frontend | `client-foundation` | Customer OTP request/verify UX | `S01-FE-002` | Draft | Not created |
 | 14 | `S01-FE-004` | Frontend | `client-foundation` | Staff login plus mandatory first-password-change UX | `S01-FE-002` | Draft | Not created |
-| 15 | `S01-FE-005` | Frontend | `client-foundation` | Six role/device shells, route guards, logout and session isolation | `S01-FE-003`, `S01-FE-004`, `S01-BE-005` | Draft | Not created |
+| 15 | `S01-FE-005` | Frontend | `client-foundation` | Six role/device shells, route guards, logout and session isolation | `S01-FE-003`, `S01-FE-004`, `S01-BE-005`, `S-32` | Draft | Not created |
 | — | `Wave 0 Frontend Phase 2` | Review | — | Frontend auth/session/router/build block checkpoint | all frontend tasks Accepted | Not started | Review later |
 | 16 | `W0-INT-003` | Integration | `wave-owner` | Real Laravel/PostgreSQL/Flutter auth E2E on the fake `SmsGateway` | Backend and Frontend PASS | Draft | Not created |
 
@@ -223,3 +223,4 @@ Filled in per task when its contract is written. `git diff --check` is required 
 | 2026-09-22 | `main` merged forward into `W0-BE-010`, and the CI failure that held it closed: `memory_limit` was the binding constraint, raised by `W0-INT-004`, with two green runs on the merged head. The mechanism inside the parallel worker remains unexplained and is tracked as a separate risk. | Re-verification after taking in merged shared infrastructure, root `AGENTS.md` §11 | Implementing agent; task acceptance remains the Project Owner’s |
 | 2026-09-22 | `W0-INT-004` and `W0-BE-010` set `Accepted`. Both are on `origin/main` (PR #11 and PR #9), local `main` is synchronized and clean, and CI is green on each merged head. | Acceptance assigned by the Project Owner and recorded on their instruction, per root `AGENTS.md` §15 | Project Owner |
 | 2026-09-22 | `S-28` resolved, `AUD-025`: 5 failed `current_password` checks per minute on `/auth/change-password`, counted **per token**. No task row changed — the decision had been recorded against `S01-BE-004` in error, and `S01-BE-003`, which builds the endpoint, was already `Draft`. Every Wave 0 specification decision is now resolved; two Wave 0 gaps remain in Section 9 as risks rather than decisions. | The last Wave 0 decision, opened by the independent review of `AUD-024`; its own review then changed the answer | Project Owner |
+| 2026-09-23 | `AUD-028` recorded. `S01-FE-002` now also stores two sessions, Staff and Customer, for one person on one phone, so that the Customer mode decided for Shopper and Courier needs no storage change once clients are installed; the switch control itself is not Wave 0. `S01-FE-005` now depends on `S-32`, which reopens Wave 0's specification gate. No status changed. | Project Owner decisions in the `W0-BE-011` follow-up session | Project Owner |

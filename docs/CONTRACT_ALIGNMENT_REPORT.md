@@ -173,6 +173,31 @@ Changes applied after the 2026-09-07 lock. Each required Project Owner approval.
 
     **Bookkeeping.** Status line stamped on `07`. No task row or ownership change; `S01-FE-001` records `R-09` as resolved in its own review table.
 
+28. **AUD-028 Staff and Customer on one phone, the customer-mode switch, and the Shopper's device** (2026-09-23) — Project Owner decided. Raised while presenting the questions left open by `W0-BE-011`, when the Project Owner asked how role changes and role combinations should feel to the people living with them.
+
+    **Decided, in the order it was settled.**
+
+    - **One person is never both Shopper and Courier.** A combined seventh role was proposed for small teams where one person buys and delivers, and declined. `BR-ROLE-001` and `02` Section 1 are unchanged.
+    - **An employee may be a Customer on their own phone — `AUD-023` reaffirmed.** The Project Owner first restricted this for the MVP, then withdrew the restriction in the same session once the flow they wanted was described: a person signs in to the Customer side as an ordinary Customer, and the Customer side needs no knowledge of Staff at all. Nothing changed in between. The two per-family partial unique indexes of `08` Section 3 stand, and so does `09` Section 7.
+    - **One application for every role.** Separate Customer and Staff applications were considered and declined. `02` Section 10 and `07` Section 2 stand.
+    - **Customer mode inside the Staff interface.** A Shopper or Courier who holds a Customer account on the same phone reaches it from inside the Staff interface instead of signing out. The first entry requires the Customer SMS OTP; after that the client keeps both sessions and switches in one step. Decided now, built in two steps: the session foundation (`S01-FE-002`) stores two sessions from the start, while no client is installed and the storage key can still change for free; the switch control ships with the first Customer surface that has content — Catalog and Cart — because in Wave 0 Customer mode would open onto an empty screen.
+    - **Shoppers use their personal phone.**
+    - **A Shopper's current Order refreshes by polling while the app is in the foreground.** Chosen over push notifications to Staff. MVP push stays limited to the Customer events `03` Section 22 requires, and WebSockets stay excluded.
+
+    **Rejected alternatives.** A switch placed at sign-in, meaning sign out and back in, was rejected because returning to work would mean re-entering the Staff password mid-shift. A switch *without* the OTP — "the password was already entered" — was rejected because it would open a person's Customer account, with its addresses, Orders and Payments, to anyone who knows or has seen their Staff password, and because `07` Section 8 has each authentication path resolve only its own account family.
+
+    **Changed.** `02` Section 1 states that moving between a person's two accounts is not the role switching it excludes. `02` Section 10 records the personal phone and Customer mode. `07` Section 8 allows one device to hold a person's Staff and Customer sessions, one secure-storage slot each, never exchanged for one another and ending independently. `07` Section 24 records that the MVP adds no push for Staff and that the Shopper's Order screen polls in the foreground only. `07` Section 28 treats the mode switch as a session change for stale-result isolation.
+
+    **Changed, by category.** **Unresolved UX behaviour** and **cross-feature architecture** — the client session model — both of which root `AGENTS.md` §3 reserves to the Project Owner. No API semantics: no endpoint, field or code is added, and each session is still issued only by its own family's existing path. No database or schema contract. No money, quantity or rounding rule. No lifecycle state. No concurrency, idempotency or replay policy. No role capability, ownership or assignment scope: each account keeps exactly its own role, and `02` Section 13 invariant 1 — the client cannot choose the authoritative role — holds because the server still reads the role from whichever token arrives. No existence-privacy behaviour.
+
+    **Raised in priority, not decided.** `S-18` — may a Shopper be assigned to an Order placed from their own phone's Customer account — was already due before the Wave 2 assignment task. The switch puts a Shopper two taps away from approving a change on their own Order, so that deadline is now firm.
+
+    **Opened and deferred by the Project Owner.** `S-32` to `S-35`: what a role sees on a device that is not its surface, whether an Operator may assign, Shopper input under poor connectivity, and a typo guard for `at_purchase` prices. `S-32` blocks `S01-FE-005`, so it reopens Wave 0.
+
+    **Evidence validity** per `tasks/README.md` §13: docs and bookkeeping only; no evidence is invalidated. `S01-FE-001`'s single-slot token store in PR #16 remains correct for that task — `S01-FE-002` extends it. `W0-BE-011`'s schema in PR #17 already implements the per-family indexes this record reaffirms.
+
+    **Bookkeeping.** Status lines stamped on `02` and `07`. `WAVE_00_TASK_INDEX.md`: `S01-FE-002` now carries the two-session foundation, `S01-FE-005` depends on `S-32`, and the entry gate records Wave 0 reopened.
+
 ## External Integration Gates
 
 Not unresolved business-contract defects: concrete SMS vendor, Flutter map/tile provider, Firebase credentials, official Payme/Paynet/xazna/Click merchant protocols/credentials. These are provider implementation gates. The implementing agent must not invent them; missing material causes `BLOCKED`.
