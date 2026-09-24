@@ -22,9 +22,11 @@ return new class extends Migration
 
     public function up(): void
     {
+        // Precision 0, matching what the delivered migration built and what
+        // `users` carries, so the two tables agree to the second.
         foreach (self::COLUMNS as $column) {
             DB::statement(
-                "alter table personal_access_tokens alter column {$column} type timestamptz using {$column} at time zone 'UTC'"
+                "alter table personal_access_tokens alter column {$column} type timestamptz(0) using {$column} at time zone 'UTC'"
             );
         }
     }
@@ -33,7 +35,7 @@ return new class extends Migration
     {
         foreach (self::COLUMNS as $column) {
             DB::statement(
-                "alter table personal_access_tokens alter column {$column} type timestamp using {$column} at time zone 'UTC'"
+                "alter table personal_access_tokens alter column {$column} type timestamp(0) using {$column} at time zone 'UTC'"
             );
         }
     }

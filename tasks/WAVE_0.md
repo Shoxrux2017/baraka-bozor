@@ -55,7 +55,8 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 | A recreated `app` container ran the stale image without `docker/php.ini`; PHPStan died at 128M locally | Closed: `up -d --build`. Rebuild after any Dockerfile or php.ini change, as `docker/README.md` says |
 | `frontend/README.md` is `flutter create` boilerplate | Open, replace in W0-6 |
 | `personal_access_tokens` instants are `timestamp` not `timestamptz` | Closed in W0-2 by a forward `ALTER` migration |
-| Feature tests: the auth guards cache the first request's user for the whole test, so a second request with another token was served as the first user | Closed in W0-2: `tests/TestCase.php` forgets the guards before every request |
+| Feature tests: the auth guards cache the first request's user for the whole test, so a second request with another token was served as the first user | Closed in W0-2: `tests/TestCase.php` forgets the guards before every request and re-applies an `actingAs()` user; `Sanctum::actingAs()` is unsupported |
+| Per-IP login limit behind the production proxy: without `TRUSTED_PROXIES` every client is the proxy and twenty wrong attempts lock staff login for everyone | Open until deployment (Wave 4): `config/trustedproxy.php` reads `TRUSTED_PROXIES`; the deployment task sets it to the proxy's address |
 | Worktree `G:/project/bb-flutter` could not be removed (Windows path length); harmless | Open, Owner may delete the folder |
 
 ## Independent-review findings not acted on

@@ -66,6 +66,12 @@ final class AuthenticateStaff
         }
 
         if ($account->status === UserStatus::Blocked) {
+            // Counted like a failure: the caller learns nothing new, since they
+            // already hold the password, but repeated probing of a blocked
+            // account is still bounded.
+            $this->limiter->hit($phoneKey, self::DECAY_SECONDS);
+            $this->limiter->hit($ipKey, self::DECAY_SECONDS);
+
             throw ApiException::unauthenticated('account_blocked');
         }
 

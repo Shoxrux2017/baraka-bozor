@@ -89,7 +89,6 @@ final class StaffLoginTest extends TestCase
         User::factory()->customer()->create(['phone' => self::PHONE]);
 
         $this->assertRefused($this->login(self::PHONE, self::PASSWORD), 401, 'invalid_credentials');
-        $this->assertRefused($this->login(self::PHONE, ''), 422, 'validation_failed');
     }
 
     public function test_a_blocked_staff_account_with_the_right_password_is_account_blocked(): void

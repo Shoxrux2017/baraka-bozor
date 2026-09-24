@@ -35,7 +35,9 @@ return [
     |
     */
 
-    'guard' => ['web'],
+    // No session guard is consulted: every request authenticates by bearer
+    // token or not at all.
+    'guard' => [],
 
     /*
     |--------------------------------------------------------------------------

@@ -251,7 +251,7 @@ Internet → reverse proxy with TLS → Laravel (php-fpm) → PostgreSQL
 web panel: static build behind the same proxy
 ```
 
-One Ubuntu VPS in Uzbekistan running Docker Compose, nightly database backups off the host.
+One Ubuntu VPS in Uzbekistan running Docker Compose, nightly database backups off the host. The proxy is named in `TRUSTED_PROXIES` so the application sees the client's address; without that, the per-IP login limit would count every client as the proxy.
 
 ## 35. Non-Goals
 
