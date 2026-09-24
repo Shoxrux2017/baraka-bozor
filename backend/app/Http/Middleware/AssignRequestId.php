@@ -6,7 +6,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -21,8 +21,12 @@ use Symfony\Component\HttpFoundation\Response;
  * it is returned in error responses only; a successful response has no use
  * for it and no header carries it.
  *
- * Registered as global middleware, first in the stack, so a request that
- * matches no route — the most common API error — still has one.
+ * Registered as the first global middleware. Route matching happens after
+ * every global middleware whatever the order, so an unmatched route carries
+ * the identifier regardless; being first additionally covers the framework's
+ * own global middleware — malformed path encoding, maintenance mode, an
+ * oversized body — whose refusals would otherwise get the renderer's fallback
+ * identifier instead of one the logs also carry.
  */
 final class AssignRequestId
 {
@@ -34,9 +38,10 @@ final class AssignRequestId
 
         $request->attributes->set(self::ATTRIBUTE, $requestId);
 
-        // Shared context reaches every log line written during this request,
-        // by any channel, without each call site having to remember it.
-        Log::shareContext([self::ATTRIBUTE => $requestId]);
+        // Context reaches every log line written during this request through
+        // the framework's log processor, and it travels with any job the
+        // request queues, so a job's log lines carry the request that queued it.
+        Context::add(self::ATTRIBUTE, $requestId);
 
         return $next($request);
     }

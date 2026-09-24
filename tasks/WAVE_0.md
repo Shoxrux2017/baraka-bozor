@@ -49,7 +49,7 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 | Item | Status |
 |---|---|
 | `backend/phpunit.xml` lacks `failOnEmptyTestSuite="true"` | Closed in W0-1 |
-| `backend/phpunit.xml` `DB_URL` lacks `force="true"` | Closed in W0-1 |
+| `backend/phpunit.xml` `DB_URL` lacks `force="true"` | Closed in W0-1, differently: a forced `<env>` never beats an exported variable (Laravel reads `$_SERVER` first), so every `DB_*` is now also set through `<server>`, and `tests/TestCase.php` refuses to migrate a database not named `*_test` (`DL-8`) |
 | Inert Sanctum stateful-domain configuration | Open, remove in W0-2 |
 | CI runs bare `phpstan analyse`, a dead worker names no file | Closed in W0-1: a single-process `--debug` step runs only after the normal analysis failed |
 | A recreated `app` container ran the stale image without `docker/php.ini`; PHPStan died at 128M locally | Closed: `up -d --build`. Rebuild after any Dockerfile or php.ini change, as `docker/README.md` says |

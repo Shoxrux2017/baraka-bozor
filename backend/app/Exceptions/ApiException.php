@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
+use Illuminate\Contracts\Debug\ShouldntReport;
+use InvalidArgumentException;
 use RuntimeException;
 
 /**
@@ -17,22 +19,58 @@ use RuntimeException;
  * needs to compose its own text (the minimum amount, the shortfall) travels in
  * `details`, never inside prose.
  *
- * The message is for developers and logs only; the renderer never sends it to
- * a client, so nothing sensitive may be avoided by keeping it vague — it may
- * simply never contain anything sensitive.
+ * The constructor is private: every instance comes from a factory below, so
+ * the API can only answer with a status the renderer's table knows. A refusal
+ * is an expected outcome, not an incident, so it is not reported to the error
+ * log (`ShouldntReport`); the response carries the request id for support.
+ *
+ * The message is for developers only; the renderer never sends it. `details`
+ * reaches the client verbatim, so it is restricted to scalars and null, nested
+ * in plain arrays — never a model or an object.
  */
-final class ApiException extends RuntimeException
+final class ApiException extends RuntimeException implements ShouldntReport
 {
     /**
      * @param  array<string, mixed>  $details
+     * @param  array<string, string>  $headers
      */
-    public function __construct(
+    private function __construct(
         private readonly int $status,
         private readonly string $apiCode,
         private readonly array $details = [],
         string $message = '',
+        private readonly array $headers = [],
     ) {
+        self::assertScalarTree($details, 'details');
+
         parent::__construct($message !== '' ? $message : "API failure {$status} {$apiCode}.");
+    }
+
+    /**
+     * A `400` request the client cannot repair by retrying, such as a missing
+     * `Idempotency-Key` header.
+     */
+    public static function badRequest(string $apiCode, string $message = ''): self
+    {
+        return new self(400, $apiCode, [], $message);
+    }
+
+    /**
+     * A `401` refusal with a specific code, such as `account_blocked`.
+     */
+    public static function unauthenticated(string $apiCode, string $message = ''): self
+    {
+        return new self(401, $apiCode, [], $message);
+    }
+
+    /**
+     * A `403` capability denial with a specific code.
+     *
+     * @param  array<string, mixed>  $details
+     */
+    public static function forbidden(string $apiCode, array $details = [], string $message = ''): self
+    {
+        return new self(403, $apiCode, $details, $message);
     }
 
     /**
@@ -57,21 +95,12 @@ final class ApiException extends RuntimeException
     }
 
     /**
-     * A `403` capability denial with a specific code.
-     *
-     * @param  array<string, mixed>  $details
+     * A `429` refusal. `Retry-After` is part of the contract for this status:
+     * without it a client cannot back off correctly.
      */
-    public static function forbidden(string $apiCode, array $details = [], string $message = ''): self
+    public static function rateLimited(int $retryAfterSeconds, string $message = ''): self
     {
-        return new self(403, $apiCode, $details, $message);
-    }
-
-    /**
-     * A `401` refusal with a specific code, such as `account_blocked`.
-     */
-    public static function unauthenticated(string $apiCode, string $message = ''): self
-    {
-        return new self(401, $apiCode, [], $message);
+        return new self(429, 'rate_limited', [], $message, ['Retry-After' => (string) max(1, $retryAfterSeconds)]);
     }
 
     public function status(): int
@@ -90,5 +119,39 @@ final class ApiException extends RuntimeException
     public function details(): array
     {
         return $this->details;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function headers(): array
+    {
+        return $this->headers;
+    }
+
+    /**
+     * Refuse anything that is not a scalar, null, or a plain array of those.
+     *
+     * `JsonResponse` would happily serialise a model or any JsonSerializable
+     * placed here, attributes and all. Failing at construction keeps that a
+     * developer error caught by the first test rather than a leak in production.
+     *
+     * @param  array<array-key, mixed>  $values
+     */
+    private static function assertScalarTree(array $values, string $path): void
+    {
+        foreach ($values as $key => $value) {
+            if (is_array($value)) {
+                self::assertScalarTree($value, "{$path}.{$key}");
+
+                continue;
+            }
+
+            if ($value !== null && ! is_scalar($value)) {
+                throw new InvalidArgumentException(
+                    "ApiException details may hold only scalars, null and plain arrays; {$path}.{$key} is ".get_debug_type($value).'.'
+                );
+            }
+        }
     }
 }

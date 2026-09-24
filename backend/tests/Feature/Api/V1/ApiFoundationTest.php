@@ -6,7 +6,7 @@ namespace Tests\Feature\Api\V1;
 
 use App\Exceptions\ApiException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use RuntimeException;
@@ -60,6 +60,10 @@ final class ApiFoundationTest extends TestCase
                     'minimum_order_uzs' => 50000,
                     'shortfall_uzs' => 12000,
                 ], self::SENSITIVE_MARKER);
+            });
+
+            Route::get('limited', function (): void {
+                throw ApiException::rateLimited(45, self::SENSITIVE_MARKER);
             });
         });
     }
@@ -194,17 +198,47 @@ final class ApiFoundationTest extends TestCase
         $this->assertIsString($requestId);
         $this->assertMatchesRegularExpression('/^req_[0-9a-z]{26}$/', $requestId);
 
-        // The middleware shares the identifier with the logger for the whole
-        // request, which is what lets support find the log from the response.
-        $this->assertSame($requestId, Log::sharedContext()['request_id'] ?? null);
+        // The middleware puts the identifier into the request context, which
+        // the framework's log processor stamps on every log line, and which is
+        // what lets support find the log from the response.
+        $this->assertSame($requestId, Context::get('request_id'));
     }
 
-    public function test_each_request_gets_its_own_request_id(): void
+    public function test_an_unmatched_route_answers_with_the_middleware_request_id(): void
     {
-        $first = $this->getJson('/api/v1/no-such-resource')->json('request_id');
-        $second = $this->getJson('/api/v1/no-such-resource')->json('request_id');
+        // The renderer generates a fallback identifier when the middleware did
+        // not run, so distinct identifiers prove nothing. Equality with the
+        // context proves the middleware ran for a request matching no route.
+        $first = $this->getJson('/api/v1/no-such-resource');
+        $this->assertSame($first->json('request_id'), Context::get('request_id'));
 
-        $this->assertNotSame($first, $second);
+        $second = $this->getJson('/api/v1/no-such-resource');
+        $this->assertSame($second->json('request_id'), Context::get('request_id'));
+        $this->assertNotSame($first->json('request_id'), $second->json('request_id'));
+    }
+
+    public function test_rate_limited_refusal_carries_retry_after(): void
+    {
+        $response = $this->getJson('/api/v1/testing/limited');
+
+        $this->assertEnvelope($response, 429, 'rate_limited');
+        $response->assertHeader('Retry-After', '45');
+    }
+
+    public function test_maintenance_mode_answers_service_unavailable_not_a_provider_failure(): void
+    {
+        config(['app.debug' => true]);
+
+        $this->app->maintenanceMode()->activate(['retry' => 60, 'status' => 503]);
+
+        try {
+            $response = $this->getJson('/api/v1/testing/get-only');
+        } finally {
+            $this->app->maintenanceMode()->deactivate();
+        }
+
+        $this->assertEnvelope($response, 503, 'service_unavailable');
+        $response->assertHeader('Retry-After', '60');
     }
 
     public function test_successful_responses_carry_no_request_id(): void

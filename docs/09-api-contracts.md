@@ -26,7 +26,7 @@ Single resource: `{"data": {...}}`. Collection: `{"data": [...], "meta": {"pagin
 
 `errors` holds field errors for `validation_failed` and is `{}` otherwise. `details` carries machine-readable values a client needs to compose its own text (for example a minimum amount) and is omitted when empty. `request_id` is generated per request, written to that request's log lines, and returned in error responses only.
 
-HTTP baseline: `200/201/204` success; `400 malformed_request`; `401` unauthenticated or blocked; `403 forbidden`; `404 resource_not_found` (scope-safe); `409` lifecycle, business, idempotency or concurrency conflict; `422 validation_failed`; `429 rate_limited`; `502/503` provider problem; `500 server_error`. No response ever carries exception text, SQL, paths, class names, secrets or raw provider errors.
+HTTP baseline: `200/201/204` success; `400 malformed_request`; `401` unauthenticated or blocked; `403 forbidden`; `404 resource_not_found` (scope-safe); `409` lifecycle, business, idempotency or concurrency conflict; `422 validation_failed`; `429 rate_limited` with `Retry-After`; `502/503 provider_unavailable` for an external provider; `503 service_unavailable` for planned maintenance, with `Retry-After`; `500 server_error`. Any other client status folds to the scope-safe `404`; any other server status keeps its number with `server_error`. No response ever carries exception text, SQL, paths, class names, secrets or raw provider errors.
 
 ## 4. Strict Request Shape
 
@@ -297,7 +297,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 51. Common
 
-`validation_failed`, `malformed_request`, `authentication_required`, `forbidden`, `resource_not_found`, `business_conflict`, `rate_limited`, `provider_unavailable`, `idempotency_key_required`, `idempotency_key_reused`, `idempotency_in_progress`, `server_error`.
+`validation_failed`, `malformed_request`, `authentication_required`, `forbidden`, `resource_not_found`, `business_conflict`, `rate_limited`, `provider_unavailable`, `service_unavailable`, `idempotency_key_required`, `idempotency_key_reused`, `idempotency_in_progress`, `server_error`.
 
 ## 52. Auth
 

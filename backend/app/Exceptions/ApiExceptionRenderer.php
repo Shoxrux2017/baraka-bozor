@@ -58,7 +58,7 @@ final class ApiExceptionRenderer
         }
 
         if ($e instanceof ApiException) {
-            return self::respond($request, $e->status(), $e->apiCode(), details: $e->details());
+            return self::respond($request, $e->status(), $e->apiCode(), details: $e->details(), headers: $e->headers());
         }
 
         if ($e instanceof ValidationException) {
@@ -78,7 +78,12 @@ final class ApiExceptionRenderer
             // response cannot carry a header describing the original one.
             $headers = $status === $e->getStatusCode() ? $e->getHeaders() : [];
 
-            return self::respond($request, $status, headers: $headers);
+            // Planned downtime is not a provider failure. The maintenance
+            // middleware throws a bare 503, so the mode itself is what
+            // distinguishes the two; the client acts the same either way.
+            $code = $status === 503 && app()->isDownForMaintenance() ? 'service_unavailable' : null;
+
+            return self::respond($request, $status, $code, headers: $headers);
         }
 
         return self::respond($request, 500);
@@ -132,8 +137,8 @@ final class ApiExceptionRenderer
 
     /**
      * The identifier the middleware assigned, or a fresh one when the failure
-     * happened before the middleware ran, so that no error response ever
-     * lacks one.
+     * happened before any middleware ran (a bootstrap failure, or a unit
+     * test), so that no error response ever lacks one.
      */
     private static function requestId(Request $request): string
     {
@@ -155,7 +160,7 @@ final class ApiExceptionRenderer
             409 => 'The request conflicts with the current state.',
             422 => 'The given data was invalid.',
             429 => 'Too many requests.',
-            502, 503 => 'An external provider is unavailable.',
+            502, 503 => 'The service or an external provider is temporarily unavailable.',
             default => 'An unexpected server error occurred.',
         };
     }

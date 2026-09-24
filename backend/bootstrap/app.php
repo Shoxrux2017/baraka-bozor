@@ -16,8 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // First in the global stack, so that even a request matching no
-        // route carries the identifier its error response returns.
+        // First in the global stack, ahead of the framework's own global
+        // middleware, so that their refusals carry the identifier too.
         $middleware->prepend(AssignRequestId::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

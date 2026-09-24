@@ -8,9 +8,11 @@ use App\Exceptions\ApiException;
 use App\Exceptions\ApiExceptionRenderer;
 use App\Http\Middleware\AssignRequestId;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use stdClass;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
@@ -36,7 +38,6 @@ final class ApiExceptionRendererTest extends TestCase
             'mapped 422' => [422, 422, 'validation_failed'],
             'mapped 429' => [429, 429, 'rate_limited'],
             'mapped 502' => [502, 502, 'provider_unavailable'],
-            'mapped 503' => [503, 503, 'provider_unavailable'],
             'unmapped 405 becomes scope-safe 404' => [405, 404, 'resource_not_found'],
             'unmapped 418 becomes scope-safe 404' => [418, 404, 'resource_not_found'],
             'unmapped 504 keeps its status' => [504, 504, 'server_error'],
@@ -118,6 +119,43 @@ final class ApiExceptionRendererTest extends TestCase
         $this->assertArrayNotHasKey('details', $payload);
     }
 
+    public function test_rate_limited_carries_retry_after(): void
+    {
+        $response = ApiExceptionRenderer::render(
+            ApiException::rateLimited(30),
+            Request::create('/api/v1/auth/staff/login'),
+        );
+
+        $this->assertNotNull($response);
+        $this->assertSame(429, $response->getStatusCode());
+        $this->assertSame('rate_limited', $this->decode($response->getContent())['code']);
+        $this->assertSame('30', $response->headers->get('Retry-After'));
+    }
+
+    public function test_details_may_not_carry_an_object(): void
+    {
+        // JsonResponse would serialise a model or any JsonSerializable placed
+        // here, attributes and all, so the leak is refused at construction.
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('details.nested.object');
+
+        ApiException::conflict('business_conflict', ['nested' => ['object' => new stdClass]]);
+    }
+
+    public function test_details_accept_scalars_null_and_plain_arrays(): void
+    {
+        $exception = ApiException::conflict('customer_approval_required', [
+            'ceiling_customer_unit_price_uzs' => 20700,
+            'proposed_customer_unit_price_uzs' => 25300,
+            'note' => null,
+            'product_ids' => ['a', 'b'],
+            'flags' => ['fresh' => true, 'ratio' => 1.22],
+        ]);
+
+        $this->assertSame(409, $exception->status());
+        $this->assertSame(['a', 'b'], $exception->details()['product_ids']);
+    }
+
     public function test_request_id_is_taken_from_the_middleware_attribute(): void
     {
         $request = Request::create('/api/v1/anything');
@@ -131,8 +169,8 @@ final class ApiExceptionRendererTest extends TestCase
 
     public function test_request_id_is_generated_when_the_middleware_did_not_run(): void
     {
-        // A failure raised before the middleware stack — or in a unit test —
-        // still answers with an identifier, so no error response ever lacks one.
+        // A failure raised before any middleware — or in a unit test — still
+        // answers with an identifier, so no error response ever lacks one.
         $response = ApiExceptionRenderer::render(new HttpException(404), Request::create('/api/v1/anything'));
 
         $this->assertNotNull($response);
