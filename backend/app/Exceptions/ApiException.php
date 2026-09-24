@@ -74,6 +74,15 @@ final class ApiException extends RuntimeException implements ShouldntReport
     }
 
     /**
+     * The scope-safe `404`: the record is outside the actor's scope or does
+     * not exist, and the answer does not say which.
+     */
+    public static function notFound(string $message = ''): self
+    {
+        return new self(404, 'resource_not_found', [], $message);
+    }
+
+    /**
      * A `409` lifecycle, business, idempotency or concurrency conflict.
      *
      * @param  array<string, mixed>  $details

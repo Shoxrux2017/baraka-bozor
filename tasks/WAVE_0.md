@@ -23,7 +23,7 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 | W0-1 | Error renderer to the final contract: `malformed_request`, `business_conflict`, `provider_unavailable`, `details`, `request_id` | Merged |
 | W0-2 | Staff auth: login, logout, me, `PATCH /auth/me`, change-password, rate limits, sliding 30-day token, blocked re-check, `preferred_language` column | Merged |
 | W0-3 | Customer login codes: `channel` column, `CodeDeliveryGateway` with the fake and the test numbers, request and verify endpoints | Merged |
-| W0-4 | Authorization foundation: role and scope middleware, scope-safe not-found helpers, Operator-as-restricted-Admin capability check, probe tests | Planned |
+| W0-4 | Authorization foundation: role and scope middleware, scope-safe not-found helpers, Operator-as-restricted-Admin capability check, probe tests | Merged |
 | W0-5 | Client session foundation: two token slots, auth repository and DTOs, error-code mapping, language selection with device default | Planned |
 | W0-6 | Client auth screens and shells: code request and verify, staff login and password change, six role shells, wrong-surface screen, web build of the panel shell | Planned |
 | W0-7 | Wave closure: full suites, Android and web builds, real-stack login walk-through for every role, Owner checklist and report | Planned |
@@ -36,7 +36,7 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 
 **W0-3.** The challenge is created and delivered by `CodeDeliveryGateway`; the fake records the code in a test-only in-process sink; a listed test phone gets a stored challenge for the fixed code and no delivery (`config/login_codes.php`: `LOGIN_CODE_DRIVER`, `LOGIN_CODE_TEST_PHONES`, `LOGIN_CODE_TEST_CODE`, empty by default). Rate limits per `09` Section 6 through the cache-backed limiter. Verify resolves the active Customer or creates one; a blocked Customer answers `account_blocked` only after the code was valid. Mechanics in `DL-10`.
 
-**W0-4.** Middleware `role:<roles>` plus policy helpers that scope queries by actor; a protected probe route set in tests only proves 401, 403 and scope-safe 404 for every role. Operator inherits Admin's operational endpoints through one capability map, not duplicated routes.
+**W0-4.** Middleware `role:<roles>` (`RequireRole::of(Role::Operator, Role::Admin)`) after the `protected` group refuses a role outside the list with `403 forbidden`; the Operator surface is every operations route naming both roles, admin-only routes naming one. `ScopedLookup::firstOrNotFound` and `lockOrNotFound` take a query already narrowed to the actor and answer the scope-safe `404 resource_not_found` for a foreign or missing record alike. Probe routes in tests only prove every role against every surface, the order blocked → gate → role, and that a foreign and a missing record are indistinguishable.
 
 **W0-5.** `TokenStore` grows two slots (`staff`, `customer`) with a stable key scheme; the Dio interceptor attaches the active mode's token; a `401` with `authentication_required` or `account_blocked` clears only the refused slot. Error mapping from `code` to localized text lives in `core/`, with both languages from the start. Language: device default, in-app switch, persisted on device, sent through `PATCH /auth/me` after login.
 

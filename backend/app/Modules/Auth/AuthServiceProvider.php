@@ -9,6 +9,7 @@ use App\Modules\Auth\CodeDelivery\FakeCodeDelivery;
 use App\Modules\Auth\CodeDelivery\FakeCodeSink;
 use App\Modules\Auth\Http\Middleware\EnsureAccountActive;
 use App\Modules\Auth\Http\Middleware\EnsurePasswordChanged;
+use App\Modules\Auth\Http\Middleware\RequireRole;
 use App\Modules\Auth\Sanctum\TokenLifetime;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Routing\Router;
@@ -62,6 +63,7 @@ final class AuthServiceProvider extends ServiceProvider
 
         $router->aliasMiddleware('account.active', EnsureAccountActive::class);
         $router->aliasMiddleware('password.changed', EnsurePasswordChanged::class);
+        $router->aliasMiddleware(RequireRole::ALIAS, RequireRole::class);
         $router->middlewareGroup(self::PROTECTED, ['auth:sanctum', 'account.active', 'password.changed']);
 
         // `docs/07-architecture.md` Section 8: a token is valid for 30 days
