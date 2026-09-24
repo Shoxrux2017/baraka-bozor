@@ -18,28 +18,31 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * The six authorization layers of docs/07 Section 9 on probe routes that
- * exist only in this test: every role enters only what its surface admits,
- * a foreign record answers a scope-safe 404, and the refusals carry the
- * codes docs/09 Sections 51 and 52 fix.
+ * Layers 1 to 4 of docs/07 Section 9 on probe routes that exist only in this
+ * test: every role against every surface, the refusal order, and a foreign
+ * record answering the same scope-safe 404 as a missing one. Layers 5 and 6
+ * (lifecycle condition, state under lock) live in the actions that own them.
  */
 final class AuthorizationFoundationTest extends TestCase
 {
     use RefreshDatabase;
+
+    /** @var array<string, list<Role>> probe => the roles it admits */
+    private const ADMITTED = [
+        'customer-only' => [Role::Customer],
+        'operations' => [Role::Operator, Role::Admin],
+        'admin-only' => [Role::Admin],
+    ];
 
     protected function setUp(): void
     {
         parent::setUp();
 
         Route::middleware(['api', 'protected'])->prefix('api/v1/testing')->group(function (): void {
-            Route::get('customer-only', fn () => response()->json(['data' => ['surface' => 'customer']]))
-                ->middleware(RequireRole::of(Role::Customer));
-
-            Route::get('operations', fn () => response()->json(['data' => ['surface' => 'operations']]))
-                ->middleware(RequireRole::of(Role::Operator, Role::Admin));
-
-            Route::get('admin-only', fn () => response()->json(['data' => ['surface' => 'admin']]))
-                ->middleware(RequireRole::of(Role::Admin));
+            foreach (self::ADMITTED as $probe => $roles) {
+                Route::get($probe, fn () => response()->json(['data' => ['surface' => $probe]]))
+                    ->middleware(RequireRole::of(...$roles));
+            }
 
             // A record lookup scoped to the actor: only the actor's own row is
             // in scope, so any other id — existing or not — is out of it.
@@ -53,36 +56,33 @@ final class AuthorizationFoundationTest extends TestCase
     }
 
     /**
-     * @return array<string, array{Role, string, int}>
+     * Every role against every probe, generated so a role or a probe cannot
+     * be left out by hand.
+     *
+     * @return array<string, array{Role, string, bool}>
      */
     public static function surfaceCases(): array
     {
-        return [
-            'customer on the customer surface' => [Role::Customer, 'customer-only', 200],
-            'customer on operations' => [Role::Customer, 'operations', 403],
-            'customer on admin' => [Role::Customer, 'admin-only', 403],
-            'shopper on the customer surface' => [Role::Shopper, 'customer-only', 403],
-            'shopper on operations' => [Role::Shopper, 'operations', 403],
-            'courier on operations' => [Role::Courier, 'operations', 403],
-            'operator on operations' => [Role::Operator, 'operations', 200],
-            'operator on admin' => [Role::Operator, 'admin-only', 403],
-            'admin on operations' => [Role::Admin, 'operations', 200],
-            'admin on admin' => [Role::Admin, 'admin-only', 200],
-            'admin on the customer surface' => [Role::Admin, 'customer-only', 403],
-            'manager on operations' => [Role::Manager, 'operations', 403],
-            'manager on admin' => [Role::Manager, 'admin-only', 403],
-        ];
+        $cases = [];
+
+        foreach (Role::cases() as $role) {
+            foreach (self::ADMITTED as $probe => $admitted) {
+                $cases["{$role->value} on {$probe}"] = [$role, $probe, in_array($role, $admitted, true)];
+            }
+        }
+
+        return $cases;
     }
 
     #[DataProvider('surfaceCases')]
-    public function test_each_role_enters_only_what_its_surface_admits(Role $role, string $probe, int $status): void
+    public function test_each_role_enters_only_what_its_surface_admits(Role $role, string $probe, bool $admitted): void
     {
-        $response = $this->as(User::factory()->role($role)->create())->getJson("/api/v1/testing/{$probe}");
+        $response = $this->signedInAs(User::factory()->role($role)->create())->getJson("/api/v1/testing/{$probe}");
 
-        $response->assertStatus($status);
-
-        if ($status === 403) {
-            $response->assertJsonPath('code', 'forbidden');
+        if ($admitted) {
+            $response->assertOk()->assertJsonPath('data.surface', $probe);
+        } else {
+            $response->assertStatus(403)->assertJsonPath('code', 'forbidden');
         }
     }
 
@@ -97,9 +97,11 @@ final class AuthorizationFoundationTest extends TestCase
 
     public function test_a_blocked_account_is_refused_before_its_role_is_considered(): void
     {
-        $admin = User::factory()->role(Role::Admin)->create();
-        $token = $admin->createToken('test')->plainTextToken;
-        $admin->forceFill(['status' => UserStatus::Blocked, 'blocked_at' => now()])->save();
+        // A Shopper is not admitted to admin-only, so a role check that ran
+        // first would answer 403 forbidden; the blocked check must win.
+        $shopper = User::factory()->role(Role::Shopper)->create();
+        $token = $shopper->createToken('test')->plainTextToken;
+        $shopper->forceFill(['status' => UserStatus::Blocked, 'blocked_at' => now()])->save();
 
         $this->withToken($token)->getJson('/api/v1/testing/admin-only')
             ->assertStatus(401)
@@ -108,7 +110,8 @@ final class AuthorizationFoundationTest extends TestCase
 
     public function test_the_first_login_gate_is_checked_before_the_role(): void
     {
-        $this->as(User::factory()->role(Role::Admin)->mustChangePassword()->create())
+        // Same idea: a gated Shopper on admin-only gets the gate, not 403.
+        $this->signedInAs(User::factory()->role(Role::Shopper)->mustChangePassword()->create())
             ->getJson('/api/v1/testing/admin-only')
             ->assertStatus(403)
             ->assertJsonPath('code', 'password_change_required');
@@ -118,58 +121,51 @@ final class AuthorizationFoundationTest extends TestCase
     {
         $customer = User::factory()->customer()->create();
 
-        $this->as($customer)->getJson("/api/v1/testing/scoped/{$customer->id}")
+        $this->signedInAs($customer)->getJson("/api/v1/testing/scoped/{$customer->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $customer->id);
     }
 
-    public function test_a_foreign_record_and_a_missing_record_are_the_same_scope_safe_not_found(): void
+    public function test_a_foreign_record_a_missing_record_and_a_malformed_id_are_the_same_not_found(): void
     {
         $customer = User::factory()->customer()->create();
         $other = User::factory()->customer()->create();
 
-        $foreign = $this->as($customer)->getJson("/api/v1/testing/scoped/{$other->id}");
-        $missing = $this->as($customer)->getJson('/api/v1/testing/scoped/'.Str::uuid());
+        $foreign = $this->signedInAs($customer)->getJson("/api/v1/testing/scoped/{$other->id}");
+        $missing = $this->signedInAs($customer)->getJson('/api/v1/testing/scoped/'.Str::uuid());
+        $malformed = $this->signedInAs($customer)->getJson('/api/v1/testing/scoped/not-a-uuid');
 
-        foreach ([$foreign, $missing] as $response) {
+        foreach ([$foreign, $missing, $malformed] as $response) {
             $response->assertStatus(404)->assertJsonPath('code', 'resource_not_found');
         }
 
-        // Byte-identical apart from the request id: a valid UUID that exists
-        // reveals nothing a random one would not.
-        $this->assertSame(
-            $this->withoutRequestId($foreign),
-            $this->withoutRequestId($missing)
-        );
+        // The same bytes apart from the request id: a valid UUID that exists
+        // reveals nothing a random one, or a malformed one, would not.
+        $this->assertSame($this->bodyWithoutRequestId($foreign), $this->bodyWithoutRequestId($missing));
+        $this->assertSame($this->bodyWithoutRequestId($foreign), $this->bodyWithoutRequestId($malformed));
     }
 
-    public function test_the_role_middleware_refuses_to_be_mounted_without_a_role(): void
+    public function test_a_role_check_mounted_without_a_role_is_a_server_failure_not_an_open_door(): void
     {
         Route::middleware(['api', 'protected', 'role'])->get('api/v1/testing/roleless', fn () => 'never');
 
-        config(['app.debug' => false]);
-
-        // A misconfigured route is a server failure, never an open door.
-        $this->as(User::factory()->role(Role::Admin)->create())
+        $this->signedInAs(User::factory()->role(Role::Admin)->create())
             ->getJson('/api/v1/testing/roleless')
             ->assertStatus(500)
             ->assertJsonPath('code', 'server_error');
     }
 
-    private function as(User $user): static
+    private function signedInAs(User $user): static
     {
         return $this->withToken($user->createToken('test')->plainTextToken);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function withoutRequestId(TestResponse $response): array
+    private function bodyWithoutRequestId(TestResponse $response): string
     {
-        $body = $response->json();
-        $this->assertIsArray($body);
-        unset($body['request_id']);
+        $body = (string) $response->getContent();
 
-        return $body;
+        $this->assertMatchesRegularExpression('/"request_id":"req_[0-9a-z]{26}"/', $body);
+
+        return (string) preg_replace('/"request_id":"req_[0-9a-z]{26}"/', '"request_id":"-"', $body);
     }
 }
