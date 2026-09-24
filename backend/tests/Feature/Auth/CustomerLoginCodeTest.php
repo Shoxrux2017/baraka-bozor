@@ -10,6 +10,7 @@ use App\Modules\Auth\CodeDelivery\CodeDeliveryFailed;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryGateway;
 use App\Modules\Auth\CodeDelivery\FakeCodeSink;
 use App\Modules\Auth\Models\LoginChallenge;
+use App\Modules\Auth\TestPhones;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
@@ -150,21 +151,57 @@ final class CustomerLoginCodeTest extends TestCase
         $this->assertRefused($this->verify(self::PHONE, '123456'), 'code_invalid');
     }
 
-    public function test_a_new_request_invalidates_the_previous_code(): void
+    public function test_a_new_request_invalidates_the_previous_challenge(): void
     {
         $this->request(self::PHONE);
-        $first = $this->codeFor(self::PHONE);
+        $first = LoginChallenge::query()->sole();
 
         $this->travel(61)->seconds();
         $this->request(self::PHONE)->assertOk();
-        $second = $this->codeFor(self::PHONE);
 
-        if ($first === $second) {
-            $this->markTestSkipped('the two random codes collided; rerun');
+        // The earlier challenge is closed in the database, not merely
+        // shadowed by the newer one, so its code cannot be reached by any
+        // lookup order.
+        $this->assertNotNull($first->fresh()?->invalidated_at);
+        $this->assertSame(1, LoginChallenge::query()->openFor(self::PHONE)->count());
+
+        $this->verify(self::PHONE, $this->codeFor(self::PHONE))->assertOk();
+    }
+
+    public function test_a_failed_delivery_still_costs_the_send_slot(): void
+    {
+        $this->app->instance(CodeDeliveryGateway::class, new class implements CodeDeliveryGateway
+        {
+            public function deliver(string $phone, string $code): string
+            {
+                throw new CodeDeliveryFailed('down');
+            }
+        });
+
+        $this->request(self::PHONE)->assertStatus(503);
+
+        // Retrying a failing provider is bounded like any other send.
+        $this->request(self::PHONE)->assertStatus(429)->assertJsonPath('code', 'code_resend_too_soon');
+    }
+
+    public function test_ten_requests_per_address_per_minute(): void
+    {
+        for ($attempt = 1; $attempt <= 10; $attempt++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])
+                ->postJson('/api/v1/auth/customer/code/request', ['phone' => sprintf('+99890%07d', $attempt)])
+                ->assertOk();
         }
 
-        $this->assertRefused($this->verify(self::PHONE, $first), 'code_invalid');
-        $this->verify(self::PHONE, $second)->assertOk();
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])
+            ->postJson('/api/v1/auth/customer/code/request', ['phone' => '+998901111111'])
+            ->assertStatus(429)
+            ->assertJsonPath('code', 'rate_limited');
+
+        // The refusal on the address charged that phone nothing: it can still
+        // be served from another address at once.
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.11'])
+            ->postJson('/api/v1/auth/customer/code/request', ['phone' => '+998901111111'])
+            ->assertOk();
     }
 
     public function test_a_resend_inside_sixty_seconds_is_refused(): void
@@ -211,7 +248,7 @@ final class CustomerLoginCodeTest extends TestCase
 
     public function test_a_test_phone_verifies_with_the_fixed_code_and_receives_nothing(): void
     {
-        config(['login_codes.test_phones' => [self::TEST_PHONE], 'login_codes.test_code' => self::TEST_CODE]);
+        $this->configureTestPhone();
 
         $this->request(self::TEST_PHONE)->assertOk()->assertJsonPath('data.channel', 'test');
 
@@ -223,7 +260,7 @@ final class CustomerLoginCodeTest extends TestCase
 
     public function test_the_fixed_code_does_not_open_a_phone_that_is_not_a_test_phone(): void
     {
-        config(['login_codes.test_phones' => [self::TEST_PHONE], 'login_codes.test_code' => self::TEST_CODE]);
+        $this->configureTestPhone();
 
         $this->request(self::PHONE)->assertOk()->assertJsonPath('data.channel', 'fake');
 
@@ -256,6 +293,18 @@ final class CustomerLoginCodeTest extends TestCase
 
         $this->postJson('/api/v1/auth/customer/code/request', ['phone' => self::PHONE, 'role' => 'admin'])
             ->assertStatus(422)->assertJsonValidationErrors(['role']);
+    }
+
+    /**
+     * The provider resolves the test phones at boot, before a test can change
+     * the configuration, so the resolved instance is dropped and the singleton
+     * reads the new values on its next resolution.
+     */
+    private function configureTestPhone(): void
+    {
+        config(['login_codes.test_phones' => [self::TEST_PHONE], 'login_codes.test_code' => self::TEST_CODE]);
+
+        $this->app->forgetInstance(TestPhones::class);
     }
 
     private function request(string $phone): TestResponse

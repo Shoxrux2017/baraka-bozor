@@ -23,8 +23,21 @@ final class LoginCodePolicy
 
     public const HOUR_SECONDS = 3600;
 
+    /**
+     * Exactly six digits. `\z`, not `$`: `$` also matches before a trailing
+     * newline, which a client can send and which nothing after validation
+     * expects.
+     */
+    public const CODE_PATTERN = '/^[0-9]{6}\z/';
+
+    /**
+     * An Uzbekistan mobile number in E.164, docs/09 Section 6, anchored the
+     * same way and for the same reason.
+     */
+    public const PHONE_PATTERN = '/^\+998[0-9]{9}\z/';
+
     public static function isWellFormed(string $code): bool
     {
-        return preg_match('/^[0-9]{'.self::DIGITS.'}$/', $code) === 1;
+        return preg_match(self::CODE_PATTERN, $code) === 1;
     }
 }

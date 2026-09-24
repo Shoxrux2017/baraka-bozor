@@ -16,7 +16,7 @@ final class CustomerLoginCodeController extends Controller
 {
     public function request(RequestCustomerLoginCodeRequest $request, RequestCustomerLoginCode $requestCode): JsonResponse
     {
-        $issued = $requestCode((string) $request->validated('phone'));
+        $issued = $requestCode((string) $request->validated('phone'), (string) $request->ip());
 
         return new JsonResponse([
             'data' => [

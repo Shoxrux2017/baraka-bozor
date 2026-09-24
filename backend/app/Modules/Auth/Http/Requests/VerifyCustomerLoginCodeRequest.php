@@ -15,8 +15,8 @@ final class VerifyCustomerLoginCodeRequest extends StrictFormRequest
     public function rules(): array
     {
         return [
-            'phone' => ['required', 'string', 'regex:/^\+998[0-9]{9}$/'],
-            'code' => ['required', 'string', 'regex:/^[0-9]{'.LoginCodePolicy::DIGITS.'}$/'],
+            'phone' => ['required', 'string', 'regex:'.LoginCodePolicy::PHONE_PATTERN],
+            'code' => ['required', 'string', 'regex:'.LoginCodePolicy::CODE_PATTERN],
         ];
     }
 }

@@ -12,7 +12,9 @@ use RuntimeException;
  * app-store reviewers sign in before a real provider exists.
  *
  * Read from `config/login_codes.php`, which is server configuration and never
- * an Admin setting (`DL-7`). The list is empty in production.
+ * an Admin setting (`DL-7`). The provider resolves this at boot, so a bad
+ * configuration fails the boot rather than the first login, and it refuses to
+ * boot a production environment with any test phone at all (`DL-11`).
  */
 final class TestPhones
 {
@@ -24,16 +26,24 @@ final class TestPhones
     public function __construct(
         private readonly array $phones,
         private readonly ?string $code,
+        bool $production = false,
     ) {
-        if ($this->phones !== [] && ($this->code === null || ! LoginCodePolicy::isWellFormed($this->code))) {
-            // Loud at boot rather than a mystery at the first login attempt.
+        if ($this->phones === []) {
+            return;
+        }
+
+        if ($production) {
+            throw new RuntimeException('LOGIN_CODE_TEST_PHONES must be empty in production.');
+        }
+
+        if ($this->code === null || ! LoginCodePolicy::isWellFormed($this->code)) {
             throw new RuntimeException(
                 'LOGIN_CODE_TEST_PHONES is set but LOGIN_CODE_TEST_CODE is not a '.LoginCodePolicy::DIGITS.'-digit code.'
             );
         }
     }
 
-    public static function fromConfig(): self
+    public static function fromConfig(bool $production): self
     {
         $phones = config('login_codes.test_phones');
         $code = config('login_codes.test_code');
@@ -41,7 +51,7 @@ final class TestPhones
         /** @var list<string> $phones */
         $phones = is_array($phones) ? array_values(array_map('strval', $phones)) : [];
 
-        return new self($phones, is_string($code) && $code !== '' ? $code : null);
+        return new self($phones, is_string($code) && $code !== '' ? $code : null, $production);
     }
 
     /**

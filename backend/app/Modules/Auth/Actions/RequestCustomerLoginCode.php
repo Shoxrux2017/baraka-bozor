@@ -14,7 +14,6 @@ use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * `POST /auth/customer/code/request` — docs/09 Section 6.
@@ -24,29 +23,33 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * account exists for the phone, and nothing anywhere carries the code except
  * the gateway call and the hash.
  *
+ * The counters are incremented before anything else happens and the new count
+ * is what decides, so a burst of parallel requests cannot all slip under a
+ * limit, and a delivery that fails still costs its slot: retrying a failing
+ * provider is bounded like everything else (`DL-11`). Three counters: sixty
+ * seconds between sends and five sends per hour per phone, plus ten requests
+ * per minute per address so one source cannot pump codes at many phones.
+ *
  * A configured test phone gets a challenge for the fixed test code and no
  * delivery at all; the counters apply to it like to any other phone.
  */
 final class RequestCustomerLoginCode
 {
+    public const IP_REQUESTS_PER_MINUTE = 10;
+
     public function __construct(
         private readonly RateLimiter $limiter,
         private readonly CodeDeliveryGateway $gateway,
         private readonly TestPhones $testPhones,
     ) {}
 
-    public function __invoke(string $phone): RequestedLoginCode
+    public function __invoke(string $phone, string $ip): RequestedLoginCode
     {
-        $resendKey = "login-code:resend:{$phone}";
-        $hourKey = "login-code:hour:{$phone}";
-
-        if ($this->limiter->tooManyAttempts($resendKey, 1)) {
-            throw ApiException::tooManyRequests('code_resend_too_soon', $this->limiter->availableIn($resendKey));
-        }
-
-        if ($this->limiter->tooManyAttempts($hourKey, LoginCodePolicy::SENDS_PER_HOUR)) {
-            throw ApiException::rateLimited($this->limiter->availableIn($hourKey));
-        }
+        // Broadest first: a request refused on the address alone charges the
+        // phone nothing, so one noisy source cannot use up a phone's window.
+        $this->reserve("login-code:ip:{$ip}", self::IP_REQUESTS_PER_MINUTE, 60, 'rate_limited');
+        $this->reserve("login-code:resend:{$phone}", 1, LoginCodePolicy::RESEND_SECONDS, 'code_resend_too_soon');
+        $this->reserve("login-code:hour:{$phone}", LoginCodePolicy::SENDS_PER_HOUR, LoginCodePolicy::HOUR_SECONDS, 'rate_limited');
 
         $testCode = $this->testPhones->codeFor($phone);
         $code = $testCode ?? self::generate();
@@ -71,9 +74,6 @@ final class RequestCustomerLoginCode
             ]);
         });
 
-        $this->limiter->hit($resendKey, LoginCodePolicy::RESEND_SECONDS);
-        $this->limiter->hit($hourKey, LoginCodePolicy::HOUR_SECONDS);
-
         return new RequestedLoginCode(
             channel: $channel,
             expiresInSeconds: LoginCodePolicy::LIFETIME_SECONDS,
@@ -81,16 +81,32 @@ final class RequestCustomerLoginCode
         );
     }
 
+    /**
+     * Take one slot under $key, or refuse when that slot is beyond the limit.
+     *
+     * The increment is atomic in the cache, so concurrent requests see distinct
+     * counts and only $max of them pass. A refused request has already been
+     * counted under this key and under the keys reserved before it; that keeps
+     * a window closed and never widens one.
+     */
+    private function reserve(string $key, int $max, int $decaySeconds, string $apiCode): void
+    {
+        if ($this->limiter->hit($key, $decaySeconds) > $max) {
+            throw ApiException::tooManyRequests($apiCode, $this->limiter->availableIn($key));
+        }
+    }
+
     private function deliver(string $phone, string $code): string
     {
         try {
             return $this->gateway->deliver($phone, $code);
         } catch (CodeDeliveryFailed $failure) {
-            // The provider's own text stays in the log; the client gets the
-            // stable code and nothing that could name the provider's endpoint.
-            Log::warning('Login code delivery failed.', ['reason' => $failure->getMessage()]);
+            // Only a category reaches the log. The provider's own text is not
+            // written anywhere: an adapter's transport error can carry the
+            // request it was making, and that request carries the code.
+            Log::warning('Login code delivery failed.', ['gateway' => $this->gateway::class]);
 
-            throw new HttpException(503, 'Login code delivery failed.', $failure);
+            throw ApiException::unavailable('provider_unavailable');
         }
     }
 

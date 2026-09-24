@@ -24,9 +24,4 @@ final class FakeCodeSink
     {
         return $this->codes[$phone] ?? null;
     }
-
-    public function count(): int
-    {
-        return count($this->codes);
-    }
 }

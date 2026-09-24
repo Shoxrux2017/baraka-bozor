@@ -49,9 +49,8 @@ final class VerifyCustomerLoginCode
             throw $refusal;
         }
 
-        if ($session === null) {
-            throw ApiException::unauthenticated('code_invalid');
-        }
+        // The closure returns null only alongside a refusal.
+        assert($session instanceof IssuedSession);
 
         return $session;
     }

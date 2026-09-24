@@ -23,7 +23,10 @@ declare(strict_types=1);
 $testPhones = env('LOGIN_CODE_TEST_PHONES');
 
 return [
-    'driver' => env('LOGIN_CODE_DRIVER', 'fake'),
+    // The fake is the default everywhere except production, which must name
+    // its driver: a production box missing the variable must not deliver
+    // nothing in silence.
+    'driver' => env('LOGIN_CODE_DRIVER', env('APP_ENV') === 'production' ? null : 'fake'),
 
     'test_phones' => is_string($testPhones) && trim($testPhones) !== ''
         ? array_values(array_filter(array_map('trim', explode(',', $testPhones))))

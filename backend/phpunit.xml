@@ -50,6 +50,14 @@
         <server name="DB_USERNAME" value="baraka"/>
         <server name="DB_PASSWORD" value="baraka_local_dev"/>
         <server name="DB_URL" value=""/>
+        <!-- Pinned so a developer's .env test phones cannot change what the
+             login-code tests observe. -->
+        <env name="LOGIN_CODE_DRIVER" value="fake" force="true"/>
+        <env name="LOGIN_CODE_TEST_PHONES" value="" force="true"/>
+        <env name="LOGIN_CODE_TEST_CODE" value="" force="true"/>
+        <server name="LOGIN_CODE_DRIVER" value="fake"/>
+        <server name="LOGIN_CODE_TEST_PHONES" value=""/>
+        <server name="LOGIN_CODE_TEST_CODE" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

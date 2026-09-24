@@ -111,6 +111,16 @@ final class ApiException extends RuntimeException implements ShouldntReport
         return new self(429, $apiCode, [], $message, ['Retry-After' => (string) max(1, $retryAfterSeconds)]);
     }
 
+    /**
+     * A `503`: an external provider, or the service itself, is unavailable.
+     * `provider_unavailable` for a provider, `payment_provider_unavailable` on
+     * a payment endpoint, `service_unavailable` for planned downtime.
+     */
+    public static function unavailable(string $apiCode, string $message = ''): self
+    {
+        return new self(503, $apiCode, [], $message);
+    }
+
     public function status(): int
     {
         return $this->status;

@@ -36,7 +36,10 @@ final class AuthServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(FakeCodeSink::class);
-        $this->app->singleton(TestPhones::class, static fn (): TestPhones => TestPhones::fromConfig());
+        $this->app->singleton(
+            TestPhones::class,
+            static fn (Application $app): TestPhones => TestPhones::fromConfig($app->environment('production'))
+        );
 
         $this->app->bind(CodeDeliveryGateway::class, static function (Application $app): CodeDeliveryGateway {
             $driver = config('login_codes.driver');
@@ -45,7 +48,7 @@ final class AuthServiceProvider extends ServiceProvider
                 'fake' => $app->make(FakeCodeDelivery::class),
                 // `telegram` arrives with Wave 4 and `sms` with Wave 5.
                 default => throw new RuntimeException(
-                    'Unsupported LOGIN_CODE_DRIVER '.json_encode($driver).'; only "fake" exists yet.'
+                    'LOGIN_CODE_DRIVER is '.json_encode($driver).'; only "fake" exists yet, and production must set it explicitly.'
                 ),
             };
         });
@@ -53,6 +56,10 @@ final class AuthServiceProvider extends ServiceProvider
 
     public function boot(Router $router): void
     {
+        // Resolved now rather than at the first login, so a bad test-phone
+        // configuration, or one present in production, fails the boot.
+        $this->app->make(TestPhones::class);
+
         $router->aliasMiddleware('account.active', EnsureAccountActive::class);
         $router->aliasMiddleware('password.changed', EnsurePasswordChanged::class);
         $router->middlewareGroup(self::PROTECTED, ['auth:sanctum', 'account.active', 'password.changed']);

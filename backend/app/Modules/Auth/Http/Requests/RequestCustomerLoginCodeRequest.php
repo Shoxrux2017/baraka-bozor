@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Auth\Http\Requests;
 
 use App\Http\Requests\StrictFormRequest;
+use App\Modules\Auth\LoginCodePolicy;
 
 final class RequestCustomerLoginCodeRequest extends StrictFormRequest
 {
@@ -14,7 +15,7 @@ final class RequestCustomerLoginCodeRequest extends StrictFormRequest
     public function rules(): array
     {
         return [
-            'phone' => ['required', 'string', 'regex:/^\+998[0-9]{9}$/'],
+            'phone' => ['required', 'string', 'regex:'.LoginCodePolicy::PHONE_PATTERN],
         ];
     }
 }
