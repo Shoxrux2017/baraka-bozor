@@ -3,6 +3,7 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         failOnEmptyTestSuite="true"
 >
     <testsuites>
         <testsuite name="Unit">
@@ -27,17 +28,28 @@
              docker/initdb/01-create-test-database.sql. Never SQLite: it diverges
              on column types, partial unique indexes and transaction behavior.
              See docs/07-architecture.md Section 33. -->
-        <!-- force="true" is load-bearing. Without it PHPUnit applies an <env>
-             only when the variable is absent from the real environment, so any
-             DB_* set by Compose, a shell, or a CI runner would silently send
-             the suite to the development database. -->
+        <!-- Each connection value is set twice, on purpose. <env force="true">
+             writes putenv() and $_ENV, which is what neutralises a .env file.
+             But Laravel reads $_SERVER before $_ENV, and the PHP CLI copies the
+             process environment into $_SERVER, so a DB_* exported by Compose,
+             a shell or a CI runner would still win. <server> writes $_SERVER
+             unconditionally and closes that path. DB_URL is included because
+             Laravel prefers it over the discrete values. tests/TestCase.php
+             additionally refuses to migrate any database not named *_test. -->
         <env name="DB_CONNECTION" value="pgsql" force="true"/>
         <env name="DB_HOST" value="db" force="true"/>
         <env name="DB_PORT" value="5432" force="true"/>
         <env name="DB_DATABASE" value="baraka_bozor_test" force="true"/>
         <env name="DB_USERNAME" value="baraka" force="true"/>
         <env name="DB_PASSWORD" value="baraka_local_dev" force="true"/>
-        <env name="DB_URL" value=""/>
+        <env name="DB_URL" value="" force="true"/>
+        <server name="DB_CONNECTION" value="pgsql"/>
+        <server name="DB_HOST" value="db"/>
+        <server name="DB_PORT" value="5432"/>
+        <server name="DB_DATABASE" value="baraka_bozor_test"/>
+        <server name="DB_USERNAME" value="baraka"/>
+        <server name="DB_PASSWORD" value="baraka_local_dev"/>
+        <server name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

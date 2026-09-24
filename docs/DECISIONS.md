@@ -90,6 +90,10 @@ The Owner allowed editing until shopping starts (topic 4.2) without saying what 
 
 Topic 9.0 of the interview record listed test phone numbers among the Admin settings; topic 7.2 and every document keep them in server configuration, empty in production. The documents are right: a list an Admin can edit at runtime is a login bypass one compromised Admin account away. The 9.0 sentence is corrected in the interview record with a note.
 
+## DL-8 — Error-envelope details from W0-1 (2026-09-24, agent)
+
+Found while building the renderer and its review: (1) planned maintenance answers `503 service_unavailable`, distinct from `provider_unavailable`, because "try again later" text for a provider outage would mislead during downtime; the client acts the same on both. (2) A business refusal (`ApiException`) is an expected outcome and is not reported to the error log; the response's `request_id` still lets support find the request's other log lines. (3) The test suite refuses to migrate any database whose name does not end in `_test`, and `phpunit.xml` sets the connection values in `$_SERVER` as well as `$_ENV`, because Laravel reads `$_SERVER` first and a forced `<env>` alone cannot beat an exported variable. (4) The request identifier is carried in the framework's request `Context`, so it also stamps the log lines of jobs the request queues.
+
 ## DL-5 — Waves after the interview (2026-09-24, agent)
 
 | Wave | Outcome |
