@@ -39,6 +39,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $last_login_at
  * @property Carbon|null $blocked_at
  * @property string|null $created_by_user_id
+ * @property string $preferred_language
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
@@ -61,6 +62,7 @@ class User extends Authenticatable
         'phone',
         'full_name',
         'password',
+        'preferred_language',
     ];
 
     /**

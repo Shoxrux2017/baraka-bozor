@@ -21,7 +21,7 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 | # | Task | Status |
 |---|---|---|
 | W0-1 | Error renderer to the final contract: `malformed_request`, `business_conflict`, `provider_unavailable`, `details`, `request_id` | Merged |
-| W0-2 | Staff auth: login, logout, me, `PATCH /auth/me`, change-password, rate limits, sliding 30-day token, blocked re-check, `preferred_language` column | Planned |
+| W0-2 | Staff auth: login, logout, me, `PATCH /auth/me`, change-password, rate limits, sliding 30-day token, blocked re-check, `preferred_language` column | Merged |
 | W0-3 | Customer login codes: `channel` column, `CodeDeliveryGateway` with the fake and the test numbers, request and verify endpoints | Planned |
 | W0-4 | Authorization foundation: role and scope middleware, scope-safe not-found helpers, Operator-as-restricted-Admin capability check, probe tests | Planned |
 | W0-5 | Client session foundation: two token slots, auth repository and DTOs, error-code mapping, language selection with device default | Planned |
@@ -32,7 +32,7 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 
 **W0-1.** Replaces the interim rules of `S01-BE-001`: `400 → malformed_request`; `409 → business_conflict`, keeping its status, as the default for a lifecycle conflict thrown without a more specific code; `405` keeps folding to a scope-safe `404 resource_not_found` so the `Allow` header discloses nothing; `502/503 → provider_unavailable`; `request_id` generated per request and written to log context. `details` is emitted when a thrown domain exception carries values. Update the two tests that assert the interim behaviour; the envelope gains `details` (optional) and `request_id`.
 
-**W0-2.** Staff-only endpoints; a Customer token is refused on `/auth/staff/login` by construction (no password) and on change-password (`403`). Sliding lifetime: reject when `last_used_at` (or `created_at`) is older than 30 days; Sanctum's absolute `expiration` stays null. Blocking deletes every token and the auth middleware re-reads status. Rate limits per `09` Section 8 and 10; per-token counter keyed by token ID. `preferred_language` migration on `users`.
+**W0-2.** Staff-only endpoints; a Customer token is refused on `/auth/staff/login` by construction (no password) and on change-password (`403`). Sliding lifetime: reject when `last_used_at` (or `created_at`) is older than 30 days; Sanctum's absolute `expiration` stays null; a stale token is deleted on sight. Blocking deletes every token and the `account.active` middleware re-reads status. Rate limits per `09` Section 8 and 10; per-token counter keyed by token ID; a password change revokes the account's other tokens (`DL-9`). `preferred_language` migration on `users`. Middleware group `protected` = `auth:sanctum, account.active, password.changed` for every later feature endpoint; `StrictFormRequest` rejects undeclared fields for every mutation.
 
 **W0-3.** The challenge is created and delivered by `CodeDeliveryGateway`; the fake records the code in a test-only sink; a listed test phone bypasses delivery and verifies with the fixed code (config `auth.test_phones`, `auth.test_code`, empty by default). Rate limits per `09` Section 6. Verify resolves the active Customer or creates one; a blocked Customer answers `account_blocked` only after the code was valid.
 
@@ -50,11 +50,13 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 |---|---|
 | `backend/phpunit.xml` lacks `failOnEmptyTestSuite="true"` | Closed in W0-1 |
 | `backend/phpunit.xml` `DB_URL` lacks `force="true"` | Closed in W0-1, differently: a forced `<env>` never beats an exported variable (Laravel reads `$_SERVER` first), so every `DB_*` is now also set through `<server>`, and `tests/TestCase.php` refuses to migrate a database not named `*_test` (`DL-8`) |
-| Inert Sanctum stateful-domain configuration | Open, remove in W0-2 |
+| Inert Sanctum stateful-domain configuration | Closed in W0-2: `stateful` is empty, bearer tokens everywhere |
 | CI runs bare `phpstan analyse`, a dead worker names no file | Closed in W0-1: a single-process `--debug` step runs only after the normal analysis failed |
 | A recreated `app` container ran the stale image without `docker/php.ini`; PHPStan died at 128M locally | Closed: `up -d --build`. Rebuild after any Dockerfile or php.ini change, as `docker/README.md` says |
 | `frontend/README.md` is `flutter create` boilerplate | Open, replace in W0-6 |
-| `personal_access_tokens` instants are `timestamp` not `timestamptz` | Open, convert in W0-2 (forward `ALTER`) |
+| `personal_access_tokens` instants are `timestamp` not `timestamptz` | Closed in W0-2 by a forward `ALTER` migration |
+| Feature tests: the auth guards cache the first request's user for the whole test, so a second request with another token was served as the first user | Closed in W0-2: `tests/TestCase.php` forgets the guards before every request and re-applies an `actingAs()` user; `Sanctum::actingAs()` is unsupported |
+| Per-IP login limit behind the production proxy: without `TRUSTED_PROXIES` every client is the proxy and twenty wrong attempts lock staff login for everyone | Open until deployment (Wave 4): `config/trustedproxy.php` reads `TRUSTED_PROXIES`; the deployment task sets it to the proxy's address |
 | Worktree `G:/project/bb-flutter` could not be removed (Windows path length); harmless | Open, Owner may delete the folder |
 
 ## Independent-review findings not acted on

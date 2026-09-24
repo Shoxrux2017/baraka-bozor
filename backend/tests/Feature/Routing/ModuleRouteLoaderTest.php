@@ -164,20 +164,25 @@ final class ModuleRouteLoaderTest extends TestCase
         ModuleRouteLoader::load($directory);
     }
 
-    public function test_the_production_route_table_holds_no_api_endpoint(): void
+    public function test_the_production_api_surface_comes_from_module_files_only(): void
     {
-        // routes/api/v1/ holds only .gitkeep, so the real API surface is empty.
-        // Asserting over the whole route table rather than probing one path: a
-        // single 404 probe would stay green after a real endpoint was added.
+        // routes/api.php is the loader and declares nothing itself; every
+        // endpoint under /api/v1 comes from a module file and is named, which
+        // is what lets a duplicate name anywhere stop the boot.
+        $source = (string) file_get_contents(base_path('routes/api.php'));
+
+        $this->assertStringNotContainsString('Route::', $source, 'routes/api.php must declare no route of its own.');
+        $this->assertStringContainsString("ModuleRouteLoader::load(__DIR__.'/api/v1')", $source);
+
         $apiRoutes = array_filter(
             Route::getRoutes()->getRoutes(),
             fn ($route) => str_starts_with($route->uri(), 'api/v1'),
         );
 
-        $this->assertSame(
-            [],
-            array_map(fn ($route) => $route->uri(), array_values($apiRoutes)),
-            'This task must add no endpoint to the production API surface.'
-        );
+        $this->assertNotEmpty($apiRoutes, 'The auth module declares the first production endpoints.');
+
+        foreach ($apiRoutes as $route) {
+            $this->assertNotEmpty($route->getName(), "Route {$route->uri()} must be named by its module file.");
+        }
     }
 }

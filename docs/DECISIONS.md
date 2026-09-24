@@ -94,6 +94,10 @@ Topic 9.0 of the interview record listed test phone numbers among the Admin sett
 
 Found while building the renderer and its review: (1) planned maintenance answers `503 service_unavailable`, distinct from `provider_unavailable`, because "try again later" text for a provider outage would mislead during downtime; the client acts the same on both. (2) A business refusal (`ApiException`) is an expected outcome and is not reported to the error log; the response's `request_id` still lets support find the request's other log lines. (3) The test suite refuses to migrate any database whose name does not end in `_test`, and `phpunit.xml` sets the connection values in `$_SERVER` as well as `$_ENV`, because Laravel reads `$_SERVER` first and a forced `<env>` alone cannot beat an exported variable. (4) The request identifier is carried in the framework's request `Context`, so it also stamps the log lines of jobs the request queues.
 
+## DL-9 — A password change revokes the account's other tokens (2026-09-24, agent)
+
+`docs/09` Section 10 said nothing about other sessions. Decided: a successful password change deletes every other token of the account and keeps only the one that made the change. **Why:** the reason a person changes a password is usually that someone else may know it; leaving that someone's session alive would defeat the change. The cost is one re-login on a second device, which is what every mainstream service does. A blocked account still loses every token including the current one (`docs/07` Section 8).
+
 ## DL-5 — Waves after the interview (2026-09-24, agent)
 
 | Wave | Outcome |

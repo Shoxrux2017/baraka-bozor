@@ -49,6 +49,7 @@ final class UserFactory extends Factory
             'password' => 'password',
             'status' => UserStatus::Active,
             'must_change_password' => false,
+            'preferred_language' => 'uz',
             'password_changed_at' => null,
             'last_login_at' => null,
             'blocked_at' => null,
