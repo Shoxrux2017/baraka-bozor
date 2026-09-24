@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-23 (AUD-029); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## Source Provenance
 
@@ -209,6 +209,8 @@ Real-time GPS, proof photos, signatures, and delivery OTP are not required in MV
 ## 17. Notifications
 
 Customer notification attempts are required at least for Order accepted, approval required, Payment required, Courier started, and Order delivered. Notifications are not authoritative state.
+
+A Shopper is notified when an Order is assigned to them and when a Customer answers an Approval, alongside in-app polling while the app is open (`AUD-029`).
 
 ## 18. History and Reorder
 

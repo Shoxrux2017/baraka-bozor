@@ -278,9 +278,11 @@ For a Shopper the client uses **polling and push together**, each for the case t
 
 The backend always sends the push for those two events; it does not know, and must not try to track, whether the phone is in a hand or a pocket. The client decides what to show: in the foreground it suppresses the banner, because polling has already refreshed the screen; in the background the operating system shows it, and opening it resumes the app and its polling.
 
-Push is best-effort, not guaranteed. On devices whose vendor firmware restricts background work aggressively — common on the phones Shoppers are likely to carry — delivery can be delayed or suppressed until the app is allowed to autostart and is exempt from battery optimisation. That is a device setting given to the Shopper with their access, not behaviour the client can guarantee. Polling while the app is open does not depend on it.
+Push is best-effort, not guaranteed. Android's own power management can defer normal-priority messages, which makes message priority the first lever; and vendor firmware that restricts background work more aggressively can delay or suppress delivery further. Allowing the app to autostart and exempting it from battery optimisation is likely to help and does not guarantee delivery. Whether that becomes an onboarding step for Shoppers is the Project Owner's to decide. Polling while the app is open does not depend on any of it.
 
-Push for the Courier is not decided here and is tracked as `S-40`.
+**A push carries no Customer data.** Root `AGENTS.md` Section 6 and Section 31 of this document already forbid unnecessary Customer PII, and a banner is shown on the lock screen of a personal phone and passes through the platform push service. So the payload carries the event type and the Order or Approval ID only — no Customer name, phone, address, Item or price — and the details are fetched after opening, through the scoped API. Because delivery is queued and retried, a push can arrive after the Shopper has been unassigned; that fetch is what keeps current-assignment scope intact.
+
+Push for other Staff roles is not decided here; the Courier first, tracked as `S-40`.
 
 ## 25. Queue and Scheduler
 

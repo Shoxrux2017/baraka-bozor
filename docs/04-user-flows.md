@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023) and 2026-09-22 (AUD-024); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023), 2026-09-22 (AUD-024) and 2026-09-23 (AUD-029); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## 1. Main End-to-End Flow
 
@@ -90,7 +90,7 @@ Order has checkout Payment obligation. Customer initiates Attempt; provider-auth
 
 ## 10. Admin Assigns Shopper
 
-Admin selects active Shopper for eligible `new` Order. Backend locks/validates, creates assignment, Order → `shopping_assigned`. Reassignment allowed only before Shopping starts.
+Admin selects active Shopper for eligible `new` Order. Backend locks/validates, creates assignment, Order → `shopping_assigned`. Reassignment allowed only before Shopping starts. The Shopper is notified (`AUD-029`).
 
 ## 11. Shopper Accepts and Starts
 
@@ -142,7 +142,7 @@ created_at
 +30 min → expired
 ```
 
-Customer cannot approve expired Approval. Operator/Admin may resolve expired only with `remove_item`; they cannot consent on Customer's behalf. If no fulfilment Item remains, Order cancels and paid amount is refunded as required.
+When the Customer answers, the Shopper is notified (`AUD-029`). Customer cannot approve expired Approval. Operator/Admin may resolve expired only with `remove_item`; they cannot consent on Customer's behalf. If no fulfilment Item remains, Order cancels and paid amount is refunded as required.
 
 ## 21. Approval Does Not Freeze Unrelated Shopping
 

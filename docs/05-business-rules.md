@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023) and 2026-09-23 (AUD-029); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
 
 ## Rule Language
 
@@ -309,6 +309,8 @@ payment_required
 courier_started
 order_delivered
 ```
+
+Required Shopper notification events, `AUD-029`: Order assigned, and Customer answered an Approval. Their machine codes are not yet approved and are tracked as `S-42`; the Wave 1 schema task must not invent them.
 
 Notification failure does not change Order state.
 

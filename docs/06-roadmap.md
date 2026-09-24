@@ -54,7 +54,7 @@ Where the original twelve stages went:
 | 11 Manager Analytics | 4 |
 | 12 MVP Integration & Pilot Readiness | 4 (fake-provider scenarios), 5 (provider sandbox, release build, PostgreSQL migration checks, performance checks, security and financial integrity review, implementation-versus-documentation review, pilot) |
 
-Sections 3–15 below define the content of each original stage. They remain the authoritative description of **what** must be built and are unchanged except where a provider gate moved. Section 2 maps that content onto waves; `tasks/WAVE_<N>_TASK_INDEX.md` defines execution order inside a wave.
+Sections 3–15 below define the content of each original stage. They remain the authoritative description of **what** must be built and are unchanged except where a provider gate moved, and Section 13, which `AUD-029` extended with two Shopper events. Section 2 maps that content onto waves; `tasks/WAVE_<N>_TASK_INDEX.md` defines execution order inside a wave.
 
 ## 3. Stage 0 — Product & Engineering Foundation
 
