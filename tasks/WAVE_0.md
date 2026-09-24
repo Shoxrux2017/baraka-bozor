@@ -20,7 +20,7 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 
 | # | Task | Status |
 |---|---|---|
-| W0-1 | Error renderer to the final contract: `malformed_request`, `business_conflict`, `provider_unavailable`, `details`, `request_id` | Planned |
+| W0-1 | Error renderer to the final contract: `malformed_request`, `business_conflict`, `provider_unavailable`, `details`, `request_id` | Merged |
 | W0-2 | Staff auth: login, logout, me, `PATCH /auth/me`, change-password, rate limits, sliding 30-day token, blocked re-check, `preferred_language` column | Planned |
 | W0-3 | Customer login codes: `channel` column, `CodeDeliveryGateway` with the fake and the test numbers, request and verify endpoints | Planned |
 | W0-4 | Authorization foundation: role and scope middleware, scope-safe not-found helpers, Operator-as-restricted-Admin capability check, probe tests | Planned |
@@ -48,10 +48,11 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 
 | Item | Status |
 |---|---|
-| `backend/phpunit.xml` lacks `failOnEmptyTestSuite="true"` | Open, fix in W0-1 |
-| `backend/phpunit.xml` `DB_URL` lacks `force="true"` | Open, fix in W0-1 |
+| `backend/phpunit.xml` lacks `failOnEmptyTestSuite="true"` | Closed in W0-1 |
+| `backend/phpunit.xml` `DB_URL` lacks `force="true"` | Closed in W0-1 |
 | Inert Sanctum stateful-domain configuration | Open, remove in W0-2 |
-| CI runs bare `phpstan analyse`, a dead worker names no file | Open, add `--debug` fallback step on failure in W0-1 |
+| CI runs bare `phpstan analyse`, a dead worker names no file | Closed in W0-1: a single-process `--debug` step runs only after the normal analysis failed |
+| A recreated `app` container ran the stale image without `docker/php.ini`; PHPStan died at 128M locally | Closed: `up -d --build`. Rebuild after any Dockerfile or php.ini change, as `docker/README.md` says |
 | `frontend/README.md` is `flutter create` boilerplate | Open, replace in W0-6 |
 | `personal_access_tokens` instants are `timestamp` not `timestamptz` | Open, convert in W0-2 (forward `ALTER`) |
 | Worktree `G:/project/bb-flutter` could not be removed (Windows path length); harmless | Open, Owner may delete the folder |

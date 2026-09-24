@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exceptions;
 
+use App\Http\Middleware\AssignRequestId;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,10 +15,13 @@ use Throwable;
 /**
  * Renders the BarakaBozor API error envelope for failures under the client API.
  *
- * The envelope is the stable client contract: `code` is what a client branches
- * on, `message` is for humans only, and `errors` is always an object. No
- * exception message, stack frame, file path, query fragment, class name or
- * configuration value ever reaches the response body, in any debug mode.
+ * The envelope is the stable client contract of `docs/09-api-contracts.md`
+ * Section 3: `code` is what a client branches on, `message` is for developers
+ * only, `errors` is always an object and holds field errors for validation
+ * failures, `details` carries machine-readable values when a failure has them,
+ * and `request_id` ties the response to the request's log lines. No exception
+ * message, stack frame, file path, query fragment, class name or configuration
+ * value ever reaches the response body, in any debug mode.
  *
  * Every failure under the client API leaves through this class. Nothing is
  * allowed to fall through to the framework renderer, because that renderer
@@ -26,16 +30,20 @@ use Throwable;
 final class ApiExceptionRenderer
 {
     /**
-     * HTTP statuses that carry an approved stable machine code.
+     * HTTP statuses that carry a stable machine code of their own.
      *
      * @var array<int, string>
      */
     private const CODE_BY_STATUS = [
+        400 => 'malformed_request',
         401 => 'authentication_required',
         403 => 'forbidden',
         404 => 'resource_not_found',
+        409 => 'business_conflict',
         422 => 'validation_failed',
         429 => 'rate_limited',
+        502 => 'provider_unavailable',
+        503 => 'provider_unavailable',
     ];
 
     private const FALLBACK_CODE = 'server_error';
@@ -49,12 +57,16 @@ final class ApiExceptionRenderer
             return null;
         }
 
+        if ($e instanceof ApiException) {
+            return self::respond($request, $e->status(), $e->apiCode(), details: $e->details());
+        }
+
         if ($e instanceof ValidationException) {
-            return self::respond(422, $e->errors());
+            return self::respond($request, 422, errors: $e->errors());
         }
 
         if ($e instanceof AuthenticationException) {
-            return self::respond(401);
+            return self::respond($request, 401);
         }
 
         if ($e instanceof HttpExceptionInterface) {
@@ -66,24 +78,20 @@ final class ApiExceptionRenderer
             // response cannot carry a header describing the original one.
             $headers = $status === $e->getStatusCode() ? $e->getHeaders() : [];
 
-            return self::respond($status, [], $headers);
+            return self::respond($request, $status, headers: $headers);
         }
 
-        return self::respond(500);
+        return self::respond($request, 500);
     }
 
     /**
-     * Map a status with no approved machine code onto one that has.
+     * Map a status with no machine code of its own onto one that has.
      *
-     * A client error outside the approved set becomes a scope-safe 404: the
-     * approved answer for "what you asked for is not there in that form", and
-     * the one that reveals least, since a 405 would otherwise disclose which
-     * methods a path accepts. Server errors keep their status and fall back to
-     * `server_error`.
-     *
-     * This is interim behavior. Codes for 400, 502 and 503 are an open decision
-     * recorded as S-16 in docs/SPEC_DECISIONS_BACKLOG.md, which must be resolved
-     * before the first real endpoint ships.
+     * A client error outside the table becomes a scope-safe 404: the answer for
+     * "what you asked for is not there in that form", and the one that reveals
+     * least — a 405 would otherwise disclose, through its status and its Allow
+     * header, which methods a path accepts. A server error keeps its status and
+     * carries `server_error`.
      */
     private static function normalizeStatus(int $status): int
     {
@@ -96,15 +104,42 @@ final class ApiExceptionRenderer
 
     /**
      * @param  array<string, array<int, string>>  $errors
+     * @param  array<string, mixed>  $details
      * @param  array<string, string>  $headers
      */
-    private static function respond(int $status, array $errors = [], array $headers = []): JsonResponse
-    {
-        return new JsonResponse([
+    private static function respond(
+        Request $request,
+        int $status,
+        ?string $code = null,
+        array $errors = [],
+        array $details = [],
+        array $headers = [],
+    ): JsonResponse {
+        $body = [
             'message' => self::message($status),
-            'code' => self::CODE_BY_STATUS[$status] ?? self::FALLBACK_CODE,
+            'code' => $code ?? self::CODE_BY_STATUS[$status] ?? self::FALLBACK_CODE,
             'errors' => (object) $errors,
-        ], $status, $headers);
+        ];
+
+        if ($details !== []) {
+            $body['details'] = $details;
+        }
+
+        $body['request_id'] = self::requestId($request);
+
+        return new JsonResponse($body, $status, $headers);
+    }
+
+    /**
+     * The identifier the middleware assigned, or a fresh one when the failure
+     * happened before the middleware ran, so that no error response ever
+     * lacks one.
+     */
+    private static function requestId(Request $request): string
+    {
+        $assigned = $request->attributes->get(AssignRequestId::ATTRIBUTE);
+
+        return is_string($assigned) && $assigned !== '' ? $assigned : AssignRequestId::generate();
     }
 
     /**
@@ -113,11 +148,14 @@ final class ApiExceptionRenderer
     private static function message(int $status): string
     {
         return match ($status) {
+            400 => 'The request could not be parsed.',
             401 => 'Authentication is required.',
             403 => 'This action is not allowed.',
             404 => 'The requested resource was not found.',
+            409 => 'The request conflicts with the current state.',
             422 => 'The given data was invalid.',
             429 => 'Too many requests.',
+            502, 503 => 'An external provider is unavailable.',
             default => 'An unexpected server error occurred.',
         };
     }

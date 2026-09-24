@@ -3,6 +3,7 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         failOnEmptyTestSuite="true"
 >
     <testsuites>
         <testsuite name="Unit">
@@ -37,7 +38,9 @@
         <env name="DB_DATABASE" value="baraka_bozor_test" force="true"/>
         <env name="DB_USERNAME" value="baraka" force="true"/>
         <env name="DB_PASSWORD" value="baraka_local_dev" force="true"/>
-        <env name="DB_URL" value=""/>
+        <!-- Forced as well: Laravel prefers DB_URL over the discrete values, so
+             an outer DB_URL would silently override every line above. -->
+        <env name="DB_URL" value="" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

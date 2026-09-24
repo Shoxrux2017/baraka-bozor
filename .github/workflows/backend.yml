@@ -70,7 +70,15 @@ jobs:
         run: docker compose -f docker/compose.yaml exec -T app vendor/bin/pint --test
 
       - name: PHPStan
+        id: phpstan
         run: docker compose -f docker/compose.yaml exec -T app vendor/bin/phpstan analyse
+
+      # A fatal inside a parallel worker is reported only as a dead child, with
+      # no file named. --debug runs single-process and names the file it dies
+      # on, so it runs only after the normal analysis has already failed.
+      - name: PHPStan single-process, to name the file that failed
+        if: failure() && steps.phpstan.outcome == 'failure'
+        run: docker compose -f docker/compose.yaml exec -T app vendor/bin/phpstan analyse --debug --no-progress
 
       - name: Stack logs on failure
         if: failure()
