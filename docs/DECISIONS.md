@@ -98,6 +98,10 @@ Found while building the renderer and its review: (1) planned maintenance answer
 
 `docs/09` Section 10 said nothing about other sessions. Decided: a successful password change deletes every other token of the account and keeps only the one that made the change. **Why:** the reason a person changes a password is usually that someone else may know it; leaving that someone's session alive would defeat the change. The cost is one re-login on a second device, which is what every mainstream service does. A blocked account still loses every token including the current one (`docs/07` Section 8).
 
+## DL-10 — Login-code mechanics from W0-3 (2026-09-24, agent)
+
+(1) A code is stored as a bcrypt hash and checked like a password. (2) A new request for a phone invalidates every earlier open challenge, so only the newest code works. (3) Verification checks in this order: no open challenge → `code_invalid`; expired → `code_expired`; five failures already → `code_attempts_exhausted`; hash mismatch → `code_invalid` and one more failure counted; only then the account, so `account_blocked` needs a valid code. (4) A configured test phone gets a stored challenge for the fixed code with `channel = test` and no delivery, so verification is one path for every phone and the send counters apply to test phones too. (5) A delivery failure stores no challenge and answers `503 provider_unavailable`; the provider's text goes to the log only.
+
 ## DL-5 — Waves after the interview (2026-09-24, agent)
 
 | Wave | Outcome |

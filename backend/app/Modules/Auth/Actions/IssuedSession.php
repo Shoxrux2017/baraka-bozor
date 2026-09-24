@@ -7,10 +7,10 @@ namespace App\Modules\Auth\Actions;
 use App\Models\User;
 
 /**
- * The outcome of a successful staff login: the plain-text token, which exists
- * only in this response, and the account it belongs to.
+ * The outcome of a successful login of either family: the plain-text token,
+ * which exists only in this response, and the account it belongs to.
  */
-final class AuthenticatedStaff
+final class IssuedSession
 {
     public function __construct(
         public readonly string $token,

@@ -22,7 +22,7 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 |---|---|---|
 | W0-1 | Error renderer to the final contract: `malformed_request`, `business_conflict`, `provider_unavailable`, `details`, `request_id` | Merged |
 | W0-2 | Staff auth: login, logout, me, `PATCH /auth/me`, change-password, rate limits, sliding 30-day token, blocked re-check, `preferred_language` column | Merged |
-| W0-3 | Customer login codes: `channel` column, `CodeDeliveryGateway` with the fake and the test numbers, request and verify endpoints | Planned |
+| W0-3 | Customer login codes: `channel` column, `CodeDeliveryGateway` with the fake and the test numbers, request and verify endpoints | Merged |
 | W0-4 | Authorization foundation: role and scope middleware, scope-safe not-found helpers, Operator-as-restricted-Admin capability check, probe tests | Planned |
 | W0-5 | Client session foundation: two token slots, auth repository and DTOs, error-code mapping, language selection with device default | Planned |
 | W0-6 | Client auth screens and shells: code request and verify, staff login and password change, six role shells, wrong-surface screen, web build of the panel shell | Planned |
@@ -34,7 +34,7 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 
 **W0-2.** Staff-only endpoints; a Customer token is refused on `/auth/staff/login` by construction (no password) and on change-password (`403`). Sliding lifetime: reject when `last_used_at` (or `created_at`) is older than 30 days; Sanctum's absolute `expiration` stays null; a stale token is deleted on sight. Blocking deletes every token and the `account.active` middleware re-reads status. Rate limits per `09` Section 8 and 10; per-token counter keyed by token ID; a password change revokes the account's other tokens (`DL-9`). `preferred_language` migration on `users`. Middleware group `protected` = `auth:sanctum, account.active, password.changed` for every later feature endpoint; `StrictFormRequest` rejects undeclared fields for every mutation.
 
-**W0-3.** The challenge is created and delivered by `CodeDeliveryGateway`; the fake records the code in a test-only sink; a listed test phone bypasses delivery and verifies with the fixed code (config `auth.test_phones`, `auth.test_code`, empty by default). Rate limits per `09` Section 6. Verify resolves the active Customer or creates one; a blocked Customer answers `account_blocked` only after the code was valid.
+**W0-3.** The challenge is created and delivered by `CodeDeliveryGateway`; the fake records the code in a test-only in-process sink; a listed test phone gets a stored challenge for the fixed code and no delivery (`config/login_codes.php`: `LOGIN_CODE_DRIVER`, `LOGIN_CODE_TEST_PHONES`, `LOGIN_CODE_TEST_CODE`, empty by default). Rate limits per `09` Section 6 through the cache-backed limiter. Verify resolves the active Customer or creates one; a blocked Customer answers `account_blocked` only after the code was valid. Mechanics in `DL-10`.
 
 **W0-4.** Middleware `role:<roles>` plus policy helpers that scope queries by actor; a protected probe route set in tests only proves 401, 403 and scope-safe 404 for every role. Operator inherits Admin's operational endpoints through one capability map, not duplicated routes.
 

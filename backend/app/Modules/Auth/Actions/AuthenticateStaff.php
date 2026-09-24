@@ -41,7 +41,7 @@ final class AuthenticateStaff
 
     public function __construct(private readonly RateLimiter $limiter) {}
 
-    public function __invoke(string $phone, string $password, string $ip): AuthenticatedStaff
+    public function __invoke(string $phone, string $password, string $ip): IssuedSession
     {
         $phoneKey = "staff-login:phone:{$phone}";
         $ipKey = "staff-login:ip:{$ip}";
@@ -79,7 +79,7 @@ final class AuthenticateStaff
 
         $account->forceFill(['last_login_at' => now()])->save();
 
-        return new AuthenticatedStaff($account->createToken('staff')->plainTextToken, $account);
+        return new IssuedSession($account->createToken('staff')->plainTextToken, $account);
     }
 
     private function activeStaff(string $phone): ?User
