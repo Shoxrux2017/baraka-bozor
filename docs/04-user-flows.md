@@ -66,7 +66,7 @@ If anything changed, order creation returns `checkout_snapshot_stale` and the Cu
 
 ## 9. Order Editing
 
-While the order is `new` or `shopping_assigned` and shopping has not started, the Customer sends the full desired item list and delivery wish. The backend locks the order, validates it like a checkout (active products, quantities, minimum amount), replaces the items with fresh snapshots at current prices, writes an `order_edited` history entry, and returns the order. Once shopping has started the request is refused with `order_editing_locked`.
+While the order is `new` or `shopping_assigned` and shopping has not started, the Customer sends the full desired item list and delivery wish. The backend locks the order, validates it like a checkout (active products, quantities, minimum amount), removes the lines that are gone, updates quantity, note and rule on the lines that stay while keeping their price snapshots, adds new lines with current prices, leaves the fee and markup snapshots untouched (`DL-6`), writes an `edited` history entry, and returns the order. Once shopping has started the request is refused with `order_editing_locked`.
 
 ## 10. Customer Cancels Before Shopping
 
@@ -86,7 +86,7 @@ The Shopper buys the physical quantity and records `purchased_quantity` and the 
 
 ## 14. Estimate Item
 
-The Shopper sees the actual market price and enters it with the purchased quantity. The backend computes the customer price from it (actual price plus the markup snapshot, rounded). If that price is within the tolerance of the estimate snapshot — or at or below the ceiling a previous approval set — the item becomes `purchased` at that price. If it exceeds the ceiling, the backend refuses with `customer_approval_required` and the Shopper requests a `price_over_tolerance` approval carrying the proposed customer price before buying at that price.
+The Shopper sees the actual market price and enters it with the purchased quantity; the app asks for confirmation first when the entered price is more than three times or less than a third of the estimate's market price, the typo guard of `DL-3` (S-35). The backend computes the customer price from it (actual price plus the markup snapshot, rounded). If that price is within the tolerance of the estimate snapshot — or at or below the ceiling a previous approval set — the item becomes `purchased` at that price. If it exceeds the ceiling, the backend refuses with `customer_approval_required` and the Shopper requests a `price_over_tolerance` approval carrying the proposed customer price before buying at that price.
 
 ## 15. Excess Quantity
 
@@ -104,7 +104,7 @@ The Shopper proposes a lower positive quantity; a `reduced_quantity` approval is
 
 ## 17. Unavailable — Remove
 
-For `remove_if_unavailable` the Shopper marks the item unavailable and it is removed at once with `removed_reason_code = unavailable`. For the other two rules the Shopper either proposes a replacement (Sections 18, 19) or, when no replacement exists, marks the item unavailable with `resolution = remove`.
+For `remove_if_unavailable` the Shopper marks the item unavailable and it is removed at once with `removed_reason_code = unavailable`. For the other two rules the Shopper either proposes a replacement (Sections 18, 19) or, when no replacement exists, marks the item unavailable, which removes it the same way.
 
 ## 18. Automatic Replacement
 
@@ -156,7 +156,7 @@ An Operator or Admin selects an active Courier for a `ready_for_delivery` order.
 
 ## 27. Courier Accepts and Starts
 
-The Courier accepts, collects the order at the handoff point, and starts. The backend records `on_the_way_at` and the delay deadline from the threshold snapshot, sets `on_the_way`, and notifies the Customer with `courier_started`.
+The Courier accepts, collects the order at the handoff point (or, while no handoff point exists, calls the Shopper whose phone the assignment shows), and starts. The backend records `on_the_way_at` and the delay deadline from the threshold snapshot, sets `on_the_way`, and notifies the Customer with `courier_started`.
 
 ## 28. Delivered
 

@@ -17,7 +17,7 @@ HTTP boundary
   -> Eloquent/PostgreSQL/infrastructure
 ```
 
-Do not introduce a generic repository layer, command bus, event framework, microservice boundary, or new package without explicit approval.
+Do not introduce a generic repository layer, command bus, event framework or microservice boundary. A new package needs a reason recorded in the commit message and, when it shapes the architecture, a `docs/DECISIONS.md` entry.
 
 ## 3. HTTP Boundary
 
@@ -66,7 +66,7 @@ Use deterministic ordering for paginated data where required. Add/use indexes th
 
 ## 6. Persistence and Migrations
 
-Use forward migrations for schema changes. Follow locked UUID/timestamptz/money/quantity/constraint conventions from the task contract.
+Use forward migrations for schema changes. Follow the UUID, `timestamptz`, money, quantity and constraint conventions of `docs/08-database.md`.
 
 Structural invariants belong in PostgreSQL when practical:
 

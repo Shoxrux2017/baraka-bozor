@@ -46,11 +46,11 @@ Do not introduce microservices, GraphQL, message brokers, Elasticsearch, mandato
 
 ## 5. Server Authority and Security
 
-The backend is authoritative for identity and role, active or blocked state and the first-login password gate, record ownership and assignment scope, the Order and Item lifecycle, quantities and billable quantities, prices, markup, fees, totals and rounding, Customer approvals, payment state and provider reconciliation, cancellation, and delivery completion.
+The backend is authoritative for identity and role, active or blocked state and the first-login password gate, record ownership and assignment scope, Customer-only resources, Shopper and Courier current-assignment scope, Operator and Admin capability boundaries, Manager read-only scope, the Order and Item lifecycle, quantities and billable quantities, prices, markup, fees, totals and rounding, Customer approvals, payment and refund state and provider reconciliation, cancellation, and delivery completion.
 
 A valid UUID never grants access. Scope every protected record to the actor before returning or mutating it. Where the API contract requires scope-safe not-found behaviour, do not reveal whether an inaccessible record exists.
 
-Never expose or log passwords, login codes, bearer tokens, merchant credentials, payment secrets, private keys, raw provider payloads, or Customer PII beyond what a screen needs. A login code is never emitted to a client, a log or a header in any environment; the only exceptions are the configured test phone numbers with their fixed code (`DL-2`, topic 7).
+Never expose or log passwords, login codes, bearer tokens, merchant credentials, payment secrets, private keys, raw provider payloads, or Customer PII beyond what a screen needs. A login code is never emitted to a client, a log or a header in any environment. The configured test phone numbers use a fixed code that is never generated or delivered (`DL-2`, topic 7); that is not an emission, and the list is empty in production.
 
 ## 6. Financial and Historical Integrity
 
@@ -60,6 +60,7 @@ Never weaken:
 - the ordered quantity never silently increases; excess purchase is never billed;
 - a price above the tolerance, a substitution, or a reduced quantity requires the Customer's decision as the documents define it, and an expired approval is never consent;
 - payment success is provider-authoritative for online payments; a cash payment is recorded only by the Courier's explicit action at handover;
+- a refund is recorded as completed only by an Admin with the provider's reference, and completed refunds never exceed the amount paid;
 - retries and callbacks never create duplicate financial or lifecycle effects;
 - no generic arbitrary order-status mutation exists;
 - lifecycle, assignment, approval, payment and refund history is preserved.
@@ -99,7 +100,7 @@ Never claim a command passed unless it was run and observed passing.
 
 ## 11. Preserve Existing Work
 
-Inspect repository status before editing. Preserve pre-existing changes and untracked files. Do not overwrite, revert, stage, format, move or delete unrelated work. Containers named `testlabuz-*` on this machine belong to another project and are never touched.
+Inspect repository status before editing. Preserve pre-existing changes and untracked files. Do not overwrite, revert, stage, format, move or delete unrelated work. Containers, volumes and directories that belong to other projects on the development machine are never touched.
 
 ## 12. Git
 

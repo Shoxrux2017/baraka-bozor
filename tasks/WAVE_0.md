@@ -30,7 +30,7 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 
 ## Task notes
 
-**W0-1.** Replaces the interim rules of `S01-BE-001`: `400 → malformed_request`, `405/409 → business_conflict` (409 keeps its status; 405 becomes a scope-safe 404 as before), `502/503 → provider_unavailable`, `request_id` generated per request and written to log context. `details` is emitted when a thrown domain exception carries values. Update the two tests that assert the interim behaviour; the envelope gains `details` (optional) and `request_id`.
+**W0-1.** Replaces the interim rules of `S01-BE-001`: `400 → malformed_request`; `409 → business_conflict`, keeping its status, as the default for a lifecycle conflict thrown without a more specific code; `405` keeps folding to a scope-safe `404 resource_not_found` so the `Allow` header discloses nothing; `502/503 → provider_unavailable`; `request_id` generated per request and written to log context. `details` is emitted when a thrown domain exception carries values. Update the two tests that assert the interim behaviour; the envelope gains `details` (optional) and `request_id`.
 
 **W0-2.** Staff-only endpoints; a Customer token is refused on `/auth/staff/login` by construction (no password) and on change-password (`403`). Sliding lifetime: reject when `last_used_at` (or `created_at`) is older than 30 days; Sanctum's absolute `expiration` stays null. Blocking deletes every token and the auth middleware re-reads status. Rate limits per `09` Section 8 and 10; per-token counter keyed by token ID. `preferred_language` migration on `users`.
 

@@ -119,7 +119,7 @@ Follow theme/design tokens and support required:
 
 ## 13. Packages and Platforms
 
-Do not add/change Flutter packages or platform files unless explicitly required. Do not alter `pubspec.lock` without a real approved dependency change. Do not regenerate unrelated Android/iOS/Windows/web files.
+Do not add or change Flutter packages or platform files unless the task needs it; record the reason in the commit message. Do not alter `pubspec.lock` without a real dependency change. Do not regenerate unrelated Android, iOS or web files.
 
 ## 14. Frontend Tests
 

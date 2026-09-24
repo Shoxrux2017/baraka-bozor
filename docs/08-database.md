@@ -133,7 +133,7 @@ Checks: purchased requires `purchased_quantity ≥ billable_quantity > 0`, a bil
 
 Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (user|system|payment_provider), actor_user_id?, reason_code?, note?, created_at`.
 
-`event_type` in `status_changed, edited, payment_method_switched, price_corrected, shopper_assigned, shopper_reassigned, courier_assigned, courier_reassigned, delivery_failed, approval_requested, approval_decided, approval_expired, approval_resolved`. `reason_code` for cancellations in `customer_cancelled, cancellation_request_approved, operator_cancelled, unpaid_online, no_items_purchased, delivery_failed, system`. Index `(order_id, created_at)`.
+`event_type` in `status_changed, edited, payment_method_switched, price_corrected, shopper_assigned, shopper_reassigned, courier_assigned, courier_reassigned, delivery_failed, approval_requested, approval_decided, approval_expired, approval_resolved`. `reason_code` for cancellations in `customer_cancelled, cancellation_request_approved, unpaid_online, no_items_purchased, delivery_failed, system`. Index `(order_id, created_at)`.
 
 ## 16. `order_shopper_assignments`
 
@@ -161,7 +161,7 @@ Append-only: `id, order_item_id, old_actual_market_price_uzs, new_actual_market_
 
 `id, order_id, method (cash|online), provider? (payme|click|paynet|xazna), amount_uzs > 0, status (unpaid|pending|paid|cancelled), attention_at?, paid_at?, cancelled_at?, recorded_by_user_id?, timestamps`.
 
-Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per order. Cash rows are created `paid` by the Courier's action with `recorded_by_user_id`; online rows are created `unpaid` at shopping completion and cancelled when the Operator switches to cash or the order is cancelled unpaid.
+Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per order. Cash rows are created `paid` by the Courier's action with `recorded_by_user_id`. Online rows are created `unpaid` at shopping completion, are `pending` while an attempt is in flight or unknown, return to `unpaid` when that attempt fails, become `paid` on provider-confirmed success, and are `cancelled` when the Operator switches to cash or the order is cancelled unpaid.
 
 ## 22. `payment_attempts`
 
@@ -173,7 +173,7 @@ Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per or
 
 ## 24. `refunds`
 
-`id, order_id, payment_id, amount_uzs > 0, reason_code (cancellation|correction), status (pending|completed|failed), provider_reference?, note?, created_by_user_id?, completed_by_user_id?, completed_at?, timestamps`. Application check under the payment lock: sum of completed refunds ≤ paid amount.
+`id, order_id, payment_id, amount_uzs > 0, status (pending|completed|failed), provider_reference?, note?, created_by_user_id?, completed_by_user_id?, completed_at?, timestamps`. A refund has one cause, the cancellation of an order with a paid online payment, so there is no reason column. Application check under the payment lock: sum of completed refunds ≤ paid amount.
 
 ## 25. `push_devices`
 

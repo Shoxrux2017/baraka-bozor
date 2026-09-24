@@ -42,7 +42,7 @@ Each former `S-` item, what was decided, and why. Owner-decided items are marked
 | S-6 | `approval_required` is **derived**, not stored. `orders.status` stays `shopping` while an item awaits the Customer; the API exposes `pending_approval_count` and the board filters on `customer_approvals.status = pending`. No history rows for entering and leaving a derived state. |
 | S-7 | After an approval is **granted** the item returns to `pending` with the approved result recorded on it (approved unit-price ceiling, authorized replacement product, or approved quantity cap); the Shopper then records the purchase as for any item. After a rejection the item is `removed`. |
 | S-8 | `staff-activity` is deferred with the Manager screens. When built: per Staff member and period, count of shopping runs completed, deliveries completed, and average duration of each. |
-| S-9 | Vocabularies fixed: `order_items.substitution_resolution` ∈ `automatic, approved`; `order_items.removed_reason_code` ∈ `unavailable, customer_rejected, approval_expired, customer_removed, operator_removed, order_cancelled`; `order_status_history.reason_code` ∈ `customer_cancelled, cancellation_request_approved, operator_cancelled, unpaid_online, no_items_purchased, delivery_failed, system`; assignment `ended_reason` ∈ `completed, reassigned, delivery_failed, order_cancelled`; `refunds.reason_code` ∈ `cancellation, correction`. A replacement must have the **same `unit_code`** as the original. |
+| S-9 | Vocabularies fixed: `order_items.substitution_resolution` ∈ `automatic, approved`; `order_items.removed_reason_code` ∈ `unavailable, customer_rejected, approval_expired, customer_removed, operator_removed, order_cancelled`; `order_history.reason_code` for cancellations ∈ `customer_cancelled, cancellation_request_approved, unpaid_online, no_items_purchased, delivery_failed, system`; assignment `ended_reason` ∈ `completed, reassigned, delivery_failed, order_cancelled`. Refunds have one cause, cancellation of a paid online order, so they carry no reason column. A replacement must have the **same `unit_code`** as the original. |
 | S-10 | "Unknown" payment outcome is **derived**: a `pending` attempt older than the provider timeout (15 minutes) with no result. A reconciliation job asks the provider; no new persisted state. |
 | S-11 | An idempotency row in `processing` holds a **60-second lease**. A retry inside the lease gets `409 idempotency_in_progress`; a retry after it takes the row over and runs the operation again. |
 | S-12 | `order_accepted` fires when the order is created (Owner, topic 7). |
@@ -81,6 +81,14 @@ States: `new, shopping_assigned, shopping, final_payment_pending, ready_for_deli
 - Online order: `shopping` → `final_payment_pending` when shopping completes; provider-confirmed payment → `ready_for_delivery`; 30 minutes unpaid → Operator attention; Operator may switch the order to cash (→ `ready_for_delivery`) or cancel.
 - "Not delivered": `on_the_way` → `ready_for_delivery`, assignment ended with `delivery_failed`, Operator attention.
 - Editing: allowed while `new` or `shopping_assigned` and shopping has not started; each edit re-snapshots the changed lines and writes history.
+
+## DL-6 — What an order edit re-snapshots (2026-09-24, agent)
+
+The Owner allowed editing until shopping starts (topic 4.2) without saying what gets re-priced. Decided: a line the Customer **adds** takes the current catalog price; a line that stays, with or without a quantity change, **keeps** its unit-price snapshot; a removed line is removed. The markup, tolerance, service fee, delivery fee and delay-threshold snapshots stay as at creation. The minimum order amount is re-checked against the new subtotal. **Why:** a price shown at order time is a promise; re-pricing untouched lines on an unrelated edit would surprise the Customer, and refreshing fee snapshots would let a settings change reach an existing order through the back door.
+
+## DL-7 — Test phone numbers are server configuration (2026-09-24, agent)
+
+Topic 9.0 of the interview record listed test phone numbers among the Admin settings; topic 7.2 and every document keep them in server configuration, empty in production. The documents are right: a list an Admin can edit at runtime is a login bypass one compromised Admin account away. The 9.0 sentence is corrected in the interview record with a note.
 
 ## DL-5 — Waves after the interview (2026-09-24, agent)
 

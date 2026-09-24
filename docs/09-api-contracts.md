@@ -48,7 +48,7 @@ Phone: E.164 `+998` plus nine digits. Policy: six digits, five-minute lifetime, 
 {"data":{"channel":"telegram","expires_in_seconds":300,"resend_available_in_seconds":60}}
 ```
 
-`channel` ∈ `telegram, sms, test`. Codes: `code_resend_too_soon`, `rate_limited`, `provider_unavailable`, `validation_failed`.
+`channel` ∈ `telegram, sms, fake, test`. `fake` is what the development gateway reports; `test` means a configured test phone that needs no delivery. The client shows channel-specific text for `telegram` and `sms` and a generic "code sent" otherwise. Codes: `code_resend_too_soon`, `rate_limited`, `provider_unavailable`, `validation_failed`.
 
 ## 7. Verify Customer Login Code
 
@@ -223,7 +223,7 @@ Approval resource: `type`, `status`, the item with both names, `proposed_custome
 
 ## 36. Assigned Deliveries
 
-`GET /courier/orders`, `GET /courier/orders/{order}`: order number, recipient name and phone, address, delivery note, delivery time note, payment method, `amount_to_collect_uzs` for cash, status.
+`GET /courier/orders`, `GET /courier/orders/{order}`: order number, recipient name and phone, address, delivery note, delivery time note, payment method, `amount_to_collect_uzs` for cash, status, and `shopper_phone` only while the server runs without a handoff point (`BR-DEL-006`), otherwise absent.
 
 ## 37. Accept, Start, Delivered, Not Delivered
 
@@ -243,9 +243,11 @@ Approval resource: `type`, `status`, the item with both names, `proposed_custome
 
 `POST /operations/approvals/{approval}/resolve-expired` `{"resolution":"remove_item","note":"..."}`. `GET /operations/cancellation-requests`, `GET .../{request}`, `POST .../{request}/decision` `{"decision":"approve","note":"..."}`.
 
-## 41. Unpaid Online Orders *(Wave 5)*
+## 41. Operator Cancellation and Switch to Cash
 
-`POST /operations/orders/{order}/switch-to-cash` `{"note":"..."}` while `final_payment_pending` and unpaid → cancels the obligation, sets `ready_for_delivery`. `POST /operations/orders/{order}/cancel` `{"reason_code":"unpaid_online","note":"..."}`, also `delivery_failed` for an order back in `ready_for_delivery` after a failed delivery.
+`POST /operations/orders/{order}/cancel` `{"reason_code":"delivery_failed","note":"..."}` for an order back in `ready_for_delivery` after a failed delivery (Wave 3), and `{"reason_code":"unpaid_online"}` for an order in `final_payment_pending` (Wave 5). Any other state answers `409 order_state_conflict`. A paid online payment creates a refund obligation.
+
+`POST /operations/orders/{order}/switch-to-cash` `{"note":"..."}` *(Wave 5)* while `final_payment_pending` and unpaid → cancels the obligation, sets `ready_for_delivery`, writes `payment_method_switched`.
 
 ## 42. Refunds
 

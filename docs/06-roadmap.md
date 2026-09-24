@@ -14,7 +14,7 @@ Build toward a **cash-first pilot** in the order below, one implementing agent, 
 |---:|---|---|---|
 | 0 | Foundation | runtime, CI, identity, staff login, Customer login through the code-delivery abstraction (fake now, test numbers), authorization, client auth screens and role shells, web target | none |
 | 1 | Catalog and account | Admin catalog in the web panel, Customer catalog and search, profile and language, addresses with the Yandex map picker and service-area check, staff management, business settings, push device registration | Yandex MapKit key |
-| 2 | Cart and order on cash | cart, checkout with cash (online shown as unavailable), order creation, editing and direct cancellation, Shopper and Courier assignment, the Admin and Operator board with the summary strip | none |
+| 2 | Cart and order on cash | cart, checkout with cash (online shown as unavailable), order creation, editing and direct cancellation, Shopper and Courier assignment, the Admin and Operator board with the summary strip, the Customer-mode switch for Shoppers and Couriers | none |
 | 3 | Fulfilment | shopping with fixed and estimate items, unavailability, substitution, approvals with timers, Operator attention, Courier delivery with cash collection and not-delivered, cancellation requests | none |
 | 4 | Pilot readiness | real FCM push and every notification event, history and reorder, Telegram Gateway login with the fixed-code test numbers kept, deployment to the Owner's VPS with backups, Android closed testing, web panel hosting, end-to-end check on cash, the pilot | Firebase, Telegram Gateway, hosting, Google Play |
 | 5 | Online payment | Payme and Click adapters from published protocols, the online flow with its 30-minute window and the Operator switch, provider reconciliation, manual refund tracking, Eskiz SMS fallback | legal entity, merchant agreements, Eskiz contract |
@@ -36,7 +36,7 @@ Categories and products with bilingual fields, price mode, market price, images 
 
 ### Wave 2 — Cart and order on cash
 
-Cart; checkout preview with the minimum amount, working-hours note and the payment-method choice; order creation with snapshots and the order number; order editing before shopping; direct cancellation; assignment endpoints and history; the board with filters, the attention list skeleton and the summary strip.
+Cart; checkout preview with the minimum amount, working-hours note and the payment-method choice; order creation with snapshots and the order number; order editing before shopping; direct cancellation; assignment endpoints and history; the board with filters, the attention list skeleton and the summary strip; the Customer-mode switch inside the Shopper and Courier interface, now that Customer mode has a catalog and a cart to show.
 
 ### Wave 3 — Fulfilment
 

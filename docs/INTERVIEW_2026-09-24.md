@@ -42,7 +42,7 @@ Format: topic, then each question with the option chosen and its consequence.
 
 **4.1 Minimum order amount is a business setting (option Б).** Checkout is refused below it; the refusal carries the minimum and the shortfall as data so the client can say how much is missing.
 
-**4.2 The Customer may edit an order until shopping starts (option Б).** Add items, remove items, change quantities, notes and substitution policies while the order is `new` or `shopping_assigned` and the Shopper has not pressed start. Editing re-snapshots the changed lines at current catalog prices, re-checks the minimum amount, and records the change in order history. After shopping starts the order is read-only for the Customer.
+**4.2 The Customer may edit an order until shopping starts (option Б).** Add items, remove items, change quantities, notes and substitution policies while the order is `new` or `shopping_assigned` and the Shopper has not pressed start. Added lines take current catalog prices; lines that stay keep their price snapshots; fee and markup snapshots stay as at creation (precision added by `DL-6`). The minimum amount is re-checked and the change is recorded in order history. After shopping starts the order is read-only for the Customer.
 
 **4.3 Approval timing stays as documented (option A).** 10 minutes after creation the pending approval becomes Operator attention; 30 minutes after creation it expires; an expired approval never counts as consent, and only an Operator or Admin resolves it, by removing the item. The Shopper continues with the other items meanwhile.
 
@@ -94,7 +94,7 @@ Format: topic, then each question with the option chosen and its consequence.
 
 ## Topic 9. Operator and Admin board, figures
 
-**9.0 Agent decisions, not objected to:** orders carry a short human number (for example `1042`) shown to Customer, Shopper and Courier; every business setting (markup, service fee, delivery fee, minimum order, price tolerance, working hours, service area, delay threshold, test phone numbers) is edited by Admin on one settings screen.
+**9.0 Agent decisions, not objected to:** orders carry a short human number (for example `1042`) shown to Customer, Shopper and Courier; every business setting (markup, service fee, delivery fee, minimum order, price tolerance, working hours, service area, delay threshold) is edited by Admin on one settings screen. *Correction under `DL-7`: the sentence as first presented also listed test phone numbers here; they are server configuration per 7.2, never an Admin setting.*
 
 **9.1 Operators do not create orders on behalf of Customers (option A).** Orders come only from the Customer app in the MVP.
 

@@ -56,7 +56,7 @@ Idempotent. Snapshots products, quantities, notes, rules, prices, markup, tolera
 
 ## 11. Order Editing
 
-Until shopping starts the Customer may replace the item set (add, remove, change quantities, notes, rules) and the delivery wish. Editing re-snapshots the changed lines at current prices, re-checks the minimum order amount, and writes an order history entry. Address and payment method are not editable; cancel and reorder instead.
+Until shopping starts the Customer may replace the item set (add, remove, change quantities, notes, rules) and the delivery wish. Added lines take current prices, lines that stay keep their price snapshots, fee and markup snapshots are untouched (`DL-6`); the minimum order amount is re-checked and an order history entry is written. Address and payment method are not editable; cancel and reorder instead.
 
 ## 12. Order Lifecycle
 

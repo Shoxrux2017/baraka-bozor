@@ -84,7 +84,7 @@ The company earns a **markup on goods** plus a **service fee** plus a **delivery
   - **`fixed`** — the customer price is guaranteed. The Customer pays the price snapshotted at order time whatever the Shopper actually paid.
   - **`estimate`** — the customer price is an estimate. The Customer pays the customer price computed from the price the Shopper actually paid (actual market price plus the markup snapshot). If that exceeds the estimate by more than the **tolerance percentage** from business settings, the Shopper needs the Customer's approval before buying at that price.
 - The **service fee** is fixed or a percentage of the merchandise subtotal; the **delivery fee** is one fixed tariff. Both are business settings.
-- Every price, markup, fee and tolerance is snapshotted into the order at creation (and again on an edit before shopping). Later changes to the catalog or settings never rewrite an existing order.
+- Every price, markup, fee and tolerance is snapshotted into the order at creation. Later changes to the catalog or settings never rewrite an existing order; an edit before shopping prices only the lines the Customer adds.
 
 The Customer sees the composition of the amount — merchandise, service fee, delivery fee — at checkout, and the final composition before paying online or at the door.
 
@@ -135,7 +135,7 @@ Before shopping starts the Customer cancels directly. After shopping starts and 
 
 ## 15. Delivery
 
-A shopped order that is paid (online) or payable at the door (cash) is assigned to one active Courier. The Courier collects the packed order at the handoff point, accepts the assignment, starts, delivers, and records the cash received for a cash order. If delivery fails — nobody answers, the Customer refuses, the address is wrong — the Courier marks it not delivered with the reason; the order returns to the pool and an Operator reassigns it or cancels it.
+A shopped order that is paid (online) or payable at the door (cash) is assigned to one active Courier. The Courier collects the packed order at the handoff point, accepts the assignment, starts, delivers, and records the cash received for a cash order. Until a handoff point exists, the Courier instead sees the Shopper's phone number and they meet at the market (server configuration, topic 1.1 fallback). If delivery fails — nobody answers, the Customer refuses, the address is wrong — the Courier marks it not delivered with the reason; the order returns to the pool and an Operator reassigns it or cancels it.
 
 Orders are collected and delivered as soon as possible inside the working hours in business settings. An order placed outside working hours is accepted and collected after opening; the Customer sees that at checkout. No delivery slots.
 

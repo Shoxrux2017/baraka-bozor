@@ -121,7 +121,7 @@ Order
 
 ## 13. Snapshot Boundary
 
-At creation and on every edit before shopping: product names in both languages, unit, price mode, market price, customer unit price, ordered quantity, note, substitution rule; recipient name and phone; address coordinates and text; markup percentage, tolerance percentage, service fee rule, delivery fee, delay threshold; payment method. Later catalog or settings changes never touch them.
+At creation: product names in both languages, unit, price mode, market price, customer unit price, ordered quantity, note, substitution rule per line; recipient name and phone; address coordinates and text; markup percentage, tolerance percentage, service fee rule, delivery fee, delay threshold; payment method. An edit before shopping adds new lines with fresh line snapshots and leaves every other snapshot as it was (`DL-6`). Later catalog or settings changes never touch them.
 
 ## 14. Money and Quantity
 
@@ -165,7 +165,7 @@ A persisted immutable proposal with `attention_at = created + 10 min` and `expir
 Order → PaymentService → cash record | online obligation → provider adapter (Payme, Click; Paynet, xazna later)
 ```
 
-Cash: a payment row `method = cash` created `paid` by the Courier's delivered action with the amount. Online: an obligation `method = online, status = unpaid` created at shopping completion with `attention_at = +30 min`; attempts against a chosen enabled provider; provider event → deduplicate by `(provider, event_key)` → normalize → apply under lock; success sets `paid` and moves the order to `ready_for_delivery`. Adapters hold transport, signing and parsing only. Merchant credentials live in backend configuration.
+Cash: a payment row `method = cash` created `paid` by the Courier's delivered action with the amount. Online: an obligation `method = online, status = unpaid` created at shopping completion with `attention_at = +30 min`; it becomes `pending` while an attempt is in flight or unknown and returns to `unpaid` when that attempt fails; attempts run against a chosen enabled provider; provider event → deduplicate by `(provider, event_key)` → normalize → apply under lock; success sets `paid` and moves the order to `ready_for_delivery`. Adapters hold transport, signing and parsing only. Merchant credentials live in backend configuration.
 
 ## 21. Reconciliation
 
@@ -211,6 +211,8 @@ Features: auth, catalog, profile, addresses, cart, orders, shopper, approvals, p
 Languages: Uzbek (Latin) and Russian; the client owns every user-facing string, renders text from machine codes, and never displays the API `message`. Language: device default, in-app switch, stored on the device and reported through `PATCH /auth/me`.
 
 Money renders as `150 000 so'm` / `150 000 сум`; phones as `+998 90 123 45 67`.
+
+Design: no brand assets exist. The client ships a text logo "BarakaBozor", the green seed colour already in `core/theme`, and standard Material 3 components; colours and logo live in one place so a designer can replace them later. The Shopper's price entry asks for confirmation when the entered market price is more than three times or less than a third of the estimate's market price (`DL-3`, S-35).
 
 ## 28. Async and Session Safety
 

@@ -158,7 +158,7 @@ cancelled
 
 **BR-ORDER-003** — "Awaiting the Customer" is derived from pending approvals; the order stays `shopping`.
 
-**BR-ORDER-004** — The Customer may edit items and the delivery wish while `new` or `shopping_assigned` and shopping has not started; each edit re-snapshots the changed lines and writes history.
+**BR-ORDER-004** — The Customer may edit items and the delivery wish while `new` or `shopping_assigned` and shopping has not started. Added lines are priced at current catalog prices; lines that stay keep their price snapshots; fee, markup, tolerance and delay snapshots stay as at creation; the minimum amount is re-checked; history is written (`DL-6`).
 
 **BR-ORDER-005** — Order numbers are short, sequential and unique.
 
@@ -224,7 +224,7 @@ Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pendin
 
 **BR-PAY-003** — Cash: the Courier records the cash received at handover; the amount must equal the final total; the payment record is `paid` by that action.
 
-**BR-PAY-004** — Online: a `final` payment obligation is created at shopping completion; success is provider-authoritative; no role can mark it paid.
+**BR-PAY-004** — Online: a payment obligation for the final total is created at shopping completion; success is provider-authoritative; no role can mark it paid. The obligation is `unpaid` with no live attempt, `pending` while an attempt is in flight or unknown, `paid`, or `cancelled`.
 
 **BR-PAY-005** — One live pending attempt per obligation; a new attempt is refused while one is pending.
 
@@ -271,6 +271,8 @@ Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pendin
 **BR-DEL-004** — Delivered on a cash order requires the cash amount and it must equal the final total.
 
 **BR-DEL-005** — No proof photo, signature, code or GPS at handover.
+
+**BR-DEL-006** — The Courier collects the order at the handoff point. While the business runs without one (server configuration `delivery.handoff_point = false`), the Courier's assignment shows the Shopper's phone so they can meet at the market.
 
 # 17. Working Hours and Service Area
 
