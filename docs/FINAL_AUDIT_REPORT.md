@@ -1,5 +1,7 @@
 # BarakaBozor — Final Cross-Document Consistency Audit
 
+> Historical record of the 2026-09-07 audit. The documents it audited were rewritten on 2026-09-24; see `docs/DECISIONS.md`.
+
 ## Verdict
 
 **PASS — `01–09` are LOCKED FOR MVP IMPLEMENTATION.**

@@ -1,5 +1,7 @@
 # BarakaBozor — Path Ownership Map
 
+> **Retired on 2026-09-24** (`DL-1` in `docs/DECISIONS.md`): one implementing agent, no concurrent tracks, no path ownership. Kept as history; not edited.
+
 ## Purpose
 
 Several implementing agents work at once, one per track, each in its own git worktree. This file says which paths each track may modify. It is the mechanism that keeps two concurrent agents out of the same file, and it is binding: a task contract's **Allowed Areas** section must agree with its track's row here, and root `AGENTS.md` Section 8 forbids editing a path owned by another track.

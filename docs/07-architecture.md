@@ -2,390 +2,261 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-020, AUD-021, AUD-022, AUD-023) and 2026-09-22 (AUD-024, AUD-026) and 2026-09-23 (AUD-027, AUD-028); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** current. Rewritten on 2026-09-24 to `docs/INTERVIEW_2026-09-24.md` and `DL-2`–`DL-5` in `docs/DECISIONS.md`. Maintained by the implementing agent.
 
-## 1. Architecture Goals
+## 1. Goals
 
-The MVP architecture must provide backend-authoritative business/financial state, historical Order stability, strong role/ownership/assignment/lifecycle authorization, transaction-safe quantity/payment/refund behavior, vertical feature development inside waves of concurrent tracks, and simple deployment without speculative distributed infrastructure.
+Backend-authoritative business and financial state; stable order history; strong role, ownership, assignment and lifecycle authorization; transaction-safe quantity and payment behaviour; one codebase per side; simple deployment on one server.
 
 ## 2. Technology Baseline
 
 ### Backend
 
 ```text
-PHP 8.3+
-Laravel 13
-Laravel Sanctum
-PostgreSQL
-PHPUnit
-Laravel Pint
-Larastan (PHPStan)
+PHP 8.4 (in Docker), Laravel 13, Laravel Sanctum, PostgreSQL 17
+PHPUnit, Laravel Pint, Larastan (PHPStan level 5)
 ```
 
 ### Frontend
 
 ```text
-Flutter / Dart
-Riverpod
-GoRouter
-Dio
-flutter_secure_storage
-Material 3
+Flutter / Dart, Riverpod, GoRouter, Dio, flutter_secure_storage, Material 3
+Yandex MapKit for the address picker
 ```
 
-One Flutter codebase supports mobile Customer/Shopper/Courier and desktop Operator/Admin/Manager surfaces.
-
-Build targets: **Android**, **iOS**, and **Windows desktop**. No web target — `02` Section 10 fixes Desktop as an installed Windows application, so no browser surface and no CORS configuration exist in the MVP. Android and Windows are required release targets from Wave 0; an iOS release build becomes required in Wave 5, since it needs macOS and an Apple Developer Program membership. iOS code is written throughout.
+Targets: **Android** and the **web panel** from the first client wave; **iOS** once a Mac and an Apple developer account exist (iOS code is written throughout). No Windows or Linux desktop build.
 
 ## 3. Repository Baseline
 
 ```text
 baraka-bozor/
-  AGENTS.md
-  docs/01–09
-  docs/superpowers/specs/
-  tasks/
-  tasks/OWNERSHIP.md
-  tests/fixtures/api/
-  backend/AGENTS.md
-  backend/...
-  frontend/AGENTS.md
-  frontend/...
-  docker/
+  AGENTS.md                 engineering rules
+  docs/                     product and technical design, decisions, interview
+  tasks/                    wave plans
+  backend/                  Laravel application (runs only inside docker/)
+  frontend/                 Flutter application
+  docker/                   local runtime: PostgreSQL 17 + PHP 8.4
 ```
 
-`docs/01–09` is the locked specification. `docs/superpowers/specs/` holds approved engineering design records that are **not** part of the locked specification; each carries its own status line and is authority only for what that line claims. `tasks/OWNERSHIP.md` assigns repository paths to concurrent tracks.
-
-Backend routes are declared per module in `routes/api/v1/<module>.php` and collected by one loop; Flutter feature route fragments are collected by one registry. This keeps concurrent tracks out of the same shared file and is decision `D-8`.
-
-One git worktree per concurrent track, as siblings of the primary checkout. The primary checkout stays on `main` and clean.
+Backend routes are declared per module in `routes/api/v1/<module>.php` and collected by one loader; module service providers under `app/Modules/<Module>/` are collected by one registry; Flutter feature route fragments are collected by one registry in `lib/app/router.dart`. These registries exist so that a feature never edits a shared file.
 
 ## 4. System Context
 
 ```text
-Flutter clients
-     │ HTTPS/JSON
-     ▼
+Flutter clients (Android, iOS, web panel)
+      │ HTTPS/JSON
+      ▼
 Laravel modular monolith
- ├─ Auth/Authorization
- ├─ Catalog/Cart/Orders
- ├─ Shopping/Approvals
- ├─ Payments/Refunds
- ├─ Delivery/Operations
- └─ Analytics
-     │
+ ├─ Auth / Authorization
+ ├─ Catalog / Cart / Orders
+ ├─ Shopping / Approvals
+ ├─ Payments / Refunds
+ ├─ Delivery / Operations
+ └─ Notifications
+      │
  ├─ PostgreSQL
- ├─ Laravel Filesystem
- ├─ Queue/Scheduler
- └─ external adapters
-      ├─ SMS
-      ├─ Payme
-      ├─ Paynet
-      ├─ xazna
-      ├─ Click
-      └─ FCM
+ ├─ Laravel Filesystem (public product images)
+ ├─ database queue + scheduler
+ └─ adapters: Telegram Gateway, SMS (Eskiz), FCM, Payme, Click, Paynet, xazna
 ```
 
-## 5. Architectural Style
+## 5. Style
 
-Use a **modular monolith**. Do not start with microservices, event sourcing, Kafka/RabbitMQ, Kubernetes, mandatory Redis, Elasticsearch, GraphQL, or separate analytics database.
-
-Order, Shopping, Approval, Payment, Refund, and Delivery are strongly connected and benefit from one transactional PostgreSQL model.
+Modular monolith. No microservices, message brokers, Kubernetes, mandatory Redis, Elasticsearch, GraphQL, WebSockets or separate analytics database. Order, shopping, approval, payment and delivery share one transactional PostgreSQL model.
 
 ## 6. Backend Responsibility Flow
 
 ```text
-HTTP boundary
-→ Application Action
-→ Domain Policy/Service
-→ Eloquent/PostgreSQL/Infrastructure
-→ Resource/response
+HTTP boundary (Form Request, thin controller)
+→ Application action (one use case)
+→ Domain policy or calculator where logic is reusable
+→ Eloquent / PostgreSQL / adapters
+→ Resource
 ```
 
-Controllers parse/validate allowed input, resolve actor, call one Action, map expected failures, return Resource. Complex lifecycle/transaction logic does not belong in Controllers.
+Representative actions: `RequestCustomerLoginCode`, `VerifyCustomerLoginCode`, `AuthenticateStaff`, `ChangePassword`, `PreviewCheckout`, `CreateOrder`, `EditOrderItems`, `CancelOrder`, `AssignShopper`, `AcceptShoppingAssignment`, `StartShopping`, `RecordPurchasedItem`, `MarkItemUnavailable`, `ProposeSubstitution`, `RequestApproval`, `DecideApproval`, `ExpireApprovals`, `CompleteShopping`, `InitiatePaymentAttempt`, `ApplyProviderPaymentEvent`, `ReconcilePayment`, `SwitchOrderToCash`, `AssignCourier`, `StartDelivery`, `CompleteDelivery`, `FailDelivery`, `CompleteRefund`.
 
-Representative Actions: `RequestCustomerOtp`, `VerifyCustomerOtp`, `AuthenticateStaff`, `ChangePassword`, `PreviewCheckout`, `CreateOrder`, `AssignShopper`, `AcceptShoppingAssignment`, `StartShopping`, `RecordPurchasedItem`, `RequestCustomerApproval`, `RespondToApproval`, `CompleteShopping`, `InitiatePayment`, `ApplyProviderPaymentEvent`, `ReconcilePayment`, `CreateRefund`, `AssignCourier`, `AcceptDeliveryAssignment`, `StartDelivery`, `CompleteDelivery`, `CancelOrder`.
-
-Representative Domain components: `PricingPolicy`, `QuantityPolicy`, `SubstitutionPolicy`, `ApprovalPolicy`, `MoneyCalculator`, `ServiceFeeCalculator`, `OrderLifecycle`, `CancellationPolicy`, `PaymentPolicy`, `RefundPolicy`, `DeliveryPolicy`.
+Representative domain components: `CustomerPriceCalculator`, `QuantityPolicy`, `SubstitutionPolicy`, `ApprovalPolicy`, `MoneyCalculator`, `ServiceFeeCalculator`, `OrderLifecycle`, `CancellationPolicy`, `PaymentPolicy`, `ServiceAreaPolicy`, `WorkingHours`.
 
 ## 7. Single-Business Boundary
 
-MVP is not multi-tenant SaaS. Do not add tenant/company/market/city ownership solely for future expansion. One business, one market/region. Multi-market/city requires later architecture revision.
+Not multi-tenant. No tenant, market or city ownership columns.
 
 ## 8. Identity and Authentication
 
-Customer: `phone → OTP → customer → Sanctum token`, no password.
+**Customer:** `phone → login code → customer → Sanctum token`. The code is six digits, hashed at rest, valid five minutes, five failed verifications, sixty seconds between sends, five sends per phone per hour. Delivery goes through the `CodeDeliveryGateway` abstraction with three implementations: Telegram Gateway, SMS (Eskiz), and a fake that records codes in a test-only in-process sink. The gateway selection: Telegram when the provider reports the number has a Telegram account, otherwise SMS when configured, otherwise (development) the fake. **Test phone numbers:** configuration lists phone numbers and one fixed code; a listed number verifies with that code and no delivery is attempted; the list is empty in production and is never an Admin setting.
 
-Staff: `phone + password → Staff role → Sanctum token`.
+**Staff:** `phone + password → role → Sanctum token`, with the first-login gate. Rate limits: five failed logins per phone per minute and twenty per IP per minute; five failed `current_password` checks per token per minute on password change. No account lockout.
 
-Admin-created Staff begins `must_change_password=true`; backend blocks normal actions until password change, allowing only `/auth/me`, password change, logout.
+**Tokens:** bearer on every surface, including the web panel; 30 days sliding from last use; several per account; all deleted on blocking, and status re-checked on every request. Sanctum's SPA cookie mode and CSRF are not used; the web panel's origin is allowed by CORS configuration.
 
-Flutter stores bearer token using secure platform storage. Every MVP target — Android, iOS, Windows — provides one, which is part of why `02` Section 10 rules out a browser surface. Sanctum therefore runs in bearer-token mode on every surface; there is no SPA-cookie mode and no CSRF surface.
-
-Backend re-reads current user role/status; valid token never overrides `blocked`. Each authentication path resolves the active account of its own family: Customer OTP verify the active Customer account, Staff login the active Staff account, per `BR-ROLE-010`.
-
-**Token lifetime is 30 days, sliding — renewed by use.** A token is invalid once it has gone 30 days unused, measured from `last_used_at` and from creation when never used. Not 30 days from issue: an active Shopper or Courier is never signed out mid-Order, while a lost or forgotten phone stops working within a month. Sanctum's absolute `expiration` setting measures from issue and is therefore not what implements this.
-
-**Any account may hold several valid tokens at once** — a Shopper on two phones, a Customer on a phone and a tablet. No cap, and no device-management surface in the MVP.
-
-**One device may hold two sessions for one person** — the Staff session and the Customer session of a Shopper or Courier who holds both accounts on one phone number, for the Customer mode of `02` Section 10. The client keeps them in separate secure-storage slots and sends with each request the token of the mode that issued it, so a request queued or retried across a switch still acts on the account that made it. They are never exchanged for one another: the Customer session is issued only by Customer OTP verify and the Staff session only by Staff login, so no password ever opens a Customer account and no OTP ever opens a Staff one. When one token is refused — for instance because that account was blocked — the client discards that token alone and, if the other session is stored, continues in its mode (`09` Section 8). What logging out of one mode does to the other is not yet decided (`S-37`). The session foundation (`S01-FE-002`) stores both from the start. The storage key is treated as a contract: changing it before any client is installed costs nothing, while after release the same change would need a migration in every installed client. The switch control itself is built later, with the Catalog and Cart.
-
-**Blocking revokes access two independent ways, deliberately redundant.** Every token belonging to the account is deleted at the moment it is blocked, *and* account status is re-checked on every authenticated request. If a later change ever misses one barrier the other still holds, and the person being blocked may hold Order, assignment and money capabilities, so defence in depth is proportionate here. A valid token on a blocked account returns `401 account_blocked`.
+**Two sessions on one device** for Customer mode: the client keeps a staff slot and a customer slot and sends the token of the active mode. A refused token ends only its own session.
 
 ## 9. Authorization Layers
 
-1. authenticated token;
-2. active account / password-change gate;
-3. role capability;
-4. ownership/assignment scope;
-5. lifecycle/business condition;
-6. current authoritative state under lock where race-sensitive.
-
-Direct UUID is never authorization.
+1. authenticated token; 2. active account and password gate; 3. role capability; 4. ownership or current-assignment scope; 5. lifecycle condition; 6. current state under lock where race-sensitive. A UUID is never authorization. Operator capabilities are a subset of Admin capabilities enforced per endpoint.
 
 ## 10. Catalog and Media
 
-Catalog is relational PostgreSQL. MVP Product search is server-side PostgreSQL; no Elasticsearch.
+Relational catalog with paired language columns. Server-side PostgreSQL search over `lower(name_uz)` and `lower(name_ru)`. Product image metadata in PostgreSQL, bytes on the Laravel public disk in development and S3-compatible storage in production, served from public URLs with long cache headers; the URL changes when the image changes.
 
-Product image metadata is PostgreSQL, bytes through Laravel Filesystem. One current image; JPEG/PNG/WebP <=5 MB. Development may use local storage; production may use S3-compatible storage without domain change.
+## 11. Address and Map
 
-## 11. Customer Address / Map
+The backend stores coordinates and text and validates the service-area circle by great-circle distance from the configured centre. The client uses Yandex MapKit for the picker; the backend has no map dependency.
 
-Backend stores structured address + coordinates and remains map-vendor neutral. The Flutter map point-picker package is selected at the Wave 2 planning gate. Automatic geocoding is optional and not authoritative delivery requirement.
-
-## 12. Order Aggregate Boundary
+## 12. Order Aggregate
 
 ```text
 Order
- ├─ historical Order Items
- ├─ status history
- ├─ Shopper assignment history
- ├─ Customer Approvals
+ ├─ items (with both-language snapshots)
+ ├─ history (status changes, edits, switches, corrections, assignment events)
+ ├─ shopper assignments
+ ├─ courier assignments
+ ├─ approvals
  ├─ cancellation requests
- ├─ Payments / Attempts / Provider Events
- ├─ Refunds / Attempts
- └─ Courier assignment history
+ ├─ payment (cash record or online obligation) → attempts → provider events
+ ├─ refunds (manual)
+ └─ price corrections
 ```
 
-Do not store business aggregate as uncontrolled JSON blob.
+## 13. Snapshot Boundary
 
-## 13. Historical Snapshot Boundary
-
-At Order creation persist original Product name/unit/price mode/fixed/range values, ordered quantity/note/substitution policy, recipient name/phone, Address coordinates/text, Service fee rule, Delivery fee, selected Payment provider. Current Catalog/settings changes never rewrite these.
+At creation: product names in both languages, unit, price mode, market price, customer unit price, ordered quantity, note, substitution rule per line; recipient name and phone; address coordinates and text; markup percentage, tolerance percentage, service fee rule, delivery fee, delay threshold; payment method. An edit before shopping adds new lines with fresh line snapshots and leaves every other snapshot as it was (`DL-6`). Later catalog or settings changes never touch them.
 
 ## 14. Money and Quantity
 
-- money: integer UZS;
-- Service percentage: decimal;
-- quantity: decimal-compatible with unit-specific rules;
-- line totals and percentage Service fee: deterministic half-up to 1 UZS.
-
-Flutter sends quantity/percentage decimal values as strings.
+Money `bigint` UZS; percentages `numeric(5,2)`; quantities `numeric(18,3)` with unit precision rules; every rounding half-up to 1 UZS in one `MoneyCalculator`. The client sends quantities and percentages as strings.
 
 ## 15. Order Lifecycle
 
 ```text
-checkout_payment_pending
-new
-shopping_assigned
-shopping
-approval_required
-final_payment_pending
-ready_for_delivery
-delivery_assigned
-on_the_way
-completed
-cancelled
+new → shopping_assigned → shopping → [final_payment_pending] → ready_for_delivery
+    → delivery_assigned → on_the_way → completed
+cancelled from any non-terminal state under the rules of 05 Section 15
 ```
 
-No generic status PATCH. Explicit Actions own transitions. `approval_required` is Order projection while at least one Item awaits Customer; other eligible Shopping Items may continue.
+`final_payment_pending` only for online orders. Awaiting-customer is derived from pending approvals. Every transition is an explicit action writing `order_history`.
 
 ## 16. Transactions and Concurrency
 
-Use PostgreSQL transactions for multi-record invariants and row locks when current state must serialize competing mutations.
+Transactions with row locks (`SELECT … FOR UPDATE` on the order row) for: order creation and cart conversion, editing, assignment, shopping start and completion, item recording, approval creation and decision and expiry, payment creation, provider events and reconciliation, switch to cash, cancellation and its decisions, delivery start, completion and failure, refund completion. Lock order: order, then items, then payment. Fresh locked state wins over a stale client.
 
-Lock-sensitive families include Order creation/Cart conversion, assignments, Shopping start/completion, Approval decision/expiry fallback, Payment/refund creation/events/reconciliation, cancellation decision, delivery start/completion.
-
-Fresh locked state wins over stale Flutter state.
-
-## 17. Persisted Idempotency Architecture
-
-High-risk Flutter mutations use one persisted boundary:
+## 17. Persisted Idempotency
 
 ```text
 IdempotencyStore
-  begin(actor, operation, key, request_hash)
+  begin(actor, operation, key, request_hash)  → new | replay(resource) | in_progress | conflict
   complete(resource reference)
 ```
 
-PostgreSQL stores unique `(actor_user_id, operation, idempotency_key)` + request hash + logical resource reference. Same key/request returns same logical result; same key/different request conflicts. Provider callbacks use provider-event identity instead.
+Unique `(actor_user_id, operation, idempotency_key)`, request hash, state `processing` or `completed`, and a 60-second lease on `processing`. Same key and hash while completed → the same logical result. Same key inside the lease → `409 idempotency_in_progress`. Same key after the lease with no completion → the operation runs again and takes the row over. Different hash → `409 idempotency_key_reused`. Provider callbacks use provider event identity instead.
 
-## 18. Shopper/Courier Assignment
+## 18. Assignment
 
-Current assignment unique/Order and history retained. Assignment must be accepted before work begins. Shopper reassignment only before Shopping starts; Courier reassignment only before `on_the_way`.
+One current Shopper assignment and one current Courier assignment per order; history kept; accept before start; reassignment before start of work; `is_self_order` computed at assignment from the phones.
 
-## 19. Customer Approval Architecture
+## 19. Approvals
 
-Approval is first-class persisted proposal, immutable after creation except resolution. Scheduler/request-time reconciliation uses same idempotent expiration action.
+A persisted immutable proposal with `attention_at = created + 10 min` and `expires_at = created + 30 min`. The scheduler runs the idempotent `ExpireApprovals` action every minute; reads also reconcile on the way through so a late scheduler never lets an expired approval be approved. Approval outcome is written onto the item (ceiling, replacement authorization, quantity cap) and the item returns to `pending`.
 
-`attention_at=created+10m`, `expires_at=created+30m`. Expiration never authorizes Customer spending; Operator/Admin fallback is Item removal only.
-
-## 20. Payment Architecture
+## 20. Payments
 
 ```text
-Order
-→ Payment application/orchestrator
-→ provider adapter
-   ├─ Payme
-   ├─ Paynet
-   ├─ xazna
-   └─ Click
+Order → PaymentService → cash record | online obligation → provider adapter (Payme, Click; Paynet, xazna later)
 ```
 
-Common business capabilities: create Payment obligation, initiate Attempt, validate/normalize provider inbound request, reconcile state, create/process Refund. Provider-specific signatures/routes/merchant auth/responses remain inside adapters based on official docs.
+Cash: a payment row `method = cash` created `paid` by the Courier's delivered action with the amount. Online: an obligation `method = online, status = unpaid` created at shopping completion with `attention_at = +30 min`; it becomes `pending` while an attempt is in flight or unknown and returns to `unpaid` when that attempt fails; attempts run against a chosen enabled provider; provider event → deduplicate by `(provider, event_key)` → normalize → apply under lock; success sets `paid` and moves the order to `ready_for_delivery`. Adapters hold transport, signing and parsing only. Merchant credentials live in backend configuration.
 
-## 21. Payment Event Boundary
+## 21. Reconciliation
 
-```text
-provider request
-→ provider-specific auth/signature validation
-→ provider-event deduplication
-→ normalize outcome
-→ transaction/lock Payment
-→ update Attempt/Payment/Order
-→ queue secondary notifications
-```
+An attempt `pending` for longer than the provider timeout (15 minutes) is "unknown". The scheduler asks the provider for its state; the answer is applied like an event. No new attempt is allowed on an obligation with a pending or unknown attempt.
 
-Merchant credentials/private keys are backend configuration only and never Flutter/API data.
+## 22. Refunds
 
-## 22. Refund Architecture
+A `refunds` row is created when a paid online order is cancelled. Completion is manual: Admin records the provider reference. The system never calls a refund API in the MVP.
 
-Refund is first-class entity with provider Attempts. Successful refund total is transactionally constrained not to exceed successful Payment amount. Pending overpayment Refund does not block delivery when Customer has already paid enough for final total.
+## 23. Code Delivery
 
-## 23. SMS OTP Architecture
+`CodeDeliveryGateway` with `TelegramGatewayCodeDelivery`, `EskizSmsCodeDelivery` and `FakeCodeDelivery`. No code value is ever logged or returned. Provider credentials are configuration.
 
-Domain uses `SmsGateway` abstraction. OTP generation/hash/expiry/attempts/rate limit are backend responsibilities. Exact OTP policy is fixed in API.
+## 24. Notifications
 
-**OTP values are never emitted.** Not in an API response, not in a log line, not in a response header, in any environment. Root `AGENTS.md` Section 6 states this without an environment qualifier and this document adds none. A fake `SmsGateway` used before a real vendor exists records the issued OTP only in a test-only in-process sink that backend feature tests assert against.
-
-The actual SMS vendor is a **Wave 5** external gate: the vendor contract and alpha-name registration require a registered legal entity. Wave 0 implements and verifies the full OTP flow behind the fake gateway and closes on it, with the real path recorded as explicit debt (`06-roadmap.md` Section 4, decision `D-4`).
-
-## 24. Notification Architecture
-
-Use `NotificationService` abstraction with FCM adapter for MVP mobile push. Domain emits semantic intents, not Firebase calls. Notification delivery is asynchronous/secondary and failure never rolls back valid Order/Payment transition.
-
-For a Shopper's current Order the Project Owner chose polling over push: the Order screen refreshes itself every few seconds while the app is open. Mobile operating systems do not allow polling that often in the background, so while the phone is locked or in a pocket the Shopper receives nothing — neither a new assignment nor a Customer's answer to an Approval. The gap is recorded in `AUD-028`; polling does not close it. Push for other Staff roles is not decided here.
+`NotificationService` with an FCM adapter and a fake. The domain emits intents (`event type`, `user`, `order or approval ID`); a queued job renders the title and body from the two-language template set by `users.preferred_language` and sends a push whose data carries the event type and the ID only. Delivery rows are recorded; failure never rolls anything back. A device registers its token once per signed-in account; the Shopper's order screen polls every few seconds in the foreground and the client suppresses foreground banners for events the screen already shows.
 
 ## 25. Queue and Scheduler
 
-Baseline may use Laravel database queue with PostgreSQL to avoid mandatory Redis.
-
-Scheduler/request-time idempotent reconciliation handles Approval attention/expiry, unpaid fixed checkout cancellation, Payment/refund reconciliation, and operational attention refresh. Correctness must not depend only on scheduler latency.
+Laravel database queue in PostgreSQL. Scheduler jobs: approval attention and expiry, unpaid-online attention, payment reconciliation, delay attention refresh. Correctness never depends on scheduler latency alone: every read path reconciles what it shows.
 
 ## 26. Time
 
-Backend `Clock` provides authoritative UTC time. `Asia/Tashkent` is MVP business display default; device clock not authoritative.
+Backend `Clock` in UTC; `Asia/Tashkent` for display and for working hours; device clocks are never authoritative.
 
 ## 27. Flutter Architecture
 
 ```text
-Presentation
-→ Riverpod Controller/Notifier
-→ Repository contract
-→ Repository implementation
-→ API Data Source / DTO
-→ configured Dio
+Presentation → Riverpod controller → repository contract → repository → API data source / DTO → the one Dio client
 ```
 
-Widgets never call Dio or parse raw JSON directly. Logical features: auth, catalog, profile, addresses, cart, orders, shopper, approvals, payments, courier, operator, admin, notifications, history, analytics.
-
-**Directory layout**, fixed once for the whole client so no wave has to renegotiate it:
+Layout, fixed:
 
 ```text
 lib/
-  app/                      root router and root providers
-  core/                     everything no single feature owns — for
-                            example network (the one configured Dio
-                            client), theme, error-envelope parsing,
-                            the code-to-text mapping, localization
-  features/
-    <feature>/
-      data/                 DTOs, data sources
-      domain/               entities, repository contracts
-      application/          Riverpod controllers and notifiers
-      presentation/         screens and widgets
+  app/        root router and root providers
+  core/       everything no single feature owns: network, storage, theme, error mapping, localization, routing registry, config, map
+  features/<feature>/{data,domain,application,presentation}
 ```
 
-One feature per directory under `features/`, named from the list above. The four layer directories are the boundaries `frontend/AGENTS.md` Section 2 already requires, made concrete; a feature uses the ones that carry real ownership rather than creating empty folders. `lib/app/` holds only the root router and root providers, which the `D-8` registry collects from per-feature fragments, and which `tasks/OWNERSHIP.md` keeps out of every feature track's hands from Wave 1 onward.
+Features: auth, catalog, profile, addresses, cart, orders, shopper, approvals, payments, courier, operations, admin, notifications, history. The web panel is the same application built for web with the operations and admin features; mobile builds carry the customer, shopper and courier features. A role that lands on the wrong surface sees a screen naming the right one.
 
-Nothing cross-feature belongs anywhere but `core/`. A second home for shared code is how a codebase ends up with two Dio clients, which Section 2 of `frontend/AGENTS.md` forbids.
+Languages: Uzbek (Latin) and Russian; the client owns every user-facing string, renders text from machine codes, and never displays the API `message`. Language: device default, in-app switch, stored on the device and reported through `PATCH /auth/me`.
 
-The `core/` names above are examples, not a closed list. The test for a new subdirectory is whether a single feature owns the thing: if one does, it belongs in that feature; if none does, it belongs in `core/`. A track does not need approval to add one that passes that test.
+Money renders as `150 000 so'm` / `150 000 сум`; phones as `+998 90 123 45 67`.
 
-MVP client languages are **Uzbek and Russian**. No English UI. How the language is selected, defaulted and persisted is **not yet decided** and is tracked as `S-27`; no feature list, wave or table in this specification carries a language-selection surface today.
+Design: no brand assets exist. The client ships a text logo "BarakaBozor", the green seed colour already in `core/theme`, and standard Material 3 components; colours and logo live in one place so a designer can replace them later. The Shopper's price entry asks for confirmation when the entered market price is more than three times or less than a third of the estimate's market price (`DL-3`, S-35).
 
-**The client owns every user-facing string.** It renders text from the machine `code` an API error carries, in the user's language, and never displays the API `message`, which is developer-facing English. A `code` with no client text is a frontend defect, not a backend one. Machine values — `customer`, `shopping`, `payme`, `kg`, `piece` — are likewise never displayed raw; the client maps them to labels, so no `unit_label` column or translated enum belongs in the database.
+## 28. Async and Session Safety
 
-## 28. Flutter Async Safety
-
-Session/target/operation identity prevents stale async completion from leaking prior Customer/Order/account into current UI. High-risk Payment/Approval/Order operations suppress duplicate submissions and reconcile server state after uncertain outcomes.
-
-Switching between Staff and Customer mode (`02` Section 10) is a session change under this rule: a result requested in one mode is discarded if it completes after the switch, and no screen state crosses from one mode into the other.
+Session, target and operation identity guard every async completion; a result that completes after a mode switch or an account change is discarded. Payment, approval and order actions suppress duplicate submission and reconcile from the server after an uncertain outcome.
 
 ## 29. Navigation
 
-Role-aware areas: `/auth`, `/customer`, `/shopper`, `/courier`, `/operator`, `/admin`, `/manager`. GoRouter guards improve UX; backend remains authority.
+Areas: `/auth`, `/customer`, `/shopper`, `/courier`, `/operations`, `/admin`, `/manager`. Guards are UX; the backend is the authority.
 
 ## 30. API Style
 
-Versioned JSON REST `/api/v1`. Success/error envelopes, strict request shape, pagination, error codes, idempotency headers, and endpoints are in `09-api-contracts.md`.
-
-**The backend performs no locale negotiation.** It does not read `Accept-Language`, holds no translation files, and never chooses a language on the client's behalf: prose it emits is English for developers, and data held in both languages is returned in both for the client to select. Because the client renders user-facing text from the error `code` (Section 27), there is nothing for the server to translate, and a value a message would need must reach the client as data rather than inside prose (`09` Section 3, where the envelope slot for it is still open as `S-31`). Do not add locale handling to the backend out of habit.
+Versioned JSON REST under `/api/v1`; envelopes, strict request shape, pagination, error codes with an optional `details` object, idempotency headers — all in `09`. The backend performs no locale negotiation; `message` is developer English.
 
 ## 31. PII and Logging
 
-Logs may contain request ID, actor ID/role, Order/Payment ID, action, safe error category. Never passwords, OTPs, bearer tokens, merchant secrets/private keys, sensitive raw provider/card credentials. Shopper/Courier/Manager receive only necessary data.
+Logs carry request ID, actor ID and role, order and payment IDs, action and safe error category. Never passwords, login codes, tokens, provider secrets, raw provider payloads. Shopper screens omit the address; Courier screens carry only the delivery data.
 
-## 32. Analytics
+## 32. Figures
 
-Use PostgreSQL read/aggregate queries over authoritative business state. No separate analytics database/warehouse in MVP.
+Deferred. When built: read-only aggregates over the authoritative tables, no warehouse.
 
-## 33. Testing Architecture
+## 33. Testing
 
-Backend unit/domain: pricing/quantity/substitution/approval, money rounding/fees, lifecycle/cancellation/refund, idempotency, delay.
+Backend unit: price and money calculators, quantity, substitution and approval policies, lifecycle, cancellation, idempotency, service area, working hours. Backend feature (against PostgreSQL): auth and gates; role, ownership and assignment negatives; catalog, cart, checkout, order creation and editing; shopping and approvals; payments with fake providers including failure and unknown paths; delivery; operations and admin boundaries. Frontend: DTO parsing from the examples in `09`, request construction, repository failure mapping, controller transitions, session isolation, route guards, screen states. End to end before each wave closes: the real stack, the wave's scenario.
 
-Backend feature: Auth/OTP/first-login/blocking; role/ownership/assignment negatives; Catalog/Cart/Checkout; Order snapshots/idempotency; Shopping/Approval; Payment/refund replay/reconciliation; Delivery; Operator/Admin/Manager boundaries.
-
-Frontend: strict DTOs, request construction/failure mapping, Riverpod transitions, session/stale-result isolation, route guards, loading/error/data/empty, Payment unknown state, responsive role surfaces.
-
-Integration: real Flutter → Laravel → PostgreSQL plus provider sandbox/test checks at relevant gates.
-
-**Shared API fixtures (`D-9`).** Frontend and backend implement the same locked contract concurrently, so the response and error examples from `09-api-contracts.md` live in one shared fixture directory. Backend feature tests assert that the API emits them; frontend tests assert that the client parses them. A divergence fails CI instead of surfacing at integration. A frontend track may only build against a fixture surface that is actually decided — an endpoint whose error envelope still has an open specification question has no writable fixture yet.
-
-**Fake providers.** Where a wave runs behind a fake provider, its tests must exercise failure and unknown-outcome paths, not only success, and must assert that no code path presents a fake provider success as a real payment.
+No code path may present a fake provider result as real.
 
 ## 34. Production Topology
 
 ```text
-Internet
-→ HTTPS reverse proxy
-→ Laravel API
-   ├─ PostgreSQL
-   ├─ Queue worker
-   ├─ Scheduler
-   ├─ File/object storage
-   └─ external SMS/Payment/FCM APIs
+Internet → reverse proxy with TLS → Laravel (php-fpm) → PostgreSQL
+                                  ├─ queue worker
+                                  ├─ scheduler
+                                  ├─ object storage (images)
+                                  └─ Telegram / SMS / FCM / payment APIs
+web panel: static build behind the same proxy
 ```
 
-## 35. Architecture Non-Goals
+One Ubuntu VPS in Uzbekistan running Docker Compose, nightly database backups off the host.
 
-No microservices, Kafka/RabbitMQ, Kubernetes, mandatory Redis, Elasticsearch, GraphQL, WebSockets, separate analytics DB, multi-tenant/multi-market foundation, live GPS, automatic dispatch, offline-authoritative mutation sync, AI, warehouse/inventory subsystem.
+## 35. Non-Goals
 
-## 36. External Integration Gates
+Microservices, brokers, Kubernetes, mandatory Redis, Elasticsearch, GraphQL, WebSockets, separate analytics database, multi-tenant foundation, live GPS, automatic dispatch, offline shopping mode, AI, warehouse.
 
-Provider facts remain explicit implementation gates: selected SMS vendor, Flutter map/tile provider, Firebase config, and official Payme/Paynet/xazna/Click merchant protocols/credentials. The implementing agent must not invent protocols or fake production success.
+## 36. External Gates
 
-Two refinements from the wave model, with the full table in `tasks/README.md` Section 16:
-
-- **Published documentation and credentials are separate gates.** Official published protocol documentation is enough to implement a thin adapter — transport, signing and response parsing only. Credentials remain mandatory for verification and for Wave 5 closure. Obligations, attempts, idempotency, reconciliation and refunds stay provider-agnostic, so a divergence between published and contractual protocol rewrites the thin adapter and not the payment core.
-- **Some gates need a registered legal entity and some do not.** The SMS contract with its alpha-name, and every merchant agreement, do. Provider selection, the Flutter map/tile package and the Firebase project do not. Firebase therefore reaches a real integration in Wave 4, while SMS and merchant integration wait for Wave 5.
+`06` Section 5. Published protocol documentation permits a thin adapter; credentials are needed to verify it. Never invent a protocol; never present a fake result as real.

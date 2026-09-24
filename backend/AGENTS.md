@@ -2,9 +2,9 @@
 
 ## 1. Scope
 
-Applies to changes under `backend/`. Read with root `AGENTS.md` and the current approved implementation contract.
+Applies to changes under `backend/`. Read with root `AGENTS.md`, `docs/07–09` and the current wave file in `tasks/`.
 
-The contract defines behavior/API/schema/lifecycle/concurrency/tests. This file defines Laravel/PostgreSQL engineering standards.
+The documents define behavior/API/schema/lifecycle/concurrency. This file defines Laravel/PostgreSQL engineering standards. Every backend command runs inside the Compose stack (`docker/README.md`); the host PHP cannot reach PostgreSQL.
 
 ## 2. Backend Architecture
 
@@ -17,7 +17,7 @@ HTTP boundary
   -> Eloquent/PostgreSQL/infrastructure
 ```
 
-Do not introduce a generic repository layer, command bus, event framework, microservice boundary, or new package without explicit approval.
+Do not introduce a generic repository layer, command bus, event framework or microservice boundary. A new package needs a reason recorded in the commit message and, when it shapes the architecture, a `docs/DECISIONS.md` entry.
 
 ## 3. HTTP Boundary
 
@@ -66,7 +66,7 @@ Use deterministic ordering for paginated data where required. Add/use indexes th
 
 ## 6. Persistence and Migrations
 
-Use forward migrations for schema changes. Follow locked UUID/timestamptz/money/quantity/constraint conventions from the task contract.
+Use forward migrations for schema changes. Follow the UUID, `timestamptz`, money, quantity and constraint conventions of `docs/08-database.md`.
 
 Structural invariants belong in PostgreSQL when practical:
 
@@ -104,7 +104,7 @@ Expected conflicts map to safe stable API errors; never leak DB exceptions.
 
 ## 9. External Providers
 
-SMS, FCM, Payme, Paynet, xazna, and Click belong behind explicit infrastructure adapters. Domain/order code must not contain provider-specific HTTP protocol details.
+Telegram Gateway, SMS (Eskiz), FCM, Payme, Click, Paynet and xazna belong behind explicit infrastructure adapters. Domain/order code must not contain provider-specific HTTP protocol details.
 
 Never call real providers from normal automated tests. Use fakes/stubs and separately approved sandbox/integration checks.
 

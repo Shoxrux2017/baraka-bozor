@@ -2,309 +2,201 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023) and 2026-09-22 (AUD-024); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** current. Rewritten on 2026-09-24 to `DL-2`–`DL-4` in `docs/DECISIONS.md`. The `users` and `customer_otp_challenges` tables are already migrated; every other table is created by the wave that first needs it, by forward migrations only.
 
 ## 1. Baseline
 
-PostgreSQL, one BarakaBozor business/market, not multi-tenant. Domain tables use UUID PKs; authoritative instants `timestamptz`; business enums constrained `varchar + CHECK`; money `bigint` integer UZS; quantity `numeric(18,3)` with unit-specific application precision rules.
+PostgreSQL 17. UUID primary keys on domain tables; `timestamptz` for every instant; business enums as `varchar` with `CHECK`; money `bigint` UZS; percentages `numeric(5,2)`; quantities `numeric(18,3)`; coordinates `numeric(9,6)` / `numeric(10,6)`. Named constraints. No hard deletes of history.
 
 ## 2. Table Map
 
 ```text
-users
-customer_otp_challenges
+users                       customer_otp_challenges
 customer_addresses
-categories
-products
-product_images
-carts
-cart_items
-business_settings
-payment_provider_settings
-orders
-order_items
-order_status_history
-order_shopper_assignments
-customer_approvals
-order_item_price_corrections
+categories                  products                 product_images
+carts                       cart_items
+business_settings           payment_provider_settings
+orders                      order_items              order_history
+order_shopper_assignments   order_courier_assignments
+customer_approvals          order_item_price_corrections
 order_cancellation_requests
-payments
-payment_attempts
-provider_events
+payments                    payment_attempts         provider_events
 refunds
-refund_attempts
-order_courier_assignments
-push_devices
-notification_deliveries
+push_devices                notification_deliveries
 idempotency_keys
 ```
 
-Framework tables: Sanctum tokens, queue tables, migrations.
+Framework: `personal_access_tokens`, `cache`, `jobs`, `failed_jobs`, `job_batches`, `migrations`.
 
-## 3. `users`
+## 3. `users` (migrated)
 
-| Column | Type | Null |
-|---|---|---:|
-| id | uuid | no |
-| role | varchar(24) | no |
-| phone | varchar(20) | no |
-| full_name | varchar(160) | yes |
-| password | varchar(255) | yes |
-| status | varchar(16) | no |
-| must_change_password | boolean | no |
-| password_changed_at | timestamptz | yes |
-| last_login_at | timestamptz | yes |
-| blocked_at | timestamptz | yes |
-| created_by_user_id | uuid | yes |
-| created_at | timestamptz | no |
-| updated_at | timestamptz | no |
+`id, role, phone, full_name?, password?, status, must_change_password, password_changed_at?, last_login_at?, blocked_at?, created_by_user_id?, timestamps`, plus **`preferred_language varchar(2) NOT NULL DEFAULT 'uz'`** (`CHECK IN ('uz','ru')`, added by a Wave 0 migration).
 
-Constraints: `phone` is **not** plainly unique. Two partial unique indexes instead, one per account family — PostgreSQL expresses a conditional uniqueness only as an index, not as a table constraint:
+Checks: role in the six values; status `active|blocked`; phone `^\+998[0-9]{9}$`; Customer has null password and no gate; Staff has a password; blocked implies `blocked_at`. Two partial unique indexes: `(phone) WHERE status='active' AND role='customer'` and `(phone) WHERE status='active' AND role<>'customer'`. Index `(role,status)`, `lower(full_name)`.
 
-```sql
-CREATE UNIQUE INDEX users_phone_active_customer_unique
-    ON users (phone) WHERE status = 'active' AND role = 'customer';
+## 4. `customer_otp_challenges` (migrated)
 
-CREATE UNIQUE INDEX users_phone_active_staff_unique
-    ON users (phone) WHERE status = 'active' AND role <> 'customer';
-```
-
-Invariant: **at most one active Customer account and at most one active Staff account per phone.** `role` and `status` are both `NOT NULL`, so neither predicate can be evaded. Rationale and consequences are in `02` Section 3 and in `AUD-023`. The constraint is enforced by the database. The API additionally validates the phone, so a duplicate on Staff creation returns `422 validation_failed` per `09` Section 3 rather than surfacing a constraint violation as a server failure. Roles six approved; status active/blocked; Customer password null + no change gate; Staff password non-null. Index `(role,status)`, `lower(full_name)`. No hard-delete historical users.
-
-## 4. `customer_otp_challenges`
-
-`id, phone, purpose, code_hash, failed_attempts, expires_at, consumed_at, invalidated_at, created_at`. Purpose `customer_login`. Index `(phone,created_at)`, `expires_at`. No plaintext OTP.
+`id, phone, purpose (customer_login), code_hash, failed_attempts ≥ 0, expires_at, consumed_at?, invalidated_at?, created_at`, plus **`channel varchar(16)`** (`CHECK IN ('telegram','sms','fake','test')`, added by a Wave 0 migration). Index `(phone, created_at)`, `expires_at`. No plaintext code.
 
 ## 5. `customer_addresses`
 
-`id, customer_id, label?, latitude numeric(9,6), longitude numeric(10,6), street, house, apartment?, landmark?, delivery_note?, is_active, timestamps`.
-
-Checks valid coordinates, non-empty street/house. Index `(customer_id,is_active)`.
+`id, customer_id → users, label?, latitude, longitude, street, house, apartment?, landmark?, delivery_note?, is_active, timestamps`. Checks: valid coordinate ranges, non-empty street and house. Index `(customer_id, is_active)`. The service-area check is application logic against `business_settings`.
 
 ## 6. `categories`
 
-`id, name_uz, name_ru, description_uz?, description_ru?, sort_order, is_active, archived_at?, created_by_user_id, timestamps`. Index active/sort, and `lower(name_uz)` and `lower(name_ru)` — a single-language index would make Customer search miss a Category in the other language.
+`id, name_uz, name_ru, description_uz?, description_ru?, sort_order, is_active, archived_at?, created_by_user_id, timestamps`. Non-empty names. Index `(is_active, sort_order)`, `lower(name_uz)`, `lower(name_ru)`.
 
 ## 7. `products`
 
-`id, category_id, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, fixed_price_uzs?, min_price_uzs?, max_price_uzs?, is_active, sort_order, archived_at?, created_by_user_id, timestamps`.
+`id, category_id → categories, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, is_active, sort_order, archived_at?, created_by_user_id, timestamps`.
 
-Category and Product names and descriptions are **bilingual, Uzbek and Russian**, because `07` Section 27 fixes both as MVP client languages. `AUD-024` is the first place the language set is fixed anywhere in `01`—`09`; nothing before it said anything about language.
+Checks: unit in `kg, gram, piece, liter, package, box, bundle, meter`; `price_mode IN ('fixed','estimate')`; `market_price_uzs > 0`. Indexes `(category_id, is_active)`, `(is_active, sort_order)`, `lower(name_uz)`, `lower(name_ru)`.
 
-**The paired-column representation is a schema contract awaiting the Project Owner's sign-off.** The decision recorded in `AUD-024` is that the catalog is bilingual; two columns per field is one way to hold that, a JSONB map or a `translations` table are others, and the choice decides whether a third language is later a migration of every catalog table and index. Tracked as `S-25`.
-
-Five further questions are **not yet decided** and are tracked in `SPEC_DECISIONS_BACKLOG.md`: `S-21` whether both languages are required, `S-22` what a Customer sees when their language is empty, `S-23` whether search matches across both, `S-24` which name enters the historical Order snapshots in Sections 14 and 17 required by `07` Section 13, and `S-26` whether the Catalog API returns both values and accepts both on write.
-
-Units: `kg, gram, piece, liter, package, box, bundle, meter`.
-
-Pricing checks:
-
-```text
-fixed: fixed>0; min/max null
-range: fixed null; min>0; max>=min
-at_purchase: all price fields null
-```
-
-Indexes Category/active, active/sort, `lower(name_uz)`, `lower(name_ru)`, price_mode.
+The customer price is computed, never stored on the product: `half_up(market_price_uzs × (1 + markup_percent/100))`.
 
 ## 8. `product_images`
 
-One current image/Product: `id, product_id, storage_key, original_filename?, mime_type, size_bytes, timestamps`.
-
-Unique product_id/storage_key; size 1..5MB; MIME restricted to JPEG/PNG/WebP. Bytes live in Filesystem.
+`id, product_id → products (unique), storage_key (unique), original_filename?, mime_type, size_bytes, timestamps`. Size 1..5 MB; MIME in JPEG, PNG, WebP.
 
 ## 9. `carts`
 
-`id, customer_id, status active|converted|abandoned, timestamps`. Partial unique one active Cart/Customer.
+`id, customer_id, status (active|converted), timestamps`. Partial unique `(customer_id) WHERE status='active'`.
 
 ## 10. `cart_items`
 
-`id, cart_id, product_id, quantity numeric(18,3), customer_note?, substitution_policy, timestamps`.
-
-Quantity >0; unique `(cart_id,product_id)`; substitution policy in approved three values. Unit-specific integer/fraction rule application validated.
+`id, cart_id, product_id, quantity > 0, customer_note?, substitution_policy, timestamps`. Unique `(cart_id, product_id)`; policy in the three values. Unit precision validated by the application.
 
 ## 11. `business_settings`
 
-Singleton `id=1`: Service fee mode/value, Delivery fee, delivery delay threshold, updated_by, timestamps.
-
-Service mode `fixed|percentage`; cross-field checks. Delay default 60. Required fees may be null until Admin config; checkout blocks while incomplete.
+Singleton `id = 1`: `markup_percent ≥ 0, service_fee_mode (fixed|percentage), service_fee_fixed_uzs?, service_fee_percent?, delivery_fee_uzs?, minimum_order_uzs?, price_tolerance_percent (default 15), opens_at time?, closes_at time?, service_centre_latitude?, service_centre_longitude?, service_radius_km?, delivery_delay_threshold_minutes (default 60), updated_by_user_id?, timestamps`. Cross-field check on the service-fee mode. Nullable fields stay null until Admin configures them; checkout is blocked while any needed value is null.
 
 ## 12. `payment_provider_settings`
 
-`provider` PK (`payme|paynet|xazna|click`), `is_enabled`, updated_by, timestamps. No secrets.
+`provider` PK in `payme, click, paynet, xazna`; `is_enabled`; `updated_by_user_id?`; timestamps. No secrets.
 
 ## 13. `orders`
 
-Key columns:
-
 ```text
 id uuid PK
-order_number unique
-customer_id
-source_cart_id unique
-source_address_id
+order_number bigint unique, from sequence orders_order_number_seq
+customer_id → users
+source_cart_id → carts, unique
+source_address_id → customer_addresses
 status
-payment_flow prepaid|deferred
-selected_payment_provider
-recipient_name_snapshot
-recipient_phone_snapshot
-latitude/longitude_snapshot
-street/house/apartment/landmark/delivery_note snapshots
-service_fee_mode/fixed/percentage snapshots
+payment_method            cash|online
+delivery_time_note?       varchar(160)
+recipient_name_snapshot, recipient_phone_snapshot
+latitude_snapshot, longitude_snapshot, street_snapshot, house_snapshot,
+apartment_snapshot?, landmark_snapshot?, delivery_note_snapshot?
+markup_percent_snapshot, price_tolerance_percent_snapshot
+service_fee_mode_snapshot, service_fee_fixed_uzs_snapshot?, service_fee_percent_snapshot?
 delivery_fee_uzs_snapshot
-final_merchandise_subtotal_uzs nullable
-final_service_fee_uzs nullable
-final_total_uzs nullable
-shopping_started_at nullable
-shopping_completed_at nullable
-ready_for_delivery_at nullable
-on_the_way_at nullable
-completed_at nullable
-cancelled_at nullable
-created_at/updated_at
+delivery_delay_threshold_minutes_snapshot
+final_merchandise_subtotal_uzs?, final_service_fee_uzs?, final_total_uzs?
+shopping_started_at?, shopping_completed_at?,
+ready_for_delivery_at?, on_the_way_at?, completed_at?, cancelled_at?
+cancellation_reason_code?
+created_at, updated_at
 ```
 
-Status values are canonical states in Business Rules. Index Customer/date, status/date, status/update, completed_at, cancelled_at.
+Status check on the nine values. Indexes `(customer_id, created_at)`, `(status, created_at)`, `(status, updated_at)`, `completed_at`, `cancelled_at`. The 30-minute online-payment attention instant lives on the payment row (Section 21).
 
 ## 14. `order_items`
 
-Key columns:
-
 ```text
-id
-order_id
-product_id
-product_name_snapshot
-unit_code_snapshot
-price_mode_snapshot
-fixed/min/max price snapshots
-ordered_quantity
-purchased_quantity nullable
-billable_quantity
-customer_note_snapshot nullable
-substitution_policy_snapshot
-status
-fulfilled_product_id nullable
-fulfilled_product_name_snapshot nullable
-fulfilled_unit_code_snapshot nullable
-substitution_resolution nullable
-purchase_unit_price_uzs nullable
-billable_unit_price_uzs nullable
-line_total_uzs nullable
-removed_reason_code nullable
-removed_at nullable
+id, order_id → orders, product_id → products
+product_name_uz_snapshot, product_name_ru_snapshot, unit_code_snapshot
+price_mode_snapshot            fixed|estimate
+market_price_uzs_snapshot
+customer_unit_price_uzs_snapshot          fixed price, or the estimate
+ordered_quantity > 0
+purchased_quantity?
+billable_quantity ≥ 0, ≤ ordered_quantity (or ≤ approved_quantity_cap when set)
+customer_note_snapshot?, substitution_policy_snapshot
+status                          pending|awaiting_customer|purchased|removed
+approved_quantity_cap?
+approved_unit_price_ceiling_uzs?
+fulfilled_product_id? → products
+fulfilled_product_name_uz_snapshot?, fulfilled_product_name_ru_snapshot?, fulfilled_unit_code_snapshot?
+substitution_resolution?        automatic|approved
+actual_market_price_uzs?
+billable_unit_price_uzs?
+line_total_uzs?
+removed_reason_code?            unavailable|customer_rejected|approval_expired|customer_removed|operator_removed|order_cancelled
+removed_at?
 timestamps
 ```
 
-States `pending|awaiting_customer|purchased|removed`.
+Checks: purchased requires `purchased_quantity ≥ billable_quantity > 0`, a billable price, a line total and a fulfilled product; removed has billable quantity and line total zero and a reason. `actual_market_price_uzs` is required by the application for estimate items and replacements. Index `(order_id, status)`, `fulfilled_product_id`.
 
-Checks: ordered>0, billable>=0, billable<=ordered. Purchased requires purchased_quantity>=billable_quantity>0, billable price, line total, fulfilled Product. Procurement price may be null for ordinary fixed original Item and is required by application for dynamic/replacement contexts. Removed has billable=0 and line_total=0.
+## 15. `order_history`
 
-## 15. `order_status_history`
+Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (user|system|payment_provider), actor_user_id?, reason_code?, note?, created_at`.
 
-Append-only `id, order_id, from_status?, to_status, actor_type user|system|payment_provider, actor_user_id?, reason_code?, note?, created_at`. Index Order/date.
+`event_type` in `status_changed, edited, payment_method_switched, price_corrected, shopper_assigned, shopper_reassigned, courier_assigned, courier_reassigned, delivery_failed, approval_requested, approval_decided, approval_expired, approval_resolved`. `reason_code` for cancellations in `customer_cancelled, cancellation_request_approved, unpaid_online, no_items_purchased, delivery_failed, system`. Index `(order_id, created_at)`.
 
 ## 16. `order_shopper_assignments`
 
-`id, order_id, shopper_id, assigned_by_user_id, assigned_at, accepted_at?, started_at?, completed_at?, ended_at?, ended_reason?, timestamps`.
+`id, order_id, shopper_id → users, assigned_by_user_id, is_self_order, assigned_at, accepted_at?, started_at?, completed_at?, ended_at?, ended_reason? (completed|reassigned|order_cancelled), timestamps`. Partial unique `(order_id) WHERE ended_at IS NULL`. Index `(shopper_id) WHERE ended_at IS NULL`.
 
-Partial unique one current assignment where ended_at null. Index Shopper/current and Order/current.
+## 17. `order_courier_assignments`
 
-## 17. `customer_approvals`
+`id, order_id, courier_id → users, assigned_by_user_id, is_self_order, assigned_at, accepted_at?, delivery_started_at?, delay_at?, completed_at?, ended_at?, ended_reason? (completed|reassigned|delivery_failed|order_cancelled), failed_reason_code? (no_answer|refused|wrong_address|other), failed_note?, timestamps`. Partial unique `(order_id) WHERE ended_at IS NULL`. Index `(courier_id) WHERE ended_at IS NULL`, `delay_at`.
 
-`id, order_id, order_item_id, type, status, requested_by_user_id, proposed_unit_price_uzs?, proposed_quantity?, replacement_product_id?, replacement_name_snapshot?, replacement_unit_snapshot?, request_note?, attention_at, expires_at, resolved_by_user_id?, resolved_at?, timestamps`.
+## 18. `customer_approvals`
 
-Types `price_over_range|substitution|reduced_quantity`; states `pending|approved|rejected|expired`.
+`id, order_id, order_item_id, type (price_over_tolerance|substitution|reduced_quantity), status (pending|approved|rejected|expired), requested_by_user_id, proposed_customer_unit_price_uzs?, proposed_actual_market_price_uzs?, proposed_quantity?, replacement_product_id?, replacement_name_uz_snapshot?, replacement_name_ru_snapshot?, replacement_unit_code_snapshot?, request_note?, attention_at, expires_at, resolved_by_user_id?, resolved_at?, resolution? (approved|rejected|remove_item), timestamps`.
 
-Partial unique one pending Approval/Item. Index Order/status, status/attention, status/expiry. Persist attention +10m and expiry +30m snapshots.
+Partial unique `(order_item_id) WHERE status='pending'`. Indexes `(order_id, status)`, `(status, attention_at)`, `(status, expires_at)`.
 
-## 18. `order_item_price_corrections`
+## 19. `order_item_price_corrections`
 
-Append-only: `id, order_item_id, old/new purchase price, old/new billable price, corrected_by_user_id, reason, created_at`. Application enforces Admin/dynamic/pre-final-Payment.
+Append-only: `id, order_item_id, old_actual_market_price_uzs, new_actual_market_price_uzs, old_billable_unit_price_uzs, new_billable_unit_price_uzs, corrected_by_user_id, reason, created_at`.
 
-## 19. `order_cancellation_requests`
+## 20. `order_cancellation_requests`
 
-`id, order_id, origin customer|staff|system, requested_by_user_id?, status pending|approved|rejected, reason, resolved_by_user_id?, resolution_note?, resolved_at?, timestamps`. Partial unique one pending/Order.
+`id, order_id, origin (customer|staff), requested_by_user_id, status (pending|approved|rejected), reason, resolved_by_user_id?, resolution_note?, resolved_at?, timestamps`. Partial unique `(order_id) WHERE status='pending'`.
 
-## 20. `payments`
+## 21. `payments`
 
-Business obligation: `id, order_id, kind checkout|final|additional, provider, amount_uzs>0, status unpaid|pending|paid|cancelled, attention_at?, expires_at?, paid_at?, cancelled_at?, timestamps`.
+`id, order_id, method (cash|online), provider? (payme|click|paynet|xazna), amount_uzs > 0, status (unpaid|pending|paid|cancelled), attention_at?, paid_at?, cancelled_at?, recorded_by_user_id?, timestamps`.
 
-Unique `(order_id,kind)`. Checkout expires +30m; final/additional gets +30m attention but no auto-cancel.
+Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per order. Cash rows are created `paid` by the Courier's action with `recorded_by_user_id`. Online rows are created `unpaid` at shopping completion, are `pending` while an attempt is in flight or unknown, return to `unpaid` when that attempt fails, become `paid` on provider-confirmed success, and are `cancelled` when the Operator switches to cash or the order is cancelled unpaid.
 
-## 21. `payment_attempts`
+## 22. `payment_attempts`
 
-`id, payment_id, status pending|successful|failed|cancelled, provider_request_id, provider_reference?, failure_code?, last_reconciled_at?, started_at, resolved_at?, timestamps`.
+`id, payment_id, provider, status (pending|successful|failed|cancelled), provider_request_id (unique), provider_reference?, failure_code?, last_reconciled_at?, started_at, resolved_at?, timestamps`. Partial unique one `pending` and one `successful` per payment.
 
-Unique provider_request_id; provider reference unique where applicable; partial unique one pending and one successful Attempt/Payment.
+## 23. `provider_events`
 
-## 22. `provider_events`
+`id, provider, event_key, payment_attempt_id?, payload_hash?, status (received|processed|ignored|failed), received_at, processed_at?, error_code?`. Unique `(provider, event_key)`. No raw sensitive payload.
 
-`id, provider, event_key, payment_attempt_id?, refund_attempt_id?, payload_hash?, status received|processed|ignored|failed, received_at, processed_at?, error_code?`.
+## 24. `refunds`
 
-Unique `(provider,event_key)`. At most one target attempt. No sensitive raw payload by default.
+`id, order_id, payment_id, amount_uzs > 0, status (pending|completed|failed), provider_reference?, note?, created_by_user_id?, completed_by_user_id?, completed_at?, timestamps`. A refund has one cause, the cancellation of an order with a paid online payment, so there is no reason column. Application check under the payment lock: sum of completed refunds ≤ paid amount.
 
-## 23. `refunds`
+## 25. `push_devices`
 
-`id, order_id, payment_id, kind order_adjustment|cancellation, amount_uzs>0, status pending|successful|failed, reason_code, created_by_user_id?, completed_at?, timestamps`.
+`id, user_id, platform (android|ios|web), push_token, last_seen_at?, revoked_at?, timestamps`. Unique `(push_token, user_id)`. Index `(user_id) WHERE revoked_at IS NULL`.
 
-Application under Payment lock enforces sum successful refunds <= successful paid amount.
+## 26. `notification_deliveries`
 
-## 24. `refund_attempts`
+`id, user_id, push_device_id?, order_id?, approval_id?, type, status (queued|sent|failed), attempt_count, sent_at?, last_error_code?, timestamps`. `type` in the eleven values of `05` Section 18. Index `(user_id, created_at)`, `(status, created_at)`.
 
-`id, refund_id, status pending|successful|failed, provider_request_id, provider_reference?, failure_code?, last_reconciled_at?, started_at, resolved_at?, timestamps`.
+## 27. `idempotency_keys`
 
-Partial unique one pending and one successful Attempt/Refund.
+`id, actor_user_id, operation varchar(80), idempotency_key uuid, request_hash char(64), state (processing|completed), lease_expires_at, resource_type?, resource_id?, created_at, completed_at?`. Unique `(actor_user_id, operation, idempotency_key)`. Completed rows may be pruned after 30 days.
 
-## 25. `order_courier_assignments`
+## 28. Deletion Strategy
 
-`id, order_id, courier_id, assigned_by_user_id, assigned_at, accepted_at?, delivery_started_at?, delay_at?, completed_at?, ended_at?, ended_reason?, timestamps`.
+`RESTRICT` on every business-history foreign key. Archive, block or deactivate current catalog, user and address rows; orders and everything under them are never deleted by a business operation.
 
-Partial unique one current assignment. `delay_at` snapshots start + configured threshold. Index Courier/current, Order/current, delay_at.
+## 29. Database versus Application Enforcement
 
-## 26. `push_devices`
+Database: foreign keys, the phone-family indexes, one active cart, one live assignment per order, one pending approval per item, one pending cancellation request per order, one live payment per order, one pending and one successful attempt per payment, provider-event and idempotency uniqueness, positive amounts, enum checks, price-mode and status checks.
 
-`id, user_id, platform android|ios, push_token, last_seen_at?, revoked_at?, timestamps`. Unique push_token.
+Application: role and ownership, unit precision, lifecycle transitions, price and ceiling semantics, approval necessity, same-unit replacement, rounding, refund sums, service area, working hours, the test-phone rule.
 
-## 27. `notification_deliveries`
+## 30. Deliberately Absent
 
-`id, user_id, push_device_id?, order_id?, type, status queued|sent|failed, attempt_count, sent_at?, last_error_code?, timestamps`. Required five Customer notification types. Never controls Order state.
-
-## 28. `idempotency_keys`
-
-| Column | Type | Null |
-|---|---|---:|
-| id | uuid | no |
-| actor_user_id | uuid | no |
-| operation | varchar(80) | no |
-| idempotency_key | uuid | no |
-| request_hash | char(64) | no |
-| state | varchar(20) | no |
-| resource_type | varchar(60) | yes |
-| resource_id | uuid | yes |
-| created_at | timestamptz | no |
-| completed_at | timestamptz | yes |
-
-State `processing|completed`. Unique `(actor_user_id,operation,idempotency_key)`. Store request hash only, not sensitive body. Same key/different hash conflicts. Completed old infrastructure records may be cleaned after safe retention; business history unaffected.
-
-## 29. Framework Tables
-
-Use standard `personal_access_tokens`, `jobs`, `failed_jobs`, `job_batches`, `migrations` as applicable.
-
-## 30. Deletion Strategy
-
-Prefer RESTRICT/NO ACTION for business-history FKs. Archive/block/deactivate current Catalog/User/Address instead of cascading destruction. Orders/Items/Payments/Refunds/assignment/Approval/cancellation/status histories have no ordinary hard-delete business operation.
-
-## 31. Database vs Application Enforcement
-
-Database structural enforcement: FK, phone unique per account family among active accounts, as two partial unique indexes (Section 3), unique order/source Cart, one active Cart, one current assignments, one pending Approval/cancellation, pricing shape, positive values, one pending/successful Payment Attempt, provider-event and idempotency uniqueness.
-
-Application enforcement: roles, ownership/assignment, unit precision, lifecycle transitions, price semantics, Approval necessity, substitution compatibility, rounding formulas, Payment/refund aggregate limits, analytics definitions.
-
-## 32. Index Families
-
-Support active Catalog/name, Customer Orders/date/status, operational status/update, Shopper/Courier current assignments, Approval attention/expiry, Payment attention/expiry/reconciliation, Refund attention, Courier delay, Completed/Cancelled analytics, fulfilled Product analytics. Exact EXPLAIN refinements do not change public behavior.
-
-## 33. Deliberately Absent MVP Tables
-
-No markets/cities/vendors/Sellers/warehouses/inventory/promotions/bonuses/subscriptions/Courier GPS/dispatch/AI tables.
+Markets, cities, sellers, warehouses, inventory, promotions, bonuses, subscriptions, delivery zones, GPS tracks, chat, refund attempts.

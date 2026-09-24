@@ -1,5 +1,7 @@
 # BarakaBozor — Stage 0 Contract Alignment Report
 
+> **Frozen on 2026-09-24.** The locked-specification period ended with `DL-1` in `docs/DECISIONS.md`; `docs/01–09` were rewritten to the Owner's interview and are maintained by the implementing agent. Changes after AUD-029 are recorded in `docs/DECISIONS.md`, not here.
+
 ## Status
 
 **S00-DOC-010 — COMPLETE**
@@ -221,6 +223,24 @@ Changes applied after the 2026-09-07 lock. Each required Project Owner approval.
     - **`S-35` moved from Wave 3 to Wave 1**, where the Catalog table that a reference price would need is created.
     - **The merge risk with PR #16 is recorded** for whoever merges second: resolving the entry-gate hunk either way silently undoes one of two facts.
     - **All `P3`s resolved in place.**
+
+29. **AUD-029 Shopper notifications: polling in the foreground, push in the background** (2026-09-23) — Project Owner decided. `AUD-028` chose in-app polling for a Shopper's current Order "while the app is open", and recorded the consequence that had not been explained when the option was offered: mobile operating systems stop polling in the background, so a Shopper with the phone in a pocket learns of neither a new assignment nor a Customer's answer to an Approval. It was put back to the Project Owner in prose but never entered in the register, so it had no row and would have been lost; it is entered now as `S-39`.
+
+    **Resolved as: both mechanisms, each for the case the other cannot cover.** In the foreground the current Order polls every few seconds. For two events the backend also sends a push through the FCM `NotificationService` already approved for Customers: an Order assigned to the Shopper, and a Customer's answer to an Approval. The Project Owner proposed the split in these words — poll while the screen is open, push while the phone is in a pocket — and chose it over push alone, polling alone, and keeping the screen awake during Shopping.
+
+    **How it is implemented, stated because the plain reading would be built wrongly.** The backend cannot know whether the phone is in a hand or a pocket and must not try to. It always sends the push for those two events. The client decides: in the foreground it suppresses the banner, since polling has already refreshed the screen; in the background the operating system shows it, and opening it resumes the app and its polling.
+
+    **Why this was cheap to decide.** Push was never an extra system. `03` §22 already requires five Customer events over FCM in Wave 4, and `08` §26 keys `push_devices` on `user_id`, not on the Customer role. The Shopper reuses both; the only additions are two event types.
+
+    **Residual recorded.** Push is best-effort. Vendor firmware that restricts background work aggressively — common on the phones Shoppers are likely to carry — can delay or suppress delivery until the app may autostart and is exempt from battery optimisation. That is a device setting handed to the Shopper with their access, not something the client can guarantee, and a pilot that skips it will conclude push "does not work". Polling while the app is open does not depend on it.
+
+    **Two questions this opens, entered rather than guessed.** `S-40`: whether the Courier gets push, which `AUD-029` does not settle — a Courier rides with the phone put away and has the same limit. `S-41`, found while recording this entry: `08` §26 makes `push_token` unique, a phone has one FCM token, and `AUD-028` puts a Staff session and a Customer session on one personal phone. Under that constraint the second account cannot register the device, so only one of the person's two roles would be notified — and this decision needs both. That is a schema contract and is assigned to Wave 1, where `push_devices` is created.
+
+    **Changed, by category.** **Product behaviour**: a Shopper notification path. **Schema contract**: `08` §27's notification type vocabulary gains two Shopper types. No API semantics beyond the notification events; no money, quantity or rounding rule; no Order, Approval, Payment, Refund or Delivery lifecycle state — `03` §22 and `08` §27 both hold that notifications never control Order state, and that is unchanged; no concurrency, idempotency or replay policy; no role capability, ownership, assignment or existence-privacy rule.
+
+    **Evidence validity** per `tasks/README.md` §13: nothing is invalidated. No notification table, event or client push code exists; notifications are Wave 1 infrastructure and Wave 4 events.
+
+    **Bookkeeping.** Status lines stamped on `03`, `06`, `07` and `08`. `06` had carried no amendment stamp at all although `AUD-022` rewrote its Sections 1, 2, 4, 10, 16 and 17; its stamp now names `AUD-022` too, so the line does not imply `AUD-029` is its first change. `docs/SPEC_DECISIONS_BACKLOG.md`: `S-39` Resolved, `S-40` and `S-41` opened, one change-log row. No task row changes; no Wave 0 task is affected.
 
 ## External Integration Gates
 

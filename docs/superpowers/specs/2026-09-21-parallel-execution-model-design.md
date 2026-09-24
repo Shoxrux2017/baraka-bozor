@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | `APPROVED — Project Owner, 2026-09-21, merged as PR #3` |
+| Status | `SUPERSEDED on 2026-09-24 by DL-1 in docs/DECISIONS.md — one implementing agent, no concurrent tracks. Kept as history.` (was `APPROVED — Project Owner, 2026-09-21, merged as PR #3`) |
 | Date | `2026-09-21` |
 | Produced by | implementing agent, design session |
 | Independent review | 2026-09-21, reviewer with no implementation context; findings and resolutions in §15 |
