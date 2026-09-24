@@ -95,12 +95,30 @@ final class ApiException extends RuntimeException implements ShouldntReport
     }
 
     /**
-     * A `429` refusal. `Retry-After` is part of the contract for this status:
-     * without it a client cannot back off correctly.
+     * A `429` refusal with the generic code. `Retry-After` is part of the
+     * contract for this status: without it a client cannot back off correctly.
      */
     public static function rateLimited(int $retryAfterSeconds, string $message = ''): self
     {
-        return new self(429, 'rate_limited', [], $message, ['Retry-After' => (string) max(1, $retryAfterSeconds)]);
+        return self::tooManyRequests('rate_limited', $retryAfterSeconds, $message);
+    }
+
+    /**
+     * A `429` refusal with a specific code, such as `code_resend_too_soon`.
+     */
+    public static function tooManyRequests(string $apiCode, int $retryAfterSeconds, string $message = ''): self
+    {
+        return new self(429, $apiCode, [], $message, ['Retry-After' => (string) max(1, $retryAfterSeconds)]);
+    }
+
+    /**
+     * A `503`: an external provider, or the service itself, is unavailable.
+     * `provider_unavailable` for a provider, `payment_provider_unavailable` on
+     * a payment endpoint, `service_unavailable` for planned downtime.
+     */
+    public static function unavailable(string $apiCode, string $message = ''): self
+    {
+        return new self(503, $apiCode, [], $message);
     }
 
     public function status(): int

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Auth\Http\Controllers\ChangePasswordController;
 use App\Modules\Auth\Http\Controllers\CurrentUserController;
+use App\Modules\Auth\Http\Controllers\CustomerLoginCodeController;
 use App\Modules\Auth\Http\Controllers\LogoutController;
 use App\Modules\Auth\Http\Controllers\StaffLoginController;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('auth')->group(function (): void {
+    Route::post('customer/code/request', [CustomerLoginCodeController::class, 'request'])->name('auth.customer.code.request');
+    Route::post('customer/code/verify', [CustomerLoginCodeController::class, 'verify'])->name('auth.customer.code.verify');
     Route::post('staff/login', StaffLoginController::class)->name('auth.staff.login');
 
     Route::middleware(['auth:sanctum', 'account.active'])->group(function (): void {

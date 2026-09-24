@@ -7,7 +7,7 @@ namespace App\Modules\Auth\Http\Requests;
 use App\Http\Requests\StrictFormRequest;
 use App\Modules\Auth\LoginCodePolicy;
 
-final class StaffLoginRequest extends StrictFormRequest
+final class VerifyCustomerLoginCodeRequest extends StrictFormRequest
 {
     /**
      * @return array<string, mixed>
@@ -16,7 +16,7 @@ final class StaffLoginRequest extends StrictFormRequest
     {
         return [
             'phone' => ['required', 'string', 'regex:'.LoginCodePolicy::PHONE_PATTERN],
-            'password' => ['required', 'string', 'max:128'],
+            'code' => ['required', 'string', 'regex:'.LoginCodePolicy::CODE_PATTERN],
         ];
     }
 }
