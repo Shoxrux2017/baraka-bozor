@@ -1,5 +1,7 @@
 # Wave 0 Task Index — Foundation
 
+> **Superseded on 2026-09-24** by `tasks/WAVE_0.md` under workflow v6 (`tasks/README.md`). Kept as history; not edited.
+
 ## 1. Wave Metadata
 
 | Field | Value |

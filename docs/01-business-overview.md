@@ -2,11 +2,11 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-23 (AUD-029); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** current. Rewritten on 2026-09-24 to the Project Owner's decisions in `docs/INTERVIEW_2026-09-24.md` (`DL-2` in `docs/DECISIONS.md`). Maintained by the implementing agent; product changes go through the Owner.
 
 ## Source Provenance
 
-This document formalizes the business requirements in **“BOZORLIK YETKAZIB BERISH XIZMATI — TZ v1.1” (29.08.2026)** and the approved Stage 0 product decisions. The source TZ remains the provenance for the original business idea; this `docs/01–09` set is the implementation contract after Stage 0 lock.
+Formalizes "BOZORLIK YETKAZIB BERISH XIZMATI — TZ v1.1" (29.08.2026), the Stage 0 decisions of 2026-09-07, and the Owner interview of 2026-09-24. Where they differ, the interview wins.
 
 ## 1. Project Name
 
@@ -14,230 +14,155 @@ This document formalizes the business requirements in **“BOZORLIK YETKAZIB BER
 
 ## 2. Business Model
 
-BarakaBozor is an online household-shopping and delivery service centered on one company-operated fulfilment process:
+An online household-shopping and delivery service built around one company-operated fulfilment process:
 
 ```text
 ONLINE SHOPPING
-+
-COMPANY SHOPPER
-+
-ONLINE PAYMENT
-+
-DELIVERY
++ COMPANY SHOPPER AT ONE WHOLESALE MARKET
++ DELIVERY BY A COMPANY COURIER
++ PAYMENT AFTER SHOPPING, CASH OR ONLINE
 ```
 
-The Customer does **not** choose a market or an individual market Seller. In the MVP, BarakaBozor works with one large wholesale market. The Customer chooses the required Product and quantity; a company Shopper purchases the goods at the market; the system manages pricing, approvals, payment, and delivery; a Courier delivers the completed Order.
-
-BarakaBozor is therefore **not a marketplace of independent Sellers** in the MVP. Market Sellers do not have platform accounts.
+The Customer does not choose a market or a seller. BarakaBozor works with one wholesale market in one city. The Customer chooses products and quantities; a company Shopper buys them at the market; the Customer pays after shopping, in cash to the Courier or online; a Courier delivers. Market sellers have no accounts. This is not a marketplace.
 
 ## 3. Problem Statement
 
-Traditional market shopping can require substantial travel time, transport, physical effort, and coordination, especially for busy people, families with small children, elderly Customers, people without convenient transport, and Customers buying many categories at once.
-
-BarakaBozor replaces the Customer's physical market trip with one controlled service flow:
+A market trip costs travel, transport, effort and time. BarakaBozor replaces it with one controlled flow:
 
 ```text
-find Products
-→ choose exact quantities
-→ create Order
-→ company purchases at market
-→ calculate final amount
-→ online payment
-→ home delivery
+find products → choose exact quantities → create order
+→ company buys at the market → final amount is known
+→ courier delivers → customer pays cash at the door, or online before delivery
 ```
 
-## 4. Proposed Solution
+## 4. How an Order Works
 
-1. The Customer authenticates and browses the Product Catalog.
-2. The Customer selects Products and exact quantities.
-3. The Customer chooses substitution preferences and may leave Product-specific notes.
-4. The Customer prepares a Cart and selects a saved delivery Address.
-5. The system creates an Order using current Product, pricing, Address, and fee snapshots.
-6. An Admin assigns an active Shopper.
-7. The Shopper purchases the Order at the wholesale market.
-8. Unavailable Products, reduced quantities, substitutions, and price approvals are resolved through the approved rules.
-9. The system calculates the authoritative final Order amount.
-10. Payment is completed through an approved online Payment provider.
-11. An Admin assigns an active Courier.
-12. The Courier delivers the Order.
-13. The Order becomes Completed and remains available in Customer history.
+1. The Customer signs in with a phone number and a login code, browses the catalog, adds products with exact quantities, a note and a substitution rule per item.
+2. At checkout the Customer picks a saved address inside the service area, a payment method (cash to the Courier, or online), and may add a free-text wish about the delivery time.
+3. The system creates the order with price, fee, address and settings snapshots. Until shopping starts the Customer may still edit or cancel it.
+4. An Operator or Admin assigns a Shopper. The Shopper accepts, goes to the market and, item by item, records what was bought and at what price.
+5. If a product is missing, more expensive than the estimate allows, or available only in a smaller quantity, the item is resolved by the Customer's substitution rule or by the Customer's decision in the app.
+6. When every item is bought or removed, the system computes the final amount.
+7. Cash orders go straight to delivery. Online orders wait up to 30 minutes for the Customer to pay in the app; if payment does not arrive, an Operator calls, switches the order to cash, or cancels it.
+8. The Shopper leaves the packed order at the handoff point by the market. An Operator or Admin assigns a Courier, who collects it, delivers it, and records the cash received when the order is a cash order.
+9. The order is completed and stays in the Customer's history for reordering.
 
 ## 5. MVP Operating Boundary
 
-The MVP supports one BarakaBozor business, one operating city/region, one wholesale market, many Customers and Staff users, and no Seller accounts or marketplace tenancy. Multi-city and multi-market operation is Post-MVP.
+One BarakaBozor business, one city, one wholesale market, one handoff point by the market, one service area drawn as a circle around a centre point, many Customers and staff. No seller accounts, no multi-city or multi-market operation, no warehouse.
 
-## 6. MVP Roles
+## 6. Roles
 
-The six approved MVP roles are:
+```text
+customer   orders and pays
+shopper    buys assigned orders at the market
+courier    delivers assigned orders and collects cash
+operator   runs the order board: assignment, attention, cancellation decisions
+admin      everything the operator does, plus catalog, staff, settings, refunds
+manager    read-only business figures (screens deferred past the pilot)
+```
 
-1. `customer` — creates and pays for Orders and receives delivery;
-2. `shopper` — purchases assigned Orders at the market;
-3. `courier` — delivers assigned ready Orders;
-4. `operator` — monitors and resolves permitted operational problems;
-5. `admin` — manages Catalog, Staff, assignments, fees, and operational settings;
-6. `manager` — read-only business analytics and KPI monitoring.
-
-Each account has exactly one primary role in the MVP.
+One account has exactly one role. At launch one person may hold the Admin role and do everything; the Operator role is the same board with catalog, staff and settings hidden. See `02-user-roles.md`.
 
 ## 7. Catalog
 
-The Catalog is Admin-managed and contains dynamic Categories and Products. Categories are not hard-coded enums.
-
-Supported MVP unit codes:
+Admin-managed categories (flat list) and products. Names are required in Uzbek (Latin script) and Russian; descriptions are optional in both. One image per product. Units:
 
 ```text
-kg
-gram
-piece
-liter
-package
-box
-bundle
-meter
+kg  gram  piece  liter  package  box  bundle  meter
 ```
 
-Products have one current image in the MVP. Customer-facing Product images support JPEG, PNG, and WebP, with a backend-authoritative 5 MB maximum per image.
+`kg`, `liter` and `meter` accept up to three decimals; the others accept whole numbers.
 
-## 8. Pricing Model
+## 8. Pricing
 
-Each Product uses one current pricing mode:
+The company earns a **markup on goods** plus a **service fee** plus a **delivery fee**.
 
-```text
-fixed
-range
-at_purchase
-```
+- Admin enters each product's **market price**, the price the company expects to pay at the market.
+- The **customer price** is the market price plus the markup percentage from business settings, rounded half-up to 1 UZS. That is the only price the Customer sees.
+- Each product has one of two **price modes**:
+  - **`fixed`** — the customer price is guaranteed. The Customer pays the price snapshotted at order time whatever the Shopper actually paid.
+  - **`estimate`** — the customer price is an estimate. The Customer pays the customer price computed from the price the Shopper actually paid (actual market price plus the markup snapshot). If that exceeds the estimate by more than the **tolerance percentage** from business settings, the Shopper needs the Customer's approval before buying at that price.
+- The **service fee** is fixed or a percentage of the merchandise subtotal; the **delivery fee** is one fixed tariff. Both are business settings.
+- Every price, markup, fee and tolerance is snapshotted into the order at creation (and again on an edit before shopping). Later changes to the catalog or settings never rewrite an existing order.
 
-### Fixed
-
-The Customer sees one fixed unit price. The Order snapshots that price at checkout. For an ordinary non-substituted fixed Item, the Customer's billable unit price remains the fixed snapshot even if the company's actual market procurement cost differs.
-
-### Range
-
-The Customer sees an accepted minimum/maximum unit-price range. The actual purchased unit price becomes the billable unit price when it is within the accepted range. If the actual price is above the snapshotted maximum, Customer approval is required **before** the Shopper purchases that Item at the higher price.
-
-### At Purchase
-
-The Customer explicitly accepts that the unit price is unknown at checkout. The Shopper records the actual purchase unit price, and the Customer sees the authoritative final Order amount before deferred online payment. A separate pre-purchase price approval is not required for the original `at_purchase` Product.
-
-Changing current Catalog pricing never rewrites historical Order pricing.
+The Customer sees the composition of the amount — merchandise, service fee, delivery fee — at checkout, and the final composition before paying online or at the door.
 
 ## 9. Quantity Principle
 
-The Customer's ordered quantity is authoritative for the Customer contract.
+The Customer's ordered quantity is the contract.
 
 ```text
-ordered_quantity
-purchased_quantity
-billable_quantity
+ordered_quantity     what the Customer asked for
+purchased_quantity   what the Shopper physically bought
+billable_quantity    what the Customer pays for, never above ordered
 ```
 
-If the Customer orders `5.000 kg` and the Shopper purchases `5.200 kg`, the Customer is not charged for the extra `0.200 kg`. The excess is an internal company matter.
+If the Customer orders 5.000 kg and the Shopper buys 5.200 kg, the Customer pays for 5.000 kg. Reducing the quantity requires the Customer's approval, unless the whole item is removed under the Customer's own "remove if unavailable" rule.
 
-Reducing the Customer's quantity requires Customer approval unless the whole unavailable Item is removed under the Customer's preselected `remove_if_unavailable` policy.
+## 10. Availability and Substitution
 
-## 10. Product Availability and Substitution
-
-For each Cart Item, the Customer chooses one policy:
+Per cart item the Customer chooses one rule; the default is the first:
 
 ```text
-allow_similar_substitution
-contact_before_substitution
-remove_if_unavailable
+allow_similar_substitution    the Shopper may replace with a similar product within the price ceiling
+contact_before_substitution   any replacement needs the Customer's approval
+remove_if_unavailable         a missing item is removed without asking
 ```
 
-A structured replacement must reference a current active Catalog Product and use compatible unit semantics.
-
-Automatic similar substitution is allowed only within the approved price ceiling:
-
-- original `fixed` → fixed-price snapshot;
-- original `range` → max-price snapshot;
-- original `at_purchase` → no automatic substitution; explicit Customer approval.
-
-A replacement above the applicable ceiling requires Customer approval.
+A replacement must be an active catalog product with the same unit. The automatic ceiling is the item's fixed customer price, or for an estimate item the estimate plus the tolerance. A replacement above the ceiling needs approval.
 
 ## 11. Customer Approval
 
-Approval is used for `price_over_range`, `substitution`, and `reduced_quantity`.
+Approval is asked for `price_over_tolerance`, `substitution` and `reduced_quantity`. The Customer decides in the app. Ten minutes after the request the pending approval becomes an Operator attention item; thirty minutes after the request it expires. Expiry never means consent: an Operator or Admin may then only remove the affected item. Meanwhile the Shopper continues with the other items.
 
-A pending approval becomes an Operator-attention item after 10 minutes. If no Customer decision exists after 30 minutes, the approval expires. Expiration never means Customer consent.
+## 12. Payment
 
-For an expired approval, Operator/Admin may only remove the affected Item. They may not approve higher spending, substitution, or reduced quantity on the Customer's behalf.
+Every order is paid **after shopping**. At checkout the Customer chooses:
 
-## 12. Fees
+- **cash** — the Courier collects the final amount at handover;
+- **online** — once shopping is complete the Customer has 30 minutes to pay the final amount in the app through an enabled provider. Payme and Click come first; Paynet and xazna later. Payment success is provider-authoritative: nobody in the app can mark an online payment as paid.
 
-BarakaBozor may charge a separate Service fee and Delivery fee. Service fee can be fixed or a percentage of final merchandise subtotal. Percentage calculations and Product line totals use half-up rounding to the nearest 1 UZS.
+An online order left unpaid after 30 minutes becomes Operator attention. The Operator may switch it to cash on delivery, or cancel it. No prepayment, no authorization holds, no additional payments.
 
-The MVP uses one fixed Delivery tariff. Zone- and distance-based delivery pricing are Post-MVP.
+## 13. Refunds
 
-The Customer must see the understandable composition of the amount before payment.
+A refund arises only when an online-paid order is cancelled before delivery. The system records the refund obligation and its amount; an Admin performs it in the provider's merchant cabinet and marks it done with the provider's reference. Operators see outstanding refunds. Automation per provider comes after the pilot.
 
-## 13. Payment
+## 14. Cancellation
 
-Online Payment is mandatory in the MVP through:
+Before shopping starts the Customer cancels directly. After shopping starts and before the Courier is on the way, the Customer files a cancellation request that an Operator or Admin approves or rejects; an approved cancellation costs the Customer nothing. Once the Courier is on the way, no normal cancellation. Returns and claims after delivery are post-MVP.
 
-```text
-Payme
-Paynet
-xazna
-Click
-```
+## 15. Delivery
 
-Two normal flows exist:
+A shopped order that is paid (online) or payable at the door (cash) is assigned to one active Courier. The Courier collects the packed order at the handoff point, accepts the assignment, starts, delivers, and records the cash received for a cash order. If delivery fails — nobody answers, the Customer refuses, the address is wrong — the Courier marks it not delivered with the reason; the order returns to the pool and an Operator reassigns it or cancels it.
 
-- fixed-only Order → prepaid before Shopping;
-- any `range`/`at_purchase` Item → Shopping first, then authoritative final amount and deferred Payment.
+Orders are collected and delivered as soon as possible inside the working hours in business settings. An order placed outside working hours is accepted and collected after opening; the Customer sees that at checkout. No delivery slots.
 
-Payment success is provider-authoritative. Flutter, Customer, Operator, and Admin cannot fabricate successful Payment state. Uncertain outcomes require reconciliation before another potentially duplicating charge is allowed.
+## 16. Notifications
 
-## 14. Refunds and Adjustments
+Customers, Shoppers and Couriers receive push notifications for the events `05-business-rules.md` Section 18 lists. SMS is used only for login codes, and only as a fallback: login codes go through Telegram first. A Shopper's order screen also refreshes itself while the app is open.
 
-Refund is a separate financial operation. Examples include prepaid downward adjustment and approved paid-order cancellation.
+## 17. History and Reorder
 
-A pending overpayment refund does not block Delivery when Customer payment already covers the authoritative final total. Failed/uncertain refunds become Operator/Admin attention and require provider-authoritative reconciliation/retry.
+Customers see their past orders. Reorder puts the originally ordered products back into the cart at current prices and availability, skipping products already in the cart and reporting products no longer available.
 
-## 15. Cancellation
+## 18. Manager Figures
 
-Before Shopping starts, Customer may cancel directly. After Shopping starts but before `on_the_way`, Customer creates a cancellation request that Operator/Admin may approve or reject. Normal cancellation is unavailable once `on_the_way`. Post-delivery returns/claims are Post-MVP.
+Deferred past the pilot. The Admin board shows a summary strip: today's orders by status, today's sales, orders needing attention.
 
-## 16. Delivery
+## 19. MVP Success Criterion
 
-A ready, sufficiently paid Order is assigned to one active Courier. The Courier sees only required delivery data, accepts the assignment, starts delivery, and marks delivered after physical handover.
-
-Real-time GPS, proof photos, signatures, and delivery OTP are not required in MVP.
-
-## 17. Notifications
-
-Customer notification attempts are required at least for Order accepted, approval required, Payment required, Courier started, and Order delivered. Notifications are not authoritative state.
-
-A Shopper is notified when an Order is assigned to them and when a Customer answers an Approval, alongside in-app polling while the app is open (`AUD-029`).
-
-## 18. History and Reorder
-
-Customer can view historical Orders. `Reorder` uses the **original ordered Product**, not a historical replacement, and applies current availability/pricing. Existing Cart duplicates are skipped rather than overwritten.
-
-## 19. Manager Analytics
-
-Manager is read-only. MVP KPIs include Orders created, Completed, Cancelled, gross sales = sum `final_total_uzs` for Completed Orders, service revenue = sum `final_service_fee_uzs`, average Order value, average fulfilment time, Staff activity, and popular Products ranked by number of Completed Orders containing the Product with quantities shown separately by unit.
-
-## 20. MVP Success Criterion
-
-The MVP succeeds only when this real flow works:
+The pilot succeeds when this works with real Customers on cash:
 
 ```text
-Customer authentication
-→ Catalog
-→ Cart/Address
-→ Checkout/Order
-→ Shopper market purchase
-→ approval/final pricing where needed
-→ online Payment
-→ Courier delivery
-→ Completed history
+sign in with a login code → catalog → cart and address → checkout
+→ Shopper buys at the market, approvals where needed → final amount
+→ Courier delivers and collects cash → completed order in history
 ```
 
-and Admin, Operator, and Manager can perform approved responsibilities without direct database manipulation.
+with the Admin running assignment and the board in the browser, and then when online payment through Payme and Click joins it.
 
-## 21. Explicit Post-MVP Scope
+## 20. Explicitly Outside the MVP
 
-Outside MVP: bonus/cashback, recurring shopping, AI recommendations, voice ordering, Telegram bot, live Courier GPS, automatic dispatch, multiple cities/markets, Seller marketplace accounts, complex promotions, warehouse/inventory planning, custom roles/multi-role accounts, and post-delivery claims/returns workflow.
+Delivery slots and zones, distance tariffs, bonus and cashback, promotions, recurring orders, in-app chat, order creation by Operators, spreadsheet import, receipt photos, live GPS, automatic dispatch, multiple cities or markets, seller accounts, warehouse or inventory, custom roles, returns and claims, offline shopping mode, AI and voice ordering, Telegram bot ordering.

@@ -1,5 +1,7 @@
 # BarakaBozor — Stage 0 Contract Alignment Report
 
+> **Frozen on 2026-09-24.** The locked-specification period ended with `DL-1` in `docs/DECISIONS.md`; `docs/01–09` were rewritten to the Owner's interview and are maintained by the implementing agent. Changes after AUD-029 are recorded in `docs/DECISIONS.md`, not here.
+
 ## Status
 
 **S00-DOC-010 — COMPLETE**

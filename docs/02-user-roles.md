@@ -2,146 +2,108 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023) and 2026-09-23 (AUD-028); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** current. Rewritten on 2026-09-24 to `docs/INTERVIEW_2026-09-24.md` topics 6 and 7 and `DL-2`, `DL-3` in `docs/DECISIONS.md`.
 
 ## 1. Role Model
 
-The MVP has exactly six primary roles:
+Exactly six roles:
 
 ```text
-customer
-shopper
-courier
-operator
-admin
-manager
+customer   shopper   courier   operator   admin   manager
 ```
 
-Each account has exactly one primary role. No custom roles, multi-role accounts, role switching, or user-created permission sets.
+Each account has exactly one role, immutable for the life of the account. No custom roles, multi-role accounts or role switching. To change a person's role, block the old account and create a new one; the new account reuses the same phone number (Section 3).
 
-Moving between two accounts is not role switching. A Shopper or Courier who holds a Customer account on the same phone number (Section 3) may move between their two accounts in the mobile app, as Section 10 describes. Each account keeps exactly its own role, and each session is issued only by its own account family's authentication path. What stays excluded is one account acting under a role it does not have.
+A Shopper or Courier who also holds a Customer account on the same number moves between the two accounts inside the app (Section 10). Each account keeps its own role and its own session.
 
-Backend is authoritative for role, account status, record ownership, assignment scope, and lifecycle permissions.
+The backend is authoritative for role, account status, record ownership, assignment scope and lifecycle permissions.
 
-## 2. Authentication Model
+## 2. Authentication
 
 ### Customer
 
-- self-registers/authenticates with phone + SMS OTP;
-- has no password in MVP;
-- receives role `customer` from backend;
-- cannot select/request another role.
+Phone number plus a six-digit login code. The code is delivered to the Customer's Telegram account when the number has one, otherwise by SMS once an SMS provider exists. No password. The account is created on the first verified login. Configured test phone numbers accept a fixed code without any delivery; the list is empty in production.
 
 ### Staff
 
-`shopper`, `courier`, `operator`, `admin`, `manager` use phone + password.
+`shopper`, `courier`, `operator`, `admin`, `manager` sign in with phone number and password. Admin creates every staff account except the first Admin, which a one-time server command creates. A new staff account starts with a server-generated temporary password and `must_change_password = true`; until the password is changed only the identity, password-change and logout endpoints work. Staff status is `active` or `blocked`.
 
-Staff accounts cannot self-register; Admin creates them except the first bootstrap Admin. New Staff receives a server-generated temporary password and begins `must_change_password=true`. Staff status is `active|blocked`.
+## 3. Phone Uniqueness by Account Family
 
-The first Admin is created by a controlled one-time Laravel/Artisan bootstrap command. There is no public bootstrap endpoint.
-
-## 3. Role Immutability
-
-Staff role is immutable in MVP. To change a person's operational role, block the old account and create a new account so historical assignments remain attached to the original identity.
-
-The new account uses the **same phone**. This is possible because `phone` uniqueness is scoped to active accounts within an account family — see `08` Section 3 — so the blocked account keeps its real phone and nothing is rewritten. A role change therefore does not require the person to obtain a second number.
-
-The same scoping means a person may hold an active Staff account and an active Customer account on one number. A company employee can order as a Customer; the surfaces never collide because Staff authenticate with a password and Customers with an OTP.
-
-A third consequence follows and is **not yet resolved**: one human can now stand on both sides of one Order — propose a substitution or quantity change as the Shopper and grant the Customer Approval for it, making the financial consent required by root `AGENTS.md` Section 7 self-granted. Plain phone uniqueness made this impossible, so no rule addresses it. Tracked as `S-18` in `SPEC_DECISIONS_BACKLOG.md`, to be decided before the Wave 2 assignment task.
+At most one active Customer account and at most one active Staff account per phone number. A blocked account keeps its phone; an active account of the same family cannot be created or unblocked while another active account of that family holds the number. One person may hold an active Customer account and an active Staff account on one number; the two never collide because they authenticate on different endpoints.
 
 ## 4. Customer
 
-Customer may authenticate, manage own profile/Addresses, browse/search Catalog, manage own Cart, create own Order, respond to own Approvals, initiate/retry own Payments, view own Refunds, request cancellation, track delivery, view history, and Reorder.
+May: sign in; edit own name and language; manage own addresses; browse and search the catalog; manage own cart; create, edit (until shopping starts) and cancel own orders; decide own approvals; pay own online orders; file cancellation requests; see own orders, payments, refunds and delivery state; reorder.
 
-Customer must not access another Customer's data, choose authoritative role/status, assign Staff, mutate Catalog pricing, set billable quantity/final totals, fabricate Payment/refund success, mark delivery complete, or access internal credential/operational data.
+Must not: reach another Customer's data; choose a role or status; assign staff; change prices or fees; set billable quantities or totals; mark payments as paid; mark deliveries as done; see internal or staff data.
 
 ## 5. Shopper
 
-Shopper may view only current assigned Shopping Orders, accept assignment, start Shopping after acceptance, view required Product/quantity/pricing/note/policy data, record purchased quantity, record actual price for `range`/`at_purchase`, use approved structured replacements, mark unavailable, request Customer Approval, continue other non-blocked Items during a pending Approval, and complete Shopping only after all Items are terminal and no Approval is pending.
+May: see own current assigned orders; accept an assignment; start shopping; see the products, quantities, notes, rules and price snapshots of those orders; record purchased quantity and actual price; mark an item unavailable; propose a replacement; request approvals; call the Customer while the order is in shopping; complete shopping when every item is terminal and no approval is pending; move to own Customer account inside the app.
 
-Shopper must not access unassigned Orders, increase Customer billable quantity because of excess purchase, choose billable prices directly, approve on behalf of Customer, fabricate Payment state, mutate Catalog/fees, assign Staff, or mark delivery complete.
+Must not: see unassigned orders; increase a billable quantity; set a customer price directly; decide on the Customer's behalf; record payments; change the catalog, fees or settings; assign staff; mark deliveries.
 
-Once Shopping starts, normal Shopper reassignment is not permitted in MVP.
+A Shopper may hold several assigned orders at once. Once shopping has started, the assignment cannot be moved to another Shopper.
 
 ## 6. Courier
 
-Courier may view only current assigned delivery Orders, accept assignment, see required delivery PII, start delivery after acceptance, and mark delivered after physical handover.
+May: see own current delivery assignments with the delivery address, recipient name and phone, the order number, the payment method and, for cash, the amount to collect; accept; start delivery; mark delivered, recording the cash received for a cash order; mark not delivered with a reason; move to own Customer account inside the app.
 
-Courier must not mutate Shopping, quantities, pricing, Payment/Refund, fees, Catalog, assignment, or another Courier's Order.
+Must not: change items, quantities, prices, fees, the catalog or assignments; see other Couriers' orders; record an online payment.
 
-Once `on_the_way`, normal Courier reassignment is not permitted.
+Once the Courier is on the way, the assignment cannot be moved to another Courier.
 
 ## 7. Operator
 
-Operator monitors Order flow and permitted operational exceptions. Operator may view operational Orders/attention, contact relevant actors, decide cancellation requests where allowed, resolve expired Approval only by removing affected Item, monitor Payment/Refund state, and record permitted resolution notes/actions.
+Runs the order board. May: see every order and the attention list; assign and reassign Shoppers before shopping starts and Couriers before delivery starts; decide cancellation requests; switch an unpaid online order to cash or cancel it; resolve an expired approval by removing the item; cancel an order the rules allow; see payments and outstanding refunds; add resolution notes.
 
-Operator must not use generic status mutation, approve higher spending/substitution/reduced quantity on Customer's behalf, mutate Catalog/fees, fabricate financial success, manage Staff credentials/roles, or mark delivery complete for Courier.
+Must not: use any generic status editor; approve spending, a substitution or a reduced quantity on the Customer's behalf; change the catalog, prices, fees or settings; manage staff or passwords; mark refunds as done; mark deliveries or payments.
+
+The Operator surface is the Admin surface with catalog, staff, settings and refund completion hidden.
 
 ## 8. Admin
 
-Admin may manage Categories/Products/images/pricing, view all Orders/history, assign/reassign Shopper before Shopping starts, assign/reassign Courier before delivery starts, create Staff, activate/block Staff, reset another Staff user's password, manage fees/delay threshold/Payment-provider enablement, handle approved cancellation/refund operations, and perform audited dynamic-price correction before relevant final Payment lock.
+Everything the Operator may do, plus: manage categories, products, images and prices; create staff, block and unblock staff, reset another staff member's password; edit business settings and provider enablement; mark manual refunds as done; correct an estimate item's recorded price before the order is paid, with an audited reason.
 
-Security boundaries:
-
-- existing Staff role is immutable;
-- Admin may not block self;
-- Admin may not block the last active Admin;
-- Admin never reads an existing password;
-- Admin cannot fabricate Payment/refund success;
-- Payment secrets are never returned through Admin API;
-- normal Order lifecycle still uses explicit domain actions.
+Boundaries: an existing account's role is immutable; Admin cannot block itself or the last active Admin; Admin never sees a password; Admin cannot mark an online payment as paid; provider secrets are never returned by any API.
 
 ## 9. Manager
 
-Manager is read-only and may access approved KPI/analytics data only. Manager does not modify Orders, Catalog, Staff, Payment/Refund, fees, or settings.
+Read-only figures. Screens deferred past the pilot; the role exists so accounts can be created when they arrive.
 
-## 10. Device Surfaces
+## 10. Surfaces
 
-| Role | Primary MVP Surface |
+| Role | Surface |
 |---|---|
-| Customer | Mobile |
-| Shopper | Mobile |
-| Courier | Mobile |
-| Operator | Desktop |
-| Admin | Desktop |
-| Manager | Desktop |
+| Customer, Shopper, Courier | mobile app: Android from the first client wave, iOS when a Mac and an Apple developer account exist |
+| Operator, Admin, Manager | web panel in the browser, built from the same Flutter code |
 
-One Flutter codebase provides all role-aware shells.
+One Flutter codebase provides every role shell. A role that opens a surface not its own — an Admin on a phone, a Shopper in the browser — sees a screen naming the right surface; the backend does not enforce surfaces.
 
-**Desktop means an installed Windows application**, not a browser surface. Operator, Admin and Manager are company staff at a workstation, and a native surface keeps the bearer token in platform-secured storage as `07` Section 8 requires, which a browser cannot offer. No web build is part of the MVP, and no CORS configuration is therefore needed.
-
-**Mobile means Android and iOS from the same codebase.** Android and Windows are required release targets from Wave 0. An iOS release build becomes a required target in Wave 5, because building and signing for iOS needs macOS and an Apple Developer Program membership, neither of which the project has yet. iOS-specific code is written from the start; only the obligation to produce and verify an iOS build is deferred.
-
-**Shoppers use their personal phone.** The MVP issues them no company device.
-
-**Customer mode.** A Shopper or Courier reaches their own Customer account from inside the Staff interface rather than by signing out. The client cannot tell whether that Customer account exists — `09` Section 6 discloses nothing — so the entry is offered to every Shopper and Courier. Entering it verifies a Customer SMS OTP sent to the Staff account's own phone number, and `09` Section 7 then resolves the existing Customer account or creates one. The Staff password alone never opens it; that would expose a person's addresses, Orders and Payments to anyone who knows or has seen the password. Once verified, the app keeps both sessions and switches between them in one step. The OTP is needed again only when no valid Customer session is stored, for instance after 30 days unused (`07` Section 8). The active mode is always visually unmistakable, so a Staff action is never taken from Customer mode or the reverse. If the Staff account is blocked, the app discards the Staff session only and stays in Customer mode. The switch control ships with the Catalog and the Cart, once Customer mode has something to show (`S-37`); the session foundation it relies on is built first, per `07` Section 8. Customer mode belongs to the mobile Shopper and Courier interface. Whether any Customer surface appears on Windows, and what a Shopper or Courier sees there at all, is `S-32`.
+**Customer mode.** A Shopper or Courier reaches their own Customer account from inside the staff interface. Entering it verifies a Customer login code sent to the staff account's own phone; the password alone never opens it. Afterwards the app keeps both sessions and switches in one step; the active mode is always visible. Logging out of one mode ends only that session. Customer mode is not reachable while the staff first-login gate is set. If the staff account is blocked, the app drops the staff session only. Shoppers and Couriers use their personal phones.
 
 ## 11. Field Visibility
 
-- Customer: own profile/Addresses/Cart/Orders/Approvals/Payments/Refunds/delivery state.
-- Shopper: only assigned Shopping data; delivery-address PII not exposed by default.
-- Courier: only delivery PII for current assigned Order.
-- Operator/Admin: operational data only as required; never passwords, OTPs, bearer tokens, merchant secrets/private keys.
-- Manager: aggregates by default, not Customer PII.
+- Customer: own profile, addresses, cart, orders, approvals, payments, refunds, delivery state.
+- Shopper: assigned orders' items, notes, rules and price snapshots; the Customer's phone only while the order is in shopping; never the delivery address.
+- Courier: delivery address, recipient name and phone, order number, payment method and cash amount, for current assignments only.
+- Operator and Admin: operational data; never passwords, login codes, bearer tokens, provider secrets.
+- Manager: aggregates only.
 
 ## 12. Account Status
 
-Blocked Staff cannot create a new session and cannot continue normal protected use through an old token. Historical records remain preserved.
-
-An account may not be unblocked while another active account **of its own family** holds the same phone — Staff against Staff, Customer against Customer. Without this an unblock would produce two active accounts in one family for one number and break the invariant in `08` Section 3. An active Customer account never blocks unblocking a Staff account, or the reverse.
-
-The refusal is `409 phone_already_active`, defined in `09` Section 59. Resolving such a case is an Admin operational decision, not something unblocking may do implicitly. Note that the obvious remedy — blocking the newer account — is unavailable when that account is the last active Admin, which `BR-ROLE-008` protects; another active Admin must exist first.
+A blocked staff account cannot create a new session and cannot continue with an old token: every token is deleted at the moment of blocking and the status is re-checked on every request. Historical records are preserved. Unblocking is refused with `409 phone_already_active` while another active account of the same family holds the phone.
 
 ## 13. Core Security Invariants
 
-1. Client cannot choose authoritative role.
-2. Customer cannot access another Customer's records.
-3. Shopper/Courier access is assignment-scoped.
-4. Operator has explicit operations, not arbitrary status mutation.
+1. The client never chooses the role.
+2. A Customer never reaches another Customer's records.
+3. Shopper and Courier access is scoped to current assignments.
+4. Operator and Admin act through explicit operations, never arbitrary status writes.
 5. Manager is read-only.
-6. Blocked Staff cannot use old token as active Staff.
-7. Direct IDs never grant access.
-8. Flutter route guards never replace backend authorization.
-9. Payment/refund success is provider-authoritative.
-10. Passwords, OTPs, tokens, and merchant secrets never become business API data.
+6. A blocked staff account cannot use an old token.
+7. A direct ID never grants access.
+8. Client route guards never replace backend authorization.
+9. Online payment success is provider-authoritative; cash is recorded only by the Courier's handover action.
+10. Passwords, login codes, tokens and provider secrets never appear in business API data.

@@ -1,22 +1,22 @@
 # BarakaBozor
 
-BarakaBozor is an MVP grocery-market purchasing and delivery service built around the locked business model:
+BarakaBozor is a grocery-market purchasing and delivery service for one city in Uzbekistan:
 
 ```text
 ONLINE BOZORLIK
 + XARIDCHI XODIM
-+ ONLINE TO'LOV
 + YETKAZIB BERISH
++ NAQD YOKI ONLAYN TO'LOV
 ```
 
-The Customer orders products and exact quantities from BarakaBozor. The Customer does not choose a market or market seller. Company staff purchases the goods at one wholesale market, the system controls pricing/payment, and a Courier delivers the completed order.
+The Customer orders products and exact quantities in the app. The Customer does not choose a market or a seller. A company Shopper buys the goods at one wholesale market, a Courier delivers them, and the Customer pays after shopping, in cash to the Courier or online.
 
-## MVP specification
-
-The product and technical specification is locked in:
+## Documents
 
 ```text
 docs/
+  INTERVIEW_2026-09-24.md   the Project Owner's product decisions
+  DECISIONS.md              the decision log: what was decided and why
   01-business-overview.md
   02-user-roles.md
   03-features.md
@@ -28,36 +28,21 @@ docs/
   09-api-contracts.md
 ```
 
-`docs/FINAL_AUDIT_REPORT.md` records the final cross-document PASS.
+`01–09` describe the product and the technical design as they currently are and are kept current by the implementing agent. Frozen history of the earlier locked-specification period: `docs/CONTRACT_ALIGNMENT_REPORT.md`, `docs/SPEC_DECISIONS_BACKLOG.md`, `docs/FINAL_AUDIT_REPORT.md`.
 
 ## Engineering model
 
-The project is built by two parties under `AGENTS.md` and `tasks/README.md`:
-
-```text
-Implementing agent = requirements analysis, task contracts, implementation,
-                     focused verification, branches and PRs;
-                     obtains an independent review before every PR
-Project Owner      = product decisions, approval, PR review and merge,
-                     real-stack execution, manual smoke, Wave closure
-CI                 = checkpoint/integration execution when configured
-```
-
-Work runs in waves. Inside a wave several tracks run concurrently, each as its own implementing agent in its own git worktree, and each holding **one approved task at a time**. Track count is bounded by the wave's declared width in `tasks/WAVE_<N>_TASK_INDEX.md`, and the paths each track may touch are fixed in `tasks/OWNERSHIP.md`.
-
-The implementing agent does not decide product behavior, API semantics, database contracts, security or lifecycle rules, money rules, concurrency policy, cross-feature architecture, dependency strategy, or UX. Those belong to the Project Owner, and so does every change to the locked specification.
-
-Because one agent both plans and implements, an independent reviewer with no implementation context reviews each diff before its pull request is opened.
+One implementing agent (Claude Code) plans, implements, tests, obtains an independent review, merges on a green CI run and reports once per wave. The Project Owner decides product questions the documents do not cover and checks the product in the app once per wave. Rules: `AGENTS.md`, `backend/AGENTS.md`, `frontend/AGENTS.md`; workflow: `tasks/README.md`.
 
 ## Technical baseline
 
 ```text
-Backend:  Laravel 13 / PHP 8.3+ / PostgreSQL / Sanctum
-Frontend: Flutter / Riverpod / GoRouter / Dio / secure storage
+Backend:  Laravel 13 / PHP 8.4 / PostgreSQL 17 / Sanctum, in Docker
+Frontend: Flutter / Riverpod / GoRouter / Dio — Android, iOS, web panel
 API:      REST JSON under /api/v1
 ```
 
-The backend is authoritative for role, access, Order lifecycle, prices, quantities, approvals, payments, refunds, fees, Shopper/Courier assignment, and delivery state.
+The backend is authoritative for identity, access, the order lifecycle, prices, quantities, approvals, payments, assignment and delivery state.
 
 ## Repository structure
 
@@ -66,17 +51,13 @@ baraka-bozor/
   AGENTS.md
   docs/
   tasks/
-  backend/
-  frontend/
+  backend/     Laravel application; runs only inside docker/compose.yaml
+  frontend/    Flutter application
+  docker/      local development and test runtime
 ```
 
-The Laravel scaffold arrived through the first approved Wave 0 task. The Flutter scaffold is introduced through a later Wave 0 task.
+`docker/README.md` explains how to start the stack and run the backend checks.
 
-## Current status
+## Status
 
-- Locked `docs/01–09`: PASS.
-- Stage 0: CLOSED. Baseline delivered to `origin/main`.
-- Execution model: six waves with concurrent tracks, approved 2026-09-21. Recorded in `docs/06-roadmap.md` Sections 1–2 and in `docs/superpowers/specs/2026-09-21-parallel-execution-model-design.md`.
-- Wave 0 (Foundation): in progress. `S01-BE-001` Laravel API foundation is Accepted; the PostgreSQL runtime, required CI, module registries and auth core follow.
-- Open specification questions are tracked in `docs/SPEC_DECISIONS_BACKLOG.md`, grouped by the wave that must resolve them.
-- External gates: a real SMS path and merchant credentials are Wave 5 requirements and both depend on a registered legal entity, which does not yet exist. Waves 0–4 reach a demonstrable MVP without it, running behind a fake SMS gateway and a fake payment provider; push notifications reach a real Firebase integration in Wave 4, which needs no legal entity.
+Wave 0 (foundation) is in progress: the runtime, CI, the identity schema and the Flutter scaffold are merged; staff login, Customer login, authorization and the client's auth screens follow. The order of the remaining waves is in `docs/06-roadmap.md` Section 2 and `docs/DECISIONS.md` `DL-5`.

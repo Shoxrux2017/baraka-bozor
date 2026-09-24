@@ -2,9 +2,9 @@
 
 ## 1. Scope
 
-Applies to changes under `backend/`. Read with root `AGENTS.md` and the current approved implementation contract.
+Applies to changes under `backend/`. Read with root `AGENTS.md`, `docs/07–09` and the current wave file in `tasks/`.
 
-The contract defines behavior/API/schema/lifecycle/concurrency/tests. This file defines Laravel/PostgreSQL engineering standards.
+The documents define behavior/API/schema/lifecycle/concurrency. This file defines Laravel/PostgreSQL engineering standards. Every backend command runs inside the Compose stack (`docker/README.md`); the host PHP cannot reach PostgreSQL.
 
 ## 2. Backend Architecture
 
@@ -104,7 +104,7 @@ Expected conflicts map to safe stable API errors; never leak DB exceptions.
 
 ## 9. External Providers
 
-SMS, FCM, Payme, Paynet, xazna, and Click belong behind explicit infrastructure adapters. Domain/order code must not contain provider-specific HTTP protocol details.
+Telegram Gateway, SMS (Eskiz), FCM, Payme, Click, Paynet and xazna belong behind explicit infrastructure adapters. Domain/order code must not contain provider-specific HTTP protocol details.
 
 Never call real providers from normal automated tests. Use fakes/stubs and separately approved sandbox/integration checks.
 

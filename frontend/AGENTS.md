@@ -2,9 +2,9 @@
 
 ## 1. Scope
 
-Applies to changes under `frontend/`. Read with root `AGENTS.md` and the current approved implementation contract.
+Applies to changes under `frontend/`. Read with root `AGENTS.md`, `docs/07` Section 27 onward, `docs/09` and the current wave file in `tasks/`.
 
-The contract defines required UX/routes/API/state/validation/tests. This file defines Flutter engineering standards.
+The documents define the UX, routes, API, state and validation. This file defines Flutter engineering standards. Targets: Android and the web panel from the first client wave, iOS later.
 
 ## 2. Flutter Architecture
 
@@ -108,7 +108,7 @@ When a mutation may have committed but its response is uncertain, downstream cac
 
 Follow theme/design tokens and support required:
 
-- mobile/desktop responsiveness by approved role surface;
+- mobile and browser responsiveness by role surface;
 - text scaling and long content;
 - scrolling without overflow;
 - keyboard/focus behavior on desktop;

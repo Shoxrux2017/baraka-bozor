@@ -2,167 +2,149 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-21 (AUD-023) and 2026-09-23 (AUD-029); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** current. Rewritten on 2026-09-24 to `docs/INTERVIEW_2026-09-24.md` and `DL-2`–`DL-4` in `docs/DECISIONS.md`.
 
 ## Rule Language
 
-- **Must / must not** — mandatory MVP contract.
-- **May** — permitted but not necessarily applicable in every state.
-- **Authoritative** — decided/validated by backend/current persisted state rather than client presentation.
+- **Must / must not** — mandatory.
+- **May** — permitted where the state allows it.
+- **Authoritative** — decided by the backend from persisted state, never by the client.
 
-# 1. Core Rules
+# 1. Core
 
-**BR-CORE-001 — Company fulfilment model**
-Customer Orders BarakaBozor service; market Sellers are not platform users.
+**BR-CORE-001** — The company fulfils the order; market sellers are not users.
 
-**BR-CORE-002 — One market/city operating model**
-The MVP has one business operating against one wholesale market/region. Multi-market/city is Post-MVP.
+**BR-CORE-002** — One business, one city, one market, one handoff point, one service area.
 
-**BR-CORE-003 — Server authority**
-Backend is authoritative for identity, role, status, ownership, Order/Item lifecycle, billable quantities/prices, approvals, fees, Payment/refund state, assignments, and delivery state.
+**BR-CORE-003** — The backend is authoritative for identity, role, status, ownership, order and item lifecycle, quantities, prices, markup, fees, approvals, payment state, assignments and delivery state.
 
-**BR-CORE-004 — Historical stability**
-Existing Order snapshots must not be rewritten by later Catalog, Address, fee, or settings changes.
+**BR-CORE-004** — Existing order snapshots are never rewritten by later catalog, markup, fee, address or settings changes. An edit before shopping creates new snapshots by the Customer's own action.
 
-# 2. Role and Account Rules
+# 2. Roles and Accounts
 
 **BR-ROLE-001** — Roles are exactly `customer`, `shopper`, `courier`, `operator`, `admin`, `manager`.
 
-**BR-ROLE-002** — One primary role per account; role is immutable in MVP. A role change blocks the old account and creates a new one reusing the same phone, which `08` Section 3 permits by scoping phone uniqueness to active accounts within an account family.
+**BR-ROLE-002** — One role per account, immutable. A role change blocks the old account and creates a new one on the same phone.
 
-**BR-ROLE-003** — Customer authenticates with phone + SMS OTP and has no password.
+**BR-ROLE-003** — Customers authenticate with phone and login code and have no password.
 
-**BR-ROLE-004** — Staff uses phone + password; Staff self-registration is forbidden.
+**BR-ROLE-004** — Staff authenticate with phone and password; staff self-registration is forbidden.
 
-**BR-ROLE-005** — Admin-created Staff gets server-generated temporary password and `must_change_password=true`.
+**BR-ROLE-005** — Admin-created staff receive a server-generated temporary password and start with `must_change_password = true`.
 
-**BR-ROLE-006** — While `must_change_password=true`, only current identity, password change, and logout onboarding capabilities are permitted.
+**BR-ROLE-006** — While the gate is set, only identity, password change and logout are permitted.
 
-**BR-ROLE-007** — Staff status is `active|blocked`; blocked Staff cannot use old tokens for normal protected operations.
+**BR-ROLE-007** — Staff status is `active` or `blocked`; a blocked account cannot use old tokens.
 
-**BR-ROLE-008** — Admin may not block self or the last active Admin account.
+**BR-ROLE-008** — Admin may not block itself or the last active Admin.
 
-**BR-ROLE-009** — First Admin is created through controlled one-time backend CLI/bootstrap, never public API.
+**BR-ROLE-009** — The first Admin is created by a one-time server command, never by an API.
 
-**BR-ROLE-010** — At most one active Customer account and at most one active Staff account exist per phone. Staff login resolves the active Staff account for a phone; Customer OTP verify resolves or creates the active Customer account. An account may not be unblocked while another active account **of its own family** holds the same phone.
+**BR-ROLE-010** — At most one active Customer account and one active Staff account per phone; login resolves the active account of its own family; an unblock is refused while another active account of the same family holds the phone.
 
-# 3. Catalog Rules
+**BR-ROLE-011** — Login codes for configured test phone numbers are the configured fixed code and are not delivered; the configuration is empty in production. No other login code is ever emitted anywhere.
 
-**BR-CAT-001** — Categories/Products are managed data, not hard-coded business enums.
+# 3. Catalog
 
-**BR-CAT-002** — Historically referenced Catalog data is preserved through archive/deactivation rather than destructive deletion.
+**BR-CAT-001** — Categories and products are managed data.
 
-**BR-CAT-003** — Archived/inactive Product cannot be added to a new Cart/Order.
+**BR-CAT-002** — Referenced catalog data is archived, never hard-deleted.
 
-**BR-CAT-004** — One current Product image; JPEG/PNG/WebP; <=5 MB; backend-authoritative validation.
+**BR-CAT-003** — An archived or inactive product cannot enter a cart or an order.
 
-# 4. Quantity Rules
+**BR-CAT-004** — One current image per product; JPEG, PNG or WebP; at most 5 MB; validated by the backend.
 
-**BR-QTY-001** — Precision:
+**BR-CAT-005** — `name_uz` and `name_ru` are required on categories and products; descriptions are optional. Search matches both languages.
 
-- `kg|liter|meter`: positive value with <=3 fractional digits;
-- `gram|piece|package|box|bundle`: positive integer.
+**BR-CAT-006** — Categories are a flat list ordered by `sort_order`.
 
-**BR-QTY-002** — `ordered_quantity` is Customer contract and never silently increases.
+# 4. Quantity
 
-**BR-QTY-003** — `billable_quantity <= ordered_quantity`.
+**BR-QTY-001** — `kg`, `liter`, `meter`: positive, at most three decimals. `gram`, `piece`, `package`, `box`, `bundle`: positive integer.
 
-**BR-QTY-004** — Excess physical purchase does not increase Customer charge.
+**BR-QTY-002** — `ordered_quantity` is the Customer's contract and never silently increases.
 
-**BR-QTY-005** — Reduced fulfilment requires Customer Approval unless whole Item is removed under preselected policy.
+**BR-QTY-003** — `billable_quantity ≤ ordered_quantity`.
 
-**BR-QTY-006** — Approved reduction changes billable quantity only; ordered quantity remains historical intent.
+**BR-QTY-004** — Excess purchase never increases the bill.
 
-# 5. Pricing Rules
+**BR-QTY-005** — A reduced billable quantity requires Customer approval, unless the whole item is removed under `remove_if_unavailable`.
 
-**BR-PRICE-001 — Fixed**
-Order snapshots fixed price. Ordinary fixed Item billable unit price = fixed snapshot. Shopper procurement price is not required for Customer calculation.
+**BR-QTY-006** — An approved reduction caps the billable quantity; the ordered quantity stays as history.
 
-**BR-PRICE-002 — Range**
-Order snapshots min/max. Actual <= approved ceiling is billable without extra approval. Actual > ceiling requires Customer Approval before purchase at that higher price. Actual below min is allowed and billed at lower actual price.
+# 5. Prices
 
-**BR-PRICE-003 — At purchase**
-Customer accepts unknown original Product price at checkout. Shopper records actual unit price; no separate pre-purchase approval for original Product.
+**BR-PRICE-001 — Customer price.** `customer_unit_price = half_up(market_price × (1 + markup_percent / 100))`. The Customer only ever sees customer prices.
 
-**BR-PRICE-004 — Substitution**
-Replacement uses actual replacement unit price subject to ceiling/Approval.
+**BR-PRICE-002 — Fixed.** The order snapshots the customer price; the billable unit price is that snapshot regardless of what the Shopper paid.
 
-**BR-PRICE-005 — Automatic replacement ceiling**
+**BR-PRICE-003 — Estimate.** The order snapshots the estimate customer price, the markup and the tolerance. The billable unit price is `half_up(actual_market_price × (1 + markup_snapshot / 100))`. The ceiling is `half_up(estimate_snapshot × (1 + tolerance_snapshot / 100))`, or a higher ceiling an approval set. A billable unit price above the ceiling requires approval before purchase.
 
-- fixed original → fixed snapshot;
-- range original → max snapshot or later Customer-approved higher ceiling;
-- at_purchase original → no automatic substitution; explicit Approval.
+**BR-PRICE-004 — Replacement.** A replacement is billed at its own customer price computed the same way, subject to the original item's ceiling or an approval.
 
-**BR-PRICE-006 — Price correction**
-Admin audited correction applies only to dynamic purchased pricing before relevant final Payment lock. Operator cannot correct price.
+**BR-PRICE-005 — Automatic replacement ceiling.** Fixed original: its customer-price snapshot. Estimate original: its estimate plus tolerance, or an approved higher ceiling.
+
+**BR-PRICE-006 — Price correction.** Admin may correct a purchased estimate item's recorded market price with a reason while the order is unpaid; totals and an unpaid online obligation are recomputed. A paid order locks corrections.
 
 # 6. Money and Rounding
 
-**BR-MONEY-001** — Authoritative currency is integer UZS.
+**BR-MONEY-001** — Currency is integer UZS.
 
 **BR-MONEY-002** — No binary floating-point money arithmetic.
 
-**BR-MONEY-003 — Line rounding**
+**BR-MONEY-003** — `line_total = half_up(billable_unit_price × billable_quantity)` to 1 UZS.
 
-```text
-raw_line = billable_unit_price_uzs × billable_quantity
-line_total_uzs = half-up(raw_line) to nearest 1 UZS
-```
+**BR-MONEY-004** — Merchandise subtotal is the sum of rounded purchased lines.
 
-**BR-MONEY-004** — Merchandise subtotal = sum of rounded purchased line totals.
+**BR-MONEY-005** — A percentage service fee is `half_up(subtotal × percent / 100)`.
 
-**BR-MONEY-005** — Percentage Service fee is calculated from final merchandise subtotal and rounded half-up to nearest 1 UZS.
+**BR-MONEY-006** — `final_total = subtotal + service_fee + delivery_fee_snapshot`.
 
-**BR-MONEY-006**
+# 7. Settings
 
-```text
-final_total_uzs
-= final_merchandise_subtotal_uzs
-+ final_service_fee_uzs
-+ delivery_fee_uzs_snapshot
-```
+**BR-SET-001** — Business settings: `markup_percent`, service fee (`fixed` or `percentage`), `delivery_fee_uzs`, `minimum_order_uzs`, `price_tolerance_percent` (default 15), working hours (`opens_at`, `closes_at`), service area (`centre_latitude`, `centre_longitude`, `radius_km`), `delivery_delay_threshold_minutes` (default 60).
 
-# 7. Fee Rules
+**BR-SET-002** — Checkout is blocked until every setting it needs exists.
 
-**BR-FEE-001** — Service mode `fixed|percentage`.
+**BR-SET-003** — Orders snapshot the settings they depend on; settings changes never touch existing orders.
 
-**BR-FEE-002** — Percentage base excludes Delivery fee.
+**BR-SET-004** — Provider enablement per provider controls only new online payments.
 
-**BR-FEE-003** — MVP Delivery fee is one fixed Admin-managed tariff.
+# 8. Cart and Checkout
 
-**BR-FEE-004** — Order snapshots fee values/rule; settings changes do not mutate existing Order.
+**BR-CART-001** — At most one active cart per Customer.
 
-**BR-FEE-005** — Checkout blocked until required fee configuration exists.
+**BR-CART-002** — A product appears at most once per cart.
 
-# 8. Cart and Checkout Rules
+**BR-CART-003** — The cart shows current prices and is not history.
 
-**BR-CART-001** — At most one active Cart/Customer.
+**BR-CART-004** — The default substitution rule is `allow_similar_substitution`.
 
-**BR-CART-002** — Product appears at most once/Cart.
+**BR-CHK-001** — Checkout requires a non-empty `full_name`.
 
-**BR-CART-003** — Cart uses current Product/price data and is not historical.
+**BR-CHK-002** — Checkout requires an own active address with coordinates inside the service area, street and house.
 
-**BR-CHK-001** — Checkout requires non-empty `full_name`.
+**BR-CHK-003** — The merchandise subtotal of the preview must reach `minimum_order_uzs`; the refusal carries the minimum and the shortfall.
 
-**BR-CHK-002** — Checkout Address requires latitude, longitude, street, house.
+**BR-CHK-004** — The Customer chooses `cash` or `online`; `online` requires at least one enabled provider.
 
-**BR-CHK-003** — Preview kind is `final`, `estimate_range`, or `contains_unknown`.
+**BR-CHK-005** — The preview is `final` when every line is fixed, `estimate` otherwise; an estimate total is labelled as such.
 
-**BR-CHK-004** — Backend returns signed 5-minute checkout token bound to Customer/Cart/Address/Products/pricing/fees/provider state.
+**BR-CHK-006** — A signed five-minute checkout token binds the preview to the Customer, cart, address, products, prices, fees, settings and payment method.
 
-**BR-CHK-005** — Stale preview cannot silently create Order.
+**BR-CHK-007** — A stale token cannot create an order.
 
-**BR-CHK-006** — Order creation atomically converts source Cart and creates new empty active Cart.
+**BR-CHK-008** — Order creation converts the cart and creates a new empty active cart atomically.
+
+**BR-CHK-009** — An order placed outside working hours is accepted; the preview tells the Customer it will be collected after opening.
 
 # 9. Order States
 
 ```text
-checkout_payment_pending
 new
 shopping_assigned
 shopping
-approval_required
-final_payment_pending
+final_payment_pending    online orders only
 ready_for_delivery
 delivery_assigned
 on_the_way
@@ -170,187 +152,168 @@ completed
 cancelled
 ```
 
-**BR-ORDER-001** — `completed|cancelled` terminal.
+**BR-ORDER-001** — `completed` and `cancelled` are terminal.
 
-**BR-ORDER-002** — Client never sets arbitrary status; explicit actions own transitions.
+**BR-ORDER-002** — Explicit actions own transitions; no generic status write exists.
 
-**BR-ORDER-003** — Pre-Shopping fixed payment uses `checkout_payment_pending`; post-Shopping deferred/additional uses `final_payment_pending`.
+**BR-ORDER-003** — "Awaiting the Customer" is derived from pending approvals; the order stays `shopping`.
 
-**BR-ORDER-004** — Pending Approval projects Order as `approval_required`; Shopper may still process other non-blocked Items; completion blocked until resolved.
+**BR-ORDER-004** — The Customer may edit items and the delivery wish while `new` or `shopping_assigned` and shopping has not started; each edit re-snapshots the changed lines and writes history.
+
+**BR-ORDER-005** — Order numbers are short, sequential and unique.
 
 # 10. Order Item States
 
 ```text
-pending
-awaiting_customer
-purchased
-removed
+pending    awaiting_customer    purchased    removed
 ```
 
-**BR-ITEM-001** — `purchased|removed` terminal fulfilment outcomes.
+**BR-ITEM-001** — `purchased` and `removed` are terminal.
 
-**BR-ITEM-002** — Purchased Item has positive billable quantity, billable unit price, line total.
+**BR-ITEM-002** — A purchased item has a positive billable quantity, a billable unit price and a line total.
 
-**BR-ITEM-003** — Removed Item has billable quantity and line total zero.
+**BR-ITEM-003** — A removed item has billable quantity and line total zero and a `removed_reason_code`.
 
-# 11. Shopper Assignment and Shopping
+**BR-ITEM-004** — A replacement has the same `unit_code` as the original.
 
-**BR-SHOP-001** — Admin manually assigns one current active Shopper.
+# 11. Assignment
 
-**BR-SHOP-002** — Shopper accepts before start.
+**BR-ASSIGN-001** — Operators and Admins assign one active Shopper to a `new` order and one active Courier to a `ready_for_delivery` order.
 
-**BR-SHOP-003** — Normal Shopper reassignment only before Shopping starts.
+**BR-ASSIGN-002** — Shopper reassignment only before shopping starts; Courier reassignment only before `on_the_way`.
 
-**BR-SHOP-004** — Shopper access current-assignment scoped.
+**BR-ASSIGN-003** — Accept before start.
 
-**BR-SHOP-005** — Completion requires every Item terminal and no pending Approval.
+**BR-ASSIGN-004** — Shopper and Courier access is scoped to current assignments.
 
-**BR-SHOP-006** — If no purchased Item remains, Order cancels, final Customer fulfilment totals are zero, paid amount refunded as required.
+**BR-ASSIGN-005** — An assignment whose assignee's phone equals the Customer's is allowed and flagged `is_self_order` on the assignment, the board and history.
 
-# 12. Approval Rules
+**BR-ASSIGN-006** — Shopping completion requires every item terminal and no pending approval; if nothing was purchased the order is cancelled with `no_items_purchased`.
 
-Types: `price_over_range|substitution|reduced_quantity`.
-States: `pending|approved|rejected|expired`.
+# 12. Approvals
 
-**BR-APP-001** — Proposal immutable after creation except resolution fields.
+Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pending`, `approved`, `rejected`, `expired`.
 
-**BR-APP-002** — +10m creates Operator attention; still pending.
+**BR-APP-001** — A proposal is immutable after creation except for its resolution.
 
-**BR-APP-003** — +30m expires unresolved Approval.
+**BR-APP-002** — At creation plus 10 minutes a pending approval is Operator attention.
 
-**BR-APP-004** — Expiration never implies consent.
+**BR-APP-003** — At creation plus 30 minutes it expires.
 
-**BR-APP-005** — Customer decides only own pending Approval and only persisted proposal.
+**BR-APP-004** — Expiry never implies consent.
 
-**BR-APP-006** — Reject removes affected Item.
+**BR-APP-005** — Only the Customer decides, only own pending approvals, only the persisted proposal.
 
-**BR-APP-007** — Expired Approval may be resolved by Operator/Admin only as `remove_item`.
+**BR-APP-006** — Reject removes the item.
 
-**BR-APP-008** — Approved price-over-range establishes specific approved ceiling; later higher price requires new Approval.
+**BR-APP-007** — An expired approval is resolved by an Operator or Admin only as `remove_item`.
 
-**BR-APP-009** — Approved substitution authorizes only proposed replacement/price context.
+**BR-APP-008** — An approved price sets the item's ceiling; a later higher price needs a new approval.
 
-# 13. Payment Flow Rules
+**BR-APP-009** — An approved substitution authorizes only the proposed replacement and price context.
 
-**BR-PAY-001** — All fixed Items → prepaid; any range/at_purchase → deferred.
+**BR-APP-010** — After approval the item returns to `pending` and the Shopper records the purchase.
 
-**BR-PAY-002** — Prepaid Shopping cannot begin before successful checkout Payment.
+**BR-APP-011** — At most one pending approval per item.
 
-**BR-PAY-003** — Deferred final Payment created only after Shopping completion/final calculation.
+# 13. Payment
 
-**BR-PAY-004** — No UI/user role fabricates Payment success.
+**BR-PAY-001** — Every order is paid after shopping; there is no prepayment.
 
-**BR-PAY-005** — One live pending Attempt/Payment; do not start another while outcome unknown.
+**BR-PAY-002** — `payment_method` is `cash` or `online`, chosen at checkout, changeable only by an Operator switching an unpaid online order to cash.
 
-**BR-PAY-006** — Definitive failed Attempt may retry.
+**BR-PAY-003** — Cash: the Courier records the cash received at handover; the amount must equal the final total; the payment record is `paid` by that action.
 
-**BR-PAY-007** — Unknown outcome requires reconciliation.
+**BR-PAY-004** — Online: a `final` payment obligation is created at shopping completion; success is provider-authoritative; no role can mark it paid.
 
-**BR-PAY-008** — Unpaid checkout Payment expires +30m and system-cancels Order before Shopping.
+**BR-PAY-005** — One live pending attempt per obligation; a new attempt is refused while one is pending.
 
-**BR-PAY-009** — Final/additional Payment after Shopping is not auto-cancelled at +30m; becomes Operator attention.
+**BR-PAY-006** — A failed attempt may be retried.
 
-# 14. Prepaid Recalculation
+**BR-PAY-007** — An attempt without a result after the provider timeout is reconciled with the provider before anything else.
 
-```text
-paid == final → ready
-paid < final  → additional Payment, final_payment_pending
-paid > final  → overpayment Refund + ready
-```
+**BR-PAY-008** — Thirty minutes unpaid after shopping completion makes the order Operator attention; nothing is auto-cancelled.
 
-**BR-PAY-010** — Additional amount never charged automatically.
+**BR-PAY-009** — Provider callbacks are deduplicated by provider event identity and never cause duplicate transitions.
 
-**BR-PAY-011** — Pending overpayment Refund does not block Delivery if paid amount covers final total.
+# 14. Refunds
 
-# 15. Refund Rules
+**BR-REF-001** — A refund obligation is created when an order with a paid online payment is cancelled.
 
-**BR-REF-001** — Refund links to successful Payment and provider-authoritative outcome.
+**BR-REF-002** — The refund amount is the paid amount; the sum of completed refunds never exceeds it.
 
-**BR-REF-002** — Sum successful Refunds <= successful paid amount.
+**BR-REF-003** — Refunds are performed manually by an Admin in the provider's cabinet and recorded as `completed` with the provider reference, or `failed` with a note.
 
-**BR-REF-003** — Overpayment refund = paid amount above authoritative final total.
+**BR-REF-004** — Outstanding refunds are Operator attention.
 
-**BR-REF-004** — Approved whole-Order cancellation sets final Customer fulfilment total zero and refunds paid Customer amount.
+# 15. Cancellation
 
-**BR-REF-005** — Failed/unknown Refund becomes attention; Admin may retry safely under provider contract.
+**BR-CAN-001** — While `new` or `shopping_assigned`, the Customer may cancel directly.
 
-# 16. Cancellation Rules
+**BR-CAN-002** — From `shopping` through `delivery_assigned`, the Customer files a request; an Operator or Admin decides; at most one pending request per order.
 
-**BR-CAN-001** — Before Shopping, Customer may cancel directly.
+**BR-CAN-003** — From `on_the_way`, no normal cancellation.
 
-**BR-CAN-002** — After Shopping starts and before `on_the_way`, Customer creates request; Operator/Admin decides.
+**BR-CAN-004** — Operators and Admins may cancel an unpaid online order after the 30-minute window and an order whose delivery failed.
 
-**BR-CAN-003** — `on_the_way` or later: normal MVP cancellation forbidden.
+**BR-CAN-005** — Cancellation records origin, actor, reason, time, previous state and whether a refund is due.
 
-**BR-CAN-004** — Cancellation stores origin/actor/reason/time/previous state/refund requirement.
+**BR-CAN-006** — An approved cancellation costs the Customer nothing.
 
-# 17. Courier Rules
+# 16. Delivery
 
-**BR-COUR-001** — Admin assigns one current active Courier only for ready Order.
+**BR-DEL-001** — `delivery_assigned → on_the_way → completed` is Courier-owned.
 
-**BR-COUR-002** — Courier accepts before start.
+**BR-DEL-002** — Delay is derived from the threshold snapshot and is attention, not state.
 
-**BR-COUR-003** — Normal reassignment only before `on_the_way`.
+**BR-DEL-003** — A Courier may mark `not_delivered` with a reason; the assignment ends `delivery_failed`, the order returns to `ready_for_delivery`, and it is Operator attention.
 
-**BR-COUR-004** — Courier access current-assignment scoped.
+**BR-DEL-004** — Delivered on a cash order requires the cash amount and it must equal the final total.
 
-**BR-COUR-005** — `delivery_assigned → on_the_way → completed` is Courier-owned.
+**BR-DEL-005** — No proof photo, signature, code or GPS at handover.
 
-**BR-COUR-006** — Delay is derived attention from snapshotted threshold, not lifecycle state.
+# 17. Working Hours and Service Area
 
-# 18. Notification Rules
+**BR-AREA-001** — An address point farther than `radius_km` from the centre is refused.
 
-Required Customer notification types:
+**BR-AREA-002** — Orders are accepted at any time; collection happens inside working hours.
 
-```text
-order_accepted
-approval_required
-payment_required
-courier_started
-order_delivered
-```
+# 18. Notifications
 
-Required Shopper notification events, `AUD-029`: Order assigned, and Customer answered an Approval. Their machine codes are not yet approved and are tracked as `S-42`; the Wave 1 schema task must not invent them.
+Customer: `order_accepted`, `approval_required`, `payment_required`, `courier_started`, `order_delivered`, `order_cancelled`. Shopper: `shopping_assigned`, `approval_answered`, `shopping_order_cancelled`. Courier: `delivery_assigned`, `delivery_cancelled`.
 
-Notification failure does not change Order state.
+**BR-NOTIF-001** — Delivery is best-effort and never changes state.
+
+**BR-NOTIF-002** — Texts are rendered in the user's `preferred_language`; payloads carry the event type and an ID only.
+
+**BR-NOTIF-003** — SMS carries login codes only.
 
 # 19. History and Reorder
 
-**BR-HIST-001** — Customer history ownership-scoped and snapshot-stable.
+**BR-HIST-001** — History is ownership-scoped and snapshot-stable.
 
-**BR-HIST-002** — Reorder uses original ordered Product + current availability/pricing.
+**BR-HIST-002** — Reorder uses the original ordered products at current availability and prices.
 
-**BR-HIST-003** — Existing current Cart Product is skipped, not overwritten.
+**BR-HIST-003** — Products already in the cart are skipped, not overwritten.
 
-**BR-HIST-004** — Reorder never creates Order automatically.
+**BR-HIST-004** — Reorder never creates an order.
 
-# 20. Analytics Rules
+# 20. Figures
 
-For selected period:
-
-- Orders created: count by `created_at`.
-- Completed Orders: `completed_at` in period.
-- Cancelled Orders: `cancelled_at` in period.
-- Gross sales: sum `final_total_uzs` for Completed Orders.
-- Service revenue: sum `final_service_fee_uzs` for Completed Orders.
-- AOV: average `final_total_uzs` for Completed Orders.
-- Average fulfilment: average `completed_at-created_at` for Completed Orders.
-- Popular Products: rank by number of Completed Orders containing fulfilled Product; quantity totals separate per unit.
+Deferred past the pilot. When built: orders created by `created_at`; completed by `completed_at`; cancelled by `cancelled_at`; gross sales = sum of `final_total_uzs` of completed orders; service revenue = sum of `final_service_fee_uzs`; markup revenue = sum over purchased lines of `line_total − half_up(actual_market_price × billable_quantity)` where the actual price is known; average order value; average fulfilment time; popular products by completed orders containing the fulfilled product, quantities per unit; staff activity per member: shopping runs and deliveries completed, average duration.
 
 # 21. Concurrency and Idempotency
 
-**BR-CON-001** — Current persisted state under lock wins over stale UI.
+**BR-CON-001** — Current persisted state under lock wins over a stale client.
 
-**BR-CON-002** — One current Shopper assignment/Order.
+**BR-CON-002** — One current Shopper assignment and one current Courier assignment per order.
 
-**BR-CON-003** — One current Courier assignment/Order.
+**BR-CON-003** — High-risk mutations use the persisted `Idempotency-Key` contract in `09`.
 
-**BR-CON-004** — High-risk Flutter mutations use persisted idempotency contract in Architecture/DB/API.
+**BR-CON-004** — Duplicate provider events never duplicate transitions.
 
-**BR-CON-005** — Duplicate provider events do not duplicate financial/lifecycle transitions.
-
-**BR-CON-006** — Explicitly approved natural lifecycle repeats may return current resource without duplicate history.
+**BR-CON-005** — Natural repeats (accept an accepted assignment, mark delivered a completed order from the same assignment) return the current resource without duplicate history.
 
 # 22. Traceability
 
-Preserve explainable history for Order lifecycle, Shopper/Courier assignments, Customer Approvals, dynamic price corrections, cancellations, Payment Attempts/provider events, Refunds/refund Attempts. No generic status editor may bypass this history.
+Preserve explainable history for order lifecycle, edits, assignments, approvals, price corrections, cancellations, payments and attempts, provider events, refunds and delivery failures. No path bypasses this history.

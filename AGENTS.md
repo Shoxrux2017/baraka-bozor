@@ -2,234 +2,120 @@
 
 ## 1. Purpose and Scope
 
-This file applies to the entire BarakaBozor repository.
+This file applies to the entire BarakaBozor repository. Backend and frontend specifics are in `backend/AGENTS.md` and `frontend/AGENTS.md`.
 
-More specific engineering rules exist in:
-
-- `backend/AGENTS.md`
-- `frontend/AGENTS.md`
-
-The locked `docs/01–09` define approved MVP product and technical behavior. The current approved task contract defines exactly what is being built now. This file defines how to build it safely and well.
+`docs/01–09` describe the product and the technical design as they currently are. `docs/DECISIONS.md` records why they are that way. `docs/INTERVIEW_2026-09-24.md` records the Project Owner's product decisions. `tasks/` holds the wave plans.
 
 ## 2. Working Model
 
-Two parties build this project:
+Two parties, since 2026-09-24 (`DL-1`):
 
 ```text
-Implementing agent = requirements analysis, task contracts, implementation,
-                     focused verification, branches and PRs;
-                     obtains an independent review before every PR
-Project Owner      = product decisions, approval, PR review and merge,
-                     real-stack execution, manual smoke, Wave closure
-CI                 = checkpoint/integration verification when configured
+Implementing agent = plans, implements, tests, obtains an independent review,
+                     merges on a green CI run, runs the real stack, keeps
+                     docs/ and tasks/ current, reports once per wave
+Project Owner      = product and business decisions; a manual check of the
+                     product once per wave, from the agent's checklist
+CI                 = tests, Pint, PHPStan on PostgreSQL on every pull request
 ```
 
-The implementing agent never merges its own work. The Project Owner owns `main`.
-
-Several implementing agents may work at once, one per track, each in its own git worktree and on its own branch. Each of them holds one approved task at a time and edits only the paths its task contract and `tasks/OWNERSHIP.md` assign to its track. Concurrency changes nothing about authority, verification, security, financial integrity or the review obligations below — it only means more than one of these agents exists.
+One implementing agent at a time. It works on one task branch at a time from the primary checkout; no ownership map and no per-track worktrees are needed.
 
 ## 3. Authority
 
-Use this priority:
+1. `docs/INTERVIEW_2026-09-24.md` and `docs/DECISIONS.md` for what was decided and why;
+2. `docs/01–09` for the current product and technical design;
+3. this file and the nested `AGENTS.md` for engineering, security and repository safety;
+4. existing code patterns where they do not conflict with the above.
 
-1. the current approved task contract for task-specific scope, behavior, public contracts, acceptance criteria, verification, and allowed areas;
-2. root/nested `AGENTS.md` for engineering, security, quality, verification, and repository safety;
-3. existing code patterns only where they do not conflict with the approved task contract.
+**What the Project Owner decides:** product and business behaviour that neither the documents nor the interview covers, money the company charges or forgoes, and anything that changes what a Customer, Shopper or Courier is promised. When such a question arises, stop that task, research how real products handle it, and put it to the Owner with a recommended answer in the format the Owner asked for; continue with work that does not depend on the answer.
 
-The implementing agent must not decide these alone. They belong to the Project Owner:
+**What the implementing agent decides:** everything else, including schema shapes, API details, error codes, concurrency and idempotency mechanics, libraries, structure, tests, deployment and process. Each such decision is recorded in `docs/DECISIONS.md` with its reason before or with the code that implements it, and the affected document in `docs/01–09` is updated in the same pull request. A decision that turns out wrong is superseded by a later entry, never edited away.
 
-- product/business behavior;
-- public API semantics;
-- database/schema contracts;
-- Order/Item/Approval/Payment/Refund/Delivery lifecycle;
-- role, ownership, assignment, or existence-privacy rules;
-- money/quantity/rounding rules;
-- concurrency, idempotency, or replay policy;
-- cross-feature architecture;
-- external-provider protocol;
-- package/dependency strategy;
-- unresolved UX behavior;
-- any change to the locked `docs/01–09`.
+Read `docs/01–09` whole before planning a wave. Contradictions between documents are resolved by the agent and recorded; contradictions with the Owner's interview are resolved in the interview's favour.
 
-If a required decision is missing or conflicting, stop and ask the Project Owner with the exact gap stated. Do not guess and do not pick a default.
-
-## 4. Context Discipline
-
-Reading the locked `docs/01–09` is allowed and expected. Holding the whole specification is how contradictions get caught before they reach code.
-
-What remains forbidden:
-
-- re-deciding a question the approved task contract already settled;
-- widening scope because an adjacent problem became visible while reading;
-- treating a locked document as a suggestion;
-- implementing a behavior the specification describes but the current task excludes.
-
-If reading the specification reveals a genuine conflict with the current task, stop and report it. Do not resolve it silently.
-
-## 5. MVP Architecture Boundary
-
-The locked baseline is:
+## 4. Architecture Boundary
 
 ```text
-Laravel modular monolith
-+ PostgreSQL
-+ Flutter feature-first client
-+ REST/JSON /api/v1
+Laravel modular monolith + PostgreSQL
+Flutter feature-first client: Android, iOS, web panel
+REST/JSON under /api/v1
 ```
 
-Do not introduce microservices, GraphQL, Kafka/RabbitMQ, Elasticsearch, mandatory Redis, WebSockets, event sourcing, a second state-management framework, another router, another HTTP stack, or another database unless an approved architecture change explicitly requires it.
+Do not introduce microservices, GraphQL, message brokers, Elasticsearch, mandatory Redis, WebSockets, event sourcing, a second state-management framework, another router, another HTTP stack, or another database. If one of these ever seems necessary, record the reasoning in `docs/DECISIONS.md` first.
 
-## 6. Server Authority and Security
+## 5. Server Authority and Security
 
-The backend is authoritative for:
+The backend is authoritative for identity and role, active or blocked state and the first-login password gate, record ownership and assignment scope, the Order and Item lifecycle, quantities and billable quantities, prices, markup, fees, totals and rounding, Customer approvals, payment state and provider reconciliation, cancellation, and delivery completion.
 
-- authenticated identity and one primary role;
-- active/blocked state and first-login password gate;
-- record ownership and assignment scope;
-- Customer-only resources;
-- Shopper current assignment scope;
-- Courier current assignment scope;
-- Operator/Admin capability boundaries;
-- Manager read-only scope;
-- Order and Order Item lifecycle;
-- quantities and billable quantities;
-- prices, fees, totals, rounding;
-- Customer approvals;
-- payment/refund state and provider reconciliation;
-- cancellation;
-- delivery completion.
+A valid UUID never grants access. Scope every protected record to the actor before returning or mutating it. Where the API contract requires scope-safe not-found behaviour, do not reveal whether an inaccessible record exists.
 
-A valid UUID does not grant access. Scope protected records before returning or mutating them. Do not leak whether an inaccessible record exists when the API contract requires scope-safe not-found behavior.
+Never expose or log passwords, login codes, bearer tokens, merchant credentials, payment secrets, private keys, raw provider payloads, or Customer PII beyond what a screen needs. A login code is never emitted to a client, a log or a header in any environment; the only exceptions are the configured test phone numbers with their fixed code (`DL-2`, topic 7).
 
-Never expose or log passwords, OTP values, bearer tokens, merchant credentials, payment secrets, private keys, raw sensitive provider payloads, or unnecessary Customer PII.
+## 6. Financial and Historical Integrity
 
-## 7. Historical and Financial Integrity
+Never weaken:
 
-Never weaken locked invariants such as:
+- historical orders stay stable when the catalog, markup, fees or settings change;
+- the ordered quantity never silently increases; excess purchase is never billed;
+- a price above the tolerance, a substitution, or a reduced quantity requires the Customer's decision as the documents define it, and an expired approval is never consent;
+- payment success is provider-authoritative for online payments; a cash payment is recorded only by the Courier's explicit action at handover;
+- retries and callbacks never create duplicate financial or lifecycle effects;
+- no generic arbitrary order-status mutation exists;
+- lifecycle, assignment, approval, payment and refund history is preserved.
 
-- historical Orders remain stable when current Catalog/pricing/settings change;
-- ordered quantity is not silently increased;
-- excess Shopper purchase is not billed to the Customer;
-- Customer financial consent is required where the locked Approval contract requires it;
-- payment/refund success is provider-authoritative;
-- retries/callbacks must not create duplicate financial effects;
-- no generic arbitrary Order-status mutation exists;
-- critical lifecycle/history records are preserved.
+Multi-write financial and lifecycle actions run in one database transaction with the row locks `backend/AGENTS.md` describes.
 
-Multi-write financial/lifecycle actions must be atomic when required by the task contract.
+## 7. Scope and Change Control
 
-## 8. Scope and Change Control
+Implement the task at hand. Adjacent improvements that the task makes obviously necessary are fine; unrelated refactors, formatting churn, speculative infrastructure and dependency changes are not. A dependency is added only when the task needs it, with the reason in the commit message.
 
-Implement exactly the approved task.
+Generated files are never hand-edited. Lockfiles change only with a real dependency change.
 
-Do not:
+If work reveals a defect outside the task, fix it in the same pull request when it is small and clearly related; otherwise record it in the wave file's risk list.
 
-- add unrelated functionality;
-- perform unrelated refactors or formatting churn;
-- create speculative infrastructure for later waves;
-- add/change packages unless explicitly required;
-- change unrelated API/schema/routes/serialization;
-- edit locked docs or wave bookkeeping unless explicitly required;
-- manually edit generated files;
-- change lockfiles without a real approved dependency change;
-- edit a path owned by another track in `tasks/OWNERSHIP.md`.
+## 8. Production Code Quality
 
-Two things are permitted that read like speculative infrastructure and are not, because the wave model requires them and each needs its own approved contract:
+Precise names, focused responsibilities, thin controllers and widgets, logic in the layer that owns it. No debug output, commented-out alternatives, dead code, TODO placeholders standing in for acceptance criteria, broad catch-and-ignore handlers, stack traces, SQL details or secrets in production code.
 
-- the current wave's schema task may create the tables that wave's features need, so that feature tasks add no migrations of their own — the current wave only, never the whole MVP;
-- the module registries approved as `D-8` — per-module backend route files collected by one loop, and Flutter feature route fragments collected by one registry — so that concurrent tracks never edit the same shared file.
+## 9. Tests
 
-If an unrelated defect is found, report it separately unless it blocks the task.
+Tests are production code. Every behaviour change carries focused tests, including the negative and security cases the design implies. Tests are deterministic: no real external networks, no arbitrary sleeps, no uncontrolled clocks, no hidden dependence on the local environment. Backend tests run against the real PostgreSQL test database; provider adapters are tested against fakes.
 
-## 9. Production Code Quality
+Never delete, skip or weaken a test to make an implementation pass.
 
-Use precise names and focused responsibilities. Keep controllers/widgets thin, place logic in the layer that owns it, reuse existing abstractions only when responsibility truly matches, and avoid God classes/services/files.
+## 10. Verification
 
-Do not leave debug output, commented-out alternatives, dead code, hidden TODO acceptance criteria, broad catch-and-ignore handlers, stack traces, SQL details, or secrets.
+Per task, before the pull request:
 
-## 10. Tests
-
-Tests are production code. Add/update focused tests for the changed behavior, including negative/security and edge cases required by the task contract.
-
-Do not delete, skip, weaken, or relax existing tests just to pass implementation. Keep tests deterministic: no real external networks, arbitrary sleeps, uncontrolled clocks, or hidden dependence on local environment.
-
-## 11. Verification Model
-
-Per-task verification is proportional and defined by the task contract:
-
-- focused tests for changed functionality;
-- required formatter/linter/static checks;
-- named directly affected regression checks when justified;
+- focused tests for the changed behaviour;
+- `pint --test`, `phpstan analyse`, `flutter analyze`, `dart format --set-exit-if-changed` as applicable;
 - `git diff --check`;
-- complete focused scope/diff self-review.
+- a self-review of the complete diff against Sections 5 to 9.
 
-Do not independently run full backend/frontend suites, full builds, broad E2E, Phase 2, or wave closure verification unless the current task contract explicitly requires a broader check for a concrete risk.
+CI runs the full backend suite on every pull request and is required for merge. Before a wave closes, the agent also runs the full frontend suite, builds the required targets, brings up the real stack, and walks the end-to-end scenario of that wave.
 
-Backend/frontend Phase 2, real-stack integration, and manual smoke are Project Owner/CI owned by default, and their unit is the wave. See `tasks/README.md`.
+Never claim a command passed unless it was run and observed passing.
 
-When a task branch takes in a merged migration or a merged shared-infrastructure change, re-run that task's focused verification before delivery. Evidence gathered before that merge does not cover the head that will be merged.
+## 11. Preserve Existing Work
 
-Never claim a command passed if it was not run and observed passing. Quote the observed output.
+Inspect repository status before editing. Preserve pre-existing changes and untracked files. Do not overwrite, revert, stage, format, move or delete unrelated work. Containers named `testlabuz-*` on this machine belong to another project and are never touched.
 
-## 12. Preserve Existing Work
+## 12. Git
 
-Before editing, inspect repository status and preserve all pre-existing user changes and untracked files. Do not overwrite, revert, stage, format, move, or delete unrelated existing work.
+The agent creates branches, commits, pushes, opens pull requests and merges them once CI is green and the independent review is resolved. It never commits or pushes directly to `main`, never force-pushes any branch or rewrites pushed history, never bypasses checks, never edits global Git configuration, never replaces a remote silently, and never commits credentials, tokens, login codes, keys, certificates or local-only files. A branch that has fallen behind is updated by merging `main` into it.
 
-If safe isolation is impossible, stop and report why.
+Branch names: `task/<wave>-<short-description>` for code, `docs/<short-description>` for documentation.
 
-## 13. Git Safety
+## 13. Review Before Merge
 
-The implementing agent may create branches, commit, push, and open pull requests. It may not merge them.
+Two reviews per pull request:
 
-Never:
+1. **Self-review of the complete diff:** every changed file necessary; the design in `docs/01–09` honoured; Sections 5 and 6 intact; tests cover the change; no secret, debug or temporary artefact.
+2. **Independent review** by a subagent that did not write the change and holds no implementation context, against the task's goal and this file. P1 and P2 findings are fixed before merge. Findings not acted on are recorded in the wave file with the reason.
 
-- commit or push directly to `main`;
-- merge a pull request;
-- force-push any branch, or rewrite history that has been pushed — a branch that has fallen behind is brought up to date by merging `main` forward into it, never by rebasing. Amending or reordering commits that exist only locally and have never been pushed is not a rewrite of shared history and is allowed;
-- use destructive `git reset --hard`/`git clean` as routine workflow;
-- bypass checks with `--no-verify`;
-- modify global Git configuration;
-- silently replace an unexpected remote;
-- commit credentials, tokens, OTPs, keys, certificates, secrets, or local-only files.
+Severity: **P1** security, privacy, data loss, financial integrity or public-contract breach; **P2** material functional or architectural defect; **P3** non-blocking improvement.
 
-## 14. Review Before Delivery
+## 14. Reporting to the Project Owner
 
-Two reviews happen before a pull request is opened.
-
-**Self-review of the complete diff.** Verify:
-
-- every changed file is necessary;
-- implementation exactly matches the task contract;
-- non-goals remain excluded;
-- responsibilities/layers are correct;
-- no public API/schema/route/serialization changed unintentionally;
-- ownership/assignment/security boundaries remain intact;
-- lifecycle/money/quantity invariants remain intact;
-- focused tests cover the actual change;
-- no secret/debug/generated/temp junk exists.
-
-**Independent review.** Because one agent both plans and implements, a reviewer that did not produce the change and holds no implementation context reviews the diff against the task contract before delivery. The producing agent never performs this review itself. Its findings are reported to the Project Owner with the work, including findings that were not acted on and why.
-
-## 15. Completion Report
-
-Return one implementation status:
-
-```text
-IMPLEMENTATION COMPLETE
-BLOCKED
-```
-
-Report only:
-
-- concise implementation summary;
-- changed files and purpose;
-- exact focused verification commands/results;
-- required regression checks;
-- `git diff --check` result;
-- scope/non-goal confirmation;
-- security/ownership evidence or justified N/A;
-- independent review findings and their resolution;
-- deviations/blockers;
-- current Git state and the pull request for handoff.
-
-Do not report a task `Accepted`. The Project Owner assigns acceptance only after the work is merged to `origin/main` and the repository state is synchronized and clean.
+One short report at the end of each wave: what now works, what changed in behaviour, the checklist for the Owner's manual check in the app, known gaps, and what the next wave builds. Between reports the Owner is contacted only for a product question under Section 3 or for an external action only the Owner can take (accounts, keys, contracts, hosting).

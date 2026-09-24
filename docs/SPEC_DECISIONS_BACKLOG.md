@@ -1,5 +1,7 @@
 # BarakaBozor — Open Specification Decisions
 
+> **Frozen on 2026-09-24.** Every row still open below was resolved in `docs/DECISIONS.md` (`DL-2` for the Owner's decisions, `DL-3` for the engineering ones). New decisions are recorded there. This file is history and is not edited.
+
 ## Purpose
 
 The locked `docs/01–09` passed cross-document audit on 2026-09-07. A second read on 2026-09-21 found questions the specification does not answer, or answers in two incompatible ways. None of them contradicts the business model; each is a decision that has not been made yet.

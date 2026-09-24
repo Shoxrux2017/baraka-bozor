@@ -2,218 +2,125 @@
 
 ## Document Status
 
-**Status:** LOCKED FOR MVP IMPLEMENTATION — final cross-document consistency audit passed on 2026-09-07. Amended 2026-09-22 (AUD-024) and 2026-09-23 (AUD-029); see `docs/CONTRACT_ALIGNMENT_REPORT.md`.
+**Status:** current. Rewritten on 2026-09-24 to `docs/INTERVIEW_2026-09-24.md` and `DL-2`–`DL-5` in `docs/DECISIONS.md`.
 
 ## 1. MVP Feature Overview
 
-The MVP must support one complete vertical workflow:
-
 ```text
-Authentication
-→ Catalog
-→ Cart / Address
-→ Checkout / Order
-→ Market Shopping
-→ Approval / Final Pricing where required
-→ Online Payment
-→ Courier Delivery
-→ History / Reorder
+Authentication → Catalog → Cart and address → Checkout and order
+→ Market shopping with approvals → Final amount
+→ Delivery, cash at the door or online payment → History and reorder
 ```
 
-Supporting operational features are Admin, Operator, Notifications, and Manager Analytics.
+Supporting features: the Admin and Operator web panel, notifications, business settings. Manager figures are deferred.
 
 ## 2. Authentication and Session
 
-### Customer
+**Customer:** request a login code for a phone number; verify it; account created on first verified login; session bootstrap through `/auth/me`; logout. Codes go through Telegram Gateway when the number has Telegram, else SMS (fake gateway until a provider exists). Test phone numbers verify with a fixed code.
 
-- phone + SMS OTP registration/login;
-- current-session bootstrap;
-- logout;
-- account creation on first verified phone;
-- server-authoritative Customer role.
+**Staff:** phone and password login; temporary password and mandatory first-login change; active or blocked enforcement; role-aware entry.
 
-### Staff
-
-- phone + password login;
-- Admin-created accounts;
-- temporary password;
-- mandatory first-login password change;
-- active/blocked enforcement;
-- server-authoritative role-aware entry.
+**Sessions:** bearer tokens, 30 days sliding, several per account; two sessions on one device for Customer mode.
 
 ## 3. Customer Profile
 
-Customer can view/update approved profile fields. `full_name` may be empty immediately after OTP registration, but checkout requires non-empty Customer name. Phone is authentication identity and is not changed through normal profile edit.
+View and edit `full_name` and `preferred_language` (`uz` or `ru`). Checkout requires a non-empty name. The phone is the login identity and is not edited here.
 
 ## 4. Delivery Addresses
 
-Customer can create/view/edit/deactivate own Addresses.
-
-Required for checkout eligibility: latitude, longitude, street, house. Optional: label, apartment, landmark, Courier delivery note.
-
-MVP requires map-point selection but no specific map vendor.
+Create, list, edit and deactivate own addresses. Required: a point on the map inside the service area, street, house. Optional: label, apartment, landmark, note for the Courier. The map is Yandex MapKit in the client; the backend stores coordinates and text only and checks the service-area circle.
 
 ## 5. Catalog
 
-Admin-managed dynamic Categories and Products with Customer active-list/search access.
-
-Product fields include name and description in both MVP languages (`08` Section 7), Category, unit, availability/archive state, one current image, and pricing.
-
-Product image: JPEG/PNG/WebP, maximum 5 MB, backend-authoritative validation.
+Admin manages a flat list of categories and the products in them: bilingual names (required) and descriptions (optional), unit, price mode, market price, one image (JPEG, PNG or WebP, at most 5 MB), sort order, archive and restore. Customers list active categories and products, search by name in both languages at once, and see the customer price (market price plus markup). Images are served from public URLs.
 
 ## 6. Pricing
 
-Supported:
-
-```text
-fixed
-range
-at_purchase
-```
-
-- `fixed`: one authoritative checkout unit price;
-- `range`: accepted min/max and actual dynamic unit price during Shopping;
-- `at_purchase`: price unknown at checkout and recorded by Shopper.
-
-Historical Order pricing never follows later Catalog changes.
+Two price modes, `fixed` and `estimate` (`01` Section 8). Business settings hold the markup percentage, the service fee (fixed or percentage), the delivery fee, the tolerance percentage and the minimum order amount. Everything is snapshotted into the order.
 
 ## 7. Quantity
 
-- `kg`, `liter`, `meter`: positive decimal with up to 3 fractional digits;
-- `gram`, `piece`, `package`, `box`, `bundle`: positive integer.
-
-Ordered, purchased, and billable quantities remain distinct.
+`kg`, `liter`, `meter`: positive decimal with up to three decimals. `gram`, `piece`, `package`, `box`, `bundle`: positive integer. Ordered, purchased and billable quantities are distinct.
 
 ## 8. Cart
 
-At most one active Cart per Customer, created on first Cart access. Customer can add a Product once, change quantity, update note/substitution policy, remove an Item, and review current pricing state. Cart is not historical.
+One active cart per Customer, created on first access. A product appears at most once; the Customer changes quantity, note and substitution rule, removes items, and sees current customer prices. The cart is not history.
 
 ## 9. Checkout Preview
 
-Uses current Cart, profile, selected own Address, Product pricing, active fees, and selected enabled Payment provider.
-
-Pricing summary kinds:
-
-```text
-final
-estimate_range
-contains_unknown
-```
-
-- all fixed → final authoritative total;
-- fixed/range without `at_purchase` → estimated min/max;
-- any `at_purchase` → no fake total; unknown-price flag and known components only.
-
-Backend returns a signed short-lived checkout token validated again at Order creation.
+Input: an own active address, the payment method (`cash` or `online`), an optional free-text delivery wish. Checks: non-empty name, address inside the service area, non-empty cart, active products, valid quantities, minimum order amount, complete settings, and for `online` at least one enabled provider. Output: the lines with their kind, merchandise subtotal, service fee, delivery fee, total, and whether the total is `final` (only fixed items) or an `estimate` (any estimate item), plus a note when the order falls outside working hours. A signed checkout token valid for five minutes binds the preview to the current state.
 
 ## 10. Order Creation
 
-Order creation snapshots Product/quantity/pricing/Customer/Address/fees/provider, determines prepaid/deferred flow, converts source Cart, creates a new empty active Cart in the same transaction, and is idempotent.
+Idempotent. Snapshots products, quantities, notes, rules, prices, markup, tolerance, fees, recipient, address and payment method; converts the cart; creates a new empty cart in the same transaction; assigns the next order number; notifies the Customer.
 
-## 11. Order Lifecycle
+## 11. Order Editing
 
-Authoritative machine states:
+Until shopping starts the Customer may replace the item set (add, remove, change quantities, notes, rules) and the delivery wish. Editing re-snapshots the changed lines at current prices, re-checks the minimum order amount, and writes an order history entry. Address and payment method are not editable; cancel and reorder instead.
 
-```text
-checkout_payment_pending
-new
-shopping_assigned
-shopping
-approval_required
-final_payment_pending
-ready_for_delivery
-delivery_assigned
-on_the_way
-completed
-cancelled
-```
-
-No generic arbitrary status update exists. Customer-facing labels may map multiple machine states to one display label.
-
-## 12. Shopper Assignment and Shopping
-
-Admin manually assigns active Shopper. Shopper can accept, start, process assigned Items, record purchased quantity, record dynamic actual price, mark unavailable, propose replacement, request approval, continue other Items while one Item awaits Customer, and complete only when all Items terminal and no approval pending.
-
-Normal reassignment after Shopping starts is out of MVP.
-
-## 13. Availability and Substitution
-
-Customer policies:
+## 12. Order Lifecycle
 
 ```text
-allow_similar_substitution
-contact_before_substitution
-remove_if_unavailable
+new → shopping_assigned → shopping → [final_payment_pending] → ready_for_delivery
+→ delivery_assigned → on_the_way → completed
+cancelled from any non-terminal state under the cancellation rules
 ```
 
-Structured replacement uses active Product with compatible unit. Automatic replacement obeys approved price ceiling; `at_purchase` replacement requires explicit approval.
+`final_payment_pending` exists only for online orders. "Awaiting a Customer decision" is derived from pending approvals, not a stored state. No generic status update exists.
 
-## 14. Customer Approval
+## 13. Assignment
 
-Types: `price_over_range`, `substitution`, `reduced_quantity`.
+Operators and Admins assign one active Shopper to a `new` order (reassignment until shopping starts) and one active Courier to a `ready_for_delivery` order (reassignment until the Courier is on the way). An assignment whose assignee shares the Customer's phone number is allowed and flagged as a self-order on the board and in history.
 
-States: `pending`, `approved`, `rejected`, `expired`.
+## 14. Market Shopping
 
-- 10 minutes → Operator attention, still pending;
-- 30 minutes → expired;
-- approve applies persisted proposal;
-- reject removes affected Item;
-- expired cannot be approved later;
-- Operator/Admin may resolve expired only by removal.
+The Shopper accepts, starts, and per item: records purchased quantity and, for estimate items and replacements, the actual market price; marks unavailable; proposes a replacement; requests approval for a price over tolerance, a substitution needing consent, or a reduced quantity; continues with other items while one awaits the Customer; completes shopping when every item is `purchased` or `removed` and no approval is pending. If nothing was purchased the order is cancelled.
 
-## 15. Final Pricing
+## 15. Availability and Substitution
 
-- fixed original → billable price = fixed snapshot;
-- range → approved/allowed actual price;
-- at_purchase → actual price;
-- replacement → actual replacement price subject to approval ceiling.
+Rules `allow_similar_substitution`, `contact_before_substitution`, `remove_if_unavailable`. A replacement must be active and have the same unit. Automatic replacement is allowed only under the first rule and only within the price ceiling; otherwise approval.
 
-Each `line_total` and percentage Service fee is rounded half-up to 1 UZS. Merchandise subtotal sums rounded line totals.
+## 16. Customer Approval
 
-## 16. Online Payments
+Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pending`, `approved`, `rejected`, `expired`. Ten minutes: Operator attention. Thirty minutes: expired. Approve applies the persisted proposal and returns the item to `pending` for the Shopper to record the purchase; reject removes the item; an expired approval can only be resolved by an Operator or Admin removing the item.
 
-Mandatory providers: Payme, Paynet, xazna, Click.
+## 17. Final Amount
 
-Features: prepaid fixed-order Payment; deferred final Payment; additional Payment when approved recalculation increases prepaid final amount; failed retry; uncertain reconciliation; callback deduplication; provider-authoritative success; provider enablement for new checkout selection.
+Each purchased item: billable unit price × billable quantity, rounded half-up to 1 UZS. Merchandise subtotal is the sum of rounded lines. Service fee: fixed, or the percentage of the subtotal rounded half-up. Total = subtotal + service fee + delivery fee. Computed once at shopping completion and again after an Admin price correction while the order is unpaid.
 
-Raw provider protocol details are provider-specific Stage 7 contracts based on official merchant documentation.
+## 18. Payment
 
-## 17. Refunds
+- **Cash:** the order goes to delivery unpaid; the Courier records the cash received at handover; the amount must equal the final total.
+- **Online:** at shopping completion a payment obligation for the final total is created and the Customer is notified; the Customer starts an attempt with an enabled provider (Payme, Click; Paynet and xazna later); the provider's callback confirms success; 30 minutes unpaid becomes Operator attention; the Operator may switch to cash or cancel. Failed attempts may be retried; an uncertain outcome is reconciled with the provider before another attempt.
 
-Supports partial overpayment refund, full approved-cancellation refund, provider attempt/reconciliation/retry, and provider-authoritative success. Pending overpayment refund does not block Delivery when Customer has already paid enough to cover final total.
+## 19. Refunds
 
-## 18. Cancellation
+Manual, tracked: an obligation is created when an online-paid order is cancelled; Admin marks it done with the provider reference or failed; Operators see outstanding refunds.
 
-- before Shopping: Customer can cancel directly;
-- after Shopping starts and before `on_the_way`: Customer creates request, Operator/Admin decides;
-- `on_the_way` or later: normal cancellation unavailable.
+## 20. Cancellation
 
-## 19. Courier Delivery
+Before shopping starts: the Customer cancels directly. After shopping starts and before `on_the_way`: the Customer files a request, an Operator or Admin decides. `on_the_way` and later: no. Operators may cancel unpaid online orders after the 30-minute window and orders that could not be delivered.
 
-Admin manually assigns active Courier. Courier accepts, views assigned delivery context, starts, and marks delivered. Delay is derived attention, not lifecycle status.
+## 21. Courier Delivery
 
-## 20. Operator Operations
+Accept, start (`on_the_way`, delay snapshot), delivered with cash received for cash orders, or not delivered with a reason. Delay past the threshold is derived attention.
 
-Operational board supports Customer no-response, pending/expired Approval, Payment failed/overdue/unknown, Refund failed/unknown, Courier delay, cancellation requests, and other approved problem views. No generic status editor.
+## 22. Operator and Admin Panel
 
-## 21. Admin Operations
+Web panel. Order board with filters and the summary strip; attention list (pending and expired approvals, Customer no-response, unpaid online orders, outstanding refunds, delayed Couriers, failed deliveries, cancellation requests, self-orders); assignment; cancellation decisions; switch to cash; refund tracking; Admin-only catalog, staff, settings and provider enablement; audited price correction.
 
-Catalog/pricing/image management; all-Order view/history; assignment before work starts; Staff create/activate/block/reset; Service/Delivery fee and delay threshold; provider enablement; permitted cancellation/refund management; audited dynamic-price correction before relevant final Payment lock. Existing Staff role mutation is not supported.
+## 23. Notifications
 
-## 22. Notifications
+Push through FCM behind an abstraction: Customer `order_accepted`, `approval_required`, `payment_required`, `courier_started`, `order_delivered`, `order_cancelled`; Shopper `shopping_assigned`, `approval_answered`, `shopping_order_cancelled`; Courier `delivery_assigned`, `delivery_cancelled`. Texts in the user's language from backend templates; payloads carry the event and an ID only. Delivery is best-effort and never changes order state. The Shopper's order screen also polls while the app is open.
 
-Minimum Customer notification events: Order accepted, approval required, Payment required, Courier started, Order delivered. FCM is the approved mobile push mechanism behind an abstraction. Notification failure does not change authoritative Order state.
+## 24. History and Reorder
 
-Shopper notification events: Order assigned, and Customer answered an Approval. They complement the Shopper's in-app polling rather than replacing it — see `07` Section 24 and `AUD-029`.
+Own order history with snapshots. Reorder adds the original products at current prices and availability to the active cart, skips duplicates, reports unavailable products, never creates an order by itself.
 
-## 23. History and Reorder
+## 25. Business Settings
 
-Customer can view own history. Reorder uses original Product IDs from historical Items, applies current availability/pricing, never creates Order automatically, skips current Cart duplicates, and reports unavailable/skipped Products.
+Markup percentage, service fee mode and value, delivery fee, minimum order amount, tolerance percentage, working hours, service-area centre and radius, delivery delay threshold; provider enablement per provider. Edited by Admin on one screen. Test phone numbers and provider credentials are server configuration, not settings.
 
-## 24. Manager Analytics
+## 26. Deferred Past the Pilot
 
-Read-only summary/top-Products/Staff-activity features with fixed KPI definitions in Business Rules/API.
-
-## 25. Explicit Post-MVP
-
-Bonus/cashback, recurring shopping, AI recommendations, voice ordering, Telegram bot, live GPS, automatic dispatch, multiple cities/markets, Seller marketplace, complex promotions, warehouse/inventory planning, custom roles, offline-first mutation sync, and post-delivery claims/returns workflow.
+Manager figures and `staff-activity`; Paynet and xazna; automated refunds; iOS release; delivery zones and tariffs; spreadsheet import; everything in `01` Section 20.
