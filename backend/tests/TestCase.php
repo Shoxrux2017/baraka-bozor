@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Testing\TestResponse;
 use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
@@ -33,5 +34,29 @@ abstract class TestCase extends BaseTestCase
                 .'tests may only run against a database named *_test.'
             );
         }
+    }
+
+    /**
+     * Every request in a test starts with no authenticated user.
+     *
+     * The application instance lives for the whole test, and the auth guards
+     * cache the user they resolved for the first request. A second request in
+     * the same test carrying another token — or no token — would otherwise be
+     * served as the first request's user, which is not how HTTP works and
+     * which would let a test pass that proves the opposite of its name.
+     *
+     * @param  string  $method
+     * @param  string  $uri
+     * @param  array<string, mixed>  $parameters
+     * @param  array<string, mixed>  $cookies
+     * @param  array<string, mixed>  $files
+     * @param  array<string, mixed>  $server
+     * @param  string|null  $content
+     */
+    public function call($method, $uri, $parameters = [], $cookies = [], $files = [], $server = [], $content = null): TestResponse
+    {
+        $this->app['auth']->forgetGuards();
+
+        return parent::call($method, $uri, $parameters, $cookies, $files, $server, $content);
     }
 }

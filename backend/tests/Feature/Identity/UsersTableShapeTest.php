@@ -44,6 +44,7 @@ final class UsersTableShapeTest extends TestCase
             'last_login_at' => ['timestamp with time zone', true],
             'blocked_at' => ['timestamp with time zone', true],
             'created_by_user_id' => ['uuid', true],
+            'preferred_language' => ['character varying', false],
             'created_at' => ['timestamp with time zone', false],
             'updated_at' => ['timestamp with time zone', false],
         ];

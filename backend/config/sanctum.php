@@ -3,7 +3,6 @@
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Laravel\Sanctum\Http\Middleware\AuthenticateSession;
-use Laravel\Sanctum\Sanctum;
 
 return [
 
@@ -18,12 +17,11 @@ return [
     |
     */
 
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
-        Sanctum::currentApplicationUrlWithPort(),
-        // Sanctum::currentRequestHost(),
-    ))),
+    // Empty on purpose. Every client, the web panel included, authenticates
+    // with a bearer token (docs/07-architecture.md Section 8); no origin ever
+    // receives a session cookie, so there is no stateful domain and no CSRF
+    // surface.
+    'stateful' => [],
 
     /*
     |--------------------------------------------------------------------------
