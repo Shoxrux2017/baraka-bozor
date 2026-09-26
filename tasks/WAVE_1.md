@@ -24,8 +24,8 @@ The Yandex MapKit API key (`docs/06` section 5). Only W1-13 needs it; every othe
 | W1-8 | Push device registration API | Merged |
 | W1-9 | Panel: business settings and payment providers screen | Merged |
 | W1-10 | Panel: categories and products management with image upload | Merged |
-| W1-11 | Panel: staff management | In review |
-| W1-12 | App: Customer catalog, search and product screen | Planned |
+| W1-11 | Panel: staff management | Merged |
+| W1-12 | App: Customer catalog, search and product screen | In review |
 | W1-13 | App: profile, addresses list and form with the Yandex map picker | Planned, gated |
 | W1-14 | App and panel: push token registration behind a token source | Planned |
 | W1-15 | Wave closure: full suites, builds, real-stack walkthrough of the wave's scenario, Owner checklist and report | Planned |

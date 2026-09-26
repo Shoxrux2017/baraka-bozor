@@ -277,5 +277,22 @@
   "errorSelfBlockNotAllowed": "Нельзя заблокировать себя",
   "errorLastActiveAdminRequired": "Нельзя заблокировать последнего активного администратора",
   "errorSelfResetNotAllowed": "Свой пароль здесь сбросить нельзя",
-  "errorPhoneAlreadyActive": "Этот номер уже у другого активного сотрудника"
+  "errorPhoneAlreadyActive": "Этот номер уже у другого активного сотрудника",
+  "catalogSearchHint": "Поиск товаров",
+  "catalogCategoriesTitle": "Разделы",
+  "catalogNoProducts": "Здесь пока нет товаров",
+  "catalogPricePerUnit": "{price} / {unit}",
+  "@catalogPricePerUnit": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogEstimateNote": "цена ориентировочная",
+  "catalogEstimateExplain": "Итоговая цена определится по чеку из магазина. Если цена превысит допустимый предел, мы спросим вашего согласия.",
+  "catalogLoadMore": "Загрузить ещё"
 }

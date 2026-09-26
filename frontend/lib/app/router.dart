@@ -5,6 +5,7 @@ import '../core/routing/app_paths.dart';
 import '../core/routing/feature_routes.dart';
 import '../features/admin/presentation/admin_routes.dart';
 import '../features/auth/presentation/auth_routes.dart';
+import '../features/catalog/presentation/catalog_routes.dart';
 import '../features/shells/presentation/shells_routes.dart';
 
 /// The Flutter half of decision `D-8`: every feature route fragment the client
@@ -21,6 +22,7 @@ final List<FeatureRoutes> featureRouteFragments = <FeatureRoutes>[
   authRoutes,
   shellsRoutes,
   adminRoutes,
+  catalogRoutes,
 ];
 
 /// The application's route table. [redirect] is the session guard the root

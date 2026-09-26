@@ -687,4 +687,28 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get errorPhoneAlreadyActive => 'Bu raqam boshqa faol xodimga tegishli';
+
+  @override
+  String get catalogSearchHint => 'Mahsulot qidirish';
+
+  @override
+  String get catalogCategoriesTitle => 'Bo\'limlar';
+
+  @override
+  String get catalogNoProducts => 'Bu yerda hozircha mahsulot yo\'q';
+
+  @override
+  String catalogPricePerUnit(String price, String unit) {
+    return '$price / $unit';
+  }
+
+  @override
+  String get catalogEstimateNote => 'narx taxminiy';
+
+  @override
+  String get catalogEstimateExplain =>
+      'Yakuniy narx do\'kondagi chek bo\'yicha aniqlanadi. Narx belgilangan chegaradan oshsa, sizdan rozilik so\'raymiz.';
+
+  @override
+  String get catalogLoadMore => 'Yana yuklash';
 }

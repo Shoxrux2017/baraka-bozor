@@ -130,8 +130,11 @@ void main() {
 
       expect(repository.calls.last, 'verify:+998901234567:482913');
       expect(tokens.tokens[SessionSlot.customer], 'c');
-      expect(find.text(l10n(tester).shellCustomer), findsOneWidget);
-      expect(find.text(l10n(tester).shellPlaceholder), findsOneWidget);
+      // The Customer area's home: the catalog.
+      expect(
+        find.byKey(const ValueKey<String>('catalog-search')),
+        findsOneWidget,
+      );
     },
   );
 

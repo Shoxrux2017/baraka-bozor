@@ -1369,6 +1369,48 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Bu raqam boshqa faol xodimga tegishli'**
   String get errorPhoneAlreadyActive;
+
+  /// No description provided for @catalogSearchHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot qidirish'**
+  String get catalogSearchHint;
+
+  /// No description provided for @catalogCategoriesTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bo\'limlar'**
+  String get catalogCategoriesTitle;
+
+  /// No description provided for @catalogNoProducts.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu yerda hozircha mahsulot yo\'q'**
+  String get catalogNoProducts;
+
+  /// No description provided for @catalogPricePerUnit.
+  ///
+  /// In uz, this message translates to:
+  /// **'{price} / {unit}'**
+  String catalogPricePerUnit(String price, String unit);
+
+  /// No description provided for @catalogEstimateNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'narx taxminiy'**
+  String get catalogEstimateNote;
+
+  /// No description provided for @catalogEstimateExplain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yakuniy narx do\'kondagi chek bo\'yicha aniqlanadi. Narx belgilangan chegaradan oshsa, sizdan rozilik so\'raymiz.'**
+  String get catalogEstimateExplain;
+
+  /// No description provided for @catalogLoadMore.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana yuklash'**
+  String get catalogLoadMore;
 }
 
 class _AppLocalizationsDelegate

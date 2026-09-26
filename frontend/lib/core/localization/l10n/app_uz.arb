@@ -277,5 +277,22 @@
   "errorSelfBlockNotAllowed": "O'zingizni bloklay olmaysiz",
   "errorLastActiveAdminRequired": "Oxirgi faol administratorni bloklab bo'lmaydi",
   "errorSelfResetNotAllowed": "O'z parolingizni bu yerda tiklab bo'lmaydi",
-  "errorPhoneAlreadyActive": "Bu raqam boshqa faol xodimga tegishli"
+  "errorPhoneAlreadyActive": "Bu raqam boshqa faol xodimga tegishli",
+  "catalogSearchHint": "Mahsulot qidirish",
+  "catalogCategoriesTitle": "Bo'limlar",
+  "catalogNoProducts": "Bu yerda hozircha mahsulot yo'q",
+  "catalogPricePerUnit": "{price} / {unit}",
+  "@catalogPricePerUnit": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogEstimateNote": "narx taxminiy",
+  "catalogEstimateExplain": "Yakuniy narx do'kondagi chek bo'yicha aniqlanadi. Narx belgilangan chegaradan oshsa, sizdan rozilik so'raymiz.",
+  "catalogLoadMore": "Yana yuklash"
 }

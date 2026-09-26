@@ -685,4 +685,28 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get errorPhoneAlreadyActive =>
       'Этот номер уже у другого активного сотрудника';
+
+  @override
+  String get catalogSearchHint => 'Поиск товаров';
+
+  @override
+  String get catalogCategoriesTitle => 'Разделы';
+
+  @override
+  String get catalogNoProducts => 'Здесь пока нет товаров';
+
+  @override
+  String catalogPricePerUnit(String price, String unit) {
+    return '$price / $unit';
+  }
+
+  @override
+  String get catalogEstimateNote => 'цена ориентировочная';
+
+  @override
+  String get catalogEstimateExplain =>
+      'Итоговая цена определится по чеку из магазина. Если цена превысит допустимый предел, мы спросим вашего согласия.';
+
+  @override
+  String get catalogLoadMore => 'Загрузить ещё';
 }
