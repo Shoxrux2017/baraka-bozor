@@ -73,6 +73,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get cancelButton => 'Отмена';
 
   @override
+  String get requestCodeButton => 'Запросить код';
+
+  @override
   String get wrongSurfaceTitle => 'Отсюда войти нельзя';
 
   @override

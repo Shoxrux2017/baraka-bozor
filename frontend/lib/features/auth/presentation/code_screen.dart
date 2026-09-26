@@ -35,10 +35,14 @@ class CodeScreen extends ConsumerWidget {
           CodeEntry(state: state),
           TextButton(
             key: const ValueKey<String>('change-phone-link'),
-            onPressed: () {
-              ref.read(codeLoginControllerProvider.notifier).changePhone();
-              context.go(AppPaths.auth);
-            },
+            onPressed: state.busy
+                ? null
+                : () {
+                    ref
+                        .read(codeLoginControllerProvider.notifier)
+                        .changePhone();
+                    context.go(AppPaths.auth);
+                  },
             child: Text(l10n.changePhone),
           ),
         ],

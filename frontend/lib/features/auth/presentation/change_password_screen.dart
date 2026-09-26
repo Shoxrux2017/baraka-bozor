@@ -127,9 +127,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               const SizedBox(height: 12),
               TextButton(
                 key: const ValueKey<String>('logout-button'),
-                onPressed: () => ref
-                    .read(sessionControllerProvider.notifier)
-                    .logout(SessionMode.staff),
+                onPressed: state.isBusy
+                    ? null
+                    : () => ref
+                          .read(sessionControllerProvider.notifier)
+                          .logout(SessionMode.staff),
                 child: Text(l10n.logoutButton),
               ),
             ],

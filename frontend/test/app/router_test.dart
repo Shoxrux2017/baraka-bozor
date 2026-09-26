@@ -109,6 +109,28 @@ void main() {
     });
   });
 
+  group('an unknown location', () {
+    testWidgets('goes back to the entry point instead of an error page', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = buildRouterFrom(<FeatureRoutes>[]);
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      router.go('/nowhere/at/all');
+      // Not pumpAndSettle: the entry point shows a progress indicator, which
+      // never settles.
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        router.routerDelegate.currentConfiguration.uri.path,
+        AppPaths.bootstrap,
+      );
+      expect(find.textContaining('Page Not Found'), findsNothing);
+    });
+  });
+
   group('BarakaBozorApp', () {
     testWidgets('boots into a neutral screen with no text', (
       WidgetTester tester,

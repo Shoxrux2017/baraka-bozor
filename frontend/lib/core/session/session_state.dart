@@ -25,7 +25,11 @@ final class SignedOut extends SessionState {
 /// At least one token exists but the server could not be reached to confirm
 /// it. Every token is kept; the person may retry.
 final class SessionUnreachable extends SessionState {
-  const SessionUnreachable();
+  const SessionUnreachable({this.retrying = false});
+
+  /// A retry is running: the screen waits for it rather than starting
+  /// another.
+  final bool retrying;
 }
 
 /// Every stored session confirmed, and which one is active.

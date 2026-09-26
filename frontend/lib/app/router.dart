@@ -23,7 +23,10 @@ final List<FeatureRoutes> featureRouteFragments = <FeatureRoutes>[
 
 /// The application's route table. [redirect] is the session guard the root
 /// provider supplies; [refreshListenable] makes the router re-evaluate it
-/// when the session changes.
+/// when the session changes. A location no route serves — a mistyped
+/// address in the panel — goes back to the entry point, from where the
+/// guard opens the right area, so go_router's own English error page is
+/// never shown (`docs/07-architecture.md` section 27).
 GoRouter buildRouter({
   GoRouterRedirect? redirect,
   Listenable? refreshListenable,
@@ -48,6 +51,8 @@ GoRouter buildRouterFrom(
     initialLocation: AppPaths.bootstrap,
     redirect: redirect,
     refreshListenable: refreshListenable,
+    onException: (BuildContext context, GoRouterState state, GoRouter router) =>
+        router.go(AppPaths.bootstrap),
     routes: collectFeatureRoutes(<FeatureRoutes>[
       _bootstrapFragment,
       ...fragments,

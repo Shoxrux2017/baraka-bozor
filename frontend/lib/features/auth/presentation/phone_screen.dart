@@ -89,7 +89,9 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
               const SizedBox(height: 12),
               TextButton(
                 key: const ValueKey<String>('staff-login-link'),
-                onPressed: () => context.go(AppPaths.staffLogin),
+                onPressed: state.busy
+                    ? null
+                    : () => context.go(AppPaths.staffLogin),
                 child: Text(l10n.staffLoginLink),
               ),
             ],

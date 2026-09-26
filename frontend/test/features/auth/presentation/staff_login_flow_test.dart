@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
@@ -107,6 +109,19 @@ void main() {
       await tester.tap(saveButton);
       await tester.pumpAndSettle();
       expect(repository.calls, isNot(contains('change-password:staff')));
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: newPassword,
+                matching: find.byType(TextField),
+              ),
+            )
+            .decoration
+            ?.errorText,
+        l10n(tester).passwordRuleHint,
+        reason: 'the rule is shown as the field error',
+      );
 
       await tester.enterText(newPassword, 'long enough one');
       await tester.enterText(confirmPassword, 'long enough two');
@@ -163,6 +178,35 @@ void main() {
     expect(repository.calls, contains('logout:staff'));
     expect(tokens.tokens, isEmpty);
     expect(phoneField, findsOneWidget);
+  });
+
+  testWidgets('while the login runs the way to the customer login waits', (
+    WidgetTester tester,
+  ) async {
+    repository.staffLoginResult = IssuedSession(
+      token: 's',
+      user: user(role: UserRole.admin),
+    );
+    repository.holdAnswers = Completer<void>();
+    await openStaffLogin(tester, surface: Surface.web);
+
+    await tester.enterText(phoneField, '901234567');
+    await tester.enterText(passwordField, 'temporary pass');
+    await tester.tap(loginButton);
+    await tester.pump();
+
+    expect(
+      tester
+          .widget<TextButton>(
+            find.byKey(const ValueKey<String>('customer-login-link')),
+          )
+          .onPressed,
+      isNull,
+    );
+
+    repository.holdAnswers!.complete();
+    await tester.pumpAndSettle();
+    expect(find.text(l10n(tester).shellAdmin), findsOneWidget);
   });
 
   testWidgets('a stored staff session opens its shell without a login', (

@@ -80,7 +80,9 @@ class _StaffLoginScreenState extends ConsumerState<StaffLoginScreen> {
               const SizedBox(height: 12),
               TextButton(
                 key: const ValueKey<String>('customer-login-link'),
-                onPressed: () => context.go(AppPaths.auth),
+                onPressed: state.isBusy
+                    ? null
+                    : () => context.go(AppPaths.auth),
                 child: Text(l10n.customerLoginLink),
               ),
             ],

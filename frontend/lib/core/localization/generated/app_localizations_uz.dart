@@ -73,6 +73,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get cancelButton => 'Bekor qilish';
 
   @override
+  String get requestCodeButton => 'Kod so\'rash';
+
+  @override
   String get wrongSurfaceTitle => 'Bu yerdan kirib bo\'lmaydi';
 
   @override

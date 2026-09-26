@@ -56,13 +56,13 @@ class CustomerModeScreen extends ConsumerWidget {
               onPressed: () => ref
                   .read(codeLoginControllerProvider.notifier)
                   .requestCodeForStaffAccount(),
-              child: Text(l10n.retryButton),
+              child: Text(l10n.requestCodeButton),
             ),
           ],
           const SizedBox(height: 12),
           TextButton(
             key: const ValueKey<String>('cancel-button'),
-            onPressed: () => _cancel(context, ref),
+            onPressed: state.busy ? null : () => _cancel(context, ref),
             child: Text(l10n.cancelButton),
           ),
         ],

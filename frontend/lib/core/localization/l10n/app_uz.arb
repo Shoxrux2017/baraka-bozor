@@ -33,6 +33,7 @@
   },
   "customerModeIntro": "Mijoz rejimiga kirish uchun o'z raqamingizga yuborilgan kodni kiriting",
   "cancelButton": "Bekor qilish",
+  "requestCodeButton": "Kod so'rash",
   "wrongSurfaceTitle": "Bu yerdan kirib bo'lmaydi",
   "staffLoginTitle": "Xodim kirishi",
   "staffLoginLink": "Xodim sifatida kirish",

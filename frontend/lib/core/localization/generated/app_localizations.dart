@@ -212,6 +212,12 @@ abstract class AppLocalizations {
   /// **'Bekor qilish'**
   String get cancelButton;
 
+  /// No description provided for @requestCodeButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod so\'rash'**
+  String get requestCodeButton;
+
   /// No description provided for @wrongSurfaceTitle.
   ///
   /// In uz, this message translates to:

@@ -1,6 +1,7 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show protected;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../errors/report_unexpected_error.dart';
 import '../network/api_failure.dart';
 
 /// The state of one server mutation as a form shows it: idle, busy, or
@@ -37,9 +38,11 @@ final class MutationFailed extends MutationState {
 ///
 /// A second submission while one runs is refused, so a double tap cannot
 /// send twice (`frontend/AGENTS.md` section 10). A completion that belongs
-/// to a run this notifier has since superseded is discarded
-/// (`docs/07-architecture.md` section 28), so a late answer never overwrites
-/// a newer state.
+/// to a run this notifier has since superseded, or that arrives after the
+/// notifier was disposed with its screen, is discarded
+/// (`docs/07-architecture.md` section 28). Whatever the action throws, the
+/// form is usable again afterwards: a failure the application knows is
+/// shown as itself, anything else as the generic failure, and reported.
 abstract class MutationNotifier extends Notifier<MutationState> {
   int _generation = 0;
 
@@ -60,22 +63,25 @@ abstract class MutationNotifier extends Notifier<MutationState> {
     try {
       await action();
     } on ApiFailure catch (failure) {
-      if (generation == _generation) {
-        state = MutationFailed(failure);
-      }
+      _settle(generation, MutationFailed(failure));
+      return false;
+    } catch (error, stackTrace) {
+      _settle(generation, const MutationFailed(UnexpectedFailure()));
+      reportUnexpectedError(error, stackTrace, 'while running a form mutation');
       return false;
     }
 
-    if (generation != _generation) {
-      return false;
-    }
-    state = const MutationIdle();
-    return true;
+    return _settle(generation, const MutationIdle());
   }
 
-  /// Forgets a failure, for example when the person edits the form again.
-  void reset() {
-    _generation++;
-    state = const MutationIdle();
+  /// Applies [next] only while this run is the current one and the notifier
+  /// is still alive; a form that was left while its request ran has nothing
+  /// to update.
+  bool _settle(int generation, MutationState next) {
+    if (generation != _generation || !ref.mounted) {
+      return false;
+    }
+    state = next;
+    return true;
   }
 }

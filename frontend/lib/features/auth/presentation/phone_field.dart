@@ -37,10 +37,7 @@ class PhoneField extends StatelessWidget {
       keyboardType: TextInputType.phone,
       textInputAction: textInputAction,
       autofillHints: const <String>[AutofillHints.telephoneNumberNational],
-      inputFormatters: <TextInputFormatter>[
-        FilteringTextInputFormatter.digitsOnly,
-        LengthLimitingTextInputFormatter(phoneNationalDigits),
-      ],
+      inputFormatters: <TextInputFormatter>[NationalPhoneDigitsFormatter()],
       decoration: InputDecoration(
         labelText: l10n.phoneLabel,
         prefixText: '$phoneCountryCode ',
@@ -50,6 +47,38 @@ class PhoneField extends StatelessWidget {
           ? l10n.phoneInvalid
           : null,
       onFieldSubmitted: onSubmitted,
+    );
+  }
+}
+
+/// Keeps the nine national digits of whatever was typed, pasted or filled
+/// in. A full number with the country code — `+998 90 123 45 67`, with or
+/// without the plus — loses its `998`, so a paste does not end up as a
+/// nine-digit number starting with the country code; anything longer than
+/// nine digits is cut.
+class NationalPhoneDigitsFormatter extends TextInputFormatter {
+  static final RegExp _notDigits = RegExp(r'[^0-9]');
+  static const String _countryDigits = '998';
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    String digits = newValue.text.replaceAll(_notDigits, '');
+    if (digits.length > phoneNationalDigits &&
+        digits.startsWith(_countryDigits)) {
+      digits = digits.substring(_countryDigits.length);
+    }
+    if (digits.length > phoneNationalDigits) {
+      digits = digits.substring(0, phoneNationalDigits);
+    }
+    if (digits == newValue.text) {
+      return newValue;
+    }
+    return TextEditingValue(
+      text: digits,
+      selection: TextSelection.collapsed(offset: digits.length),
     );
   }
 }

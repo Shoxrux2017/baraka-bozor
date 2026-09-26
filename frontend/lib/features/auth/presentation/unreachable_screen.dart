@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/session/session_state.dart';
 import 'auth_scaffold.dart';
 
 /// A stored session the server could not confirm: the tokens are kept and
@@ -13,7 +14,8 @@ class UnreachableScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final bool retrying = ref.watch(sessionControllerProvider).isLoading;
+    final SessionState? session = ref.watch(sessionControllerProvider).value;
+    final bool retrying = session is SessionUnreachable && session.retrying;
 
     return AuthScaffold(
       title: l10n.sessionUnreachableTitle,

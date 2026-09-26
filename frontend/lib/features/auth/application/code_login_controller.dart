@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
+import '../../../core/errors/report_unexpected_error.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/session/session_controller.dart';
 import '../../../core/session/session_state.dart';
@@ -68,6 +69,9 @@ final class CodeLoginState {
 /// Every request carries a generation number; an answer to a request this
 /// controller has since superseded — a changed phone, a reset — is discarded
 /// (`docs/07-architecture.md` section 28). Only one request runs at a time.
+/// A new request starts from a clean state, so nothing of an earlier flow —
+/// another phone, the other mode — survives into it; a resend keeps the
+/// code it repeats. Whatever a call throws, the screen is usable afterwards.
 class CodeLoginController extends Notifier<CodeLoginState> {
   int _generation = 0;
   Timer? _countdown;
@@ -101,14 +105,21 @@ class CodeLoginController extends Notifier<CodeLoginState> {
     );
   }
 
+  /// Another code for the same phone. The code already on the way stays
+  /// valid, so a refused resend keeps the entry screen and shows why.
   Future<bool> resend() {
     final String? phone = state.phone;
-    if (phone == null) {
+    if (phone == null || !state.hasCode) {
       return Future<bool>.value(false);
     }
-    return state.forStaffAccount
-        ? requestCodeForStaffAccount()
-        : requestCode(phone);
+    return _request(
+      phone: phone,
+      forStaffAccount: state.forStaffAccount,
+      send: state.forStaffAccount
+          ? _session.requestCustomerModeCode
+          : () => _session.requestCustomerCode(phone),
+      resend: true,
+    );
   }
 
   /// Verifies [code]; on success the session changes and the router moves
@@ -118,9 +129,9 @@ class CodeLoginController extends Notifier<CodeLoginState> {
     if (phone == null || state.busy) {
       return false;
     }
-    if (state.forStaffAccount && _staffUser() == null) {
-      // The staff session ended while the code was on its way; the router
-      // has already left this screen.
+    if (state.forStaffAccount && _staffUser()?.phone != phone) {
+      // The staff session ended, or another staff account signed in, while
+      // the code was on its way; the router has already left this screen.
       _clear();
       return false;
     }
@@ -135,13 +146,15 @@ class CodeLoginController extends Notifier<CodeLoginState> {
         await _session.verifyCustomerCode(phone: phone, code: code);
       }
     } on ApiFailure catch (failure) {
-      if (generation == _generation) {
-        state = state.copyWith(busy: false, failure: failure);
-      }
+      _fail(generation, failure);
+      return false;
+    } catch (error, stackTrace) {
+      _fail(generation, const UnexpectedFailure());
+      reportUnexpectedError(error, stackTrace, 'while verifying a login code');
       return false;
     }
 
-    if (generation != _generation) {
+    if (!_current(generation)) {
       return false;
     }
     _clear();
@@ -166,32 +179,49 @@ class CodeLoginController extends Notifier<CodeLoginState> {
     required String phone,
     required bool forStaffAccount,
     required Future<RequestedCode> Function() send,
+    bool resend = false,
   }) async {
     if (state.busy) {
       return false;
     }
 
     final int generation = ++_generation;
-    state = state.copyWith(
-      phone: phone,
-      forStaffAccount: forStaffAccount,
-      busy: true,
-      clearFailure: true,
-    );
+    if (resend) {
+      state = state.copyWith(busy: true, clearFailure: true);
+    } else {
+      _countdown?.cancel();
+      state = CodeLoginState(
+        phone: phone,
+        forStaffAccount: forStaffAccount,
+        busy: true,
+      );
+    }
 
     try {
       final RequestedCode requested = await send();
-      if (generation != _generation) {
+      if (!_current(generation)) {
         return false;
       }
       state = state.copyWith(requested: requested, busy: false);
       _startCountdown(requested.resendAvailableInSeconds);
       return true;
     } on ApiFailure catch (failure) {
-      if (generation == _generation) {
-        state = state.copyWith(busy: false, failure: failure);
-      }
+      _fail(generation, failure);
       return false;
+    } catch (error, stackTrace) {
+      _fail(generation, const UnexpectedFailure());
+      reportUnexpectedError(error, stackTrace, 'while requesting a login code');
+      return false;
+    }
+  }
+
+  /// Whether a completion still belongs to the current request of a live
+  /// controller.
+  bool _current(int generation) => generation == _generation && ref.mounted;
+
+  void _fail(int generation, ApiFailure failure) {
+    if (_current(generation)) {
+      state = state.copyWith(busy: false, failure: failure);
     }
   }
 

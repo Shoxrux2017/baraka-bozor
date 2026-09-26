@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/state/mutation_state.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,15 +18,20 @@ class _HeldMutation extends MutationNotifier {
 }
 
 final NotifierProvider<_HeldMutation, MutationState> _provider =
-    NotifierProvider<_HeldMutation, MutationState>(_HeldMutation.new);
+    NotifierProvider.autoDispose<_HeldMutation, MutationState>(
+      _HeldMutation.new,
+    );
 
 void main() {
   late ProviderContainer container;
   late _HeldMutation notifier;
+  late ProviderSubscription<MutationState> subscription;
 
   setUp(() {
     container = ProviderContainer();
     addTearDown(container.dispose);
+    // A listener keeps the autoDispose notifier alive, as a screen would.
+    subscription = container.listen<MutationState>(_provider, (_, _) {});
     notifier = container.read(_provider.notifier);
   });
 
@@ -40,15 +46,29 @@ void main() {
     expect(container.read(_provider), isA<MutationIdle>());
   });
 
-  test('a failure is kept with its cause and cleared by reset', () async {
-    notifier.gate.completeError(const NetworkFailure());
+  test(
+    'a known failure is kept with its cause and the form is usable',
+    () async {
+      notifier.gate.completeError(const NetworkFailure());
+
+      expect(await notifier.submit(), isFalse);
+      expect(container.read(_provider).failure, isA<NetworkFailure>());
+      expect(container.read(_provider).isBusy, isFalse);
+    },
+  );
+
+  test('an error the application cannot explain re-enables the form, shows the generic failure and is reported', () async {
+    final List<FlutterErrorDetails> reported = <FlutterErrorDetails>[];
+    final FlutterExceptionHandler? previous = FlutterError.onError;
+    FlutterError.onError = reported.add;
+    addTearDown(() => FlutterError.onError = previous);
+    notifier.gate.completeError(StateError('storage is gone'));
 
     expect(await notifier.submit(), isFalse);
-    expect(container.read(_provider).failure, isA<NetworkFailure>());
-    expect(container.read(_provider).isBusy, isFalse);
 
-    notifier.reset();
-    expect(container.read(_provider), isA<MutationIdle>());
+    expect(container.read(_provider).isBusy, isFalse);
+    expect(container.read(_provider).failure, isA<UnexpectedFailure>());
+    expect(reported.single.exception, isA<StateError>());
   });
 
   test('a second submission while one runs is refused, not queued', () async {
@@ -61,16 +81,20 @@ void main() {
     expect(await first, isTrue);
   });
 
-  test('a completion superseded by a reset changes nothing', () async {
-    final Future<bool> stale = notifier.submit();
-    notifier.reset();
-    notifier.gate.completeError(const NetworkFailure());
+  test('a completion after the screen left and the notifier was disposed writes nothing and throws nothing', () async {
+    final Future<bool> late = notifier.submit();
+    subscription.close();
+    // autoDispose runs after the current event; let it.
+    await Future<void>.delayed(Duration.zero);
 
-    expect(await stale, isFalse);
+    notifier.gate.complete();
+
+    expect(await late, isFalse);
     expect(
-      container.read(_provider),
-      isA<MutationIdle>(),
-      reason: 'the failure of an abandoned run is not shown',
+      () => container.read(_provider),
+      returnsNormally,
+      reason: 'a fresh notifier is created; the old completion left no trace',
     );
+    expect(container.read(_provider), isA<MutationIdle>());
   });
 }
