@@ -137,5 +137,90 @@
   "fieldMinutes": "Целое число от 1 до 1440",
   "fieldPairIncomplete": "Заполните оба значения или оставьте оба пустыми",
   "fieldSameTime": "Время закрытия должно отличаться от времени открытия",
-  "fieldRejected": "Сервер не принял это значение"
+  "fieldRejected": "Сервер не принял это значение",
+  "adminSectionCategories": "Категории",
+  "adminSectionProducts": "Товары",
+  "catalogNameUz": "Название (узбекский)",
+  "catalogNameRu": "Название (русский)",
+  "catalogDescriptionUz": "Описание (узбекский)",
+  "catalogDescriptionRu": "Описание (русский)",
+  "catalogSortOrder": "Порядок",
+  "catalogSortOrderHint": "Чем меньше, тем выше в списке",
+  "catalogShownToCustomers": "Показывать клиентам",
+  "catalogIncludeArchived": "Вместе с архивом",
+  "catalogStateActive": "Показывается",
+  "catalogStateHidden": "Скрыто",
+  "catalogStateArchived": "В архиве",
+  "catalogEdit": "Изменить",
+  "catalogArchive": "В архив",
+  "catalogRestore": "Вернуть из архива",
+  "catalogArchivedNote": "Записи в архиве не видны клиентам. Вернуть её можно действием в списке",
+  "catalogEmpty": "Ничего не найдено",
+  "catalogPage": "Страница {page} из {last}",
+  "@catalogPage": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "last": {
+        "type": "int"
+      }
+    }
+  },
+  "catalogPreviousPage": "Предыдущая страница",
+  "catalogNextPage": "Следующая страница",
+  "categoryNew": "Новая категория",
+  "categoryEditTitle": "Редактирование категории",
+  "categorySaved": "Категория сохранена",
+  "productNew": "Новый товар",
+  "productEditTitle": "Редактирование товара",
+  "productSaved": "Товар сохранён",
+  "productCategory": "Категория",
+  "productAllCategories": "Все категории",
+  "productUnit": "Единица измерения",
+  "productPriceMode": "Тип цены",
+  "productMarketPrice": "Рыночная цена",
+  "productCustomerPrice": "Цена для клиента: {price}",
+  "@productCustomerPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "productSearch": "Поиск по названию",
+  "productBackToList": "К списку товаров",
+  "productImage": "Фото",
+  "productNoImage": "Фото нет",
+  "productChooseImage": "Выбрать фото",
+  "productUploadImage": "Загрузить",
+  "productRemoveImage": "Удалить фото",
+  "productRemoveImageConfirm": "Удалить фото товара?",
+  "productImageRules": "JPEG, PNG или WebP, не больше 5 МБ",
+  "productImageTooLarge": "Фото больше 5 МБ",
+  "productImageWrongType": "Только JPEG, PNG или WebP",
+  "productImageAfterSave": "Фото можно добавить после сохранения товара",
+  "confirmButton": "Да",
+  "priceModeFixed": "Точная цена",
+  "priceModeEstimate": "Ориентировочная цена",
+  "unitKg": "кг",
+  "unitGram": "грамм",
+  "unitPiece": "шт.",
+  "unitLiter": "литр",
+  "unitPackage": "упаковка",
+  "unitBox": "коробка",
+  "unitBundle": "пучок",
+  "unitMeter": "метр",
+  "fieldTooLong": "Не более {max} символов",
+  "@fieldTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "fieldSortOrder": "Целое число от -100 000 до 100 000",
+  "fieldMarketPrice": "Целое число от 1 до 1 000 000 000",
+  "errorBusinessConflict": "Состояние изменилось. Обновите данные и попробуйте снова",
+  "errorPayloadTooLarge": "Файл слишком большой"
 }

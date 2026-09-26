@@ -383,4 +383,196 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get fieldRejected => 'Server bu qiymatni qabul qilmadi';
+
+  @override
+  String get adminSectionCategories => 'Kategoriyalar';
+
+  @override
+  String get adminSectionProducts => 'Mahsulotlar';
+
+  @override
+  String get catalogNameUz => 'Nomi (o\'zbekcha)';
+
+  @override
+  String get catalogNameRu => 'Nomi (ruscha)';
+
+  @override
+  String get catalogDescriptionUz => 'Tavsif (o\'zbekcha)';
+
+  @override
+  String get catalogDescriptionRu => 'Tavsif (ruscha)';
+
+  @override
+  String get catalogSortOrder => 'Tartib raqami';
+
+  @override
+  String get catalogSortOrderHint => 'Kichigi ro\'yxatda yuqoriroq turadi';
+
+  @override
+  String get catalogShownToCustomers => 'Mijozlarga ko\'rsatilsin';
+
+  @override
+  String get catalogIncludeArchived => 'Arxivdagilar ham';
+
+  @override
+  String get catalogStateActive => 'Ko\'rsatilmoqda';
+
+  @override
+  String get catalogStateHidden => 'Yashirilgan';
+
+  @override
+  String get catalogStateArchived => 'Arxivda';
+
+  @override
+  String get catalogEdit => 'Tahrirlash';
+
+  @override
+  String get catalogArchive => 'Arxivga';
+
+  @override
+  String get catalogRestore => 'Arxivdan qaytarish';
+
+  @override
+  String get catalogArchivedNote =>
+      'Arxivdagi yozuv mijozlarga ko\'rinmaydi. Qaytarish uchun ro\'yxatdagi amaldan foydalaning';
+
+  @override
+  String get catalogEmpty => 'Hech narsa topilmadi';
+
+  @override
+  String catalogPage(int page, int last) {
+    return '$page-sahifa, jami $last';
+  }
+
+  @override
+  String get catalogPreviousPage => 'Oldingi sahifa';
+
+  @override
+  String get catalogNextPage => 'Keyingi sahifa';
+
+  @override
+  String get categoryNew => 'Yangi kategoriya';
+
+  @override
+  String get categoryEditTitle => 'Kategoriyani tahrirlash';
+
+  @override
+  String get categorySaved => 'Kategoriya saqlandi';
+
+  @override
+  String get productNew => 'Yangi mahsulot';
+
+  @override
+  String get productEditTitle => 'Mahsulotni tahrirlash';
+
+  @override
+  String get productSaved => 'Mahsulot saqlandi';
+
+  @override
+  String get productCategory => 'Kategoriya';
+
+  @override
+  String get productAllCategories => 'Barcha kategoriyalar';
+
+  @override
+  String get productUnit => 'O\'lchov birligi';
+
+  @override
+  String get productPriceMode => 'Narx turi';
+
+  @override
+  String get productMarketPrice => 'Bozor narxi';
+
+  @override
+  String productCustomerPrice(String price) {
+    return 'Mijoz uchun narx: $price';
+  }
+
+  @override
+  String get productSearch => 'Nomi bo\'yicha qidirish';
+
+  @override
+  String get productBackToList => 'Mahsulotlar ro\'yxati';
+
+  @override
+  String get productImage => 'Rasm';
+
+  @override
+  String get productNoImage => 'Rasm yo\'q';
+
+  @override
+  String get productChooseImage => 'Rasm tanlash';
+
+  @override
+  String get productUploadImage => 'Yuklash';
+
+  @override
+  String get productRemoveImage => 'Rasmni o\'chirish';
+
+  @override
+  String get productRemoveImageConfirm => 'Mahsulot rasmi o\'chirilsinmi?';
+
+  @override
+  String get productImageRules => 'JPEG, PNG yoki WebP, ko\'pi bilan 5 MB';
+
+  @override
+  String get productImageTooLarge => 'Rasm 5 MB dan katta';
+
+  @override
+  String get productImageWrongType => 'Faqat JPEG, PNG yoki WebP rasm';
+
+  @override
+  String get productImageAfterSave =>
+      'Rasmni mahsulot saqlangandan keyin qo\'shish mumkin';
+
+  @override
+  String get confirmButton => 'Ha';
+
+  @override
+  String get priceModeFixed => 'Aniq narx';
+
+  @override
+  String get priceModeEstimate => 'Taxminiy narx';
+
+  @override
+  String get unitKg => 'kg';
+
+  @override
+  String get unitGram => 'gramm';
+
+  @override
+  String get unitPiece => 'dona';
+
+  @override
+  String get unitLiter => 'litr';
+
+  @override
+  String get unitPackage => 'qadoq';
+
+  @override
+  String get unitBox => 'quti';
+
+  @override
+  String get unitBundle => 'bog\'';
+
+  @override
+  String get unitMeter => 'metr';
+
+  @override
+  String fieldTooLong(int max) {
+    return 'Ko\'pi bilan $max ta belgi';
+  }
+
+  @override
+  String get fieldSortOrder => '-100 000 dan 100 000 gacha butun son';
+
+  @override
+  String get fieldMarketPrice => '1 dan 1 000 000 000 gacha butun son';
+
+  @override
+  String get errorBusinessConflict =>
+      'Holat o\'zgargan. Ma\'lumotni yangilab, qayta urinib ko\'ring';
+
+  @override
+  String get errorPayloadTooLarge => 'Fayl juda katta';
 }

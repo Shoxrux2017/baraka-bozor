@@ -79,8 +79,25 @@ void main() {
   });
 
   test('a status without a text of its own gets the generic text', () {
-    expect(failureText(uz, refusal(409, 'business_conflict')), uz.errorUnknown);
-    expect(failureText(ru, refusal(409, 'business_conflict')), ru.errorUnknown);
+    expect(
+      failureText(uz, refusal(409, 'order_editing_locked')),
+      uz.errorUnknown,
+    );
+    expect(
+      failureText(ru, refusal(409, 'order_editing_locked')),
+      ru.errorUnknown,
+    );
+  });
+
+  test('a conflict and a body too large have texts of their own', () {
+    expect(
+      failureText(uz, refusal(409, 'business_conflict')),
+      uz.errorBusinessConflict,
+    );
+    expect(
+      failureText(ru, refusal(413, 'payload_too_large')),
+      ru.errorPayloadTooLarge,
+    );
   });
 
   test('client-side failures have texts too, and a cancellation has none', () {

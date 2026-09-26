@@ -137,5 +137,90 @@
   "fieldMinutes": "1 dan 1440 gacha butun son",
   "fieldPairIncomplete": "Ikkala qiymatni kiriting yoki ikkalasini ham bo'sh qoldiring",
   "fieldSameTime": "Yopilish vaqti ochilish vaqtidan farq qilishi kerak",
-  "fieldRejected": "Server bu qiymatni qabul qilmadi"
+  "fieldRejected": "Server bu qiymatni qabul qilmadi",
+  "adminSectionCategories": "Kategoriyalar",
+  "adminSectionProducts": "Mahsulotlar",
+  "catalogNameUz": "Nomi (o'zbekcha)",
+  "catalogNameRu": "Nomi (ruscha)",
+  "catalogDescriptionUz": "Tavsif (o'zbekcha)",
+  "catalogDescriptionRu": "Tavsif (ruscha)",
+  "catalogSortOrder": "Tartib raqami",
+  "catalogSortOrderHint": "Kichigi ro'yxatda yuqoriroq turadi",
+  "catalogShownToCustomers": "Mijozlarga ko'rsatilsin",
+  "catalogIncludeArchived": "Arxivdagilar ham",
+  "catalogStateActive": "Ko'rsatilmoqda",
+  "catalogStateHidden": "Yashirilgan",
+  "catalogStateArchived": "Arxivda",
+  "catalogEdit": "Tahrirlash",
+  "catalogArchive": "Arxivga",
+  "catalogRestore": "Arxivdan qaytarish",
+  "catalogArchivedNote": "Arxivdagi yozuv mijozlarga ko'rinmaydi. Qaytarish uchun ro'yxatdagi amaldan foydalaning",
+  "catalogEmpty": "Hech narsa topilmadi",
+  "catalogPage": "{page}-sahifa, jami {last}",
+  "@catalogPage": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "last": {
+        "type": "int"
+      }
+    }
+  },
+  "catalogPreviousPage": "Oldingi sahifa",
+  "catalogNextPage": "Keyingi sahifa",
+  "categoryNew": "Yangi kategoriya",
+  "categoryEditTitle": "Kategoriyani tahrirlash",
+  "categorySaved": "Kategoriya saqlandi",
+  "productNew": "Yangi mahsulot",
+  "productEditTitle": "Mahsulotni tahrirlash",
+  "productSaved": "Mahsulot saqlandi",
+  "productCategory": "Kategoriya",
+  "productAllCategories": "Barcha kategoriyalar",
+  "productUnit": "O'lchov birligi",
+  "productPriceMode": "Narx turi",
+  "productMarketPrice": "Bozor narxi",
+  "productCustomerPrice": "Mijoz uchun narx: {price}",
+  "@productCustomerPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "productSearch": "Nomi bo'yicha qidirish",
+  "productBackToList": "Mahsulotlar ro'yxati",
+  "productImage": "Rasm",
+  "productNoImage": "Rasm yo'q",
+  "productChooseImage": "Rasm tanlash",
+  "productUploadImage": "Yuklash",
+  "productRemoveImage": "Rasmni o'chirish",
+  "productRemoveImageConfirm": "Mahsulot rasmi o'chirilsinmi?",
+  "productImageRules": "JPEG, PNG yoki WebP, ko'pi bilan 5 MB",
+  "productImageTooLarge": "Rasm 5 MB dan katta",
+  "productImageWrongType": "Faqat JPEG, PNG yoki WebP rasm",
+  "productImageAfterSave": "Rasmni mahsulot saqlangandan keyin qo'shish mumkin",
+  "confirmButton": "Ha",
+  "priceModeFixed": "Aniq narx",
+  "priceModeEstimate": "Taxminiy narx",
+  "unitKg": "kg",
+  "unitGram": "gramm",
+  "unitPiece": "dona",
+  "unitLiter": "litr",
+  "unitPackage": "qadoq",
+  "unitBox": "quti",
+  "unitBundle": "bog'",
+  "unitMeter": "metr",
+  "fieldTooLong": "Ko'pi bilan {max} ta belgi",
+  "@fieldTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "fieldSortOrder": "-100 000 dan 100 000 gacha butun son",
+  "fieldMarketPrice": "1 dan 1 000 000 000 gacha butun son",
+  "errorBusinessConflict": "Holat o'zgargan. Ma'lumotni yangilab, qayta urinib ko'ring",
+  "errorPayloadTooLarge": "Fayl juda katta"
 }

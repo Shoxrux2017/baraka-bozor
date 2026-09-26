@@ -47,6 +47,10 @@ void main() {
         AppPaths.operations,
         AppPaths.manager,
         AppPaths.admin,
+        AdminPaths.categories,
+        AdminPaths.products,
+        AdminPaths.newProduct,
+        AdminPaths.productPattern,
         AdminPaths.settings,
       ]);
     });

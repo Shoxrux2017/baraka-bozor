@@ -799,6 +799,372 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Server bu qiymatni qabul qilmadi'**
   String get fieldRejected;
+
+  /// No description provided for @adminSectionCategories.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kategoriyalar'**
+  String get adminSectionCategories;
+
+  /// No description provided for @adminSectionProducts.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotlar'**
+  String get adminSectionProducts;
+
+  /// No description provided for @catalogNameUz.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nomi (o\'zbekcha)'**
+  String get catalogNameUz;
+
+  /// No description provided for @catalogNameRu.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nomi (ruscha)'**
+  String get catalogNameRu;
+
+  /// No description provided for @catalogDescriptionUz.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tavsif (o\'zbekcha)'**
+  String get catalogDescriptionUz;
+
+  /// No description provided for @catalogDescriptionRu.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tavsif (ruscha)'**
+  String get catalogDescriptionRu;
+
+  /// No description provided for @catalogSortOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tartib raqami'**
+  String get catalogSortOrder;
+
+  /// No description provided for @catalogSortOrderHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kichigi ro\'yxatda yuqoriroq turadi'**
+  String get catalogSortOrderHint;
+
+  /// No description provided for @catalogShownToCustomers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozlarga ko\'rsatilsin'**
+  String get catalogShownToCustomers;
+
+  /// No description provided for @catalogIncludeArchived.
+  ///
+  /// In uz, this message translates to:
+  /// **'Arxivdagilar ham'**
+  String get catalogIncludeArchived;
+
+  /// No description provided for @catalogStateActive.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'rsatilmoqda'**
+  String get catalogStateActive;
+
+  /// No description provided for @catalogStateHidden.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yashirilgan'**
+  String get catalogStateHidden;
+
+  /// No description provided for @catalogStateArchived.
+  ///
+  /// In uz, this message translates to:
+  /// **'Arxivda'**
+  String get catalogStateArchived;
+
+  /// No description provided for @catalogEdit.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tahrirlash'**
+  String get catalogEdit;
+
+  /// No description provided for @catalogArchive.
+  ///
+  /// In uz, this message translates to:
+  /// **'Arxivga'**
+  String get catalogArchive;
+
+  /// No description provided for @catalogRestore.
+  ///
+  /// In uz, this message translates to:
+  /// **'Arxivdan qaytarish'**
+  String get catalogRestore;
+
+  /// No description provided for @catalogArchivedNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Arxivdagi yozuv mijozlarga ko\'rinmaydi. Qaytarish uchun ro\'yxatdagi amaldan foydalaning'**
+  String get catalogArchivedNote;
+
+  /// No description provided for @catalogEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hech narsa topilmadi'**
+  String get catalogEmpty;
+
+  /// No description provided for @catalogPage.
+  ///
+  /// In uz, this message translates to:
+  /// **'{page}-sahifa, jami {last}'**
+  String catalogPage(int page, int last);
+
+  /// No description provided for @catalogPreviousPage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oldingi sahifa'**
+  String get catalogPreviousPage;
+
+  /// No description provided for @catalogNextPage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Keyingi sahifa'**
+  String get catalogNextPage;
+
+  /// No description provided for @categoryNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi kategoriya'**
+  String get categoryNew;
+
+  /// No description provided for @categoryEditTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kategoriyani tahrirlash'**
+  String get categoryEditTitle;
+
+  /// No description provided for @categorySaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kategoriya saqlandi'**
+  String get categorySaved;
+
+  /// No description provided for @productNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi mahsulot'**
+  String get productNew;
+
+  /// No description provided for @productEditTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotni tahrirlash'**
+  String get productEditTitle;
+
+  /// No description provided for @productSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot saqlandi'**
+  String get productSaved;
+
+  /// No description provided for @productCategory.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kategoriya'**
+  String get productCategory;
+
+  /// No description provided for @productAllCategories.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha kategoriyalar'**
+  String get productAllCategories;
+
+  /// No description provided for @productUnit.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'lchov birligi'**
+  String get productUnit;
+
+  /// No description provided for @productPriceMode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narx turi'**
+  String get productPriceMode;
+
+  /// No description provided for @productMarketPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bozor narxi'**
+  String get productMarketPrice;
+
+  /// No description provided for @productCustomerPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz uchun narx: {price}'**
+  String productCustomerPrice(String price);
+
+  /// No description provided for @productSearch.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nomi bo\'yicha qidirish'**
+  String get productSearch;
+
+  /// No description provided for @productBackToList.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotlar ro\'yxati'**
+  String get productBackToList;
+
+  /// No description provided for @productImage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasm'**
+  String get productImage;
+
+  /// No description provided for @productNoImage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasm yo\'q'**
+  String get productNoImage;
+
+  /// No description provided for @productChooseImage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasm tanlash'**
+  String get productChooseImage;
+
+  /// No description provided for @productUploadImage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yuklash'**
+  String get productUploadImage;
+
+  /// No description provided for @productRemoveImage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasmni o\'chirish'**
+  String get productRemoveImage;
+
+  /// No description provided for @productRemoveImageConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot rasmi o\'chirilsinmi?'**
+  String get productRemoveImageConfirm;
+
+  /// No description provided for @productImageRules.
+  ///
+  /// In uz, this message translates to:
+  /// **'JPEG, PNG yoki WebP, ko\'pi bilan 5 MB'**
+  String get productImageRules;
+
+  /// No description provided for @productImageTooLarge.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasm 5 MB dan katta'**
+  String get productImageTooLarge;
+
+  /// No description provided for @productImageWrongType.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faqat JPEG, PNG yoki WebP rasm'**
+  String get productImageWrongType;
+
+  /// No description provided for @productImageAfterSave.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasmni mahsulot saqlangandan keyin qo\'shish mumkin'**
+  String get productImageAfterSave;
+
+  /// No description provided for @confirmButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ha'**
+  String get confirmButton;
+
+  /// No description provided for @priceModeFixed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aniq narx'**
+  String get priceModeFixed;
+
+  /// No description provided for @priceModeEstimate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Taxminiy narx'**
+  String get priceModeEstimate;
+
+  /// No description provided for @unitKg.
+  ///
+  /// In uz, this message translates to:
+  /// **'kg'**
+  String get unitKg;
+
+  /// No description provided for @unitGram.
+  ///
+  /// In uz, this message translates to:
+  /// **'gramm'**
+  String get unitGram;
+
+  /// No description provided for @unitPiece.
+  ///
+  /// In uz, this message translates to:
+  /// **'dona'**
+  String get unitPiece;
+
+  /// No description provided for @unitLiter.
+  ///
+  /// In uz, this message translates to:
+  /// **'litr'**
+  String get unitLiter;
+
+  /// No description provided for @unitPackage.
+  ///
+  /// In uz, this message translates to:
+  /// **'qadoq'**
+  String get unitPackage;
+
+  /// No description provided for @unitBox.
+  ///
+  /// In uz, this message translates to:
+  /// **'quti'**
+  String get unitBox;
+
+  /// No description provided for @unitBundle.
+  ///
+  /// In uz, this message translates to:
+  /// **'bog\''**
+  String get unitBundle;
+
+  /// No description provided for @unitMeter.
+  ///
+  /// In uz, this message translates to:
+  /// **'metr'**
+  String get unitMeter;
+
+  /// No description provided for @fieldTooLong.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'pi bilan {max} ta belgi'**
+  String fieldTooLong(int max);
+
+  /// No description provided for @fieldSortOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'-100 000 dan 100 000 gacha butun son'**
+  String get fieldSortOrder;
+
+  /// No description provided for @fieldMarketPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'1 dan 1 000 000 000 gacha butun son'**
+  String get fieldMarketPrice;
+
+  /// No description provided for @errorBusinessConflict.
+  ///
+  /// In uz, this message translates to:
+  /// **'Holat o\'zgargan. Ma\'lumotni yangilab, qayta urinib ko\'ring'**
+  String get errorBusinessConflict;
+
+  /// No description provided for @errorPayloadTooLarge.
+  ///
+  /// In uz, this message translates to:
+  /// **'Fayl juda katta'**
+  String get errorPayloadTooLarge;
 }
 
 class _AppLocalizationsDelegate

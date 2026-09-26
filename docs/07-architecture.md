@@ -21,6 +21,7 @@ PHPUnit, Laravel Pint, Larastan (PHPStan level 5)
 
 ```text
 Flutter / Dart, Riverpod, GoRouter, Dio, flutter_secure_storage, Material 3
+image_picker for the panel's product images (DL-28)
 Yandex MapKit for the address picker
 ```
 
