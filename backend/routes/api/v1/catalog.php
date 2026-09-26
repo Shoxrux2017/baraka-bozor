@@ -8,6 +8,7 @@ use App\Modules\Auth\Http\Middleware\RequireRole;
 use App\Modules\Catalog\Http\Controllers\AdminCategoryController;
 use App\Modules\Catalog\Http\Controllers\AdminProductController;
 use App\Modules\Catalog\Http\Controllers\AdminProductImageController;
+use App\Modules\Catalog\Http\Controllers\CustomerCatalogController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,7 +17,8 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | The Admin catalog is Admin only: the Operator surface hides the catalog
-| (docs/02 Section 7). The Customer catalog arrives with W1-5.
+| (docs/02 Section 7). The Customer catalog needs a Customer session
+| (DL-17 (4)); a Shopper looking for a replacement joins in Wave 3.
 |
 */
 
@@ -39,4 +41,12 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Admin)]
 
         Route::post('products/{product}/image', [AdminProductImageController::class, 'store'])->name('admin.products.image.store');
         Route::delete('products/{product}/image', [AdminProductImageController::class, 'destroy'])->name('admin.products.image.destroy');
+    });
+
+Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Customer)])
+    ->prefix('catalog')
+    ->group(function (): void {
+        Route::get('categories', [CustomerCatalogController::class, 'categories'])->name('catalog.categories.index');
+        Route::get('products', [CustomerCatalogController::class, 'products'])->name('catalog.products.index');
+        Route::get('products/{product}', [CustomerCatalogController::class, 'product'])->name('catalog.products.show');
     });

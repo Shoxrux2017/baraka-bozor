@@ -92,7 +92,7 @@ Codes: `code_invalid`, `code_expired`, `code_attempts_exhausted`, `account_block
 
 ## 14. Customer Catalog
 
-`GET /catalog/categories`, `GET /catalog/products?category_id=&search=&page=&per_page=`, `GET /catalog/products/{product}`. A Customer session is required (`DL-17`); an archived or inactive product, or one in an inactive category, is a scope-safe `404`.
+`GET /catalog/categories?page=&per_page=`, `GET /catalog/products?category_id=&search=&page=&per_page=`, `GET /catalog/products/{product}`, all paginated lists in the envelope of Section 2. A Customer session is required (`DL-17`); categories are the active, unarchived ones; a product is listed only while it and its category are active and unarchived, and otherwise its detail is the scope-safe `404`. A category carries `id, name_uz, name_ru, description_uz, description_ru, sort_order`; a product never carries the market price.
 
 Product:
 
