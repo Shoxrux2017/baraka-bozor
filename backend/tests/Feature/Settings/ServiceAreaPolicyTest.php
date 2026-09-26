@@ -38,14 +38,25 @@ final class ServiceAreaPolicyTest extends TestCase
         $this->configure(radius: '5.00');
         $policy = new ServiceAreaPolicy;
 
-        // Due north along the meridian: 0.044876° ≈ 4.99 km, 0.045056° ≈ 5.01 km.
+        // Due north along the meridian: 0.044876° ≈ 4.990 km, 0.045039° ≈ 5.008 km.
         $policy->assertDeliverable('41.355957', self::CENTRE_LNG);
         $policy->assertDeliverable(self::CENTRE_LAT, self::CENTRE_LNG);
 
         $this->assertRefusal(422, 'address_outside_service_area', [
             'max_distance_km' => '5.00',
             'distance_km' => '5.01',
-        ], '41.356137', self::CENTRE_LNG);
+        ], '41.356120', self::CENTRE_LNG);
+    }
+
+    public function test_a_point_a_few_metres_beyond_the_radius_shows_a_distance_above_it(): void
+    {
+        $this->configure(radius: '5.00');
+
+        // 0.044993° north ≈ 5.003 km: refused, and shown as 5.01, not 5.00.
+        $this->assertRefusal(422, 'address_outside_service_area', [
+            'max_distance_km' => '5.00',
+            'distance_km' => '5.01',
+        ], '41.356074', self::CENTRE_LNG);
     }
 
     public function test_the_customer_price_follows_the_stored_markup(): void

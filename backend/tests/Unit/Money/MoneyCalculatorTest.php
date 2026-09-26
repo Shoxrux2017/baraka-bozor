@@ -36,6 +36,13 @@ final class MoneyCalculatorTest extends TestCase
         $this->assertSame(1_001, MoneyCalculator::increaseByPercent(1_001, Percentage::fromString('0.04')));
     }
 
+    public function test_a_hair_below_and_a_hair_above_the_half(): void
+    {
+        // 4999 × 1.0001 = 4999.4999 → 4999;  5001 × 1.0001 = 5001.5001 → 5002.
+        $this->assertSame(4_999, MoneyCalculator::increaseByPercent(4_999, Percentage::fromString('0.01')));
+        $this->assertSame(5_002, MoneyCalculator::increaseByPercent(5_001, Percentage::fromString('0.01')));
+    }
+
     public function test_a_large_amount_stays_exact(): void
     {
         // 9 876 543 210 × 1.0001 = 9 877 530 864.321 → 9 877 530 864.

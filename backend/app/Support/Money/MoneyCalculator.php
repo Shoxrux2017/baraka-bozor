@@ -15,8 +15,11 @@ use InvalidArgumentException;
  * system are never negative, so "half up" and "half away from zero" agree, and
  * the method refuses a negative input rather than pick one.
  *
- * The largest intermediate is an amount times `10000 + 99999`; with amounts in
- * the billions of UZS that stays far below the 64-bit limit.
+ * The largest intermediate is `2 × amount × (10000 + 99999) + 10000`, which
+ * stays inside a 64-bit integer for amounts up to about 4.19 × 10¹³ UZS. Every
+ * amount that reaches here is bounded far below that by its request (a market
+ * price at most 10⁹ UZS); beyond it PHP raises a `TypeError` rather than
+ * rounding silently.
  */
 final class MoneyCalculator
 {

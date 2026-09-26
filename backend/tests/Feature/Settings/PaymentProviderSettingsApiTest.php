@@ -24,7 +24,9 @@ final class PaymentProviderSettingsApiTest extends TestCase
 
     public function test_the_four_providers_are_listed_in_order_disabled_and_without_any_secret(): void
     {
-        $response = $this->asAdmin()->getJson(self::URL)->assertOk();
+        $response = $this->asAdmin()->getJson(self::URL)
+            ->assertOk()
+            ->assertJsonPath('meta.pagination', ['page' => 1, 'per_page' => 4, 'total' => 4, 'last_page' => 1]);
 
         $this->assertSame(['payme', 'click', 'paynet', 'xazna'], array_column($response->json('data'), 'provider'));
         $this->assertSame([false, false, false, false], array_column($response->json('data'), 'is_enabled'));
@@ -77,8 +79,10 @@ final class PaymentProviderSettingsApiTest extends TestCase
         foreach ([Role::Operator, Role::Manager, Role::Customer] as $role) {
             $token = User::factory()->role($role)->create()->createToken('t')->plainTextToken;
 
-            $this->withToken($token)->getJson(self::URL)->assertStatus(403);
-            $this->withToken($token)->patchJson(self::URL.'/payme', ['is_enabled' => true])->assertStatus(403);
+            $this->withToken($token)->getJson(self::URL)->assertStatus(403)->assertJsonPath('code', 'forbidden');
+            $this->withToken($token)->patchJson(self::URL.'/payme', ['is_enabled' => true])
+                ->assertStatus(403)
+                ->assertJsonPath('code', 'forbidden');
         }
 
         $this->assertFalse(PaymentProviderSetting::query()->findOrFail(PaymentProvider::Payme->value)->is_enabled);

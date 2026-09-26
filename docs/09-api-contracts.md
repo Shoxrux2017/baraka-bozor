@@ -261,7 +261,7 @@ Approval resource: `type`, `status`, the item with both names, `proposed_custome
 
 ## 44. Business Settings
 
-`GET|PATCH /admin/settings/business` — every field of `08` Section 11; `PATCH` takes any subset and enforces the service-fee cross-field rule. `GET /admin/settings/payment-providers`, `PATCH /admin/settings/payment-providers/{provider}` `{"is_enabled":true}`, where `{provider}` is constrained to the four provider values (`DL-17`).
+`GET|PATCH /admin/settings/business` — every field of `08` Section 11 except the id and the last editor, plus `updated_at`; unset values are `null`. Money is a JSON integer; percentages, coordinates and the radius are decimal strings; `opens_at` and `closes_at` are `HH:MM` in `Asia/Tashkent`. `PATCH` takes any non-empty subset (an empty body is `422` on `body`) and checks the merged row: the value of the service-fee mode not chosen must be `null`, working hours and the centre come in pairs, opening and closing differ; a refusal is `422 validation_failed` on the field that must change. `GET /admin/settings/payment-providers` answers the four rows `{provider, is_enabled, updated_at}` in the order payme, click, paynet, xazna, in the collection envelope of Section 2 as one page. `PATCH /admin/settings/payment-providers/{provider}` `{"is_enabled":true}` takes a strict boolean; `{provider}` is constrained to the four values, anything else is the scope-safe `404` (`DL-17`, `DL-19`).
 
 ## 45. Price Correction
 

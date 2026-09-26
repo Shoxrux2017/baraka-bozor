@@ -18,6 +18,8 @@ use App\Models\BusinessSettings;
  * centre or the radius is unset (`DL-17` (7)), and
  * `422 address_outside_service_area` with both distances as two-decimal
  * strings so the client can compose its own sentence (`docs/09` section 13).
+ * The distance shown is rounded up, so a point a few metres beyond a 5.00 km
+ * radius reads "5.01", never "5.00 km away, we deliver within 5.00 km".
  */
 final class ServiceAreaPolicy
 {
@@ -41,12 +43,21 @@ final class ServiceAreaPolicy
             $longitude,
         );
 
-        if ($distance > (float) $settings->service_radius_km) {
+        if (! self::isWithin($distance, $settings->service_radius_km)) {
             throw ApiException::unprocessable('address_outside_service_area', [
                 'max_distance_km' => $settings->service_radius_km,
-                'distance_km' => number_format($distance, 2, '.', ''),
+                'distance_km' => number_format(ceil($distance * 100) / 100, 2, '.', ''),
             ]);
         }
+    }
+
+    /**
+     * `BR-AREA-001`: a point is refused only when it lies farther than the
+     * radius; a point exactly on the circle is inside.
+     */
+    public static function isWithin(float $distanceKm, string $radiusKm): bool
+    {
+        return $distanceKm <= (float) $radiusKm;
     }
 
     /**

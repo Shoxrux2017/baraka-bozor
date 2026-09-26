@@ -45,6 +45,27 @@ class PaymentProviderSetting extends Model
     }
 
     /**
+     * The four rows in the order the interview names the providers (3.3):
+     * Payme and Click first, Paynet and xazna later.
+     *
+     * @return list<self>
+     */
+    public static function inProviderOrder(): array
+    {
+        $byProvider = self::query()->get()->keyBy('provider');
+
+        $ordered = [];
+        foreach (PaymentProvider::cases() as $provider) {
+            $setting = $byProvider->get($provider->value);
+            if ($setting instanceof self) {
+                $ordered[] = $setting;
+            }
+        }
+
+        return $ordered;
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

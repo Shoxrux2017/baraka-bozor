@@ -22,8 +22,17 @@ final class BusinessSettingsApiTest extends TestCase
 
     public function test_an_admin_reads_every_setting_with_nothing_configured_yet(): void
     {
-        $this->asAdmin()->getJson(self::URL)
-            ->assertOk()
+        $response = $this->asAdmin()->getJson(self::URL)->assertOk();
+
+        $this->assertSame([
+            'markup_percent', 'service_fee_mode', 'service_fee_fixed_uzs', 'service_fee_percent',
+            'delivery_fee_uzs', 'minimum_order_uzs', 'price_tolerance_percent', 'opens_at', 'closes_at',
+            'service_centre_latitude', 'service_centre_longitude', 'service_radius_km',
+            'delivery_delay_threshold_minutes', 'updated_at',
+        ], array_keys($response->json('data')), 'Exactly the settings, nothing internal such as the id or the last editor.');
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $response->json('data.updated_at'));
+
+        $response
             ->assertJson(['data' => [
                 'markup_percent' => '0.00',
                 'service_fee_mode' => 'fixed',
@@ -38,8 +47,7 @@ final class BusinessSettingsApiTest extends TestCase
                 'service_centre_longitude' => null,
                 'service_radius_km' => null,
                 'delivery_delay_threshold_minutes' => 60,
-            ]])
-            ->assertJsonStructure(['data' => ['updated_at']]);
+            ]]);
     }
 
     public function test_every_role_but_admin_is_refused_and_no_token_is_unauthenticated(): void
@@ -51,7 +59,8 @@ final class BusinessSettingsApiTest extends TestCase
                 ->assertStatus(403)
                 ->assertJsonPath('code', 'forbidden');
             $this->withToken($user->createToken('t')->plainTextToken)->patchJson(self::URL, ['markup_percent' => '10'])
-                ->assertStatus(403);
+                ->assertStatus(403)
+                ->assertJsonPath('code', 'forbidden');
         }
 
         $this->withoutToken()->getJson(self::URL)->assertStatus(401)->assertJsonPath('code', 'authentication_required');
@@ -120,6 +129,23 @@ final class BusinessSettingsApiTest extends TestCase
         }
 
         $this->assertNull(BusinessSettings::current()->updated_by_user_id, 'Nothing was saved.');
+    }
+
+    public function test_a_body_that_names_no_setting_is_refused_and_records_nothing(): void
+    {
+        $this->asAdmin()->patchJson(self::URL, [])
+            ->assertStatus(422)
+            ->assertJsonValidationErrorFor('body', 'errors');
+
+        $token = User::factory()->role(Role::Admin)->create()->createToken('t')->plainTextToken;
+        $this->call('PATCH', self::URL, [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_AUTHORIZATION' => 'Bearer '.$token,
+        ], '{"markup_percent": "12.5"')
+            ->assertStatus(422);
+
+        $this->assertNull(BusinessSettings::current()->updated_by_user_id);
     }
 
     public function test_an_unknown_field_is_refused(): void

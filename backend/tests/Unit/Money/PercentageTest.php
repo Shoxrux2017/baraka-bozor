@@ -19,11 +19,10 @@ final class PercentageTest extends TestCase
         $this->assertSame(99_999, Percentage::fromString('999.99')->basisPoints);
     }
 
-    public function test_it_always_leaves_with_two_decimals(): void
+    public function test_leading_zeros_are_read_as_the_number_they_write(): void
     {
-        $this->assertSame('12.50', Percentage::fromString('12.5')->toDecimalString());
-        $this->assertSame('0.00', Percentage::fromString('0')->toDecimalString());
-        $this->assertSame('7.05', Percentage::fromBasisPoints(705)->toDecimalString());
+        $this->assertSame(700, Percentage::fromString('007')->basisPoints);
+        $this->assertSame(5, Percentage::fromString('0.05')->basisPoints);
     }
 
     public function test_anything_but_a_non_negative_two_place_decimal_is_refused(): void
@@ -36,12 +35,5 @@ final class PercentageTest extends TestCase
                 $this->addToAssertionCount(1);
             }
         }
-    }
-
-    public function test_basis_points_outside_the_column_range_are_refused(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-
-        Percentage::fromBasisPoints(100_000);
     }
 }

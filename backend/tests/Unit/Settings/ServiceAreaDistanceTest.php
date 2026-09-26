@@ -35,6 +35,13 @@ final class ServiceAreaDistanceTest extends TestCase
         $this->assertEqualsWithDelta(266.0, $distance, 5.0);
     }
 
+    public function test_a_point_exactly_on_the_circle_is_inside_and_one_a_hair_beyond_is_not(): void
+    {
+        $this->assertTrue(ServiceAreaPolicy::isWithin(5.0, '5.00'));
+        $this->assertTrue(ServiceAreaPolicy::isWithin(4.999999, '5.00'));
+        $this->assertFalse(ServiceAreaPolicy::isWithin(5.000001, '5.00'));
+    }
+
     public function test_the_customer_price_is_the_market_price_plus_the_markup_rounded_half_up(): void
     {
         $calculator = new CustomerPriceCalculator(Percentage::fromString('15'));
