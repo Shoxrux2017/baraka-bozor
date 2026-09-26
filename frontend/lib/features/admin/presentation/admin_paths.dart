@@ -7,6 +7,7 @@ abstract final class AdminPaths {
   static const String categories = '${AppPaths.admin}/categories';
   static const String products = '${AppPaths.admin}/products';
   static const String newProduct = '$products/new';
+  static const String staff = '${AppPaths.admin}/staff';
 
   /// The route pattern of one product's page.
   static const String productPattern = '$products/:product';

@@ -576,4 +576,112 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get errorPayloadTooLarge => 'Fayl juda katta';
+
+  @override
+  String get adminSectionStaff => 'Xodimlar';
+
+  @override
+  String get roleShopper => 'Yig\'uvchi';
+
+  @override
+  String get roleCourier => 'Kuryer';
+
+  @override
+  String get roleOperator => 'Operator';
+
+  @override
+  String get roleAdmin => 'Administrator';
+
+  @override
+  String get roleManager => 'Menejer';
+
+  @override
+  String get statusActive => 'Faol';
+
+  @override
+  String get statusBlocked => 'Bloklangan';
+
+  @override
+  String get staffNew => 'Yangi xodim';
+
+  @override
+  String get staffFullName => 'To\'liq ism';
+
+  @override
+  String get staffRole => 'Rol';
+
+  @override
+  String get staffAllRoles => 'Barcha rollar';
+
+  @override
+  String get staffAllStatuses => 'Barcha holatlar';
+
+  @override
+  String get staffNoName => 'Ism kiritilmagan';
+
+  @override
+  String get staffEditName => 'Ismni o\'zgartirish';
+
+  @override
+  String get staffBlock => 'Bloklash';
+
+  @override
+  String get staffActivate => 'Blokdan chiqarish';
+
+  @override
+  String get staffResetPassword => 'Parolni tiklash';
+
+  @override
+  String staffBlockConfirm(String name) {
+    return '$name bloklansinmi? Bu xodimning barcha seanslari darhol yopiladi.';
+  }
+
+  @override
+  String staffResetConfirm(String name) {
+    return '$name uchun yangi vaqtinchalik parol yaratilsinmi? Bu xodimning barcha seanslari yopiladi.';
+  }
+
+  @override
+  String get staffTemporaryPasswordTitle => 'Vaqtinchalik parol';
+
+  @override
+  String get staffTemporaryPasswordWarning =>
+      'Parolni hozir nusxalab, xodimga bering. U boshqa ko\'rsatilmaydi. Birinchi kirishda xodim o\'z parolini o\'rnatadi.';
+
+  @override
+  String get staffCopy => 'Nusxalash';
+
+  @override
+  String get staffCopied => 'Nusxalandi';
+
+  @override
+  String get staffDone => 'Tayyor';
+
+  @override
+  String get staffMustChangePassword => 'Parolni almashtirishi kerak';
+
+  @override
+  String staffLastLogin(String when) {
+    return 'Oxirgi kirish: $when';
+  }
+
+  @override
+  String get staffNeverLoggedIn => 'Hali kirmagan';
+
+  @override
+  String get staffSaved => 'Saqlandi';
+
+  @override
+  String get errorSelfBlockNotAllowed => 'O\'zingizni bloklay olmaysiz';
+
+  @override
+  String get errorLastActiveAdminRequired =>
+      'Oxirgi faol administratorni bloklab bo\'lmaydi';
+
+  @override
+  String get errorSelfResetNotAllowed =>
+      'O\'z parolingizni «Parolni o\'zgartirish» orqali almashtiring';
+
+  @override
+  String get errorPhoneAlreadyActive => 'Bu raqam boshqa faol xodimga tegishli';
 }

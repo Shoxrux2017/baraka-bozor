@@ -222,5 +222,59 @@
   "fieldSortOrder": "-100 000 dan 100 000 gacha butun son",
   "fieldMarketPrice": "1 dan 1 000 000 000 gacha butun son",
   "errorBusinessConflict": "Ma'lumot allaqachon o'zgargan. Joriy holatni tekshirib, qayta urinib ko'ring",
-  "errorPayloadTooLarge": "Fayl juda katta"
+  "errorPayloadTooLarge": "Fayl juda katta",
+  "adminSectionStaff": "Xodimlar",
+  "roleShopper": "Yig'uvchi",
+  "roleCourier": "Kuryer",
+  "roleOperator": "Operator",
+  "roleAdmin": "Administrator",
+  "roleManager": "Menejer",
+  "statusActive": "Faol",
+  "statusBlocked": "Bloklangan",
+  "staffNew": "Yangi xodim",
+  "staffFullName": "To'liq ism",
+  "staffRole": "Rol",
+  "staffAllRoles": "Barcha rollar",
+  "staffAllStatuses": "Barcha holatlar",
+  "staffNoName": "Ism kiritilmagan",
+  "staffEditName": "Ismni o'zgartirish",
+  "staffBlock": "Bloklash",
+  "staffActivate": "Blokdan chiqarish",
+  "staffResetPassword": "Parolni tiklash",
+  "staffBlockConfirm": "{name} bloklansinmi? Bu xodimning barcha seanslari darhol yopiladi.",
+  "@staffBlockConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffResetConfirm": "{name} uchun yangi vaqtinchalik parol yaratilsinmi? Bu xodimning barcha seanslari yopiladi.",
+  "@staffResetConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffTemporaryPasswordTitle": "Vaqtinchalik parol",
+  "staffTemporaryPasswordWarning": "Parolni hozir nusxalab, xodimga bering. U boshqa ko'rsatilmaydi. Birinchi kirishda xodim o'z parolini o'rnatadi.",
+  "staffCopy": "Nusxalash",
+  "staffCopied": "Nusxalandi",
+  "staffDone": "Tayyor",
+  "staffMustChangePassword": "Parolni almashtirishi kerak",
+  "staffLastLogin": "Oxirgi kirish: {when}",
+  "@staffLastLogin": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "staffNeverLoggedIn": "Hali kirmagan",
+  "staffSaved": "Saqlandi",
+  "errorSelfBlockNotAllowed": "O'zingizni bloklay olmaysiz",
+  "errorLastActiveAdminRequired": "Oxirgi faol administratorni bloklab bo'lmaydi",
+  "errorSelfResetNotAllowed": "O'z parolingizni «Parolni o'zgartirish» orqali almashtiring",
+  "errorPhoneAlreadyActive": "Bu raqam boshqa faol xodimga tegishli"
 }
