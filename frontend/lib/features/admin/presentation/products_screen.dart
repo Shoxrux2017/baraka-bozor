@@ -265,6 +265,10 @@ class ProductThumbnail extends StatelessWidget {
         width: size,
         height: size,
         fit: BoxFit.cover,
+        // The browser loads an image from another origin, one that sends no
+        // CORS headers for its files, only as its own image element: tried
+        // after the ordinary load fails (`DL-34`).
+        webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
         errorBuilder: (BuildContext context, Object error, StackTrace? _) =>
             placeholder,
       ),
