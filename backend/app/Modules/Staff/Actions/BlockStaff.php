@@ -21,9 +21,15 @@ use Illuminate\Support\Facades\DB;
  *
  * Lock order. When the target is an Admin, every active Admin row is locked
  * first, in id order, and the target after; two Admins blocking each other at
- * once therefore queue on the same rows instead of deadlocking, and the second
- * sees the first one's block and is refused as the last active Admin. The
- * role is read before any lock because it never changes (`BR-ROLE-002`).
+ * once therefore queue on the same rows instead of deadlocking. The second
+ * reads the Admin rows after the first committed: its own author is no longer
+ * among the active ones, so its target is the last active Admin and the block
+ * is refused. The role is read before any lock because it never changes
+ * (`BR-ROLE-002`).
+ *
+ * Like every action, a block completes as its author could when the request
+ * passed the session check; an Admin blocked while a request of theirs is on
+ * its way may still see that one request through (`DL-25` (4)).
  */
 final class BlockStaff
 {

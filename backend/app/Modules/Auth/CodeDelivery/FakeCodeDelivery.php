@@ -15,7 +15,7 @@ final class FakeCodeDelivery implements CodeDeliveryGateway
 
     public function __construct(private readonly FakeCodeSink $sink) {}
 
-    public function deliver(string $phone, string $code): string
+    public function deliver(string $phone, #[\SensitiveParameter] string $code): string
     {
         $this->sink->record($phone, $code);
 

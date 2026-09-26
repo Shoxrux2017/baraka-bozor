@@ -97,6 +97,10 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // A failed query's exception message names the statement, not its
+            // values: those can be a phone, a name or a password hash, and the
+            // message is what the error log keeps (`AGENTS.md` section 5).
+            'mask_bindings_in_exception_messages' => true,
         ],
 
         'sqlsrv' => [

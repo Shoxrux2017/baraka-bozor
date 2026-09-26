@@ -12,6 +12,7 @@ use App\Modules\Staff\StaffDirectory;
 use App\Modules\Staff\TemporaryCredentials;
 use App\Modules\Staff\TemporaryPassword;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Admin creates a staff account (`docs/04` section 32, `BR-ROLE-004`,
@@ -44,7 +45,10 @@ final class CreateStaff
         ]);
 
         try {
-            $staff->save();
+            // One statement, but in a transaction of its own, so a refused
+            // insert inside a caller's transaction rolls back to a savepoint
+            // instead of aborting the caller's work.
+            DB::transaction(static fn () => $staff->save());
         } catch (UniqueConstraintViolationException $exception) {
             // Two creates for one phone at the same instant: the partial unique
             // index decides, and the loser gets the answer the check would have

@@ -44,9 +44,11 @@ final class StaffDirectory
 
     /**
      * Whether a unique violation is that index, and not another constraint.
+     * The driver names the index it parsed from PostgreSQL's error; the
+     * message itself is not searched, since it may quote request values.
      */
     public static function isActivePhoneClash(UniqueConstraintViolationException $exception): bool
     {
-        return str_contains($exception->getMessage(), self::ACTIVE_PHONE_INDEX);
+        return $exception->index === self::ACTIVE_PHONE_INDEX;
     }
 }

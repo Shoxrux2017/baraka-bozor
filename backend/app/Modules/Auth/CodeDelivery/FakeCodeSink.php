@@ -15,7 +15,7 @@ final class FakeCodeSink
     /** @var array<string, string> phone => the last code delivered to it */
     private array $codes = [];
 
-    public function record(string $phone, string $code): void
+    public function record(string $phone, #[\SensitiveParameter] string $code): void
     {
         $this->codes[$phone] = $code;
     }

@@ -9,6 +9,8 @@ use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Models\User;
 use App\Modules\Staff\Actions\BlockStaff;
+use App\Modules\Staff\StaffDirectory;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Carbon;
@@ -17,6 +19,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use PDOException;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
@@ -143,6 +146,47 @@ final class AdminStaffApiTest extends TestCase
             ->assertStatus(409)
             ->assertJsonPath('code', 'phone_already_active');
         $this->assertSame(1, User::query()->where('phone', self::PHONE)->count());
+    }
+
+    public function test_a_create_that_loses_the_phone_to_a_concurrent_one_is_the_same_conflict(): void
+    {
+        // Another request's account takes the phone after this one checked
+        // it and before its insert: the unique index decides.
+        User::creating(static function (User $user): void {
+            if ($user->role === Role::Shopper) {
+                User::factory()->role(Role::Courier)->create(['phone' => self::PHONE]);
+            }
+        });
+
+        $this->asAdmin()->postJson(self::URL, $this->body())
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'phone_already_active');
+
+        $this->assertFalse(User::query()->where('role', Role::Shopper->value)->exists());
+    }
+
+    public function test_an_activate_that_loses_the_phone_to_a_concurrent_one_is_the_same_conflict(): void
+    {
+        $old = User::factory()->role(Role::Shopper)->blocked()->create(['phone' => self::PHONE]);
+        User::updating(static function (User $user) use ($old): void {
+            if ($user->is($old)) {
+                User::factory()->role(Role::Courier)->create(['phone' => self::PHONE]);
+            }
+        });
+
+        $this->asAdmin()->postJson(self::URL.'/'.$old->id.'/activate')
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'phone_already_active');
+
+        $this->assertSame(UserStatus::Blocked, $old->fresh()?->status);
+    }
+
+    public function test_another_unique_violation_is_not_mistaken_for_the_phone_rule(): void
+    {
+        $clash = new UniqueConstraintViolationException('pgsql', 'insert', [], new PDOException('duplicate'));
+
+        $this->assertFalse(StaffDirectory::isActivePhoneClash($clash->setIndex('users_pkey')));
+        $this->assertTrue(StaffDirectory::isActivePhoneClash($clash->setIndex(StaffDirectory::ACTIVE_PHONE_INDEX)));
     }
 
     public function test_a_blocked_staff_account_or_a_customer_on_the_phone_does_not_stop_a_create(): void

@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\ApiExceptionRenderer;
+use App\Exceptions\QueryFailureReport;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\RejectMalformedInput;
 use Illuminate\Foundation\Application;
@@ -55,4 +56,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(
             fn (Throwable $e, Request $request) => ApiExceptionRenderer::render($e, $request),
         );
+
+        // A failed query is logged without the row values PostgreSQL quotes.
+        $exceptions->report(QueryFailureReport::report(...));
     })->create();

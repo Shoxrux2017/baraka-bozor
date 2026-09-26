@@ -20,5 +20,5 @@ interface CodeDeliveryGateway
      *
      * @throws CodeDeliveryFailed when the provider could not be reached or refused
      */
-    public function deliver(string $phone, string $code): string;
+    public function deliver(string $phone, #[\SensitiveParameter] string $code): string;
 }

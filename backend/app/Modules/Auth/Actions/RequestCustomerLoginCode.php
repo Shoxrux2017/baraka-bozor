@@ -96,7 +96,7 @@ final class RequestCustomerLoginCode
         }
     }
 
-    private function deliver(string $phone, string $code): string
+    private function deliver(string $phone, #[\SensitiveParameter] string $code): string
     {
         try {
             return $this->gateway->deliver($phone, $code);

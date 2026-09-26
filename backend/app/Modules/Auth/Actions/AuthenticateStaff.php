@@ -41,7 +41,7 @@ final class AuthenticateStaff
 
     public function __construct(private readonly RateLimiter $limiter) {}
 
-    public function __invoke(string $phone, string $password, string $ip): IssuedSession
+    public function __invoke(string $phone, #[\SensitiveParameter] string $password, string $ip): IssuedSession
     {
         $phoneKey = "staff-login:phone:{$phone}";
         $ipKey = "staff-login:ip:{$ip}";

@@ -32,7 +32,7 @@ final class ChangePassword
 
     public function __construct(private readonly RateLimiter $limiter) {}
 
-    public function __invoke(User $user, PersonalAccessToken $token, string $currentPassword, string $newPassword): void
+    public function __invoke(User $user, PersonalAccessToken $token, #[\SensitiveParameter] string $currentPassword, #[\SensitiveParameter] string $newPassword): void
     {
         $key = "change-password:token:{$token->getKey()}";
 
