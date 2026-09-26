@@ -21,6 +21,16 @@ abstract final class AppPaths {
   static const String admin = '/admin';
   static const String manager = '/manager';
 
+  // Inside the Customer area, where more than one feature links: the
+  // catalog's home opens the profile, the profile the addresses.
+  static const String customerProfile = '$customer/profile';
+  static const String customerAddresses = '$customer/addresses';
+  static const String customerNewAddress = '$customerAddresses/new';
+  static const String customerAddressPattern = '$customerAddresses/:address';
+
+  static String customerAddress(String id) =>
+      '$customerAddresses/${Uri.encodeComponent(id)}';
+
   /// The area a role works in.
   static String areaOf(UserRole role) => switch (role) {
     UserRole.customer => customer,

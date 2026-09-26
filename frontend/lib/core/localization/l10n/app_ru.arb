@@ -295,5 +295,36 @@
   },
   "catalogEstimateNote": "цена ориентировочная",
   "catalogEstimateExplain": "Итоговая цена рассчитывается от цены, которую сборщик фактически заплатит на рынке. Если она превысит ориентировочную больше допустимого, мы спросим вашего согласия до покупки.",
-  "catalogLoadMore": "Загрузить ещё"
+  "catalogLoadMore": "Загрузить ещё",
+  "profileTitle": "Профиль",
+  "profileName": "Ваше имя",
+  "profileNameNeeded": "Чтобы оформить заказ, укажите имя",
+  "profileSaved": "Имя сохранено",
+  "addressesTitle": "Мои адреса",
+  "addressNone": "Адресов пока нет",
+  "addressNew": "Новый адрес",
+  "addressEdit": "Изменить адрес",
+  "addressLabel": "Название, например, Дом или Работа",
+  "addressStreet": "Улица",
+  "addressHouse": "Дом",
+  "addressApartment": "Квартира",
+  "addressLandmark": "Ориентир",
+  "addressDeliveryNote": "Комментарий для курьера",
+  "addressMapHint": "Двигайте карту, чтобы метка стояла у вашей двери",
+  "addressMapUnavailable": "В этой сборке нет карты. Введите координаты точки",
+  "addressOutsideArea": "Адрес вне зоны доставки: {distance} км. Мы доставляем в радиусе {max} км",
+  "@addressOutsideArea": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "addressSaved": "Адрес сохранён",
+  "addressRemove": "Удалить",
+  "addressRemoveConfirm": "Удалить этот адрес?",
+  "errorConfigurationIncomplete": "Сервис ещё не настроен до конца. Попробуйте позже"
 }

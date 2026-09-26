@@ -26,8 +26,8 @@ The Yandex MapKit API key (`docs/06` section 5). Only W1-13 needs it; every othe
 | W1-10 | Panel: categories and products management with image upload | Merged |
 | W1-11 | Panel: staff management | Merged |
 | W1-12 | App: Customer catalog, search and product screen | Merged |
-| W1-13 | App: profile, addresses list and form with the Yandex map picker | Planned, gated |
-| W1-14 | App and panel: push token registration behind a token source | In review |
+| W1-13 | App: profile, addresses list and form with the Yandex map picker | In review |
+| W1-14 | App and panel: push token registration behind a token source | Merged |
 | W1-15 | Wave closure: full suites, builds, real-stack walkthrough of the wave's scenario, Owner checklist and report | Planned |
 
 Backend tasks first, in order; the panel screens after their APIs; the app screens after theirs; W1-13 last because of the gate. This is a split by layer rather than by vertical slice (`tasks/README.md` section 2), chosen because the panel and the app consume the same APIs and each screen task then tests against a merged contract; the trade-off is that no feature is usable end to end before its screen task lands.
@@ -71,6 +71,8 @@ Backend tasks first, in order; the panel screens after their APIs; the app scree
 | The Yandex MapKit key is not there yet | Open; W1-13 is last and can close without device verification |
 | The MapKit package has no web implementation while the frontend CI job builds the web panel on every pull request | W1-13 must keep `flutter build web` green: the map widget is imported only by the mobile-only `addresses` feature, and the package chosen must take the key from Dart (`--dart-define`), not from committed native files |
 | A body the JSON decoder cannot read reaches every endpoint as an empty body: a POST fails its required fields and every PATCH refuses an empty body with `422`, but no endpoint answers the `400 malformed_request` of `docs/09` section 3. A string with an interior NUL byte is silently cut at the NUL by the input handling | Closed by one global middleware (`DL-24`) |
+| The Yandex map is verified only with the Owner's MapKit key, which the wave still waits for; builds without it type the point as coordinates (`DL-33` (4)) | Open until the key arrives; the emulator check of the map is part of the closure once it does |
+| iOS hands MapKit its key in `AppDelegate`, which needs a Mac to write and build (`DL-33` (6)) | Open until a Mac exists |
 | The push token port answers only `current()`: a token that arrives late (an iOS APNs token, a permission granted later) or changes (FCM `onTokenRefresh`) is not followed, and a `null` token is not asked for again until the next session change (found by the W1-14 review) | Open for Wave 4, which brings FCM: the port gains a change stream the registrar follows |
 | Browser tests (`*_browser_test.dart`) do not load on the development machine: `flutter test --platform chrome` ends with "Connection closed before test suite loaded" with Chrome and Edge 153 alike, even for a trivial test. They run in CI only, and the panel's image picker is also tried by hand in the closure walkthrough (`DL-28` (6)) | Open until the local runner works; CI covers the check meanwhile |
 | The Admin shell (`DL-27` (1)) lists the Admin's sections only; the Operator's surface is the same panel with sections hidden (`docs/02`), so the shell must filter its sections by role, or be shared, when `/operations` gets its screens (found by the W1-9 review) | Open for the wave that builds the Operator's board |

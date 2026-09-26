@@ -56,18 +56,19 @@ void main() {
         AppPaths.customer,
         CatalogPaths.categoryPattern,
         CatalogPaths.productPattern,
+        AppPaths.customerProfile,
+        AppPaths.customerAddresses,
+        AppPaths.customerNewAddress,
+        AppPaths.customerAddressPattern,
       ]);
     });
 
-    test(
-      'registers the auth, shells, admin and catalog fragments, in order',
-      () {
-        expect(
-          featureRouteFragments.map((FeatureRoutes f) => f.feature),
-          <String>['auth', 'shells', 'admin', 'catalog'],
-        );
-      },
-    );
+    test('registers every feature fragment, in order', () {
+      expect(
+        featureRouteFragments.map((FeatureRoutes f) => f.feature),
+        <String>['auth', 'shells', 'admin', 'catalog', 'profile', 'addresses'],
+      );
+    });
 
     test('rejects a fragment that collides with the bootstrap route', () {
       // The bootstrap route goes through the same collision check as every

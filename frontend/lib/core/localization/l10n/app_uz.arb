@@ -295,5 +295,36 @@
   },
   "catalogEstimateNote": "narx taxminiy",
   "catalogEstimateExplain": "Yakuniy narx yig'uvchi bozorda haqiqatda to'lagan narxdan hisoblanadi. U taxminiy narxdan belgilangan chegaradan ko'proq oshsa, xarid qilishdan oldin sizdan rozilik so'raymiz.",
-  "catalogLoadMore": "Yana yuklash"
+  "catalogLoadMore": "Yana yuklash",
+  "profileTitle": "Profil",
+  "profileName": "Ismingiz",
+  "profileNameNeeded": "Buyurtma berish uchun ismingizni kiriting",
+  "profileSaved": "Ism saqlandi",
+  "addressesTitle": "Manzillarim",
+  "addressNone": "Hali manzil qo'shilmagan",
+  "addressNew": "Yangi manzil",
+  "addressEdit": "Manzilni tahrirlash",
+  "addressLabel": "Nomi, masalan, Uy yoki Ish",
+  "addressStreet": "Ko'cha",
+  "addressHouse": "Uy",
+  "addressApartment": "Xonadon",
+  "addressLandmark": "Mo'ljal",
+  "addressDeliveryNote": "Kuryer uchun izoh",
+  "addressMapHint": "Xaritani suring: belgi eshigingiz ustida tursin",
+  "addressMapUnavailable": "Bu ilova versiyasida xarita yo'q. Nuqtaning koordinatalarini kiriting",
+  "addressOutsideArea": "Bu manzil yetkazib berish hududidan tashqarida: {distance} km. Biz {max} km gacha yetkazib beramiz",
+  "@addressOutsideArea": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "addressSaved": "Manzil saqlandi",
+  "addressRemove": "O'chirish",
+  "addressRemoveConfirm": "Bu manzil o'chirilsinmi?",
+  "errorConfigurationIncomplete": "Xizmat hali to'liq sozlanmagan. Keyinroq urinib ko'ring"
 }
