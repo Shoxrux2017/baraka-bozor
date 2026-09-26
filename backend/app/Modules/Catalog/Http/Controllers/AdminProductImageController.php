@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\EmptyBodyRequest;
 use App\Models\Product;
 use App\Modules\Catalog\Actions\RemoveProductImage;
 use App\Modules\Catalog\Actions\ReplaceProductImage;
@@ -25,7 +26,7 @@ final class AdminProductImageController extends Controller
         return $this->resource($replace($this->find($product), $request->uploadedImage(), $request->mimeType()));
     }
 
-    public function destroy(string $product, RemoveProductImage $remove): AdminProductResource
+    public function destroy(EmptyBodyRequest $request, string $product, RemoveProductImage $remove): AdminProductResource
     {
         return $this->resource($remove($this->find($product)));
     }

@@ -6,6 +6,7 @@ namespace App\Modules\Staff\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Pagination\PaginatedResponse;
+use App\Http\Requests\EmptyBodyRequest;
 use App\Models\User;
 use App\Modules\Staff\Actions\ActivateStaff;
 use App\Modules\Staff\Actions\BlockStaff;
@@ -61,17 +62,17 @@ final class AdminStaffController extends Controller
         return new StaffResource($staff);
     }
 
-    public function block(Request $request, string $user, BlockStaff $block): StaffResource
+    public function block(EmptyBodyRequest $request, string $user, BlockStaff $block): StaffResource
     {
         return new StaffResource($block($this->admin($request), $user));
     }
 
-    public function activate(string $user, ActivateStaff $activate): StaffResource
+    public function activate(EmptyBodyRequest $request, string $user, ActivateStaff $activate): StaffResource
     {
         return new StaffResource($activate($user));
     }
 
-    public function resetPassword(Request $request, string $user, ResetStaffPassword $reset): JsonResponse
+    public function resetPassword(EmptyBodyRequest $request, string $user, ResetStaffPassword $reset): JsonResponse
     {
         return $this->withTemporaryPassword($request, $reset($this->admin($request), $user), 200);
     }

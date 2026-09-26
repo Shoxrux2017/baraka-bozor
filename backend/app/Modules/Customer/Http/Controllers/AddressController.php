@@ -6,6 +6,7 @@ namespace App\Modules\Customer\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Pagination\PaginatedResponse;
+use App\Http\Requests\EmptyBodyRequest;
 use App\Models\CustomerAddress;
 use App\Models\User;
 use App\Modules\Customer\Actions\SaveAddress;
@@ -60,7 +61,7 @@ final class AddressController extends Controller
         return new AddressResource($save->update($this->customer($request), $address, $fields));
     }
 
-    public function destroy(Request $request, string $address, SaveAddress $save): Response
+    public function destroy(EmptyBodyRequest $request, string $address, SaveAddress $save): Response
     {
         $save->deactivate($this->customer($request), $address);
 

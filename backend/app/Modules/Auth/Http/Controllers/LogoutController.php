@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Auth\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\EmptyBodyRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -17,7 +17,7 @@ use Laravel\Sanctum\PersonalAccessToken;
  */
 final class LogoutController extends Controller
 {
-    public function __invoke(Request $request): Response
+    public function __invoke(EmptyBodyRequest $request): Response
     {
         $user = $request->user();
         $token = $user instanceof User ? $user->currentAccessToken() : null;
