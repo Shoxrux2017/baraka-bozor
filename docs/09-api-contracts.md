@@ -177,7 +177,7 @@ Approval resource: `type`, `status`, the item with both names, `proposed_custome
 
 ## 27. Push Devices
 
-`POST /push-devices` `{"platform":"android","token":"..."}` (bound to the calling account), `DELETE /push-devices/{device}`.
+`POST /push-devices` `{"platform":"android","token":"..."}` (bound to the calling account), `DELETE /push-devices/{device}`. Any signed-in account past the password gate. `platform` is `android`, `ios` or `web`; `token` is 1–512 characters. Registering creates the device or refreshes it and revives it if revoked, and always answers `200` `{"data":{"id":"...","platform":"android","last_seen_at":"...","created_at":"..."}}`; the token is not echoed. Delete revokes the caller's own device and answers `204`, also when it is already revoked; another account's device is the scope-safe `404` (`DL-26`).
 
 # Shopper
 
