@@ -107,9 +107,16 @@ final class ProfileApiTest extends TestCase
 
     public function test_an_empty_update_is_refused(): void
     {
-        $this->as(User::factory()->customer()->create())->patchJson(self::URL, [])
-            ->assertStatus(422)
-            ->assertJsonValidationErrorFor('body', 'errors');
+        $customer = User::factory()->customer()->create(['full_name' => null]);
+
+        // A query string is not a body: `?x=1` does not make `{}` an edit.
+        foreach ([self::URL, self::URL.'?full_name=Ism'] as $url) {
+            $this->as($customer)->patchJson($url, [])
+                ->assertStatus(422)
+                ->assertJsonValidationErrorFor('body', 'errors');
+        }
+
+        $this->assertNull($customer->fresh()?->full_name);
     }
 
     public function test_staff_have_no_customer_profile(): void

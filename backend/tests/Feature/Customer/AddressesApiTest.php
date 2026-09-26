@@ -262,6 +262,33 @@ final class AddressesApiTest extends TestCase
             ->assertJsonPath('code', 'checkout_configuration_incomplete');
     }
 
+    public function test_a_whole_edit_form_that_sends_the_point_back_unchanged_is_not_a_move(): void
+    {
+        // The circle no longer reaches this address, as after the business
+        // moved or shrank it.
+        $address = $this->address(['latitude' => self::OUTSIDE_LAT, 'house' => '1']);
+        $url = self::URL.'/'.$address->id;
+
+        $this->asCustomer()->patchJson($url, ['latitude' => self::OUTSIDE_LAT, 'longitude' => self::CENTRE_LNG, 'house' => '1B'])
+            ->assertOk()
+            ->assertJsonPath('data.house', '1B');
+
+        $this->configureArea(radius: null);
+        $this->asCustomer()->patchJson($url, ['latitude' => self::OUTSIDE_LAT, 'longitude' => self::CENTRE_LNG, 'house' => '1C'])
+            ->assertOk()
+            ->assertJsonPath('data.house', '1C');
+
+        $short = $this->address(['latitude' => '41.300000', 'longitude' => '69.240000']);
+        $this->asCustomer()->patchJson(self::URL.'/'.$short->id, ['latitude' => '41.3', 'longitude' => '69.24', 'house' => '5'])
+            ->assertOk()
+            ->assertJsonPath('data.latitude', '41.300000')
+            ->assertJsonPath('data.house', '5');
+
+        $this->asCustomer()->patchJson(self::URL.'/'.$short->id, ['latitude' => '41.300001', 'longitude' => '69.24'])
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'checkout_configuration_incomplete');
+    }
+
     public function test_another_customers_address_is_not_found_whatever_the_body(): void
     {
         $foreign = CustomerAddress::factory()->create(['house' => '7']);

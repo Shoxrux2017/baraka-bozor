@@ -9,6 +9,7 @@ use App\Http\Pagination\PaginatedResponse;
 use App\Models\CustomerAddress;
 use App\Models\User;
 use App\Modules\Customer\Actions\SaveAddress;
+use App\Modules\Customer\CustomerAddresses;
 use App\Modules\Customer\Http\Requests\AddressRequest;
 use App\Modules\Customer\Http\Requests\ListAddressesRequest;
 use App\Modules\Customer\Http\Resources\AddressResource;
@@ -26,7 +27,7 @@ final class AddressController extends Controller
 {
     public function index(ListAddressesRequest $request): JsonResponse
     {
-        $query = SaveAddress::own($this->customer($request))->orderByDesc('created_at')->orderBy('id');
+        $query = CustomerAddresses::own($this->customer($request))->orderByDesc('created_at')->orderBy('id');
 
         return PaginatedResponse::of(
             $query->paginate($request->perPage(), ['*'], 'page', $request->page()),
@@ -47,7 +48,7 @@ final class AddressController extends Controller
     public function show(Request $request, string $address): AddressResource
     {
         return new AddressResource(
-            ScopedLookup::firstOrNotFound(SaveAddress::own($this->customer($request))->whereKey($address))
+            ScopedLookup::firstOrNotFound(CustomerAddresses::own($this->customer($request))->whereKey($address))
         );
     }
 
