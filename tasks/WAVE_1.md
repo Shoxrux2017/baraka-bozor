@@ -17,8 +17,8 @@ The Yandex MapKit API key (`docs/06` section 5). Only W1-13 needs it; every othe
 | W1-1 | Schema: `customer_addresses`, `categories`, `products`, `product_images`, `business_settings`, `payment_provider_settings`, `push_devices`; models and factories | Merged |
 | W1-2 | Pricing core and business settings API: `MoneyCalculator`, `CustomerPriceCalculator`, `ServiceAreaPolicy`; `GET\|PATCH /admin/settings/business`, `GET\|PATCH /admin/settings/payment-providers` | Merged |
 | W1-3 | Admin catalog API: categories and products list, create, read, update, archive, restore | Merged |
-| W1-4 | Product image API: upload or replace, delete, public URL | In review |
-| W1-5 | Customer catalog API: categories, products with search and pagination, product detail, customer price | Planned |
+| W1-4 | Product image API: upload or replace, delete, public URL | Merged |
+| W1-5 | Customer catalog API: categories, products with search and pagination, product detail, customer price | In review |
 | W1-6 | Customer profile and addresses API with the service-area check | Planned |
 | W1-7 | Staff management API: create with a temporary password, block, activate, reset password | Planned |
 | W1-8 | Push device registration API | Planned |
@@ -56,7 +56,7 @@ Backend tasks first, in order; the panel screens after their APIs; the app scree
 
 **W1-11.** Panel feature `admin`: staff list with role and status filters, create (shows the temporary password once with a copy button and a warning that it will not be shown again), edit name, block, activate, reset password. Tests: the temporary password shown once and never kept in state after the dialog closes.
 
-**W1-12.** App feature `catalog`: categories, product list with search and infinite pagination, product screen with both names in the interface language, unit, price mode wording ("narx taxminiy" / "цена ориентировочная" for estimates) and the customer price. Stale search results discarded by request generation (`docs/07` section 28). Tests: DTOs, pagination end, price mode texts, the stale completion.
+**W1-12.** App feature `catalog`: categories (fetched once with `per_page=100`, `DL-22` (4)), product list with search and infinite pagination, product screen with both names in the interface language, unit, price mode wording ("narx taxminiy" / "цена ориентировочная" for estimates) and the customer price. Stale search results discarded by request generation (`docs/07` section 28). Tests: DTOs, pagination end, price mode texts, the stale completion.
 
 **W1-13.** App features `profile` and `addresses`: profile screen (name, language); addresses list, create and edit with the Yandex map picker (a draggable pin on the map, the coordinates read back), the text fields, the service-area refusal shown with the distance from `details`; deactivate with confirmation. The MapKit package is added here with the reason in the commit message and the exact package recorded in the wave file; the key is read from a `--dart-define` and never committed. Tests: everything but the map widget itself, which is verified on the emulator at closure.
 
