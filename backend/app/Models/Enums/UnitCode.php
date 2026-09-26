@@ -6,10 +6,8 @@ namespace App\Models\Enums;
 
 /**
  * The units `01` Section 7 and `BR-QTY-001` approve, backed by the strings
- * `products_unit_code_check` lists.
- *
- * Which units take a fractional quantity is part of the unit, not of the
- * product: a kilogram of tomatoes may be 1.250 kg, a box may not be 1.25 boxes.
+ * `products_unit_code_check` lists. Which of them take a fractional quantity
+ * is the cart's concern and arrives with it (Wave 2).
  */
 enum UnitCode: string
 {
@@ -21,16 +19,4 @@ enum UnitCode: string
     case Box = 'box';
     case Bundle = 'bundle';
     case Meter = 'meter';
-
-    /**
-     * Whether a quantity in this unit may carry up to three decimals; every
-     * other unit takes a positive whole number.
-     */
-    public function acceptsDecimals(): bool
-    {
-        return match ($this) {
-            self::Kg, self::Liter, self::Meter => true,
-            self::Gram, self::Piece, self::Package, self::Box, self::Bundle => false,
-        };
-    }
 }

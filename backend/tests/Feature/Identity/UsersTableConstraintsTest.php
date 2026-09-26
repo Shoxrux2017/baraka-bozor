@@ -8,6 +8,8 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Tests\Support\Database\AssertsDatabaseRejections;
+use Tests\Support\Database\ReadsPostgresCatalog;
 use Tests\TestCase;
 
 /**

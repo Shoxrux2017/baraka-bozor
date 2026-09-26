@@ -11,8 +11,8 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Tests\Feature\Identity\AssertsDatabaseRejections;
-use Tests\Feature\Identity\ReadsPostgresCatalog;
+use Tests\Support\Database\AssertsDatabaseRejections;
+use Tests\Support\Database\ReadsPostgresCatalog;
 use Tests\TestCase;
 
 /**
@@ -103,8 +103,8 @@ final class ProductsTableTest extends TestCase
     {
         $indexes = $this->indexesOn(self::TABLE);
 
-        $this->assertArrayHasKey('products_category_id_is_active_index', $indexes);
-        $this->assertArrayHasKey('products_is_active_sort_order_index', $indexes);
+        $this->assertStringContainsString('(category_id, is_active)', $indexes['products_category_id_is_active_index']);
+        $this->assertStringContainsString('(is_active, sort_order)', $indexes['products_is_active_sort_order_index']);
         $this->assertStringContainsString('lower((name_uz)::text)', $indexes['products_name_uz_lower_index']);
         $this->assertStringContainsString('lower((name_ru)::text)', $indexes['products_name_ru_lower_index']);
     }
@@ -148,6 +148,12 @@ final class ProductsTableTest extends TestCase
 
     public function test_a_blank_name_and_an_archived_active_product_are_rejected(): void
     {
+        $this->assertRejectedBy(
+            self::TABLE,
+            'products_name_uz_not_blank_check',
+            $this->row(['name_uz' => '']),
+            'BR-CAT-005 requires both names.'
+        );
         $this->assertRejectedBy(
             self::TABLE,
             'products_name_ru_not_blank_check',

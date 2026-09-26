@@ -9,8 +9,8 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Tests\Feature\Identity\AssertsDatabaseRejections;
-use Tests\Feature\Identity\ReadsPostgresCatalog;
+use Tests\Support\Database\AssertsDatabaseRejections;
+use Tests\Support\Database\ReadsPostgresCatalog;
 use Tests\TestCase;
 
 /**
@@ -72,7 +72,11 @@ final class CustomerAddressesTableTest extends TestCase
     {
         $actual = $this->columnsOf(self::TABLE);
 
-        $this->assertSame(array_keys($this->expectedColumns()), array_keys($this->sortedLike($actual)));
+        $names = array_keys($actual);
+        $expectedNames = array_keys($this->expectedColumns());
+        sort($names);
+        sort($expectedNames);
+        $this->assertSame($expectedNames, $names);
 
         foreach ($this->expectedColumns() as $column => [$type, $nullable]) {
             $this->assertSame($type, $actual[$column]->data_type, self::TABLE.".{$column} type");
@@ -89,7 +93,18 @@ final class CustomerAddressesTableTest extends TestCase
 
     public function test_it_indexes_the_owner_with_the_active_flag(): void
     {
-        $this->assertArrayHasKey('customer_addresses_customer_id_is_active_index', $this->indexesOn(self::TABLE));
+        $this->assertStringContainsString(
+            '(customer_id, is_active)',
+            $this->indexesOn(self::TABLE)['customer_addresses_customer_id_is_active_index']
+        );
+    }
+
+    public function test_the_extreme_coordinates_are_accepted(): void
+    {
+        DB::table(self::TABLE)->insert($this->row(['latitude' => '90.000000', 'longitude' => '180.000000']));
+        DB::table(self::TABLE)->insert($this->row(['latitude' => '-90.000000', 'longitude' => '-180.000000']));
+
+        $this->assertSame(2, DB::table(self::TABLE)->count());
     }
 
     public function test_coordinates_outside_their_ranges_are_rejected(): void
@@ -133,24 +148,5 @@ final class CustomerAddressesTableTest extends TestCase
         $this->expectExceptionMessage('customer_addresses_customer_id_foreign');
 
         DB::table('users')->where('id', $customer->id)->delete();
-    }
-
-    /**
-     * @param  array<string, object>  $columns
-     * @return array<string, object>
-     */
-    private function sortedLike(array $columns): array
-    {
-        $ordered = [];
-        foreach (array_keys($this->expectedColumns()) as $name) {
-            if (array_key_exists($name, $columns)) {
-                $ordered[$name] = $columns[$name];
-            }
-        }
-        foreach ($columns as $name => $column) {
-            $ordered[$name] = $column;
-        }
-
-        return $ordered;
     }
 }

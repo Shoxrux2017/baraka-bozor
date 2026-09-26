@@ -54,7 +54,6 @@ final class Wave1ModelsAndFactoriesTest extends TestCase
         $fixedBox = Product::factory()->fixed()->unit(UnitCode::Box)->archived()->create();
         $this->assertSame(PriceMode::Fixed, $fixedBox->price_mode);
         $this->assertSame(UnitCode::Box, $fixedBox->unit_code);
-        $this->assertFalse($fixedBox->unit_code->acceptsDecimals());
         $this->assertFalse($fixedBox->is_active);
 
         $image = ProductImage::factory()->create();
@@ -84,20 +83,36 @@ final class Wave1ModelsAndFactoriesTest extends TestCase
         $this->assertNull($settings->service_radius_km);
 
         $providers = PaymentProviderSetting::query()->orderBy('provider')->get();
+        $this->assertSame(['click', 'payme', 'paynet', 'xazna'], $providers->pluck('provider')->all());
         $this->assertSame(
             [PaymentProvider::Click, PaymentProvider::Payme, PaymentProvider::Paynet, PaymentProvider::Xazna],
-            $providers->pluck('provider')->all()
+            $providers->map(fn (PaymentProviderSetting $setting): PaymentProvider => $setting->paymentProvider())->all()
         );
         $this->assertFalse($providers->contains(fn (PaymentProviderSetting $setting): bool => $setting->is_enabled));
     }
 
-    public function test_the_units_that_take_decimals_are_exactly_kg_liter_and_meter(): void
+    public function test_a_provider_setting_is_found_by_its_key_and_saved_through_eloquent(): void
     {
-        $decimal = array_map(
-            static fn (UnitCode $unit): string => $unit->value,
-            array_values(array_filter(UnitCode::cases(), static fn (UnitCode $unit): bool => $unit->acceptsDecimals()))
-        );
+        $click = PaymentProviderSetting::query()->findOrFail(PaymentProvider::Click->value);
+        $this->assertSame($click->provider, PaymentProviderSetting::query()->whereKey($click->getKey())->value('provider'));
+        // A collection lookup by key is exactly what an enum-cast key broke silently.
+        // @phpstan-ignore larastan.noUnnecessaryCollectionCall
+        $this->assertSame('click', PaymentProviderSetting::all()->find('click')?->provider);
 
-        $this->assertSame(['kg', 'liter', 'meter'], $decimal, 'BR-QTY-001');
+        $click->is_enabled = true;
+        $click->save();
+
+        $this->assertTrue(PaymentProviderSetting::query()->findOrFail('click')->is_enabled);
+        $this->assertTrue($click->fresh()?->is_enabled);
+        $this->assertFalse(PaymentProviderSetting::query()->findOrFail('payme')->is_enabled);
+    }
+
+    public function test_the_settings_singleton_saves_through_eloquent(): void
+    {
+        $settings = BusinessSettings::current();
+        $settings->forceFill(['markup_percent' => '12.5', 'service_radius_km' => '7.25'])->save();
+
+        $this->assertSame('12.50', BusinessSettings::current()->markup_percent);
+        $this->assertSame('7.25', BusinessSettings::current()->service_radius_km);
     }
 }

@@ -15,9 +15,12 @@ use Illuminate\Support\Carbon;
  * A catalog category (`08` Section 6): flat, bilingual, archived rather than
  * deleted.
  *
- * `is_active`, `archived_at` and `created_by_user_id` are outside `$fillable`:
- * archiving is an explicit action with its own endpoint (`09` Section 15), and
- * the creator is the authenticated Admin.
+ * `is_active`, `archived_at` and `created_by_user_id` are outside `$fillable`.
+ * Hiding (`is_active`) is part of the write body (`09` Section 15), but the
+ * two flags move under a rule `fill()` cannot enforce — an archived category
+ * is never active (`categories_archived_inactive_check`) — so the catalog
+ * actions assign both explicitly; archiving has its own endpoint, and the
+ * creator is the authenticated Admin.
  *
  * @property string $id
  * @property string $name_uz

@@ -8,8 +8,8 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Tests\Feature\Identity\AssertsDatabaseRejections;
-use Tests\Feature\Identity\ReadsPostgresCatalog;
+use Tests\Support\Database\AssertsDatabaseRejections;
+use Tests\Support\Database\ReadsPostgresCatalog;
 use Tests\TestCase;
 
 /**
@@ -116,7 +116,6 @@ final class PushDevicesTableTest extends TestCase
     {
         $indexes = $this->indexesOn(self::TABLE);
 
-        $this->assertArrayHasKey('push_devices_user_live_index', $indexes);
-        $this->assertStringContainsString('WHERE (revoked_at IS NULL)', $indexes['push_devices_user_live_index']);
+        $this->assertStringContainsString('(user_id) WHERE (revoked_at IS NULL)', $indexes['push_devices_user_live_index']);
     }
 }

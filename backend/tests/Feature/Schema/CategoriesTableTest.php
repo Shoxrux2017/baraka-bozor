@@ -10,8 +10,8 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Tests\Feature\Identity\AssertsDatabaseRejections;
-use Tests\Feature\Identity\ReadsPostgresCatalog;
+use Tests\Support\Database\AssertsDatabaseRejections;
+use Tests\Support\Database\ReadsPostgresCatalog;
 use Tests\TestCase;
 
 /**
@@ -87,7 +87,7 @@ final class CategoriesTableTest extends TestCase
     {
         $indexes = $this->indexesOn(self::TABLE);
 
-        $this->assertArrayHasKey('categories_is_active_sort_order_index', $indexes);
+        $this->assertStringContainsString('(is_active, sort_order)', $indexes['categories_is_active_sort_order_index']);
         $this->assertStringContainsString('lower((name_uz)::text)', $indexes['categories_name_uz_lower_index']);
         $this->assertStringContainsString('lower((name_ru)::text)', $indexes['categories_name_ru_lower_index']);
     }

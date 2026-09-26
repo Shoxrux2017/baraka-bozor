@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\Identity;
+namespace Tests\Support\Database;
 
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\DB;
 /**
  * Asserts that PostgreSQL refuses a row, and refuses it for the stated reason.
  *
- * Shared by the two identity tables because both enforce their invariants in the
- * database rather than in a request rule, and both therefore have to prove it the
+ * Shared by every schema test, because every table here enforces its invariants
+ * in the database rather than in a request rule, and each has to prove it the
  * same way.
  */
 trait AssertsDatabaseRejections

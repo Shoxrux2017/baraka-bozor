@@ -6,8 +6,9 @@ namespace Tests\Feature\Schema;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Tests\Feature\Identity\AssertsDatabaseRejections;
-use Tests\Feature\Identity\ReadsPostgresCatalog;
+use Tests\Support\Database\AssertsDatabaseRejections;
+use Tests\Support\Database\AssertsUpdateRejections;
+use Tests\Support\Database\ReadsPostgresCatalog;
 use Tests\TestCase;
 
 /**
@@ -124,9 +125,21 @@ final class BusinessSettingsTableTest extends TestCase
         $this->assertSame(10000, (int) DB::table(self::TABLE)->value('service_fee_fixed_uzs'));
     }
 
+    public function test_a_service_fee_mode_outside_fixed_and_percentage_is_rejected(): void
+    {
+        $this->assertUpdateRejectedBy(
+            self::TABLE,
+            'business_settings_service_fee_mode_check',
+            self::SINGLETON,
+            ['service_fee_mode' => 'free'],
+            'BR-SET-001 names two service-fee modes.'
+        );
+    }
+
     public function test_negative_amounts_and_percentages_are_rejected(): void
     {
         foreach ([
+            ['business_settings_service_fee_percent_check', ['service_fee_mode' => 'percentage', 'service_fee_percent' => '-1.00']],
             ['business_settings_markup_percent_check', ['markup_percent' => '-1.00']],
             ['business_settings_service_fee_fixed_check', ['service_fee_fixed_uzs' => -1]],
             ['business_settings_delivery_fee_check', ['delivery_fee_uzs' => -1]],

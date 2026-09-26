@@ -9,8 +9,8 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Tests\Feature\Identity\AssertsDatabaseRejections;
-use Tests\Feature\Identity\ReadsPostgresCatalog;
+use Tests\Support\Database\AssertsDatabaseRejections;
+use Tests\Support\Database\ReadsPostgresCatalog;
 use Tests\TestCase;
 
 /**
@@ -100,6 +100,14 @@ final class ProductImagesTableTest extends TestCase
             $this->row(['storage_key' => $key, 'mime_type' => 'image/png']),
             'Two rows pointing at one file would let a delete of either remove the other\'s image.'
         );
+    }
+
+    public function test_a_size_of_one_byte_and_of_exactly_five_mebibytes_is_accepted(): void
+    {
+        DB::table(self::TABLE)->insert($this->row(['size_bytes' => 1]));
+        DB::table(self::TABLE)->insert($this->row(['size_bytes' => 5 * 1024 * 1024]));
+
+        $this->assertSame(2, DB::table(self::TABLE)->count());
     }
 
     public function test_a_size_outside_one_byte_to_five_megabytes_is_rejected(): void

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\Schema;
+namespace Tests\Support\Database;
 
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;

@@ -22,9 +22,11 @@ use Illuminate\Support\Carbon;
  * snapshots are where a price gets written down.
  *
  * `is_active`, `archived_at` and `created_by_user_id` are outside `$fillable`
- * for the same reasons as on `Category`; `category_id` is inside it because
- * the category is ordinary input the admin form sends, validated to exist and
- * to be unarchived by the action that saves it.
+ * for the same reasons as on `Category`: hiding is in the write body but is
+ * assigned explicitly by the catalog actions, because an archived product is
+ * never active (`products_archived_inactive_check`). `category_id` is inside
+ * it because the category is ordinary input the admin form sends, validated
+ * to exist and to be unarchived by the action that saves it.
  *
  * @property string $id
  * @property string $category_id

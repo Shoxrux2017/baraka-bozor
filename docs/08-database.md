@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** current. Rewritten on 2026-09-24 to `DL-2`–`DL-4` in `docs/DECISIONS.md`. The `users` and `customer_otp_challenges` tables are already migrated; every other table is created by the wave that first needs it, by forward migrations only.
+**Status:** current. Rewritten on 2026-09-24 to `DL-2`–`DL-4` in `docs/DECISIONS.md`. Tables marked *(migrated)* exist: `users` and `customer_otp_challenges` from Wave 0, and the seven Wave 1 tables of sections 5 to 8, 11, 12 and 25 (`DL-18`). Every other table is created by the wave that first needs it, by forward migrations only.
 
 ## 1. Baseline
 
@@ -44,19 +44,19 @@ Checks: role in the six values; status `active|blocked`; phone `^\+998[0-9]{9}$`
 
 ## 6. `categories` (migrated)
 
-`id, name_uz, name_ru, description_uz?, description_ru?, sort_order, is_active, archived_at?, created_by_user_id, timestamps`. Non-empty names. Index `(is_active, sort_order)`, `lower(name_uz)`, `lower(name_ru)`.
+`id, name_uz, name_ru, description_uz?, description_ru?, sort_order, is_active, archived_at?, created_by_user_id, timestamps`. Names `varchar(120)`, non-blank; an archived category is never active (`archived_at is null or is_active = false`). Index `(is_active, sort_order)`, `lower(name_uz)`, `lower(name_ru)`.
 
 ## 7. `products` (migrated)
 
 `id, category_id → categories, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, is_active, sort_order, archived_at?, created_by_user_id, timestamps`.
 
-Checks: unit in `kg, gram, piece, liter, package, box, bundle, meter`; `price_mode IN ('fixed','estimate')`; `market_price_uzs > 0`. Indexes `(category_id, is_active)`, `(is_active, sort_order)`, `lower(name_uz)`, `lower(name_ru)`.
+Checks: unit in `kg, gram, piece, liter, package, box, bundle, meter`; `price_mode IN ('fixed','estimate')`; `market_price_uzs > 0`; names `varchar(160)`, non-blank; an archived product is never active. Indexes `(category_id, is_active)`, `(is_active, sort_order)`, `lower(name_uz)`, `lower(name_ru)`.
 
 The customer price is computed, never stored on the product: `half_up(market_price_uzs × (1 + markup_percent/100))`.
 
 ## 8. `product_images` (migrated)
 
-`id, product_id → products (unique), storage_key (unique), original_filename?, mime_type, size_bytes, timestamps`. Size 1..5 MB; MIME in JPEG, PNG, WebP.
+`id, product_id → products (unique), storage_key (unique), original_filename?, mime_type, size_bytes, timestamps`. Size from 1 byte to 5 MiB (5 242 880 bytes) inclusive; MIME in `image/jpeg`, `image/png`, `image/webp`.
 
 ## 9. `carts`
 
@@ -68,7 +68,7 @@ The customer price is computed, never stored on the product: `half_up(market_pri
 
 ## 11. `business_settings` (migrated)
 
-Singleton `id = 1`: `markup_percent ≥ 0, service_fee_mode (fixed|percentage), service_fee_fixed_uzs?, service_fee_percent?, delivery_fee_uzs?, minimum_order_uzs?, price_tolerance_percent (default 15), opens_at time?, closes_at time?, service_centre_latitude?, service_centre_longitude?, service_radius_km?, delivery_delay_threshold_minutes (default 60), updated_by_user_id?, timestamps`. Cross-field check on the service-fee mode. Nullable fields stay null until Admin configures them; checkout is blocked while any needed value is null. The cross-field check: in `fixed` mode `service_fee_percent` is null, in `percentage` mode `service_fee_fixed_uzs` is null, so the value of the inactive mode can never linger. The row `id = 1` is inserted by the migration with the documented defaults (`DL-17`).
+Singleton `id = 1`: `markup_percent ≥ 0, service_fee_mode (fixed|percentage), service_fee_fixed_uzs?, service_fee_percent?, delivery_fee_uzs?, minimum_order_uzs?, price_tolerance_percent (default 15), opens_at time?, closes_at time?, service_centre_latitude?, service_centre_longitude?, service_radius_km?, delivery_delay_threshold_minutes (default 60), updated_by_user_id?, timestamps`. Checks: the singleton `id = 1`; every amount, percentage and the tolerance non-negative; `service_radius_km numeric(6,2) > 0`; `delivery_delay_threshold_minutes > 0`; the centre within coordinate ranges; `opens_at` and `closes_at` both set or both null; the cross-field check on the service-fee mode. Nullable fields stay null until Admin configures them; checkout is blocked while any needed value is null. The cross-field check: in `fixed` mode `service_fee_percent` is null, in `percentage` mode `service_fee_fixed_uzs` is null, so the value of the inactive mode can never linger. The row `id = 1` is inserted by the migration with the documented defaults (`DL-17`).
 
 ## 12. `payment_provider_settings` (migrated)
 
@@ -177,7 +177,7 @@ Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per or
 
 ## 25. `push_devices` (migrated)
 
-`id, user_id, platform (android|ios|web), push_token, last_seen_at?, revoked_at?, timestamps`. Unique `(push_token, user_id)`. Index `(user_id) WHERE revoked_at IS NULL`.
+`id, user_id, platform (android|ios|web), push_token varchar(512) non-blank, last_seen_at?, revoked_at?, timestamps`. Unique `(push_token, user_id)`. Index `(user_id) WHERE revoked_at IS NULL`.
 
 ## 26. `notification_deliveries`
 
