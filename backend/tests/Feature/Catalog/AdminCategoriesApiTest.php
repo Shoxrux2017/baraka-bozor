@@ -201,7 +201,7 @@ final class AdminCategoriesApiTest extends TestCase
             'CONTENT_TYPE' => 'application/json',
             'HTTP_ACCEPT' => 'application/json',
             'HTTP_AUTHORIZATION' => 'Bearer '.$token,
-        ], '{"name_uz": "X",')->assertStatus(422);
+        ], '{"name_uz": "X",')->assertStatus(400)->assertJsonPath('code', 'malformed_request');
 
         $this->assertSame('Eski', $category->fresh()?->name_uz);
     }
