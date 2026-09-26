@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Hash;
  */
 final class VerifyCustomerLoginCode
 {
-    public function __invoke(string $phone, string $code): IssuedSession
+    public function __invoke(string $phone, #[\SensitiveParameter] string $code): IssuedSession
     {
         /** @var ApiException|null $refusal */
         $refusal = null;
@@ -55,7 +55,7 @@ final class VerifyCustomerLoginCode
         return $session;
     }
 
-    private function verify(string $phone, string $code): IssuedSession
+    private function verify(string $phone, #[\SensitiveParameter] string $code): IssuedSession
     {
         $challenge = LoginChallenge::query()
             ->openFor($phone)

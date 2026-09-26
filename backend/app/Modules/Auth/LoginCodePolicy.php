@@ -36,7 +36,7 @@ final class LoginCodePolicy
      */
     public const PHONE_PATTERN = '/^\+998[0-9]{9}\z/';
 
-    public static function isWellFormed(string $code): bool
+    public static function isWellFormed(#[\SensitiveParameter] string $code): bool
     {
         return preg_match(self::CODE_PATTERN, $code) === 1;
     }

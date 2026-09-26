@@ -13,7 +13,7 @@ use App\Models\User;
 final class IssuedSession
 {
     public function __construct(
-        public readonly string $token,
+        #[\SensitiveParameter] public readonly string $token,
         public readonly User $user,
     ) {}
 }

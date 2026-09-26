@@ -257,7 +257,9 @@ Approval resource: `type`, `status`, the item with both names, `proposed_custome
 
 ## 43. Staff
 
-`GET|POST /admin/staff` (the list takes `role`, `status`, `page`, `per_page`), `GET|PATCH /admin/staff/{user}`, `POST .../block`, `POST .../activate`, `POST .../reset-password`. Create body `{"full_name":"...","phone":"+998...","role":"shopper"}` with `full_name` 1–120 characters; create and reset return the temporary password once. Block and reset-password delete every token of the account (`DL-17`). PATCH accepts `full_name` only, never `role`. Codes: `self_block_not_allowed`, `last_active_admin_required`, `phone_already_active`.
+`GET|POST /admin/staff` (the list takes `role`, `status`, `page`, `per_page`), `GET|PATCH /admin/staff/{user}`, `POST .../block`, `POST .../activate`, `POST .../reset-password`. Create body `{"full_name":"...","phone":"+998...","role":"shopper"}` with `full_name` 1–120 characters; create and reset return the temporary password once. Block and reset-password delete every token of the account (`DL-17`). PATCH accepts `full_name` only, never `role`. Codes: `self_block_not_allowed`, `last_active_admin_required`, `self_reset_not_allowed`, `phone_already_active`.
+
+A staff account is `{"id":"...","role":"shopper","phone":"+998901112233","full_name":"Dilnoza Karimova","status":"active","must_change_password":true,"last_login_at":null,"blocked_at":null,"created_at":"...","updated_at":"..."}`. Create (`201`) and reset-password (`200`) answer `{"data":{"user":{...},"temporary_password":"7pQx9KmT3wZe"}}` with `Cache-Control: no-store`; every other endpoint answers the account. The role is any staff role, never `customer`; the phone is `+998` and nine digits. The list is newest first. A Customer's id is the scope-safe `404`. Blocking a blocked account and activating an active one are natural repeats (Section 49). An Admin cannot reset their own password here (`409 self_reset_not_allowed`); they use `POST /auth/change-password` (`DL-25`).
 
 ## 44. Business Settings
 
@@ -317,7 +319,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 56. Delivery and Admin
 
-`courier_not_assigned`, `delivery_not_ready`, `delivery_state_conflict`, `last_active_admin_required`, `self_block_not_allowed`, `phone_already_active`, `price_correction_locked`.
+`courier_not_assigned`, `delivery_not_ready`, `delivery_state_conflict`, `last_active_admin_required`, `self_block_not_allowed`, `self_reset_not_allowed`, `phone_already_active`, `price_correction_locked`.
 
 ## 57. Provider Safety
 
