@@ -114,6 +114,9 @@
   "settingsDeliverySection": "Контроль доставки",
   "settingsDelayThreshold": "Порог опоздания, мин",
   "settingsSaved": "Настройки сохранены",
+  "settingsNoChanges": "Изменений нет",
+  "settingsSaving": "Сохранение",
+  "settingsTashkentTimeHint": "По времени Ташкента",
   "settingsUpdatedAt": "Последнее изменение: {when}",
   "@settingsUpdatedAt": {
     "placeholders": {

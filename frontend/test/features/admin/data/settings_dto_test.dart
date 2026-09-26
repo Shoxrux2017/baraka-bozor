@@ -78,49 +78,92 @@ void main() {
       );
     });
 
-    test('the body carries every field and only the chosen fee value', () {
-      BusinessSettingsDraft draft(ServiceFeeMode mode) => BusinessSettingsDraft(
-        markupPercent: '12.50',
-        serviceFeeMode: mode,
-        serviceFeeFixedUzs: 3000,
-        serviceFeePercent: '2.5',
-        deliveryFeeUzs: null,
-        minimumOrderUzs: 50000,
-        priceTolerancePercent: '10',
-        opensAt: '08:00',
-        closesAt: '22:30',
-        serviceCentreLatitude: '41.3',
-        serviceCentreLongitude: '69.24',
-        serviceRadiusKm: '7.5',
-        deliveryDelayThresholdMinutes: 45,
+    test('the body carries only what changed from the settings loaded', () {
+      final BusinessSettings base = SettingsDto.parseBusinessSettings(
+        businessJson(),
       );
 
       expect(
-        SettingsDto.businessSettingsBody(draft(ServiceFeeMode.fixed)),
-        <String, Object?>{
-          'markup_percent': '12.50',
-          'service_fee_mode': 'fixed',
-          'service_fee_fixed_uzs': 3000,
-          'service_fee_percent': null,
-          'delivery_fee_uzs': null,
-          'minimum_order_uzs': 50000,
-          'price_tolerance_percent': '10',
-          'opens_at': '08:00',
-          'closes_at': '22:30',
-          'service_centre_latitude': '41.3',
-          'service_centre_longitude': '69.24',
-          'service_radius_km': '7.5',
-          'delivery_delay_threshold_minutes': 45,
-        },
+        SettingsDto.businessSettingsBody(
+          BusinessSettingsDraft.fromSettings(base),
+          base,
+        ),
+        isEmpty,
       );
 
-      final Map<String, Object?> percentage = SettingsDto.businessSettingsBody(
-        draft(ServiceFeeMode.percentage),
+      BusinessSettingsDraft edit({
+        String markup = '15.00',
+        ServiceFeeMode mode = ServiceFeeMode.fixed,
+        int? fixed = 5000,
+        String? percent,
+        String? opensAt = '09:00',
+      }) => BusinessSettingsDraft(
+        markupPercent: markup,
+        serviceFeeMode: mode,
+        serviceFeeFixedUzs: fixed,
+        serviceFeePercent: percent,
+        deliveryFeeUzs: 15000,
+        minimumOrderUzs: 100000,
+        priceTolerancePercent: '10.00',
+        opensAt: opensAt,
+        closesAt: '21:00',
+        serviceCentreLatitude: '41.311081',
+        serviceCentreLongitude: '69.240562',
+        serviceRadiusKm: '5.00',
+        deliveryDelayThresholdMinutes: 30,
       );
-      expect(percentage['service_fee_mode'], 'percentage');
-      expect(percentage['service_fee_fixed_uzs'], isNull);
-      expect(percentage['service_fee_percent'], '2.5');
+
+      expect(
+        SettingsDto.businessSettingsBody(edit(markup: '12.5'), base),
+        <String, Object?>{'markup_percent': '12.5'},
+      );
+      expect(
+        SettingsDto.businessSettingsBody(edit(fixed: 7000), base),
+        <String, Object?>{'service_fee_fixed_uzs': 7000},
+      );
+      expect(
+        SettingsDto.businessSettingsBody(
+          edit(mode: ServiceFeeMode.percentage, fixed: null, percent: '2.5'),
+          base,
+        ),
+        <String, Object?>{
+          'service_fee_mode': 'percentage',
+          'service_fee_fixed_uzs': null,
+          'service_fee_percent': '2.5',
+        },
+      );
+      expect(
+        SettingsDto.businessSettingsBody(edit(opensAt: null), base),
+        <String, Object?>{'opens_at': null},
+      );
     });
+
+    test(
+      'values out of their contract shape, or broken invariants, are refused',
+      () {
+        for (final Map<String, dynamic> json in <Map<String, dynamic>>[
+          <String, dynamic>{...businessJson(), 'opens_at': '09:00:00'},
+          <String, dynamic>{...businessJson(), 'markup_percent': '15.001'},
+          <String, dynamic>{...businessJson(), 'service_radius_km': 'five'},
+          <String, dynamic>{
+            ...businessJson(),
+            'service_centre_latitude': '41,3',
+          },
+          <String, dynamic>{...businessJson(), 'service_fee_percent': '2.00'},
+          <String, dynamic>{...businessJson(), 'closes_at': null},
+          <String, dynamic>{
+            ...businessJson(),
+            'service_centre_longitude': null,
+          },
+        ]) {
+          expect(
+            () => SettingsDto.parseBusinessSettings(json),
+            throwsFormatException,
+            reason: json.toString(),
+          );
+        }
+      },
+    );
   });
 
   group('payment providers', () {

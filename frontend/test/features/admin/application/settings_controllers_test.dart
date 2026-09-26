@@ -66,7 +66,7 @@ void main() {
           .read(paymentProvidersControllerProvider)
           .requireValue;
       expect(after.busy, isEmpty);
-      expect(after.failure, isNull);
+      expect(after.failures, isEmpty);
       expect(
         after.providers
             .singleWhere(
@@ -108,6 +108,7 @@ void main() {
             serviceRadiusKm: null,
             deliveryDelayThresholdMinutes: 30,
           ),
+          settings(),
         );
 
     container.read(_account.notifier).signIn('admin-2');
@@ -155,6 +156,7 @@ void main() {
             serviceRadiusKm: null,
             deliveryDelayThresholdMinutes: 30,
           ),
+          settings(),
         );
 
     expect(saved, isTrue);

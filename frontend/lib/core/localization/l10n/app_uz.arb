@@ -114,6 +114,9 @@
   "settingsDeliverySection": "Yetkazib berish nazorati",
   "settingsDelayThreshold": "Kechikish chegarasi, daqiqa",
   "settingsSaved": "Sozlamalar saqlandi",
+  "settingsNoChanges": "O'zgarish yo'q",
+  "settingsSaving": "Saqlanmoqda",
+  "settingsTashkentTimeHint": "Toshkent vaqti bilan",
   "settingsUpdatedAt": "Oxirgi o'zgarish: {when}",
   "@settingsUpdatedAt": {
     "placeholders": {

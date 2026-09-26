@@ -698,6 +698,24 @@ abstract class AppLocalizations {
   /// **'Sozlamalar saqlandi'**
   String get settingsSaved;
 
+  /// No description provided for @settingsNoChanges.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgarish yo\'q'**
+  String get settingsNoChanges;
+
+  /// No description provided for @settingsSaving.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlanmoqda'**
+  String get settingsSaving;
+
+  /// No description provided for @settingsTashkentTimeHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Toshkent vaqti bilan'**
+  String get settingsTashkentTimeHint;
+
   /// No description provided for @settingsUpdatedAt.
   ///
   /// In uz, this message translates to:

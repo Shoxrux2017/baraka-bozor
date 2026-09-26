@@ -5,7 +5,12 @@ import 'business_settings.dart';
 abstract interface class SettingsRepository {
   Future<BusinessSettings> businessSettings();
 
-  Future<BusinessSettings> saveBusinessSettings(BusinessSettingsDraft draft);
+  /// Saves what [draft] changed from [base], the settings the form was
+  /// loaded with.
+  Future<BusinessSettings> saveBusinessSettings(
+    BusinessSettingsDraft draft,
+    BusinessSettings base,
+  );
 
   Future<List<PaymentProviderSetting>> paymentProviders();
 

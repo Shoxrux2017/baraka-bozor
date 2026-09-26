@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/formatting/money_format.dart';
+import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
@@ -41,9 +41,10 @@ class SettingsScreen extends ConsumerWidget {
             settings.when(
               skipLoadingOnReload: false,
               data: (BusinessSettings value) => _SettingsForm(
-                // A saved row replaces the form, so the fields show what the
-                // server stored rather than what was typed.
-                key: ValueKey<DateTime>(value.updatedAt),
+                // Every answer is a new object, so a saved row always
+                // replaces the form, even one saved within the same second or
+                // one the server did not need to change.
+                key: ObjectKey(value),
                 settings: value,
               ),
               error: (Object error, StackTrace _) => _LoadFailure(
@@ -164,17 +165,27 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   }
 
   Future<void> _submit() async {
+    if (ref.read(saveBusinessSettingsControllerProvider).isBusy) {
+      return;
+    }
     _rejected = <String>{};
     if (!(_form.currentState?.validate() ?? false)) {
       return;
     }
 
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final String savedText = AppLocalizations.of(context).settingsSaved;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final BusinessSettingsDraft draft = _draft();
+
+    if (draft == BusinessSettingsDraft.fromSettings(widget.settings)) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.settingsNoChanges)));
+      return;
+    }
 
     final bool saved = await ref
         .read(saveBusinessSettingsControllerProvider.notifier)
-        .save(_draft());
+        .save(draft, widget.settings);
+    final String savedText = l10n.settingsSaved;
 
     if (saved) {
       messenger.showSnackBar(SnackBar(content: Text(savedText)));
@@ -215,6 +226,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
       String? suffix,
       String? hint,
       String? helper,
+      TextInputType? keyboard,
     }) {
       return Padding(
         padding: const EdgeInsets.only(bottom: 12),
@@ -222,6 +234,9 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           key: ValueKey<String>('field-$apiKey'),
           controller: controller,
           enabled: !save.isBusy,
+          keyboardType: keyboard,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (String _) => _submit(),
           decoration: InputDecoration(
             labelText: label,
             suffixText: suffix,
@@ -251,26 +266,31 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             _markup,
             l10n.settingsMarkup,
             (String text) => SettingsFormRules.percent(text, required: true),
+            keyboard: const TextInputType.numberWithOptions(decimal: true),
           ),
           Text(l10n.settingsServiceFeeMode),
           const SizedBox(height: 8),
-          SegmentedButton<ServiceFeeMode>(
-            key: const ValueKey<String>('field-service_fee_mode'),
-            segments: <ButtonSegment<ServiceFeeMode>>[
-              ButtonSegment<ServiceFeeMode>(
-                value: ServiceFeeMode.fixed,
-                label: Text(l10n.settingsServiceFeeFixed),
-              ),
-              ButtonSegment<ServiceFeeMode>(
-                value: ServiceFeeMode.percentage,
-                label: Text(l10n.settingsServiceFeePercentage),
-              ),
-            ],
-            selected: <ServiceFeeMode>{_mode},
-            onSelectionChanged: save.isBusy
-                ? null
-                : (Set<ServiceFeeMode> selected) =>
-                      setState(() => _mode = selected.single),
+          Semantics(
+            label: l10n.settingsServiceFeeMode,
+            container: true,
+            child: SegmentedButton<ServiceFeeMode>(
+              key: const ValueKey<String>('field-service_fee_mode'),
+              segments: <ButtonSegment<ServiceFeeMode>>[
+                ButtonSegment<ServiceFeeMode>(
+                  value: ServiceFeeMode.fixed,
+                  label: Text(l10n.settingsServiceFeeFixed),
+                ),
+                ButtonSegment<ServiceFeeMode>(
+                  value: ServiceFeeMode.percentage,
+                  label: Text(l10n.settingsServiceFeePercentage),
+                ),
+              ],
+              selected: <ServiceFeeMode>{_mode},
+              onSelectionChanged: save.isBusy
+                  ? null
+                  : (Set<ServiceFeeMode> selected) =>
+                        setState(() => _mode = selected.single),
+            ),
           ),
           const SizedBox(height: 12),
           if (_mode == ServiceFeeMode.fixed)
@@ -281,6 +301,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
               SettingsFormRules.amount,
               suffix: currency,
               helper: l10n.settingsOptionalHint,
+              keyboard: TextInputType.number,
             )
           else
             field(
@@ -289,6 +310,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
               l10n.settingsServiceFeePercent,
               (String text) => SettingsFormRules.percent(text, required: false),
               helper: l10n.settingsOptionalHint,
+              keyboard: const TextInputType.numberWithOptions(decimal: true),
             ),
           field(
             'delivery_fee_uzs',
@@ -297,6 +319,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             SettingsFormRules.amount,
             suffix: currency,
             helper: l10n.settingsOptionalHint,
+            keyboard: TextInputType.number,
           ),
           field(
             'minimum_order_uzs',
@@ -305,6 +328,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             SettingsFormRules.amount,
             suffix: currency,
             helper: l10n.settingsOptionalHint,
+            keyboard: TextInputType.number,
           ),
           field(
             'price_tolerance_percent',
@@ -312,6 +336,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             l10n.settingsPriceTolerance,
             (String text) => SettingsFormRules.percent(text, required: true),
             helper: l10n.settingsPriceToleranceHint,
+            keyboard: const TextInputType.numberWithOptions(decimal: true),
           ),
           _SectionTitle(l10n.settingsHoursSection),
           field(
@@ -322,7 +347,9 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                 SettingsFormRules.time(text) ??
                 SettingsFormRules.pairHalf(text, _closesAt.text),
             hint: '09:00',
-            helper: l10n.settingsOptionalHint,
+            helper:
+                '${l10n.settingsTashkentTimeHint}. ${l10n.settingsOptionalHint}',
+            keyboard: TextInputType.datetime,
           ),
           field(
             'closes_at',
@@ -330,7 +357,9 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             l10n.settingsClosesAt,
             (String text) => SettingsFormRules.closesAt(text, _opensAt.text),
             hint: '21:00',
-            helper: l10n.settingsOptionalHint,
+            helper:
+                '${l10n.settingsTashkentTimeHint}. ${l10n.settingsOptionalHint}',
+            keyboard: TextInputType.datetime,
           ),
           _SectionTitle(l10n.settingsAreaSection),
           field(
@@ -341,6 +370,11 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                 SettingsFormRules.latitude(text) ??
                 SettingsFormRules.pairHalf(text, _longitude.text),
             hint: '41.311081',
+            keyboard: const TextInputType.numberWithOptions(
+              decimal: true,
+              signed: true,
+            ),
+            helper: l10n.settingsOptionalHint,
           ),
           field(
             'service_centre_longitude',
@@ -350,6 +384,11 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                 SettingsFormRules.longitude(text) ??
                 SettingsFormRules.pairHalf(text, _latitude.text),
             hint: '69.240562',
+            keyboard: const TextInputType.numberWithOptions(
+              decimal: true,
+              signed: true,
+            ),
+            helper: l10n.settingsOptionalHint,
           ),
           field(
             'service_radius_km',
@@ -357,6 +396,8 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             l10n.settingsRadius,
             SettingsFormRules.radius,
             hint: '5.00',
+            keyboard: const TextInputType.numberWithOptions(decimal: true),
+            helper: l10n.settingsOptionalHint,
           ),
           _SectionTitle(l10n.settingsDeliverySection),
           field(
@@ -364,11 +405,11 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             _delay,
             l10n.settingsDelayThreshold,
             SettingsFormRules.minutes,
+            keyboard: TextInputType.number,
           ),
           Text(
             l10n.settingsUpdatedAt(
-              DateFormat('dd.MM.yyyy HH:mm')
-                  .format(widget.settings.updatedAt.toLocal()),
+              TashkentTime.format(widget.settings.updatedAt),
             ),
             key: const ValueKey<String>('settings-updated-at'),
             style: Theme.of(context).textTheme.bodySmall,
@@ -380,9 +421,12 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
               key: const ValueKey<String>('settings-save'),
               onPressed: save.isBusy ? null : _submit,
               child: save.isBusy
-                  ? const SizedBox.square(
+                  ? SizedBox.square(
                       dimension: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        semanticsLabel: l10n.settingsSaving,
+                      ),
                     )
                   : Text(l10n.saveButton),
             ),
@@ -438,7 +482,8 @@ class _PaymentProvidersCard extends ConsumerWidget {
               data: (PaymentProvidersView view) => Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  for (final PaymentProviderSetting setting in view.providers)
+                  for (final PaymentProviderSetting setting
+                      in view.providers) ...<Widget>[
                     SwitchListTile(
                       key: ValueKey<String>(
                         'provider-${setting.provider.code}',
@@ -446,9 +491,12 @@ class _PaymentProvidersCard extends ConsumerWidget {
                       title: Text(setting.provider.brand),
                       value: setting.isEnabled,
                       secondary: view.busy.contains(setting.provider)
-                          ? const SizedBox.square(
+                          ? SizedBox.square(
                               dimension: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                semanticsLabel: l10n.settingsSaving,
+                              ),
                             )
                           : null,
                       onChanged: view.busy.contains(setting.provider)
@@ -459,7 +507,8 @@ class _PaymentProvidersCard extends ConsumerWidget {
                                 )
                                 .setEnabled(setting.provider, enabled: enabled),
                     ),
-                  FailureMessage(view.failure),
+                    FailureMessage(view.failures[setting.provider]),
+                  ],
                 ],
               ),
               error: (Object error, StackTrace _) => _LoadFailure(

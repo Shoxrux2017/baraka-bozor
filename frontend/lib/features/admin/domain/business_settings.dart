@@ -60,9 +60,9 @@ final class BusinessSettings {
   final DateTime updatedAt;
 }
 
-/// The settings as the form submits them: every field, the one of the two
-/// service-fee values the mode does not use left `null`, because the API
-/// checks the merged row and refuses a value for the other mode.
+/// The settings as the form submits them. Only what differs from the
+/// settings the form was loaded with is sent (`DL-27` (3)), so two Admins
+/// editing different settings at once do not undo each other.
 final class BusinessSettingsDraft {
   const BusinessSettingsDraft({
     required this.markupPercent,
@@ -80,6 +80,24 @@ final class BusinessSettingsDraft {
     required this.deliveryDelayThresholdMinutes,
   });
 
+  /// The draft of settings nobody has edited: what the form started from.
+  factory BusinessSettingsDraft.fromSettings(BusinessSettings settings) =>
+      BusinessSettingsDraft(
+        markupPercent: settings.markupPercent,
+        serviceFeeMode: settings.serviceFeeMode,
+        serviceFeeFixedUzs: settings.serviceFeeFixedUzs,
+        serviceFeePercent: settings.serviceFeePercent,
+        deliveryFeeUzs: settings.deliveryFeeUzs,
+        minimumOrderUzs: settings.minimumOrderUzs,
+        priceTolerancePercent: settings.priceTolerancePercent,
+        opensAt: settings.opensAt,
+        closesAt: settings.closesAt,
+        serviceCentreLatitude: settings.serviceCentreLatitude,
+        serviceCentreLongitude: settings.serviceCentreLongitude,
+        serviceRadiusKm: settings.serviceRadiusKm,
+        deliveryDelayThresholdMinutes: settings.deliveryDelayThresholdMinutes,
+      );
+
   final String markupPercent;
   final ServiceFeeMode serviceFeeMode;
   final int? serviceFeeFixedUzs;
@@ -93,6 +111,40 @@ final class BusinessSettingsDraft {
   final String? serviceCentreLongitude;
   final String? serviceRadiusKm;
   final int deliveryDelayThresholdMinutes;
+
+  List<Object?> get _values => <Object?>[
+    markupPercent,
+    serviceFeeMode,
+    serviceFeeFixedUzs,
+    serviceFeePercent,
+    deliveryFeeUzs,
+    minimumOrderUzs,
+    priceTolerancePercent,
+    opensAt,
+    closesAt,
+    serviceCentreLatitude,
+    serviceCentreLongitude,
+    serviceRadiusKm,
+    deliveryDelayThresholdMinutes,
+  ];
+
+  @override
+  bool operator ==(Object other) {
+    if (other is! BusinessSettingsDraft) {
+      return false;
+    }
+    final List<Object?> mine = _values;
+    final List<Object?> theirs = other._values;
+    for (int i = 0; i < mine.length; i++) {
+      if (mine[i] != theirs[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @override
+  int get hashCode => Object.hashAll(_values);
 }
 
 /// The four online payment providers, in the order the API lists them.

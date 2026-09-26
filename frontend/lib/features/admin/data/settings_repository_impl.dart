@@ -13,8 +13,10 @@ class SettingsRepositoryImpl implements SettingsRepository {
       guardApiCall(_api.businessSettings);
 
   @override
-  Future<BusinessSettings> saveBusinessSettings(BusinessSettingsDraft draft) =>
-      guardApiCall(() => _api.saveBusinessSettings(draft));
+  Future<BusinessSettings> saveBusinessSettings(
+    BusinessSettingsDraft draft,
+    BusinessSettings base,
+  ) => guardApiCall(() => _api.saveBusinessSettings(draft, base));
 
   @override
   Future<List<PaymentProviderSetting>> paymentProviders() =>

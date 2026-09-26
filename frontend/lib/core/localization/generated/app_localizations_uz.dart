@@ -325,6 +325,15 @@ class AppLocalizationsUz extends AppLocalizations {
   String get settingsSaved => 'Sozlamalar saqlandi';
 
   @override
+  String get settingsNoChanges => 'O\'zgarish yo\'q';
+
+  @override
+  String get settingsSaving => 'Saqlanmoqda';
+
+  @override
+  String get settingsTashkentTimeHint => 'Toshkent vaqti bilan';
+
+  @override
   String settingsUpdatedAt(String when) {
     return 'Oxirgi o\'zgarish: $when';
   }

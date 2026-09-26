@@ -65,6 +65,9 @@ class FakeSettingsRepository implements SettingsRepository {
   List<PaymentProviderSetting> providerSettings;
 
   final List<BusinessSettingsDraft> saved = <BusinessSettingsDraft>[];
+
+  /// The settings each save was made against.
+  final List<BusinessSettings> bases = <BusinessSettings>[];
   final List<(PaymentProvider, bool)> switched = <(PaymentProvider, bool)>[];
 
   ApiFailure? loadFailure;
@@ -94,8 +97,10 @@ class FakeSettingsRepository implements SettingsRepository {
   @override
   Future<BusinessSettings> saveBusinessSettings(
     BusinessSettingsDraft draft,
+    BusinessSettings base,
   ) async {
     saved.add(draft);
+    bases.add(base);
     await saveGate?.future;
     final ApiFailure? failure = saveFailure;
     if (failure != null) {

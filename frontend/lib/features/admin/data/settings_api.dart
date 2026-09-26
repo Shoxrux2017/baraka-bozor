@@ -27,10 +27,11 @@ class SettingsApi {
 
   Future<BusinessSettings> saveBusinessSettings(
     BusinessSettingsDraft draft,
+    BusinessSettings base,
   ) async {
     final Response<dynamic> response = await _dio.patch<dynamic>(
       '/admin/settings/business',
-      data: SettingsDto.businessSettingsBody(draft),
+      data: SettingsDto.businessSettingsBody(draft, base),
       options: _staff,
     );
     return SettingsDto.parseBusinessSettings(ApiEnvelope.unwrap(response.data));
@@ -53,6 +54,14 @@ class SettingsApi {
       data: <String, bool>{'is_enabled': enabled},
       options: _staff,
     );
-    return SettingsDto.parsePaymentProvider(ApiEnvelope.unwrap(response.data));
+    final PaymentProviderSetting setting = SettingsDto.parsePaymentProvider(
+      ApiEnvelope.unwrap(response.data),
+    );
+    if (setting.provider != provider) {
+      throw FormatException(
+        'asked to switch ${provider.code}, answered for ${setting.provider.code}',
+      );
+    }
+    return setting;
   }
 }

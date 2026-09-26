@@ -4,6 +4,7 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/network/auth_interceptor.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/admin/data/settings_api.dart';
+import 'package:baraka_bozor/features/admin/data/settings_dto.dart';
 import 'package:baraka_bozor/features/admin/data/settings_repository_impl.dart';
 import 'package:baraka_bozor/features/admin/domain/business_settings.dart';
 import 'package:dio/dio.dart';
@@ -37,39 +38,99 @@ void main() {
     expect(settings.markupPercent, '15.00');
   });
 
-  test('a save sends the whole form as a PATCH', () async {
+  test('a save sends as a PATCH only what the form changed', () async {
+    final BusinessSettings base = SettingsDto.parseBusinessSettings(
+      businessJson(),
+    );
+
     await repository.saveBusinessSettings(
       const BusinessSettingsDraft(
         markupPercent: '20',
         serviceFeeMode: ServiceFeeMode.percentage,
         serviceFeeFixedUzs: null,
         serviceFeePercent: '3.5',
-        deliveryFeeUzs: 0,
-        minimumOrderUzs: null,
+        deliveryFeeUzs: 15000,
+        minimumOrderUzs: 100000,
         priceTolerancePercent: '10.00',
-        opensAt: null,
-        closesAt: null,
-        serviceCentreLatitude: null,
-        serviceCentreLongitude: null,
-        serviceRadiusKm: null,
+        opensAt: '09:00',
+        closesAt: '21:00',
+        serviceCentreLatitude: '41.311081',
+        serviceCentreLongitude: '69.240562',
+        serviceRadiusKm: '5.00',
         deliveryDelayThresholdMinutes: 30,
       ),
+      base,
     );
 
     final RequestOptions request = adapter.requests.single;
     expect(request.method, 'PATCH');
     expect(request.path, '/admin/settings/business');
     expect(slotOf(request), SessionSlot.staff);
-    final Map<String, dynamic> body =
-        jsonDecode(jsonEncode(request.data)) as Map<String, dynamic>;
-    expect(body['markup_percent'], '20');
-    expect(body['service_fee_mode'], 'percentage');
-    expect(body['service_fee_percent'], '3.5');
-    expect(body['service_fee_fixed_uzs'], isNull);
-    expect(body['delivery_fee_uzs'], 0);
-    expect(body.containsKey('minimum_order_uzs'), isTrue);
-    expect(body.length, 13);
+    expect(jsonDecode(jsonEncode(request.data)), <String, Object?>{
+      'markup_percent': '20',
+      'service_fee_mode': 'percentage',
+      'service_fee_fixed_uzs': null,
+      'service_fee_percent': '3.5',
+    });
   });
+
+  test('a validation refusal of a save keeps its field errors', () async {
+    reply = (RequestOptions options) => options.method == 'PATCH'
+        ? errorReply(
+            422,
+            'validation_failed',
+            errors: <String, List<String>>{
+              'closes_at': <String>['Must differ from opens_at.'],
+            },
+          )
+        : jsonReply(200, <String, Object?>{'data': businessJson()});
+    final BusinessSettings base = await repository.businessSettings();
+
+    await expectLater(
+      repository.saveBusinessSettings(
+        const BusinessSettingsDraft(
+          markupPercent: '15.00',
+          serviceFeeMode: ServiceFeeMode.fixed,
+          serviceFeeFixedUzs: 5000,
+          serviceFeePercent: null,
+          deliveryFeeUzs: 15000,
+          minimumOrderUzs: 100000,
+          priceTolerancePercent: '10.00',
+          opensAt: '09:00',
+          closesAt: '09:00',
+          serviceCentreLatitude: '41.311081',
+          serviceCentreLongitude: '69.240562',
+          serviceRadiusKm: '5.00',
+          deliveryDelayThresholdMinutes: 30,
+        ),
+        base,
+      ),
+      throwsA(
+        isA<ApiRefusal>().having(
+          (ApiRefusal r) => r.error.errors.keys,
+          'fields',
+          <String>['closes_at'],
+        ),
+      ),
+    );
+  });
+
+  test(
+    'an answer about another provider than the one switched is refused',
+    () async {
+      reply = (RequestOptions options) => jsonReply(200, <String, Object?>{
+        'data': providerJson('payme', enabled: true),
+      });
+
+      await expectLater(
+        repository.setPaymentProviderEnabled(
+          PaymentProvider.click,
+          enabled: true,
+        ),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+    },
+  );
 
   test('the providers are listed and one is switched', () async {
     reply = (RequestOptions options) => options.method == 'GET'
@@ -105,7 +166,7 @@ void main() {
     expect(click.isEnabled, isTrue);
   });
 
-  test('a validation refusal keeps its field errors', () async {
+  test('a refusal of the read keeps its field errors', () async {
     reply = (RequestOptions options) => errorReply(
       422,
       'validation_failed',

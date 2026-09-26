@@ -10,6 +10,7 @@ import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../support/app_harness.dart';
 import '../../../support/fake_auth_repository.dart';
@@ -183,6 +184,43 @@ void main() {
     expect(textOf(tester, field('markup_percent')), '12.50');
   });
 
+  testWidgets(
+    'a save answered with the same timestamp still shows the stored values',
+    (WidgetTester tester) async {
+      // Two saves within one second, or a save the server did not need to
+      // store, answer with the updated_at the form already had.
+      repository.onSave = (BusinessSettingsDraft draft) =>
+          settings(markupPercent: '12.50');
+      await openSettings(tester);
+
+      await tester.enterText(field('markup_percent'), '12.5');
+      await submit(tester);
+
+      expect(textOf(tester, field('markup_percent')), '12.50');
+    },
+  );
+
+  testWidgets('a form nobody changed is not sent', (WidgetTester tester) async {
+    await openSettings(tester);
+
+    await submit(tester);
+
+    expect(repository.saved, isEmpty);
+    expect(find.text(l10n(tester).settingsNoChanges), findsOneWidget);
+  });
+
+  testWidgets('the last change is shown in Tashkent time', (
+    WidgetTester tester,
+  ) async {
+    // 05:00 UTC is 10:00 in Tashkent, whatever the device's zone.
+    await openSettings(tester);
+
+    expect(
+      find.text(l10n(tester).settingsUpdatedAt('26.09.2026 10:00')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('a field the server refused is marked until it is edited', (
     WidgetTester tester,
   ) async {
@@ -195,9 +233,29 @@ void main() {
         },
       ),
     );
+    final Completer<void> gate = Completer<void>();
+    repository.saveGate = gate;
     await openSettings(tester);
 
-    await submit(tester);
+    await tester.enterText(field('markup_percent'), '14');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pump();
+    // While the save is on its way the fields wait with it.
+    expect(
+      tester
+          .widget<TextField>(
+            find.descendant(
+              of: field('closes_at'),
+              matching: find.byType(TextField),
+            ),
+          )
+          .enabled,
+      isFalse,
+    );
+    gate.complete();
+    repository.saveGate = null;
+    await tester.pumpAndSettle();
 
     expect(find.text(l10n(tester).fieldRejected), findsOneWidget);
     expect(find.text(l10n(tester).errorValidationFailed), findsOneWidget);
@@ -268,6 +326,13 @@ void main() {
     expect(tester.widget<SwitchListTile>(payme).value, isFalse);
     expect(tester.widget<SwitchListTile>(payme).onChanged, isNotNull);
     expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+
+    // Another provider's success leaves the reason Payme was refused.
+    final Finder click = find.byKey(const ValueKey<String>('provider-click'));
+    await tester.tap(click);
+    await tester.pumpAndSettle();
+    expect(tester.widget<SwitchListTile>(click).value, isTrue);
+    expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
   });
 
   testWidgets('on a narrow window the sections are in a drawer', (
@@ -288,4 +353,20 @@ void main() {
 
     expect(find.text(l10n(tester).settingsTitle), findsOneWidget);
   });
+
+  testWidgets(
+    'an Operator sent to the settings lands in their own area, loading nothing',
+    (WidgetTester tester) async {
+      auth.identities[SessionSlot.staff] = user(role: UserRole.operator);
+      await openPanel(tester);
+
+      GoRouter.of(tester.element(find.byType(Scaffold).first))
+          .go(AdminPaths.settings);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n(tester).shellOperations), findsOneWidget);
+      expect(find.text(l10n(tester).settingsTitle), findsNothing);
+      expect(repository.loads, 0);
+    },
+  );
 }

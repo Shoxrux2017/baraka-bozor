@@ -325,6 +325,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsSaved => 'Настройки сохранены';
 
   @override
+  String get settingsNoChanges => 'Изменений нет';
+
+  @override
+  String get settingsSaving => 'Сохранение';
+
+  @override
+  String get settingsTashkentTimeHint => 'По времени Ташкента';
+
+  @override
   String settingsUpdatedAt(String when) {
     return 'Последнее изменение: $when';
   }
