@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Catalog;
 
+use App\Exceptions\ApiException;
 use App\Models\Category;
 use App\Models\Enums\Role;
 use App\Models\Product;
 use App\Models\User;
+use App\Modules\Catalog\Actions\SaveCatalogEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -173,14 +175,146 @@ final class AdminProductsApiTest extends TestCase
 
     public function test_every_role_but_admin_is_refused(): void
     {
-        foreach ([Role::Operator, Role::Manager, Role::Courier, Role::Customer] as $role) {
+        $product = Product::factory()->create();
+        $url = self::URL.'/'.$product->id;
+
+        foreach ([Role::Operator, Role::Manager, Role::Shopper, Role::Courier, Role::Customer] as $role) {
             $token = User::factory()->role($role)->create()->createToken('t')->plainTextToken;
 
-            $this->withToken($token)->getJson(self::URL)->assertStatus(403);
-            $this->withToken($token)->postJson(self::URL, $this->body())->assertStatus(403);
+            foreach ([
+                $this->withToken($token)->getJson(self::URL),
+                $this->withToken($token)->postJson(self::URL, $this->body()),
+                $this->withToken($token)->getJson($url),
+                $this->withToken($token)->patchJson($url, ['name_uz' => 'X']),
+                $this->withToken($token)->postJson($url.'/archive'),
+                $this->withToken($token)->postJson($url.'/restore'),
+            ] as $response) {
+                $response->assertStatus(403)->assertJsonPath('code', 'forbidden');
+            }
         }
 
-        $this->assertSame(0, Product::query()->count());
+        $this->assertSame(1, Product::query()->count());
+    }
+
+    public function test_a_missing_or_malformed_id_is_the_scope_safe_not_found(): void
+    {
+        foreach ([(string) Str::uuid(), 'not-a-uuid'] as $id) {
+            foreach ([
+                $this->asAdmin()->getJson(self::URL.'/'.$id),
+                $this->asAdmin()->patchJson(self::URL.'/'.$id, ['name_uz' => 'X']),
+                $this->asAdmin()->postJson(self::URL.'/'.$id.'/archive'),
+                $this->asAdmin()->postJson(self::URL.'/'.$id.'/restore'),
+            ] as $response) {
+                $response->assertStatus(404)->assertJsonPath('code', 'resource_not_found');
+            }
+        }
+    }
+
+    public function test_the_response_carries_exactly_the_documented_fields(): void
+    {
+        $data = $this->asAdmin()->getJson(self::URL.'/'.Product::factory()->create()->id)->assertOk()->json('data');
+
+        $this->assertSame([
+            'id', 'category_id', 'name_uz', 'name_ru', 'description_uz', 'description_ru', 'unit_code', 'price_mode',
+            'market_price_uzs', 'customer_unit_price_uzs', 'sort_order', 'is_active', 'archived_at', 'created_at', 'updated_at',
+        ], array_keys($data));
+    }
+
+    public function test_the_bounds_themselves_are_accepted(): void
+    {
+        $this->asAdmin()->postJson(self::URL, $this->body([
+            'name_uz' => str_repeat('a', 160),
+            'name_ru' => str_repeat('я', 160),
+            'description_uz' => str_repeat('d', 2000),
+            'description_ru' => null,
+            'market_price_uzs' => 1_000_000_000,
+            'sort_order' => 100_000,
+            'is_active' => false,
+        ]))->assertCreated()->assertJsonPath('data.is_active', false)->assertJsonPath('data.description_ru', null);
+
+        $this->asAdmin()->postJson(self::URL, $this->body(['market_price_uzs' => 1, 'sort_order' => -100_000]))->assertCreated();
+    }
+
+    public function test_a_product_in_an_archived_category_can_still_be_edited_when_the_body_re_sends_its_category(): void
+    {
+        $category = Category::factory()->create();
+        $product = Product::factory()->create(['category_id' => $category->id, 'name_uz' => 'Eski']);
+        $category->forceFill(['archived_at' => now(), 'is_active' => false])->save();
+
+        $this->asAdmin()->patchJson(self::URL.'/'.$product->id, ['category_id' => $category->id, 'name_uz' => 'Yangi'])
+            ->assertOk()
+            ->assertJsonPath('data.name_uz', 'Yangi');
+        $this->asAdmin()->patchJson(self::URL.'/'.$product->id, ['category_id' => strtoupper($category->id), 'name_uz' => 'Yana'])
+            ->assertOk();
+    }
+
+    public function test_an_edit_made_on_a_stale_read_is_decided_on_the_locked_row(): void
+    {
+        $stale = Product::factory()->create();
+        Product::query()->whereKey($stale->id)->update(['archived_at' => now(), 'is_active' => false]);
+
+        try {
+            app(SaveCatalogEntry::class)->updateProduct($stale, ['is_active' => true]);
+            $this->fail('An archived product was made active from a stale read.');
+        } catch (ApiException $exception) {
+            $this->assertSame(409, $exception->status());
+            $this->assertSame('business_conflict', $exception->apiCode());
+        }
+
+        $this->assertFalse((bool) $stale->fresh()?->is_active);
+    }
+
+    public function test_an_empty_or_unreadable_update_is_refused_and_changes_nothing(): void
+    {
+        $product = Product::factory()->create(['market_price_uzs' => 5_000]);
+        $token = User::factory()->role(Role::Admin)->create()->createToken('t')->plainTextToken;
+
+        $this->withToken($token)->patchJson(self::URL.'/'.$product->id, [])
+            ->assertStatus(422)
+            ->assertJsonValidationErrorFor('body', 'errors');
+        $this->call('PATCH', self::URL.'/'.$product->id, [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_AUTHORIZATION' => 'Bearer '.$token,
+        ], '{"market_price_uzs": 6000,')->assertStatus(422);
+
+        $this->assertSame(5_000, $product->fresh()?->market_price_uzs);
+    }
+
+    public function test_search_reads_yo_as_ye_every_uzbek_apostrophe_alike_and_a_backslash_literally(): void
+    {
+        Product::factory()->create(['name_uz' => 'Asal', 'name_ru' => 'Мёд']);
+        Product::factory()->create(['name_uz' => "O'rik", 'name_ru' => 'Абрикос']);
+        Product::factory()->create(['name_uz' => 'Back\\slash', 'name_ru' => 'Слэш']);
+
+        $this->asAdmin()->getJson(self::URL.'?search='.urlencode('мед'))->assertJsonPath('data.*.name_uz', ['Asal']);
+        $this->asAdmin()->getJson(self::URL.'?search='.urlencode('МЁД'))->assertJsonPath('data.*.name_uz', ['Asal']);
+        foreach (['oʻrik', 'o‘rik', 'o’rik', 'o`rik', "O'RIK"] as $typed) {
+            $this->asAdmin()->getJson(self::URL.'?search='.urlencode($typed))
+                ->assertJsonPath('data.*.name_ru', ['Абрикос']);
+        }
+        $this->asAdmin()->getJson(self::URL.'?search='.urlencode('k\\s'))->assertJsonPath('data.*.name_ru', ['Слэш']);
+        $this->asAdmin()->getJson(self::URL.'?search='.urlencode('   '))->assertJsonPath('meta.pagination.total', 3);
+    }
+
+    public function test_equal_sort_keys_keep_a_stable_order_across_pages(): void
+    {
+        foreach (range(1, 3) as $_) {
+            Product::factory()->create(['name_uz' => 'Bir xil', 'sort_order' => 0]);
+        }
+        $expected = Product::query()->orderBy('id')->pluck('id')->all();
+
+        $seen = [];
+        foreach ([1, 2, 3] as $page) {
+            $seen[] = $this->asAdmin()->getJson(self::URL.'?per_page=1&page='.$page)->json('data.0.id');
+        }
+
+        $this->assertSame($expected, $seen);
+    }
+
+    public function test_without_a_token_the_answer_is_authentication_required(): void
+    {
+        $this->getJson(self::URL)->assertStatus(401)->assertJsonPath('code', 'authentication_required');
     }
 
     private function asAdmin(?User $admin = null): self

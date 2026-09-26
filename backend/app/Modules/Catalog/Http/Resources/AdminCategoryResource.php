@@ -5,17 +5,24 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Http\Resources;
 
 use App\Models\Category;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * A category as the Admin panel sees it (`docs/09` section 15).
+ * A category as the Admin panel sees it (`docs/09` section 15). The creator
+ * is recorded but not shown.
+ *
+ * @property-read Category $resource
  */
-final class AdminCategoryPresenter
+final class AdminCategoryResource extends JsonResource
 {
     /**
      * @return array<string, mixed>
      */
-    public static function present(Category $category): array
+    public function toArray(Request $request): array
     {
+        $category = $this->resource;
+
         return [
             'id' => $category->id,
             'name_uz' => $category->name_uz,

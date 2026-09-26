@@ -15,8 +15,8 @@ final class ListAdminProductsRequest extends ListRequest
     protected function filters(): array
     {
         return [
-            'include_archived' => ['sometimes', 'in:true,false,1,0'],
-            'category_id' => ['sometimes', 'string', 'uuid'],
+            'include_archived' => ['sometimes', 'nullable', 'in:true,false,1,0'],
+            'category_id' => ['sometimes', 'nullable', 'string', 'uuid'],
             'search' => ['sometimes', 'nullable', 'string', 'max:'.CatalogSearch::MAX_TERM_LENGTH],
         ];
     }
@@ -28,15 +28,11 @@ final class ListAdminProductsRequest extends ListRequest
 
     public function categoryId(): ?string
     {
-        $id = $this->validated('category_id');
-
-        return is_string($id) ? $id : null;
+        return $this->text('category_id');
     }
 
     public function search(): ?string
     {
-        $term = $this->validated('search');
-
-        return is_string($term) ? $term : null;
+        return $this->text('search');
     }
 }

@@ -14,7 +14,7 @@ final class ListCategoriesRequest extends ListRequest
     protected function filters(): array
     {
         return [
-            'include_archived' => ['sometimes', 'in:true,false,1,0'],
+            'include_archived' => ['sometimes', 'nullable', 'in:true,false,1,0'],
         ];
     }
 

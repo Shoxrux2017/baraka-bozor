@@ -10,10 +10,10 @@ use App\Models\Category;
 use App\Models\User;
 use App\Modules\Catalog\Actions\CatalogArchive;
 use App\Modules\Catalog\Actions\SaveCatalogEntry;
-use App\Modules\Catalog\CatalogSearch;
+use App\Modules\Catalog\AdminCatalogListing;
 use App\Modules\Catalog\Http\Requests\CategoryRequest;
 use App\Modules\Catalog\Http\Requests\ListCategoriesRequest;
-use App\Modules\Catalog\Http\Resources\AdminCategoryPresenter;
+use App\Modules\Catalog\Http\Resources\AdminCategoryResource;
 use App\Support\Scope\ScopedLookup;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,15 +27,10 @@ final class AdminCategoryController extends Controller
 {
     public function index(ListCategoriesRequest $request): JsonResponse
     {
-        $query = CatalogSearch::ordered(Category::query());
-
-        if (! $request->includeArchived()) {
-            $query->whereNull('archived_at');
-        }
-
         return PaginatedResponse::of(
-            $query->paginate($request->perPage(), ['*'], 'page', $request->page()),
-            static fn (Category $category): array => AdminCategoryPresenter::present($category),
+            AdminCatalogListing::categories($request->includeArchived())
+                ->paginate($request->perPage(), ['*'], 'page', $request->page()),
+            static fn (Category $category): array => (new AdminCategoryResource($category))->resolve($request),
         );
     }
 
@@ -44,42 +39,32 @@ final class AdminCategoryController extends Controller
         /** @var array<string, mixed> $fields */
         $fields = $request->validated();
 
-        return new JsonResponse(
-            ['data' => AdminCategoryPresenter::present($save->createCategory($this->admin($request), $fields))],
-            201,
-        );
+        return (new AdminCategoryResource($save->createCategory($this->admin($request), $fields)))
+            ->response()
+            ->setStatusCode(201);
     }
 
-    public function show(string $category): JsonResponse
+    public function show(string $category): AdminCategoryResource
     {
-        return new JsonResponse(['data' => AdminCategoryPresenter::present($this->find($category))]);
+        return new AdminCategoryResource($this->find($category));
     }
 
-    public function update(CategoryRequest $request, string $category, SaveCatalogEntry $save): JsonResponse
+    public function update(CategoryRequest $request, string $category, SaveCatalogEntry $save): AdminCategoryResource
     {
         /** @var array<string, mixed> $fields */
         $fields = $request->validated();
 
-        /** @var Category $saved */
-        $saved = $save->update($this->find($category), $fields);
-
-        return new JsonResponse(['data' => AdminCategoryPresenter::present($saved)]);
+        return new AdminCategoryResource($save->updateCategory($this->find($category), $fields));
     }
 
-    public function archive(string $category, CatalogArchive $archive): JsonResponse
+    public function archive(string $category, CatalogArchive $archive): AdminCategoryResource
     {
-        /** @var Category $archived */
-        $archived = $archive->archive($this->find($category));
-
-        return new JsonResponse(['data' => AdminCategoryPresenter::present($archived)]);
+        return new AdminCategoryResource($archive->archiveCategory($this->find($category)));
     }
 
-    public function restore(string $category, CatalogArchive $archive): JsonResponse
+    public function restore(string $category, CatalogArchive $archive): AdminCategoryResource
     {
-        /** @var Category $restored */
-        $restored = $archive->restore($this->find($category));
-
-        return new JsonResponse(['data' => AdminCategoryPresenter::present($restored)]);
+        return new AdminCategoryResource($archive->restoreCategory($this->find($category)));
     }
 
     private function find(string $id): Category

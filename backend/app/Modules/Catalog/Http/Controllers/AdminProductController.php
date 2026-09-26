@@ -10,10 +10,10 @@ use App\Models\Product;
 use App\Models\User;
 use App\Modules\Catalog\Actions\CatalogArchive;
 use App\Modules\Catalog\Actions\SaveCatalogEntry;
-use App\Modules\Catalog\CatalogSearch;
+use App\Modules\Catalog\AdminCatalogListing;
 use App\Modules\Catalog\Http\Requests\ListAdminProductsRequest;
 use App\Modules\Catalog\Http\Requests\ProductRequest;
-use App\Modules\Catalog\Http\Resources\AdminProductPresenter;
+use App\Modules\Catalog\Http\Resources\AdminProductResource;
 use App\Modules\Settings\CustomerPriceCalculator;
 use App\Support\Scope\ScopedLookup;
 use Illuminate\Http\JsonResponse;
@@ -28,22 +28,12 @@ final class AdminProductController extends Controller
 {
     public function index(ListAdminProductsRequest $request): JsonResponse
     {
-        $query = CatalogSearch::ordered(CatalogSearch::matching(Product::query(), $request->search()));
-
-        if (! $request->includeArchived()) {
-            $query->whereNull('archived_at');
-        }
-
-        $categoryId = $request->categoryId();
-        if ($categoryId !== null) {
-            $query->where('category_id', $categoryId);
-        }
-
-        $presenter = new AdminProductPresenter(CustomerPriceCalculator::current());
+        $prices = CustomerPriceCalculator::current();
 
         return PaginatedResponse::of(
-            $query->paginate($request->perPage(), ['*'], 'page', $request->page()),
-            static fn (Product $product): array => $presenter->present($product),
+            AdminCatalogListing::products($request->includeArchived(), $request->categoryId(), $request->search())
+                ->paginate($request->perPage(), ['*'], 'page', $request->page()),
+            static fn (Product $product): array => (new AdminProductResource($product, $prices))->resolve($request),
         );
     }
 
@@ -52,47 +42,37 @@ final class AdminProductController extends Controller
         /** @var array<string, mixed> $fields */
         $fields = $request->validated();
 
-        return new JsonResponse(
-            ['data' => $this->presenter()->present($save->createProduct($this->admin($request), $fields))],
-            201,
-        );
+        return $this->resource($save->createProduct($this->admin($request), $fields))
+            ->response()
+            ->setStatusCode(201);
     }
 
-    public function show(string $product): JsonResponse
+    public function show(string $product): AdminProductResource
     {
-        return new JsonResponse(['data' => $this->presenter()->present($this->find($product))]);
+        return $this->resource($this->find($product));
     }
 
-    public function update(ProductRequest $request, string $product, SaveCatalogEntry $save): JsonResponse
+    public function update(ProductRequest $request, string $product, SaveCatalogEntry $save): AdminProductResource
     {
         /** @var array<string, mixed> $fields */
         $fields = $request->validated();
 
-        /** @var Product $saved */
-        $saved = $save->update($this->find($product), $fields);
-
-        return new JsonResponse(['data' => $this->presenter()->present($saved)]);
+        return $this->resource($save->updateProduct($this->find($product), $fields));
     }
 
-    public function archive(string $product, CatalogArchive $archive): JsonResponse
+    public function archive(string $product, CatalogArchive $archive): AdminProductResource
     {
-        /** @var Product $archived */
-        $archived = $archive->archive($this->find($product));
-
-        return new JsonResponse(['data' => $this->presenter()->present($archived)]);
+        return $this->resource($archive->archiveProduct($this->find($product)));
     }
 
-    public function restore(string $product, CatalogArchive $archive): JsonResponse
+    public function restore(string $product, CatalogArchive $archive): AdminProductResource
     {
-        /** @var Product $restored */
-        $restored = $archive->restore($this->find($product));
-
-        return new JsonResponse(['data' => $this->presenter()->present($restored)]);
+        return $this->resource($archive->restoreProduct($this->find($product)));
     }
 
-    private function presenter(): AdminProductPresenter
+    private function resource(Product $product): AdminProductResource
     {
-        return new AdminProductPresenter(CustomerPriceCalculator::current());
+        return new AdminProductResource($product, CustomerPriceCalculator::current());
     }
 
     private function find(string $id): Product

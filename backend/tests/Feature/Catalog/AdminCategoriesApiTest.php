@@ -142,15 +142,85 @@ final class AdminCategoriesApiTest extends TestCase
     {
         $category = Category::factory()->create();
 
-        foreach ([Role::Operator, Role::Manager, Role::Shopper, Role::Customer] as $role) {
+        foreach ([Role::Operator, Role::Manager, Role::Shopper, Role::Courier, Role::Customer] as $role) {
             $token = User::factory()->role($role)->create()->createToken('t')->plainTextToken;
+            $url = self::URL.'/'.$category->id;
 
-            $this->withToken($token)->getJson(self::URL)->assertStatus(403);
-            $this->withToken($token)->postJson(self::URL, ['name_uz' => 'X', 'name_ru' => 'Х'])->assertStatus(403);
-            $this->withToken($token)->postJson(self::URL.'/'.$category->id.'/archive')->assertStatus(403);
+            foreach ([
+                $this->withToken($token)->getJson(self::URL),
+                $this->withToken($token)->postJson(self::URL, ['name_uz' => 'X', 'name_ru' => 'Х']),
+                $this->withToken($token)->getJson($url),
+                $this->withToken($token)->patchJson($url, ['name_uz' => 'X']),
+                $this->withToken($token)->postJson($url.'/archive'),
+                $this->withToken($token)->postJson($url.'/restore'),
+            ] as $response) {
+                $response->assertStatus(403)->assertJsonPath('code', 'forbidden');
+            }
         }
 
         $this->assertNull($category->fresh()?->archived_at);
+    }
+
+    public function test_the_response_carries_exactly_the_documented_fields(): void
+    {
+        $category = Category::factory()->create();
+
+        $data = $this->asAdmin()->getJson(self::URL.'/'.$category->id)->assertOk()->json('data');
+
+        $this->assertSame(
+            ['id', 'name_uz', 'name_ru', 'description_uz', 'description_ru', 'sort_order', 'is_active', 'archived_at', 'created_at', 'updated_at'],
+            array_keys($data)
+        );
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $data['created_at']);
+    }
+
+    public function test_the_bounds_themselves_are_accepted(): void
+    {
+        $this->asAdmin()->postJson(self::URL, [
+            'name_uz' => str_repeat('a', 120),
+            'name_ru' => str_repeat('я', 120),
+            'description_uz' => str_repeat('d', 2000),
+            'sort_order' => -100_000,
+        ])->assertCreated();
+
+        $this->asAdmin()->postJson(self::URL, ['name_uz' => 'B', 'name_ru' => 'Б', 'sort_order' => 100_000])->assertCreated();
+        $this->asAdmin()->postJson(self::URL, ['name_uz' => 'C', 'name_ru' => 'В', 'description_ru' => str_repeat('d', 2001)])
+            ->assertStatus(422)
+            ->assertJsonValidationErrorFor('description_ru', 'errors');
+    }
+
+    public function test_an_empty_or_unreadable_update_is_refused_and_changes_nothing(): void
+    {
+        $category = Category::factory()->create(['name_uz' => 'Eski']);
+        $token = User::factory()->role(Role::Admin)->create()->createToken('t')->plainTextToken;
+
+        $this->withToken($token)->patchJson(self::URL.'/'.$category->id, [])
+            ->assertStatus(422)
+            ->assertJsonValidationErrorFor('body', 'errors');
+        $this->call('PATCH', self::URL.'/'.$category->id, [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_AUTHORIZATION' => 'Bearer '.$token,
+        ], '{"name_uz": "X",')->assertStatus(422);
+
+        $this->assertSame('Eski', $category->fresh()?->name_uz);
+    }
+
+    public function test_an_empty_query_parameter_means_absent_and_an_absurd_page_is_refused(): void
+    {
+        Category::factory()->create();
+
+        $this->asAdmin()->getJson(self::URL.'?include_archived=&page=&per_page=')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.page', 1)
+            ->assertJsonPath('meta.pagination.per_page', 20);
+        $this->asAdmin()->getJson(self::URL.'?page=100001')->assertStatus(422);
+        $this->asAdmin()->getJson(self::URL.'?page=9223372036854775807')->assertStatus(422);
+    }
+
+    public function test_without_a_token_the_answer_is_authentication_required(): void
+    {
+        $this->getJson(self::URL)->assertStatus(401)->assertJsonPath('code', 'authentication_required');
     }
 
     private function asAdmin(?User $admin = null): self

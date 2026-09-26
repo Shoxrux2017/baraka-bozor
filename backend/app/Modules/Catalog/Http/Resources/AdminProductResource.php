@@ -6,24 +6,33 @@ namespace App\Modules\Catalog\Http\Resources;
 
 use App\Models\Product;
 use App\Modules\Settings\CustomerPriceCalculator;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * A product as the Admin panel sees it (`docs/09` section 15): the market
  * price the Admin entered and the customer price it becomes under the
- * current markup, side by side.
+ * current markup, side by side. The creator is recorded but not shown.
  *
- * The calculator is built once per response and passed in, so a page of a
- * hundred products reads the markup once.
+ * The calculator is built once per response and handed to every product in
+ * it, so a page of a hundred products reads the markup once.
+ *
+ * @property-read Product $resource
  */
-final class AdminProductPresenter
+final class AdminProductResource extends JsonResource
 {
-    public function __construct(private readonly CustomerPriceCalculator $prices) {}
+    public function __construct(Product $product, private readonly CustomerPriceCalculator $prices)
+    {
+        parent::__construct($product);
+    }
 
     /**
      * @return array<string, mixed>
      */
-    public function present(Product $product): array
+    public function toArray(Request $request): array
     {
+        $product = $this->resource;
+
         return [
             'id' => $product->id,
             'category_id' => $product->category_id,
