@@ -1,6 +1,6 @@
 # Wave 0 — Foundation
 
-Status: **In Progress**. Plan under workflow v6 (`tasks/README.md`), written 2026-09-24. Earlier Wave 0 records: `WAVE_00_TASK_INDEX.md`, `backend/`, `frontend/`, `integration/` (history).
+Status: **Closed** (2026-09-26). Plan under workflow v6 (`tasks/README.md`), written 2026-09-24. Earlier Wave 0 records: `WAVE_00_TASK_INDEX.md`, `backend/`, `frontend/`, `integration/` (history).
 
 ## Goal
 
@@ -20,12 +20,12 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 
 | # | Task | Status |
 |---|---|---|
-| W0-1 | Error renderer to the final contract: `malformed_request`, `business_conflict`, `provider_unavailable`, `details`, `request_id` | Merged |
-| W0-2 | Staff auth: login, logout, me, `PATCH /auth/me`, change-password, rate limits, sliding 30-day token, blocked re-check, `preferred_language` column | Merged |
-| W0-3 | Customer login codes: `channel` column, `CodeDeliveryGateway` with the fake and the test numbers, request and verify endpoints | Merged |
-| W0-4 | Authorization foundation: role and scope middleware, scope-safe not-found helpers, Operator-as-restricted-Admin capability check, probe tests | Merged |
-| W0-5 | Client session foundation: two token slots, auth repository and DTOs, error-code mapping, language selection with device default | Merged |
-| W0-6 | Client auth screens and shells: code request and verify, staff login and password change, six role shells, wrong-surface screen, web build of the panel shell | Merged |
+| W0-1 | Error renderer to the final contract: `malformed_request`, `business_conflict`, `provider_unavailable`, `details`, `request_id` | Verified |
+| W0-2 | Staff auth: login, logout, me, `PATCH /auth/me`, change-password, rate limits, sliding 30-day token, blocked re-check, `preferred_language` column | Verified |
+| W0-3 | Customer login codes: `channel` column, `CodeDeliveryGateway` with the fake and the test numbers, request and verify endpoints | Verified |
+| W0-4 | Authorization foundation: role and scope middleware, scope-safe not-found helpers, Operator-as-restricted-Admin capability check, probe tests | Verified |
+| W0-5 | Client session foundation: two token slots, auth repository and DTOs, error-code mapping, language selection with device default | Verified |
+| W0-6 | Client auth screens and shells: code request and verify, staff login and password change, six role shells, wrong-surface screen, web build of the panel shell | Verified |
 | W0-7 | Wave closure: full suites, Android and web builds, real-stack login walk-through for every role, Owner checklist and report | Done, see Closure |
 
 ## Task notes
@@ -62,13 +62,13 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 | The frontend CI job is not yet a required check on `main`; only the Owner can change branch protection | Open, asked in the W0-7 report |
 | The first frame renders in the device language until the stored choice is read; invisible today because the bootstrap screen shows no text | Accepted |
 | Uzbek strings use the ASCII apostrophe (`O'zbekcha`) rather than the orthographic ʻ (U+02BB), as most Uzbek apps do; the Shopper is `Yig'uvchi`, the Courier `Kuryer` | Open for the Owner's word in the W0-7 report; a change is an ARB edit |
-| `401 code_invalid`, `code_expired` and `code_attempts_exhausted` carry the generic developer `message` "Authentication is required." because `ApiException::unauthenticated()` has one message; the client never shows it, so only logs read oddly | Open, P3; a message per code when the auth module is next touched |
+| Every `401` envelope carries the developer `message` "Authentication is required.", whatever its `code` (`code_invalid`, `invalid_credentials`, `account_blocked`, …): `ApiExceptionRenderer` fixes the text per status by design, clients branch on `code` (`docs/09` section 3), and the message is neither logged nor shown | By design, nothing to do; noted so the walkthrough's log is not read as a defect |
 | The launcher icon and the Android splash are Flutter's defaults; no brand assets exist (`docs/07` section 27) | Open until a designer supplies assets; visible in the Owner's check |
-| `frontend/pubspec.lock` and `backend/composer.lock` are pinned by the tasks that added packages; no dependency was added in W0-5 to W0-7 | Closed, nothing to do |
+| Lockfiles change only with a real dependency change: W0-5 added `flutter_localizations` and `intl` with the matching `pubspec.lock` change in the same pull request; W0-6 and W0-7 added nothing | Closed, nothing to do |
 
 ## Independent-review findings not acted on
 
-None. Every finding of the six reviews (W0-1 to W0-6) was acted on before merge; the records are on pull requests #20 to #26.
+None. Every finding of the seven reviews (W0-1 to W0-7) was acted on before merge; the records are on pull requests #21 to #27.
 
 ## Closure
 
@@ -88,13 +88,14 @@ Closed on 2026-09-26 at `main` = merge of PR #26 (`e957301`) plus this closure r
 | `flutter build apk --debug` | built (Flutter 3.47.5) |
 | Real stack (PostgreSQL 17 + PHP 8.4 in Compose, `php artisan serve` in a one-off container), API walkthrough | 21 of 21 steps pass: Customer code login on a test phone (`channel = test`), wrong code `401 code_invalid`, `/auth/me`, language through `PATCH /auth/me`; staff login for Shopper, Courier, Operator, Admin, Manager; wrong password `401 invalid_credentials`; first-login gate set, cleared through `/auth/change-password`, new password accepted; a customer session for a Shopper's own phone with `role = customer`; logout revokes the token (`204`, then `401 authentication_required`); `404 resource_not_found` envelope with `request_id` |
 | Real stack, Android app on the emulator (API 36 image, `BB_API_BASE_URL=http://10.0.2.2:8000/api/v1`) | Customer login by phone and code; the stored session survives an app restart; logout; staff login as Shopper; Customer mode with a code to the staff phone; the active-mode chip; switch back; logout of one mode keeps the other; language switch to Russian across every string; an Admin on the phone sees the wrong-surface screen and can log out |
+| Real stack, the web panel (`build/web` served on loopback, headless Chrome 153 driven over the DevTools protocol, default `BB_API_BASE_URL`) | Operator, Admin and Manager sign in and land in their shells (`#/operations`, `#/admin`, `#/manager`); a mistyped address inside the panel (`#/operations/x`) returns to the shell; logout returns to the login; a Shopper signing in in the browser sees the wrong-surface screen (`#/auth/wrong-surface`) |
 
-**Not verified by the agent, on the Owner's checklist:** the web panel in a real browser (built and tested with the web surface, not driven in Chrome); a real phone; Telegram and SMS delivery (no provider until Wave 4 and 5 — the fake gateway records codes, test phones use the fixed code).
+**Not verified by the agent, on the Owner's checklist:** a real phone; Telegram and SMS delivery (no provider until Wave 4 and 5 — the fake gateway records codes, test phones use the fixed code); the panel in a headed browser with a person's keyboard and mouse (the agent drove a headless one).
 
-**Owner's manual check** (the app: install `frontend/build/app/outputs/flutter-apk/app-debug.apk` built with the `BB_API_BASE_URL` of the running stack, or run `flutter run` against it; the panel: `flutter run -d chrome --dart-define=BB_API_BASE_URL=...`):
+**Owner's manual check.** On the emulator: the APK on disk (`frontend/build/app/outputs/flutter-apk/app-debug.apk`, built for `http://10.0.2.2:8000/api/v1`) against the stack served as the W0-7 note says. On a real phone on the same Wi-Fi: publish the server on the machine's LAN address (`-p <LAN address>:8000:8000`) and rebuild with `flutter build apk --debug --dart-define=BB_API_BASE_URL=http://<LAN address>:8000/api/v1`. The panel: `flutter run -d chrome --dart-define=BB_API_BASE_URL=http://127.0.0.1:8000/api/v1`. Test phones and the fixed code are in the local `backend/.env`; staff accounts come from the seed of the W0-7 note.
 
-1. Customer: enter a test phone, receive the code screen naming the channel and the phone, enter the fixed code, land in the Customer shell. Close and reopen the app: still signed in. Log out: back to the phone screen.
-2. Wrong input: an incomplete phone and a five-digit code are refused before anything is sent; a wrong code shows "Kod noto'g'ri"; after five wrong codes the text says to request a new one.
+1. Customer: enter a test phone, receive the code screen saying the code was sent and naming the phone (a test phone names no channel), enter the fixed code, land in the Customer shell. Close and reopen the app: still signed in. Log out: back to the phone screen.
+2. Wrong input: an incomplete phone and a five-digit code are refused before anything is sent; a wrong code shows "Kod noto'g'ri" five times; the sixth code entered says the attempts are exhausted and to request a new one.
 3. Staff: "Xodim sifatida kirish", phone and password. A wrong password shows its text and the form stays usable. A staff account with a temporary password lands on the password change and nowhere else; a pair shorter than ten characters or not matching is refused before sending; after the change the role shell opens.
 4. Customer mode: as a Shopper or Courier, "Mijoz sifatida davom etish", the code goes to your own phone, the Customer shell opens with the "Mijoz rejimi" chip; "Xodim rejimiga qaytish" switches back without a code; logging out of one mode keeps the other.
 5. Language: the globe icon switches every string between Uzbek and Russian and the choice survives a restart.
