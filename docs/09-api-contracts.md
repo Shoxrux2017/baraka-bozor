@@ -86,26 +86,26 @@ Codes: `code_invalid`, `code_expired`, `code_attempts_exhausted`, `account_block
 
 ## 13. Addresses
 
-`GET|POST /customer/addresses`, `GET|PATCH|DELETE /customer/addresses/{address}`. Body: `latitude`, `longitude` (decimal strings), `street`, `house`, optional `label`, `apartment`, `landmark`, `delivery_note`. A point outside the service area answers `422 address_outside_service_area` with `details.max_distance_km` and `details.distance_km`. Delete deactivates when the address is referenced by an order.
+`GET|POST /customer/addresses`, `GET|PATCH|DELETE /customer/addresses/{address}`. Body: `latitude`, `longitude` (decimal strings), `street`, `house`, optional `label`, `apartment`, `landmark`, `delivery_note`. A point outside the service area answers `422 address_outside_service_area` with `details.max_distance_km` and `details.distance_km`; while the service area is not configured, create and update answer `409 checkout_configuration_incomplete`. Delete always deactivates (`DL-17`); the list returns active addresses only.
 
 # Catalog
 
 ## 14. Customer Catalog
 
-`GET /catalog/categories`, `GET /catalog/products?category_id=&search=&page=`, `GET /catalog/products/{product}`.
+`GET /catalog/categories`, `GET /catalog/products?category_id=&search=&page=&per_page=`, `GET /catalog/products/{product}`. A Customer session is required (`DL-17`); an archived or inactive product, or one in an inactive category, is a scope-safe `404`.
 
 Product:
 
 ```json
 {"id":"...","category_id":"...","name_uz":"Pomidor","name_ru":"Помидор","description_uz":null,"description_ru":null,
- "unit_code":"kg","price_mode":"estimate","customer_unit_price_uzs":18400,"image_url":"https://.../p/....webp","is_active":true}
+ "unit_code":"kg","price_mode":"estimate","customer_unit_price_uzs":18400,"image_url":"https://.../storage/products/<uuid>.webp","is_active":true}
 ```
 
 Search matches `name_uz` and `name_ru` case-insensitively.
 
 ## 15. Admin Catalog
 
-`GET|POST /admin/categories`, `GET|PATCH /admin/categories/{category}`, `POST .../archive`, `POST .../restore`; the same for `/admin/products`. Product write body: `category_id, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, sort_order, is_active`. Admin responses also carry `market_price_uzs`.
+`GET|POST /admin/categories`, `GET|PATCH /admin/categories/{category}`, `POST .../archive`, `POST .../restore`; the same for `/admin/products`. Lists are paginated, ordered by `sort_order` then `name_uz`, and take `include_archived`; the product list also takes `category_id` and `search`. Product write body: `category_id, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, sort_order, is_active`. Archive sets `archived_at` and `is_active = false`; restore clears `archived_at` and sets `is_active = true`; `is_active` alone hides a product without archiving it. Admin responses also carry `market_price_uzs`, the computed `customer_unit_price_uzs` and `archived_at`.
 
 ## 16. Product Image
 
@@ -257,11 +257,11 @@ Approval resource: `type`, `status`, the item with both names, `proposed_custome
 
 ## 43. Staff
 
-`GET|POST /admin/staff`, `GET|PATCH /admin/staff/{user}`, `POST .../block`, `POST .../activate`, `POST .../reset-password`. Create body `{"full_name":"...","phone":"+998...","role":"shopper"}`; create and reset return the temporary password once. PATCH never accepts `role`. Codes: `self_block_not_allowed`, `last_active_admin_required`, `phone_already_active`.
+`GET|POST /admin/staff` (the list takes `role`, `status`, `page`, `per_page`), `GET|PATCH /admin/staff/{user}`, `POST .../block`, `POST .../activate`, `POST .../reset-password`. Create body `{"full_name":"...","phone":"+998...","role":"shopper"}` with `full_name` 1–120 characters; create and reset return the temporary password once. Block and reset-password delete every token of the account (`DL-17`). PATCH accepts `full_name` only, never `role`. Codes: `self_block_not_allowed`, `last_active_admin_required`, `phone_already_active`.
 
 ## 44. Business Settings
 
-`GET|PATCH /admin/settings/business` — every field of `08` Section 11. `GET /admin/settings/payment-providers`, `PATCH /admin/settings/payment-providers/{provider}` `{"is_enabled":true}`.
+`GET|PATCH /admin/settings/business` — every field of `08` Section 11; `PATCH` takes any subset and enforces the service-fee cross-field rule. `GET /admin/settings/payment-providers`, `PATCH /admin/settings/payment-providers/{provider}` `{"is_enabled":true}`, where `{provider}` is constrained to the four provider values (`DL-17`).
 
 ## 45. Price Correction
 
