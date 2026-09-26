@@ -26,7 +26,7 @@ Single resource: `{"data": {...}}`. Collection: `{"data": [...], "meta": {"pagin
 
 `errors` holds field errors for `validation_failed` and is `{}` otherwise. `details` carries machine-readable values a client needs to compose its own text (for example a minimum amount) and is omitted when empty. `request_id` is generated per request, written to that request's log lines, and returned in error responses only.
 
-HTTP baseline: `200/201/204` success; `400 malformed_request`; `401` unauthenticated or blocked; `403 forbidden`; `404 resource_not_found` (scope-safe); `409` lifecycle, business, idempotency or concurrency conflict; `422 validation_failed`; `429 rate_limited` with `Retry-After`; `502/503 provider_unavailable` for an external provider; `503 service_unavailable` for planned maintenance, with `Retry-After`; `500 server_error`. Any other client status folds to the scope-safe `404`; any other server status keeps its number with `server_error`. No response ever carries exception text, SQL, paths, class names, secrets or raw provider errors.
+HTTP baseline: `200/201/204` success; `400 malformed_request`; `401` unauthenticated or blocked; `403 forbidden`; `404 resource_not_found` (scope-safe); `409` lifecycle, business, idempotency or concurrency conflict; `413 payload_too_large` for a body above the server's limit (8 MiB); `422 validation_failed`; `429 rate_limited` with `Retry-After`; `502/503 provider_unavailable` for an external provider; `503 service_unavailable` for planned maintenance, with `Retry-After`; `500 server_error`. Any other client status folds to the scope-safe `404`; any other server status keeps its number with `server_error`. No response ever carries exception text, SQL, paths, class names, secrets or raw provider errors.
 
 ## 4. Strict Request Shape
 
@@ -105,11 +105,11 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
 
 ## 15. Admin Catalog
 
-`GET|POST /admin/categories`, `GET|PATCH /admin/categories/{category}`, `POST .../archive`, `POST .../restore`; the same for `/admin/products`. Lists are paginated, ordered by `sort_order` then `name_uz`, and take `include_archived`; the product list also takes `category_id` and `search`. Product write body: `category_id, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, sort_order?, is_active?` (`sort_order` defaults to 0, `is_active` to true); an update takes any non-empty subset. Archive sets `archived_at` and `is_active = false`; restore clears `archived_at` and sets `is_active = true`; both are natural repeats; `is_active` alone hides an entry without archiving it, and `is_active: true` on an archived entry answers `409 business_conflict`. A product is created in, or moved to, an existing unarchived category only (`422 validation_failed` on `category_id`); an edit that re-sends the product's current category is not a move; archiving a category leaves its products as they are. Admin responses also carry `market_price_uzs`, the computed `customer_unit_price_uzs` and `archived_at`.
+`GET|POST /admin/categories`, `GET|PATCH /admin/categories/{category}`, `POST .../archive`, `POST .../restore`; the same for `/admin/products`. Lists are paginated, ordered by `sort_order` then `name_uz`, and take `include_archived`; the product list also takes `category_id` and `search`. Product write body: `category_id, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, sort_order?, is_active?` (`sort_order` defaults to 0, `is_active` to true); an update takes any non-empty subset. Archive sets `archived_at` and `is_active = false`; restore clears `archived_at` and sets `is_active = true`; both are natural repeats; `is_active` alone hides an entry without archiving it, and `is_active: true` on an archived entry answers `409 business_conflict`. A product is created in, or moved to, an existing unarchived category only (`422 validation_failed` on `category_id`); an edit that re-sends the product's current category is not a move; archiving a category leaves its products as they are. Admin responses also carry `market_price_uzs`, the computed `customer_unit_price_uzs`, `image_url` (`null` without an image) and `archived_at`.
 
 ## 16. Product Image
 
-`POST /admin/products/{product}/image` (multipart field `image`; JPEG, PNG or WebP judged by the bytes, not the file name; at most 5 MiB) replaces the current image under a fresh key, so `image_url` changes; `DELETE` removes it and is a natural repeat. Both answer the Admin product with `image_url` (`null` without an image). An archived product accepts an image.
+`POST /admin/products/{product}/image` (multipart field `image`; JPEG, PNG or WebP judged by the bytes, not the file name; at most 5 MiB) replaces the current image under a fresh key, so `image_url` changes; two uploads for one product at once are serialized, and one that still collides answers `409 business_conflict`; `DELETE` removes it and is a natural repeat. A file field other than `image` is refused like an unknown field. Both answer the Admin product with `image_url` (`null` without an image). An archived product accepts an image.
 
 # Cart and Checkout
 
@@ -297,7 +297,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 51. Common
 
-`validation_failed`, `malformed_request`, `authentication_required`, `forbidden`, `resource_not_found`, `business_conflict`, `rate_limited`, `provider_unavailable`, `service_unavailable`, `idempotency_key_required`, `idempotency_key_reused`, `idempotency_in_progress`, `server_error`.
+`validation_failed`, `malformed_request`, `authentication_required`, `forbidden`, `resource_not_found`, `business_conflict`, `payload_too_large`, `rate_limited`, `provider_unavailable`, `service_unavailable`, `idempotency_key_required`, `idempotency_key_reused`, `idempotency_in_progress`, `server_error`.
 
 ## 52. Auth
 

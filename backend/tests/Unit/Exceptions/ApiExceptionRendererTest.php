@@ -35,6 +35,7 @@ final class ApiExceptionRendererTest extends TestCase
             'mapped 403' => [403, 403, 'forbidden'],
             'mapped 404' => [404, 404, 'resource_not_found'],
             'mapped 409' => [409, 409, 'business_conflict'],
+            'mapped 413' => [413, 413, 'payload_too_large'],
             'mapped 422' => [422, 422, 'validation_failed'],
             'mapped 429' => [429, 429, 'rate_limited'],
             'mapped 502' => [502, 502, 'provider_unavailable'],

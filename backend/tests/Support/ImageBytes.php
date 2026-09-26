@@ -28,6 +28,9 @@ final class ImageBytes
 
     private const GIF = 'R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
 
+    /** @var list<string> */
+    private static array $written = [];
+
     public static function png(string $name = 'pomidor.png'): UploadedFile
     {
         return self::file($name, self::decode(self::PNG));
@@ -49,11 +52,49 @@ final class ImageBytes
     }
 
     /**
-     * A PDF under a JPEG name: the name says image, the bytes do not.
+     * A PDF under a JPEG name, whose client also claims `image/jpeg`: the name
+     * and the header say image, the bytes do not.
      */
     public static function pdfNamedJpeg(): UploadedFile
     {
-        return self::file('photo.jpg', "%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n");
+        return self::file('photo.jpg', "%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n", 'image/jpeg');
+    }
+
+    /**
+     * PNG bytes under a JPEG name: allowed, and stored by what the bytes are.
+     */
+    public static function pngNamedJpeg(): UploadedFile
+    {
+        return self::file('photo.jpg', self::decode(self::PNG), 'image/jpeg');
+    }
+
+    public static function svgNamedPng(): UploadedFile
+    {
+        return self::file('a.png', '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><rect width="1" height="1"/></svg>', 'image/png');
+    }
+
+    public static function htmlNamedPng(): UploadedFile
+    {
+        return self::file('a.png', "<!DOCTYPE html>\n<html><body><script>alert(1)</script></body></html>\n", 'image/png');
+    }
+
+    public static function emptyFile(): UploadedFile
+    {
+        return self::file('empty.png', '', 'image/png');
+    }
+
+    /**
+     * Removes every file this class wrote, for a test's tearDown.
+     */
+    public static function cleanUp(): void
+    {
+        foreach (self::$written as $path) {
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+
+        self::$written = [];
     }
 
     /**
@@ -67,7 +108,7 @@ final class ImageBytes
         return self::file('big.png', $png.str_repeat("\0", max(0, $bytes - strlen($png))));
     }
 
-    private static function file(string $name, string $contents): UploadedFile
+    private static function file(string $name, string $contents, ?string $clientMimeType = null): UploadedFile
     {
         $path = tempnam(sys_get_temp_dir(), 'bb-upload-');
 
@@ -75,7 +116,9 @@ final class ImageBytes
             throw new RuntimeException('Could not write a temporary upload.');
         }
 
-        return new UploadedFile($path, $name, null, null, true);
+        self::$written[] = $path;
+
+        return new UploadedFile($path, $name, $clientMimeType, null, true);
     }
 
     private static function decode(string $base64): string

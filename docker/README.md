@@ -65,7 +65,7 @@ docker compose -f docker/compose.yaml exec app php artisan migrate --force
 docker compose -f docker/compose.yaml exec app php artisan storage:link
 ```
 
-`storage:link` publishes the `public` disk under `/storage`, where product images are served from (`DL-21`).
+`storage:link` publishes the `public` disk under `/storage`, where product images are served from (`DL-21`). Image URLs are absolute and built from `APP_URL`, so `APP_URL` in `backend/.env` must be the address the clients use: `http://10.0.2.2:8000` for the Android emulator, the machine's LAN address for a phone. A change to `docker/php.ini` (the upload limits among them) needs `up -d --build`.
 
 Both `vendor/` and `.env` are gitignored, so a fresh clone or a new worktree has
 neither, and both are required. Without `vendor/` nothing runs at all. Without
