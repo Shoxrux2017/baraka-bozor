@@ -81,8 +81,11 @@ flutter {
     source = "../.."
 }
 
+/** The MapKit variant the yandex_mapkit plugin is built with (gradle.properties). */
+val mapKitVariant = (project.findProperty("yandexMapkit.variant") as String?) ?: "lite"
+
 dependencies {
-    // The version the yandex_mapkit plugin itself uses; the application
-    // needs it too, to hand the SDK its key in MainApplication.
-    implementation("com.yandex.android:maps.mobile:4.39.1-lite")
+    // The version the yandex_mapkit plugin itself uses, in its variant; the
+    // application needs it too, to hand the SDK its key in MainApplication.
+    implementation("com.yandex.android:maps.mobile:4.39.1-$mapKitVariant")
 }

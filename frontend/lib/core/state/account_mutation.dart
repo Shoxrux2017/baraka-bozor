@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show protected;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show KeepAliveLink;
 
 import '../network/api_failure.dart';
 import 'mutation_state.dart';
@@ -11,10 +12,13 @@ import 'mutation_state.dart';
 /// (`frontend/AGENTS.md` sections 4 and 5, `DL-28` (10)).
 ///
 /// After the change, [perform] reloads what it touched: on success, and also
-/// after a conflict or an uncertain outcome, when the screen may be showing a
-/// state the server no longer has (`docs/09` section 50) — but not after a
-/// refused field, which the form still holds. An answer that arrives for
-/// another account counts as cancelled (`DL-27` (2)).
+/// after a conflict, a record gone, or an uncertain outcome, when the screen
+/// may be showing a state the server no longer has (`docs/09` section 50) —
+/// but not after a refused field, which the form still holds. The surface
+/// stays alive until its change has answered, so a change the person left
+/// still reloads what it touched; whether it may still navigate or confirm
+/// is the widget's to decide. An answer that arrives for another account
+/// counts as cancelled (`DL-27` (2)).
 abstract class AccountMutation extends MutationNotifier {
   /// The id of the account the change is made for, `null` while there is
   /// none; watched, so another account starts the surface over.
@@ -36,23 +40,31 @@ abstract class AccountMutation extends MutationNotifier {
   }) async {
     final String? before = ref.read(account);
     bool current() => ref.mounted && ref.read(account) == before;
+    final KeepAliveLink alive = ref.keepAlive();
 
     T? result;
-    final bool done = await run(() async {
-      try {
-        result = await change();
-      } on ApiFailure catch (failure) {
-        final bool mayBeStale = failure is! ApiRefusal || failure.status == 409;
-        if (mayBeStale && current()) {
-          reload(null);
+    try {
+      final bool done = await run(() async {
+        try {
+          result = await change();
+        } on ApiFailure catch (failure) {
+          final bool mayBeStale =
+              failure is! ApiRefusal ||
+              failure.status == 404 ||
+              failure.status == 409;
+          if (mayBeStale && current()) {
+            reload(null);
+          }
+          rethrow;
         }
-        rethrow;
-      }
-      if (!current()) {
-        throw const CancelledFailure();
-      }
-      reload(result);
-    });
-    return done ? result : null;
+        if (!current()) {
+          throw const CancelledFailure();
+        }
+        reload(result);
+      });
+      return done ? result : null;
+    } finally {
+      alive.close();
+    }
   }
 }

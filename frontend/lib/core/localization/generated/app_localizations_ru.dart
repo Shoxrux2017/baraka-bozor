@@ -764,6 +764,25 @@ class AppLocalizationsRu extends AppLocalizations {
       'В этой сборке нет карты. Введите координаты точки';
 
   @override
+  String get addressLatitude => 'Широта';
+
+  @override
+  String get addressLongitude => 'Долгота';
+
+  @override
+  String get addressLatitudeInvalid => 'Широта должна быть числом от -90 до 90';
+
+  @override
+  String get addressLongitudeInvalid =>
+      'Долгота должна быть числом от -180 до 180';
+
+  @override
+  String get addressOutsideAreaPlain => 'Этот адрес вне зоны доставки';
+
+  @override
+  String get noChanges => 'Изменений нет';
+
+  @override
   String addressOutsideArea(String distance, String max) {
     return 'Адрес вне зоны доставки: $distance км. Мы доставляем в радиусе $max км';
   }

@@ -7,9 +7,11 @@ import 'yandex_map_picker_stub.dart'
     if (dart.library.io) 'yandex_map_picker.dart';
 
 /// Builds the widget where the Customer puts the pin: [initial] where it
-/// starts, [onMoved] each time it comes to rest somewhere else.
+/// starts, [onMoved] each time it comes to rest somewhere else, and
+/// [enabled] false while the form is saving. It sizes itself.
 typedef MapPickerBuilder = Widget Function({
   required GeoPoint initial,
+  required bool enabled,
   required ValueChanged<GeoPoint> onMoved,
 });
 

@@ -1514,6 +1514,42 @@ abstract class AppLocalizations {
   /// **'Bu ilova versiyasida xarita yo\'q. Nuqtaning koordinatalarini kiriting'**
   String get addressMapUnavailable;
 
+  /// No description provided for @addressLatitude.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kenglik'**
+  String get addressLatitude;
+
+  /// No description provided for @addressLongitude.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uzunlik'**
+  String get addressLongitude;
+
+  /// No description provided for @addressLatitudeInvalid.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kenglik -90 dan 90 gacha son bo\'lishi kerak'**
+  String get addressLatitudeInvalid;
+
+  /// No description provided for @addressLongitudeInvalid.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uzunlik -180 dan 180 gacha son bo\'lishi kerak'**
+  String get addressLongitudeInvalid;
+
+  /// No description provided for @addressOutsideAreaPlain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu manzil yetkazib berish hududidan tashqarida'**
+  String get addressOutsideAreaPlain;
+
+  /// No description provided for @noChanges.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgarish yo\'q'**
+  String get noChanges;
+
   /// No description provided for @addressOutsideArea.
   ///
   /// In uz, this message translates to:

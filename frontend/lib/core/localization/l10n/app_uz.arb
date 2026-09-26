@@ -312,6 +312,12 @@
   "addressDeliveryNote": "Kuryer uchun izoh",
   "addressMapHint": "Xaritani suring: belgi eshigingiz ustida tursin",
   "addressMapUnavailable": "Bu ilova versiyasida xarita yo'q. Nuqtaning koordinatalarini kiriting",
+  "addressLatitude": "Kenglik",
+  "addressLongitude": "Uzunlik",
+  "addressLatitudeInvalid": "Kenglik -90 dan 90 gacha son bo'lishi kerak",
+  "addressLongitudeInvalid": "Uzunlik -180 dan 180 gacha son bo'lishi kerak",
+  "addressOutsideAreaPlain": "Bu manzil yetkazib berish hududidan tashqarida",
+  "noChanges": "O'zgarish yo'q",
   "addressOutsideArea": "Bu manzil yetkazib berish hududidan tashqarida: {distance} km. Biz {max} km gacha yetkazib beramiz",
   "@addressOutsideArea": {
     "placeholders": {

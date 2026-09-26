@@ -766,6 +766,27 @@ class AppLocalizationsUz extends AppLocalizations {
       'Bu ilova versiyasida xarita yo\'q. Nuqtaning koordinatalarini kiriting';
 
   @override
+  String get addressLatitude => 'Kenglik';
+
+  @override
+  String get addressLongitude => 'Uzunlik';
+
+  @override
+  String get addressLatitudeInvalid =>
+      'Kenglik -90 dan 90 gacha son bo\'lishi kerak';
+
+  @override
+  String get addressLongitudeInvalid =>
+      'Uzunlik -180 dan 180 gacha son bo\'lishi kerak';
+
+  @override
+  String get addressOutsideAreaPlain =>
+      'Bu manzil yetkazib berish hududidan tashqarida';
+
+  @override
+  String get noChanges => 'O\'zgarish yo\'q';
+
+  @override
   String addressOutsideArea(String distance, String max) {
     return 'Bu manzil yetkazib berish hududidan tashqarida: $distance km. Biz $max km gacha yetkazib beramiz';
   }

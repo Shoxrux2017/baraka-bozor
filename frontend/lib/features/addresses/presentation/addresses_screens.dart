@@ -139,7 +139,7 @@ class AddressFormScreen extends ConsumerWidget {
       body: SafeArea(
         child: UnderActiveMode(
           child: addresses.when(
-            skipLoadingOnReload: true,
+            skipLoadingOnReload: false,
             // A retry after a failed load shows progress; a reload after a
             // save keeps the form.
             skipLoadingOnRefresh: !addresses.hasError,
@@ -194,6 +194,10 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
   );
   late GeoPoint _point = widget.address?.point ?? defaultMapCentre;
 
+  /// The point of the last save, so a refusal of the area is shown only
+  /// while the pin is still where it was refused.
+  GeoPoint? _sentPoint;
+
   @override
   void dispose() {
     for (final TextEditingController controller in <TextEditingController>[
@@ -218,22 +222,29 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
     if (!(_form.currentState?.validate() ?? false)) {
       return;
     }
-    final String savedText = AppLocalizations.of(context).addressSaved;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final Address? address = widget.address;
+    final AddressDraft draft = AddressDraft(
+      label: _optional(_label.text),
+      point: _point,
+      street: _street.text.trim(),
+      house: _house.text.trim(),
+      apartment: _optional(_apartment.text),
+      landmark: _optional(_landmark.text),
+      deliveryNote: _optional(_note.text),
+    );
+    // An edit that changes nothing sends nothing and says so (`DL-27` (3)).
+    if (address != null && draft.sameAs(address)) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.noChanges)));
+      return;
+    }
+    final String savedText = l10n.addressSaved;
+    setState(() => _sentPoint = _point);
 
     final Address? saved = await ref
         .read(addressFormControllerProvider.notifier)
-        .save(
-          widget.address,
-          AddressDraft(
-            label: _optional(_label.text),
-            point: _point,
-            street: _street.text.trim(),
-            house: _house.text.trim(),
-            apartment: _optional(_apartment.text),
-            landmark: _optional(_landmark.text),
-            deliveryNote: _optional(_note.text),
-          ),
-        );
+        .save(address, draft);
     // The Customer may have gone back while the save ran; where they went
     // stays on screen.
     if (!mounted || saved == null) {
@@ -292,12 +303,10 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
         children: <Widget>[
           Text(l10n.addressMapHint),
           const SizedBox(height: 8),
-          SizedBox(
-            height: 280,
-            child: picker(
-              initial: _point,
-              onMoved: (GeoPoint point) => setState(() => _point = point),
-            ),
+          picker(
+            initial: _point,
+            enabled: !change.isBusy,
+            onMoved: (GeoPoint point) => setState(() => _point = point),
           ),
           const SizedBox(height: 16),
           field('street', _street, l10n.addressStreet, 160, required: true),
@@ -317,7 +326,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
             onPressed: change.isBusy ? null : _submit,
             child: Text(l10n.saveButton),
           ),
-          _SaveFailure(change.failure),
+          _SaveFailure(change.failure, samePoint: _point == _sentPoint),
         ],
       ),
     );
@@ -325,23 +334,44 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
 }
 
 /// A refused save: outside the service area it says how far and how far is
-/// served, from the answer's `details`; anything else as its code says.
+/// served, from the answer's `details` — while the pin is still where it
+/// was refused; anything else as its code says.
 class _SaveFailure extends StatelessWidget {
-  const _SaveFailure(this.failure);
+  const _SaveFailure(this.failure, {required this.samePoint});
 
   final ApiFailure? failure;
+  final bool samePoint;
+
+  /// Two decimals, as `details` carries them (`docs/09` section 13).
+  static final RegExp _kilometres = RegExp(r'^\d+\.\d{2}$');
 
   @override
   Widget build(BuildContext context) {
     final ApiFailure? failure = this.failure;
     if (failure is ApiRefusal &&
         failure.code == 'address_outside_service_area') {
+      if (!samePoint) {
+        return const SizedBox.shrink();
+      }
+      final AppLocalizations l10n = AppLocalizations.of(context);
       final Object? distance = failure.error.details['distance_km'];
       final Object? max = failure.error.details['max_distance_km'];
+      // Kilometres with the decimal comma of both languages; without
+      // readable numbers the refusal is said without them.
+      final String text =
+          distance is String &&
+              max is String &&
+              _kilometres.hasMatch(distance) &&
+              _kilometres.hasMatch(max)
+          ? l10n.addressOutsideArea(
+              distance.replaceAll('.', ','),
+              max.replaceAll('.', ','),
+            )
+          : l10n.addressOutsideAreaPlain;
       return Padding(
         padding: const EdgeInsets.only(top: 12),
         child: Text(
-          AppLocalizations.of(context).addressOutsideArea('$distance', '$max'),
+          text,
           key: const ValueKey<String>('address-outside-area'),
           style: TextStyle(color: Theme.of(context).colorScheme.error),
         ),

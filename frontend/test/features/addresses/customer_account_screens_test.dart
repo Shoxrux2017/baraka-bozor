@@ -14,6 +14,9 @@ import 'package:baraka_bozor/features/profile/application/profile_controllers.da
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:baraka_bozor/features/profile/domain/profile.dart';
+import 'package:baraka_bozor/core/routing/app_paths.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_auth_repository.dart';
@@ -25,6 +28,7 @@ const GeoPoint _door = GeoPoint(latitude: '41.320000', longitude: '69.250000');
 /// A map whose pin moves to [_door] when its button is tapped.
 Widget _fakeMap({
   required GeoPoint initial,
+  required bool enabled,
   required ValueChanged<GeoPoint> onMoved,
 }) => Column(
   children: <Widget>[
@@ -217,10 +221,18 @@ void main() {
       await tapAndSettle(tester, byKey('address-save'));
 
       expect(
-        find.text(l10n(tester).addressOutsideArea('7.25', '5.00')),
+        find.text(l10n(tester).addressOutsideArea('7,25', '5,00')),
         findsOneWidget,
+        reason: 'with the decimal comma',
       );
       expect(byKey('address-save'), findsOneWidget, reason: 'the form stays');
+
+      await tapAndSettle(tester, byKey('fake-map-move'));
+      expect(
+        byKey('address-outside-area'),
+        findsNothing,
+        reason: 'the refusal was about the point before',
+      );
     });
 
     testWidgets('an area not configured yet is explained', (
@@ -311,6 +323,11 @@ void main() {
       expect(addresses.saved, hasLength(1));
       expect(byKey('address-new'), findsOneWidget, reason: 'still the list');
       expect(find.text(l10n(tester).addressSaved), findsNothing);
+      expect(
+        find.text('Navoiy, 5A'),
+        findsOneWidget,
+        reason: 'the list shows the address the save made',
+      );
     });
 
     testWidgets('a failure shows where it happened and nowhere else', (
@@ -427,5 +444,244 @@ void main() {
     await tester.pumpAndSettle();
     await tapAndSettle(tester, find.text('Uy'));
     expect(mode, findsOneWidget, reason: 'on an edit');
+  });
+
+  group('coordinates typed without a map', () {
+    Future<void> typePoint(
+      WidgetTester tester,
+      String latitude,
+      String longitude,
+    ) async {
+      await openAddresses(tester, fakeMap: false);
+      await tapAndSettle(tester, byKey('address-new'));
+      await tester.enterText(byKey('point-latitude'), latitude);
+      await tester.enterText(byKey('point-longitude'), longitude);
+      await tester.enterText(byKey('field-street'), 'Navoiy');
+      await tester.enterText(byKey('field-house'), '5A');
+      await tapAndSettle(tester, byKey('address-save'));
+    }
+
+    testWidgets('a decimal comma is read as the point it shows', (
+      WidgetTester tester,
+    ) async {
+      await typePoint(tester, '41,33', '69,28');
+
+      expect(
+        addresses.saved.single.$2.point,
+        const GeoPoint(latitude: '41.330000', longitude: '69.280000'),
+      );
+    });
+
+    testWidgets('more than six decimals are rounded, not dropped', (
+      WidgetTester tester,
+    ) async {
+      await typePoint(tester, '41.3456789', '69.2405617');
+
+      expect(
+        addresses.saved.single.$2.point,
+        const GeoPoint(latitude: '41.345679', longitude: '69.240562'),
+      );
+    });
+
+    testWidgets('an empty or impossible coordinate stops the save', (
+      WidgetTester tester,
+    ) async {
+      await typePoint(tester, '95.5', '');
+
+      expect(addresses.saved, isEmpty);
+      expect(find.text(l10n(tester).addressLatitudeInvalid), findsOneWidget);
+      expect(find.text(l10n(tester).fieldRequired), findsOneWidget);
+    });
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets('the fields fit a phone-size window with large text '
+          '(${device.languageCode})', (WidgetTester tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        tester.view.physicalSize = const Size(320, 568);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          appUnderTest(
+            tokens: tokens,
+            repository: auth,
+            device: device,
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(profile),
+              addressesRepositoryProvider.overrideWithValue(addresses),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tapAndSettle(tester, byKey('open-profile'));
+        await tester.scrollUntilVisible(
+          byKey('profile-addresses'),
+          200,
+          scrollable: find
+              .descendant(
+                of: byKey('profile-list'),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tapAndSettle(tester, byKey('profile-addresses'));
+        await tapAndSettle(tester, byKey('address-new'));
+        expect(byKey('point-longitude'), findsOneWidget);
+      });
+    }
+  });
+
+  group('failures and answers', () {
+    testWidgets('a profile that failed to load shows progress on its retry', (
+      WidgetTester tester,
+    ) async {
+      profile.loadFailure = const NetworkFailure();
+      await openProfile(tester);
+      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+
+      profile.hold = Completer<void>();
+      await tester.tap(find.text(l10n(tester).retryButton));
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      profile.hold!.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('profile-name'), findsOneWidget);
+    });
+
+    testWidgets('addresses that failed to load show progress on their retry', (
+      WidgetTester tester,
+    ) async {
+      addresses.loadFailure = const NetworkFailure();
+      await openAddresses(tester);
+      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+
+      addresses.loadHold = Completer<void>();
+      await tester.tap(find.text(l10n(tester).retryButton));
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      addresses.loadHold!.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Uy'), findsOneWidget);
+    });
+
+    testWidgets("another Customer's profile is not shown", (
+      WidgetTester tester,
+    ) async {
+      profile.current = const CustomerProfile(
+        id: 'someone-else',
+        phone: '+998909999999',
+        fullName: 'Begona',
+      );
+      await openProfile(tester);
+
+      expect(find.text(l10n(tester).errorServerError), findsOneWidget);
+      expect(find.text('Begona'), findsNothing);
+    });
+
+    testWidgets('a refused rename explains itself and keeps the name typed', (
+      WidgetTester tester,
+    ) async {
+      profile.renameFailure = const NetworkFailure();
+      await openProfile(tester);
+
+      await tester.enterText(byKey('profile-name'), 'Aziza Karimova');
+      await tapAndSettle(tester, byKey('profile-save'));
+
+      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      expect(
+        tester.widget<TextFormField>(byKey('profile-name')).controller!.text,
+        'Aziza Karimova',
+      );
+    });
+
+    testWidgets('an unchanged name is not sent and says so', (
+      WidgetTester tester,
+    ) async {
+      profile.current = const CustomerProfile(
+        id: 'c',
+        phone: '+998901234567',
+        fullName: 'Aziza',
+      );
+      await openProfile(tester);
+
+      await tapAndSettle(tester, byKey('profile-save'));
+
+      expect(profile.renames, isEmpty);
+      expect(find.text(l10n(tester).noChanges), findsOneWidget);
+    });
+
+    testWidgets('a rename answered after the Customer moved on says nothing', (
+      WidgetTester tester,
+    ) async {
+      await openProfile(tester);
+      await tester.enterText(byKey('profile-name'), 'Aziza Karimova');
+      profile.hold = Completer<void>();
+      await tester.tap(byKey('profile-save'));
+      await tester.pump();
+
+      await tapAndSettle(tester, byKey('profile-addresses'));
+      profile.hold!.complete();
+      await tester.pumpAndSettle();
+
+      expect(profile.renames, <String>['Aziza Karimova']);
+      expect(find.text(l10n(tester).profileSaved), findsNothing);
+    });
+
+    testWidgets('an unchanged address is not sent and says so', (
+      WidgetTester tester,
+    ) async {
+      await openAddresses(tester);
+      await tapAndSettle(tester, find.text('Uy'));
+
+      await tapAndSettle(tester, byKey('address-save'));
+
+      expect(addresses.saved, isEmpty);
+      expect(find.text(l10n(tester).noChanges), findsOneWidget);
+      expect(byKey('address-save'), findsOneWidget, reason: 'the form stays');
+    });
+
+    testWidgets('an address that no longer exists says so', (
+      WidgetTester tester,
+    ) async {
+      await openAddresses(tester);
+
+      GoRouter.of(tester.element(find.byType(Scaffold).first))
+          .push(AppPaths.customerAddress('a-gone'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n(tester).errorNotFound), findsOneWidget);
+      expect(byKey('address-save'), findsNothing);
+    });
+
+    testWidgets('a refusal of the area without its numbers still explains', (
+      WidgetTester tester,
+    ) async {
+      addresses.saveFailure = const ApiRefusal(
+        ApiError(status: 422, code: 'address_outside_service_area'),
+      );
+      await openAddresses(tester);
+      await fillNewAddress(tester);
+      await tapAndSettle(tester, byKey('address-save'));
+
+      expect(find.text(l10n(tester).addressOutsideAreaPlain), findsOneWidget);
+      expect(find.textContaining('null'), findsNothing);
+    });
+
+    testWidgets('an address already gone when removed leaves the list', (
+      WidgetTester tester,
+    ) async {
+      await openAddresses(tester);
+      addresses.rows = <Address>[];
+      addresses.removeFailure = const ApiRefusal(
+        ApiError(status: 404, code: 'resource_not_found'),
+      );
+
+      await tapAndSettle(tester, byKey('address-remove-a-1'));
+      await tapAndSettle(tester, byKey('address-remove-confirm'));
+
+      expect(find.text(l10n(tester).addressNone), findsOneWidget);
+    });
   });
 }

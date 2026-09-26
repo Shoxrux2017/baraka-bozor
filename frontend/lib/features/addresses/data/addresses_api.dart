@@ -19,12 +19,22 @@ class AddressesRepositoryImpl implements AddressesRepository {
 
   @override
   Future<List<Address>> addresses() => guardApiCall(() async {
-    final Response<dynamic> response = await _dio.get<dynamic>(
-      '/customer/addresses',
-      queryParameters: <String, Object>{'per_page': 100},
-      options: _customer,
-    );
-    return Paged.parse(response.data, parse).items;
+    final List<Address> all = <Address>[];
+    for (int page = 1; ; page++) {
+      final Response<dynamic> response = await _dio.get<dynamic>(
+        '/customer/addresses',
+        queryParameters: <String, Object>{'page': page, 'per_page': 100},
+        options: _customer,
+      );
+      final Paged<Address> answer = Paged.parse(response.data, parse);
+      if (answer.page != page) {
+        throw const FormatException('the page does not match the request');
+      }
+      all.addAll(answer.items);
+      if (!answer.hasNext) {
+        return all;
+      }
+    }
   });
 
   @override
@@ -34,7 +44,7 @@ class AddressesRepositoryImpl implements AddressesRepository {
       data: body(draft),
       options: _customer,
     );
-    return parse(ApiEnvelope.unwrap(response.data));
+    return _matching(parse(ApiEnvelope.unwrap(response.data)), draft);
   });
 
   /// Only what changed, as `DL-28` (9) does for the panel, and the two
@@ -52,8 +62,24 @@ class AddressesRepositoryImpl implements AddressesRepository {
           data: changes,
           options: _customer,
         );
-        return parse(ApiEnvelope.unwrap(response.data));
+        final Address saved = _matching(
+          parse(ApiEnvelope.unwrap(response.data)),
+          draft,
+        );
+        if (saved.id != address.id) {
+          throw const FormatException('the address does not match the request');
+        }
+        return saved;
       });
+
+  /// [saved] when it holds what [draft] sent; an answer about something
+  /// else is malformed (`DL-27` (6)).
+  static Address _matching(Address saved, AddressDraft draft) {
+    if (!draft.sameAs(saved)) {
+      throw const FormatException('the address does not match the request');
+    }
+    return saved;
+  }
 
   @override
   Future<void> remove(String id) => guardApiCall(
@@ -111,7 +137,16 @@ class AddressesRepositoryImpl implements AddressesRepository {
       house: json.string('house'),
       apartment: json.nullableString('apartment'),
       landmark: json.nullableString('landmark'),
-      deliveryNote: json.nullableString('delivery_note'),
+      deliveryNote: _read(json),
     );
+  }
+
+  /// The last member the address carries, read with the two times the
+  /// contract also names.
+  static String? _read(JsonFields json) {
+    json
+      ..instant('created_at')
+      ..instant('updated_at');
+    return json.nullableString('delivery_note');
   }
 }

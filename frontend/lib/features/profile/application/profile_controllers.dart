@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
+import '../../../core/network/api_failure.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/state/account_mutation.dart';
 import '../../../core/state/mutation_state.dart';
@@ -17,11 +18,19 @@ final Provider<ProfileRepository> profileRepositoryProvider =
 /// The Customer's profile while the profile screen is open.
 class ProfileController extends AsyncNotifier<CustomerProfile> {
   @override
-  Future<CustomerProfile> build() {
-    if (ref.watch(customerAccountProvider) == null) {
+  Future<CustomerProfile> build() async {
+    final String? account = ref.watch(customerAccountProvider);
+    if (account == null) {
       return Completer<CustomerProfile>().future;
     }
-    return ref.read(profileRepositoryProvider).profile();
+    final CustomerProfile profile = await ref
+        .read(profileRepositoryProvider)
+        .profile();
+    // The profile of another Customer than the one signed in is malformed.
+    if (profile.id != account) {
+      throw const MalformedResponseFailure();
+    }
+    return profile;
   }
 
   void showSaved(CustomerProfile saved) =>

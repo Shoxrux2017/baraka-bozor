@@ -8,5 +8,6 @@ const bool yandexMapSupported = false;
 
 Widget yandexMapPicker({
   required GeoPoint initial,
+  required bool enabled,
   required ValueChanged<GeoPoint> onMoved,
 }) => throw UnsupportedError('Yandex MapKit is not available on the web');

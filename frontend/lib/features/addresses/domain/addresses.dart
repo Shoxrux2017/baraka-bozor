@@ -79,12 +79,23 @@ final class AddressDraft {
   final String? apartment;
   final String? landmark;
   final String? deliveryNote;
+
+  /// Whether [address] holds exactly this: an edit that changes nothing.
+  bool sameAs(Address address) =>
+      label == address.label &&
+      point == address.point &&
+      street == address.street &&
+      house == address.house &&
+      apartment == address.apartment &&
+      landmark == address.landmark &&
+      deliveryNote == address.deliveryNote;
 }
 
 /// The Customer's addresses (`docs/09` section 13), on the Customer
 /// session. Every method throws an `ApiFailure`.
 abstract interface class AddressesRepository {
-  /// Every active address; a Customer keeps few, so one page of 100.
+  /// Every active address, page after page; a Customer keeps few, so
+  /// usually one page of 100.
   Future<List<Address>> addresses();
 
   Future<Address> create(AddressDraft draft);

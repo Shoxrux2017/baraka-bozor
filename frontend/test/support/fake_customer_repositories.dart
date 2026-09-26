@@ -14,8 +14,22 @@ class FakeProfileRepository implements ProfileRepository {
   final List<String> renames = <String>[];
   ApiFailure? renameFailure;
 
+  /// The next load answers this instead.
+  ApiFailure? loadFailure;
+
+  /// While set, a load or a rename answers only once it completes.
+  Completer<void>? hold;
+
   @override
-  Future<CustomerProfile> profile() async => current;
+  Future<CustomerProfile> profile() async {
+    await hold?.future;
+    final ApiFailure? failure = loadFailure;
+    if (failure != null) {
+      loadFailure = null;
+      throw failure;
+    }
+    return current;
+  }
 
   @override
   Future<CustomerProfile> rename(
@@ -23,6 +37,7 @@ class FakeProfileRepository implements ProfileRepository {
     String fullName,
   ) async {
     renames.add(fullName);
+    await hold?.future;
     final ApiFailure? failure = renameFailure;
     if (failure != null) {
       renameFailure = null;
@@ -70,10 +85,23 @@ class FakeAddressesRepository implements AddressesRepository {
   ApiFailure? saveFailure;
   ApiFailure? removeFailure;
   Completer<void>? hold;
+
+  /// The next load answers this instead; while [loadHold] is set, a load
+  /// answers only once it completes.
+  ApiFailure? loadFailure;
+  Completer<void>? loadHold;
   int _next = 1;
 
   @override
-  Future<List<Address>> addresses() async => rows;
+  Future<List<Address>> addresses() async {
+    await loadHold?.future;
+    final ApiFailure? failure = loadFailure;
+    if (failure != null) {
+      loadFailure = null;
+      throw failure;
+    }
+    return rows;
+  }
 
   @override
   Future<Address> create(AddressDraft draft) => _save(null, draft);

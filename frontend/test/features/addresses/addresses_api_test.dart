@@ -1,3 +1,4 @@
+import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/network/auth_interceptor.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/addresses/data/addresses_api.dart';
@@ -61,11 +62,13 @@ void main() {
       'id': customerId,
       'phone': '+998901234567',
       'full_name': null,
+      'preferred_language': 'uz',
     };
     expect(ProfileRepositoryImpl.parse(json).phone, '+998901234567');
     for (final Map<String, Object?> broken in <Map<String, Object?>>[
       <String, Object?>{...json, 'id': 'c'},
       <String, Object?>{...json, 'phone': '901234567'},
+      <String, Object?>{...json, 'preferred_language': 'en'},
     ]) {
       expect(() => ProfileRepositoryImpl.parse(broken), throwsFormatException);
     }
@@ -103,8 +106,20 @@ void main() {
     late AddressesRepositoryImpl addresses;
     late ProfileRepositoryImpl profile;
 
+    /// How many pages the address list has; each holds one address.
+    int lastPage = 1;
+
+    /// When set, merged into every answer: an answer about something else.
+    Map<String, Object?>? skew;
+
     setUp(() {
+      lastPage = 1;
+      skew = null;
+      // Answers as the server does: what was sent, stored.
       adapter = FakeHttpClientAdapter((RequestOptions options) {
+        final Map<String, Object?> sent = options.data is Map<String, Object?>
+            ? options.data as Map<String, Object?>
+            : <String, Object?>{};
         if (options.path == '/customer/profile') {
           return jsonReply(200, <String, Object?>{
             'data': <String, Object?>{
@@ -112,6 +127,8 @@ void main() {
               'phone': '+998901234567',
               'full_name': 'Aziza',
               'preferred_language': 'uz',
+              ...sent,
+              ...?skew,
             },
           });
         }
@@ -119,21 +136,26 @@ void main() {
           return emptyReply(204);
         }
         if (options.method == 'GET') {
+          final int page = options.queryParameters['page']! as int;
           return jsonReply(200, <String, Object?>{
-            'data': <Object?>[addressJson()],
+            'data': <Object?>[
+              <String, Object?>{...addressJson(), 'house': '$page'},
+            ],
             'meta': <String, Object?>{
               'pagination': <String, int>{
-                'page': 1,
+                'page': page,
                 'per_page': 100,
-                'total': 1,
-                'last_page': 1,
+                'total': lastPage,
+                'last_page': lastPage,
               },
             },
           });
         }
         return jsonReply(
           options.method == 'POST' ? 201 : 200,
-          <String, Object?>{'data': addressJson()},
+          <String, Object?>{
+            'data': <String, Object?>{...addressJson(), ...sent, ...?skew},
+          },
         );
       });
       addresses = AddressesRepositoryImpl(dioWith(adapter));
@@ -190,8 +212,10 @@ void main() {
           'landmark': null,
           'delivery_note': 'Domofon 12',
         });
+        // The listed address is on page 1, so its house reads "1".
         expect(adapter.requests[2].data, <String, Object?>{
           'label': 'Uy',
+          'house': '12',
           'landmark': null,
           'delivery_note': 'Domofon 12',
         });
@@ -199,9 +223,70 @@ void main() {
           'full_name': 'Aziza Karimova',
         });
         expect(adapter.requests.first.queryParameters, <String, Object>{
+          'page': 1,
           'per_page': 100,
         });
       },
     );
+
+    test('every page of addresses is read', () async {
+      lastPage = 3;
+
+      final List<Address> all = await addresses.addresses();
+
+      expect(all.map((Address a) => a.house), <String>['1', '2', '3']);
+      expect(
+        adapter.requests.map((RequestOptions o) => o.queryParameters['page']),
+        <Object?>[1, 2, 3],
+      );
+    });
+
+    test('an answer about something else is refused', () async {
+      const AddressDraft draft = AddressDraft(
+        label: 'Uy',
+        point: GeoPoint(latitude: '41.311081', longitude: '69.240562'),
+        street: 'Amir Temur',
+        house: '12',
+        apartment: null,
+        landmark: null,
+        deliveryNote: null,
+      );
+      final Address existing = AddressesRepositoryImpl.parse(addressJson());
+      final CustomerProfile current = ProfileRepositoryImpl.parse(
+        <String, Object?>{
+          'id': customerId,
+          'phone': '+998901234567',
+          'full_name': 'Aziza',
+          'preferred_language': 'uz',
+        },
+      );
+
+      skew = <String, Object?>{'house': '99'};
+      await expectLater(
+        addresses.create(draft),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+      skew = <String, Object?>{'id': '4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f7a'};
+      await expectLater(
+        addresses.update(
+          existing,
+          AddressDraft(
+            label: existing.label,
+            point: existing.point,
+            street: existing.street,
+            house: '14',
+            apartment: existing.apartment,
+            landmark: existing.landmark,
+            deliveryNote: existing.deliveryNote,
+          ),
+        ),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+      skew = <String, Object?>{'id': '4d5e6f7a-8b9c-4d0e-8f1a-2b3c4d5e6f7a'};
+      await expectLater(
+        profile.rename(current, 'Aziza Karimova'),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+    });
   });
 }

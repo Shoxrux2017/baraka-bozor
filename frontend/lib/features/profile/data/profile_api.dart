@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../../core/localization/app_language.dart';
 import '../../../core/network/api_call.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/auth_interceptor.dart';
@@ -34,7 +35,13 @@ class ProfileRepositoryImpl implements ProfileRepository {
           data: <String, String>{'full_name': fullName},
           options: _customer,
         );
-        return parse(ApiEnvelope.unwrap(response.data));
+        final CustomerProfile saved = parse(ApiEnvelope.unwrap(response.data));
+        // An answer about another Customer, or without the new name, is
+        // malformed (`DL-27` (6)).
+        if (saved.id != profile.id || saved.fullName != fullName) {
+          throw const FormatException('the profile does not match the request');
+        }
+        return saved;
       });
 
   static final RegExp _phone = RegExp(r'^\+998\d{9}$');
@@ -47,6 +54,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
     if (!_phone.hasMatch(phone)) {
       throw const FormatException('a phone is +998 and nine digits');
     }
+    json.choice('preferred_language', AppLanguage.tryParse);
     return CustomerProfile(
       id: json.uuid('id'),
       phone: phone,

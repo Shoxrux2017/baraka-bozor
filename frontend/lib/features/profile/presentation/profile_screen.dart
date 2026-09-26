@@ -44,7 +44,7 @@ class ProfileScreen extends ConsumerWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 16),
-                _NameForm(key: ObjectKey(profile), profile: profile),
+                _NameForm(key: ValueKey<String>(profile.id), profile: profile),
                 const SizedBox(height: 24),
                 const _LanguageChoice(),
                 const Divider(height: 32),
@@ -101,6 +101,16 @@ class _NameFormState extends ConsumerState<_NameForm> {
   );
 
   @override
+  void didUpdateWidget(_NameForm old) {
+    super.didUpdateWidget(old);
+    // A reload brings the name as the server has it; a name the Customer is
+    // still typing stays (`DL-28` (9)).
+    if (_name.text == (old.profile.fullName ?? '')) {
+      _name.text = widget.profile.fullName ?? '';
+    }
+  }
+
+  @override
   void dispose() {
     _name.dispose();
     super.dispose();
@@ -110,15 +120,24 @@ class _NameFormState extends ConsumerState<_NameForm> {
     if (!(_form.currentState?.validate() ?? false)) {
       return;
     }
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final String savedText = AppLocalizations.of(context).profileSaved;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String name = _name.text.trim();
+    if (name == widget.profile.fullName) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.noChanges)));
+      return;
+    }
 
     final CustomerProfile? saved = await ref
         .read(renameControllerProvider.notifier)
-        .rename(widget.profile, _name.text.trim());
-    // A save the Customer left, or one for another account, says nothing.
-    if (saved != null) {
-      messenger.showSnackBar(SnackBar(content: Text(savedText)));
+        .rename(widget.profile, name);
+    // A save for another account says nothing, and neither does one the
+    // Customer has moved on from — to the addresses above the profile.
+    if (saved != null &&
+        mounted &&
+        (ModalRoute.of(context)?.isCurrent ?? false)) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.profileSaved)));
     }
   }
 
