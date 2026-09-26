@@ -6,6 +6,7 @@ namespace App\Modules\Catalog\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Pagination\PaginatedResponse;
+use App\Http\Requests\EmptyBodyRequest;
 use App\Models\Category;
 use App\Models\User;
 use App\Modules\Catalog\Actions\CatalogArchive;
@@ -57,12 +58,12 @@ final class AdminCategoryController extends Controller
         return new AdminCategoryResource($save->updateCategory($this->find($category), $fields));
     }
 
-    public function archive(string $category, CatalogArchive $archive): AdminCategoryResource
+    public function archive(EmptyBodyRequest $request, string $category, CatalogArchive $archive): AdminCategoryResource
     {
         return new AdminCategoryResource($archive->archiveCategory($this->find($category)));
     }
 
-    public function restore(string $category, CatalogArchive $archive): AdminCategoryResource
+    public function restore(EmptyBodyRequest $request, string $category, CatalogArchive $archive): AdminCategoryResource
     {
         return new AdminCategoryResource($archive->restoreCategory($this->find($category)));
     }

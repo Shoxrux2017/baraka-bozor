@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Auth;
 
+use App\Http\Requests\StrictFormRequest;
 use App\Models\Enums\Role;
 use App\Modules\Auth\Http\Middleware\EnsureAccountActive;
 use App\Modules\Auth\Http\Middleware\EnsurePasswordChanged;
@@ -12,6 +13,8 @@ use App\Support\Routing\UuidRouteParameters;
 use Illuminate\Routing\Route as RouteInstance;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;
+use ReflectionMethod;
+use ReflectionNamedType;
 use Tests\TestCase;
 
 /**
@@ -22,7 +25,9 @@ use Tests\TestCase;
  * Section 8), a role check mounted without the token, status and gate checks
  * before it (docs/07 Section 9), an Operator admitted outside the operations
  * surface (DL-12), a misspelled role that would fail only when hit, or a UUID
- * parameter left unconstrained so a malformed id reaches a query.
+ * parameter left unconstrained so a malformed id reaches a query; a
+ * mutation that reads a plain request, so a field sent to it is silently
+ * ignored (docs/09 Section 4, DL-31); or a write accepted outside the API.
  */
 final class ProtectedRoutesTest extends TestCase
 {
@@ -132,6 +137,52 @@ final class ProtectedRoutesTest extends TestCase
                     "Route {$route->uri()} parameter \"{$parameter}\" is not constrained to a UUID."
                 );
             }
+        }
+    }
+
+    public function test_every_mutating_api_route_takes_a_strict_request(): void
+    {
+        $checked = 0;
+
+        foreach ($this->routesOrFail() as [$route]) {
+            if (array_intersect($route->methods(), ['POST', 'PUT', 'PATCH', 'DELETE']) === []) {
+                continue;
+            }
+
+            $checked++;
+            [$class, $method] = str_contains($route->getActionName(), '@')
+                ? explode('@', $route->getActionName())
+                : [$route->getActionName(), '__invoke'];
+            $strict = false;
+
+            foreach ((new ReflectionMethod($class, $method))->getParameters() as $parameter) {
+                $type = $parameter->getType();
+                $strict = $strict || ($type instanceof ReflectionNamedType
+                    && ! $type->isBuiltin()
+                    && is_a($type->getName(), StrictFormRequest::class, true));
+            }
+
+            $this->assertTrue(
+                $strict,
+                "Route {$route->uri()} changes something without a strict request, so a field sent to it would be ignored."
+            );
+        }
+
+        $this->assertGreaterThan(0, $checked, 'The API declares mutating routes.');
+    }
+
+    public function test_nothing_outside_the_api_accepts_a_write(): void
+    {
+        foreach (Route::getRoutes()->getRoutes() as $route) {
+            if (str_starts_with($route->uri(), 'api/')) {
+                continue;
+            }
+
+            $this->assertSame(
+                [],
+                array_values(array_diff($route->methods(), ['GET', 'HEAD'])),
+                "Route {$route->uri()} accepts a write outside the API."
+            );
         }
     }
 

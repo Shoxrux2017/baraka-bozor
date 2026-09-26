@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // No signed `storage/{path}` routes: the application never hands
+            // out temporary URLs for private files (DL-31).
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

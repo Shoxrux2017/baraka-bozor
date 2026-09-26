@@ -6,6 +6,7 @@ namespace App\Modules\Catalog\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Pagination\PaginatedResponse;
+use App\Http\Requests\EmptyBodyRequest;
 use App\Models\Product;
 use App\Models\User;
 use App\Modules\Catalog\Actions\CatalogArchive;
@@ -60,12 +61,12 @@ final class AdminProductController extends Controller
         return $this->resource($save->updateProduct($this->find($product), $fields));
     }
 
-    public function archive(string $product, CatalogArchive $archive): AdminProductResource
+    public function archive(EmptyBodyRequest $request, string $product, CatalogArchive $archive): AdminProductResource
     {
         return $this->resource($archive->archiveProduct($this->find($product)));
     }
 
-    public function restore(string $product, CatalogArchive $archive): AdminProductResource
+    public function restore(EmptyBodyRequest $request, string $product, CatalogArchive $archive): AdminProductResource
     {
         return $this->resource($archive->restoreProduct($this->find($product)));
     }
