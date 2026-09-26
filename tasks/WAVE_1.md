@@ -18,8 +18,8 @@ The Yandex MapKit API key (`docs/06` section 5). Only W1-13 needs it; every othe
 | W1-2 | Pricing core and business settings API: `MoneyCalculator`, `CustomerPriceCalculator`, `ServiceAreaPolicy`; `GET\|PATCH /admin/settings/business`, `GET\|PATCH /admin/settings/payment-providers` | Merged |
 | W1-3 | Admin catalog API: categories and products list, create, read, update, archive, restore | Merged |
 | W1-4 | Product image API: upload or replace, delete, public URL | Merged |
-| W1-5 | Customer catalog API: categories, products with search and pagination, product detail, customer price | In review |
-| W1-6 | Customer profile and addresses API with the service-area check | Planned |
+| W1-5 | Customer catalog API: categories, products with search and pagination, product detail, customer price | Merged |
+| W1-6 | Customer profile and addresses API with the service-area check | In review |
 | W1-7 | Staff management API: create with a temporary password, block, activate, reset password | Planned |
 | W1-8 | Push device registration API | Planned |
 | W1-9 | Panel: business settings and payment providers screen | Planned |

@@ -82,11 +82,11 @@ Codes: `code_invalid`, `code_expired`, `code_attempts_exhausted`, `account_block
 
 ## 12. Profile
 
-`GET /customer/profile`, `PATCH /customer/profile` `{"full_name":"...","preferred_language":"uz"}`.
+`GET /customer/profile`, `PATCH /customer/profile` `{"full_name":"...","preferred_language":"uz"}`. A Customer session is required. The response is `{"data":{"id":"...","phone":"+998901234567","full_name":"Aziza Karimova","preferred_language":"uz"}}`. PATCH takes either field or both: `full_name` is trimmed and holds 1–120 characters and cannot be cleared; `preferred_language` is `uz` or `ru`. The phone is not editable (`DL-23`).
 
 ## 13. Addresses
 
-`GET|POST /customer/addresses`, `GET|PATCH|DELETE /customer/addresses/{address}`. Body: `latitude`, `longitude` (decimal strings), `street`, `house`, optional `label`, `apartment`, `landmark`, `delivery_note`. A point outside the service area answers `422 address_outside_service_area` with `details.max_distance_km` and `details.distance_km`; while the service area is not configured, create and update answer `409 checkout_configuration_incomplete`. Delete always deactivates (`DL-17`); the list returns active addresses only.
+`GET|POST /customer/addresses`, `GET|PATCH|DELETE /customer/addresses/{address}`, a Customer session and own addresses only. Body: `latitude`, `longitude` (decimal strings, at most six decimals, a JSON number is refused), `street` (1–160), `house` (1–40), optional `label` (60), `apartment` (40), `landmark` (160), `delivery_note` (300). PATCH takes any non-empty subset, but the two coordinates always together. The response carries `id, label, latitude, longitude, street, house, apartment, landmark, delivery_note, created_at, updated_at`, coordinates as six-decimal strings; create answers `201`, delete `204`. A point outside the service area answers `422 address_outside_service_area` with `details.max_distance_km` and `details.distance_km`; while the service area is not configured, create and an update that moves the point answer `409 checkout_configuration_incomplete`; an update that keeps the point is not checked again (`DL-23`). Delete always deactivates (`DL-17`); the list returns active addresses only, newest first, and a deactivated or foreign address is the scope-safe `404` everywhere.
 
 # Catalog
 
