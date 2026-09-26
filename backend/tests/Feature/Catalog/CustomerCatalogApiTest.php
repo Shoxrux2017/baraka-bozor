@@ -7,26 +7,31 @@ namespace Tests\Feature\Catalog;
 use App\Models\Category;
 use App\Models\Enums\Role;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * The Customer catalog (`docs/09` section 14, `BR-CAT-003`, `BR-CAT-005`,
- * `BR-PRICE-001`, `DL-17` (4)).
+ * The Customer catalog (`docs/09` section 14, `BR-CAT-005`, `BR-PRICE-001`,
+ * `DL-17` (4), `DL-22`).
  */
 final class CustomerCatalogApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_only_active_unarchived_categories_are_listed_in_order(): void
+    public function test_only_active_unarchived_categories_with_a_visible_product_are_listed_in_order(): void
     {
-        Category::factory()->create(['name_uz' => 'Mevalar', 'sort_order' => 2]);
-        Category::factory()->create(['name_uz' => 'Sabzavotlar', 'sort_order' => 1]);
-        Category::factory()->create(['name_uz' => 'Yashirin', 'is_active' => false]);
-        Category::factory()->archived()->create(['name_uz' => 'Eski']);
+        Product::factory()->for(Category::factory()->state(['name_uz' => 'Mevalar', 'sort_order' => 2]))->create();
+        Product::factory()->for(Category::factory()->state(['name_uz' => 'Sabzavotlar', 'sort_order' => 1]))->create();
+        Product::factory()->for(Category::factory()->state(['name_uz' => 'Yashirin', 'is_active' => false]))->create();
+        Product::factory()->for(Category::factory()->archived()->state(['name_uz' => 'Eski']))->create();
+        Category::factory()->create(['name_uz' => 'Bo\'sh']);
+        Product::factory()->for(Category::factory()->state(['name_uz' => 'Yopiq mahsulot']))->create(['is_active' => false]);
+        Product::factory()->archived()->for(Category::factory()->state(['name_uz' => 'Arxiv mahsulot']))->create();
 
         $response = $this->asCustomer()->getJson('/api/v1/catalog/categories')->assertOk();
 
@@ -103,8 +108,72 @@ final class CustomerCatalogApiTest extends TestCase
         $this->asCustomer()->getJson('/api/v1/catalog/products?category_id='.$vegetables->id)
             ->assertJsonPath('meta.pagination.total', 2);
         $this->asCustomer()->getJson('/api/v1/catalog/products?per_page=1&page=2&category_id='.$vegetables->id)
-            ->assertJsonPath('meta.pagination', ['page' => 2, 'per_page' => 1, 'total' => 2, 'last_page' => 2]);
+            ->assertJsonPath('meta.pagination', ['page' => 2, 'per_page' => 1, 'total' => 2, 'last_page' => 2])
+            ->assertJsonPath('data.*.name_uz', ['Pomidor']);
+        $this->asCustomer()->getJson('/api/v1/catalog/products?search=POMI')
+            ->assertJsonPath('data.*.name_uz', ['Pomidor']);
+        $this->asCustomer()->getJson('/api/v1/catalog/products?search=o&category_id='.$vegetables->id)
+            ->assertJsonPath('data.*.name_uz', ['Bodring', 'Pomidor']);
+        $this->asCustomer()->getJson('/api/v1/catalog/products?search=asal&category_id='.$vegetables->id)
+            ->assertJsonPath('meta.pagination.total', 0);
         $this->asCustomer()->getJson('/api/v1/catalog/products?category_id=nope')->assertStatus(422);
+    }
+
+    public function test_neither_search_nor_the_category_filter_brings_back_a_hidden_product(): void
+    {
+        $hiddenCategory = Category::factory()->create(['is_active' => false]);
+        $archivedCategory = Category::factory()->archived()->create();
+        $visible = Product::factory()->create(['name_uz' => 'Olma qizil', 'name_ru' => 'Яблоко красное']);
+        Product::factory()->create(['name_uz' => 'Olma yashirin', 'name_ru' => 'Яблоко скрытое', 'is_active' => false]);
+        Product::factory()->archived()->create(['name_uz' => 'Olma eski', 'name_ru' => 'Яблоко старое']);
+        Product::factory()->create(['category_id' => $hiddenCategory->id, 'name_uz' => 'Olma bog\'i', 'name_ru' => 'Яблоко садовое']);
+        Product::factory()->create(['category_id' => $archivedCategory->id, 'name_uz' => 'Olma quruq', 'name_ru' => 'Яблоко сушёное']);
+
+        foreach (['olma', 'яблоко', 'Olma'] as $term) {
+            $this->asCustomer()->getJson('/api/v1/catalog/products?search='.urlencode($term))
+                ->assertOk()
+                ->assertJsonPath('data.*.id', [$visible->id]);
+        }
+
+        foreach ([$hiddenCategory->id, $archivedCategory->id, (string) Str::uuid()] as $categoryId) {
+            $this->asCustomer()->getJson('/api/v1/catalog/products?category_id='.$categoryId)
+                ->assertOk()
+                ->assertJsonPath('data', [])
+                ->assertJsonPath('meta.pagination.total', 0);
+            $this->asCustomer()->getJson('/api/v1/catalog/products?search=olma&category_id='.$categoryId)
+                ->assertOk()
+                ->assertJsonPath('data', []);
+        }
+    }
+
+    public function test_a_product_with_an_image_carries_its_public_url(): void
+    {
+        $image = ProductImage::factory()->create();
+        $url = Storage::disk('public')->url($image->storage_key);
+
+        $this->asCustomer()->getJson('/api/v1/catalog/products/'.$image->product_id)
+            ->assertOk()
+            ->assertJsonPath('data.image_url', $url);
+        $this->asCustomer()->getJson('/api/v1/catalog/products')
+            ->assertOk()
+            ->assertJsonPath('data.0.image_url', $url);
+    }
+
+    public function test_the_pagination_bounds_hold_on_both_lists(): void
+    {
+        Product::factory()->create();
+
+        foreach (['/api/v1/catalog/categories', '/api/v1/catalog/products'] as $url) {
+            foreach (['per_page=0', 'per_page=101', 'page=0', 'page=100001', 'per_page=abc'] as $query) {
+                $this->asCustomer()->getJson($url.'?'.$query)
+                    ->assertStatus(422)
+                    ->assertJsonPath('code', 'validation_failed');
+            }
+
+            $this->asCustomer()->getJson($url.'?per_page=100&page=100000')
+                ->assertOk()
+                ->assertJsonPath('data', []);
+        }
     }
 
     public function test_a_staff_session_is_refused_and_no_session_is_unauthenticated(): void
@@ -119,9 +188,11 @@ final class CustomerCatalogApiTest extends TestCase
             }
         }
 
-        $this->withoutToken()->getJson('/api/v1/catalog/products')
-            ->assertStatus(401)
-            ->assertJsonPath('code', 'authentication_required');
+        foreach (['/api/v1/catalog/categories', '/api/v1/catalog/products', '/api/v1/catalog/products/'.$product->id] as $url) {
+            $this->withoutToken()->getJson($url)
+                ->assertStatus(401)
+                ->assertJsonPath('code', 'authentication_required');
+        }
     }
 
     private function asCustomer(): self

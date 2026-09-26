@@ -92,7 +92,7 @@ Codes: `code_invalid`, `code_expired`, `code_attempts_exhausted`, `account_block
 
 ## 14. Customer Catalog
 
-`GET /catalog/categories?page=&per_page=`, `GET /catalog/products?category_id=&search=&page=&per_page=`, `GET /catalog/products/{product}`, all paginated lists in the envelope of Section 2. A Customer session is required (`DL-17`); categories are the active, unarchived ones; a product is listed only while it and its category are active and unarchived, and otherwise its detail is the scope-safe `404`. A category carries `id, name_uz, name_ru, description_uz, description_ru, sort_order`; a product never carries the market price.
+`GET /catalog/categories?page=&per_page=`, `GET /catalog/products?category_id=&search=&page=&per_page=`, `GET /catalog/products/{product}`, all paginated lists in the envelope of Section 2. A Customer session is required (`DL-17`). A product is listed only while it and its category are active and unarchived, and otherwise its detail is the scope-safe `404`; a category is listed only while it is active, unarchived and holds at least one such product (`DL-22`). Both lists are ordered by `sort_order`, then `name_uz`, then `id`; a `category_id` the Customer cannot see gives an empty list, like one that does not exist. A category carries `id, name_uz, name_ru, description_uz, description_ru, sort_order`; a product never carries the market price.
 
 Product:
 
