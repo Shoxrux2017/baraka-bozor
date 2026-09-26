@@ -23,10 +23,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get phoneLabel => 'Номер телефона';
 
   @override
-  String get phoneHint => '+998 90 123 45 67';
+  String get phoneHint => '90 123 45 67';
 
   @override
-  String get phoneInvalid => 'Введите номер в виде +998 и 9 цифр';
+  String get phoneInvalid => 'Введите 9 цифр номера';
 
   @override
   String get continueButton => 'Продолжить';
@@ -59,6 +59,24 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get changePhone => 'Изменить номер';
+
+  @override
+  String codeSentToPhone(String phone) {
+    return 'Код отправлен на номер $phone';
+  }
+
+  @override
+  String get customerModeIntro =>
+      'Чтобы войти в режим клиента, введите код, отправленный на ваш номер';
+
+  @override
+  String get cancelButton => 'Отмена';
+
+  @override
+  String get requestCodeButton => 'Запросить код';
+
+  @override
+  String get wrongSurfaceTitle => 'Отсюда войти нельзя';
 
   @override
   String get staffLoginTitle => 'Вход для сотрудников';

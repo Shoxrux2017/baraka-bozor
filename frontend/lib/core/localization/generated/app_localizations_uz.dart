@@ -23,11 +23,10 @@ class AppLocalizationsUz extends AppLocalizations {
   String get phoneLabel => 'Telefon raqami';
 
   @override
-  String get phoneHint => '+998 90 123 45 67';
+  String get phoneHint => '90 123 45 67';
 
   @override
-  String get phoneInvalid =>
-      'Raqamni +998 va 9 ta raqam ko\'rinishida kiriting';
+  String get phoneInvalid => 'Raqamning 9 ta raqamini kiriting';
 
   @override
   String get continueButton => 'Davom etish';
@@ -60,6 +59,24 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get changePhone => 'Raqamni o\'zgartirish';
+
+  @override
+  String codeSentToPhone(String phone) {
+    return 'Kod $phone raqamiga yuborildi';
+  }
+
+  @override
+  String get customerModeIntro =>
+      'Mijoz rejimiga kirish uchun o\'z raqamingizga yuborilgan kodni kiriting';
+
+  @override
+  String get cancelButton => 'Bekor qilish';
+
+  @override
+  String get requestCodeButton => 'Kod so\'rash';
+
+  @override
+  String get wrongSurfaceTitle => 'Bu yerdan kirib bo\'lmaydi';
 
   @override
   String get staffLoginTitle => 'Xodim kirishi';

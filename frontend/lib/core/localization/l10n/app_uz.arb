@@ -4,8 +4,8 @@
   "customerLoginTitle": "Kirish",
   "customerLoginIntro": "Telefon raqamingizni kiriting, biz sizga kirish kodini yuboramiz",
   "phoneLabel": "Telefon raqami",
-  "phoneHint": "+998 90 123 45 67",
-  "phoneInvalid": "Raqamni +998 va 9 ta raqam ko'rinishida kiriting",
+  "phoneHint": "90 123 45 67",
+  "phoneInvalid": "Raqamning 9 ta raqamini kiriting",
   "continueButton": "Davom etish",
   "codeSentTelegram": "Kod Telegram orqali yuborildi",
   "codeSentSms": "Kod SMS orqali yuborildi",
@@ -23,6 +23,18 @@
     }
   },
   "changePhone": "Raqamni o'zgartirish",
+  "codeSentToPhone": "Kod {phone} raqamiga yuborildi",
+  "@codeSentToPhone": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "customerModeIntro": "Mijoz rejimiga kirish uchun o'z raqamingizga yuborilgan kodni kiriting",
+  "cancelButton": "Bekor qilish",
+  "requestCodeButton": "Kod so'rash",
+  "wrongSurfaceTitle": "Bu yerdan kirib bo'lmaydi",
   "staffLoginTitle": "Xodim kirishi",
   "staffLoginLink": "Xodim sifatida kirish",
   "customerLoginLink": "Mijoz sifatida kirish",

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../features/auth/domain/app_user.dart';
 import '../../features/auth/domain/auth_repository.dart';
+import '../errors/report_unexpected_error.dart';
 import '../localization/app_language.dart';
 import '../network/api_failure.dart';
 import '../storage/token_store.dart';
@@ -89,10 +90,35 @@ class SessionController extends AsyncNotifier<SessionState> {
     );
   }
 
-  /// Confirms the sessions again after an unreachable bootstrap.
+  /// Confirms the sessions again after an unreachable bootstrap. The retry
+  /// screen stays while the retry runs — the state says it is retrying
+  /// rather than becoming a loading state that would bounce the interface
+  /// through the bootstrap screen — and a retry that throws leaves an error
+  /// the retry screen recovers from, never a wait with no way out.
   Future<void> retry() async {
-    state = const AsyncLoading<SessionState>();
-    state = AsyncData<SessionState>(await _bootstrap());
+    final SessionState? current = state.value;
+    if (current is SessionUnreachable && current.retrying) {
+      return;
+    }
+    state = const AsyncData<SessionState>(SessionUnreachable(retrying: true));
+
+    final AsyncValue<SessionState> result = await AsyncValue.guard(_bootstrap);
+    if (result case AsyncError<SessionState>(
+      :final Object error,
+      :final StackTrace stackTrace,
+    )) {
+      // Something other than the server failed — storage, a platform
+      // channel. Reported, and the retry screen is offered again: an error
+      // state would carry the "retrying" value along with it.
+      reportUnexpectedError(
+        error,
+        stackTrace,
+        'while confirming the stored sessions',
+      );
+      state = const AsyncData<SessionState>(SessionUnreachable());
+      return;
+    }
+    state = result;
   }
 
   /// Customer login from a signed-out app.

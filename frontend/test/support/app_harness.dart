@@ -1,0 +1,31 @@
+import 'package:baraka_bozor/app/providers.dart';
+import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/main.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'fake_auth_repository.dart';
+import 'in_memory_stores.dart';
+
+/// The app without the platform plugins: in-memory stores, a fake repository
+/// and a chosen surface, so a widget test never touches a method channel and
+/// drives the real router, session controller and screens.
+Widget appUnderTest({
+  InMemoryTokenStore? tokens,
+  FakeAuthRepository? repository,
+  Surface surface = Surface.mobile,
+  Locale device = const Locale('uz'),
+}) {
+  return ProviderScope(
+    overrides: [
+      tokenStoreProvider.overrideWithValue(tokens ?? InMemoryTokenStore()),
+      preferenceStoreProvider.overrideWithValue(InMemoryPreferenceStore()),
+      deviceLocaleProvider.overrideWithValue(device),
+      authRepositoryProvider.overrideWithValue(
+        repository ?? FakeAuthRepository(),
+      ),
+      surfaceProvider.overrideWithValue(surface),
+    ],
+    child: const BarakaBozorApp(),
+  );
+}

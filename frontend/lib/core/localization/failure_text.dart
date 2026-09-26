@@ -12,6 +12,7 @@ import 'generated/app_localizations.dart';
 String? failureText(AppLocalizations l10n, ApiFailure failure) {
   return switch (failure) {
     CancelledFailure() => null,
+    UnexpectedFailure() => l10n.errorUnknown,
     NetworkFailure() => l10n.errorNetwork,
     MalformedResponseFailure() => l10n.errorServerError,
     ApiRefusal(:final String code, :final int status) => _refusalText(

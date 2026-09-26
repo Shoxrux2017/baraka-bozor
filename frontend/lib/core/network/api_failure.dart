@@ -92,6 +92,7 @@ sealed class ApiFailure implements Exception {
   static const String networkCode = 'network';
   static const String malformedCode = 'malformed_response';
   static const String cancelledCode = 'cancelled';
+  static const String unexpectedCode = 'unexpected';
 
   /// Translates a transport failure into the failure the application sees.
   static ApiFailure fromDio(DioException exception) {
@@ -157,6 +158,17 @@ final class CancelledFailure extends ApiFailure {
 
   @override
   String get code => ApiFailure.cancelledCode;
+}
+
+/// Something the application cannot explain went wrong inside an
+/// operation — storage, a platform channel — after the request itself may
+/// have succeeded. Shown as the generic text; the error itself is reported
+/// to Flutter's error handler by whoever caught it.
+final class UnexpectedFailure extends ApiFailure {
+  const UnexpectedFailure();
+
+  @override
+  String get code => ApiFailure.unexpectedCode;
 }
 
 /// A response that is not what the contract promises: an error without an

@@ -43,6 +43,7 @@ class FakeAuthRepository implements AuthRepository {
     expiresInSeconds: 300,
     resendAvailableInSeconds: 60,
   );
+  ApiFailure? requestFailure;
   ApiFailure? changePasswordFailure;
   ApiFailure? logoutFailure;
 
@@ -51,9 +52,9 @@ class FakeAuthRepository implements AuthRepository {
   final Map<SessionSlot, ApiFailure> updateLanguageFailures =
       <SessionSlot, ApiFailure>{};
 
-  /// While set and not completed, `updateLanguage` and `changePassword` wait
-  /// for it before answering, so a test can change the session while the
-  /// call is in flight.
+  /// While set and not completed, every call waits for it before answering,
+  /// so a test can look at the app mid-flight or change the session under a
+  /// pending call.
   Completer<void>? holdAnswers;
 
   final List<String> calls = <String>[];
@@ -63,6 +64,10 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<RequestedCode> requestCustomerCode(String phone) async {
     calls.add('request:$phone');
+    await _held();
+    if (requestFailure != null) {
+      throw requestFailure!;
+    }
     return requestResult;
   }
 
@@ -72,6 +77,7 @@ class FakeAuthRepository implements AuthRepository {
     required String code,
   }) async {
     calls.add('verify:$phone:$code');
+    await _held();
     if (verifyFailure != null) {
       throw verifyFailure!;
     }
@@ -84,6 +90,7 @@ class FakeAuthRepository implements AuthRepository {
     required String password,
   }) async {
     calls.add('login:$phone');
+    await _held();
     if (staffLoginFailure != null) {
       throw staffLoginFailure!;
     }
@@ -93,6 +100,7 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<AppUser> me(SessionSlot slot) async {
     calls.add('me:${slot.name}');
+    await _held();
     final Object? answer = identities[slot];
     if (answer is AppUser) {
       return answer;

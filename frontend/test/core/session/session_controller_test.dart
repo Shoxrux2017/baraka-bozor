@@ -8,6 +8,7 @@ import 'package:baraka_bozor/core/session/session_controller.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -138,6 +139,59 @@ void main() {
       repository.identities[SessionSlot.staff] = user(role: UserRole.admin);
       await controller(c).retry();
 
+      expect(current(c), isA<SignedIn>());
+    });
+
+    test('a retry keeps the previous answer while it runs, and a retry that throws leaves a way to retry again', () async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = const NetworkFailure();
+      final ProviderContainer c = container();
+      expect(await bootstrap(c), isA<SessionUnreachable>());
+
+      repository.holdAnswers = Completer<void>();
+      final Future<void> retrying = controller(c).retry();
+      await settle();
+      expect(
+        c.read(sessionControllerProvider).value,
+        isA<SessionUnreachable>().having(
+          (SessionUnreachable s) => s.retrying,
+          'retrying',
+          isTrue,
+        ),
+        reason: 'the retry screen stays, marked as retrying',
+      );
+      expect(
+        c.read(sessionControllerProvider).isLoading,
+        isFalse,
+        reason: 'never a loading state that would bounce the interface',
+      );
+      repository.calls.clear();
+      await controller(c).retry();
+      expect(repository.calls, isEmpty, reason: 'a second tap waits');
+
+      // No identity configured: the fake throws a plain StateError.
+      final List<FlutterErrorDetails> reported = <FlutterErrorDetails>[];
+      final FlutterExceptionHandler? previous = FlutterError.onError;
+      FlutterError.onError = reported.add;
+      addTearDown(() => FlutterError.onError = previous);
+      repository.identities.remove(SessionSlot.staff);
+      repository.holdAnswers!.complete();
+      await retrying;
+      expect(reported.single.exception, isA<StateError>());
+      expect(
+        current(c),
+        isA<SessionUnreachable>().having(
+          (SessionUnreachable s) => s.retrying,
+          'retrying',
+          isFalse,
+        ),
+        reason: 'the retry screen is offered again',
+      );
+      expect(tokens.tokens[SessionSlot.staff], 's', reason: 'the token stays');
+
+      repository.holdAnswers = null;
+      repository.identities[SessionSlot.staff] = user(role: UserRole.admin);
+      await controller(c).retry();
       expect(current(c), isA<SignedIn>());
     });
 
@@ -382,9 +436,9 @@ void main() {
         role: UserRole.shopper,
         mustChangePassword: true,
       );
-      repository.holdAnswers = Completer<void>();
       final ProviderContainer c = container();
       await bootstrap(c);
+      repository.holdAnswers = Completer<void>();
 
       final Future<void> change = controller(c).changePassword(
         currentPassword: 'temporary 123',
@@ -450,9 +504,9 @@ void main() {
         role: UserRole.courier,
       );
       repository.identities[SessionSlot.customer] = user(id: 'c');
-      repository.holdAnswers = Completer<void>();
       final ProviderContainer c = container();
       await bootstrap(c);
+      repository.holdAnswers = Completer<void>();
 
       final Future<void> select = c
           .read(languageControllerProvider.notifier)

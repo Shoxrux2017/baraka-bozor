@@ -4,8 +4,8 @@
   "customerLoginTitle": "Вход",
   "customerLoginIntro": "Введите номер телефона, мы отправим код для входа",
   "phoneLabel": "Номер телефона",
-  "phoneHint": "+998 90 123 45 67",
-  "phoneInvalid": "Введите номер в виде +998 и 9 цифр",
+  "phoneHint": "90 123 45 67",
+  "phoneInvalid": "Введите 9 цифр номера",
   "continueButton": "Продолжить",
   "codeSentTelegram": "Код отправлен в Telegram",
   "codeSentSms": "Код отправлен по SMS",
@@ -23,6 +23,18 @@
     }
   },
   "changePhone": "Изменить номер",
+  "codeSentToPhone": "Код отправлен на номер {phone}",
+  "@codeSentToPhone": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "customerModeIntro": "Чтобы войти в режим клиента, введите код, отправленный на ваш номер",
+  "cancelButton": "Отмена",
+  "requestCodeButton": "Запросить код",
+  "wrongSurfaceTitle": "Отсюда войти нельзя",
   "staffLoginTitle": "Вход для сотрудников",
   "staffLoginLink": "Войти как сотрудник",
   "customerLoginLink": "Войти как клиент",

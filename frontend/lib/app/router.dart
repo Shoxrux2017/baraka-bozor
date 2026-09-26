@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/routing/app_paths.dart';
 import '../core/routing/feature_routes.dart';
+import '../features/auth/presentation/auth_routes.dart';
+import '../features/shells/presentation/shells_routes.dart';
 
 /// The Flutter half of decision `D-8`: every feature route fragment the client
 /// serves, in registration order.
@@ -13,13 +16,25 @@ import '../core/routing/feature_routes.dart';
 /// loader scanning a directory. What replaces it is
 /// `test/app/route_registry_test.dart`, which reads `lib/features/` from disk
 /// and fails when a fragment exists but is not listed below.
-///
-/// From Wave 1 this file belongs to the wave owner, so adding a feature is a
-/// serialized edit by one track rather than a file two tracks contend for.
-const List<FeatureRoutes> featureRouteFragments = <FeatureRoutes>[];
+final List<FeatureRoutes> featureRouteFragments = <FeatureRoutes>[
+  authRoutes,
+  shellsRoutes,
+];
 
-/// The application's route table.
-GoRouter buildRouter() => buildRouterFrom(featureRouteFragments);
+/// The application's route table. [redirect] is the session guard the root
+/// provider supplies; [refreshListenable] makes the router re-evaluate it
+/// when the session changes. A location no route serves — a mistyped
+/// address in the panel — goes back to the entry point, from where the
+/// guard opens the right area, so go_router's own English error page is
+/// never shown (`docs/07-architecture.md` section 27).
+GoRouter buildRouter({
+  GoRouterRedirect? redirect,
+  Listenable? refreshListenable,
+}) => buildRouterFrom(
+  featureRouteFragments,
+  redirect: redirect,
+  refreshListenable: refreshListenable,
+);
 
 /// Builds a router from [fragments], for tests that need a table other than
 /// the production one.
@@ -27,9 +42,17 @@ GoRouter buildRouter() => buildRouterFrom(featureRouteFragments);
 /// The bootstrap route is collected alongside the fragments rather than added
 /// afterwards, so a feature claiming `/` collides loudly instead of quietly
 /// taking over the entry point.
-GoRouter buildRouterFrom(List<FeatureRoutes> fragments) {
+GoRouter buildRouterFrom(
+  List<FeatureRoutes> fragments, {
+  GoRouterRedirect? redirect,
+  Listenable? refreshListenable,
+}) {
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: AppPaths.bootstrap,
+    redirect: redirect,
+    refreshListenable: refreshListenable,
+    onException: (BuildContext context, GoRouterState state, GoRouter router) =>
+        router.go(AppPaths.bootstrap),
     routes: collectFeatureRoutes(<FeatureRoutes>[
       _bootstrapFragment,
       ...fragments,
@@ -41,7 +64,7 @@ final FeatureRoutes _bootstrapFragment = FeatureRoutes(
   feature: 'app',
   routes: <RouteBase>[
     GoRoute(
-      path: '/',
+      path: AppPaths.bootstrap,
       name: 'bootstrap',
       builder: (BuildContext context, GoRouterState state) =>
           const _BootstrapScreen(),
@@ -49,11 +72,11 @@ final FeatureRoutes _bootstrapFragment = FeatureRoutes(
   ],
 );
 
-/// What the client shows before it knows whether a session exists.
+/// What the client shows until the session is known.
 ///
-/// It carries no text: `docs/07-architecture.md` section 27 forbids English UI
-/// and how a language is chosen is still open as `S-27`. The session task
-/// replaces this with the real bootstrap decision.
+/// It carries no text: the session guard leaves it the moment the bootstrap
+/// answers, and a stored language choice may still be loading, so any text
+/// here could flash in the wrong language.
 class _BootstrapScreen extends StatelessWidget {
   const _BootstrapScreen();
 

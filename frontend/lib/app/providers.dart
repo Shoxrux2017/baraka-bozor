@@ -1,6 +1,8 @@
 import 'dart:ui' show Locale, PlatformDispatcher;
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show ChangeNotifier, kIsWeb;
+import 'package:flutter/widgets.dart' show BuildContext;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,12 +11,14 @@ import '../core/localization/app_language.dart';
 import '../core/localization/language_controller.dart';
 import '../core/network/api_client.dart';
 import '../core/network/auth_interceptor.dart';
+import '../core/routing/session_redirect.dart';
 import '../core/session/session_controller.dart';
 import '../core/session/session_state.dart';
 import '../core/storage/preference_store.dart';
 import '../core/storage/token_store.dart';
 import '../features/auth/data/auth_api.dart';
 import '../features/auth/data/auth_repository_impl.dart';
+import '../features/auth/domain/app_user.dart';
 import '../features/auth/domain/auth_repository.dart';
 import 'router.dart';
 
@@ -85,9 +89,40 @@ languageControllerProvider =
       LanguageController.new,
     );
 
-/// The application's route table, built once for the process.
+/// The surface this build runs on (`docs/02-user-roles.md` section 10): the
+/// web panel in a browser, the mobile app anywhere else. Overridden in
+/// tests to show either.
+final Provider<Surface> surfaceProvider = Provider<Surface>(
+  (Ref ref) => kIsWeb ? Surface.web : Surface.mobile,
+);
+
+/// The application's route table, built once for the process, with the
+/// session guard of `core/routing/session_redirect.dart`. The router
+/// re-evaluates the guard whenever the session changes, so a login, a mode
+/// switch or a dropped session moves the interface without any screen
+/// having to navigate.
 final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
-  final GoRouter router = buildRouter();
+  final Surface surface = ref.watch(surfaceProvider);
+  final _RouterRefresh refresh = _RouterRefresh();
+  ref.listen<AsyncValue<SessionState>>(
+    sessionControllerProvider,
+    (AsyncValue<SessionState>? previous, AsyncValue<SessionState> next) =>
+        refresh.notify(),
+  );
+
+  final GoRouter router = buildRouter(
+    refreshListenable: refresh,
+    redirect: (BuildContext context, GoRouterState state) => sessionRedirect(
+      session: ref.read(sessionControllerProvider),
+      surface: surface,
+      location: state.matchedLocation,
+    ),
+  );
   ref.onDispose(router.dispose);
+  ref.onDispose(refresh.dispose);
   return router;
 });
+
+class _RouterRefresh extends ChangeNotifier {
+  void notify() => notifyListeners();
+}

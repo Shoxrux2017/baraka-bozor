@@ -1,5 +1,5 @@
 name: baraka_bozor
-description: "BarakaBozor client — one Flutter codebase for the Customer, Shopper and Courier mobile surfaces and the Operator, Admin and Manager Windows desktop surface."
+description: "BarakaBozor client — one Flutter codebase for the Customer, Shopper and Courier mobile app and the Operator, Admin and Manager web panel."
 # Private application. Never published to pub.dev.
 publish_to: "none"
 version: 1.0.0+1

@@ -1,50 +1,56 @@
-import 'package:baraka_bozor/app/providers.dart';
+import 'dart:async';
+
 import 'package:baraka_bozor/app/router.dart';
+import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/routing/feature_routes.dart';
-import 'package:baraka_bozor/main.dart';
+import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import '../support/app_harness.dart';
 import '../support/fake_auth_repository.dart';
 import '../support/in_memory_stores.dart';
-
-/// The app without the platform plugins: in-memory stores and a fake
-/// repository, so the widget tests never touch a method channel.
-Widget appUnderTest() {
-  return ProviderScope(
-    overrides: [
-      tokenStoreProvider.overrideWithValue(InMemoryTokenStore()),
-      preferenceStoreProvider.overrideWithValue(InMemoryPreferenceStore()),
-      deviceLocaleProvider.overrideWithValue(const Locale('uz')),
-      authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
-    ],
-    child: const BarakaBozorApp(),
-  );
-}
 
 void main() {
   setUpAll(TestWidgetsFlutterBinding.ensureInitialized);
 
   group('buildRouter', () {
-    test('registers the bootstrap route and nothing else yet', () {
-      final GoRouter router = buildRouter();
-      addTearDown(router.dispose);
+    test(
+      'registers the bootstrap route, the auth screens and the six areas',
+      () {
+        final GoRouter router = buildRouter();
+        addTearDown(router.dispose);
 
-      // The analogue of the backend registry adding no production endpoint:
-      // no feature route fragment exists yet, so the table is the bootstrap
-      // route alone. A feature task changes this deliberately.
+        expect(
+          router.configuration.routes.whereType<GoRoute>().map(
+            (GoRoute route) => route.path,
+          ),
+          <String>[
+            AppPaths.bootstrap,
+            AppPaths.auth,
+            AppPaths.customerCode,
+            AppPaths.staffLogin,
+            AppPaths.changePassword,
+            AppPaths.customerMode,
+            AppPaths.unreachable,
+            AppPaths.wrongSurface,
+            AppPaths.customer,
+            AppPaths.shopper,
+            AppPaths.courier,
+            AppPaths.operations,
+            AppPaths.admin,
+            AppPaths.manager,
+          ],
+        );
+      },
+    );
+
+    test('registers the auth and shells fragments, in that order', () {
       expect(
-        router.configuration.routes.whereType<GoRoute>().map(
-          (GoRoute route) => route.path,
-        ),
-        <String>['/'],
+        featureRouteFragments.map((FeatureRoutes f) => f.feature),
+        <String>['auth', 'shells'],
       );
-    });
-
-    test('no feature route fragment is registered yet', () {
-      expect(featureRouteFragments, isEmpty);
     });
 
     test('rejects a fragment that collides with the bootstrap route', () {
@@ -103,23 +109,65 @@ void main() {
     });
   });
 
+  group('an unknown location', () {
+    testWidgets('goes back to the entry point instead of an error page', (
+      WidgetTester tester,
+    ) async {
+      final GoRouter router = buildRouterFrom(<FeatureRoutes>[]);
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      router.go('/nowhere/at/all');
+      // Not pumpAndSettle: the entry point shows a progress indicator, which
+      // never settles.
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        router.routerDelegate.currentConfiguration.uri.path,
+        AppPaths.bootstrap,
+      );
+      expect(find.textContaining('Page Not Found'), findsNothing);
+    });
+  });
+
   group('BarakaBozorApp', () {
-    testWidgets('boots into a neutral screen', (WidgetTester tester) async {
-      await tester.pumpWidget(appUnderTest());
+    testWidgets('boots into a neutral screen with no text', (
+      WidgetTester tester,
+    ) async {
+      // The bootstrap screen shows nothing until the session is known; a
+      // stored language choice may still be loading, and any text here could
+      // flash in the wrong language.
+      final FakeAuthRepository repository = FakeAuthRepository()
+        ..identities[SessionSlot.staff] = user()
+        ..holdAnswers = Completer<void>();
+      await tester.pumpWidget(
+        appUnderTest(
+          tokens: InMemoryTokenStore(<SessionSlot, String>{
+            SessionSlot.staff: 's',
+          }),
+          repository: repository,
+        ),
+      );
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(Text), findsNothing);
+
+      repository.holdAnswers!.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
-    testWidgets('renders no user-facing text on the bootstrap screen', (
+    testWidgets('leaves the bootstrap screen once the session is known', (
       WidgetTester tester,
     ) async {
-      // The bootstrap screen shows nothing until the session is known; the
-      // auth screens of the next task carry the localized strings.
       await tester.pumpWidget(appUnderTest());
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(find.byType(Text), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byKey(const ValueKey<String>('phone-field')), findsOneWidget);
     });
   });
 }
