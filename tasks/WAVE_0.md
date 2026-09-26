@@ -61,7 +61,7 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 | `frontend/pubspec.yaml` has `generate: true`, so `flutter test`, `run` and `build` regenerate `lib/core/localization/generated/` from the ARB files; a forgotten regeneration shows up as a dirty tree, never as a stale build | Closed in W0-6: the frontend CI job runs `flutter gen-l10n` and fails on a dirty tree |
 | The frontend CI job is not yet a required check on `main`; only the Owner can change branch protection | Open, asked in the W0-7 report |
 | The first frame renders in the device language until the stored choice is read; invisible today because the bootstrap screen shows no text | Accepted |
-| Uzbek strings use the ASCII apostrophe (`O'zbekcha`) rather than the orthographic ʻ (U+02BB), as most Uzbek apps do; the Shopper is `Yig'uvchi`, the Courier `Kuryer` | Open for the Owner's word in the W0-7 report; a change is an ARB edit |
+| Uzbek strings use the ASCII apostrophe (`O'zbekcha`) rather than the orthographic ʻ (U+02BB), as most Uzbek apps do; the Shopper is `Yig'uvchi`, the Courier `Kuryer` | Closed: the Owner kept both (`DL-16`) |
 | Every `401` envelope carries the developer `message` "Authentication is required.", whatever its `code` (`code_invalid`, `invalid_credentials`, `account_blocked`, …): `ApiExceptionRenderer` fixes the text per status by design, clients branch on `code` (`docs/09` section 3), and the message is neither logged nor shown | By design, nothing to do; noted so the walkthrough's log is not read as a defect |
 | The launcher icon and the Android splash are Flutter's defaults; no brand assets exist (`docs/07` section 27) | Open until a designer supplies assets; visible in the Owner's check |
 | Lockfiles change only with a real dependency change: W0-5 added `flutter_localizations` and `intl` with the matching `pubspec.lock` change in the same pull request; W0-6 and W0-7 added nothing | Closed, nothing to do |
@@ -102,4 +102,4 @@ Closed on 2026-09-26 at `main` = merge of PR #26 (`e957301`) plus this closure r
 6. Wrong surface: an Operator, Admin or Manager on the phone, or a Customer, Shopper or Courier in the browser, sees the screen naming the right surface and can log out.
 7. Web panel: Operator, Admin and Manager sign in in Chrome and see their shell; a mistyped address inside the panel returns to the shell, never an English error page.
 
-**What remains open:** the risk rows above marked Open; the frontend CI job as a required check; the Owner's word on the Uzbek terms; Wave 1 needs the Yandex MapKit API key (`tasks/README.md` section 5).
+**What remains open:** the risk rows above marked Open; the frontend CI job as a required check; Wave 1 needs the Yandex MapKit API key (`tasks/README.md` section 5).
