@@ -41,6 +41,11 @@ final List<AdminSection> adminSections = <AdminSection>[
     label: (AppLocalizations l10n) => l10n.adminSectionProducts,
   ),
   AdminSection(
+    path: AdminPaths.staff,
+    icon: Icons.badge_outlined,
+    label: (AppLocalizations l10n) => l10n.adminSectionStaff,
+  ),
+  AdminSection(
     path: AdminPaths.settings,
     icon: Icons.settings_outlined,
     label: (AppLocalizations l10n) => l10n.adminSectionSettings,

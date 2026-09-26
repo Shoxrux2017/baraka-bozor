@@ -9,6 +9,7 @@ import 'categories_screen.dart';
 import 'product_edit_screen.dart';
 import 'products_screen.dart';
 import 'settings_screen.dart';
+import 'staff_screen.dart';
 
 /// The Admin area of the web panel (`docs/07-architecture.md` section 27):
 /// every Admin screen inside one shell. The session guard admits only an
@@ -51,6 +52,12 @@ final FeatureRoutes adminRoutes = FeatureRoutes(
           name: 'admin-product',
           builder: (BuildContext context, GoRouterState state) =>
               ProductEditScreen(productId: state.pathParameters['product']),
+        ),
+        GoRoute(
+          path: AdminPaths.staff,
+          name: 'admin-staff',
+          builder: (BuildContext context, GoRouterState state) =>
+              const StaffScreen(),
         ),
         GoRoute(
           path: AdminPaths.settings,

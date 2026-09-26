@@ -39,6 +39,10 @@ String _refusalText(AppLocalizations l10n, String code, int status) {
     'resource_not_found' => l10n.errorNotFound,
     'business_conflict' => l10n.errorBusinessConflict,
     'payload_too_large' => l10n.errorPayloadTooLarge,
+    'self_block_not_allowed' => l10n.errorSelfBlockNotAllowed,
+    'last_active_admin_required' => l10n.errorLastActiveAdminRequired,
+    'self_reset_not_allowed' => l10n.errorSelfResetNotAllowed,
+    'phone_already_active' => l10n.errorPhoneAlreadyActive,
     'provider_unavailable' ||
     'payment_provider_unavailable' => l10n.errorProviderUnavailable,
     'service_unavailable' => l10n.errorServiceUnavailable,

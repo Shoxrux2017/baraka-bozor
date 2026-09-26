@@ -1165,6 +1165,210 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Fayl juda katta'**
   String get errorPayloadTooLarge;
+
+  /// No description provided for @adminSectionStaff.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xodimlar'**
+  String get adminSectionStaff;
+
+  /// No description provided for @roleShopper.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi'**
+  String get roleShopper;
+
+  /// No description provided for @roleCourier.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer'**
+  String get roleCourier;
+
+  /// No description provided for @roleOperator.
+  ///
+  /// In uz, this message translates to:
+  /// **'Operator'**
+  String get roleOperator;
+
+  /// No description provided for @roleAdmin.
+  ///
+  /// In uz, this message translates to:
+  /// **'Administrator'**
+  String get roleAdmin;
+
+  /// No description provided for @roleManager.
+  ///
+  /// In uz, this message translates to:
+  /// **'Menejer'**
+  String get roleManager;
+
+  /// No description provided for @statusActive.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faol'**
+  String get statusActive;
+
+  /// No description provided for @statusBlocked.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bloklangan'**
+  String get statusBlocked;
+
+  /// No description provided for @staffNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi xodim'**
+  String get staffNew;
+
+  /// No description provided for @staffFullName.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'liq ism'**
+  String get staffFullName;
+
+  /// No description provided for @staffRole.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rol'**
+  String get staffRole;
+
+  /// No description provided for @staffAllRoles.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha rollar'**
+  String get staffAllRoles;
+
+  /// No description provided for @staffAllStatuses.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha holatlar'**
+  String get staffAllStatuses;
+
+  /// No description provided for @staffNoName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism kiritilmagan'**
+  String get staffNoName;
+
+  /// No description provided for @staffYou.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz'**
+  String get staffYou;
+
+  /// No description provided for @staffEditName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismni o\'zgartirish'**
+  String get staffEditName;
+
+  /// No description provided for @staffBlock.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bloklash'**
+  String get staffBlock;
+
+  /// No description provided for @staffActivate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Blokdan chiqarish'**
+  String get staffActivate;
+
+  /// No description provided for @staffResetPassword.
+  ///
+  /// In uz, this message translates to:
+  /// **'Parolni tiklash'**
+  String get staffResetPassword;
+
+  /// No description provided for @staffBlockConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name} bloklansinmi? Bu xodimning barcha seanslari darhol yopiladi.'**
+  String staffBlockConfirm(String name);
+
+  /// No description provided for @staffResetConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name} uchun yangi vaqtinchalik parol yaratilsinmi? Bu xodimning barcha seanslari yopiladi.'**
+  String staffResetConfirm(String name);
+
+  /// No description provided for @staffTemporaryPasswordTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Vaqtinchalik parol'**
+  String get staffTemporaryPasswordTitle;
+
+  /// No description provided for @staffTemporaryPasswordWarning.
+  ///
+  /// In uz, this message translates to:
+  /// **'Parolni hozir nusxalab, xodimga bering. U boshqa ko\'rsatilmaydi. Birinchi kirishda xodim o\'z parolini o\'rnatadi.'**
+  String get staffTemporaryPasswordWarning;
+
+  /// No description provided for @staffCopy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nusxalash'**
+  String get staffCopy;
+
+  /// No description provided for @staffCopied.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nusxalandi'**
+  String get staffCopied;
+
+  /// No description provided for @staffDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor'**
+  String get staffDone;
+
+  /// No description provided for @staffMustChangePassword.
+  ///
+  /// In uz, this message translates to:
+  /// **'Parolni almashtirishi kerak'**
+  String get staffMustChangePassword;
+
+  /// No description provided for @staffLastLogin.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi kirish: {when}'**
+  String staffLastLogin(String when);
+
+  /// No description provided for @staffNeverLoggedIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hali kirmagan'**
+  String get staffNeverLoggedIn;
+
+  /// No description provided for @staffSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlandi'**
+  String get staffSaved;
+
+  /// No description provided for @errorSelfBlockNotAllowed.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zingizni bloklay olmaysiz'**
+  String get errorSelfBlockNotAllowed;
+
+  /// No description provided for @errorLastActiveAdminRequired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi faol administratorni bloklab bo\'lmaydi'**
+  String get errorLastActiveAdminRequired;
+
+  /// No description provided for @errorSelfResetNotAllowed.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'z parolingizni bu yerda tiklab bo\'lmaydi'**
+  String get errorSelfResetNotAllowed;
+
+  /// No description provided for @errorPhoneAlreadyActive.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu raqam boshqa faol xodimga tegishli'**
+  String get errorPhoneAlreadyActive;
 }
 
 class _AppLocalizationsDelegate

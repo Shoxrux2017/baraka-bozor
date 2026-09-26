@@ -574,4 +574,115 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get errorPayloadTooLarge => 'Файл слишком большой';
+
+  @override
+  String get adminSectionStaff => 'Сотрудники';
+
+  @override
+  String get roleShopper => 'Сборщик';
+
+  @override
+  String get roleCourier => 'Курьер';
+
+  @override
+  String get roleOperator => 'Оператор';
+
+  @override
+  String get roleAdmin => 'Администратор';
+
+  @override
+  String get roleManager => 'Менеджер';
+
+  @override
+  String get statusActive => 'Активен';
+
+  @override
+  String get statusBlocked => 'Заблокирован';
+
+  @override
+  String get staffNew => 'Новый сотрудник';
+
+  @override
+  String get staffFullName => 'Имя и фамилия';
+
+  @override
+  String get staffRole => 'Роль';
+
+  @override
+  String get staffAllRoles => 'Все роли';
+
+  @override
+  String get staffAllStatuses => 'Все статусы';
+
+  @override
+  String get staffNoName => 'Имя не указано';
+
+  @override
+  String get staffYou => 'Вы';
+
+  @override
+  String get staffEditName => 'Изменить имя';
+
+  @override
+  String get staffBlock => 'Заблокировать';
+
+  @override
+  String get staffActivate => 'Разблокировать';
+
+  @override
+  String get staffResetPassword => 'Сбросить пароль';
+
+  @override
+  String staffBlockConfirm(String name) {
+    return 'Заблокировать: $name? Все сеансы этого сотрудника сразу завершатся.';
+  }
+
+  @override
+  String staffResetConfirm(String name) {
+    return 'Создать новый временный пароль: $name? Все сеансы этого сотрудника завершатся.';
+  }
+
+  @override
+  String get staffTemporaryPasswordTitle => 'Временный пароль';
+
+  @override
+  String get staffTemporaryPasswordWarning =>
+      'Скопируйте пароль сейчас и передайте сотруднику. Больше он показан не будет. При первом входе сотрудник задаст свой пароль.';
+
+  @override
+  String get staffCopy => 'Копировать';
+
+  @override
+  String get staffCopied => 'Скопировано';
+
+  @override
+  String get staffDone => 'Готово';
+
+  @override
+  String get staffMustChangePassword => 'Нужна смена пароля';
+
+  @override
+  String staffLastLogin(String when) {
+    return 'Последний вход: $when';
+  }
+
+  @override
+  String get staffNeverLoggedIn => 'Входов ещё не было';
+
+  @override
+  String get staffSaved => 'Сохранено';
+
+  @override
+  String get errorSelfBlockNotAllowed => 'Нельзя заблокировать себя';
+
+  @override
+  String get errorLastActiveAdminRequired =>
+      'Нельзя заблокировать последнего активного администратора';
+
+  @override
+  String get errorSelfResetNotAllowed => 'Свой пароль здесь сбросить нельзя';
+
+  @override
+  String get errorPhoneAlreadyActive =>
+      'Этот номер уже у другого активного сотрудника';
 }

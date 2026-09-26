@@ -51,6 +51,7 @@ void main() {
         AdminPaths.products,
         AdminPaths.newProduct,
         AdminPaths.productPattern,
+        AdminPaths.staff,
         AdminPaths.settings,
       ]);
     });

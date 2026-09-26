@@ -222,5 +222,60 @@
   "fieldSortOrder": "Целое число от -100 000 до 100 000",
   "fieldMarketPrice": "Целое число от 1 до 1 000 000 000",
   "errorBusinessConflict": "Данные уже изменились. Проверьте текущее состояние и попробуйте снова",
-  "errorPayloadTooLarge": "Файл слишком большой"
+  "errorPayloadTooLarge": "Файл слишком большой",
+  "adminSectionStaff": "Сотрудники",
+  "roleShopper": "Сборщик",
+  "roleCourier": "Курьер",
+  "roleOperator": "Оператор",
+  "roleAdmin": "Администратор",
+  "roleManager": "Менеджер",
+  "statusActive": "Активен",
+  "statusBlocked": "Заблокирован",
+  "staffNew": "Новый сотрудник",
+  "staffFullName": "Имя и фамилия",
+  "staffRole": "Роль",
+  "staffAllRoles": "Все роли",
+  "staffAllStatuses": "Все статусы",
+  "staffNoName": "Имя не указано",
+  "staffYou": "Вы",
+  "staffEditName": "Изменить имя",
+  "staffBlock": "Заблокировать",
+  "staffActivate": "Разблокировать",
+  "staffResetPassword": "Сбросить пароль",
+  "staffBlockConfirm": "Заблокировать: {name}? Все сеансы этого сотрудника сразу завершатся.",
+  "@staffBlockConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffResetConfirm": "Создать новый временный пароль: {name}? Все сеансы этого сотрудника завершатся.",
+  "@staffResetConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffTemporaryPasswordTitle": "Временный пароль",
+  "staffTemporaryPasswordWarning": "Скопируйте пароль сейчас и передайте сотруднику. Больше он показан не будет. При первом входе сотрудник задаст свой пароль.",
+  "staffCopy": "Копировать",
+  "staffCopied": "Скопировано",
+  "staffDone": "Готово",
+  "staffMustChangePassword": "Нужна смена пароля",
+  "staffLastLogin": "Последний вход: {when}",
+  "@staffLastLogin": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "staffNeverLoggedIn": "Входов ещё не было",
+  "staffSaved": "Сохранено",
+  "errorSelfBlockNotAllowed": "Нельзя заблокировать себя",
+  "errorLastActiveAdminRequired": "Нельзя заблокировать последнего активного администратора",
+  "errorSelfResetNotAllowed": "Свой пароль здесь сбросить нельзя",
+  "errorPhoneAlreadyActive": "Этот номер уже у другого активного сотрудника"
 }
