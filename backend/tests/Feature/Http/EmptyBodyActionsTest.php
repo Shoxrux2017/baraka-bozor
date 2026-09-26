@@ -7,10 +7,14 @@ namespace Tests\Feature\Http;
 use App\Models\Category;
 use App\Models\CustomerAddress;
 use App\Models\Enums\Role;
+use App\Models\Enums\UserStatus;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\PushDevice;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -21,23 +25,34 @@ final class EmptyBodyActionsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_every_bodyless_admin_action_refuses_a_field(): void
+    public function test_every_bodyless_admin_action_refuses_a_field_and_changes_nothing(): void
     {
         $admin = User::factory()->role(Role::Admin)->create();
-        $category = Category::factory()->create();
-        $product = Product::factory()->create();
-        $staff = User::factory()->role(Role::Shopper)->create();
         $token = $admin->createToken('t')->plainTextToken;
+        // Each action starts from the state it would change.
+        $active = Category::factory()->create();
+        $archived = Category::factory()->create(['archived_at' => now(), 'is_active' => false]);
+        $product = Product::factory()->create();
+        $archivedProduct = Product::factory()->create(['archived_at' => now(), 'is_active' => false]);
+        $withImage = Product::factory()->create();
+        ProductImage::factory()->create(['product_id' => $withImage->id]);
+        $shopper = User::factory()->role(Role::Shopper)->create();
+        $blocked = User::factory()->role(Role::Courier)->create([
+            'status' => UserStatus::Blocked,
+            'blocked_at' => now(),
+        ]);
+        $shopper->createToken('device');
+        $hash = $shopper->password;
 
         foreach ([
-            ['POST', '/api/v1/admin/categories/'.$category->id.'/archive'],
-            ['POST', '/api/v1/admin/categories/'.$category->id.'/restore'],
+            ['POST', '/api/v1/admin/categories/'.$active->id.'/archive'],
+            ['POST', '/api/v1/admin/categories/'.$archived->id.'/restore'],
             ['POST', '/api/v1/admin/products/'.$product->id.'/archive'],
-            ['POST', '/api/v1/admin/products/'.$product->id.'/restore'],
-            ['DELETE', '/api/v1/admin/products/'.$product->id.'/image'],
-            ['POST', '/api/v1/admin/staff/'.$staff->id.'/block'],
-            ['POST', '/api/v1/admin/staff/'.$staff->id.'/activate'],
-            ['POST', '/api/v1/admin/staff/'.$staff->id.'/reset-password'],
+            ['POST', '/api/v1/admin/products/'.$archivedProduct->id.'/restore'],
+            ['DELETE', '/api/v1/admin/products/'.$withImage->id.'/image'],
+            ['POST', '/api/v1/admin/staff/'.$shopper->id.'/block'],
+            ['POST', '/api/v1/admin/staff/'.$blocked->id.'/activate'],
+            ['POST', '/api/v1/admin/staff/'.$shopper->id.'/reset-password'],
         ] as [$method, $url]) {
             $this->withToken($token)->json($method, $url, ['reason' => 'x'])
                 ->assertStatus(422)
@@ -45,9 +60,60 @@ final class EmptyBodyActionsTest extends TestCase
                 ->assertJsonValidationErrorFor('reason', 'errors');
         }
 
-        $this->assertNull($category->fresh()?->archived_at);
+        $this->assertNull($active->fresh()?->archived_at);
+        $this->assertNotNull($archived->fresh()?->archived_at);
         $this->assertNull($product->fresh()?->archived_at);
-        $this->assertTrue($staff->fresh()?->status->value === 'active');
+        $this->assertNotNull($archivedProduct->fresh()?->archived_at);
+        $this->assertSame(1, ProductImage::query()->where('product_id', $withImage->id)->count());
+        $this->assertSame(UserStatus::Blocked, $blocked->fresh()?->status);
+        $fresh = $shopper->fresh();
+        $this->assertNotNull($fresh);
+        $this->assertSame(UserStatus::Active, $fresh->status);
+        $this->assertSame($hash, $fresh->password);
+        $this->assertFalse($fresh->must_change_password);
+        $this->assertSame(1, $fresh->tokens()->count());
+    }
+
+    public function test_a_form_field_or_a_file_is_refused_like_a_json_field(): void
+    {
+        $admin = User::factory()->role(Role::Admin)->create();
+        $token = $admin->createToken('t')->plainTextToken;
+        $category = Category::factory()->create();
+        $product = Product::factory()->create();
+        ProductImage::factory()->create(['product_id' => $product->id]);
+
+        $this->withToken($token)
+            ->post('/api/v1/admin/categories/'.$category->id.'/archive', ['reason' => 'x'], ['Accept' => 'application/json'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrorFor('reason', 'errors');
+        $this->withToken($token)
+            ->call('DELETE', '/api/v1/admin/products/'.$product->id.'/image', [], [], [
+                'image' => UploadedFile::fake()->create('a.png', 1, 'image/png'),
+            ], ['HTTP_ACCEPT' => 'application/json', 'HTTP_AUTHORIZATION' => 'Bearer '.$token])
+            ->assertStatus(422)
+            ->assertJsonValidationErrorFor('image', 'errors');
+
+        $this->assertNull($category->fresh()?->archived_at);
+        $this->assertSame(1, ProductImage::query()->where('product_id', $product->id)->count());
+    }
+
+    public function test_the_refusal_comes_in_the_order_that_reveals_nothing(): void
+    {
+        $admin = User::factory()->role(Role::Admin)->create();
+        $customer = User::factory()->customer()->create();
+        $missing = (string) Str::uuid();
+
+        $this->postJson('/api/v1/admin/staff/'.$missing.'/block', ['reason' => 'x'])
+            ->assertStatus(401);
+        $this->withToken($customer->createToken('t')->plainTextToken)
+            ->postJson('/api/v1/admin/staff/'.$missing.'/block', ['reason' => 'x'])
+            ->assertStatus(403);
+        // A missing record with a body is refused on the body, as an existing
+        // one is: the answer does not say whether the record exists.
+        $this->withToken($admin->createToken('t')->plainTextToken)
+            ->postJson('/api/v1/admin/staff/'.$missing.'/block', ['reason' => 'x'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrorFor('reason', 'errors');
     }
 
     public function test_the_bodyless_actions_still_work_without_a_body(): void

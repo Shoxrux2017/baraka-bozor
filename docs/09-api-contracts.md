@@ -30,7 +30,7 @@ HTTP baseline: `200/201/204` success; `400 malformed_request` for a JSON body th
 
 ## 4. Strict Request Shape
 
-Mutation endpoints reject unknown fields with `validation_failed`. Clients never send roles, statuses, billable quantities, totals, prices (other than the Shopper's actual market price) or payment states.
+Mutation endpoints reject unknown fields with `validation_failed`; an endpoint that takes no body refuses any field, and `{}` counts as no body. The query string of a mutation is not part of its shape (`DL-20` (2), `DL-31`). Clients never send roles, statuses, billable quantities, totals, prices (other than the Shopper's actual market price) or payment states.
 
 ## 5. Pagination
 
