@@ -21,8 +21,8 @@ The Yandex MapKit API key (`docs/06` section 5). Only W1-13 needs it; every othe
 | W1-5 | Customer catalog API: categories, products with search and pagination, product detail, customer price | Merged |
 | W1-6 | Customer profile and addresses API with the service-area check | Merged |
 | W1-7 | Staff management API: create with a temporary password, block, activate, reset password | Merged |
-| W1-8 | Push device registration API | In review |
-| W1-9 | Panel: business settings and payment providers screen | Planned |
+| W1-8 | Push device registration API | Merged |
+| W1-9 | Panel: business settings and payment providers screen | In review |
 | W1-10 | Panel: categories and products management with image upload | Planned |
 | W1-11 | Panel: staff management | Planned |
 | W1-12 | App: Customer catalog, search and product screen | Planned |

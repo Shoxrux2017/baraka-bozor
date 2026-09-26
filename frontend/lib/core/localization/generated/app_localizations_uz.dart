@@ -241,4 +241,137 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get errorUnknown => 'Xatolik yuz berdi. Qayta urinib ko\'ring';
+
+  @override
+  String get adminHomeIntro => 'Bo\'limni tanlang';
+
+  @override
+  String get adminSectionHome => 'Asosiy';
+
+  @override
+  String get adminSectionSettings => 'Sozlamalar';
+
+  @override
+  String get saveButton => 'Saqlash';
+
+  @override
+  String get settingsTitle => 'Biznes sozlamalari';
+
+  @override
+  String get settingsPricingSection => 'Narxlar va yig\'imlar';
+
+  @override
+  String get settingsMarkup => 'Ustama, %';
+
+  @override
+  String get settingsServiceFeeMode => 'Xizmat haqi';
+
+  @override
+  String get settingsServiceFeeFixed => 'Belgilangan summa';
+
+  @override
+  String get settingsServiceFeePercentage => 'Buyurtmaning foizi';
+
+  @override
+  String get settingsServiceFeeAmount => 'Xizmat haqi summasi';
+
+  @override
+  String get settingsServiceFeePercent => 'Xizmat haqi, %';
+
+  @override
+  String get settingsDeliveryFee => 'Yetkazib berish narxi';
+
+  @override
+  String get settingsMinimumOrder => 'Eng kam buyurtma summasi';
+
+  @override
+  String get settingsPriceTolerance => 'Narx oshishi chegarasi, %';
+
+  @override
+  String get settingsPriceToleranceHint =>
+      'Narx bundan ko\'proq oshsa, mijozning roziligi so\'raladi';
+
+  @override
+  String get settingsOptionalHint => 'Bo\'sh qoldirilsa, o\'rnatilmagan';
+
+  @override
+  String get settingsHoursSection => 'Ish vaqti';
+
+  @override
+  String get settingsOpensAt => 'Ochilish vaqti';
+
+  @override
+  String get settingsClosesAt => 'Yopilish vaqti';
+
+  @override
+  String get settingsAreaSection => 'Yetkazib berish hududi';
+
+  @override
+  String get settingsCentreLatitude => 'Markaz kengligi';
+
+  @override
+  String get settingsCentreLongitude => 'Markaz uzunligi';
+
+  @override
+  String get settingsRadius => 'Radius, km';
+
+  @override
+  String get settingsDeliverySection => 'Yetkazib berish nazorati';
+
+  @override
+  String get settingsDelayThreshold => 'Kechikish chegarasi, daqiqa';
+
+  @override
+  String get settingsSaved => 'Sozlamalar saqlandi';
+
+  @override
+  String settingsUpdatedAt(String when) {
+    return 'Oxirgi o\'zgarish: $when';
+  }
+
+  @override
+  String get providersTitle => 'Onlayn to\'lov';
+
+  @override
+  String get providersIntro =>
+      'Yoqilgan tizimlar mijozga to\'lov usuli sifatida taklif qilinadi';
+
+  @override
+  String get fieldRequired => 'Maydonni to\'ldiring';
+
+  @override
+  String get fieldPercent =>
+      '0 dan 999.99 gacha son, nuqtadan keyin ko\'pi bilan 2 raqam';
+
+  @override
+  String get fieldAmount => '0 dan 1 000 000 000 gacha butun son';
+
+  @override
+  String get fieldTime => 'Vaqtni 09:00 ko\'rinishida kiriting';
+
+  @override
+  String get fieldLatitude =>
+      '-90 dan 90 gacha, nuqtadan keyin ko\'pi bilan 6 raqam';
+
+  @override
+  String get fieldLongitude =>
+      '-180 dan 180 gacha, nuqtadan keyin ko\'pi bilan 6 raqam';
+
+  @override
+  String get fieldRadius =>
+      '0 dan katta va 9999.99 gacha, nuqtadan keyin ko\'pi bilan 2 raqam';
+
+  @override
+  String get fieldMinutes => '1 dan 1440 gacha butun son';
+
+  @override
+  String get fieldPairIncomplete =>
+      'Ikkala qiymatni kiriting yoki ikkalasini ham bo\'sh qoldiring';
+
+  @override
+  String get fieldSameTime =>
+      'Yopilish vaqti ochilish vaqtidan farq qilishi kerak';
+
+  @override
+  String get fieldRejected => 'Server bu qiymatni qabul qilmadi';
 }

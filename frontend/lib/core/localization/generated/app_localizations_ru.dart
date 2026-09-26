@@ -241,4 +241,135 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get errorUnknown => 'Произошла ошибка. Попробуйте снова';
+
+  @override
+  String get adminHomeIntro => 'Выберите раздел';
+
+  @override
+  String get adminSectionHome => 'Главная';
+
+  @override
+  String get adminSectionSettings => 'Настройки';
+
+  @override
+  String get saveButton => 'Сохранить';
+
+  @override
+  String get settingsTitle => 'Настройки бизнеса';
+
+  @override
+  String get settingsPricingSection => 'Цены и сборы';
+
+  @override
+  String get settingsMarkup => 'Наценка, %';
+
+  @override
+  String get settingsServiceFeeMode => 'Сервисный сбор';
+
+  @override
+  String get settingsServiceFeeFixed => 'Фиксированная сумма';
+
+  @override
+  String get settingsServiceFeePercentage => 'Процент от заказа';
+
+  @override
+  String get settingsServiceFeeAmount => 'Сумма сервисного сбора';
+
+  @override
+  String get settingsServiceFeePercent => 'Сервисный сбор, %';
+
+  @override
+  String get settingsDeliveryFee => 'Стоимость доставки';
+
+  @override
+  String get settingsMinimumOrder => 'Минимальная сумма заказа';
+
+  @override
+  String get settingsPriceTolerance => 'Допустимое превышение цены, %';
+
+  @override
+  String get settingsPriceToleranceHint =>
+      'Если цена выросла сильнее, спрашиваем согласие клиента';
+
+  @override
+  String get settingsOptionalHint => 'Пусто — не задано';
+
+  @override
+  String get settingsHoursSection => 'Часы работы';
+
+  @override
+  String get settingsOpensAt => 'Открытие';
+
+  @override
+  String get settingsClosesAt => 'Закрытие';
+
+  @override
+  String get settingsAreaSection => 'Зона доставки';
+
+  @override
+  String get settingsCentreLatitude => 'Широта центра';
+
+  @override
+  String get settingsCentreLongitude => 'Долгота центра';
+
+  @override
+  String get settingsRadius => 'Радиус, км';
+
+  @override
+  String get settingsDeliverySection => 'Контроль доставки';
+
+  @override
+  String get settingsDelayThreshold => 'Порог опоздания, мин';
+
+  @override
+  String get settingsSaved => 'Настройки сохранены';
+
+  @override
+  String settingsUpdatedAt(String when) {
+    return 'Последнее изменение: $when';
+  }
+
+  @override
+  String get providersTitle => 'Онлайн-оплата';
+
+  @override
+  String get providersIntro =>
+      'Включённые системы предлагаются клиенту как способ оплаты';
+
+  @override
+  String get fieldRequired => 'Заполните поле';
+
+  @override
+  String get fieldPercent =>
+      'Число от 0 до 999.99, не более 2 знаков после точки';
+
+  @override
+  String get fieldAmount => 'Целое число от 0 до 1 000 000 000';
+
+  @override
+  String get fieldTime => 'Время в формате 09:00';
+
+  @override
+  String get fieldLatitude => 'От -90 до 90, не более 6 знаков после точки';
+
+  @override
+  String get fieldLongitude => 'От -180 до 180, не более 6 знаков после точки';
+
+  @override
+  String get fieldRadius =>
+      'Больше 0 и не больше 9999.99, не более 2 знаков после точки';
+
+  @override
+  String get fieldMinutes => 'Целое число от 1 до 1440';
+
+  @override
+  String get fieldPairIncomplete =>
+      'Заполните оба значения или оставьте оба пустыми';
+
+  @override
+  String get fieldSameTime =>
+      'Время закрытия должно отличаться от времени открытия';
+
+  @override
+  String get fieldRejected => 'Сервер не принял это значение';
 }

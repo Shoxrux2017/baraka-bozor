@@ -535,6 +535,252 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Xatolik yuz berdi. Qayta urinib ko\'ring'**
   String get errorUnknown;
+
+  /// No description provided for @adminHomeIntro.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bo\'limni tanlang'**
+  String get adminHomeIntro;
+
+  /// No description provided for @adminSectionHome.
+  ///
+  /// In uz, this message translates to:
+  /// **'Asosiy'**
+  String get adminSectionHome;
+
+  /// No description provided for @adminSectionSettings.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sozlamalar'**
+  String get adminSectionSettings;
+
+  /// No description provided for @saveButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlash'**
+  String get saveButton;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Biznes sozlamalari'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsPricingSection.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narxlar va yig\'imlar'**
+  String get settingsPricingSection;
+
+  /// No description provided for @settingsMarkup.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustama, %'**
+  String get settingsMarkup;
+
+  /// No description provided for @settingsServiceFeeMode.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xizmat haqi'**
+  String get settingsServiceFeeMode;
+
+  /// No description provided for @settingsServiceFeeFixed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Belgilangan summa'**
+  String get settingsServiceFeeFixed;
+
+  /// No description provided for @settingsServiceFeePercentage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmaning foizi'**
+  String get settingsServiceFeePercentage;
+
+  /// No description provided for @settingsServiceFeeAmount.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xizmat haqi summasi'**
+  String get settingsServiceFeeAmount;
+
+  /// No description provided for @settingsServiceFeePercent.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xizmat haqi, %'**
+  String get settingsServiceFeePercent;
+
+  /// No description provided for @settingsDeliveryFee.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berish narxi'**
+  String get settingsDeliveryFee;
+
+  /// No description provided for @settingsMinimumOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Eng kam buyurtma summasi'**
+  String get settingsMinimumOrder;
+
+  /// No description provided for @settingsPriceTolerance.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narx oshishi chegarasi, %'**
+  String get settingsPriceTolerance;
+
+  /// No description provided for @settingsPriceToleranceHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narx bundan ko\'proq oshsa, mijozning roziligi so\'raladi'**
+  String get settingsPriceToleranceHint;
+
+  /// No description provided for @settingsOptionalHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bo\'sh qoldirilsa, o\'rnatilmagan'**
+  String get settingsOptionalHint;
+
+  /// No description provided for @settingsHoursSection.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ish vaqti'**
+  String get settingsHoursSection;
+
+  /// No description provided for @settingsOpensAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ochilish vaqti'**
+  String get settingsOpensAt;
+
+  /// No description provided for @settingsClosesAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yopilish vaqti'**
+  String get settingsClosesAt;
+
+  /// No description provided for @settingsAreaSection.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berish hududi'**
+  String get settingsAreaSection;
+
+  /// No description provided for @settingsCentreLatitude.
+  ///
+  /// In uz, this message translates to:
+  /// **'Markaz kengligi'**
+  String get settingsCentreLatitude;
+
+  /// No description provided for @settingsCentreLongitude.
+  ///
+  /// In uz, this message translates to:
+  /// **'Markaz uzunligi'**
+  String get settingsCentreLongitude;
+
+  /// No description provided for @settingsRadius.
+  ///
+  /// In uz, this message translates to:
+  /// **'Radius, km'**
+  String get settingsRadius;
+
+  /// No description provided for @settingsDeliverySection.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berish nazorati'**
+  String get settingsDeliverySection;
+
+  /// No description provided for @settingsDelayThreshold.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kechikish chegarasi, daqiqa'**
+  String get settingsDelayThreshold;
+
+  /// No description provided for @settingsSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sozlamalar saqlandi'**
+  String get settingsSaved;
+
+  /// No description provided for @settingsUpdatedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi o\'zgarish: {when}'**
+  String settingsUpdatedAt(String when);
+
+  /// No description provided for @providersTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Onlayn to\'lov'**
+  String get providersTitle;
+
+  /// No description provided for @providersIntro.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yoqilgan tizimlar mijozga to\'lov usuli sifatida taklif qilinadi'**
+  String get providersIntro;
+
+  /// No description provided for @fieldRequired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Maydonni to\'ldiring'**
+  String get fieldRequired;
+
+  /// No description provided for @fieldPercent.
+  ///
+  /// In uz, this message translates to:
+  /// **'0 dan 999.99 gacha son, nuqtadan keyin ko\'pi bilan 2 raqam'**
+  String get fieldPercent;
+
+  /// No description provided for @fieldAmount.
+  ///
+  /// In uz, this message translates to:
+  /// **'0 dan 1 000 000 000 gacha butun son'**
+  String get fieldAmount;
+
+  /// No description provided for @fieldTime.
+  ///
+  /// In uz, this message translates to:
+  /// **'Vaqtni 09:00 ko\'rinishida kiriting'**
+  String get fieldTime;
+
+  /// No description provided for @fieldLatitude.
+  ///
+  /// In uz, this message translates to:
+  /// **'-90 dan 90 gacha, nuqtadan keyin ko\'pi bilan 6 raqam'**
+  String get fieldLatitude;
+
+  /// No description provided for @fieldLongitude.
+  ///
+  /// In uz, this message translates to:
+  /// **'-180 dan 180 gacha, nuqtadan keyin ko\'pi bilan 6 raqam'**
+  String get fieldLongitude;
+
+  /// No description provided for @fieldRadius.
+  ///
+  /// In uz, this message translates to:
+  /// **'0 dan katta va 9999.99 gacha, nuqtadan keyin ko\'pi bilan 2 raqam'**
+  String get fieldRadius;
+
+  /// No description provided for @fieldMinutes.
+  ///
+  /// In uz, this message translates to:
+  /// **'1 dan 1440 gacha butun son'**
+  String get fieldMinutes;
+
+  /// No description provided for @fieldPairIncomplete.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ikkala qiymatni kiriting yoki ikkalasini ham bo\'sh qoldiring'**
+  String get fieldPairIncomplete;
+
+  /// No description provided for @fieldSameTime.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yopilish vaqti ochilish vaqtidan farq qilishi kerak'**
+  String get fieldSameTime;
+
+  /// No description provided for @fieldRejected.
+  ///
+  /// In uz, this message translates to:
+  /// **'Server bu qiymatni qabul qilmadi'**
+  String get fieldRejected;
 }
 
 class _AppLocalizationsDelegate
