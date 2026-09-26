@@ -37,6 +37,8 @@ String _refusalText(AppLocalizations l10n, String code, int status) {
     'validation_failed' => l10n.errorValidationFailed,
     'forbidden' => l10n.errorForbidden,
     'resource_not_found' => l10n.errorNotFound,
+    'business_conflict' => l10n.errorBusinessConflict,
+    'payload_too_large' => l10n.errorPayloadTooLarge,
     'provider_unavailable' ||
     'payment_provider_unavailable' => l10n.errorProviderUnavailable,
     'service_unavailable' => l10n.errorServiceUnavailable,

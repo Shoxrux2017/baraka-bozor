@@ -381,4 +381,197 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get fieldRejected => 'Сервер не принял это значение';
+
+  @override
+  String get adminSectionCategories => 'Категории';
+
+  @override
+  String get adminSectionProducts => 'Товары';
+
+  @override
+  String get catalogNameUz => 'Название (узбекский)';
+
+  @override
+  String get catalogNameRu => 'Название (русский)';
+
+  @override
+  String get catalogDescriptionUz => 'Описание (узбекский)';
+
+  @override
+  String get catalogDescriptionRu => 'Описание (русский)';
+
+  @override
+  String get catalogSortOrder => 'Порядок';
+
+  @override
+  String get catalogSortOrderHint => 'Чем меньше, тем выше в списке';
+
+  @override
+  String get catalogShownToCustomers => 'Показывать клиентам';
+
+  @override
+  String get catalogIncludeArchived => 'Вместе с архивом';
+
+  @override
+  String get catalogStateActive => 'Показывается';
+
+  @override
+  String get catalogStateHidden => 'Скрыто';
+
+  @override
+  String get catalogStateArchived => 'В архиве';
+
+  @override
+  String get catalogEdit => 'Изменить';
+
+  @override
+  String get catalogArchive => 'В архив';
+
+  @override
+  String get catalogRestore => 'Вернуть из архива';
+
+  @override
+  String get catalogArchivedNote =>
+      'Запись в архиве не видна клиентам. Вернуть её можно действием в списке';
+
+  @override
+  String get catalogEmpty => 'Ничего не найдено';
+
+  @override
+  String catalogPage(int page, int last) {
+    return 'Страница $page из $last';
+  }
+
+  @override
+  String get catalogPreviousPage => 'Предыдущая страница';
+
+  @override
+  String get catalogNextPage => 'Следующая страница';
+
+  @override
+  String get categoryNew => 'Новая категория';
+
+  @override
+  String get categoryEditTitle => 'Редактирование категории';
+
+  @override
+  String get categorySaved => 'Категория сохранена';
+
+  @override
+  String get productNew => 'Новый товар';
+
+  @override
+  String get productEditTitle => 'Редактирование товара';
+
+  @override
+  String get productSaved => 'Товар сохранён';
+
+  @override
+  String get productCategory => 'Категория';
+
+  @override
+  String get productAllCategories => 'Все категории';
+
+  @override
+  String get productUnit => 'Единица измерения';
+
+  @override
+  String get productPriceMode => 'Тип цены';
+
+  @override
+  String get productMarketPrice => 'Рыночная цена';
+
+  @override
+  String productCustomerPrice(String price) {
+    return 'Цена для клиента: $price';
+  }
+
+  @override
+  String get productSearch => 'Поиск по названию';
+
+  @override
+  String get productBackToList => 'К списку товаров';
+
+  @override
+  String get productImage => 'Фото';
+
+  @override
+  String get productNoImage => 'Фото нет';
+
+  @override
+  String get productChooseImage => 'Выбрать фото';
+
+  @override
+  String get productUploadImage => 'Загрузить';
+
+  @override
+  String get productRemoveImage => 'Удалить фото';
+
+  @override
+  String get productRemoveImageConfirm => 'Удалить фото товара?';
+
+  @override
+  String get productImageRules => 'JPEG, PNG или WebP, не больше 5 МБ';
+
+  @override
+  String get productImageTooLarge => 'Фото больше 5 МБ';
+
+  @override
+  String get productImageWrongType => 'Только JPEG, PNG или WebP';
+
+  @override
+  String get productImageUnreadable =>
+      'Не удалось прочитать файл. Выберите другой';
+
+  @override
+  String get productImageAfterSave =>
+      'Фото можно добавить после сохранения товара';
+
+  @override
+  String get priceModeFixed => 'Точная цена';
+
+  @override
+  String get priceModeEstimate => 'Ориентировочная цена';
+
+  @override
+  String get unitKg => 'кг';
+
+  @override
+  String get unitGram => 'г';
+
+  @override
+  String get unitPiece => 'шт.';
+
+  @override
+  String get unitLiter => 'л';
+
+  @override
+  String get unitPackage => 'уп.';
+
+  @override
+  String get unitBox => 'кор.';
+
+  @override
+  String get unitBundle => 'пуч.';
+
+  @override
+  String get unitMeter => 'м';
+
+  @override
+  String fieldTooLong(int max) {
+    return 'Не более $max символов';
+  }
+
+  @override
+  String get fieldSortOrder => 'Целое число от -100 000 до 100 000';
+
+  @override
+  String get fieldMarketPrice => 'Целое число от 1 до 1 000 000 000';
+
+  @override
+  String get errorBusinessConflict =>
+      'Данные уже изменились. Проверьте текущее состояние и попробуйте снова';
+
+  @override
+  String get errorPayloadTooLarge => 'Файл слишком большой';
 }

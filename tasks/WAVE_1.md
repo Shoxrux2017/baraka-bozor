@@ -22,8 +22,8 @@ The Yandex MapKit API key (`docs/06` section 5). Only W1-13 needs it; every othe
 | W1-6 | Customer profile and addresses API with the service-area check | Merged |
 | W1-7 | Staff management API: create with a temporary password, block, activate, reset password | Merged |
 | W1-8 | Push device registration API | Merged |
-| W1-9 | Panel: business settings and payment providers screen | In review |
-| W1-10 | Panel: categories and products management with image upload | Planned |
+| W1-9 | Panel: business settings and payment providers screen | Merged |
+| W1-10 | Panel: categories and products management with image upload | In review |
 | W1-11 | Panel: staff management | Planned |
 | W1-12 | App: Customer catalog, search and product screen | Planned |
 | W1-13 | App: profile, addresses list and form with the Yandex map picker | Planned, gated |
@@ -71,6 +71,7 @@ Backend tasks first, in order; the panel screens after their APIs; the app scree
 | The Yandex MapKit key is not there yet | Open; W1-13 is last and can close without device verification |
 | The MapKit package has no web implementation while the frontend CI job builds the web panel on every pull request | W1-13 must keep `flutter build web` green: the map widget is imported only by the mobile-only `addresses` feature, and the package chosen must take the key from Dart (`--dart-define`), not from committed native files |
 | A body the JSON decoder cannot read reaches every endpoint as an empty body: a POST fails its required fields and every PATCH refuses an empty body with `422`, but no endpoint answers the `400 malformed_request` of `docs/09` section 3. A string with an interior NUL byte is silently cut at the NUL by the input handling | Closed by one global middleware (`DL-24`) |
+| Browser tests (`*_browser_test.dart`) do not load on the development machine: `flutter test --platform chrome` ends with "Connection closed before test suite loaded" with Chrome and Edge 153 alike, even for a trivial test. They run in CI only, and the panel's image picker is also tried by hand in the closure walkthrough (`DL-28` (6)) | Open until the local runner works; CI covers the check meanwhile |
 | The Admin shell (`DL-27` (1)) lists the Admin's sections only; the Operator's surface is the same panel with sections hidden (`docs/02`), so the shell must filter its sections by role, or be shared, when `/operations` gets its screens (found by the W1-9 review) | Open for the wave that builds the Operator's board |
 | A device stays live when a session ends on the server — the 30-day idle expiry, or a logout whose revoke failed — and an account may register any number of devices (found by the W1-8 review) | Open for Wave 4, before the first push: prune devices unseen for longer than the token lifetime (the app re-registering at every start), and cap live devices per account |
 | Bodyless actions — archive, restore, block, activate, reset-password, logout, address and push-device delete — take a plain request and ignore a body, where `docs/09` section 4 says unknown fields are refused (found by the W1-7 review) | Open; one shared empty strict request for all of them in one small pull request before the wave closes |

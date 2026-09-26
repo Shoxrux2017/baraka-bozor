@@ -8,8 +8,14 @@ import 'core/localization/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 
 void main() {
-  runApp(const ProviderScope(child: BarakaBozorApp()));
+  runApp(const ProviderScope(retry: noAutomaticRetry, child: BarakaBozorApp()));
 }
+
+/// Riverpod retries a failed provider on its own unless told otherwise. The
+/// app does not: a load that failed shows its reason and a retry the person
+/// presses, and a refusal — a missing record, a refused query — would only
+/// fail again (`DL-28` (12)).
+Duration? noAutomaticRetry(int retryCount, Object error) => null;
 
 class BarakaBozorApp extends ConsumerWidget {
   const BarakaBozorApp({super.key});

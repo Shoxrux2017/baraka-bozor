@@ -61,5 +61,11 @@ jobs:
       - name: Tests
         run: flutter test
 
+      # Code that only a browser runs — the panel's file picker — is tested
+      # in Chrome, which the runner provides. These files are marked
+      # `@TestOn('browser')`, so the step above skips them.
+      - name: Browser tests
+        run: flutter test --platform chrome $(find test -name '*_browser_test.dart' | sort)
+
       - name: Web build of the panel
         run: flutter build web --release

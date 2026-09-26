@@ -19,6 +19,7 @@ Widget appUnderTest({
   List<Override> overrides = const <Override>[],
 }) {
   return ProviderScope(
+    retry: noAutomaticRetry,
     overrides: [
       tokenStoreProvider.overrideWithValue(tokens ?? InMemoryTokenStore()),
       preferenceStoreProvider.overrideWithValue(InMemoryPreferenceStore()),

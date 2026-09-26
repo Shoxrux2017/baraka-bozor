@@ -21,6 +21,7 @@ PHPUnit, Laravel Pint, Larastan (PHPStan level 5)
 
 ```text
 Flutter / Dart, Riverpod, GoRouter, Dio, flutter_secure_storage, Material 3
+package:web for the panel's image file dialog (DL-28)
 Yandex MapKit for the address picker
 ```
 
@@ -216,7 +217,7 @@ Design: no brand assets exist. The client ships a text logo "BarakaBozor", the g
 
 ## 28. Async and Session Safety
 
-Session, target and operation identity guard every async completion; a result that completes after a mode switch or an account change is discarded. Payment, approval and order actions suppress duplicate submission and reconcile from the server after an uncertain outcome.
+Session, target and operation identity guard every async completion; a result that completes after a mode switch or an account change is discarded. Payment, approval and order actions suppress duplicate submission and reconcile from the server after an uncertain outcome. A failed load is never retried automatically: the screen shows the reason and a retry the person presses (`DL-28` (12)).
 
 ## 29. Navigation
 
