@@ -5,6 +5,7 @@ import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/routing/feature_routes.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
+import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -41,7 +42,6 @@ void main() {
         AppPaths.customerMode,
         AppPaths.unreachable,
         AppPaths.wrongSurface,
-        AppPaths.customer,
         AppPaths.shopper,
         AppPaths.courier,
         AppPaths.operations,
@@ -53,15 +53,21 @@ void main() {
         AdminPaths.productPattern,
         AdminPaths.staff,
         AdminPaths.settings,
+        AppPaths.customer,
+        CatalogPaths.categoryPattern,
+        CatalogPaths.productPattern,
       ]);
     });
 
-    test('registers the auth, shells and admin fragments, in that order', () {
-      expect(
-        featureRouteFragments.map((FeatureRoutes f) => f.feature),
-        <String>['auth', 'shells', 'admin'],
-      );
-    });
+    test(
+      'registers the auth, shells, admin and catalog fragments, in order',
+      () {
+        expect(
+          featureRouteFragments.map((FeatureRoutes f) => f.feature),
+          <String>['auth', 'shells', 'admin', 'catalog'],
+        );
+      },
+    );
 
     test('rejects a fragment that collides with the bootstrap route', () {
       // The bootstrap route goes through the same collision check as every
@@ -149,12 +155,12 @@ void main() {
       // stored language choice may still be loading, and any text here could
       // flash in the wrong language.
       final FakeAuthRepository repository = FakeAuthRepository()
-        ..identities[SessionSlot.staff] = user()
+        ..identities[SessionSlot.customer] = user()
         ..holdAnswers = Completer<void>();
       await tester.pumpWidget(
         appUnderTest(
           tokens: InMemoryTokenStore(<SessionSlot, String>{
-            SessionSlot.staff: 's',
+            SessionSlot.customer: 'c',
           }),
           repository: repository,
         ),

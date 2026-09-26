@@ -1369,6 +1369,54 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Bu raqam boshqa faol xodimga tegishli'**
   String get errorPhoneAlreadyActive;
+
+  /// No description provided for @catalogSearchHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot qidirish'**
+  String get catalogSearchHint;
+
+  /// No description provided for @catalogSearchClear.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tozalash'**
+  String get catalogSearchClear;
+
+  /// No description provided for @catalogCategoriesTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bo\'limlar'**
+  String get catalogCategoriesTitle;
+
+  /// No description provided for @catalogNoProducts.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu yerda hozircha mahsulot yo\'q'**
+  String get catalogNoProducts;
+
+  /// No description provided for @catalogPricePerUnit.
+  ///
+  /// In uz, this message translates to:
+  /// **'{price} / {unit}'**
+  String catalogPricePerUnit(String price, String unit);
+
+  /// No description provided for @catalogEstimateNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'narx taxminiy'**
+  String get catalogEstimateNote;
+
+  /// No description provided for @catalogEstimateExplain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yakuniy narx yig\'uvchi bozorda haqiqatda to\'lagan narxdan hisoblanadi. U taxminiy narxdan belgilangan chegaradan ko\'proq oshsa, xarid qilishdan oldin sizdan rozilik so\'raymiz.'**
+  String get catalogEstimateExplain;
+
+  /// No description provided for @catalogLoadMore.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana yuklash'**
+  String get catalogLoadMore;
 }
 
 class _AppLocalizationsDelegate

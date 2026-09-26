@@ -57,6 +57,7 @@ class CategoriesScreen extends ConsumerWidget {
         FailureMessage(actions.failure),
         page.when(
           skipLoadingOnReload: false,
+          skipLoadingOnRefresh: !page.hasError,
           data: (Paged<AdminCategory> page) => Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[

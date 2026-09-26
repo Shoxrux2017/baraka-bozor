@@ -20,11 +20,13 @@ void main() {
   final Finder switchToStaff = find.byKey(
     const ValueKey<String>('switch-to-staff-button'),
   );
-  final Finder modeChip = find.byKey(
-    const ValueKey<String>('active-mode-chip'),
-  );
+  final Finder modeChip = find.byKey(const ValueKey<String>('active-mode'));
   final Finder logoutButton = find.byKey(
     const ValueKey<String>('logout-button'),
+  );
+  // The Customer area's home is the catalog.
+  final Finder customerHome = find.byKey(
+    const ValueKey<String>('catalog-search'),
   );
   final Finder codeField = find.byKey(const ValueKey<String>('code-field'));
 
@@ -73,7 +75,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repository.calls, contains('verify:+998901111111:123456'));
-      expect(find.text(l10n(tester).shellCustomer), findsOneWidget);
+      expect(customerHome, findsOneWidget);
       expect(modeChip, findsOneWidget);
       expect(find.text(l10n(tester).customerModeLabel), findsOneWidget);
       expect(tokens.tokens.keys, containsAll(SessionSlot.values));
@@ -89,7 +91,7 @@ void main() {
       await tester.tap(switchToCustomer);
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n(tester).shellCustomer), findsOneWidget);
+      expect(customerHome, findsOneWidget);
       expect(repository.calls, isEmpty);
     },
   );
@@ -124,7 +126,7 @@ void main() {
     expect(find.text(l10n(tester).shellShopper), findsOneWidget);
     await tester.tap(switchToCustomer);
     await tester.pumpAndSettle();
-    expect(find.text(l10n(tester).shellCustomer), findsOneWidget);
+    expect(customerHome, findsOneWidget);
 
     await tester.tap(logoutButton);
     await tester.pumpAndSettle();
