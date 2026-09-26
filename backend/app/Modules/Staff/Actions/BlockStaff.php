@@ -8,6 +8,7 @@ use App\Exceptions\ApiException;
 use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Models\User;
+use App\Modules\Notifications\Actions\RevokePushDevice;
 use App\Modules\Staff\StaffDirectory;
 use App\Support\Scope\ScopedLookup;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,8 @@ use Illuminate\Support\Facades\DB;
  * Admin blocks a staff account (`docs/02` section 12, `BR-ROLE-007`,
  * `BR-ROLE-008`): never their own, never the last active Admin, and every
  * token of the account is deleted at the same moment, so an old session
- * stops working with its next request. Blocking a blocked account is a
+ * stops working with its next request; its push devices are revoked with them
+ * (`DL-26` (5)). Blocking a blocked account is a
  * natural repeat (`docs/09` section 49): the current account, nothing changed.
  *
  * Lock order. When the target is an Admin, every active Admin row is locked
@@ -68,6 +70,7 @@ final class BlockStaff
             ])->save();
 
             $staff->tokens()->delete();
+            RevokePushDevice::everyDeviceOf($staff);
 
             return $staff;
         });

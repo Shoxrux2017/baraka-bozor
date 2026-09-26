@@ -6,6 +6,7 @@ namespace App\Modules\Staff\Actions;
 
 use App\Exceptions\ApiException;
 use App\Models\User;
+use App\Modules\Notifications\Actions\RevokePushDevice;
 use App\Modules\Staff\StaffDirectory;
 use App\Modules\Staff\TemporaryCredentials;
 use App\Modules\Staff\TemporaryPassword;
@@ -15,8 +16,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * Admin resets another staff member's password (`docs/04` section 32,
  * `DL-17` (8)): a new temporary password, the gate set again, and every token
- * of the account deleted, because a reset is what an Admin does when the
- * holder of the old sessions can no longer be trusted. A blocked account may
+ * of the account deleted and its push devices revoked, because a reset is
+ * what an Admin does when the holder of the old sessions can no longer be
+ * trusted (`DL-26` (5)). A blocked account may
  * be reset too, ready for its unblocking.
  *
  * An Admin's own password is changed with `POST /auth/change-password`; a
@@ -43,6 +45,7 @@ final class ResetStaffPassword
             ])->save();
 
             $staff->tokens()->delete();
+            RevokePushDevice::everyDeviceOf($staff);
 
             return new TemporaryCredentials($staff, $password);
         });
