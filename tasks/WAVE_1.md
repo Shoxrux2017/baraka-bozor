@@ -27,7 +27,7 @@ The Yandex MapKit API key (`docs/06` section 5). Only W1-13 needs it; every othe
 | W1-11 | Panel: staff management | Merged |
 | W1-12 | App: Customer catalog, search and product screen | Merged |
 | W1-13 | App: profile, addresses list and form with the Yandex map picker | Planned, gated |
-| W1-14 | App and panel: push token registration behind a token source | Planned |
+| W1-14 | App and panel: push token registration behind a token source | In review |
 | W1-15 | Wave closure: full suites, builds, real-stack walkthrough of the wave's scenario, Owner checklist and report | Planned |
 
 Backend tasks first, in order; the panel screens after their APIs; the app screens after theirs; W1-13 last because of the gate. This is a split by layer rather than by vertical slice (`tasks/README.md` section 2), chosen because the panel and the app consume the same APIs and each screen task then tests against a merged contract; the trade-off is that no feature is usable end to end before its screen task lands.

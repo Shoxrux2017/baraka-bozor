@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
@@ -7,6 +9,7 @@ import '../errors/report_unexpected_error.dart';
 import '../localization/app_language.dart';
 import '../network/api_failure.dart';
 import '../storage/token_store.dart';
+import 'session_end_hook.dart';
 import 'session_state.dart';
 
 /// Owns the two sessions of `docs/07-architecture.md` section 8.
@@ -171,8 +174,20 @@ class SessionController extends AsyncNotifier<SessionState> {
   }
 
   /// Ends one session and leaves the other alone
-  /// (`docs/02-user-roles.md` section 10).
+  /// (`docs/02-user-roles.md` section 10). The session-end hooks run first,
+  /// while the session still works; none of them can stop the logout.
   Future<void> logout(SessionMode mode) async {
+    final SessionEndHooks hooks = ref.read(sessionEndHooksProvider);
+    for (final SessionEndHook hook in hooks.all) {
+      try {
+        await hook.beforeLogout(mode.slot).timeout(hooks.limit);
+      } on TimeoutException {
+        // The hook finishes on its own, or not at all; the logout goes on.
+      } catch (error, stackTrace) {
+        reportUnexpectedError(error, stackTrace, 'while ending a session');
+      }
+    }
+
     try {
       await _repository.logout(mode.slot);
     } on ApiFailure {
