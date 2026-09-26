@@ -25,8 +25,8 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 | W0-3 | Customer login codes: `channel` column, `CodeDeliveryGateway` with the fake and the test numbers, request and verify endpoints | Merged |
 | W0-4 | Authorization foundation: role and scope middleware, scope-safe not-found helpers, Operator-as-restricted-Admin capability check, probe tests | Merged |
 | W0-5 | Client session foundation: two token slots, auth repository and DTOs, error-code mapping, language selection with device default | Merged |
-| W0-6 | Client auth screens and shells: code request and verify, staff login and password change, six role shells, wrong-surface screen, web build of the panel shell | In review (PR #26) |
-| W0-7 | Wave closure: full suites, Android and web builds, real-stack login walk-through for every role, Owner checklist and report | Planned |
+| W0-6 | Client auth screens and shells: code request and verify, staff login and password change, six role shells, wrong-surface screen, web build of the panel shell | Merged |
+| W0-7 | Wave closure: full suites, Android and web builds, real-stack login walk-through for every role, Owner checklist and report | Done, see Closure |
 
 ## Task notes
 
@@ -42,7 +42,7 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 
 **W0-6.** Screens per `04` Sections 2 and 3 (`features/auth/presentation/`): phone, code, staff login, password change, plus the Customer-mode entry, the unreachable-server retry and the wrong-surface screen per `02` Section 10. Six placeholder shells under `features/shells/` with the language switch, logout of the active mode, the active-mode chip while two sessions exist, and the Customer-mode switch for a Shopper or Courier. The session guard (`core/routing/session_redirect.dart`) and its rules in `DL-15`. `web/` added, `windows/` removed, `flutter build web --release` passes locally and in the new frontend CI job (`.github/workflows/frontend.yml`: format, analyze, tests, localization regeneration check, web build). `frontend/README.md` replaced.
 
-**W0-7.** Also close the risk items below that are cheap.
+**W0-7.** Also close the risk items below that are cheap. Closed: the obsolete `synthetic-package` option in `frontend/l10n.yaml` (Flutter warned on every build). The real-stack walkthrough runs the HTTP entry point as a one-off container, `docker compose run --rm -d --name baraka-bozor-serve -p 127.0.0.1:8000:8000 app php artisan serve --host 0.0.0.0`, so `docker/compose.yaml` publishes no port until the deployment task; the walkthrough fixtures are local only (test phones in the gitignored `backend/.env`, staff accounts seeded through `backend/storage/app/`).
 
 ## Risks and housekeeping
 
@@ -62,11 +62,43 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 | The frontend CI job is not yet a required check on `main`; only the Owner can change branch protection | Open, asked in the W0-7 report |
 | The first frame renders in the device language until the stored choice is read; invisible today because the bootstrap screen shows no text | Accepted |
 | Uzbek strings use the ASCII apostrophe (`O'zbekcha`) rather than the orthographic ʻ (U+02BB), as most Uzbek apps do; the Shopper is `Yig'uvchi`, the Courier `Kuryer` | Open for the Owner's word in the W0-7 report; a change is an ARB edit |
+| `401 code_invalid`, `code_expired` and `code_attempts_exhausted` carry the generic developer `message` "Authentication is required." because `ApiException::unauthenticated()` has one message; the client never shows it, so only logs read oddly | Open, P3; a message per code when the auth module is next touched |
+| The launcher icon and the Android splash are Flutter's defaults; no brand assets exist (`docs/07` section 27) | Open until a designer supplies assets; visible in the Owner's check |
+| `frontend/pubspec.lock` and `backend/composer.lock` are pinned by the tasks that added packages; no dependency was added in W0-5 to W0-7 | Closed, nothing to do |
 
 ## Independent-review findings not acted on
 
-None yet.
+None. Every finding of the six reviews (W0-1 to W0-6) was acted on before merge; the records are on pull requests #20 to #26.
 
 ## Closure
 
-Not yet.
+Closed on 2026-09-26 at `main` = merge of PR #26 (`e957301`) plus this closure record.
+
+**Verified by the agent:**
+
+| Check | Result |
+|---|---|
+| Backend suite in the Compose container, `php artisan test` | 222 passed, 1170 assertions |
+| Backend Pint, `vendor/bin/pint --test` | 106 files pass |
+| Backend CI on the last merged head (tests, Pint, PHPStan on PostgreSQL) | pass |
+| Frontend suite, `flutter test` | 182 passed |
+| Frontend analyze and format | no issues, 0 files changed |
+| Frontend CI on the last merged head (format, analyze, tests, gen-l10n check, web build) | pass |
+| `flutter build web --release` | built |
+| `flutter build apk --debug` | built (Flutter 3.47.5) |
+| Real stack (PostgreSQL 17 + PHP 8.4 in Compose, `php artisan serve` in a one-off container), API walkthrough | 21 of 21 steps pass: Customer code login on a test phone (`channel = test`), wrong code `401 code_invalid`, `/auth/me`, language through `PATCH /auth/me`; staff login for Shopper, Courier, Operator, Admin, Manager; wrong password `401 invalid_credentials`; first-login gate set, cleared through `/auth/change-password`, new password accepted; a customer session for a Shopper's own phone with `role = customer`; logout revokes the token (`204`, then `401 authentication_required`); `404 resource_not_found` envelope with `request_id` |
+| Real stack, Android app on the emulator (API 36 image, `BB_API_BASE_URL=http://10.0.2.2:8000/api/v1`) | Customer login by phone and code; the stored session survives an app restart; logout; staff login as Shopper; Customer mode with a code to the staff phone; the active-mode chip; switch back; logout of one mode keeps the other; language switch to Russian across every string; an Admin on the phone sees the wrong-surface screen and can log out |
+
+**Not verified by the agent, on the Owner's checklist:** the web panel in a real browser (built and tested with the web surface, not driven in Chrome); a real phone; Telegram and SMS delivery (no provider until Wave 4 and 5 — the fake gateway records codes, test phones use the fixed code).
+
+**Owner's manual check** (the app: install `frontend/build/app/outputs/flutter-apk/app-debug.apk` built with the `BB_API_BASE_URL` of the running stack, or run `flutter run` against it; the panel: `flutter run -d chrome --dart-define=BB_API_BASE_URL=...`):
+
+1. Customer: enter a test phone, receive the code screen naming the channel and the phone, enter the fixed code, land in the Customer shell. Close and reopen the app: still signed in. Log out: back to the phone screen.
+2. Wrong input: an incomplete phone and a five-digit code are refused before anything is sent; a wrong code shows "Kod noto'g'ri"; after five wrong codes the text says to request a new one.
+3. Staff: "Xodim sifatida kirish", phone and password. A wrong password shows its text and the form stays usable. A staff account with a temporary password lands on the password change and nowhere else; a pair shorter than ten characters or not matching is refused before sending; after the change the role shell opens.
+4. Customer mode: as a Shopper or Courier, "Mijoz sifatida davom etish", the code goes to your own phone, the Customer shell opens with the "Mijoz rejimi" chip; "Xodim rejimiga qaytish" switches back without a code; logging out of one mode keeps the other.
+5. Language: the globe icon switches every string between Uzbek and Russian and the choice survives a restart.
+6. Wrong surface: an Operator, Admin or Manager on the phone, or a Customer, Shopper or Courier in the browser, sees the screen naming the right surface and can log out.
+7. Web panel: Operator, Admin and Manager sign in in Chrome and see their shell; a mistyped address inside the panel returns to the shell, never an English error page.
+
+**What remains open:** the risk rows above marked Open; the frontend CI job as a required check; the Owner's word on the Uzbek terms; Wave 1 needs the Yandex MapKit API key (`tasks/README.md` section 5).
