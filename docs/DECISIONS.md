@@ -110,6 +110,10 @@ Found while building the renderer and its review: (1) planned maintenance answer
 
 The Owner made the Operator a restricted Admin (topic 6.2). Expressed as a rule over routes rather than a separate capability map: every route under `/api/v1/operations` admits both `operator` and `admin`, and no route anywhere else admits the Operator; admin-only routes live under `/api/v1/admin`. A structural test over the route table enforces the rule, so an admin-only route accidentally written with the Operator in its list fails the suite instead of passing review. Two further structural rules from the same review: a role check may only appear after the token, account-status and password-gate checks, and every route parameter is a constrained UUID (`UuidRouteParameters`) so a malformed id is a scope-safe 404 rather than a database error.
 
+## DL-13 — Client session and language foundation from W0-5 (2026-09-26, agent)
+
+(1) Two Flutter packages added, `flutter_localizations` and `intl`, because Flutter's own `gen-l10n` needs them; the generated localization classes are committed under `lib/core/localization/generated/` so a build never depends on a generation step it might skip. (2) A request names the session it acts for: the active mode by default, an explicit slot for cross-mode calls, or none for the public endpoints; the interceptor never sends a staff token to a customer endpoint or the reverse. (3) A refused token drops its own session only; the other session, if any, continues in its mode without a server round trip. (4) At bootstrap an unreachable server keeps the stored tokens and shows a retry, because signing a Shopper out for a lost connection would lose an order in progress; a token the server refuses is cleared at once. (5) With both sessions stored the staff mode opens first. (6) The language preference lives in the same platform-secured storage as the tokens, under a prefixed key, to avoid a second storage plugin; it is reported to the server through `PATCH /auth/me` for every confirmed session, and a failure to report is not surfaced.
+
 ## DL-5 — Waves after the interview (2026-09-24, agent)
 
 | Wave | Outcome |
