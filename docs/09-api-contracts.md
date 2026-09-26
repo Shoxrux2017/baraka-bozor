@@ -109,7 +109,7 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
 
 ## 16. Product Image
 
-`POST /admin/products/{product}/image` (multipart, JPEG/PNG/WebP, ≤ 5 MB) replaces the current image; `DELETE` removes it.
+`POST /admin/products/{product}/image` (multipart field `image`; JPEG, PNG or WebP judged by the bytes, not the file name; at most 5 MiB) replaces the current image under a fresh key, so `image_url` changes; `DELETE` removes it and is a natural repeat. Both answer the Admin product with `image_url` (`null` without an image). An archived product accepts an image.
 
 # Cart and Checkout
 

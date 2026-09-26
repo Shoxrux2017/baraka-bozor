@@ -1,0 +1,91 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Support;
+
+use Illuminate\Http\UploadedFile;
+use RuntimeException;
+
+/**
+ * Real one-pixel images in each allowed format, as uploaded files whose MIME
+ * type is read from the bytes.
+ *
+ * Laravel's fake uploads report a MIME type guessed from the file name, so a
+ * PDF named `photo.jpg` would pass as a JPEG and the upload rule would never
+ * be exercised. These are genuine files on disk, handed over the way a real
+ * request hands them over, so the type comes from `finfo` exactly as in
+ * production. The container has no GD, so the images are the smallest valid
+ * files of each kind rather than drawn ones.
+ */
+final class ImageBytes
+{
+    private const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
+    private const JPEG = '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=';
+
+    private const WEBP = 'UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA=';
+
+    private const GIF = 'R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
+
+    public static function png(string $name = 'pomidor.png'): UploadedFile
+    {
+        return self::file($name, self::decode(self::PNG));
+    }
+
+    public static function jpeg(string $name = 'pomidor.jpg'): UploadedFile
+    {
+        return self::file($name, self::decode(self::JPEG));
+    }
+
+    public static function webp(string $name = 'pomidor.webp'): UploadedFile
+    {
+        return self::file($name, self::decode(self::WEBP));
+    }
+
+    public static function gif(string $name = 'a.gif'): UploadedFile
+    {
+        return self::file($name, self::decode(self::GIF));
+    }
+
+    /**
+     * A PDF under a JPEG name: the name says image, the bytes do not.
+     */
+    public static function pdfNamedJpeg(): UploadedFile
+    {
+        return self::file('photo.jpg', "%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n");
+    }
+
+    /**
+     * A PNG followed by padding to exactly [bytes] bytes, still detected as
+     * a PNG, for the size limit.
+     */
+    public static function pngOfSize(int $bytes): UploadedFile
+    {
+        $png = self::decode(self::PNG);
+
+        return self::file('big.png', $png.str_repeat("\0", max(0, $bytes - strlen($png))));
+    }
+
+    private static function file(string $name, string $contents): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'bb-upload-');
+
+        if ($path === false || file_put_contents($path, $contents) === false) {
+            throw new RuntimeException('Could not write a temporary upload.');
+        }
+
+        return new UploadedFile($path, $name, null, null, true);
+    }
+
+    private static function decode(string $base64): string
+    {
+        $bytes = base64_decode($base64, true);
+
+        if ($bytes === false) {
+            throw new RuntimeException('Invalid fixture.');
+        }
+
+        return $bytes;
+    }
+}

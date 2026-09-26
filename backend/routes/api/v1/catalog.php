@@ -7,6 +7,7 @@ use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Auth\Http\Middleware\RequireRole;
 use App\Modules\Catalog\Http\Controllers\AdminCategoryController;
 use App\Modules\Catalog\Http\Controllers\AdminProductController;
+use App\Modules\Catalog\Http\Controllers\AdminProductImageController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,4 +36,7 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Admin)]
         Route::patch('products/{product}', [AdminProductController::class, 'update'])->name('admin.products.update');
         Route::post('products/{product}/archive', [AdminProductController::class, 'archive'])->name('admin.products.archive');
         Route::post('products/{product}/restore', [AdminProductController::class, 'restore'])->name('admin.products.restore');
+
+        Route::post('products/{product}/image', [AdminProductImageController::class, 'store'])->name('admin.products.image.store');
+        Route::delete('products/{product}/image', [AdminProductImageController::class, 'destroy'])->name('admin.products.image.destroy');
     });
