@@ -26,7 +26,8 @@ enum UnitCode {
 }
 
 /// Whether the price shown is what the Customer pays (`fixed`) or an
-/// estimate the Shopper's receipt settles (`estimate`, `BR-PRICE-003`).
+/// estimate that the price the Shopper actually pays settles (`estimate`,
+/// `BR-PRICE-003`).
 enum PriceMode {
   fixed('fixed'),
   estimate('estimate');

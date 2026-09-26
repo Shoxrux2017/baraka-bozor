@@ -44,7 +44,20 @@ class CatalogApi {
       },
       options: _customer,
     );
-    return Paged.parse(response.data, parseProduct);
+    final Paged<CatalogProduct> answer = Paged.parse(
+      response.data,
+      parseProduct,
+    );
+    // An answer for another page, or with another section's products, is
+    // malformed (`DL-27` (6)): the list would repeat or never end.
+    if (answer.page != page ||
+        (query.categoryId != null &&
+            answer.items.any(
+              (CatalogProduct p) => p.categoryId != query.categoryId,
+            ))) {
+      throw const FormatException('the page does not match the request');
+    }
+    return answer;
   }
 
   Future<CatalogProduct> product(String id) async {
@@ -52,7 +65,13 @@ class CatalogApi {
       '/catalog/products/${Uri.encodeComponent(id)}',
       options: _customer,
     );
-    return parseProduct(ApiEnvelope.unwrap(response.data));
+    final CatalogProduct product = parseProduct(
+      ApiEnvelope.unwrap(response.data),
+    );
+    if (product.id != id) {
+      throw const FormatException('the product does not match the request');
+    }
+    return product;
   }
 
   static CatalogCategory parseCategory(Object? raw) {
@@ -67,8 +86,14 @@ class CatalogApi {
     );
   }
 
+  /// A product, held to its contract: UUID ids, and a customer price above
+  /// zero, as the market price it is computed from must be (`DL-20` (6)).
   static CatalogProduct parseProduct(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'product');
+    final int price = json.integer('customer_unit_price_uzs');
+    if (price <= 0) {
+      throw const FormatException('a customer price is above zero');
+    }
     return CatalogProduct(
       id: json.uuid('id'),
       categoryId: json.uuid('category_id'),
@@ -78,7 +103,7 @@ class CatalogApi {
       descriptionRu: json.nullableString('description_ru'),
       unitCode: json.choice('unit_code', UnitCode.tryParse),
       priceMode: json.choice('price_mode', PriceMode.tryParse),
-      customerUnitPriceUzs: json.integer('customer_unit_price_uzs'),
+      customerUnitPriceUzs: price,
       imageUrl: json.nullableString('image_url'),
     );
   }

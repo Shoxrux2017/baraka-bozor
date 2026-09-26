@@ -5,8 +5,10 @@ import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
+import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_screens.dart';
 import 'package:flutter/material.dart';
@@ -298,4 +300,115 @@ void main() {
 
     expect(byKey('product-name'), findsOneWidget);
   });
+
+  testWidgets('a first page that failed shows progress while it is retried', (
+    WidgetTester tester,
+  ) async {
+    catalog.nextFailure = const NetworkFailure();
+    await open(tester);
+    await tester.tap(find.text('Sabzavotlar'));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+
+    catalog.gates[''] = Completer<void>();
+    await tester.tap(byKey('retry-load'));
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.text(l10n(tester).errorNetwork), findsNothing);
+
+    catalog.gates['']!.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Pomidor'), findsOneWidget);
+  });
+
+  testWidgets('a next page that failed offers its own retry', (
+    WidgetTester tester,
+  ) async {
+    catalog.productRows = <CatalogProduct>[
+      for (int i = 1; i <= 25; i++)
+        catalogProduct(id: 'p-$i', nameUz: 'Mahsulot $i', nameRu: 'Товар $i'),
+    ];
+    await open(tester);
+    await tester.tap(find.text('Sabzavotlar'));
+    await tester.pumpAndSettle();
+
+    catalog.nextFailure = const NetworkFailure();
+    await tester.scrollUntilVisible(byKey('load-more'), 300);
+    expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+    expect(find.text('Mahsulot 1'), findsNothing, reason: 'scrolled past');
+
+    await tester.ensureVisible(byKey('load-more'));
+    await tester.pumpAndSettle();
+    await tester.tap(byKey('load-more'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Mahsulot 25'), 300);
+    expect(byKey('load-more'), findsNothing);
+  });
+
+  testWidgets('sections that failed can be asked for again; none says so', (
+    WidgetTester tester,
+  ) async {
+    catalog.categoriesFailure = const NetworkFailure();
+    await open(tester);
+    expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+
+    catalog.categoryRows = <CatalogCategory>[];
+    await tester.tap(find.text(l10n(tester).retryButton));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n(tester).catalogNoProducts), findsOneWidget);
+  });
+
+  for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+    testWidgets(
+      'with two sessions a phone-size window shows the mode on every screen '
+      '(${device.languageCode})',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        tokens.tokens[SessionSlot.staff] = 's';
+        auth.identities[SessionSlot.staff] = user(
+          id: 's',
+          role: UserRole.courier,
+        );
+
+        await open(tester, device: device);
+        final Finder mode = byKey('active-mode');
+        expect(mode, findsOneWidget, reason: 'in the staff shell');
+        await tester.tap(byKey('switch-to-customer-button'));
+        await tester.pumpAndSettle();
+        expect(mode, findsOneWidget, reason: 'on the Customer home');
+        expect(byKey('logout-button'), findsOneWidget);
+        expect(byKey('switch-to-staff-button'), findsOneWidget);
+
+        await tester.tap(
+          find.text(device.languageCode == 'uz' ? 'Sabzavotlar' : 'Овощи'),
+        );
+        await tester.pumpAndSettle();
+        expect(mode, findsOneWidget, reason: 'on a section');
+
+        await tester.tap(
+          find.text(device.languageCode == 'uz' ? 'Pomidor' : 'Помидор'),
+        );
+        await tester.pumpAndSettle();
+        expect(mode, findsOneWidget, reason: 'on a product');
+        await tester.scrollUntilVisible(
+          find.textContaining(
+            device.languageCode == 'uz' ? 'yig\'uvchi' : 'сборщик',
+          ),
+          200,
+        );
+
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
+        await tester.tap(byKey('switch-to-staff-button'));
+        await tester.pumpAndSettle();
+        expect(mode, findsOneWidget, reason: 'back in the staff shell');
+      },
+    );
+  }
 }

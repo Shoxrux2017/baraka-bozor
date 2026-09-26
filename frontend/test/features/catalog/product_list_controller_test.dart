@@ -122,4 +122,31 @@ void main() {
       expect(stateOf().loadingMore, isFalse);
     },
   );
+
+  test('a list rebuilt for no account is not continued', () async {
+    await container.read(productListProvider(all).future);
+    final int asked = catalog.requests.length;
+
+    container.read(_account.notifier).signIn(null);
+    await container.read(productListProvider(all).notifier).loadMore();
+
+    expect(catalog.requests, hasLength(asked));
+  });
+
+  test('a product a later page repeats is shown once', () async {
+    await container.read(productListProvider(all).future);
+    // A new product ahead of the others shifts every later page by one.
+    catalog.productRows = <CatalogProduct>[
+      catalogProduct(id: 'p-new', nameUz: 'Yangi', nameRu: 'Новый'),
+      ...catalog.productRows,
+    ];
+
+    await container.read(productListProvider(all).notifier).loadMore();
+
+    final List<String> ids = <String>[
+      for (final CatalogProduct p in stateOf().items) p.id,
+    ];
+    expect(ids.toSet(), hasLength(ids.length));
+    expect(ids, hasLength(39));
+  });
 }

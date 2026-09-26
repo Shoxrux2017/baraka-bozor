@@ -12,6 +12,7 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/language_menu.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/session/session_state.dart';
+import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
@@ -20,9 +21,9 @@ import 'catalog_widgets.dart';
 
 /// The Customer area's home: the catalog's sections and a search over every
 /// product (`docs/09-api-contracts.md` section 14). The app bar carries
-/// what the area's entry carried before — the language, the active mode
-/// while two sessions exist, the way back to the staff area and the way out
-/// (`docs/02-user-roles.md` section 10).
+/// what the area's entry carried before — the language, the way back to the
+/// staff area and the way out — and the active mode shows above the body
+/// while two sessions exist (`docs/02-user-roles.md` section 10).
 class CatalogHomeScreen extends ConsumerStatefulWidget {
   const CatalogHomeScreen({super.key});
 
@@ -66,25 +67,11 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final SessionState? state = ref.watch(sessionControllerProvider).value;
     final SignedIn? session = state is SignedIn ? state : null;
-    final bool twoSessions =
-        session != null &&
-        session.staffUser != null &&
-        session.customerUser != null;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.appTitle),
         actions: <Widget>[
-          if (twoSessions)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Center(
-                child: Chip(
-                  key: const ValueKey<String>('active-mode-chip'),
-                  label: Text(l10n.customerModeLabel),
-                ),
-              ),
-            ),
           const LanguageMenuButton(),
           if (session?.staffUser != null)
             IconButton(
@@ -109,6 +96,7 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
       body: SafeArea(
         child: Column(
           children: <Widget>[
+            const ActiveModeBar(),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: TextField(
@@ -128,7 +116,7 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
                       : IconButton(
                           key: const ValueKey<String>('catalog-search-clear'),
                           icon: const Icon(Icons.clear),
-                          tooltip: l10n.cancelButton,
+                          tooltip: l10n.catalogSearchClear,
                           onPressed: _clear,
                         ),
                   border: const OutlineInputBorder(),
@@ -156,39 +144,41 @@ class _Categories extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = languageOf(context);
 
-    return ref
-        .watch(catalogCategoriesProvider)
-        .when(
-          skipLoadingOnReload: false,
-          data: (List<CatalogCategory> categories) => categories.isEmpty
-              ? Center(child: Text(l10n.catalogNoProducts))
-              : ListView(
-                  key: const ValueKey<String>('category-list'),
-                  children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                      child: Text(
-                        l10n.catalogCategoriesTitle,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    for (final CatalogCategory category in categories)
-                      ListTile(
-                        key: ValueKey<String>('category-${category.id}'),
-                        leading: const Icon(Icons.category_outlined),
-                        title: Text(category.name(language)),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () =>
-                            context.push(CatalogPaths.category(category.id)),
-                      ),
-                  ],
+    final AsyncValue<List<CatalogCategory>> sections = ref.watch(
+      catalogCategoriesProvider,
+    );
+    return sections.when(
+      skipLoadingOnReload: false,
+      skipLoadingOnRefresh: !sections.hasError,
+      data: (List<CatalogCategory> categories) => categories.isEmpty
+          ? Center(child: Text(l10n.catalogNoProducts))
+          : ListView(
+              key: const ValueKey<String>('category-list'),
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                  child: Text(
+                    l10n.catalogCategoriesTitle,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
-          error: (Object error, StackTrace _) => _Retry(
-            failure: error is ApiFailure ? error : const UnexpectedFailure(),
-            onRetry: () => ref.invalidate(catalogCategoriesProvider),
-          ),
-          loading: () => const Center(child: CircularProgressIndicator()),
-        );
+                for (final CatalogCategory category in categories)
+                  ListTile(
+                    key: ValueKey<String>('category-${category.id}'),
+                    leading: const Icon(Icons.category_outlined),
+                    title: Text(category.name(language)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        context.push(CatalogPaths.category(category.id)),
+                  ),
+              ],
+            ),
+      error: (Object error, StackTrace _) => _Retry(
+        failure: error is ApiFailure ? error : const UnexpectedFailure(),
+        onRetry: () => ref.invalidate(catalogCategoriesProvider),
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+    );
   }
 }
 
@@ -211,7 +201,16 @@ class CategoryProductsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(category?.name(language) ?? '')),
       body: SafeArea(
-        child: ProductList(query: ProductListQuery(categoryId: categoryId)),
+        child: Column(
+          children: <Widget>[
+            const ActiveModeBar(),
+            Expanded(
+              child: ProductList(
+                query: ProductListQuery(categoryId: categoryId),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -236,45 +235,58 @@ class ProductScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(product.value?.name(language) ?? '')),
       body: SafeArea(
-        child: product.when(
-          skipLoadingOnReload: false,
-          data: (CatalogProduct product) {
-            final String? description = product.description(language);
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: <Widget>[
-                Center(child: ProductImage(url: product.imageUrl, size: 240)),
-                const SizedBox(height: 16),
-                Text(
-                  product.name(language),
-                  key: const ValueKey<String>('product-name'),
-                  style: Theme.of(context).textTheme.headlineSmall,
+        child: Column(
+          children: <Widget>[
+            const ActiveModeBar(),
+            Expanded(
+              child: product.when(
+                skipLoadingOnReload: false,
+                skipLoadingOnRefresh: !product.hasError,
+                data: (CatalogProduct product) {
+                  final String? description = product.description(language);
+                  return ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: <Widget>[
+                      Center(
+                        child: ProductImage(url: product.imageUrl, size: 240),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        product.name(language),
+                        key: const ValueKey<String>('product-name'),
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      Text(
+                        product.otherName(language),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      PriceLine(
+                        product: product,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      if (product.priceMode == PriceMode.estimate) ...<Widget>[
+                        const SizedBox(height: 8),
+                        Text(l10n.catalogEstimateExplain),
+                      ],
+                      if (description != null) ...<Widget>[
+                        const SizedBox(height: 16),
+                        Text(description),
+                      ],
+                    ],
+                  );
+                },
+                error: (Object error, StackTrace _) => _Retry(
+                  failure: error is ApiFailure
+                      ? error
+                      : const UnexpectedFailure(),
+                  onRetry: () =>
+                      ref.invalidate(catalogProductProvider(productId)),
                 ),
-                Text(
-                  product.otherName(language),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 12),
-                PriceLine(
-                  product: product,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                if (product.priceMode == PriceMode.estimate) ...<Widget>[
-                  const SizedBox(height: 8),
-                  Text(l10n.catalogEstimateExplain),
-                ],
-                if (description != null) ...<Widget>[
-                  const SizedBox(height: 16),
-                  Text(description),
-                ],
-              ],
-            );
-          },
-          error: (Object error, StackTrace _) => _Retry(
-            failure: error is ApiFailure ? error : const UnexpectedFailure(),
-            onRetry: () => ref.invalidate(catalogProductProvider(productId)),
-          ),
-          loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CircularProgressIndicator()),
+              ),
+            ),
+          ],
         ),
       ),
     );

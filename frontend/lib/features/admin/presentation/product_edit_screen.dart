@@ -35,6 +35,10 @@ class ProductEditScreen extends ConsumerWidget {
       categoryOptionsProvider,
     );
 
+    final AsyncValue<AdminProduct>? product = id == null
+        ? null
+        : ref.watch(productProvider(id));
+
     final Widget body = switch ((id, categories)) {
       (_, AsyncError(:final Object error)) => LoadFailure(
         error: error,
@@ -50,28 +54,29 @@ class ProductEditScreen extends ConsumerWidget {
           ],
         ),
       (final String id, AsyncData(:final List<AdminCategory> value)) =>
-        ref
-            .watch(productProvider(id))
-            .when(
-              skipLoadingOnReload: true,
-              data: (AdminProduct product) => Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  _ProductForm(
-                    key: ValueKey<String>(product.id),
-                    product: product,
-                    categories: value,
-                  ),
-                  const SizedBox(height: 24),
-                  _ProductImageCard(product: product),
-                ],
+        product!.when(
+          skipLoadingOnReload: true,
+          // A retry after a failed load shows progress; a reload after a
+          // save keeps the form, which holds the Admin's edits.
+          skipLoadingOnRefresh: !product.hasError,
+          data: (AdminProduct product) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _ProductForm(
+                key: ValueKey<String>(product.id),
+                product: product,
+                categories: value,
               ),
-              error: (Object error, StackTrace _) => LoadFailure(
-                error: error,
-                onRetry: () => ref.invalidate(productProvider(id)),
-              ),
-              loading: () => const _Loading(),
-            ),
+              const SizedBox(height: 24),
+              _ProductImageCard(product: product),
+            ],
+          ),
+          error: (Object error, StackTrace _) => LoadFailure(
+            error: error,
+            onRetry: () => ref.invalidate(productProvider(id)),
+          ),
+          loading: () => const _Loading(),
+        ),
       _ => const _Loading(),
     };
 

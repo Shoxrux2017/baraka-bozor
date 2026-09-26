@@ -20,9 +20,7 @@ void main() {
   final Finder switchToStaff = find.byKey(
     const ValueKey<String>('switch-to-staff-button'),
   );
-  final Finder modeChip = find.byKey(
-    const ValueKey<String>('active-mode-chip'),
-  );
+  final Finder modeChip = find.byKey(const ValueKey<String>('active-mode'));
   final Finder logoutButton = find.byKey(
     const ValueKey<String>('logout-button'),
   );

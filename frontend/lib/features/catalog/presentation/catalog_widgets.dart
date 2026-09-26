@@ -99,6 +99,7 @@ class ProductList extends ConsumerWidget {
 
     return list.when(
       skipLoadingOnReload: false,
+      skipLoadingOnRefresh: !list.hasError,
       data: (ProductListState state) {
         if (state.items.isEmpty) {
           return Center(
@@ -135,6 +136,7 @@ class ProductList extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               OutlinedButton(
+                key: const ValueKey<String>('retry-load'),
                 onPressed: () => ref.invalidate(productListProvider(query)),
                 child: Text(l10n.retryButton),
               ),

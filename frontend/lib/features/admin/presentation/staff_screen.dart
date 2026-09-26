@@ -133,6 +133,7 @@ class StaffScreen extends ConsumerWidget {
         FailureMessage(actions.failure),
         page.when(
           skipLoadingOnReload: false,
+          skipLoadingOnRefresh: !page.hasError,
           data: (Paged<StaffMember> page) => Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[

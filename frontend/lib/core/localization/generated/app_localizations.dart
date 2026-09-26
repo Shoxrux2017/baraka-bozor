@@ -1376,6 +1376,12 @@ abstract class AppLocalizations {
   /// **'Mahsulot qidirish'**
   String get catalogSearchHint;
 
+  /// No description provided for @catalogSearchClear.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tozalash'**
+  String get catalogSearchClear;
+
   /// No description provided for @catalogCategoriesTitle.
   ///
   /// In uz, this message translates to:
@@ -1403,7 +1409,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogEstimateExplain.
   ///
   /// In uz, this message translates to:
-  /// **'Yakuniy narx do\'kondagi chek bo\'yicha aniqlanadi. Narx belgilangan chegaradan oshsa, sizdan rozilik so\'raymiz.'**
+  /// **'Yakuniy narx yig\'uvchi bozorda haqiqatda to\'lagan narxdan hisoblanadi. U taxminiy narxdan belgilangan chegaradan ko\'proq oshsa, xarid qilishdan oldin sizdan rozilik so\'raymiz.'**
   String get catalogEstimateExplain;
 
   /// No description provided for @catalogLoadMore.

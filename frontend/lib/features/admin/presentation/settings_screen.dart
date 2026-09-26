@@ -40,6 +40,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             settings.when(
               skipLoadingOnReload: false,
+              skipLoadingOnRefresh: !settings.hasError,
               data: (BusinessSettings value) => _SettingsForm(
                 // Every answer is a new object, so a saved row always
                 // replaces the form, even one saved within the same second or
@@ -479,6 +480,7 @@ class _PaymentProvidersCard extends ConsumerWidget {
             const SizedBox(height: 8),
             providers.when(
               skipLoadingOnReload: false,
+              skipLoadingOnRefresh: !providers.hasError,
               data: (PaymentProvidersView view) => Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[

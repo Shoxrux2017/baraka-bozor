@@ -1,4 +1,5 @@
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
+import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/network/auth_interceptor.dart';
 import 'package:baraka_bozor/core/network/paged.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
@@ -97,13 +98,28 @@ void main() {
       }),
       throwsFormatException,
     );
+    expect(
+      () => CatalogApi.parseProduct(<String, Object?>{
+        ...productJson(),
+        'customer_unit_price_uzs': 0,
+      }),
+      throwsFormatException,
+    );
   });
 
   group('requests', () {
     late FakeHttpClientAdapter adapter;
     late CatalogRepositoryImpl repository;
 
+    /// When set, the page every list answer says it is.
+    int? answeredPage;
+
+    /// When set, what every product answer carries instead.
+    Map<String, Object?>? answeredProduct;
+
     setUp(() {
+      answeredPage = null;
+      answeredProduct = null;
       adapter = FakeHttpClientAdapter((RequestOptions options) {
         if (options.path == '/catalog/categories') {
           return jsonReply(200, page(<Object?>[categoryJson()]));
@@ -111,10 +127,16 @@ void main() {
         if (options.path == '/catalog/products') {
           return jsonReply(
             200,
-            page(<Object?>[productJson()], page: 2, last: 3),
+            page(
+              <Object?>[answeredProduct ?? productJson()],
+              page: answeredPage ?? options.queryParameters['page']! as int,
+              last: 3,
+            ),
           );
         }
-        return jsonReply(200, <String, Object?>{'data': productJson()});
+        return jsonReply(200, <String, Object?>{
+          'data': answeredProduct ?? productJson(),
+        });
       });
       repository = CatalogRepositoryImpl(CatalogApi(dioWith(adapter)));
     });
@@ -125,7 +147,7 @@ void main() {
     test('every request goes on the Customer session', () async {
       await repository.categories();
       await repository.products(const ProductListQuery(), page: 1);
-      await repository.product('p-1');
+      await repository.product(productId);
 
       for (final RequestOptions request in adapter.requests) {
         expect(slotOf(request), SessionSlot.customer, reason: request.path);
@@ -158,6 +180,33 @@ void main() {
         expect(products.hasNext, isTrue);
       },
     );
+
+    test('an answer that does not match its request is refused', () async {
+      const String otherId = '6d5c4b3a-2f1e-4d0c-9b8a-7f6e5d4c3b2a';
+
+      answeredPage = 1;
+      await expectLater(
+        repository.products(const ProductListQuery(), page: 2),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+      answeredPage = null;
+      answeredProduct = <String, Object?>{
+        ...productJson(),
+        'category_id': otherId,
+      };
+      await expectLater(
+        repository.products(
+          const ProductListQuery(categoryId: categoryId),
+          page: 1,
+        ),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+      answeredProduct = <String, Object?>{...productJson(), 'id': otherId};
+      await expectLater(
+        repository.product(productId),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+    });
 
     test('a product is read by its id', () async {
       await repository.product(productId);

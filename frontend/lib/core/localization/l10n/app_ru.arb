@@ -279,6 +279,7 @@
   "errorSelfResetNotAllowed": "Свой пароль здесь сбросить нельзя",
   "errorPhoneAlreadyActive": "Этот номер уже у другого активного сотрудника",
   "catalogSearchHint": "Поиск товаров",
+  "catalogSearchClear": "Очистить",
   "catalogCategoriesTitle": "Разделы",
   "catalogNoProducts": "Здесь пока нет товаров",
   "catalogPricePerUnit": "{price} / {unit}",
@@ -293,6 +294,6 @@
     }
   },
   "catalogEstimateNote": "цена ориентировочная",
-  "catalogEstimateExplain": "Итоговая цена определится по чеку из магазина. Если цена превысит допустимый предел, мы спросим вашего согласия.",
+  "catalogEstimateExplain": "Итоговая цена рассчитывается от цены, которую сборщик фактически заплатит на рынке. Если она превысит ориентировочную больше допустимого, мы спросим вашего согласия до покупки.",
   "catalogLoadMore": "Загрузить ещё"
 }

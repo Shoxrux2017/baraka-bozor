@@ -97,7 +97,13 @@ class ProductListController extends AsyncNotifier<ProductListState> {
   Future<void> loadMore() async {
     final ProductListState? current = state.value;
     final int? page = current?.nextPage;
-    if (current == null || page == null || current.loadingMore) {
+    // While the list is rebuilt — for another account, or none — its old
+    // pages are not continued.
+    if (current == null ||
+        page == null ||
+        current.loadingMore ||
+        state.isLoading ||
+        ref.read(customerAccountProvider) == null) {
       return;
     }
 
@@ -116,8 +122,17 @@ class ProductListController extends AsyncNotifier<ProductListState> {
       final Paged<CatalogProduct> loaded = await ref
           .read(catalogRepositoryProvider)
           .products(query, page: page);
+      // Offset pages can repeat a product when the catalog changes between
+      // them; a product already shown is not shown twice.
+      final Set<String> shown = <String>{
+        for (final CatalogProduct p in current.items) p.id,
+      };
       next = ProductListState(
-        items: <CatalogProduct>[...current.items, ...loaded.items],
+        items: <CatalogProduct>[
+          ...current.items,
+          for (final CatalogProduct p in loaded.items)
+            if (!shown.contains(p.id)) p,
+        ],
         total: loaded.total,
         nextPage: loaded.hasNext ? loaded.page + 1 : null,
       );

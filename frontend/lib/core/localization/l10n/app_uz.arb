@@ -279,6 +279,7 @@
   "errorSelfResetNotAllowed": "O'z parolingizni bu yerda tiklab bo'lmaydi",
   "errorPhoneAlreadyActive": "Bu raqam boshqa faol xodimga tegishli",
   "catalogSearchHint": "Mahsulot qidirish",
+  "catalogSearchClear": "Tozalash",
   "catalogCategoriesTitle": "Bo'limlar",
   "catalogNoProducts": "Bu yerda hozircha mahsulot yo'q",
   "catalogPricePerUnit": "{price} / {unit}",
@@ -293,6 +294,6 @@
     }
   },
   "catalogEstimateNote": "narx taxminiy",
-  "catalogEstimateExplain": "Yakuniy narx do'kondagi chek bo'yicha aniqlanadi. Narx belgilangan chegaradan oshsa, sizdan rozilik so'raymiz.",
+  "catalogEstimateExplain": "Yakuniy narx yig'uvchi bozorda haqiqatda to'lagan narxdan hisoblanadi. U taxminiy narxdan belgilangan chegaradan ko'proq oshsa, xarid qilishdan oldin sizdan rozilik so'raymiz.",
   "catalogLoadMore": "Yana yuklash"
 }

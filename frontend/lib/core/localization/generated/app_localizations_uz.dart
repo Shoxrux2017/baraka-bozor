@@ -692,6 +692,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get catalogSearchHint => 'Mahsulot qidirish';
 
   @override
+  String get catalogSearchClear => 'Tozalash';
+
+  @override
   String get catalogCategoriesTitle => 'Bo\'limlar';
 
   @override
@@ -707,7 +710,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get catalogEstimateExplain =>
-      'Yakuniy narx do\'kondagi chek bo\'yicha aniqlanadi. Narx belgilangan chegaradan oshsa, sizdan rozilik so\'raymiz.';
+      'Yakuniy narx yig\'uvchi bozorda haqiqatda to\'lagan narxdan hisoblanadi. U taxminiy narxdan belgilangan chegaradan ko\'proq oshsa, xarid qilishdan oldin sizdan rozilik so\'raymiz.';
 
   @override
   String get catalogLoadMore => 'Yana yuklash';

@@ -68,9 +68,17 @@ class FakeCatalogRepository implements CatalogRepository {
   /// How many times the sections were asked for.
   int categoryLoads = 0;
 
+  /// The next sections request answers this instead.
+  ApiFailure? categoriesFailure;
+
   @override
   Future<List<CatalogCategory>> categories() async {
     categoryLoads++;
+    final ApiFailure? failure = categoriesFailure;
+    if (failure != null) {
+      categoriesFailure = null;
+      throw failure;
+    }
     return categoryRows;
   }
 

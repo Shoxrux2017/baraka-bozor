@@ -139,6 +139,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
         FailureMessage(actions.failure),
         page.when(
           skipLoadingOnReload: false,
+          skipLoadingOnRefresh: !page.hasError,
           data: (Paged<AdminProduct> page) => Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[

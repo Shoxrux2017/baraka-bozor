@@ -690,6 +690,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get catalogSearchHint => 'Поиск товаров';
 
   @override
+  String get catalogSearchClear => 'Очистить';
+
+  @override
   String get catalogCategoriesTitle => 'Разделы';
 
   @override
@@ -705,7 +708,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get catalogEstimateExplain =>
-      'Итоговая цена определится по чеку из магазина. Если цена превысит допустимый предел, мы спросим вашего согласия.';
+      'Итоговая цена рассчитывается от цены, которую сборщик фактически заплатит на рынке. Если она превысит ориентировочную больше допустимого, мы спросим вашего согласия до покупки.';
 
   @override
   String get catalogLoadMore => 'Загрузить ещё';
