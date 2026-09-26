@@ -668,6 +668,28 @@ void main() {
       expect(catalog.uploads, isEmpty);
     });
 
+    testWidgets('an image from another origin may fall back to the browser', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = <AdminProduct>[
+        adminProduct(imageUrl: 'https://api.test/storage/products/a.webp'),
+      ];
+      await open(tester, AdminPaths.product('p-1'));
+
+      final NetworkImage image =
+          tester
+                  .widget<Image>(
+                    find.descendant(
+                      of: find.byKey(const ValueKey<String>('current-image')),
+                      matching: find.byType(Image),
+                    ),
+                  )
+                  .image
+              as NetworkImage;
+      expect(image.url, 'https://api.test/storage/products/a.webp');
+      expect(image.webHtmlElementStrategy, WebHtmlElementStrategy.fallback);
+    });
+
     testWidgets('removing the image asks first', (WidgetTester tester) async {
       catalog.productRows = <AdminProduct>[
         adminProduct(imageUrl: 'https://api.test/storage/products/a.webp'),
