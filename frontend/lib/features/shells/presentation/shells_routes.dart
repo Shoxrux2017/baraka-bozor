@@ -6,18 +6,22 @@ import '../../../core/routing/feature_routes.dart';
 import '../../auth/domain/app_user.dart';
 import 'role_shell_screen.dart';
 
-/// The six areas of `docs/07-architecture.md` section 29, each entered
-/// through its role's shell. A feature that fills an area later declares its
-/// pages inside it.
+/// The areas of `docs/07-architecture.md` section 29, each entered through
+/// its role's shell, until a feature takes an area over with a shell of its
+/// own.
 final FeatureRoutes shellsRoutes = FeatureRoutes(
   feature: 'shells',
   routes: <RouteBase>[
+    // The Admin area has a feature of its own (`features/admin`), which
+    // serves its entry as well; the other areas keep this placeholder until
+    // their features arrive.
     for (final UserRole role in UserRole.values)
-      GoRoute(
-        path: AppPaths.areaOf(role),
-        name: 'shell-${role.code}',
-        builder: (BuildContext context, GoRouterState state) =>
-            RoleShellScreen(role: role),
-      ),
+      if (role != UserRole.admin)
+        GoRoute(
+          path: AppPaths.areaOf(role),
+          name: 'shell-${role.code}',
+          builder: (BuildContext context, GoRouterState state) =>
+              RoleShellScreen(role: role),
+        ),
   ],
 );

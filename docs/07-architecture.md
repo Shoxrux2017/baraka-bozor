@@ -202,7 +202,7 @@ Layout, fixed:
 ```text
 lib/
   app/        root router and root providers
-  core/       everything no single feature owns: network, storage, theme, error mapping, localization, routing registry, config, map
+  core/       everything no single feature owns: network, storage, theme, error mapping, localization, formatting, routing registry, config, map
   features/<feature>/{data,domain,application,presentation}
 ```
 

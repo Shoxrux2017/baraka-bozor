@@ -4,6 +4,7 @@ import 'package:baraka_bozor/app/router.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/routing/feature_routes.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -16,40 +17,44 @@ void main() {
   setUpAll(TestWidgetsFlutterBinding.ensureInitialized);
 
   group('buildRouter', () {
-    test(
-      'registers the bootstrap route, the auth screens and the six areas',
-      () {
-        final GoRouter router = buildRouter();
-        addTearDown(router.dispose);
+    test('registers the bootstrap route, the auth screens, the six areas and '
+        'the admin screens', () {
+      final GoRouter router = buildRouter();
+      addTearDown(router.dispose);
 
-        expect(
-          router.configuration.routes.whereType<GoRoute>().map(
-            (GoRoute route) => route.path,
-          ),
-          <String>[
-            AppPaths.bootstrap,
-            AppPaths.auth,
-            AppPaths.customerCode,
-            AppPaths.staffLogin,
-            AppPaths.changePassword,
-            AppPaths.customerMode,
-            AppPaths.unreachable,
-            AppPaths.wrongSurface,
-            AppPaths.customer,
-            AppPaths.shopper,
-            AppPaths.courier,
-            AppPaths.operations,
-            AppPaths.admin,
-            AppPaths.manager,
-          ],
-        );
-      },
-    );
+      // Paths of every page route, a shell's pages included.
+      Iterable<String> paths(List<RouteBase> routes) sync* {
+        for (final RouteBase route in routes) {
+          if (route is GoRoute) {
+            yield route.path;
+          }
+          yield* paths(route.routes);
+        }
+      }
 
-    test('registers the auth and shells fragments, in that order', () {
+      expect(paths(router.configuration.routes), <String>[
+        AppPaths.bootstrap,
+        AppPaths.auth,
+        AppPaths.customerCode,
+        AppPaths.staffLogin,
+        AppPaths.changePassword,
+        AppPaths.customerMode,
+        AppPaths.unreachable,
+        AppPaths.wrongSurface,
+        AppPaths.customer,
+        AppPaths.shopper,
+        AppPaths.courier,
+        AppPaths.operations,
+        AppPaths.manager,
+        AppPaths.admin,
+        AdminPaths.settings,
+      ]);
+    });
+
+    test('registers the auth, shells and admin fragments, in that order', () {
       expect(
         featureRouteFragments.map((FeatureRoutes f) => f.feature),
-        <String>['auth', 'shells'],
+        <String>['auth', 'shells', 'admin'],
       );
     });
 
