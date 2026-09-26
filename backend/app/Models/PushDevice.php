@@ -42,6 +42,16 @@ class PushDevice extends Model
     ];
 
     /**
+     * The token addresses one phone; no serialisation of the model should
+     * carry it (`DL-26` (2)).
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'push_token',
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

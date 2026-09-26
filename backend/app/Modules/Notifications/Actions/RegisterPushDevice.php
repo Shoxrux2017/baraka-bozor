@@ -20,7 +20,7 @@ use App\Models\User;
  */
 final class RegisterPushDevice
 {
-    public function __invoke(User $user, PushPlatform $platform, string $token): PushDevice
+    public function __invoke(User $user, PushPlatform $platform, #[\SensitiveParameter] string $token): PushDevice
     {
         $now = now();
 

@@ -57,9 +57,28 @@ final class PushDevicesApiTest extends TestCase
             ->assertJsonPath('data.platform', 'ios')
             ->assertJsonPath('data.last_seen_at', '2026-09-26T12:30:00Z')
             ->assertJsonPath('data.created_at', '2026-09-26T09:00:00Z');
+        Carbon::setTestNow('2026-09-26 13:00:00');
+        $this->as($courier)->postJson(self::URL, ['platform' => 'ios', 'token' => '  '.self::TOKEN.' '])
+            ->assertOk()
+            ->assertJsonPath('data.id', $first);
         Carbon::setTestNow();
 
         $this->assertSame(1, PushDevice::query()->count());
+        $this->assertSame('2026-09-26 13:00:00', PushDevice::query()->findOrFail($first)->updated_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_the_two_accounts_rows_for_one_token_stay_independent(): void
+    {
+        $customer = User::factory()->customer()->create(['phone' => '+998901112233']);
+        $shopper = User::factory()->role(Role::Shopper)->create(['phone' => '+998901112233']);
+        $customerDevice = $this->as($customer)->postJson(self::URL, ['platform' => 'android', 'token' => self::TOKEN])->json('data.id');
+        $shopperDevice = $this->as($shopper)->postJson(self::URL, ['platform' => 'android', 'token' => self::TOKEN])->json('data.id');
+
+        $this->as($customer)->deleteJson(self::URL.'/'.$customerDevice)->assertNoContent();
+        $this->assertNull(PushDevice::query()->findOrFail($shopperDevice)->revoked_at);
+
+        $this->as($shopper)->postJson(self::URL, ['platform' => 'android', 'token' => self::TOKEN])->assertOk();
+        $this->assertNotNull(PushDevice::query()->findOrFail($customerDevice)->revoked_at);
     }
 
     public function test_two_accounts_on_one_phone_register_the_same_token_twice(): void
@@ -109,14 +128,20 @@ final class PushDevicesApiTest extends TestCase
     {
         $owner = User::factory()->customer()->create();
         $device = PushDevice::factory()->create(['user_id' => $owner->id]);
+        $revoked = PushDevice::factory()->revoked()->create(['user_id' => $owner->id]);
         $stranger = User::factory()->role(Role::Admin)->create();
 
-        foreach ([$device->id, (string) Str::uuid(), 'not-a-uuid'] as $id) {
-            $this->as($stranger)->deleteJson(self::URL.'/'.$id)
+        $bodies = [];
+        foreach ([$device->id, $revoked->id, (string) Str::uuid(), 'not-a-uuid'] as $id) {
+            $response = $this->as($stranger)->deleteJson(self::URL.'/'.$id)
                 ->assertStatus(404)
                 ->assertJsonPath('code', 'resource_not_found');
+            $body = $response->json();
+            unset($body['request_id']);
+            $bodies[] = $body;
         }
 
+        $this->assertCount(1, array_unique(array_map('json_encode', $bodies)));
         $this->assertNull($device->fresh()?->revoked_at);
     }
 
@@ -132,6 +157,10 @@ final class PushDevicesApiTest extends TestCase
             ['platform' => 'android', 'token' => '   '],
             ['platform' => 'android', 'token' => str_repeat('a', 513)],
             ['platform' => 'android', 'token' => 12345],
+            ['platform' => 'android', 'token' => "fcm:a\nb"],
+            ['platform' => 'android', 'token' => "fcm:a\x01b"],
+            ['platform' => 'android', 'token' => 'fcm token with spaces'],
+            ['platform' => 'android', 'token' => 'токен'],
             ['platform' => 'android', 'token' => self::TOKEN, 'user_id' => $other->id],
             ['platform' => 'android', 'token' => self::TOKEN, 'revoked_at' => null],
         ] as $body) {
@@ -156,6 +185,15 @@ final class PushDevicesApiTest extends TestCase
         $this->as($gated)->postJson(self::URL, ['platform' => 'android', 'token' => 'other-token'])
             ->assertStatus(403)
             ->assertJsonPath('code', 'password_change_required');
+        $device = PushDevice::factory()->create(['user_id' => $gated->id]);
+        $this->as($gated)->deleteJson(self::URL.'/'.$device->id)
+            ->assertStatus(403)
+            ->assertJsonPath('code', 'password_change_required');
+    }
+
+    public function test_the_model_never_serialises_the_token(): void
+    {
+        $this->assertArrayNotHasKey('push_token', PushDevice::factory()->create()->toArray());
     }
 
     public function test_without_a_token_the_answer_is_authentication_required(): void

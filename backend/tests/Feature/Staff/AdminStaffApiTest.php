@@ -7,6 +7,7 @@ namespace Tests\Feature\Staff;
 use App\Exceptions\ApiException;
 use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
+use App\Models\PushDevice;
 use App\Models\User;
 use App\Modules\Staff\Actions\BlockStaff;
 use App\Modules\Staff\StaffDirectory;
@@ -288,6 +289,27 @@ final class AdminStaffApiTest extends TestCase
         }
         $this->withoutToken();
         $this->login(self::PHONE, 'secret-password')->assertStatus(401)->assertJsonPath('code', 'account_blocked');
+    }
+
+    public function test_block_and_reset_revoke_every_push_device_of_the_account_and_no_other(): void
+    {
+        $blocked = User::factory()->role(Role::Courier)->create();
+        $reset = User::factory()->role(Role::Shopper)->create();
+        $bystander = User::factory()->role(Role::Shopper)->create();
+        $devices = [
+            PushDevice::factory()->create(['user_id' => $blocked->id]),
+            PushDevice::factory()->create(['user_id' => $blocked->id]),
+            PushDevice::factory()->create(['user_id' => $reset->id]),
+        ];
+        $untouched = PushDevice::factory()->create(['user_id' => $bystander->id]);
+
+        $this->asAdmin()->postJson(self::URL.'/'.$blocked->id.'/block')->assertOk();
+        $this->asAdmin()->postJson(self::URL.'/'.$reset->id.'/reset-password')->assertOk();
+
+        foreach ($devices as $device) {
+            $this->assertNotNull($device->fresh()?->revoked_at);
+        }
+        $this->assertNull($untouched->fresh()?->revoked_at);
     }
 
     public function test_blocking_a_blocked_account_is_a_natural_repeat(): void
