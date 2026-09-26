@@ -33,7 +33,7 @@ final class AdminCatalogListing
      */
     public static function products(bool $includeArchived, ?string $categoryId, ?string $search): Builder
     {
-        $query = CatalogSearch::ordered(CatalogSearch::matching(Product::query(), $search));
+        $query = CatalogSearch::ordered(CatalogSearch::matching(Product::query()->with('image'), $search));
 
         if (! $includeArchived) {
             $query->whereNull($query->qualifyColumn('archived_at'));

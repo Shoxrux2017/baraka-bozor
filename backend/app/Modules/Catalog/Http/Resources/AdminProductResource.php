@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Http\Resources;
 
 use App\Models\Product;
+use App\Modules\Catalog\ProductImages;
 use App\Modules\Settings\CustomerPriceCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -44,6 +45,7 @@ final class AdminProductResource extends JsonResource
             'price_mode' => $product->price_mode->value,
             'market_price_uzs' => $product->market_price_uzs,
             'customer_unit_price_uzs' => $this->prices->priceOf($product->market_price_uzs),
+            'image_url' => ProductImages::url($product->image),
             'sort_order' => $product->sort_order,
             'is_active' => $product->is_active,
             'archived_at' => $product->archived_at?->toIso8601ZuluString(),

@@ -77,7 +77,7 @@ final class AdminProductController extends Controller
 
     private function find(string $id): Product
     {
-        return ScopedLookup::firstOrNotFound(Product::query()->whereKey($id));
+        return ScopedLookup::firstOrNotFound(Product::query()->with('image')->whereKey($id));
     }
 
     private function admin(Request $request): User

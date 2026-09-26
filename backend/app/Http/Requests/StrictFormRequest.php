@@ -18,8 +18,9 @@ use Illuminate\Foundation\Http\FormRequest;
  *
  * The declared shape is the tree of rule keys: `items.*.product_id` declares
  * `items`, any index below it, and `product_id` below that. A declared key with
- * no rules below it is a leaf and accepts whatever it holds. Only the body is
- * checked; query-string parameters are not part of a mutation's shape.
+ * no rules below it is a leaf and accepts whatever it holds. Only the body —
+ * its fields and its uploaded files — is checked; query-string parameters are
+ * not part of a mutation's shape.
  */
 abstract class StrictFormRequest extends FormRequest
 {
@@ -31,8 +32,11 @@ abstract class StrictFormRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            // Uploaded files are part of the body too: a multipart request
+            // with an undeclared file field is refused like an undeclared
+            // text field.
             /** @var array<array-key, mixed> $body */
-            $body = $this->getInputSource()->all();
+            $body = array_merge($this->getInputSource()->all(), $this->allFiles());
 
             $this->rejectUndeclared($validator, $body, $this->declaredTree(), '');
         });

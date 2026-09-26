@@ -216,7 +216,7 @@ final class AdminProductsApiTest extends TestCase
 
         $this->assertSame([
             'id', 'category_id', 'name_uz', 'name_ru', 'description_uz', 'description_ru', 'unit_code', 'price_mode',
-            'market_price_uzs', 'customer_unit_price_uzs', 'sort_order', 'is_active', 'archived_at', 'created_at', 'updated_at',
+            'market_price_uzs', 'customer_unit_price_uzs', 'image_url', 'sort_order', 'is_active', 'archived_at', 'created_at', 'updated_at',
         ], array_keys($data));
     }
 

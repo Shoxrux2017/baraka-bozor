@@ -52,7 +52,7 @@
 
 **BR-CAT-003** — An archived or inactive product cannot enter a cart or an order.
 
-**BR-CAT-004** — One current image per product; JPEG, PNG or WebP; at most 5 MB; validated by the backend.
+**BR-CAT-004** — One current image per product; JPEG, PNG or WebP judged by the bytes; at most 5 MiB (5 242 880 bytes); validated by the backend.
 
 **BR-CAT-005** — `name_uz` and `name_ru` are required on categories and products; descriptions are optional. Search matches both languages.
 
