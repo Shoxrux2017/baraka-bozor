@@ -99,7 +99,7 @@ Not multi-tenant. No tenant, market or city ownership columns.
 
 ## 10. Catalog and Media
 
-Relational catalog with paired language columns. Server-side PostgreSQL search over `lower(name_uz)` and `lower(name_ru)`. Product image metadata in PostgreSQL, bytes on the Laravel public disk in development and S3-compatible storage in production, served from public URLs with long cache headers; the URL changes when the image changes.
+Relational catalog with paired language columns. Server-side PostgreSQL search over `lower(name_uz)` and `lower(name_ru)`. Product image metadata in PostgreSQL, bytes on the Laravel public disk in development and S3-compatible storage in production, served from public URLs with long cache headers; the URL changes when the image changes. The image host allows the web panel's origin (CORS for GET), which a panel on another origin needs to draw an image; without it the panel falls back to the browser's own image element (`DL-34`).
 
 ## 11. Address and Map
 

@@ -677,7 +677,15 @@ void main() {
       await open(tester, AdminPaths.product('p-1'));
 
       final NetworkImage image =
-          tester.widget<Image>(find.byType(Image).first).image as NetworkImage;
+          tester
+                  .widget<Image>(
+                    find.descendant(
+                      of: find.byKey(const ValueKey<String>('current-image')),
+                      matching: find.byType(Image),
+                    ),
+                  )
+                  .image
+              as NetworkImage;
       expect(image.url, 'https://api.test/storage/products/a.webp');
       expect(image.webHtmlElementStrategy, WebHtmlElementStrategy.fallback);
     });
