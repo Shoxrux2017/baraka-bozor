@@ -25,8 +25,9 @@ use Illuminate\Support\Carbon;
  * for the same reasons as on `Category`: hiding is in the write body but is
  * assigned explicitly by the catalog actions, because an archived product is
  * never active (`products_archived_inactive_check`). `category_id` is inside
- * it because the category is ordinary input the admin form sends, validated
- * to exist and to be unarchived by the action that saves it.
+ * it because the category is ordinary input the admin form sends; that it
+ * exists and is not archived is checked under a lock by the action that saves
+ * it.
  *
  * @property string $id
  * @property string $category_id

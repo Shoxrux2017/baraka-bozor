@@ -6,7 +6,7 @@
 
 ## 1. Baseline
 
-PostgreSQL 17. UUID primary keys on domain tables; `timestamptz` for every instant; business enums as `varchar` with `CHECK`; money `bigint` UZS; percentages `numeric(5,2)`; quantities `numeric(18,3)`; coordinates `numeric(9,6)` / `numeric(10,6)`. Named constraints. No hard deletes of history.
+PostgreSQL 17 with a UTF-8 character type (`en_US.utf8` in the Compose stack and in production), so `lower()` folds Cyrillic as well as Latin — catalog search depends on it (`DL-20`); a guard test fails on a `C` or `POSIX` type. UUID primary keys on domain tables; `timestamptz` for every instant; business enums as `varchar` with `CHECK`; money `bigint` UZS; percentages `numeric(5,2)`; quantities `numeric(18,3)`; coordinates `numeric(9,6)` / `numeric(10,6)`. Named constraints. No hard deletes of history.
 
 ## 2. Table Map
 

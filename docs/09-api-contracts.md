@@ -101,11 +101,11 @@ Product:
  "unit_code":"kg","price_mode":"estimate","customer_unit_price_uzs":18400,"image_url":"https://.../storage/products/<uuid>.webp","is_active":true}
 ```
 
-Search matches `name_uz` and `name_ru` case-insensitively.
+Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, reading `ё` as `е` and every form of the Uzbek apostrophe (ʻ ‘ ’ `) as `'` (`DL-20`).
 
 ## 15. Admin Catalog
 
-`GET|POST /admin/categories`, `GET|PATCH /admin/categories/{category}`, `POST .../archive`, `POST .../restore`; the same for `/admin/products`. Lists are paginated, ordered by `sort_order` then `name_uz`, and take `include_archived`; the product list also takes `category_id` and `search`. Product write body: `category_id, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, sort_order, is_active`. Archive sets `archived_at` and `is_active = false`; restore clears `archived_at` and sets `is_active = true`; `is_active` alone hides a product without archiving it. Admin responses also carry `market_price_uzs`, the computed `customer_unit_price_uzs` and `archived_at`.
+`GET|POST /admin/categories`, `GET|PATCH /admin/categories/{category}`, `POST .../archive`, `POST .../restore`; the same for `/admin/products`. Lists are paginated, ordered by `sort_order` then `name_uz`, and take `include_archived`; the product list also takes `category_id` and `search`. Product write body: `category_id, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, sort_order?, is_active?` (`sort_order` defaults to 0, `is_active` to true); an update takes any non-empty subset. Archive sets `archived_at` and `is_active = false`; restore clears `archived_at` and sets `is_active = true`; both are natural repeats; `is_active` alone hides an entry without archiving it, and `is_active: true` on an archived entry answers `409 business_conflict`. A product is created in, or moved to, an existing unarchived category only (`422 validation_failed` on `category_id`); an edit that re-sends the product's current category is not a move; archiving a category leaves its products as they are. Admin responses also carry `market_price_uzs`, the computed `customer_unit_price_uzs` and `archived_at`.
 
 ## 16. Product Image
 
