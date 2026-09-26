@@ -38,15 +38,15 @@ Checks: role in the six values; status `active|blocked`; phone `^\+998[0-9]{9}$`
 
 `id, phone, purpose (customer_login), code_hash, failed_attempts ≥ 0, expires_at, consumed_at?, invalidated_at?, created_at`, plus **`channel varchar(16)`** (`CHECK IN ('telegram','sms','fake','test')`, added by a Wave 0 migration). Index `(phone, created_at)`, `expires_at`. No plaintext code.
 
-## 5. `customer_addresses`
+## 5. `customer_addresses` (migrated)
 
 `id, customer_id → users, label?, latitude, longitude, street, house, apartment?, landmark?, delivery_note?, is_active, timestamps`. Checks: valid coordinate ranges, non-empty street and house. Index `(customer_id, is_active)`. The service-area check is application logic against `business_settings`.
 
-## 6. `categories`
+## 6. `categories` (migrated)
 
 `id, name_uz, name_ru, description_uz?, description_ru?, sort_order, is_active, archived_at?, created_by_user_id, timestamps`. Non-empty names. Index `(is_active, sort_order)`, `lower(name_uz)`, `lower(name_ru)`.
 
-## 7. `products`
+## 7. `products` (migrated)
 
 `id, category_id → categories, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, is_active, sort_order, archived_at?, created_by_user_id, timestamps`.
 
@@ -54,7 +54,7 @@ Checks: unit in `kg, gram, piece, liter, package, box, bundle, meter`; `price_mo
 
 The customer price is computed, never stored on the product: `half_up(market_price_uzs × (1 + markup_percent/100))`.
 
-## 8. `product_images`
+## 8. `product_images` (migrated)
 
 `id, product_id → products (unique), storage_key (unique), original_filename?, mime_type, size_bytes, timestamps`. Size 1..5 MB; MIME in JPEG, PNG, WebP.
 
@@ -66,13 +66,13 @@ The customer price is computed, never stored on the product: `half_up(market_pri
 
 `id, cart_id, product_id, quantity > 0, customer_note?, substitution_policy, timestamps`. Unique `(cart_id, product_id)`; policy in the three values. Unit precision validated by the application.
 
-## 11. `business_settings`
+## 11. `business_settings` (migrated)
 
-Singleton `id = 1`: `markup_percent ≥ 0, service_fee_mode (fixed|percentage), service_fee_fixed_uzs?, service_fee_percent?, delivery_fee_uzs?, minimum_order_uzs?, price_tolerance_percent (default 15), opens_at time?, closes_at time?, service_centre_latitude?, service_centre_longitude?, service_radius_km?, delivery_delay_threshold_minutes (default 60), updated_by_user_id?, timestamps`. Cross-field check on the service-fee mode. Nullable fields stay null until Admin configures them; checkout is blocked while any needed value is null.
+Singleton `id = 1`: `markup_percent ≥ 0, service_fee_mode (fixed|percentage), service_fee_fixed_uzs?, service_fee_percent?, delivery_fee_uzs?, minimum_order_uzs?, price_tolerance_percent (default 15), opens_at time?, closes_at time?, service_centre_latitude?, service_centre_longitude?, service_radius_km?, delivery_delay_threshold_minutes (default 60), updated_by_user_id?, timestamps`. Cross-field check on the service-fee mode. Nullable fields stay null until Admin configures them; checkout is blocked while any needed value is null. The cross-field check: in `fixed` mode `service_fee_percent` is null, in `percentage` mode `service_fee_fixed_uzs` is null, so the value of the inactive mode can never linger. The row `id = 1` is inserted by the migration with the documented defaults (`DL-17`).
 
-## 12. `payment_provider_settings`
+## 12. `payment_provider_settings` (migrated)
 
-`provider` PK in `payme, click, paynet, xazna`; `is_enabled`; `updated_by_user_id?`; timestamps. No secrets.
+`provider` PK in `payme, click, paynet, xazna`; `is_enabled`; `updated_by_user_id?`; timestamps. No secrets. The four rows are inserted by the migration, disabled (`DL-17`).
 
 ## 13. `orders`
 
@@ -175,7 +175,7 @@ Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per or
 
 `id, order_id, payment_id, amount_uzs > 0, status (pending|completed|failed), provider_reference?, note?, created_by_user_id?, completed_by_user_id?, completed_at?, timestamps`. A refund has one cause, the cancellation of an order with a paid online payment, so there is no reason column. Application check under the payment lock: sum of completed refunds ≤ paid amount.
 
-## 25. `push_devices`
+## 25. `push_devices` (migrated)
 
 `id, user_id, platform (android|ios|web), push_token, last_seen_at?, revoked_at?, timestamps`. Unique `(push_token, user_id)`. Index `(user_id) WHERE revoked_at IS NULL`.
 
