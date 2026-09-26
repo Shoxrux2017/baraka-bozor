@@ -105,10 +105,22 @@ final class ProtectedRoutesTest extends TestCase
         }
     }
 
-    public function test_every_route_parameter_is_a_constrained_uuid(): void
+    public function test_every_route_parameter_is_a_constrained_uuid_or_a_closed_enum(): void
     {
         foreach ($this->routesOrFail() as [$route]) {
             foreach ($route->parameterNames() as $parameter) {
+                $enum = UuidRouteParameters::ENUMS[$parameter] ?? null;
+
+                if ($enum !== null) {
+                    $this->assertSame(
+                        UuidRouteParameters::enumPattern($enum),
+                        $route->wheres[$parameter] ?? null,
+                        "Route {$route->uri()} parameter \"{$parameter}\" is not constrained to the values of {$enum}."
+                    );
+
+                    continue;
+                }
+
                 $this->assertContains(
                     $parameter,
                     UuidRouteParameters::NAMES,
