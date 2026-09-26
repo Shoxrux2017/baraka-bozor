@@ -35,6 +35,9 @@ class PushDevicesRepositoryImpl implements PushDevicesRepository {
         if (json.string('platform') != token.platform.code) {
           throw const FormatException('the device does not match the request');
         }
+        json
+          ..nullableInstant('last_seen_at')
+          ..instant('created_at');
         return json.uuid('id');
       });
 

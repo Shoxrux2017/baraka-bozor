@@ -3,12 +3,14 @@ import 'dart:ui' show Locale;
 
 import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
+import 'package:baraka_bozor/core/session/session_controller.dart';
 import 'package:baraka_bozor/core/session/session_end_hook.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/notifications/application/push_registrar.dart';
 import 'package:baraka_bozor/features/notifications/domain/push.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -32,16 +34,27 @@ class _FakeSource implements PushTokenSource {
 }
 
 /// Records into the same call list as the auth repository, so a test sees
-/// the order of a revoke and a logout.
+/// the order of a revoke and a logout. While [registerHold] is set, a
+/// registration answers only once it completes; [registerFailures] answer a
+/// slot's next registration with a failure.
 class _FakeDevices implements PushDevicesRepository {
   _FakeDevices(this.calls);
 
   final List<String> calls;
   ApiFailure? revokeFailure;
+  Completer<void>? registerHold;
+  final Map<SessionSlot, ApiFailure> registerFailures =
+      <SessionSlot, ApiFailure>{};
   int _next = 0;
 
   @override
   Future<String> register(SessionSlot slot, PushToken token) async {
+    await registerHold?.future;
+    final ApiFailure? failure = registerFailures.remove(slot);
+    if (failure != null) {
+      calls.add('register-failed:${slot.name}');
+      throw failure;
+    }
     final String id = 'd-${_next++}';
     calls.add('register:${slot.name}:${token.value}:$id');
     return id;
@@ -71,6 +84,34 @@ void main() {
     source = _FakeSource();
     devices = _FakeDevices(auth.calls);
   });
+
+  ProviderContainer containerWith({bool shortBound = true}) {
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        tokenStoreProvider.overrideWithValue(tokens),
+        authRepositoryProvider.overrideWithValue(auth),
+        preferenceStoreProvider.overrideWithValue(InMemoryPreferenceStore()),
+        deviceLocaleProvider.overrideWithValue(const Locale('uz')),
+        pushTokenSourceProvider.overrideWithValue(source),
+        pushDevicesRepositoryProvider.overrideWithValue(devices),
+        if (shortBound)
+          sessionEndHooksProvider.overrideWithValue(
+            SessionEndHooks(limit: const Duration(milliseconds: 50)),
+          ),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.read(pushRegistrarProvider);
+    return container;
+  }
+
+  void signInCustomer(String id) {
+    tokens.tokens[SessionSlot.customer] = 'c';
+    auth.identities[SessionSlot.customer] = user(id: id);
+  }
+
+  List<String> revokes() =>
+      auth.calls.where((String c) => c.startsWith('revoke')).toList();
 
   Future<ProviderContainer> start() async {
     final ProviderContainer container = ProviderContainer(
@@ -237,4 +278,212 @@ void main() {
 
     expect(pushCalls(), <String>['register:customer:fcm-token:d-0']);
   });
+
+  test(
+    'a token answered after its slot was logged out sends nothing',
+    () async {
+      source.hold = Completer<void>();
+      signInCustomer('c');
+      final ProviderContainer container = await start();
+
+      await container
+          .read(sessionControllerProvider.notifier)
+          .logout(SessionMode.customer);
+      source.hold!.complete();
+      await pumpEventQueue();
+
+      expect(pushCalls(), isEmpty);
+    },
+  );
+
+  test(
+    'a revoke answered after its logout ended is not sent on the next account',
+    () async {
+      devices.registerHold = Completer<void>();
+      signInCustomer('c');
+      final ProviderContainer container = await start();
+      final SessionController session = container.read(
+        sessionControllerProvider.notifier,
+      );
+
+      // The registration is on its way; the logout stops waiting for it.
+      await session.logout(SessionMode.customer);
+      auth.verifyResult = IssuedSession(
+        token: 'c2',
+        user: user(id: 'c2'),
+      );
+      await session.verifyCustomerCode(phone: '+998901234567', code: '123456');
+      await pumpEventQueue();
+      devices.registerHold!.complete();
+      await pumpEventQueue();
+
+      expect(revokes(), isEmpty);
+      expect(pushCalls(), hasLength(2), reason: 'both registrations answered');
+    },
+  );
+
+  test('two logouts at once revoke once and log out once', () async {
+    devices.registerHold = Completer<void>();
+    signInCustomer('c');
+    final ProviderContainer container = await start();
+    final SessionController session = container.read(
+      sessionControllerProvider.notifier,
+    );
+
+    final Future<void> first = session.logout(SessionMode.customer);
+    final Future<void> second = session.logout(SessionMode.customer);
+    devices.registerHold!.complete();
+    await Future.wait(<Future<void>>[first, second]);
+
+    expect(revokes(), <String>['revoke:customer:d-0']);
+    expect(
+      auth.calls.where((String c) => c == 'logout:customer'),
+      hasLength(1),
+    );
+    expect(
+      auth.calls.indexOf('revoke:customer:d-0'),
+      lessThan(auth.calls.indexOf('logout:customer')),
+    );
+  });
+
+  test(
+    'a failed registration is tried again at the next session change',
+    () async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      auth.identities[SessionSlot.staff] = user(
+        id: 's',
+        role: UserRole.shopper,
+      );
+      signInCustomer('c');
+      devices.registerFailures[SessionSlot.customer] = const NetworkFailure();
+      final ProviderContainer container = await start();
+      expect(pushCalls(), contains('register-failed:customer'));
+
+      final SessionController session = container.read(
+        sessionControllerProvider.notifier,
+      );
+      session
+        ..switchMode(SessionMode.staff)
+        ..switchMode(SessionMode.customer);
+      await pumpEventQueue();
+
+      expect(pushCalls().last, startsWith('register:customer:fcm-token:'));
+      expect(
+        pushCalls().where((String c) => c.startsWith('register:customer')),
+        hasLength(1),
+        reason: 'once, not in a loop',
+      );
+    },
+  );
+
+  test(
+    'an account that replaces another in a slot is registered anew',
+    () async {
+      signInCustomer('c');
+      final ProviderContainer container = await start();
+      final SessionController session = container.read(
+        sessionControllerProvider.notifier,
+      );
+
+      await session.dropSession(SessionSlot.customer);
+      auth.verifyResult = IssuedSession(
+        token: 'c2',
+        user: user(id: 'c2'),
+      );
+      await session.verifyCustomerCode(phone: '+998901234567', code: '123456');
+      await pumpEventQueue();
+
+      expect(pushCalls(), <String>[
+        'register:customer:fcm-token:d-0',
+        'register:customer:fcm-token:d-1',
+      ]);
+    },
+  );
+
+  test('a hook that throws is reported and the logout goes on', () async {
+    final List<FlutterErrorDetails> reported = <FlutterErrorDetails>[];
+    final FlutterExceptionHandler? previous = FlutterError.onError;
+    FlutterError.onError = reported.add;
+    addTearDown(() => FlutterError.onError = previous);
+    signInCustomer('c');
+    final ProviderContainer container = await start();
+    container.read(sessionEndHooksProvider).add(_ThrowingHook());
+
+    await container
+        .read(sessionControllerProvider.notifier)
+        .logout(SessionMode.customer);
+
+    expect(auth.calls, contains('logout:customer'));
+    expect(reported.single.exception, isA<StateError>());
+  });
+
+  test('a registrar that ends takes its hook with it', () async {
+    final ProviderContainer container = await start();
+
+    container.invalidate(pushRegistrarProvider);
+    container.read(pushRegistrarProvider);
+
+    expect(container.read(sessionEndHooksProvider).all, hasLength(1));
+  });
+
+  testWidgets('a logout waits for a hook five seconds and no longer', (
+    WidgetTester tester,
+  ) async {
+    devices.registerHold = Completer<void>();
+    signInCustomer('c');
+    final ProviderContainer container = containerWith(shortBound: false);
+    await container.read(sessionControllerProvider.future);
+    await tester.pump();
+
+    bool done = false;
+    unawaited(
+      container
+          .read(sessionControllerProvider.notifier)
+          .logout(SessionMode.customer)
+          .then((_) => done = true),
+    );
+    await tester.pump(const Duration(milliseconds: 4900));
+    expect(done, isFalse);
+    expect(auth.calls, isNot(contains('logout:customer')));
+
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(done, isTrue);
+    expect(revokes(), isEmpty);
+    devices.registerHold!.complete();
+  });
+
+  testWidgets('a hook that answers inside the bound is waited for', (
+    WidgetTester tester,
+  ) async {
+    devices.registerHold = Completer<void>();
+    signInCustomer('c');
+    final ProviderContainer container = containerWith(shortBound: false);
+    await container.read(sessionControllerProvider.future);
+    await tester.pump();
+
+    bool done = false;
+    unawaited(
+      container
+          .read(sessionControllerProvider.notifier)
+          .logout(SessionMode.customer)
+          .then((_) => done = true),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    expect(done, isFalse);
+    devices.registerHold!.complete();
+    await tester.pump();
+    await tester.pump();
+
+    expect(done, isTrue);
+    expect(auth.calls.sublist(auth.calls.length - 2), <String>[
+      'revoke:customer:d-0',
+      'logout:customer',
+    ]);
+  });
+}
+
+/// A hook that fails before it starts.
+class _ThrowingHook implements SessionEndHook {
+  @override
+  Future<void> beforeLogout(SessionSlot slot) => throw StateError('broken');
 }

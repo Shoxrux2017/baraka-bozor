@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
@@ -173,16 +171,31 @@ class SessionController extends AsyncNotifier<SessionState> {
     }
   }
 
+  /// The logout running for each slot: a second one joins it rather than
+  /// overtaking its session-end hooks.
+  final Map<SessionSlot, Future<void>> _loggingOut =
+      <SessionSlot, Future<void>>{};
+
   /// Ends one session and leaves the other alone
   /// (`docs/02-user-roles.md` section 10). The session-end hooks run first,
-  /// while the session still works; none of them can stop the logout.
-  Future<void> logout(SessionMode mode) async {
+  /// while the session still works; none of them can stop the logout, and
+  /// a logout already running for the slot is joined, not repeated.
+  Future<void> logout(SessionMode mode) =>
+      _loggingOut[mode.slot] ??= _logout(mode).whenComplete(() {
+        // A block body: `remove` answers the very future being completed,
+        // which `whenComplete` would otherwise wait for.
+        _loggingOut.remove(mode.slot);
+      });
+
+  Future<void> _logout(SessionMode mode) async {
     final SessionEndHooks hooks = ref.read(sessionEndHooksProvider);
     for (final SessionEndHook hook in hooks.all) {
       try {
-        await hook.beforeLogout(mode.slot).timeout(hooks.limit);
-      } on TimeoutException {
-        // The hook finishes on its own, or not at all; the logout goes on.
+        // Past the limit the hook finishes on its own, or not at all; a
+        // timeout the hook throws itself is reported like any failure.
+        await hook
+            .beforeLogout(mode.slot)
+            .timeout(hooks.limit, onTimeout: () {});
       } catch (error, stackTrace) {
         reportUnexpectedError(error, stackTrace, 'while ending a session');
       }

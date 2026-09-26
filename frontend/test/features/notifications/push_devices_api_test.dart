@@ -64,6 +64,8 @@ void main() {
       for (final Map<String, Object?> broken in <Map<String, Object?>>[
         <String, Object?>{...answer, 'id': 'd-1'},
         <String, Object?>{...answer, 'platform': 'ios'},
+        <String, Object?>{...answer, 'last_seen_at': 'today'},
+        <String, Object?>{...answer}..remove('created_at'),
       ]) {
         answer = broken;
         await expectLater(

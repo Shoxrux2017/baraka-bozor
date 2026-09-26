@@ -29,6 +29,11 @@ final Provider<PushDevicesRepository> pushDevicesRepositoryProvider =
 /// is gone without a logout, its token refused or expired, is forgotten,
 /// since its session can no longer revoke anything. A logout revokes first,
 /// through the session-end hook, while the session still works.
+///
+/// Nothing is sent for a session that has moved on: a token answered after
+/// its slot was logged out or taken over registers nothing, and a revoke
+/// answered after its logout ended the session is not sent on whoever holds
+/// the slot then (`DL-32` (6)).
 class PushRegistrar implements SessionEndHook {
   PushRegistrar(this._ref) {
     final SessionEndHooks hooks = _ref.read(sessionEndHooksProvider)..add(this);
@@ -48,6 +53,11 @@ class PushRegistrar implements SessionEndHook {
   final Map<SessionSlot, _Registration> _registrations =
       <SessionSlot, _Registration>{};
 
+  /// Per slot: the registration a logout is revoking, until that logout has
+  /// ended the session.
+  final Map<SessionSlot, _Registration> _ending =
+      <SessionSlot, _Registration>{};
+
   void _follow(SessionState? state) {
     final SignedIn? session = state is SignedIn ? state : null;
 
@@ -59,31 +69,45 @@ class PushRegistrar implements SessionEndHook {
       final bool eligible = user != null && !user.mustChangePassword;
       final _Registration? current = _registrations[slot];
 
+      if (user == null) {
+        // The session is over; a revoke still pending for it stays unsent.
+        _ending.remove(slot);
+      }
       if (!eligible) {
         _registrations.remove(slot);
-      } else if (current == null || current.accountId != user.id) {
-        _registrations[slot] = _Registration(user.id, _register(slot));
+      } else if (current == null ||
+          current.accountId != user.id ||
+          current.failed) {
+        final _Registration registration = _Registration(user.id);
+        _registrations[slot] = registration;
+        registration.deviceId = _register(slot, registration);
       }
     }
   }
 
   /// The id of the device registered for [slot], or `null` when there is no
-  /// token or the registration failed; a failure is retried at the next
-  /// session change rather than in a loop.
-  Future<String?> _register(SessionSlot slot) async {
+  /// token, the registration failed, or the slot moved on while the token
+  /// was asked for. A failure is tried again at the next session change,
+  /// never in a loop.
+  Future<String?> _register(
+    SessionSlot slot,
+    _Registration registration,
+  ) async {
     try {
       final PushToken? token = await _ref
           .read(pushTokenSourceProvider)
           .current();
-      if (token == null) {
+      if (token == null || !identical(_registrations[slot], registration)) {
         return null;
       }
       return await _ref
           .read(pushDevicesRepositoryProvider)
           .register(slot, token);
     } on ApiFailure {
+      registration.failed = true;
       return null;
     } catch (error, stackTrace) {
+      registration.failed = true;
       reportUnexpectedError(error, stackTrace, 'while registering for push');
       return null;
     }
@@ -92,8 +116,14 @@ class PushRegistrar implements SessionEndHook {
   @override
   Future<void> beforeLogout(SessionSlot slot) async {
     final _Registration? registration = _registrations.remove(slot);
-    final String? deviceId = await registration?.deviceId;
-    if (deviceId == null) {
+    if (registration == null) {
+      return;
+    }
+    _ending[slot] = registration;
+    final String? deviceId = await registration.deviceId;
+    // A logout that stopped waiting has ended the session by now, and the
+    // slot may hold another account: this device is not theirs to revoke.
+    if (deviceId == null || !identical(_ending[slot], registration)) {
       return;
     }
     try {
@@ -106,10 +136,13 @@ class PushRegistrar implements SessionEndHook {
 }
 
 final class _Registration {
-  _Registration(this.accountId, this.deviceId);
+  _Registration(this.accountId);
 
   final String accountId;
-  final Future<String?> deviceId;
+  late final Future<String?> deviceId;
+
+  /// Whether the attempt failed, so the next session change tries again.
+  bool failed = false;
 }
 
 /// The one registrar of the process. The app root keeps it alive, and the
