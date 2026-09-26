@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Identity;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\Database\ReadsPostgresCatalog;
 use Tests\TestCase;
 
 /**
