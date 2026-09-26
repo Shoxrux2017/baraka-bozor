@@ -134,7 +134,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get shellCustomer => 'Mijoz';
 
   @override
-  String get shellShopper => 'Xaridchi';
+  String get shellShopper => 'Yig\'uvchi';
 
   @override
   String get shellCourier => 'Kuryer';

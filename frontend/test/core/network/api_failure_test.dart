@@ -156,12 +156,24 @@ void main() {
     });
 
     test('a cancelled request is its own kind, with nothing to show', () {
-      expect(
-        ApiFailure.fromDio(
-          DioException(requestOptions: options, type: DioExceptionType.cancel),
-        ),
-        isA<CancelledFailure>(),
+      final ApiFailure failure = ApiFailure.fromDio(
+        DioException(requestOptions: options, type: DioExceptionType.cancel),
       );
+
+      expect(failure, isA<CancelledFailure>());
+      expect(failure.code, ApiFailure.cancelledCode);
+    });
+
+    test('a body the JSON decoder rejected is a malformed response: the server did answer', () {
+      final ApiFailure failure = ApiFailure.fromDio(
+        DioException(
+          requestOptions: options,
+          error: const FormatException('Unexpected end of input'),
+        ),
+      );
+
+      expect(failure, isA<MalformedResponseFailure>());
+      expect(failure.code, ApiFailure.malformedCode);
     });
   });
 }

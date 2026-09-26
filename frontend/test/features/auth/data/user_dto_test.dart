@@ -86,18 +86,7 @@ void main() {
     });
   });
 
-  group('UserDto.unwrap and the other objects', () {
-    test(
-      'unwrap takes the data member and refuses an envelope without one',
-      () {
-        expect(UserDto.unwrap(<String, Object?>{'data': 1}), 1);
-        expect(
-          () => UserDto.unwrap(<String, Object?>{'meta': 1}),
-          throwsFormatException,
-        );
-      },
-    );
-
+  group('the other objects', () {
     test('a requested code carries the channel and the timers', () {
       final RequestedCode code = UserDto.parseRequestedCode(<String, Object?>{
         'channel': 'telegram',

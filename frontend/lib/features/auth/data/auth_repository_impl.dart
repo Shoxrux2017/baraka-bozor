@@ -42,11 +42,13 @@ class AuthRepositoryImpl implements AuthRepository {
     SessionSlot slot, {
     required String currentPassword,
     required String newPassword,
+    required String newPasswordConfirmation,
   }) => _guard(
     () => _api.changePassword(
       slot,
       currentPassword: currentPassword,
       newPassword: newPassword,
+      newPasswordConfirmation: newPasswordConfirmation,
     ),
   );
 

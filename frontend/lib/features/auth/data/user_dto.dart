@@ -2,7 +2,9 @@ import '../../../core/localization/app_language.dart';
 import '../domain/app_user.dart';
 
 /// Strict parsing of the identity object — `frontend/AGENTS.md` section 8: a
-/// malformed success payload is a failure, never a half-filled model.
+/// malformed success payload is a failure, never a half-filled model. Keys the
+/// contract does not name are ignored, so the server may add fields without
+/// breaking installed clients; keys it names are required.
 abstract final class UserDto {
   static AppUser parse(Object? raw) {
     final Map<String, dynamic> json = _object(raw, 'user');
@@ -57,15 +59,6 @@ abstract final class UserDto {
       token: _string(json, 'token'),
       user: parse(json['user']),
     );
-  }
-
-  /// The `data` member of a success envelope, `docs/09` section 2.
-  static Object? unwrap(Object? body) {
-    final Map<String, dynamic> json = _object(body, 'envelope');
-    if (!json.containsKey('data')) {
-      throw const FormatException('envelope has no data member');
-    }
-    return json['data'];
   }
 
   static Map<String, dynamic> _object(Object? raw, String what) {

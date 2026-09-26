@@ -144,6 +144,54 @@ void main() {
     expect(refused, isEmpty);
   });
 
+  test('the slot is fixed when the request is sent: a mode switch while it is in flight does not move the refusal', () async {
+    okReply = (RequestOptions _) {
+      active = SessionSlot.customer;
+      return errorReply(401, 'authentication_required');
+    };
+
+    await expectLater(
+      dio.get<dynamic>('/orders'),
+      throwsA(isA<DioException>()),
+    );
+
+    expect(
+      adapter.requests.single.headers['Authorization'],
+      'Bearer staff-token',
+    );
+    expect(refused, <SessionSlot>[SessionSlot.staff]);
+  });
+
+  test(
+    'a 401 for a token that a new login has since replaced drops nothing',
+    () async {
+      okReply = (RequestOptions _) {
+        tokens.tokens[SessionSlot.staff] = 'fresh-token';
+        return errorReply(401, 'authentication_required');
+      };
+
+      await expectLater(
+        dio.get<dynamic>('/auth/me'),
+        throwsA(isA<DioException>()),
+      );
+
+      expect(refused, isEmpty);
+      expect(tokens.tokens[SessionSlot.staff], 'fresh-token');
+    },
+  );
+
+  test('a 401 for a request that carried no token drops nothing', () async {
+    tokens.tokens.clear();
+    okReply = (RequestOptions _) => errorReply(401, 'authentication_required');
+
+    await expectLater(
+      dio.get<dynamic>('/auth/me'),
+      throwsA(isA<DioException>()),
+    );
+
+    expect(refused, isEmpty);
+  });
+
   test(
     'a 401 without an envelope drops nothing, because it cannot be trusted',
     () async {

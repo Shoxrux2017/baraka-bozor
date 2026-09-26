@@ -27,6 +27,7 @@ abstract interface class AuthRepository {
     SessionSlot slot, {
     required String currentPassword,
     required String newPassword,
+    required String newPasswordConfirmation,
   });
 
   /// Revokes the token in [slot] on the server. The caller clears the slot

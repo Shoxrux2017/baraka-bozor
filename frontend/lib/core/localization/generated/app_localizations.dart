@@ -335,7 +335,7 @@ abstract class AppLocalizations {
   /// No description provided for @shellShopper.
   ///
   /// In uz, this message translates to:
-  /// **'Xaridchi'**
+  /// **'Yig\'uvchi'**
   String get shellShopper;
 
   /// No description provided for @shellCourier.

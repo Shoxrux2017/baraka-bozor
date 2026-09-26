@@ -36,9 +36,4 @@ class InMemoryPreferenceStore implements PreferenceStore {
   Future<void> write(String key, String value) async {
     values[key] = value;
   }
-
-  @override
-  Future<void> remove(String key) async {
-    values.remove(key);
-  }
 }

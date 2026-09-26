@@ -119,13 +119,14 @@ void main() {
     expect(slotOf(sent), SessionSlot.staff);
   });
 
-  test('change password: POST /auth/change-password with the confirmation repeated', () async {
+  test('change password: POST /auth/change-password with the confirmation as typed, never fabricated', () async {
     reply = (RequestOptions _) => emptyReply(204);
 
     await api.changePassword(
       SessionSlot.staff,
       currentPassword: 'old password 1',
       newPassword: 'new password 2',
+      newPasswordConfirmation: 'new password 3',
     );
 
     final RequestOptions sent = adapter.requests.single;
@@ -133,7 +134,7 @@ void main() {
     expect(sent.data, <String, String>{
       'current_password': 'old password 1',
       'new_password': 'new password 2',
-      'new_password_confirmation': 'new password 2',
+      'new_password_confirmation': 'new password 3',
     });
     expect(slotOf(sent), SessionSlot.staff);
   });
@@ -177,6 +178,21 @@ void main() {
         );
       },
     );
+
+    test('a 200 whose JSON body cannot be decoded is a malformed response, not a lost connection', () async {
+      reply = (RequestOptions _) => ResponseBody.fromString(
+        '{"data": ',
+        200,
+        headers: <String, List<String>>{
+          Headers.contentTypeHeader: <String>[Headers.jsonContentType],
+        },
+      );
+
+      await expectLater(
+        repository.me(SessionSlot.staff),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+    });
 
     test('a connection failure is a network failure', () async {
       adapter = FakeHttpClientAdapter((RequestOptions options) {

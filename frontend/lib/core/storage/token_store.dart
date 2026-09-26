@@ -23,8 +23,10 @@ abstract interface class TokenStore {
 }
 
 /// The [TokenStore] backed by platform-secured storage, as
-/// `docs/07-architecture.md` section 8 requires: the Android KeyStore, the
-/// iOS keychain, and encrypted browser storage for the web panel.
+/// `docs/07-architecture.md` section 8 requires: the Android KeyStore and the
+/// iOS keychain on mobile. On the web panel the plugin keeps the token in
+/// browser storage through the same port (`docs/DECISIONS.md` DL-3, Sanctum
+/// row), which is the accepted trade-off for an internal panel behind a login.
 class SecureTokenStore implements TokenStore {
   // flutter_secure_storage 11 encrypts on Android by default, with AES-GCM
   // under a KeyStore-wrapped key, so no option is passed to request it.

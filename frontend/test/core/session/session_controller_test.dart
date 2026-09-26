@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show Locale;
 
 import 'package:baraka_bozor/app/providers.dart';
@@ -35,6 +36,13 @@ void main() {
 
   SessionController controller(ProviderContainer c) =>
       c.read(sessionControllerProvider.notifier);
+
+  SessionState current(ProviderContainer c) =>
+      c.read(sessionControllerProvider).value!;
+
+  /// Lets every queued microtask run, so a call that is waiting on the
+  /// repository has reached its await.
+  Future<void> settle() => Future<void>.delayed(Duration.zero);
 
   setUp(() {
     tokens = InMemoryTokenStore();
@@ -130,7 +138,24 @@ void main() {
       repository.identities[SessionSlot.staff] = user(role: UserRole.admin);
       await controller(c).retry();
 
-      expect(c.read(sessionControllerProvider).value, isA<SignedIn>());
+      expect(current(c), isA<SignedIn>());
+    });
+
+    test('a session the server cannot confirm keeps its token and the whole bootstrap waits, so no stored session is ever shown as absent', () async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      tokens.tokens[SessionSlot.customer] = 'c';
+      repository.identities[SessionSlot.staff] = user(
+        id: 's',
+        role: UserRole.courier,
+      );
+      repository.identities[SessionSlot.customer] = refusal(
+        503,
+        'service_unavailable',
+      );
+      final ProviderContainer c = container();
+
+      expect(await bootstrap(c), isA<SessionUnreachable>());
+      expect(tokens.tokens.keys, containsAll(SessionSlot.values));
     });
   });
 
@@ -148,8 +173,7 @@ void main() {
         await controller(c).staffLogin(phone: '+998901234567', password: 'p');
 
         expect(tokens.tokens[SessionSlot.staff], 'new-staff');
-        final SignedIn state =
-            c.read(sessionControllerProvider).value as SignedIn;
+        final SignedIn state = current(c) as SignedIn;
         expect(state.activeMode, SessionMode.staff);
         expect(state.staffUser?.role, UserRole.operator);
       },
@@ -166,7 +190,32 @@ void main() {
       );
 
       expect(tokens.tokens, isEmpty);
-      expect(c.read(sessionControllerProvider).value, isA<SignedOut>());
+      expect(current(c), isA<SignedOut>());
+    });
+
+    test('a login after an unreachable start confirms the other stored session too', () async {
+      tokens.tokens[SessionSlot.customer] = 'c';
+      repository.identities[SessionSlot.customer] = const NetworkFailure();
+      final ProviderContainer c = container();
+      expect(await bootstrap(c), isA<SessionUnreachable>());
+
+      repository.identities[SessionSlot.customer] = user(id: 'c');
+      repository.identities[SessionSlot.staff] = user(
+        id: 's',
+        role: UserRole.courier,
+      );
+      repository.staffLoginResult = IssuedSession(
+        token: 's',
+        user: user(id: 's', role: UserRole.courier),
+      );
+
+      await controller(c).staffLogin(phone: '+998901234567', password: 'p');
+
+      final SignedIn state = current(c) as SignedIn;
+      expect(state.activeMode, SessionMode.staff);
+      expect(state.staffUser?.id, 's');
+      expect(state.customerUser?.id, 'c', reason: 'confirmed, not hidden');
+      expect(tokens.tokens.keys, containsAll(SessionSlot.values));
     });
 
     test('verifying a customer code from the staff interface adds the customer session and switches to it', () async {
@@ -186,14 +235,49 @@ void main() {
           .verifyCustomerCode(phone: '+998901234567', code: '000000');
 
       expect(tokens.tokens[SessionSlot.customer], 'new-customer');
-      SignedIn state = c.read(sessionControllerProvider).value as SignedIn;
+      SignedIn state = current(c) as SignedIn;
       expect(state.activeMode, SessionMode.customer);
       expect(state.staffUser?.id, 's', reason: 'the staff session is kept');
 
       controller(c).switchMode(SessionMode.staff);
-      state = c.read(sessionControllerProvider).value as SignedIn;
+      state = current(c) as SignedIn;
       expect(state.activeMode, SessionMode.staff);
       expect(controller(c).activeSlot, SessionSlot.staff);
+    });
+
+    test('customer mode from the staff interface uses the staff phone, never a typed one', () async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = user(
+        id: 's',
+        role: UserRole.courier,
+        phone: '+998901111111',
+      );
+      repository.verifyResult = IssuedSession(
+        token: 'c',
+        user: user(id: 'c', phone: '+998901111111'),
+      );
+      final ProviderContainer c = container();
+      await bootstrap(c);
+
+      await controller(c).requestCustomerModeCode();
+      await controller(c).enterCustomerMode(code: '123456');
+
+      expect(repository.calls, contains('request:+998901111111'));
+      expect(repository.calls, contains('verify:+998901111111:123456'));
+      final SignedIn state = current(c) as SignedIn;
+      expect(state.activeMode, SessionMode.customer);
+      expect(state.staffUser?.id, 's');
+    });
+
+    test('customer mode cannot be entered without a staff session', () async {
+      final ProviderContainer c = container();
+      await bootstrap(c);
+
+      await expectLater(
+        controller(c).enterCustomerMode(code: '123456'),
+        throwsStateError,
+      );
+      expect(repository.calls, isEmpty);
     });
 
     test('switching to a mode that has no session does nothing', () async {
@@ -204,10 +288,7 @@ void main() {
 
       controller(c).switchMode(SessionMode.customer);
 
-      expect(
-        (c.read(sessionControllerProvider).value as SignedIn).activeMode,
-        SessionMode.staff,
-      );
+      expect((current(c) as SignedIn).activeMode, SessionMode.staff);
     });
   });
 
@@ -230,8 +311,7 @@ void main() {
 
         expect(repository.calls, contains('logout:customer'));
         expect(tokens.tokens.keys, <SessionSlot>[SessionSlot.staff]);
-        final SignedIn state =
-            c.read(sessionControllerProvider).value as SignedIn;
+        final SignedIn state = current(c) as SignedIn;
         expect(state.activeMode, SessionMode.staff);
         expect(state.customerUser, isNull);
       },
@@ -247,7 +327,7 @@ void main() {
       await controller(c).logout(SessionMode.staff);
 
       expect(tokens.tokens, isEmpty);
-      expect(c.read(sessionControllerProvider).value, isA<SignedOut>());
+      expect(current(c), isA<SignedOut>());
     });
 
     test(
@@ -268,10 +348,7 @@ void main() {
 
         expect(repository.calls, isEmpty);
         expect(tokens.tokens.keys, <SessionSlot>[SessionSlot.customer]);
-        expect(
-          (c.read(sessionControllerProvider).value as SignedIn).activeMode,
-          SessionMode.customer,
-        );
+        expect((current(c) as SignedIn).activeMode, SessionMode.customer);
       },
     );
   });
@@ -285,25 +362,44 @@ void main() {
       );
       final ProviderContainer c = container();
       await bootstrap(c);
-      expect(
-        (c.read(sessionControllerProvider).value as SignedIn)
-            .canOfferCustomerMode,
-        isFalse,
-      );
+      expect((current(c) as SignedIn).canOfferCustomerMode, isFalse);
 
       await controller(c).changePassword(
         currentPassword: 'temporary 123',
         newPassword: 'brand new pass',
+        newPasswordConfirmation: 'brand new pass',
       );
 
       expect(repository.calls, contains('change-password:staff'));
-      final SignedIn state =
-          c.read(sessionControllerProvider).value as SignedIn;
+      final SignedIn state = current(c) as SignedIn;
       expect(state.staffUser?.mustChangePassword, isFalse);
       expect(state.canOfferCustomerMode, isTrue);
     });
 
-    test('a language is reported for every confirmed session and kept when the server fails', () async {
+    test('a password answer that arrives after the staff session was dropped does not bring it back', () async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = user(
+        role: UserRole.shopper,
+        mustChangePassword: true,
+      );
+      repository.holdAnswers = Completer<void>();
+      final ProviderContainer c = container();
+      await bootstrap(c);
+
+      final Future<void> change = controller(c).changePassword(
+        currentPassword: 'temporary 123',
+        newPassword: 'brand new pass',
+        newPasswordConfirmation: 'brand new pass',
+      );
+      await settle();
+      await controller(c).dropSession(SessionSlot.staff);
+      repository.holdAnswers!.complete();
+      await change;
+
+      expect(current(c), isA<SignedOut>());
+    });
+
+    test('a language is reported for every confirmed session', () async {
       tokens.tokens[SessionSlot.staff] = 's';
       tokens.tokens[SessionSlot.customer] = 'c';
       repository.identities[SessionSlot.staff] = user(
@@ -320,10 +416,56 @@ void main() {
         repository.reportedLanguages.map((r) => r.$1),
         containsAll(<SessionSlot>[SessionSlot.staff, SessionSlot.customer]),
       );
-      final SignedIn state =
-          c.read(sessionControllerProvider).value as SignedIn;
-      expect(state.staffUser?.preferredLanguage.code, 'ru');
-      expect(state.customerUser?.preferredLanguage.code, 'ru');
+      final SignedIn state = current(c) as SignedIn;
+      expect(state.staffUser?.preferredLanguage, AppLanguage.ru);
+      expect(state.customerUser?.preferredLanguage, AppLanguage.ru);
+    });
+
+    test('a language the server fails to take for one session is kept on the device, and that session keeps its old language', () async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      tokens.tokens[SessionSlot.customer] = 'c';
+      repository.identities[SessionSlot.staff] = user(
+        id: 's',
+        role: UserRole.courier,
+      );
+      repository.identities[SessionSlot.customer] = user(id: 'c');
+      repository.updateLanguageFailures[SessionSlot.customer] =
+          const NetworkFailure();
+      final ProviderContainer c = container();
+      await bootstrap(c);
+
+      await c.read(languageControllerProvider.notifier).select(AppLanguage.ru);
+
+      expect(c.read(languageControllerProvider).value, AppLanguage.ru);
+      final SignedIn state = current(c) as SignedIn;
+      expect(state.staffUser?.preferredLanguage, AppLanguage.ru);
+      expect(state.customerUser?.preferredLanguage, AppLanguage.uz);
+    });
+
+    test('a language answer that arrives after its session was dropped is discarded', () async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      tokens.tokens[SessionSlot.customer] = 'c';
+      repository.identities[SessionSlot.staff] = user(
+        id: 's',
+        role: UserRole.courier,
+      );
+      repository.identities[SessionSlot.customer] = user(id: 'c');
+      repository.holdAnswers = Completer<void>();
+      final ProviderContainer c = container();
+      await bootstrap(c);
+
+      final Future<void> select = c
+          .read(languageControllerProvider.notifier)
+          .select(AppLanguage.ru);
+      await settle();
+      await controller(c).dropSession(SessionSlot.staff);
+      repository.holdAnswers!.complete();
+      await select;
+
+      final SignedIn state = current(c) as SignedIn;
+      expect(state.staffUser, isNull, reason: 'not brought back');
+      expect(state.activeMode, SessionMode.customer);
+      expect(state.customerUser?.preferredLanguage, AppLanguage.ru);
     });
   });
 }

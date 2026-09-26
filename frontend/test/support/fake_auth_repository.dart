@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
@@ -43,6 +45,16 @@ class FakeAuthRepository implements AuthRepository {
   );
   ApiFailure? changePasswordFailure;
   ApiFailure? logoutFailure;
+
+  /// What `updateLanguage` throws for a slot, when the test wants the server
+  /// to fail for that session.
+  final Map<SessionSlot, ApiFailure> updateLanguageFailures =
+      <SessionSlot, ApiFailure>{};
+
+  /// While set and not completed, `updateLanguage` and `changePassword` wait
+  /// for it before answering, so a test can change the session while the
+  /// call is in flight.
+  Completer<void>? holdAnswers;
 
   final List<String> calls = <String>[];
   final List<(SessionSlot, AppLanguage)> reportedLanguages =
@@ -94,6 +106,11 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<AppUser> updateLanguage(SessionSlot slot, AppLanguage language) async {
     calls.add('language:${slot.name}:${language.code}');
+    await _held();
+    final ApiFailure? failure = updateLanguageFailures[slot];
+    if (failure != null) {
+      throw failure;
+    }
     reportedLanguages.add((slot, language));
     final Object? current = identities[slot];
     return (current is AppUser ? current : user()).copyWith(
@@ -106,8 +123,10 @@ class FakeAuthRepository implements AuthRepository {
     SessionSlot slot, {
     required String currentPassword,
     required String newPassword,
+    required String newPasswordConfirmation,
   }) async {
     calls.add('change-password:${slot.name}');
+    await _held();
     if (changePasswordFailure != null) {
       throw changePasswordFailure!;
     }
@@ -118,6 +137,13 @@ class FakeAuthRepository implements AuthRepository {
     calls.add('logout:${slot.name}');
     if (logoutFailure != null) {
       throw logoutFailure!;
+    }
+  }
+
+  Future<void> _held() async {
+    final Completer<void>? hold = holdAnswers;
+    if (hold != null) {
+      await hold.future;
     }
   }
 }

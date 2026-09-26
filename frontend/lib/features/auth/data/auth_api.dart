@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/localization/app_language.dart';
+import '../../../core/network/api_envelope.dart';
 import '../../../core/network/auth_interceptor.dart';
 import '../../../core/storage/token_store.dart';
 import '../domain/app_user.dart';
@@ -21,7 +22,7 @@ class AuthApi {
       data: <String, String>{'phone': phone},
       options: RequestSlot.of(null),
     );
-    return UserDto.parseRequestedCode(UserDto.unwrap(response.data));
+    return UserDto.parseRequestedCode(ApiEnvelope.unwrap(response.data));
   }
 
   Future<IssuedSession> verifyCustomerCode({
@@ -33,7 +34,7 @@ class AuthApi {
       data: <String, String>{'phone': phone, 'code': code},
       options: RequestSlot.of(null),
     );
-    return UserDto.parseIssuedSession(UserDto.unwrap(response.data));
+    return UserDto.parseIssuedSession(ApiEnvelope.unwrap(response.data));
   }
 
   Future<IssuedSession> staffLogin({
@@ -45,7 +46,7 @@ class AuthApi {
       data: <String, String>{'phone': phone, 'password': password},
       options: RequestSlot.of(null),
     );
-    return UserDto.parseIssuedSession(UserDto.unwrap(response.data));
+    return UserDto.parseIssuedSession(ApiEnvelope.unwrap(response.data));
   }
 
   Future<AppUser> me(SessionSlot slot) async {
@@ -53,7 +54,7 @@ class AuthApi {
       '/auth/me',
       options: RequestSlot.of(slot),
     );
-    return UserDto.parse(UserDto.unwrap(response.data));
+    return UserDto.parse(ApiEnvelope.unwrap(response.data));
   }
 
   Future<AppUser> updateLanguage(SessionSlot slot, AppLanguage language) async {
@@ -62,20 +63,24 @@ class AuthApi {
       data: <String, String>{'preferred_language': language.code},
       options: RequestSlot.of(slot),
     );
-    return UserDto.parse(UserDto.unwrap(response.data));
+    return UserDto.parse(ApiEnvelope.unwrap(response.data));
   }
 
+  /// The confirmation is what the person typed a second time, sent as typed:
+  /// the server's confirmation check is real only if the client does not
+  /// fabricate it.
   Future<void> changePassword(
     SessionSlot slot, {
     required String currentPassword,
     required String newPassword,
+    required String newPasswordConfirmation,
   }) async {
     await _dio.post<dynamic>(
       '/auth/change-password',
       data: <String, String>{
         'current_password': currentPassword,
         'new_password': newPassword,
-        'new_password_confirmation': newPassword,
+        'new_password_confirmation': newPasswordConfirmation,
       },
       options: RequestSlot.of(slot),
     );

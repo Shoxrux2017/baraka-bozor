@@ -10,9 +10,6 @@ enum SessionMode {
   const SessionMode(this.slot);
 
   final SessionSlot slot;
-
-  static SessionMode forSlot(SessionSlot slot) =>
-      slot == SessionSlot.staff ? SessionMode.staff : SessionMode.customer;
 }
 
 /// What the client knows about its sessions after bootstrap.
@@ -25,13 +22,13 @@ final class SignedOut extends SessionState {
   const SignedOut();
 }
 
-/// A token exists but the server could not be reached to confirm who it is.
-/// The token is kept; the person may retry.
+/// At least one token exists but the server could not be reached to confirm
+/// it. Every token is kept; the person may retry.
 final class SessionUnreachable extends SessionState {
   const SessionUnreachable();
 }
 
-/// At least one confirmed session, and which one is active.
+/// Every stored session confirmed, and which one is active.
 final class SignedIn extends SessionState {
   const SignedIn({
     required this.activeMode,
@@ -50,12 +47,11 @@ final class SignedIn extends SessionState {
   AppUser get activeUser =>
       activeMode == SessionMode.staff ? staffUser! : customerUser!;
 
-  bool get hasStaff => staffUser != null;
-
-  bool get hasCustomer => customerUser != null;
+  AppUser? userIn(SessionMode mode) =>
+      mode == SessionMode.staff ? staffUser : customerUser;
 
   /// Only a Shopper or Courier reaches Customer mode from the staff interface
-  /// (`docs/02` section 10); the switch back is available whenever both exist.
+  /// (`docs/02` section 10), and not while the first-login gate is set.
   bool get canOfferCustomerMode =>
       staffUser != null &&
       (staffUser!.role == UserRole.shopper ||
@@ -66,13 +62,11 @@ final class SignedIn extends SessionState {
     SessionMode? activeMode,
     AppUser? staffUser,
     AppUser? customerUser,
-    bool clearStaff = false,
-    bool clearCustomer = false,
   }) {
     return SignedIn(
       activeMode: activeMode ?? this.activeMode,
-      staffUser: clearStaff ? null : (staffUser ?? this.staffUser),
-      customerUser: clearCustomer ? null : (customerUser ?? this.customerUser),
+      staffUser: staffUser ?? this.staffUser,
+      customerUser: customerUser ?? this.customerUser,
     );
   }
 }

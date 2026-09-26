@@ -80,8 +80,8 @@ final class ApiError {
 /// Every way a request can fail, as the application layer sees it.
 ///
 /// Repositories throw these; controllers keep them in state; screens map
-/// [code] to localized text. Nothing above the data layer sees a
-/// `DioException` or a raw response.
+/// [code] to localized text through `failureText`. Nothing above the data
+/// layer sees a `DioException` or a raw response.
 sealed class ApiFailure implements Exception {
   const ApiFailure();
 
@@ -91,12 +91,22 @@ sealed class ApiFailure implements Exception {
 
   static const String networkCode = 'network';
   static const String malformedCode = 'malformed_response';
-  static const String unknownCode = 'unknown';
+  static const String cancelledCode = 'cancelled';
 
   /// Translates a transport failure into the failure the application sees.
   static ApiFailure fromDio(DioException exception) {
     if (exception.type == DioExceptionType.cancel) {
       return const CancelledFailure();
+    }
+
+    if (exception.error is FormatException) {
+      // The server answered, but with a body the JSON decoder rejected. Dio
+      // reports that without the response, so it is caught before the
+      // "no answer" reading below.
+      return MalformedResponseFailure(
+        status: exception.response?.statusCode,
+        reason: 'undecodable body',
+      );
     }
 
     final Response<dynamic>? response = exception.response;
@@ -146,7 +156,7 @@ final class CancelledFailure extends ApiFailure {
   const CancelledFailure();
 
   @override
-  String get code => ApiFailure.unknownCode;
+  String get code => ApiFailure.cancelledCode;
 }
 
 /// A response that is not what the contract promises: an error without an

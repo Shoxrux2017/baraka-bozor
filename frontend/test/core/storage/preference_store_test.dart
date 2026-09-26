@@ -19,11 +19,7 @@ void main() {
 
       expect(await store.read('language'), 'ru');
       expect(backing.keys, <String>['bb_pref_language']);
-
-      await store.remove('language');
-
-      expect(await store.read('language'), isNull);
-      expect(backing, isEmpty);
+      expect(await store.read('missing'), isNull);
     },
   );
 }

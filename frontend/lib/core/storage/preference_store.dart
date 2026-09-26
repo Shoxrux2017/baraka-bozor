@@ -7,8 +7,6 @@ abstract interface class PreferenceStore {
   Future<String?> read(String key);
 
   Future<void> write(String key, String value);
-
-  Future<void> remove(String key);
 }
 
 class SecurePreferenceStore implements PreferenceStore {
@@ -25,7 +23,4 @@ class SecurePreferenceStore implements PreferenceStore {
   @override
   Future<void> write(String key, String value) =>
       _storage.write(key: '$prefix$key', value: value);
-
-  @override
-  Future<void> remove(String key) => _storage.delete(key: '$prefix$key');
 }
