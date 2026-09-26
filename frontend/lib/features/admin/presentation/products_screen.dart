@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -47,7 +48,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     final AsyncValue<List<AdminCategory>> categories = ref.watch(
       categoryOptionsProvider,
     );
-    final MutationState change = ref.watch(catalogChangeControllerProvider);
+    final MutationState actions = ref.watch(productListActionsProvider);
     final Map<String, AdminCategory> byId = <String, AdminCategory>{
       for (final AdminCategory category
           in categories.value ?? const <AdminCategory>[])
@@ -86,6 +87,11 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 key: const ValueKey<String>('product-search'),
                 controller: _search,
                 textInputAction: TextInputAction.search,
+                inputFormatters: <TextInputFormatter>[
+                  LengthLimitingTextInputFormatter(
+                    ProductQuery.searchMaxLength,
+                  ),
+                ],
                 decoration: InputDecoration(
                   labelText: l10n.productSearch,
                   prefixIcon: const Icon(Icons.search),
@@ -94,22 +100,32 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 onSubmitted: queries.search,
               ),
             ),
-            DropdownButton<String?>(
-              key: const ValueKey<String>('product-category-filter'),
-              value: byId.containsKey(query.categoryId)
-                  ? query.categoryId
-                  : null,
-              items: <DropdownMenuItem<String?>>[
-                DropdownMenuItem<String?>(
-                  child: Text(l10n.productAllCategories),
-                ),
-                for (final AdminCategory category in byId.values)
+            SizedBox(
+              width: 280,
+              child: DropdownButton<String?>(
+                key: const ValueKey<String>('product-category-filter'),
+                isExpanded: true,
+                value: byId.containsKey(query.categoryId)
+                    ? query.categoryId
+                    : null,
+                items: <DropdownMenuItem<String?>>[
                   DropdownMenuItem<String?>(
-                    value: category.id,
-                    child: Text(_nameOf(context, category)),
+                    child: Text(
+                      l10n.productAllCategories,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-              ],
-              onChanged: queries.filterByCategory,
+                  for (final AdminCategory category in byId.values)
+                    DropdownMenuItem<String?>(
+                      value: category.id,
+                      child: Text(
+                        _nameOf(context, category),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+                onChanged: queries.filterByCategory,
+              ),
             ),
             FilterChip(
               key: const ValueKey<String>('include-archived'),
@@ -120,7 +136,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        FailureMessage(change.failure),
+        FailureMessage(actions.failure),
         page.when(
           skipLoadingOnReload: false,
           data: (Paged<AdminProduct> page) => Column(
@@ -135,7 +151,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                 _ProductRow(
                   product: product,
                   category: byId[product.categoryId],
-                  busy: change.isBusy,
+                  busy: actions.isBusy,
                 ),
               PaginationBar(page: page, onPage: queries.goToPage),
             ],
@@ -171,8 +187,8 @@ class _ProductRow extends ConsumerWidget {
     final AppLanguage language =
         AppLanguage.tryParse(Localizations.localeOf(context).languageCode) ??
         AppLanguage.uz;
-    final CatalogChangeController change = ref.read(
-      catalogChangeControllerProvider.notifier,
+    final ProductListActions actions = ref.read(
+      productListActionsProvider.notifier,
     );
     final bool archived = product.state == CatalogEntryState.archived;
 
@@ -211,8 +227,8 @@ class _ProductRow extends ConsumerWidget {
           onPressed: busy
               ? null
               : () => archived
-                    ? change.restoreProduct(product.id)
-                    : change.archiveProduct(product.id),
+                    ? actions.restore(product.id)
+                    : actions.archive(product.id),
         ),
       ),
     );

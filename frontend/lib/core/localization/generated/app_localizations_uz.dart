@@ -427,7 +427,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get catalogEdit => 'Tahrirlash';
 
   @override
-  String get catalogArchive => 'Arxivga';
+  String get catalogArchive => 'Arxivlash';
 
   @override
   String get catalogRestore => 'Arxivdan qaytarish';
@@ -522,11 +522,12 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productImageWrongType => 'Faqat JPEG, PNG yoki WebP rasm';
 
   @override
-  String get productImageAfterSave =>
-      'Rasmni mahsulot saqlangandan keyin qo\'shish mumkin';
+  String get productImageUnreadable =>
+      'Faylni o\'qib bo\'lmadi. Boshqa faylni tanlang';
 
   @override
-  String get confirmButton => 'Ha';
+  String get productImageAfterSave =>
+      'Rasmni mahsulot saqlangandan keyin qo\'shish mumkin';
 
   @override
   String get priceModeFixed => 'Aniq narx';
@@ -538,13 +539,13 @@ class AppLocalizationsUz extends AppLocalizations {
   String get unitKg => 'kg';
 
   @override
-  String get unitGram => 'gramm';
+  String get unitGram => 'g';
 
   @override
   String get unitPiece => 'dona';
 
   @override
-  String get unitLiter => 'litr';
+  String get unitLiter => 'l';
 
   @override
   String get unitPackage => 'qadoq';
@@ -556,7 +557,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get unitBundle => 'bog\'';
 
   @override
-  String get unitMeter => 'metr';
+  String get unitMeter => 'm';
 
   @override
   String fieldTooLong(int max) {
@@ -571,7 +572,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get errorBusinessConflict =>
-      'Holat o\'zgargan. Ma\'lumotni yangilab, qayta urinib ko\'ring';
+      'Ma\'lumot allaqachon o\'zgargan. Joriy holatni tekshirib, qayta urinib ko\'ring';
 
   @override
   String get errorPayloadTooLarge => 'Fayl juda katta';

@@ -1,10 +1,12 @@
-import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
+import 'package:baraka_bozor/app/providers.dart';
+import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/admin/application/admin_catalog_controllers.dart';
 import 'package:baraka_bozor/features/admin/application/product_image_picker.dart';
@@ -12,6 +14,8 @@ import 'package:baraka_bozor/features/admin/domain/admin_catalog.dart';
 import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -48,6 +52,19 @@ void main() {
   AppLocalizations l10n(WidgetTester tester) =>
       AppLocalizations.of(tester.element(find.byType(Scaffold).first));
 
+  String location(WidgetTester tester) =>
+      GoRouter.of(tester.element(find.byType(Scaffold).first))
+          .routeInformationProvider
+          .value
+          .uri
+          .path;
+
+  String textOf(WidgetTester tester, String apiKey) =>
+      tester.widget<TextFormField>(field(apiKey)).controller!.text;
+
+  Finder inDialog(Finder finder) =>
+      find.descendant(of: find.byType(AlertDialog), matching: finder);
+
   setUp(() {
     tokens = InMemoryTokenStore();
     auth = FakeAuthRepository();
@@ -57,8 +74,12 @@ void main() {
     auth.identities[SessionSlot.staff] = user(role: UserRole.admin);
   });
 
-  Future<void> open(WidgetTester tester, String location) async {
-    tester.view.physicalSize = const Size(1400, 2600);
+  Future<void> open(
+    WidgetTester tester,
+    String location, {
+    Size size = const Size(1400, 2600),
+  }) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
@@ -84,6 +105,27 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> search(WidgetTester tester, String text) async {
+    await tester.enterText(byKey('product-search'), text);
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> fillNewProduct(WidgetTester tester) async {
+    await tapAndSettle(tester, field('category_id'));
+    await tapAndSettle(tester, find.text('Sabzavotlar').last);
+    await tester.enterText(field('name_uz'), 'Bodring');
+    await tester.enterText(field('name_ru'), 'Огурец');
+    await tester.enterText(field('market_price_uzs'), '12 000');
+  }
+
+  Future<void> signOut(WidgetTester tester) async {
+    await ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
+        .read(sessionControllerProvider.notifier)
+        .logout(SessionMode.staff);
+    await tester.pumpAndSettle();
+  }
+
   group('categories', () {
     testWidgets('a new category is created with both names and shown', (
       WidgetTester tester,
@@ -106,6 +148,69 @@ void main() {
       expect(find.byType(AlertDialog), findsNothing);
       expect(find.text(l10n(tester).categorySaved), findsOneWidget);
       expect(find.text('Mevalar · Фрукты'), findsOneWidget);
+    });
+
+    testWidgets('the dialog stays open while it saves, then closes itself', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.categories);
+      await tapAndSettle(tester, byKey('edit-c-1'));
+      await tester.enterText(field('name_uz'), 'Sabzavot');
+      catalog.hold = Completer<void>();
+
+      await tester.tap(byKey('category-save'));
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pump();
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      catalog.hold!.complete();
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text(l10n(tester).categorySaved), findsOneWidget);
+      expect(find.text('Sabzavot · Овощи'), findsOneWidget);
+    });
+
+    testWidgets('a tap outside the dialog does not throw the form away', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.categories);
+      await tapAndSettle(tester, byKey('new-category'));
+      await tester.enterText(field('name_uz'), 'Mevalar');
+
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(textOf(tester, 'name_uz'), 'Mevalar');
+    });
+
+    testWidgets('a failure shows where it happened and nowhere else', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.categories);
+      await tapAndSettle(tester, byKey('edit-c-1'));
+      await tester.enterText(field('name_uz'), 'Sabzavot');
+      catalog.changeFailure = const NetworkFailure();
+      await tapAndSettle(tester, byKey('category-save'));
+      expect(inDialog(find.text(l10n(tester).errorNetwork)), findsOneWidget);
+
+      await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+      expect(find.text(l10n(tester).errorNetwork), findsNothing);
+
+      catalog.changeFailure = const ApiRefusal(
+        ApiError(status: 409, code: 'business_conflict'),
+      );
+      await tapAndSettle(tester, byKey('archive-c-1'));
+      expect(find.text(l10n(tester).errorBusinessConflict), findsOneWidget);
+
+      await tapAndSettle(tester, byKey('edit-c-1'));
+      expect(
+        inDialog(find.text(l10n(tester).errorBusinessConflict)),
+        findsNothing,
+      );
     });
 
     testWidgets('the form refuses empty names and sends nothing', (
@@ -270,6 +375,184 @@ void main() {
       },
     );
 
+    testWidgets(
+      'a new product saved after the Admin left keeps them where they went',
+      (WidgetTester tester) async {
+        await open(tester, AdminPaths.newProduct);
+        await fillNewProduct(tester);
+        catalog.hold = Completer<void>();
+
+        await tester.tap(byKey('product-save'));
+        await tester.pump();
+        await tapAndSettle(tester, byKey('back-to-products'));
+        expect(location(tester), AdminPaths.products);
+
+        catalog.hold!.complete();
+        await tester.pumpAndSettle();
+        expect(catalog.savedProducts, hasLength(1));
+        expect(location(tester), AdminPaths.products);
+        expect(find.text(l10n(tester).productSaved), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'the list keeps its page, filter and search while a product is open',
+      (WidgetTester tester) async {
+        catalog.productRows = <AdminProduct>[
+          for (int i = 1; i <= 25; i++)
+            adminProduct(id: 'p-$i', nameUz: 'Mahsulot $i', nameRu: 'Товар $i'),
+        ];
+        await open(tester, AdminPaths.products);
+        await search(tester, 'mahsulot');
+        await tapAndSettle(tester, byKey('include-archived'));
+        await tapAndSettle(tester, byKey('next-page'));
+
+        await tapAndSettle(tester, find.text('Mahsulot 25 · Товар 25'));
+        expect(textOf(tester, 'name_uz'), 'Mahsulot 25');
+        await tapAndSettle(tester, byKey('back-to-products'));
+
+        expect(
+          catalog.productQueries.last,
+          isA<ProductQuery>()
+              .having((ProductQuery q) => q.page, 'page', 2)
+              .having((ProductQuery q) => q.search, 'search', 'mahsulot')
+              .having(
+                (ProductQuery q) => q.includeArchived,
+                'archived',
+                isTrue,
+              ),
+        );
+        expect(find.text(l10n(tester).catalogPage(2, 2)), findsOneWidget);
+        expect(
+          tester.widget<TextField>(byKey('product-search')).controller!.text,
+          'mahsulot',
+        );
+      },
+    );
+
+    testWidgets('the search takes no more than the server does', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.products);
+
+      await search(tester, 'a' * 150);
+
+      expect(
+        tester.widget<TextField>(byKey('product-search')).controller!.text,
+        'a' * ProductQuery.searchMaxLength,
+      );
+      expect(
+        catalog.productQueries.last.search,
+        'a' * ProductQuery.searchMaxLength,
+      );
+    });
+
+    testWidgets(
+      'a conflict reloads the product, and the Admin keeps their edits',
+      (WidgetTester tester) async {
+        await open(tester, AdminPaths.product('p-1'));
+        await tester.enterText(field('name_uz'), 'Pomidorlar');
+        // Archived meanwhile, in another tab.
+        catalog.productRows = <AdminProduct>[
+          adminProduct(archivedAt: DateTime.utc(2026, 9, 26, 6)),
+        ];
+        catalog.changeFailure = const ApiRefusal(
+          ApiError(status: 409, code: 'business_conflict'),
+        );
+
+        await tapAndSettle(tester, byKey('product-save'));
+        expect(find.text(l10n(tester).errorBusinessConflict), findsOneWidget);
+        expect(find.text(l10n(tester).catalogArchivedNote), findsOneWidget);
+        expect(field('is_active'), findsNothing);
+        expect(textOf(tester, 'name_uz'), 'Pomidorlar');
+
+        await tapAndSettle(tester, byKey('product-save'));
+        final ProductDraft sent = catalog.savedProducts.last.$2;
+        expect(sent.nameUz, 'Pomidorlar');
+        expect(sent.isActive, isNull);
+        expect(find.text(l10n(tester).productSaved), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a reload refreshes an untouched form and leaves unsaved edits alone',
+      (WidgetTester tester) async {
+        await open(tester, AdminPaths.product('p-1'));
+        // Renamed by another Admin; the image change below reloads it.
+        catalog.productRows = <AdminProduct>[
+          adminProduct(nameUz: 'Pomidor pushti'),
+        ];
+        picker.next = _png();
+        await tapAndSettle(tester, byKey('choose-image'));
+        await tapAndSettle(tester, byKey('upload-image'));
+        expect(textOf(tester, 'name_uz'), 'Pomidor pushti');
+
+        await tester.enterText(field('name_ru'), 'Томат');
+        picker.next = _png();
+        await tapAndSettle(tester, byKey('choose-image'));
+        await tapAndSettle(tester, byKey('upload-image'));
+        expect(catalog.uploads, hasLength(2));
+        expect(textOf(tester, 'name_ru'), 'Томат');
+
+        await tapAndSettle(tester, byKey('product-save'));
+        expect(catalog.savedProducts.single.$2.nameRu, 'Томат');
+        expect(catalog.savedProducts.single.$2.nameUz, 'Pomidor pushti');
+      },
+    );
+
+    testWidgets("the form's and the image's failures stay apart", (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.product('p-1'));
+      await tester.enterText(field('name_uz'), 'Pomidorlar');
+      catalog.changeFailure = const NetworkFailure();
+      await tapAndSettle(tester, byKey('product-save'));
+
+      picker.next = _png();
+      await tapAndSettle(tester, byKey('choose-image'));
+      catalog.changeFailure = const ApiRefusal(
+        ApiError(status: 413, code: 'payload_too_large'),
+      );
+      await tapAndSettle(tester, byKey('upload-image'));
+
+      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      expect(find.text(l10n(tester).errorPayloadTooLarge), findsOneWidget);
+
+      await tapAndSettle(tester, byKey('back-to-products'));
+      expect(find.text(l10n(tester).errorNetwork), findsNothing);
+      expect(find.text(l10n(tester).errorPayloadTooLarge), findsNothing);
+    });
+
+    testWidgets('signing out while a save runs leaves nothing behind', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.newProduct);
+      await fillNewProduct(tester);
+      catalog.hold = Completer<void>();
+      await tester.tap(byKey('product-save'));
+      await tester.pump();
+
+      await signOut(tester);
+      final String signedOut = location(tester);
+      expect(signedOut, isNot(startsWith('/admin')));
+
+      catalog.hold!.complete();
+      await tester.pumpAndSettle();
+      expect(location(tester), signedOut);
+      expect(find.text(l10n(tester).productSaved), findsNothing);
+    });
+
+    testWidgets('after signing out the lists ask for nothing more', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.products);
+      final int asked = catalog.productQueries.length;
+
+      await signOut(tester);
+
+      expect(catalog.productQueries, hasLength(asked));
+    });
+
     testWidgets('the form refuses a missing category and a bad price', (
       WidgetTester tester,
     ) async {
@@ -304,6 +587,42 @@ void main() {
         expect(catalog.savedProducts.single.$2.categoryId, 'c-1');
       },
     );
+  });
+
+  group('narrow window', () {
+    testWidgets('long names and large text fit a phone-wide window', (
+      WidgetTester tester,
+    ) async {
+      final String longUz = 'Sabzavotlar, ko\'katlar va dukkaklilar ' * 3;
+      final String longRu = 'Овощи, зелень и бобовые на каждый день ' * 3;
+      catalog.categoryRows = <AdminCategory>[
+        adminCategory(nameUz: longUz.trim(), nameRu: longRu.trim()),
+      ];
+      catalog.productRows = <AdminProduct>[
+        for (int i = 1; i <= 25; i++)
+          adminProduct(id: 'p-$i', nameUz: 'Mahsulot $i', nameRu: 'Товар $i'),
+      ];
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      await open(tester, AdminPaths.products, size: const Size(360, 2600));
+      expect(byKey('product-category-filter'), findsOneWidget);
+      expect(byKey('next-page'), findsOneWidget);
+
+      await tapAndSettle(tester, find.text('Mahsulot 1 · Товар 1'));
+      expect(field('category_id'), findsOneWidget);
+      await tester.ensureVisible(byKey('product-save'));
+      await tester.ensureVisible(byKey('choose-image'));
+      await tester.pumpAndSettle();
+
+      GoRouter.of(tester.element(find.byType(Scaffold).first))
+          .go(AdminPaths.categories);
+      await tester.pumpAndSettle();
+      await tapAndSettle(tester, byKey('edit-c-1'));
+      await tester.ensureVisible(byKey('category-save'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+    });
   });
 
   group('product image', () {
@@ -371,6 +690,20 @@ void main() {
 
       expect(find.text(l10n(tester).errorNotFound), findsOneWidget);
       expect(field('name_uz'), findsNothing);
+      expect(byKey('retry-load'), findsNothing);
+      expect(byKey('back-to-products'), findsOneWidget);
+    });
+
+    testWidgets('a product that failed to load can be asked for again', (
+      WidgetTester tester,
+    ) async {
+      catalog.loadFailure = const NetworkFailure();
+      await open(tester, AdminPaths.product('p-1'));
+      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+
+      await tapAndSettle(tester, byKey('retry-load'));
+
+      expect(textOf(tester, 'name_uz'), 'Pomidor');
     });
   });
 }

@@ -432,7 +432,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get catalogArchivedNote =>
-      'Записи в архиве не видны клиентам. Вернуть её можно действием в списке';
+      'Запись в архиве не видна клиентам. Вернуть её можно действием в списке';
 
   @override
   String get catalogEmpty => 'Ничего не найдено';
@@ -520,11 +520,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get productImageWrongType => 'Только JPEG, PNG или WebP';
 
   @override
-  String get productImageAfterSave =>
-      'Фото можно добавить после сохранения товара';
+  String get productImageUnreadable =>
+      'Не удалось прочитать файл. Выберите другой';
 
   @override
-  String get confirmButton => 'Да';
+  String get productImageAfterSave =>
+      'Фото можно добавить после сохранения товара';
 
   @override
   String get priceModeFixed => 'Точная цена';
@@ -536,25 +537,25 @@ class AppLocalizationsRu extends AppLocalizations {
   String get unitKg => 'кг';
 
   @override
-  String get unitGram => 'грамм';
+  String get unitGram => 'г';
 
   @override
   String get unitPiece => 'шт.';
 
   @override
-  String get unitLiter => 'литр';
+  String get unitLiter => 'л';
 
   @override
-  String get unitPackage => 'упаковка';
+  String get unitPackage => 'уп.';
 
   @override
-  String get unitBox => 'коробка';
+  String get unitBox => 'кор.';
 
   @override
-  String get unitBundle => 'пучок';
+  String get unitBundle => 'пуч.';
 
   @override
-  String get unitMeter => 'метр';
+  String get unitMeter => 'м';
 
   @override
   String fieldTooLong(int max) {
@@ -569,7 +570,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get errorBusinessConflict =>
-      'Состояние изменилось. Обновите данные и попробуйте снова';
+      'Данные уже изменились. Проверьте текущее состояние и попробуйте снова';
 
   @override
   String get errorPayloadTooLarge => 'Файл слишком большой';

@@ -8,8 +8,8 @@ abstract final class AdminCatalogDto {
   static AdminCategory parseCategory(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'category');
 
-    return AdminCategory(
-      id: json.string('id'),
+    final AdminCategory category = AdminCategory(
+      id: json.uuid('id'),
       nameUz: json.string('name_uz'),
       nameRu: json.string('name_ru'),
       descriptionUz: json.nullableString('description_uz'),
@@ -20,14 +20,16 @@ abstract final class AdminCatalogDto {
       createdAt: json.instant('created_at'),
       updatedAt: json.instant('updated_at'),
     );
+    _neverArchivedAndActive(category.archivedAt, category.isActive);
+    return category;
   }
 
   static AdminProduct parseProduct(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'product');
 
-    return AdminProduct(
-      id: json.string('id'),
-      categoryId: json.string('category_id'),
+    final AdminProduct product = AdminProduct(
+      id: json.uuid('id'),
+      categoryId: json.uuid('category_id'),
       nameUz: json.string('name_uz'),
       nameRu: json.string('name_ru'),
       descriptionUz: json.nullableString('description_uz'),
@@ -43,11 +45,30 @@ abstract final class AdminCatalogDto {
       createdAt: json.instant('created_at'),
       updatedAt: json.instant('updated_at'),
     );
+    _neverArchivedAndActive(product.archivedAt, product.isActive);
+    return product;
   }
 
-  /// Every field of the category form; an empty description goes as `null`,
-  /// and `is_active` only when the form offers it.
-  static Map<String, Object?> categoryBody(CategoryDraft draft) =>
+  /// A new category: every field; `is_active` only when the form offers it.
+  /// An edit of [base]: only what changed (`DL-28` (9)).
+  static Map<String, Object?> categoryBody(
+    CategoryDraft draft, {
+    AdminCategory? base,
+  }) => _changed(
+    _categoryFields(draft),
+    base == null ? null : _categoryFields(CategoryDraft.fromCategory(base)),
+  );
+
+  /// As [categoryBody], for a product.
+  static Map<String, Object?> productBody(
+    ProductDraft draft, {
+    AdminProduct? base,
+  }) => _changed(
+    _productFields(draft),
+    base == null ? null : _productFields(ProductDraft.fromProduct(base)),
+  );
+
+  static Map<String, Object?> _categoryFields(CategoryDraft draft) =>
       <String, Object?>{
         'name_uz': draft.nameUz,
         'name_ru': draft.nameRu,
@@ -57,8 +78,7 @@ abstract final class AdminCatalogDto {
         if (draft.isActive != null) 'is_active': draft.isActive,
       };
 
-  /// Every field of the product form, `is_active` as for [categoryBody].
-  static Map<String, Object?> productBody(ProductDraft draft) =>
+  static Map<String, Object?> _productFields(ProductDraft draft) =>
       <String, Object?>{
         'category_id': draft.categoryId,
         'name_uz': draft.nameUz,
@@ -71,4 +91,23 @@ abstract final class AdminCatalogDto {
         'sort_order': draft.sortOrder,
         if (draft.isActive != null) 'is_active': draft.isActive,
       };
+
+  static Map<String, Object?> _changed(
+    Map<String, Object?> after,
+    Map<String, Object?>? before,
+  ) => before == null
+      ? after
+      : <String, Object?>{
+          for (final MapEntry<String, Object?> field in after.entries)
+            if (!before.containsKey(field.key) ||
+                before[field.key] != field.value)
+              field.key: field.value,
+        };
+
+  /// `DL-17` (14): an archived entry is never active.
+  static void _neverArchivedAndActive(DateTime? archivedAt, bool isActive) {
+    if (archivedAt != null && isActive) {
+      throw const FormatException('an archived entry is marked active');
+    }
+  }
 }

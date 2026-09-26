@@ -41,14 +41,28 @@ class AdminCatalogApi {
     ),
   );
 
-  Future<AdminCategory> updateCategory(String id, CategoryDraft draft) =>
-      _category(
-        _dio.patch<dynamic>(
-          '/admin/categories/${Uri.encodeComponent(id)}',
-          data: AdminCatalogDto.categoryBody(draft),
-          options: _staff,
-        ),
-      );
+  /// Sends what [draft] changed from [category]. With nothing changed there
+  /// is nothing to send — the server refuses an empty edit (`docs/09`
+  /// section 3) — and the category is answered as it is.
+  Future<AdminCategory> updateCategory(
+    AdminCategory category,
+    CategoryDraft draft,
+  ) async {
+    final Map<String, Object?> body = AdminCatalogDto.categoryBody(
+      draft,
+      base: category,
+    );
+    if (body.isEmpty) {
+      return category;
+    }
+    return _category(
+      _dio.patch<dynamic>(
+        '/admin/categories/${Uri.encodeComponent(category.id)}',
+        data: body,
+        options: _staff,
+      ),
+    );
+  }
 
   Future<AdminCategory> archiveCategory(String id) => _category(
     _dio.post<dynamic>(
@@ -94,13 +108,26 @@ class AdminCatalogApi {
     ),
   );
 
-  Future<AdminProduct> updateProduct(String id, ProductDraft draft) => _product(
-    _dio.patch<dynamic>(
-      '/admin/products/${Uri.encodeComponent(id)}',
-      data: AdminCatalogDto.productBody(draft),
-      options: _staff,
-    ),
-  );
+  /// As [updateCategory], for a product.
+  Future<AdminProduct> updateProduct(
+    AdminProduct product,
+    ProductDraft draft,
+  ) async {
+    final Map<String, Object?> body = AdminCatalogDto.productBody(
+      draft,
+      base: product,
+    );
+    if (body.isEmpty) {
+      return product;
+    }
+    return _product(
+      _dio.patch<dynamic>(
+        '/admin/products/${Uri.encodeComponent(product.id)}',
+        data: body,
+        options: _staff,
+      ),
+    );
+  }
 
   Future<AdminProduct> archiveProduct(String id) => _product(
     _dio.post<dynamic>(
@@ -124,7 +151,7 @@ class AdminCatalogApi {
           data: FormData.fromMap(<String, Object>{
             'image': MultipartFile.fromBytes(image.bytes, filename: image.name),
           }),
-          options: RequestSlot.of(SessionSlot.staff),
+          options: _staff,
         ),
       );
 

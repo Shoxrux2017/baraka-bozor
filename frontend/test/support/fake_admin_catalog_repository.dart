@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/network/paged.dart';
@@ -60,7 +62,8 @@ AdminProduct adminProduct({
 );
 
 /// A catalog in memory, paginated like the API: twenty to a page, archived
-/// entries only on request, search over both names.
+/// entries only on request, search over both names. A change is recorded
+/// when it is asked for and answered once [hold], when set, completes.
 class FakeAdminCatalogRepository implements AdminCatalogRepository {
   FakeAdminCatalogRepository({
     List<AdminCategory>? categories,
@@ -82,6 +85,9 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
 
   /// The next change answers this failure instead.
   ApiFailure? changeFailure;
+
+  /// While set, every change waits for it before it answers.
+  Completer<void>? hold;
 
   int _next = 100;
 
@@ -120,21 +126,33 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
     );
   }
 
+  /// The next product load answers this failure instead.
+  ApiFailure? loadFailure;
+
   @override
-  Future<AdminProduct> product(String id) async => productRows.firstWhere(
-    (AdminProduct p) => p.id == id,
-    orElse: () => throw const ApiRefusal(
-      ApiError(status: 404, code: 'resource_not_found'),
-    ),
-  );
+  Future<AdminProduct> product(String id) async {
+    final ApiFailure? failure = loadFailure;
+    if (failure != null) {
+      loadFailure = null;
+      throw failure;
+    }
+    return productRows.firstWhere(
+      (AdminProduct p) => p.id == id,
+      orElse: () => throw const ApiRefusal(
+        ApiError(status: 404, code: 'resource_not_found'),
+      ),
+    );
+  }
 
   @override
   Future<AdminCategory> createCategory(CategoryDraft draft) =>
       _saveCategory(null, draft);
 
   @override
-  Future<AdminCategory> updateCategory(String id, CategoryDraft draft) =>
-      _saveCategory(id, draft);
+  Future<AdminCategory> updateCategory(
+    AdminCategory category,
+    CategoryDraft draft,
+  ) => _saveCategory(category.id, draft);
 
   @override
   Future<AdminCategory> archiveCategory(String id) => _category(
@@ -161,8 +179,10 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
       _saveProduct(null, draft);
 
   @override
-  Future<AdminProduct> updateProduct(String id, ProductDraft draft) =>
-      _saveProduct(id, draft);
+  Future<AdminProduct> updateProduct(
+    AdminProduct product,
+    ProductDraft draft,
+  ) => _saveProduct(product.id, draft);
 
   @override
   Future<AdminProduct> archiveProduct(String id) => _product(
@@ -190,11 +210,9 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
     return _product(
       'upload $productId',
       productId,
-      (AdminProduct p) => adminProduct(
-        id: p.id,
-        nameUz: p.nameUz,
-        nameRu: p.nameRu,
-        imageUrl: 'https://api.test/storage/products/${uploads.length}.png',
+      (AdminProduct p) => _withImage(
+        p,
+        'https://api.test/storage/products/${uploads.length}.png',
       ),
     );
   }
@@ -205,14 +223,13 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
     return _product(
       'remove image $productId',
       productId,
-      (AdminProduct p) =>
-          adminProduct(id: p.id, nameUz: p.nameUz, nameRu: p.nameRu),
+      (AdminProduct p) => _withImage(p, null),
     );
   }
 
   Future<AdminCategory> _saveCategory(String? id, CategoryDraft draft) async {
     savedCategories.add((id, draft));
-    _failIfAsked();
+    await _answer();
     final AdminCategory saved = adminCategory(
       id: id ?? 'c-${_next++}',
       nameUz: draft.nameUz,
@@ -230,7 +247,10 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
 
   Future<AdminProduct> _saveProduct(String? id, ProductDraft draft) async {
     savedProducts.add((id, draft));
-    _failIfAsked();
+    await _answer();
+    final AdminProduct? current = id == null
+        ? null
+        : productRows.firstWhere((AdminProduct p) => p.id == id);
     final AdminProduct saved = adminProduct(
       id: id ?? 'p-${_next++}',
       categoryId: draft.categoryId,
@@ -239,9 +259,11 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
       unitCode: draft.unitCode,
       priceMode: draft.priceMode,
       marketPriceUzs: draft.marketPriceUzs,
+      imageUrl: current?.imageUrl,
       sortOrder: draft.sortOrder,
-      isActive: draft.isActive ?? true,
-      updatedAt: DateTime.utc(2026, 9, 26, 6, _next),
+      isActive: draft.isActive ?? current?.isActive ?? true,
+      archivedAt: current?.archivedAt,
+      updatedAt: DateTime.utc(2026, 9, 26, 6, _next++),
     );
     productRows = <AdminProduct>[
       for (final AdminProduct p in productRows)
@@ -257,7 +279,7 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
     AdminCategory Function(AdminCategory current) change,
   ) async {
     actions.add(action);
-    _failIfAsked();
+    await _answer();
     final AdminCategory changed = change(
       categoryRows.firstWhere((AdminCategory c) => c.id == id),
     );
@@ -273,7 +295,7 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
     AdminProduct Function(AdminProduct current) change,
   ) async {
     actions.add(action);
-    _failIfAsked();
+    await _answer();
     final AdminProduct changed = change(
       productRows.firstWhere((AdminProduct p) => p.id == id),
     );
@@ -283,13 +305,34 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
     return changed;
   }
 
-  void _failIfAsked() {
+  Future<void> _answer() async {
+    await hold?.future;
     final ApiFailure? failure = changeFailure;
     if (failure != null) {
       changeFailure = null;
       throw failure;
     }
   }
+
+  /// [p] as it is, with another image and a later update time.
+  AdminProduct _withImage(AdminProduct p, String? imageUrl) => AdminProduct(
+    id: p.id,
+    categoryId: p.categoryId,
+    nameUz: p.nameUz,
+    nameRu: p.nameRu,
+    descriptionUz: p.descriptionUz,
+    descriptionRu: p.descriptionRu,
+    unitCode: p.unitCode,
+    priceMode: p.priceMode,
+    marketPriceUzs: p.marketPriceUzs,
+    customerUnitPriceUzs: p.customerUnitPriceUzs,
+    imageUrl: imageUrl,
+    sortOrder: p.sortOrder,
+    isActive: p.isActive,
+    archivedAt: p.archivedAt,
+    createdAt: p.createdAt,
+    updatedAt: DateTime.utc(2026, 9, 26, 7, _next++),
+  );
 
   static Paged<T> _page<T>(List<T> all, int page, int perPage) {
     final int lastPage = all.isEmpty

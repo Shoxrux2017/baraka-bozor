@@ -31,6 +31,19 @@ extension type const JsonFields(Map<String, dynamic> _json) {
     throw FormatException('$key is not a non-empty string');
   }
 
+  /// A record id, which the contract makes a UUID (`DL-12`).
+  String uuid(String key) {
+    final String value = string(key);
+    if (!_uuid.hasMatch(value)) {
+      throw FormatException('$key is not a UUID: $value');
+    }
+    return value;
+  }
+
+  static final RegExp _uuid = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
   String? nullableString(String key) {
     final Object? value = member(key);
     if (value == null) {

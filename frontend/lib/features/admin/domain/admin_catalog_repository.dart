@@ -12,7 +12,11 @@ abstract interface class AdminCatalogRepository {
 
   Future<AdminCategory> createCategory(CategoryDraft draft);
 
-  Future<AdminCategory> updateCategory(String id, CategoryDraft draft);
+  /// Saves what [draft] changed from [category], the entry the form showed.
+  Future<AdminCategory> updateCategory(
+    AdminCategory category,
+    CategoryDraft draft,
+  );
 
   Future<AdminCategory> archiveCategory(String id);
 
@@ -24,7 +28,8 @@ abstract interface class AdminCatalogRepository {
 
   Future<AdminProduct> createProduct(ProductDraft draft);
 
-  Future<AdminProduct> updateProduct(String id, ProductDraft draft);
+  /// Saves what [draft] changed from [product], the entry the form showed.
+  Future<AdminProduct> updateProduct(AdminProduct product, ProductDraft draft);
 
   Future<AdminProduct> archiveProduct(String id);
 

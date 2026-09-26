@@ -887,7 +887,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogArchive.
   ///
   /// In uz, this message translates to:
-  /// **'Arxivga'**
+  /// **'Arxivlash'**
   String get catalogArchive;
 
   /// No description provided for @catalogRestore.
@@ -1064,17 +1064,17 @@ abstract class AppLocalizations {
   /// **'Faqat JPEG, PNG yoki WebP rasm'**
   String get productImageWrongType;
 
+  /// No description provided for @productImageUnreadable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faylni o\'qib bo\'lmadi. Boshqa faylni tanlang'**
+  String get productImageUnreadable;
+
   /// No description provided for @productImageAfterSave.
   ///
   /// In uz, this message translates to:
   /// **'Rasmni mahsulot saqlangandan keyin qo\'shish mumkin'**
   String get productImageAfterSave;
-
-  /// No description provided for @confirmButton.
-  ///
-  /// In uz, this message translates to:
-  /// **'Ha'**
-  String get confirmButton;
 
   /// No description provided for @priceModeFixed.
   ///
@@ -1097,7 +1097,7 @@ abstract class AppLocalizations {
   /// No description provided for @unitGram.
   ///
   /// In uz, this message translates to:
-  /// **'gramm'**
+  /// **'g'**
   String get unitGram;
 
   /// No description provided for @unitPiece.
@@ -1109,7 +1109,7 @@ abstract class AppLocalizations {
   /// No description provided for @unitLiter.
   ///
   /// In uz, this message translates to:
-  /// **'litr'**
+  /// **'l'**
   String get unitLiter;
 
   /// No description provided for @unitPackage.
@@ -1133,7 +1133,7 @@ abstract class AppLocalizations {
   /// No description provided for @unitMeter.
   ///
   /// In uz, this message translates to:
-  /// **'metr'**
+  /// **'m'**
   String get unitMeter;
 
   /// No description provided for @fieldTooLong.
@@ -1157,7 +1157,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorBusinessConflict.
   ///
   /// In uz, this message translates to:
-  /// **'Holat o\'zgargan. Ma\'lumotni yangilab, qayta urinib ko\'ring'**
+  /// **'Ma\'lumot allaqachon o\'zgargan. Joriy holatni tekshirib, qayta urinib ko\'ring'**
   String get errorBusinessConflict;
 
   /// No description provided for @errorPayloadTooLarge.

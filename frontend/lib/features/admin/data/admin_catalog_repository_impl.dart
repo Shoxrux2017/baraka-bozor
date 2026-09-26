@@ -20,8 +20,10 @@ class AdminCatalogRepositoryImpl implements AdminCatalogRepository {
       guardApiCall(() => _api.createCategory(draft));
 
   @override
-  Future<AdminCategory> updateCategory(String id, CategoryDraft draft) =>
-      guardApiCall(() => _api.updateCategory(id, draft));
+  Future<AdminCategory> updateCategory(
+    AdminCategory category,
+    CategoryDraft draft,
+  ) => guardApiCall(() => _api.updateCategory(category, draft));
 
   @override
   Future<AdminCategory> archiveCategory(String id) =>
@@ -44,8 +46,10 @@ class AdminCatalogRepositoryImpl implements AdminCatalogRepository {
       guardApiCall(() => _api.createProduct(draft));
 
   @override
-  Future<AdminProduct> updateProduct(String id, ProductDraft draft) =>
-      guardApiCall(() => _api.updateProduct(id, draft));
+  Future<AdminProduct> updateProduct(
+    AdminProduct product,
+    ProductDraft draft,
+  ) => guardApiCall(() => _api.updateProduct(product, draft));
 
   @override
   Future<AdminProduct> archiveProduct(String id) =>

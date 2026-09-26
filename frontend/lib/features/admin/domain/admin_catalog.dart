@@ -97,6 +97,18 @@ final class CategoryDraft {
     required this.isActive,
   });
 
+  /// The draft of [category] nobody has edited: what its form started from.
+  factory CategoryDraft.fromCategory(AdminCategory category) => CategoryDraft(
+    nameUz: category.nameUz,
+    nameRu: category.nameRu,
+    descriptionUz: category.descriptionUz,
+    descriptionRu: category.descriptionRu,
+    sortOrder: category.sortOrder,
+    isActive: category.state == CatalogEntryState.archived
+        ? null
+        : category.isActive,
+  );
+
   final String nameUz;
   final String nameRu;
   final String? descriptionUz;
@@ -106,6 +118,22 @@ final class CategoryDraft {
   /// `null` leaves the flag as it is: an archived entry is restored by its
   /// own action, and `is_active: true` on it would be a `409`.
   final bool? isActive;
+
+  List<Object?> get _values => <Object?>[
+    nameUz,
+    nameRu,
+    descriptionUz,
+    descriptionRu,
+    sortOrder,
+    isActive,
+  ];
+
+  @override
+  bool operator ==(Object other) =>
+      other is CategoryDraft && _sameValues(_values, other._values);
+
+  @override
+  int get hashCode => Object.hashAll(_values);
 }
 
 /// A product as its form submits it.
@@ -123,6 +151,22 @@ final class ProductDraft {
     required this.isActive,
   });
 
+  /// The draft of [product] nobody has edited: what its form started from.
+  factory ProductDraft.fromProduct(AdminProduct product) => ProductDraft(
+    categoryId: product.categoryId,
+    nameUz: product.nameUz,
+    nameRu: product.nameRu,
+    descriptionUz: product.descriptionUz,
+    descriptionRu: product.descriptionRu,
+    unitCode: product.unitCode,
+    priceMode: product.priceMode,
+    marketPriceUzs: product.marketPriceUzs,
+    sortOrder: product.sortOrder,
+    isActive: product.state == CatalogEntryState.archived
+        ? null
+        : product.isActive,
+  );
+
   final String categoryId;
   final String nameUz;
   final String nameRu;
@@ -135,6 +179,35 @@ final class ProductDraft {
 
   /// `null` leaves the flag as it is, as for [CategoryDraft.isActive].
   final bool? isActive;
+
+  List<Object?> get _values => <Object?>[
+    categoryId,
+    nameUz,
+    nameRu,
+    descriptionUz,
+    descriptionRu,
+    unitCode,
+    priceMode,
+    marketPriceUzs,
+    sortOrder,
+    isActive,
+  ];
+
+  @override
+  bool operator ==(Object other) =>
+      other is ProductDraft && _sameValues(_values, other._values);
+
+  @override
+  int get hashCode => Object.hashAll(_values);
+}
+
+bool _sameValues(List<Object?> a, List<Object?> b) {
+  for (int i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /// What the Admin asks of the category list.
@@ -167,6 +240,10 @@ final class ProductQuery {
     this.categoryId,
     this.search = '',
   });
+
+  /// The longest search the server takes, in code points
+  /// (`CatalogSearch::MAX_TERM_LENGTH`).
+  static const int searchMaxLength = 100;
 
   final int page;
   final bool includeArchived;

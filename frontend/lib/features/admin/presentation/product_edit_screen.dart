@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/catalog/catalog_values.dart';
+import '../../../core/errors/report_unexpected_error.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
@@ -56,9 +58,7 @@ class ProductEditScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   _ProductForm(
-                    // A saved product replaces the form with what the server
-                    // stored.
-                    key: ValueKey<DateTime>(product.updatedAt),
+                    key: ValueKey<String>(product.id),
                     product: product,
                     categories: value,
                   ),
@@ -120,38 +120,80 @@ class _ProductForm extends ConsumerStatefulWidget {
 
 class _ProductFormState extends ConsumerState<_ProductForm> {
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
-  late final TextEditingController _nameUz;
-  late final TextEditingController _nameRu;
-  late final TextEditingController _descriptionUz;
-  late final TextEditingController _descriptionRu;
-  late final TextEditingController _marketPrice;
-  late final TextEditingController _sortOrder;
+  final TextEditingController _nameUz = TextEditingController();
+  final TextEditingController _nameRu = TextEditingController();
+  final TextEditingController _descriptionUz = TextEditingController();
+  final TextEditingController _descriptionRu = TextEditingController();
+  final TextEditingController _marketPrice = TextEditingController();
+  final TextEditingController _sortOrder = TextEditingController();
   String? _categoryId;
-  late UnitCode _unit;
-  late PriceMode _priceMode;
-  late bool _active;
+  UnitCode _unit = UnitCode.kg;
+  PriceMode _priceMode = PriceMode.estimate;
+  bool _active = true;
   Set<String> _rejected = <String>{};
-  bool _submitted = false;
+
+  /// The product the fields were last filled from. An edit is compared with
+  /// it, so a save sends only what the Admin changed (`DL-28` (9)).
+  AdminProduct? _base;
+
+  /// What the last fill put in the fields, to tell unsaved edits apart.
+  List<Object?> _filled = const <Object?>[];
+
+  /// Counts the fills: the dropdowns keep their own value, so they start
+  /// over with each fill.
+  int _fills = 0;
 
   bool get _archived => widget.product?.state == CatalogEntryState.archived;
 
   @override
   void initState() {
     super.initState();
-    final AdminProduct? p = widget.product;
-    _nameUz = TextEditingController(text: p?.nameUz ?? '');
-    _nameRu = TextEditingController(text: p?.nameRu ?? '');
-    _descriptionUz = TextEditingController(text: p?.descriptionUz ?? '');
-    _descriptionRu = TextEditingController(text: p?.descriptionRu ?? '');
-    _marketPrice = TextEditingController(
-      text: p == null ? '' : MoneyFormat.grouped(p.marketPriceUzs),
-    );
-    _sortOrder = TextEditingController(text: '${p?.sortOrder ?? 0}');
+    _fill(widget.product);
+  }
+
+  @override
+  void didUpdateWidget(_ProductForm old) {
+    super.didUpdateWidget(old);
+    // A reload — after a save, an image change or a conflict — brings the
+    // product as the server has it now. The form follows it unless the
+    // Admin has unsaved edits, which stay (`DL-28` (9)).
+    final AdminProduct? product = widget.product;
+    if (product != null &&
+        product != old.product &&
+        listEquals(_fieldValues(), _filled)) {
+      _fill(product);
+    }
+  }
+
+  void _fill(AdminProduct? p) {
+    _base = p;
+    _nameUz.text = p?.nameUz ?? '';
+    _nameRu.text = p?.nameRu ?? '';
+    _descriptionUz.text = p?.descriptionUz ?? '';
+    _descriptionRu.text = p?.descriptionRu ?? '';
+    _marketPrice.text = p == null ? '' : MoneyFormat.grouped(p.marketPriceUzs);
+    _sortOrder.text = '${p?.sortOrder ?? 0}';
     _categoryId = p?.categoryId;
     _unit = p?.unitCode ?? UnitCode.kg;
     _priceMode = p?.priceMode ?? PriceMode.estimate;
     _active = p?.isActive ?? true;
+    _rejected = <String>{};
+    _filled = _fieldValues();
+    _fills++;
   }
+
+  List<Object?> _fieldValues() => <Object?>[
+    _nameUz.text,
+    _nameRu.text,
+    _descriptionUz.text,
+    _descriptionRu.text,
+    _marketPrice.text,
+    _sortOrder.text,
+    _categoryId,
+    _unit,
+    _priceMode,
+    _active,
+  ];
 
   @override
   void dispose() {
@@ -179,17 +221,13 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     if (!(_form.currentState?.validate() ?? false)) {
       return;
     }
-    setState(() => _submitted = true);
 
-    final GoRouter router = GoRouter.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final String savedText = AppLocalizations.of(context).productSaved;
-    final bool creating = widget.product == null;
-
+    final AdminProduct? base = _base;
     final AdminProduct? saved = await ref
-        .read(catalogChangeControllerProvider.notifier)
-        .saveProduct(
-          widget.product?.id,
+        .read(productFormControllerProvider.notifier)
+        .save(
+          base,
           ProductDraft(
             categoryId: _categoryId!,
             nameUz: _nameUz.text.trim(),
@@ -206,18 +244,29 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
           ),
         );
 
-    if (saved != null) {
-      messenger.showSnackBar(SnackBar(content: Text(savedText)));
-      if (creating) {
-        router.go(AdminPaths.product(saved.id));
-      }
+    // The Admin may have left the page while the save ran; what they went
+    // to stays on screen.
+    if (!mounted) {
       return;
     }
-    if (mounted) {
+    if (saved == null) {
       _rejected = rejectedFields(
-        ref.read(catalogChangeControllerProvider).failure,
+        ref.read(productFormControllerProvider).failure,
       );
       _form.currentState?.validate();
+      return;
+    }
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(savedText)));
+    if (base == null) {
+      // The new product's page takes the empty form's place, in the
+      // browser's history too.
+      Router.neglect(
+        context,
+        () => GoRouter.of(context).go(AdminPaths.product(saved.id)),
+      );
+    } else {
+      setState(() => _fill(saved));
     }
   }
 
@@ -227,7 +276,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     final AppLanguage language =
         AppLanguage.tryParse(Localizations.localeOf(context).languageCode) ??
         AppLanguage.uz;
-    final MutationState change = ref.watch(catalogChangeControllerProvider);
+    final MutationState change = ref.watch(productFormControllerProvider);
     final AdminProduct? product = widget.product;
 
     String? rejected(String apiKey) =>
@@ -269,12 +318,14 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
       key: _form,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(
+        key: ValueKey<int>(_fills),
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: DropdownButtonFormField<String>(
               key: const ValueKey<String>('field-category_id'),
+              isExpanded: true,
               initialValue: _categoryId,
               decoration: InputDecoration(
                 labelText: l10n.productCategory,
@@ -284,7 +335,10 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
                 for (final AdminCategory category in _choices)
                   DropdownMenuItem<String>(
                     value: category.id,
-                    child: Text(nameOf(category)),
+                    child: Text(
+                      nameOf(category),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
               ],
               onChanged: change.isBusy
@@ -341,6 +395,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
               padding: const EdgeInsets.only(bottom: 12),
               child: DropdownButtonFormField<UnitCode>(
                 key: const ValueKey<String>('field-unit_code'),
+                isExpanded: true,
                 initialValue: _unit,
                 decoration: InputDecoration(
                   labelText: l10n.productUnit,
@@ -417,7 +472,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
               child: Text(l10n.saveButton),
             ),
           ),
-          FailureMessage(_submitted ? change.failure : null),
+          FailureMessage(change.failure),
         ],
       ),
     );
@@ -438,24 +493,34 @@ class _ProductImageCard extends ConsumerStatefulWidget {
 class _ProductImageCardState extends ConsumerState<_ProductImageCard> {
   PickedImage? _picked;
   String? _problem;
-  bool _acted = false;
 
   Future<void> _choose() async {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final PickedImage? image = await ref
-        .read(productImagePickerProvider)
-        .pick();
+    final PickedImage? image;
+    try {
+      image = await ref.read(productImagePickerProvider).pick();
+    } on Object catch (error, stackTrace) {
+      // A file moved or deleted after it was chosen cannot be read.
+      reportUnexpectedError(error, stackTrace, 'while reading a picked image');
+      if (mounted) {
+        setState(() {
+          _picked = null;
+          _problem = l10n.productImageUnreadable;
+        });
+      }
+      return;
+    }
     if (!mounted || image == null) {
       return;
     }
+    final String? problem = image.isTooLarge
+        ? l10n.productImageTooLarge
+        : image.looksLikeAcceptedImage
+        ? null
+        : l10n.productImageWrongType;
     setState(() {
-      _acted = false;
-      _problem = image.isTooLarge
-          ? l10n.productImageTooLarge
-          : image.looksLikeAcceptedImage
-          ? null
-          : l10n.productImageWrongType;
-      _picked = _problem == null ? image : null;
+      _problem = problem;
+      _picked = problem == null ? image : null;
     });
   }
 
@@ -464,10 +529,9 @@ class _ProductImageCardState extends ConsumerState<_ProductImageCard> {
     if (image == null) {
       return;
     }
-    setState(() => _acted = true);
     final AdminProduct? updated = await ref
-        .read(catalogChangeControllerProvider.notifier)
-        .uploadImage(widget.product.id, image);
+        .read(productImageControllerProvider.notifier)
+        .upload(widget.product.id, image);
     if (mounted && updated != null) {
       setState(() => _picked = null);
     }
@@ -488,7 +552,7 @@ class _ProductImageCardState extends ConsumerState<_ProductImageCard> {
               FilledButton(
                 key: const ValueKey<String>('confirm-remove-image'),
                 onPressed: () => Navigator.of(context).pop(true),
-                child: Text(l10n.confirmButton),
+                child: Text(l10n.productRemoveImage),
               ),
             ],
           ),
@@ -497,16 +561,15 @@ class _ProductImageCardState extends ConsumerState<_ProductImageCard> {
     if (!confirmed || !mounted) {
       return;
     }
-    setState(() => _acted = true);
     await ref
-        .read(catalogChangeControllerProvider.notifier)
-        .removeImage(widget.product.id);
+        .read(productImageControllerProvider.notifier)
+        .remove(widget.product.id);
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final MutationState change = ref.watch(catalogChangeControllerProvider);
+    final MutationState change = ref.watch(productImageControllerProvider);
     final PickedImage? picked = _picked;
 
     return Card(
@@ -586,7 +649,7 @@ class _ProductImageCardState extends ConsumerState<_ProductImageCard> {
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
-            FailureMessage(_acted ? change.failure : null),
+            FailureMessage(change.failure),
           ],
         ),
       ),

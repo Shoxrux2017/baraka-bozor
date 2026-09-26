@@ -154,7 +154,7 @@
   "catalogEdit": "Изменить",
   "catalogArchive": "В архив",
   "catalogRestore": "Вернуть из архива",
-  "catalogArchivedNote": "Записи в архиве не видны клиентам. Вернуть её можно действием в списке",
+  "catalogArchivedNote": "Запись в архиве не видна клиентам. Вернуть её можно действием в списке",
   "catalogEmpty": "Ничего не найдено",
   "catalogPage": "Страница {page} из {last}",
   "@catalogPage": {
@@ -199,18 +199,18 @@
   "productImageRules": "JPEG, PNG или WebP, не больше 5 МБ",
   "productImageTooLarge": "Фото больше 5 МБ",
   "productImageWrongType": "Только JPEG, PNG или WebP",
+  "productImageUnreadable": "Не удалось прочитать файл. Выберите другой",
   "productImageAfterSave": "Фото можно добавить после сохранения товара",
-  "confirmButton": "Да",
   "priceModeFixed": "Точная цена",
   "priceModeEstimate": "Ориентировочная цена",
   "unitKg": "кг",
-  "unitGram": "грамм",
+  "unitGram": "г",
   "unitPiece": "шт.",
-  "unitLiter": "литр",
-  "unitPackage": "упаковка",
-  "unitBox": "коробка",
-  "unitBundle": "пучок",
-  "unitMeter": "метр",
+  "unitLiter": "л",
+  "unitPackage": "уп.",
+  "unitBox": "кор.",
+  "unitBundle": "пуч.",
+  "unitMeter": "м",
   "fieldTooLong": "Не более {max} символов",
   "@fieldTooLong": {
     "placeholders": {
@@ -221,6 +221,6 @@
   },
   "fieldSortOrder": "Целое число от -100 000 до 100 000",
   "fieldMarketPrice": "Целое число от 1 до 1 000 000 000",
-  "errorBusinessConflict": "Состояние изменилось. Обновите данные и попробуйте снова",
+  "errorBusinessConflict": "Данные уже изменились. Проверьте текущее состояние и попробуйте снова",
   "errorPayloadTooLarge": "Файл слишком большой"
 }

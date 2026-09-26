@@ -23,7 +23,7 @@ class CategoriesScreen extends ConsumerWidget {
     final AsyncValue<Paged<AdminCategory>> page = ref.watch(
       categoryPageProvider,
     );
-    final MutationState change = ref.watch(catalogChangeControllerProvider);
+    final MutationState actions = ref.watch(categoryListActionsProvider);
 
     return ListView(
       padding: const EdgeInsets.all(24),
@@ -49,14 +49,12 @@ class CategoriesScreen extends ConsumerWidget {
               key: const ValueKey<String>('new-category'),
               icon: const Icon(Icons.add),
               label: Text(l10n.categoryNew),
-              onPressed: change.isBusy
-                  ? null
-                  : () => showCategoryForm(context, null),
+              onPressed: () => showCategoryForm(context, null),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        FailureMessage(change.failure),
+        FailureMessage(actions.failure),
         page.when(
           skipLoadingOnReload: false,
           data: (Paged<AdminCategory> page) => Column(
@@ -68,7 +66,7 @@ class CategoriesScreen extends ConsumerWidget {
                   child: Text(l10n.catalogEmpty),
                 ),
               for (final AdminCategory category in page.items)
-                _CategoryRow(category: category, busy: change.isBusy),
+                _CategoryRow(category: category, busy: actions.isBusy),
               PaginationBar(
                 page: page,
                 onPage: ref.read(categoryQueryProvider.notifier).goToPage,
@@ -98,8 +96,8 @@ class _CategoryRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final CatalogChangeController change = ref.read(
-      catalogChangeControllerProvider.notifier,
+    final CategoryListActions actions = ref.read(
+      categoryListActionsProvider.notifier,
     );
     final bool archived = category.state == CatalogEntryState.archived;
 
@@ -136,8 +134,8 @@ class _CategoryRow extends ConsumerWidget {
               onPressed: busy
                   ? null
                   : () => archived
-                        ? change.restoreCategory(category.id)
-                        : change.archiveCategory(category.id),
+                        ? actions.restore(category.id)
+                        : actions.archive(category.id),
             ),
           ],
         ),
@@ -147,11 +145,25 @@ class _CategoryRow extends ConsumerWidget {
 }
 
 /// Opens the category form: empty for a new category, filled for [category].
-Future<void> showCategoryForm(BuildContext context, AdminCategory? category) =>
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext context) => _CategoryDialog(category: category),
+///
+/// The dialog stays open while its save runs — neither a tap outside nor
+/// Escape closes it then — and closes itself with what the server stored,
+/// which the caller confirms once it is still on screen.
+Future<void> showCategoryForm(
+  BuildContext context,
+  AdminCategory? category,
+) async {
+  final AdminCategory? saved = await showDialog<AdminCategory>(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) => _CategoryDialog(category: category),
+  );
+  if (saved != null && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).categorySaved)),
     );
+  }
+}
 
 class _CategoryDialog extends ConsumerStatefulWidget {
   const _CategoryDialog({required this.category});
@@ -171,10 +183,6 @@ class _CategoryDialogState extends ConsumerState<_CategoryDialog> {
   late final TextEditingController _sortOrder;
   late bool _active;
   Set<String> _rejected = <String>{};
-
-  /// A failure is this form's to show only once the form was sent: an
-  /// earlier refusal of an action in the list is not about it.
-  bool _submitted = false;
 
   bool get _archived => widget.category?.state == CatalogEntryState.archived;
 
@@ -205,43 +213,37 @@ class _CategoryDialogState extends ConsumerState<_CategoryDialog> {
     if (!(_form.currentState?.validate() ?? false)) {
       return;
     }
-    setState(() => _submitted = true);
 
-    final NavigatorState navigator = Navigator.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final String savedText = AppLocalizations.of(context).categorySaved;
-
+    final AdminCategory? category = widget.category;
+    final CategoryDraft draft = CategoryDraft(
+      nameUz: _nameUz.text.trim(),
+      nameRu: _nameRu.text.trim(),
+      descriptionUz: CatalogFormRules.optional(_descriptionUz.text),
+      descriptionRu: CatalogFormRules.optional(_descriptionRu.text),
+      sortOrder: CatalogFormRules.sortOrderValue(_sortOrder.text),
+      isActive: _archived ? null : _active,
+    );
     final AdminCategory? saved = await ref
-        .read(catalogChangeControllerProvider.notifier)
-        .saveCategory(
-          widget.category?.id,
-          CategoryDraft(
-            nameUz: _nameUz.text.trim(),
-            nameRu: _nameRu.text.trim(),
-            descriptionUz: CatalogFormRules.optional(_descriptionUz.text),
-            descriptionRu: CatalogFormRules.optional(_descriptionRu.text),
-            sortOrder: CatalogFormRules.sortOrderValue(_sortOrder.text),
-            isActive: _archived ? null : _active,
-          ),
-        );
+        .read(categoryFormControllerProvider.notifier)
+        .save(category, draft);
 
-    if (saved != null) {
-      navigator.pop();
-      messenger.showSnackBar(SnackBar(content: Text(savedText)));
+    if (!mounted) {
       return;
     }
-    if (mounted) {
-      _rejected = rejectedFields(
-        ref.read(catalogChangeControllerProvider).failure,
-      );
-      _form.currentState?.validate();
+    if (saved != null) {
+      Navigator.of(context).pop(saved);
+      return;
     }
+    _rejected = rejectedFields(
+      ref.read(categoryFormControllerProvider).failure,
+    );
+    _form.currentState?.validate();
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final MutationState change = ref.watch(catalogChangeControllerProvider);
+    final MutationState change = ref.watch(categoryFormControllerProvider);
 
     Widget field(
       String apiKey,
@@ -272,94 +274,97 @@ class _CategoryDialogState extends ConsumerState<_CategoryDialog> {
       );
     }
 
-    return AlertDialog(
-      title: Text(
-        widget.category == null ? l10n.categoryNew : l10n.categoryEditTitle,
-      ),
-      content: SizedBox(
-        width: 720,
-        child: Form(
-          key: _form,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                SideBySide(
-                  first: field(
-                    'name_uz',
-                    _nameUz,
-                    l10n.catalogNameUz,
-                    (String text) => CatalogFormRules.name(
-                      l10n,
-                      text,
-                      CatalogFormRules.categoryNameMax,
+    return PopScope(
+      canPop: !change.isBusy,
+      child: AlertDialog(
+        title: Text(
+          widget.category == null ? l10n.categoryNew : l10n.categoryEditTitle,
+        ),
+        content: SizedBox(
+          width: 720,
+          child: Form(
+            key: _form,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  SideBySide(
+                    first: field(
+                      'name_uz',
+                      _nameUz,
+                      l10n.catalogNameUz,
+                      (String text) => CatalogFormRules.name(
+                        l10n,
+                        text,
+                        CatalogFormRules.categoryNameMax,
+                      ),
+                    ),
+                    second: field(
+                      'name_ru',
+                      _nameRu,
+                      l10n.catalogNameRu,
+                      (String text) => CatalogFormRules.name(
+                        l10n,
+                        text,
+                        CatalogFormRules.categoryNameMax,
+                      ),
                     ),
                   ),
-                  second: field(
-                    'name_ru',
-                    _nameRu,
-                    l10n.catalogNameRu,
-                    (String text) => CatalogFormRules.name(
-                      l10n,
-                      text,
-                      CatalogFormRules.categoryNameMax,
+                  SideBySide(
+                    first: field(
+                      'description_uz',
+                      _descriptionUz,
+                      l10n.catalogDescriptionUz,
+                      (String text) => CatalogFormRules.description(l10n, text),
+                      maxLines: 4,
+                    ),
+                    second: field(
+                      'description_ru',
+                      _descriptionRu,
+                      l10n.catalogDescriptionRu,
+                      (String text) => CatalogFormRules.description(l10n, text),
+                      maxLines: 4,
                     ),
                   ),
-                ),
-                SideBySide(
-                  first: field(
-                    'description_uz',
-                    _descriptionUz,
-                    l10n.catalogDescriptionUz,
-                    (String text) => CatalogFormRules.description(l10n, text),
-                    maxLines: 4,
+                  field(
+                    'sort_order',
+                    _sortOrder,
+                    l10n.catalogSortOrder,
+                    (String text) => CatalogFormRules.sortOrder(l10n, text),
+                    helper: l10n.catalogSortOrderHint,
                   ),
-                  second: field(
-                    'description_ru',
-                    _descriptionRu,
-                    l10n.catalogDescriptionRu,
-                    (String text) => CatalogFormRules.description(l10n, text),
-                    maxLines: 4,
-                  ),
-                ),
-                field(
-                  'sort_order',
-                  _sortOrder,
-                  l10n.catalogSortOrder,
-                  (String text) => CatalogFormRules.sortOrder(l10n, text),
-                  helper: l10n.catalogSortOrderHint,
-                ),
-                if (_archived)
-                  Text(l10n.catalogArchivedNote)
-                else
-                  SwitchListTile(
-                    key: const ValueKey<String>('field-is_active'),
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(l10n.catalogShownToCustomers),
-                    value: _active,
-                    onChanged: change.isBusy
-                        ? null
-                        : (bool value) => setState(() => _active = value),
-                  ),
-                FailureMessage(_submitted ? change.failure : null),
-              ],
+                  if (_archived)
+                    Text(l10n.catalogArchivedNote)
+                  else
+                    SwitchListTile(
+                      key: const ValueKey<String>('field-is_active'),
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(l10n.catalogShownToCustomers),
+                      value: _active,
+                      onChanged: change.isBusy
+                          ? null
+                          : (bool value) => setState(() => _active = value),
+                    ),
+                  FailureMessage(change.failure),
+                ],
+              ),
             ),
           ),
         ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: change.isBusy ? null : () => Navigator.of(context).pop(),
+            child: Text(l10n.cancelButton),
+          ),
+          FilledButton(
+            key: const ValueKey<String>('category-save'),
+            onPressed: change.isBusy ? null : _submit,
+            child: Text(l10n.saveButton),
+          ),
+        ],
       ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: change.isBusy ? null : () => Navigator.of(context).pop(),
-          child: Text(l10n.cancelButton),
-        ),
-        FilledButton(
-          key: const ValueKey<String>('category-save'),
-          onPressed: change.isBusy ? null : _submit,
-          child: Text(l10n.saveButton),
-        ),
-      ],
     );
   }
 }
