@@ -54,7 +54,7 @@ final class ApiExceptionRenderer
      */
     public static function render(Throwable $e, Request $request): ?JsonResponse
     {
-        if (! $request->is('api/*')) {
+        if (! self::isApiRequest($request)) {
             return null;
         }
 
@@ -99,6 +99,17 @@ final class ApiExceptionRenderer
      * header, which methods a path accepts. A server error keeps its status and
      * carries `server_error`.
      */
+    /**
+     * Whether the request is for the API, decided on the raw path. The
+     * framework's `is('api/*')` matches the decoded path with a UTF-8 pattern,
+     * which fails on a path that is not UTF-8 — exactly the request whose
+     * `400` must still be answered as an API error (`DL-24`).
+     */
+    public static function isApiRequest(Request $request): bool
+    {
+        return str_starts_with($request->getPathInfo(), '/api/');
+    }
+
     private static function normalizeStatus(int $status): int
     {
         if (isset(self::CODE_BY_STATUS[$status])) {

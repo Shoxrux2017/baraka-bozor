@@ -143,7 +143,8 @@ final class BusinessSettingsApiTest extends TestCase
             'HTTP_ACCEPT' => 'application/json',
             'HTTP_AUTHORIZATION' => 'Bearer '.$token,
         ], '{"markup_percent": "12.5"')
-            ->assertStatus(422);
+            ->assertStatus(400)
+            ->assertJsonPath('code', 'malformed_request');
 
         $this->assertNull(BusinessSettings::current()->updated_by_user_id);
     }

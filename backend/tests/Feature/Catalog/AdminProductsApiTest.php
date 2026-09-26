@@ -276,7 +276,7 @@ final class AdminProductsApiTest extends TestCase
             'CONTENT_TYPE' => 'application/json',
             'HTTP_ACCEPT' => 'application/json',
             'HTTP_AUTHORIZATION' => 'Bearer '.$token,
-        ], '{"market_price_uzs": 6000,')->assertStatus(422);
+        ], '{"market_price_uzs": 6000,')->assertStatus(400)->assertJsonPath('code', 'malformed_request');
 
         $this->assertSame(5_000, $product->fresh()?->market_price_uzs);
     }
