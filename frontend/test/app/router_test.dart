@@ -1,3 +1,4 @@
+import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/app/router.dart';
 import 'package:baraka_bozor/core/routing/feature_routes.dart';
 import 'package:baraka_bozor/main.dart';
@@ -5,6 +6,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../support/fake_auth_repository.dart';
+import '../support/in_memory_stores.dart';
+
+/// The app without the platform plugins: in-memory stores and a fake
+/// repository, so the widget tests never touch a method channel.
+Widget appUnderTest() {
+  return ProviderScope(
+    overrides: [
+      tokenStoreProvider.overrideWithValue(InMemoryTokenStore()),
+      preferenceStoreProvider.overrideWithValue(InMemoryPreferenceStore()),
+      deviceLocaleProvider.overrideWithValue(const Locale('uz')),
+      authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+    ],
+    child: const BarakaBozorApp(),
+  );
+}
 
 void main() {
   setUpAll(TestWidgetsFlutterBinding.ensureInitialized);
@@ -87,17 +105,18 @@ void main() {
 
   group('BarakaBozorApp', () {
     testWidgets('boots into a neutral screen', (WidgetTester tester) async {
-      await tester.pumpWidget(const ProviderScope(child: BarakaBozorApp()));
+      await tester.pumpWidget(appUnderTest());
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('renders no user-facing text', (WidgetTester tester) async {
-      // docs/07-architecture.md section 27 forbids English UI, and how a
-      // language is chosen is still open as S-27. The scaffold therefore ships
-      // no string at all rather than one to delete later.
-      await tester.pumpWidget(const ProviderScope(child: BarakaBozorApp()));
+    testWidgets('renders no user-facing text on the bootstrap screen', (
+      WidgetTester tester,
+    ) async {
+      // The bootstrap screen shows nothing until the session is known; the
+      // auth screens of the next task carry the localized strings.
+      await tester.pumpWidget(appUnderTest());
       await tester.pump();
 
       expect(find.byType(Text), findsNothing);

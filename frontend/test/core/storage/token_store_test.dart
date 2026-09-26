@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   // The package's own in-memory platform, so the real SecureTokenStore is
   // exercised without a plugin method channel. The map is held by reference,
-  // which is what lets these tests assert the key the token lands under.
+  // which is what lets these tests assert the keys the tokens land under.
   late Map<String, String> backing;
   late TokenStore store;
 
@@ -16,48 +16,55 @@ void main() {
   });
 
   group('SecureTokenStore', () {
-    test('reads null when no token has been stored', () async {
-      expect(await store.read(), isNull);
+    test('reads null from an empty slot', () async {
+      expect(await store.read(SessionSlot.staff), isNull);
+      expect(await store.read(SessionSlot.customer), isNull);
     });
 
-    test('reads back the token it wrote', () async {
-      await store.write('token-abc');
+    test('keeps the two sessions apart', () async {
+      await store.write(SessionSlot.staff, 'staff-token');
+      await store.write(SessionSlot.customer, 'customer-token');
 
-      expect(await store.read(), 'token-abc');
+      expect(await store.read(SessionSlot.staff), 'staff-token');
+      expect(await store.read(SessionSlot.customer), 'customer-token');
     });
 
-    test(
-      'replaces the previous token instead of accumulating one per account',
-      () async {
-        await store.write('token-first');
-        await store.write('token-second');
+    test('replaces the token in a slot instead of accumulating', () async {
+      await store.write(SessionSlot.staff, 'first');
+      await store.write(SessionSlot.staff, 'second');
 
-        expect(await store.read(), 'token-second');
-        expect(backing.values, <String>['token-second']);
-      },
-    );
-
-    test('clear removes the token', () async {
-      await store.write('token-abc');
-
-      await store.clear();
-
-      expect(await store.read(), isNull);
-      expect(backing, isEmpty);
+      expect(await store.read(SessionSlot.staff), 'second');
+      expect(backing.values, <String>['second']);
     });
 
-    test('clear on an empty store is not an error', () async {
-      await store.clear();
+    test('clearing one slot leaves the other alone', () async {
+      await store.write(SessionSlot.staff, 'staff-token');
+      await store.write(SessionSlot.customer, 'customer-token');
 
-      expect(await store.read(), isNull);
+      await store.clear(SessionSlot.staff);
+
+      expect(await store.read(SessionSlot.staff), isNull);
+      expect(await store.read(SessionSlot.customer), 'customer-token');
     });
 
-    test('stores the token under one stable key', () async {
-      await store.write('token-abc');
+    test('clearing an empty slot is not an error', () async {
+      await store.clear(SessionSlot.customer);
 
-      // The key is part of the on-device contract: changing it signs every
-      // installed client out silently, so it is asserted rather than assumed.
-      expect(backing.keys, <String>['bb_auth_token']);
+      expect(await store.read(SessionSlot.customer), isNull);
+    });
+
+    test('stores each session under its stable key', () async {
+      await store.write(SessionSlot.staff, 'a');
+      await store.write(SessionSlot.customer, 'b');
+
+      // The keys are part of the on-device contract: changing one signs
+      // every installed client out of that session, so they are asserted.
+      expect(
+        backing.keys,
+        containsAll(<String>['bb_session_staff', 'bb_session_customer']),
+      );
+      expect(backing['bb_session_staff'], 'a');
+      expect(backing['bb_session_customer'], 'b');
     });
   });
 }
