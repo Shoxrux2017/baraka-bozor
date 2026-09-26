@@ -25,7 +25,7 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 | W0-3 | Customer login codes: `channel` column, `CodeDeliveryGateway` with the fake and the test numbers, request and verify endpoints | Merged |
 | W0-4 | Authorization foundation: role and scope middleware, scope-safe not-found helpers, Operator-as-restricted-Admin capability check, probe tests | Merged |
 | W0-5 | Client session foundation: two token slots, auth repository and DTOs, error-code mapping, language selection with device default | Merged |
-| W0-6 | Client auth screens and shells: code request and verify, staff login and password change, six role shells, wrong-surface screen, web build of the panel shell | Planned |
+| W0-6 | Client auth screens and shells: code request and verify, staff login and password change, six role shells, wrong-surface screen, web build of the panel shell | In review |
 | W0-7 | Wave closure: full suites, Android and web builds, real-stack login walk-through for every role, Owner checklist and report | Planned |
 
 ## Task notes
@@ -40,7 +40,7 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 
 **W0-5.** `TokenStore` has two slots (`staff`, `customer`) under `bb_session_staff` and `bb_session_customer`; `AuthInterceptor` attaches the token of the request's slot (the active mode by default, or what `RequestSlot.of()` names) and on `401 authentication_required` or `401 account_blocked` drops that slot alone through `SessionController.dropSession`. `ApiFailure` is the sealed failure the application layer handles: `ApiRefusal` with the envelope's `code`, `details` and `Retry-After`, `NetworkFailure`, `MalformedResponseFailure`, `CancelledFailure`. `SessionController` (`AsyncNotifier`) bootstraps both slots against `/auth/me`, keeps tokens when the server is unreachable (`SessionUnreachable`, with `retry`), opens the staff mode first when both exist, and owns login, mode switch, logout, password change and language reporting. Strings: `flutter gen-l10n` from `lib/core/localization/l10n/app_uz.arb` and `app_ru.arb` into the committed `generated/` directory (`flutter_localizations` and `intl` added for that); `LanguageController` defaults to the device language, persists the choice in `PreferenceStore`, and reports it for every confirmed session. Every auth and common error code of `docs/09` Sections 51 and 52 that a screen can meet has a text in both languages, and `failureText()` maps a failure to it with a status fallback. The review of this task fixed the slot being resolved at error time rather than send time, added the token-identity check before a session is dropped, discarded stale completions, and made an unconfirmable bootstrap keep every token. Mechanics in `DL-13` and `DL-14`.
 
-**W0-6.** Screens per `04` Sections 2 and 3; role shells are placeholders with navigation only; the wrong-surface screen per `02` Section 10; `flutter build web` of the panel shell runs in CI-equivalent local verification.
+**W0-6.** Screens per `04` Sections 2 and 3 (`features/auth/presentation/`): phone, code, staff login, password change, plus the Customer-mode entry, the unreachable-server retry and the wrong-surface screen per `02` Section 10. Six placeholder shells under `features/shells/` with the language switch, logout of the active mode, the active-mode chip while two sessions exist, and the Customer-mode switch for a Shopper or Courier. The session guard (`core/routing/session_redirect.dart`) and its rules in `DL-15`. `web/` added, `windows/` removed, `flutter build web --release` passes locally and in the new frontend CI job (`.github/workflows/frontend.yml`: format, analyze, tests, localization regeneration check, web build). `frontend/README.md` replaced.
 
 **W0-7.** Also close the risk items below that are cheap.
 
@@ -53,12 +53,13 @@ A runnable, verifiable stack and six secure role entries: every role signs in on
 | Inert Sanctum stateful-domain configuration | Closed in W0-2: `stateful` is empty, bearer tokens everywhere |
 | CI runs bare `phpstan analyse`, a dead worker names no file | Closed in W0-1: a single-process `--debug` step runs only after the normal analysis failed |
 | A recreated `app` container ran the stale image without `docker/php.ini`; PHPStan died at 128M locally | Closed: `up -d --build`. Rebuild after any Dockerfile or php.ini change, as `docker/README.md` says |
-| `frontend/README.md` is `flutter create` boilerplate | Open, replace in W0-6 |
+| `frontend/README.md` is `flutter create` boilerplate | Closed in W0-6 |
 | `personal_access_tokens` instants are `timestamp` not `timestamptz` | Closed in W0-2 by a forward `ALTER` migration |
 | Feature tests: the auth guards cache the first request's user for the whole test, so a second request with another token was served as the first user | Closed in W0-2: `tests/TestCase.php` forgets the guards before every request and re-applies an `actingAs()` user; `Sanctum::actingAs()` is unsupported |
 | Per-IP login limit behind the production proxy: without `TRUSTED_PROXIES` every client is the proxy and twenty wrong attempts lock staff login for everyone | Open until deployment (Wave 4): `config/trustedproxy.php` reads `TRUSTED_PROXIES`; the deployment task sets it to the proxy's address |
 | Worktree `G:/project/bb-flutter` could not be removed (Windows path length); harmless | Open, Owner may delete the folder |
-| `frontend/pubspec.yaml` has `generate: true`, so `flutter test`, `run` and `build` regenerate `lib/core/localization/generated/` from the ARB files; a forgotten regeneration shows up as a dirty tree, never as a stale build | Accepted; the frontend CI job of W0-6 runs `flutter gen-l10n` and fails on a dirty tree |
+| `frontend/pubspec.yaml` has `generate: true`, so `flutter test`, `run` and `build` regenerate `lib/core/localization/generated/` from the ARB files; a forgotten regeneration shows up as a dirty tree, never as a stale build | Closed in W0-6: the frontend CI job runs `flutter gen-l10n` and fails on a dirty tree |
+| The frontend CI job is not yet a required check on `main`; only the Owner can change branch protection | Open, asked in the W0-7 report |
 | The first frame renders in the device language until the stored choice is read; invisible today because the bootstrap screen shows no text | Accepted |
 | Uzbek strings use the ASCII apostrophe (`O'zbekcha`) rather than the orthographic ʻ (U+02BB), as most Uzbek apps do; the Shopper is `Yig'uvchi`, the Courier `Kuryer` | Open for the Owner's word in the W0-7 report; a change is an ARB edit |
 

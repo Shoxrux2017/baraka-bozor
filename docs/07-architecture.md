@@ -222,6 +222,8 @@ Session, target and operation identity guard every async completion; a result th
 
 Areas: `/auth`, `/customer`, `/shopper`, `/courier`, `/operations`, `/admin`, `/manager`. Guards are UX; the backend is the authority.
 
+One session guard decides every navigation from the session state and the surface (`DL-15`): the bootstrap screen until the session is known; signed out, only the login screens; unreachable, only the retry screen; a role on the wrong surface, only the screen naming the right one; the first-login gate, only the password change; otherwise the active role's area. The router re-evaluates the guard whenever the session changes, so a login, a mode switch or a dropped session moves the interface without any screen navigating. The login screens are flat routes with their own way back, never pages stacked over one another.
+
 ## 30. API Style
 
 Versioned JSON REST under `/api/v1`; envelopes, strict request shape, pagination, error codes with an optional `details` object, idempotency headers — all in `09`. The backend performs no locale negotiation; `message` is developer English.

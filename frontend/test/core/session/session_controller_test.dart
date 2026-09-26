@@ -382,9 +382,9 @@ void main() {
         role: UserRole.shopper,
         mustChangePassword: true,
       );
-      repository.holdAnswers = Completer<void>();
       final ProviderContainer c = container();
       await bootstrap(c);
+      repository.holdAnswers = Completer<void>();
 
       final Future<void> change = controller(c).changePassword(
         currentPassword: 'temporary 123',
@@ -450,9 +450,9 @@ void main() {
         role: UserRole.courier,
       );
       repository.identities[SessionSlot.customer] = user(id: 'c');
-      repository.holdAnswers = Completer<void>();
       final ProviderContainer c = container();
       await bootstrap(c);
+      repository.holdAnswers = Completer<void>();
 
       final Future<void> select = c
           .read(languageControllerProvider.notifier)

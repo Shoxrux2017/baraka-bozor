@@ -125,13 +125,13 @@ abstract class AppLocalizations {
   /// No description provided for @phoneHint.
   ///
   /// In uz, this message translates to:
-  /// **'+998 90 123 45 67'**
+  /// **'90 123 45 67'**
   String get phoneHint;
 
   /// No description provided for @phoneInvalid.
   ///
   /// In uz, this message translates to:
-  /// **'Raqamni +998 va 9 ta raqam ko\'rinishida kiriting'**
+  /// **'Raqamning 9 ta raqamini kiriting'**
   String get phoneInvalid;
 
   /// No description provided for @continueButton.
@@ -193,6 +193,30 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Raqamni o\'zgartirish'**
   String get changePhone;
+
+  /// No description provided for @codeSentToPhone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod {phone} raqamiga yuborildi'**
+  String codeSentToPhone(String phone);
+
+  /// No description provided for @customerModeIntro.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz rejimiga kirish uchun o\'z raqamingizga yuborilgan kodni kiriting'**
+  String get customerModeIntro;
+
+  /// No description provided for @cancelButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish'**
+  String get cancelButton;
+
+  /// No description provided for @wrongSurfaceTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu yerdan kirib bo\'lmaydi'**
+  String get wrongSurfaceTitle;
 
   /// No description provided for @staffLoginTitle.
   ///

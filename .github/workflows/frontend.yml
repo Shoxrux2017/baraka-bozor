@@ -1,0 +1,65 @@
+name: Frontend checks
+
+# The client counterpart of backend.yml: the same commands frontend/AGENTS.md
+# section 10 names for a task, on the Flutter version the repository is
+# developed with, plus the web build of the panel. A version other than the
+# pinned one would make a green check here mean something different from a
+# local run, exactly as a differently configured PHP would on the backend.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Analyze, format, tests, web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.5
+          cache: true
+
+      - name: Show the runtime
+        run: flutter --version
+
+      - name: Fetch packages
+        run: flutter pub get
+
+      # The generated localizations are committed. A change to an ARB file
+      # without the regenerated output would leave the tree dirty here and
+      # a build elsewhere silently stale; this step fails on the former.
+      - name: Localizations are regenerated
+        run: |
+          flutter gen-l10n
+          git diff --exit-code -- lib/core/localization/generated
+
+      - name: Format
+        run: dart format --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Tests
+        run: flutter test
+
+      - name: Web build of the panel
+        run: flutter build web --release
