@@ -13,6 +13,7 @@ import '../core/network/api_client.dart';
 import '../core/network/auth_interceptor.dart';
 import '../core/routing/session_redirect.dart';
 import '../core/session/session_controller.dart';
+import '../core/session/session_end_hook.dart';
 import '../core/session/session_state.dart';
 import '../core/storage/preference_store.dart';
 import '../core/storage/token_store.dart';
@@ -81,6 +82,11 @@ sessionControllerProvider =
     AsyncNotifierProvider<SessionController, SessionState>(
       SessionController.new,
     );
+
+/// What must happen before a logout ends a session, while it still works —
+/// the push registrar revoking that session's device (`DL-26` (5)).
+final Provider<SessionEndHooks> sessionEndHooksProvider =
+    Provider<SessionEndHooks>((Ref ref) => SessionEndHooks());
 
 /// The interface language.
 final AsyncNotifierProvider<LanguageController, AppLanguage>

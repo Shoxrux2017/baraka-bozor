@@ -7,6 +7,7 @@ import '../errors/report_unexpected_error.dart';
 import '../localization/app_language.dart';
 import '../network/api_failure.dart';
 import '../storage/token_store.dart';
+import 'session_end_hook.dart';
 import 'session_state.dart';
 
 /// Owns the two sessions of `docs/07-architecture.md` section 8.
@@ -170,9 +171,36 @@ class SessionController extends AsyncNotifier<SessionState> {
     }
   }
 
+  /// The logout running for each slot: a second one joins it rather than
+  /// overtaking its session-end hooks.
+  final Map<SessionSlot, Future<void>> _loggingOut =
+      <SessionSlot, Future<void>>{};
+
   /// Ends one session and leaves the other alone
-  /// (`docs/02-user-roles.md` section 10).
-  Future<void> logout(SessionMode mode) async {
+  /// (`docs/02-user-roles.md` section 10). The session-end hooks run first,
+  /// while the session still works; none of them can stop the logout, and
+  /// a logout already running for the slot is joined, not repeated.
+  Future<void> logout(SessionMode mode) =>
+      _loggingOut[mode.slot] ??= _logout(mode).whenComplete(() {
+        // A block body: `remove` answers the very future being completed,
+        // which `whenComplete` would otherwise wait for.
+        _loggingOut.remove(mode.slot);
+      });
+
+  Future<void> _logout(SessionMode mode) async {
+    final SessionEndHooks hooks = ref.read(sessionEndHooksProvider);
+    for (final SessionEndHook hook in hooks.all) {
+      try {
+        // Past the limit the hook finishes on its own, or not at all; a
+        // timeout the hook throws itself is reported like any failure.
+        await hook
+            .beforeLogout(mode.slot)
+            .timeout(hooks.limit, onTimeout: () {});
+      } catch (error, stackTrace) {
+        reportUnexpectedError(error, stackTrace, 'while ending a session');
+      }
+    }
+
     try {
       await _repository.logout(mode.slot);
     } on ApiFailure {

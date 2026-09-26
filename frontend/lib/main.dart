@@ -6,6 +6,7 @@ import 'app/providers.dart';
 import 'core/localization/app_language.dart';
 import 'core/localization/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
+import 'features/notifications/application/push_registrar.dart';
 
 void main() {
   runApp(const ProviderScope(retry: noAutomaticRetry, child: BarakaBozorApp()));
@@ -23,6 +24,8 @@ class BarakaBozorApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final GoRouter router = ref.watch(routerProvider);
+    // Registers the device for push while any account is signed in.
+    ref.watch(pushRegistrarProvider);
     final AppLanguage? language = ref.watch(languageControllerProvider).value;
 
     return MaterialApp.router(
