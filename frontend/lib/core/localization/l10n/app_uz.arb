@@ -237,6 +237,7 @@
   "staffAllRoles": "Barcha rollar",
   "staffAllStatuses": "Barcha holatlar",
   "staffNoName": "Ism kiritilmagan",
+  "staffYou": "Siz",
   "staffEditName": "Ismni o'zgartirish",
   "staffBlock": "Bloklash",
   "staffActivate": "Blokdan chiqarish",
@@ -275,6 +276,6 @@
   "staffSaved": "Saqlandi",
   "errorSelfBlockNotAllowed": "O'zingizni bloklay olmaysiz",
   "errorLastActiveAdminRequired": "Oxirgi faol administratorni bloklab bo'lmaydi",
-  "errorSelfResetNotAllowed": "O'z parolingizni «Parolni o'zgartirish» orqali almashtiring",
+  "errorSelfResetNotAllowed": "O'z parolingizni bu yerda tiklab bo'lmaydi",
   "errorPhoneAlreadyActive": "Bu raqam boshqa faol xodimga tegishli"
 }

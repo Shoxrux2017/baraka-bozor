@@ -59,11 +59,11 @@ class FakeAdminStaffRepository implements AdminStaffRepository {
         )
         .toList();
     return Paged<StaffMember>(
-      items: matching,
-      page: 1,
+      items: matching.skip((query.page - 1) * 20).take(20).toList(),
+      page: query.page,
       perPage: 20,
       total: matching.length,
-      lastPage: 1,
+      lastPage: matching.isEmpty ? 1 : (matching.length + 19) ~/ 20,
     );
   }
 

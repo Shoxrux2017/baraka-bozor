@@ -87,6 +87,7 @@ void main() {
 
   Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
     await tester.ensureVisible(finder);
+    await tester.pumpAndSettle();
     await tester.tap(finder);
     await tester.pumpAndSettle();
   }
@@ -131,6 +132,12 @@ void main() {
         find.text(l10n(tester).staffTemporaryPasswordWarning),
         findsOneWidget,
       );
+      // While the password shows, the controller that answered it holds
+      // nothing but its state.
+      expect(
+        container(tester).read(newStaffControllerProvider),
+        isA<MutationIdle>(),
+      );
       await tapAndSettle(tester, byKey('copy-password'));
       expect(clipboard, <String>[password]);
       expect(find.text(l10n(tester).staffCopied), findsOneWidget);
@@ -140,12 +147,6 @@ void main() {
       expect(find.text(password), findsNothing);
       expect(find.textContaining('Aziz Rahimov'), findsOneWidget);
       expect(find.text(l10n(tester).staffMustChangePassword), findsOneWidget);
-      // No provider holds it: the create's controller is idle, and the list
-      // holds staff accounts, which have no password field.
-      expect(
-        container(tester).read(newStaffControllerProvider),
-        isA<MutationIdle>(),
-      );
     },
   );
 
@@ -424,7 +425,7 @@ void main() {
     expect(staff.queries, hasLength(asked));
   });
 
-  testWidgets('a phone-wide window with large text fits', (
+  testWidgets('a phone-size window with large text fits every dialog', (
     WidgetTester tester,
   ) async {
     staff.members = <StaffMember>[
@@ -432,13 +433,112 @@ void main() {
     ];
     tester.platformDispatcher.textScaleFactorTestValue = 2;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await open(tester, size: const Size(360, 1600));
+    await open(tester, size: const Size(360, 640));
     expect(byKey('staff-s-1'), findsOneWidget);
 
     await fillNewStaff(tester);
     await tapAndSettle(tester, byKey('staff-save'));
     expect(byKey('temporary-password'), findsOneWidget);
-    await tester.ensureVisible(byKey('password-done'));
+    await tapAndSettle(tester, byKey('password-done'));
+
+    // The new account heads the list now.
+    await tapAndSettle(tester, byKey('reset-s-new-0'));
+    await tapAndSettle(tester, byKey('confirm-action'));
+    expect(byKey('temporary-password'), findsOneWidget);
+    await tapAndSettle(tester, byKey('password-done'));
+
+    await tapAndSettle(tester, byKey('block-s-new-0'));
+    await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+    await tapAndSettle(tester, byKey('rename-s-new-0'));
+    await tapAndSettle(tester, byKey('rename-save'));
+  });
+
+  testWidgets("the Admin's own account can be renamed only", (
+    WidgetTester tester,
+  ) async {
+    staff.members = <StaffMember>[
+      staffMember(),
+      staffMember(id: 'u-1', role: UserRole.admin, fullName: 'Admin'),
+    ];
+    await open(tester);
+
+    expect(byKey('own-u-1'), findsOneWidget);
+    expect(byKey('rename-u-1'), findsOneWidget);
+    expect(byKey('block-u-1'), findsNothing);
+    expect(byKey('reset-u-1'), findsNothing);
+    expect(byKey('own-s-1'), findsNothing);
+    expect(byKey('block-s-1'), findsOneWidget);
+  });
+
+  testWidgets('a block confirmed after the Admin left blocks nothing', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tapAndSettle(tester, byKey('block-s-1'));
+
+    GoRouter.of(tester.element(find.byType(Scaffold).first))
+        .go(AdminPaths.settings);
     await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('confirm-action'));
+
+    expect(staff.actions, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the list pages', (WidgetTester tester) async {
+    staff.members = <StaffMember>[
+      for (int i = 1; i <= 25; i++)
+        staffMember(id: 's-$i', fullName: 'Xodim $i'),
+    ];
+    await open(tester);
+    expect(find.textContaining('Xodim 25'), findsNothing);
+    await tapAndSettle(tester, byKey('next-page'));
+
+    expect(staff.queries.last.page, 2);
+    expect(find.textContaining('Xodim 25'), findsOneWidget);
+    expect(find.textContaining('Xodim 1 '), findsNothing);
+  });
+
+  testWidgets('a name the server refused is marked in the rename dialog', (
+    WidgetTester tester,
+  ) async {
+    staff.changeFailure = const ApiRefusal(
+      ApiError(
+        status: 422,
+        code: 'validation_failed',
+        errors: <String, List<String>>{
+          'full_name': <String>['The full name field is invalid.'],
+        },
+      ),
+    );
+    await open(tester);
+
+    await tapAndSettle(tester, byKey('rename-s-1'));
+    await tester.enterText(byKey('field-full_name'), 'Dilnoza K.');
+    await tapAndSettle(tester, byKey('rename-save'));
+
+    expect(find.text(l10n(tester).fieldRejected), findsOneWidget);
+    expect(byKey('rename-save'), findsOneWidget);
+  });
+
+  testWidgets('signing out while a reset runs shows no password', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tapAndSettle(tester, byKey('reset-s-1'));
+    staff.hold = Completer<void>();
+    await tester.tap(byKey('confirm-action'));
+    await tester.pump();
+
+    await container(tester)
+        .read(sessionControllerProvider.notifier)
+        .logout(SessionMode.staff);
+    await tester.pumpAndSettle();
+    staff.hold!.complete();
+    await tester.pumpAndSettle();
+
+    expect(staff.issued, hasLength(1));
+    expect(find.text(staff.issued.single), findsNothing);
+    expect(byKey('temporary-password'), findsNothing);
   });
 }

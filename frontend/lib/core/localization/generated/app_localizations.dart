@@ -1250,6 +1250,12 @@ abstract class AppLocalizations {
   /// **'Ism kiritilmagan'**
   String get staffNoName;
 
+  /// No description provided for @staffYou.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz'**
+  String get staffYou;
+
   /// No description provided for @staffEditName.
   ///
   /// In uz, this message translates to:
@@ -1355,7 +1361,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorSelfResetNotAllowed.
   ///
   /// In uz, this message translates to:
-  /// **'O\'z parolingizni «Parolni o\'zgartirish» orqali almashtiring'**
+  /// **'O\'z parolingizni bu yerda tiklab bo\'lmaydi'**
   String get errorSelfResetNotAllowed;
 
   /// No description provided for @errorPhoneAlreadyActive.

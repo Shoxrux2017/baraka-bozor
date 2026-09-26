@@ -237,6 +237,7 @@
   "staffAllRoles": "Все роли",
   "staffAllStatuses": "Все статусы",
   "staffNoName": "Имя не указано",
+  "staffYou": "Вы",
   "staffEditName": "Изменить имя",
   "staffBlock": "Заблокировать",
   "staffActivate": "Разблокировать",
@@ -275,6 +276,6 @@
   "staffSaved": "Сохранено",
   "errorSelfBlockNotAllowed": "Нельзя заблокировать себя",
   "errorLastActiveAdminRequired": "Нельзя заблокировать последнего активного администратора",
-  "errorSelfResetNotAllowed": "Свой пароль меняйте через «Сменить пароль»",
+  "errorSelfResetNotAllowed": "Свой пароль здесь сбросить нельзя",
   "errorPhoneAlreadyActive": "Этот номер уже у другого активного сотрудника"
 }

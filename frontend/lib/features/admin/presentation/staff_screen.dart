@@ -9,6 +9,7 @@ import '../../../core/network/paged.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../auth/domain/app_user.dart';
+import '../application/admin_providers.dart';
 import '../application/admin_staff_controllers.dart';
 import '../domain/admin_staff.dart';
 import 'catalog_form_rules.dart';
@@ -162,85 +163,122 @@ class StaffScreen extends ConsumerWidget {
 class _StaffRow extends ConsumerWidget {
   const _StaffRow({required this.member, required this.busy});
 
+  /// Below this width the actions go under the account instead of beside
+  /// it, which would leave the text a narrow column.
+  static const double narrowWidth = 600;
+
   final StaffMember member;
   final bool busy;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final StaffListActions actions = ref.read(
-      staffListActionsProvider.notifier,
-    );
     final bool blocked = member.status == AccountStatus.blocked;
     final String name = member.fullName ?? l10n.staffNoName;
     final DateTime? lastLogin = member.lastLoginAt;
+    // The Admin's own account is not blocked or reset here: the server
+    // refuses both (`self_block_not_allowed`, `self_reset_not_allowed`).
+    final bool own = member.id == ref.watch(staffAccountProvider);
+
+    final Widget details = Wrap(
+      spacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: <Widget>[
+        Text(roleLabel(l10n, member.role)),
+        Chip(
+          avatar: Icon(
+            blocked ? Icons.block : Icons.check_circle_outline,
+            size: 18,
+          ),
+          label: Text(blocked ? l10n.statusBlocked : l10n.statusActive),
+          visualDensity: VisualDensity.compact,
+        ),
+        if (own)
+          Chip(
+            key: ValueKey<String>('own-${member.id}'),
+            avatar: const Icon(Icons.person_outline, size: 18),
+            label: Text(l10n.staffYou),
+            visualDensity: VisualDensity.compact,
+          ),
+        if (member.mustChangePassword) Text(l10n.staffMustChangePassword),
+        Text(
+          lastLogin == null
+              ? l10n.staffNeverLoggedIn
+              : l10n.staffLastLogin(TashkentTime.format(lastLogin)),
+        ),
+      ],
+    );
+
+    final List<Widget> actions = <Widget>[
+      IconButton(
+        key: ValueKey<String>('rename-${member.id}'),
+        tooltip: l10n.staffEditName,
+        icon: const Icon(Icons.edit_outlined),
+        onPressed: () => _rename(context, member),
+      ),
+      if (!own && blocked)
+        IconButton(
+          key: ValueKey<String>('activate-${member.id}'),
+          tooltip: l10n.staffActivate,
+          icon: const Icon(Icons.lock_open),
+          onPressed: busy
+              ? null
+              : () => ref
+                    .read(staffListActionsProvider.notifier)
+                    .activate(member.id),
+        ),
+      if (!own && !blocked)
+        IconButton(
+          key: ValueKey<String>('block-${member.id}'),
+          tooltip: l10n.staffBlock,
+          icon: const Icon(Icons.block),
+          onPressed: busy
+              ? null
+              : () async {
+                  final bool confirmed = await _confirmBlock(context, name);
+                  // The confirmation outlives the list when the Admin
+                  // moves elsewhere; then there is no block to make.
+                  if (!confirmed || !context.mounted) {
+                    return;
+                  }
+                  await ref
+                      .read(staffListActionsProvider.notifier)
+                      .block(member.id);
+                },
+        ),
+      if (!own)
+        IconButton(
+          key: ValueKey<String>('reset-${member.id}'),
+          tooltip: l10n.staffResetPassword,
+          icon: const Icon(Icons.password),
+          onPressed: () => showDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) =>
+                _ResetPasswordDialog(member: member),
+          ),
+        ),
+    ];
 
     return Card(
-      child: ListTile(
-        key: ValueKey<String>('staff-${member.id}'),
-        title: Text('$name · ${formatPhone(member.phone)}'),
-        subtitle: Wrap(
-          spacing: 12,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            Text(roleLabel(l10n, member.role)),
-            Chip(
-              avatar: Icon(
-                blocked ? Icons.block : Icons.check_circle_outline,
-                size: 18,
-              ),
-              label: Text(blocked ? l10n.statusBlocked : l10n.statusActive),
-              visualDensity: VisualDensity.compact,
-            ),
-            if (member.mustChangePassword) Text(l10n.staffMustChangePassword),
-            Text(
-              lastLogin == null
-                  ? l10n.staffNeverLoggedIn
-                  : l10n.staffLastLogin(TashkentTime.format(lastLogin)),
-            ),
-          ],
-        ),
-        trailing: Wrap(
-          children: <Widget>[
-            IconButton(
-              key: ValueKey<String>('rename-${member.id}'),
-              tooltip: l10n.staffEditName,
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () => _rename(context, member),
-            ),
-            if (blocked)
-              IconButton(
-                key: ValueKey<String>('activate-${member.id}'),
-                tooltip: l10n.staffActivate,
-                icon: const Icon(Icons.lock_open),
-                onPressed: busy ? null : () => actions.activate(member.id),
-              )
-            else
-              IconButton(
-                key: ValueKey<String>('block-${member.id}'),
-                tooltip: l10n.staffBlock,
-                icon: const Icon(Icons.block),
-                onPressed: busy
-                    ? null
-                    : () async {
-                        if (await _confirmBlock(context, name)) {
-                          await actions.block(member.id);
-                        }
-                      },
-              ),
-            IconButton(
-              key: ValueKey<String>('reset-${member.id}'),
-              tooltip: l10n.staffResetPassword,
-              icon: const Icon(Icons.password),
-              onPressed: () => showDialog<void>(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext context) =>
-                    _ResetPasswordDialog(member: member),
-              ),
-            ),
-          ],
-        ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool narrow = constraints.maxWidth < narrowWidth;
+          return ListTile(
+            key: ValueKey<String>('staff-${member.id}'),
+            title: Text('$name · ${formatPhone(member.phone)}'),
+            subtitle: narrow
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      details,
+                      Wrap(children: actions),
+                    ],
+                  )
+                : details,
+            trailing: narrow ? null : Wrap(children: actions),
+          );
+        },
       ),
     );
   }
@@ -265,6 +303,7 @@ class _StaffRow extends ConsumerWidget {
     return await showDialog<bool>(
           context: context,
           builder: (BuildContext context) => AlertDialog(
+            scrollable: true,
             content: Text(l10n.staffBlockConfirm(name)),
             actions: <Widget>[
               TextButton(
@@ -300,6 +339,7 @@ class _TemporaryPasswordDialog extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: AlertDialog(
+        scrollable: true,
         title: Text(l10n.staffTemporaryPasswordTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -401,13 +441,15 @@ class _NewStaffDialogState extends ConsumerState<_NewStaffDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Watched while the password shows too, so the controller that answered
+    // it stays alive — and holds nothing but its state (`DL-29` (1)).
+    final MutationState change = ref.watch(newStaffControllerProvider);
     final IssuedPassword? issued = _issued;
     if (issued != null) {
       return _TemporaryPasswordDialog(issued);
     }
 
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final MutationState change = ref.watch(newStaffControllerProvider);
 
     String? rejected(String key) =>
         _rejected.contains(key) ? l10n.fieldRejected : null;
@@ -530,17 +572,18 @@ class _ResetPasswordDialogState extends ConsumerState<_ResetPasswordDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final MutationState change = ref.watch(resetPasswordControllerProvider);
     final IssuedPassword? issued = _issued;
     if (issued != null) {
       return _TemporaryPasswordDialog(issued);
     }
 
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final MutationState change = ref.watch(resetPasswordControllerProvider);
 
     return PopScope(
       canPop: !change.isBusy,
       child: AlertDialog(
+        scrollable: true,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -621,6 +664,7 @@ class _RenameDialogState extends ConsumerState<_RenameDialog> {
     return PopScope(
       canPop: !change.isBusy,
       child: AlertDialog(
+        scrollable: true,
         title: Text(l10n.staffEditName),
         content: SizedBox(
           width: 480,

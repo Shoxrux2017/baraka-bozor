@@ -618,6 +618,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get staffNoName => 'Имя не указано';
 
   @override
+  String get staffYou => 'Вы';
+
+  @override
   String get staffEditName => 'Изменить имя';
 
   @override
@@ -677,8 +680,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Нельзя заблокировать последнего активного администратора';
 
   @override
-  String get errorSelfResetNotAllowed =>
-      'Свой пароль меняйте через «Сменить пароль»';
+  String get errorSelfResetNotAllowed => 'Свой пароль здесь сбросить нельзя';
 
   @override
   String get errorPhoneAlreadyActive =>

@@ -1,3 +1,4 @@
+import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/network/auth_interceptor.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/admin/data/admin_staff_api.dart';
@@ -12,15 +13,21 @@ import '../../../support/fake_http_client_adapter.dart';
 const String staffId = '7d1c2b3a-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
 
 /// A staff account as `docs/09-api-contracts.md` section 43 returns it.
-Map<String, Object?> memberJson({String role = 'shopper'}) => <String, Object?>{
-  'id': staffId,
+Map<String, Object?> memberJson({
+  String id = staffId,
+  String role = 'shopper',
+  String fullName = 'Dilnoza Karimova',
+  bool blocked = false,
+  bool mustChangePassword = true,
+}) => <String, Object?>{
+  'id': id,
   'role': role,
   'phone': '+998901112233',
-  'full_name': 'Dilnoza Karimova',
-  'status': 'active',
-  'must_change_password': true,
+  'full_name': fullName,
+  'status': blocked ? 'blocked' : 'active',
+  'must_change_password': mustChangePassword,
   'last_login_at': null,
-  'blocked_at': null,
+  'blocked_at': blocked ? '2026-09-26T06:00:00Z' : null,
   'created_at': '2026-09-26T05:00:00Z',
   'updated_at': '2026-09-26T05:00:00Z',
 };
@@ -94,7 +101,11 @@ void main() {
     late FakeHttpClientAdapter adapter;
     late AdminStaffRepositoryImpl repository;
 
+    /// When set, the answer to every change instead.
+    Map<String, Object?>? answer;
+
     setUp(() {
+      answer = null;
       adapter = FakeHttpClientAdapter((RequestOptions options) {
         if (options.method == 'GET') {
           return jsonReply(200, <String, Object?>{
@@ -112,15 +123,22 @@ void main() {
         final bool issues =
             options.path.endsWith('/reset-password') ||
             options.path == '/admin/staff';
+        final Map<String, Object?> member = options.method == 'PATCH'
+            ? memberJson(
+                fullName: (options.data as Map<String, String>)['full_name']!,
+              )
+            : memberJson(blocked: options.path.endsWith('/block'));
         return jsonReply(
           options.path == '/admin/staff' ? 201 : 200,
           <String, Object?>{
-            'data': issues
-                ? <String, Object?>{
-                    'user': memberJson(),
-                    'temporary_password': '7pQx9KmT3wZe',
-                  }
-                : memberJson(),
+            'data':
+                answer ??
+                (issues
+                    ? <String, Object?>{
+                        'user': member,
+                        'temporary_password': '7pQx9KmT3wZe',
+                      }
+                    : member),
           },
         );
       });
@@ -186,6 +204,55 @@ void main() {
       for (final RequestOptions request in adapter.requests) {
         expect(slotOf(request), SessionSlot.staff);
       }
+    });
+
+    test('an answer that does not match the request is refused', () async {
+      const String otherId = '8e2d3c4b-5f6a-4b7c-9d8e-0f1a2b3c4d5e';
+      final StaffMember member = AdminStaffApi.parseMember(memberJson());
+
+      answer = memberJson(id: otherId, blocked: true);
+      await expectLater(
+        repository.block(staffId),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+      answer = memberJson();
+      await expectLater(
+        repository.block(staffId),
+        throwsA(isA<MalformedResponseFailure>()),
+        reason: 'a block that answers an active account did not block',
+      );
+      answer = memberJson(blocked: true);
+      await expectLater(
+        repository.activate(staffId),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+      answer = memberJson();
+      await expectLater(
+        repository.rename(member, 'Dilnoza K.'),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+      answer = <String, Object?>{
+        'user': memberJson(role: 'courier'),
+        'temporary_password': '7pQx9KmT3wZe',
+      };
+      await expectLater(
+        repository.create(
+          const NewStaffMember(
+            fullName: 'Dilnoza Karimova',
+            phone: '+998901112233',
+            role: UserRole.shopper,
+          ),
+        ),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+      answer = <String, Object?>{
+        'user': memberJson(mustChangePassword: false),
+        'temporary_password': '7pQx9KmT3wZe',
+      };
+      await expectLater(
+        repository.resetPassword(staffId),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
     });
 
     test('an unchanged name is not sent', () async {

@@ -40,7 +40,14 @@ class AdminStaffApi {
       },
       options: _staff,
     );
-    return parseIssued(ApiEnvelope.unwrap(response.data));
+    return _expect<IssuedPassword>(
+      parseIssued(ApiEnvelope.unwrap(response.data)),
+      (IssuedPassword issued) =>
+          issued.staff.phone == member.phone &&
+          issued.staff.role == member.role &&
+          issued.staff.fullName == member.fullName &&
+          issued.staff.mustChangePassword,
+    );
   }
 
   /// Sends the new name; an unchanged one is not sent, and the account is
@@ -54,27 +61,60 @@ class AdminStaffApi {
       data: <String, String>{'full_name': fullName},
       options: _staff,
     );
-    return parseMember(ApiEnvelope.unwrap(response.data));
+    return _expect<StaffMember>(
+      parseMember(ApiEnvelope.unwrap(response.data)),
+      (StaffMember renamed) =>
+          renamed.id == member.id && renamed.fullName == fullName,
+    );
   }
 
-  Future<StaffMember> block(String id) => _action(id, 'block');
+  Future<StaffMember> block(String id) => _action(
+    id,
+    'block',
+    (StaffMember m) => m.id == id && m.status == AccountStatus.blocked,
+  );
 
-  Future<StaffMember> activate(String id) => _action(id, 'activate');
+  Future<StaffMember> activate(String id) => _action(
+    id,
+    'activate',
+    (StaffMember m) => m.id == id && m.status == AccountStatus.active,
+  );
 
   Future<IssuedPassword> resetPassword(String id) async {
     final Response<dynamic> response = await _dio.post<dynamic>(
       '/admin/staff/${Uri.encodeComponent(id)}/reset-password',
       options: _staff,
     );
-    return parseIssued(ApiEnvelope.unwrap(response.data));
+    return _expect<IssuedPassword>(
+      parseIssued(ApiEnvelope.unwrap(response.data)),
+      (IssuedPassword issued) =>
+          issued.staff.id == id && issued.staff.mustChangePassword,
+    );
   }
 
-  Future<StaffMember> _action(String id, String action) async {
+  Future<StaffMember> _action(
+    String id,
+    String action,
+    bool Function(StaffMember answer) holds,
+  ) async {
     final Response<dynamic> response = await _dio.post<dynamic>(
       '/admin/staff/${Uri.encodeComponent(id)}/$action',
       options: _staff,
     );
-    return parseMember(ApiEnvelope.unwrap(response.data));
+    return _expect<StaffMember>(
+      parseMember(ApiEnvelope.unwrap(response.data)),
+      holds,
+    );
+  }
+
+  /// An answer about another account, or one that does not show the change
+  /// that was asked for, is malformed (`DL-27` (6)): the password dialog
+  /// names the account from the answer.
+  static T _expect<T>(T answer, bool Function(T answer) holds) {
+    if (!holds(answer)) {
+      throw const FormatException('the answer does not match the request');
+    }
+    return answer;
   }
 
   static final RegExp _phone = RegExp(r'^\+998\d{9}$');

@@ -620,6 +620,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get staffNoName => 'Ism kiritilmagan';
 
   @override
+  String get staffYou => 'Siz';
+
+  @override
   String get staffEditName => 'Ismni o\'zgartirish';
 
   @override
@@ -680,7 +683,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get errorSelfResetNotAllowed =>
-      'O\'z parolingizni «Parolni o\'zgartirish» orqali almashtiring';
+      'O\'z parolingizni bu yerda tiklab bo\'lmaydi';
 
   @override
   String get errorPhoneAlreadyActive => 'Bu raqam boshqa faol xodimga tegishli';
