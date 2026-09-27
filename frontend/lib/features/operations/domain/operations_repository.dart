@@ -15,4 +15,15 @@ abstract interface class OperationsRepository {
 
   /// The active Shoppers, at most one page of 100 (`DL-45` (1)).
   Future<List<ShopperChoice>> shoppers();
+
+  /// Assigns [shopperId] to the `new` order [orderId].
+  Future<BoardOrder> assignShopper(String orderId, String shopperId);
+
+  /// Replaces the assignment [replacesAssignmentId] — the one the Operator
+  /// saw — with [shopperId] (`DL-45` (8)).
+  Future<BoardOrder> reassignShopper(
+    String orderId,
+    String shopperId,
+    String replacesAssignmentId,
+  );
 }

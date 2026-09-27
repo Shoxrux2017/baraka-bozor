@@ -12,6 +12,8 @@ import '../../../core/localization/order_labels.dart';
 import '../../../core/localization/role_labels.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/routing/app_paths.dart';
+import '../../../core/state/mutation_state.dart';
+import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../application/board_controllers.dart';
 import '../domain/board.dart';
@@ -157,6 +159,7 @@ class _Order extends StatelessWidget {
         _Section(
           title: l10n.orderSectionShoppers,
           children: <Widget>[
+            _AssignmentActions(order: order),
             if (order.shopperAssignments.isEmpty) Text(l10n.assignmentsNone),
             for (final ShopperAssignment assignment
                 in order.shopperAssignments.reversed)
@@ -497,4 +500,149 @@ class _History extends StatelessWidget {
     OrderHistoryEvent.approvalExpired => l10n.historyEventApprovalExpired,
     OrderHistoryEvent.approvalResolved => l10n.historyEventApprovalResolved,
   };
+}
+
+/// The way to assign a Shopper to a `new` order, or to replace the Shopper
+/// before shopping starts (`BR-ASSIGN-001`, `BR-ASSIGN-002`), and what the
+/// last attempt answered. The buttons follow the order as loaded; the
+/// server decides, and a conflict reloads the order and says why.
+class _AssignmentActions extends ConsumerWidget {
+  const _AssignmentActions({required this.order});
+
+  final BoardOrder order;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final MutationState state = ref.watch(shopperAssignmentProvider(order.id));
+    final ShopperAssignment? current = order.currentAssignment;
+    final bool assigns =
+        order.status == OrderStatus.newOrder && current == null;
+    final bool reassigns =
+        order.status == OrderStatus.shoppingAssigned &&
+        current != null &&
+        current.startedAt == null;
+
+    if (!assigns && !reassigns) {
+      return FailureMessage(state.failure);
+    }
+
+    Future<void> pick() async {
+      final ShopperChoice? chosen = await showDialog<ShopperChoice>(
+        context: context,
+        builder: (BuildContext context) =>
+            _ShopperPicker(currentShopperId: current?.shopper.id),
+      );
+      if (chosen == null || !context.mounted) {
+        return;
+      }
+      final ShopperAssignmentController assignment = ref.read(
+        shopperAssignmentProvider(order.id).notifier,
+      );
+      if (current == null) {
+        await assignment.assign(chosen.id);
+      } else {
+        await assignment.reassign(chosen.id, current.id);
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Wrap(
+            spacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              if (assigns)
+                FilledButton.icon(
+                  key: const ValueKey<String>('assign-shopper'),
+                  icon: const Icon(Icons.person_add_alt_1_outlined),
+                  label: Text(l10n.assignShopper),
+                  onPressed: state.isBusy ? null : pick,
+                )
+              else
+                OutlinedButton.icon(
+                  key: const ValueKey<String>('reassign-shopper'),
+                  icon: const Icon(Icons.swap_horiz),
+                  label: Text(l10n.reassignShopper),
+                  onPressed: state.isBusy ? null : pick,
+                ),
+              if (state.isBusy)
+                const SizedBox.square(
+                  dimension: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          FailureMessage(state.failure),
+        ],
+      ),
+    );
+  }
+}
+
+/// The active Shoppers to choose from, each with the orders in their hands
+/// now; the current Shopper is shown but not offered.
+class _ShopperPicker extends ConsumerWidget {
+  const _ShopperPicker({required this.currentShopperId});
+
+  final String? currentShopperId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AsyncValue<List<ShopperChoice>> shoppers = ref.watch(
+      shopperOptionsProvider,
+    );
+
+    return AlertDialog(
+      title: Text(l10n.pickShopperTitle),
+      content: SizedBox(
+        width: 420,
+        child: shoppers.when(
+          skipLoadingOnRefresh: !shoppers.hasError,
+          data: (List<ShopperChoice> shoppers) => shoppers.isEmpty
+              ? Text(l10n.pickShopperEmpty)
+              : ListView(
+                  shrinkWrap: true,
+                  children: <Widget>[
+                    for (final ShopperChoice shopper in shoppers)
+                      ListTile(
+                        key: ValueKey<String>('pick-shopper-${shopper.id}'),
+                        enabled: shopper.id != currentShopperId,
+                        title: Text(
+                          shopper.fullName ?? formatPhone(shopper.phone),
+                        ),
+                        subtitle: Text(
+                          '${formatPhone(shopper.phone)} · '
+                          '${l10n.shopperOrdersNow(shopper.currentAssignmentCount)}',
+                        ),
+                        trailing: shopper.id == currentShopperId
+                            ? Text(l10n.assignmentCurrent)
+                            : null,
+                        onTap: () => Navigator.of(context).pop(shopper),
+                      ),
+                  ],
+                ),
+          error: (Object error, StackTrace _) => LoadFailure(
+            error: error,
+            onRetry: () => ref.invalidate(shopperOptionsProvider),
+          ),
+          loading: () => const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          key: const ValueKey<String>('pick-shopper-cancel'),
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.cancelButton),
+        ),
+      ],
+    );
+  }
 }

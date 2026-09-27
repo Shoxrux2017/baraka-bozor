@@ -60,6 +60,17 @@ class FakeOperationsRepository implements OperationsRepository {
   /// When set, the board's page fails with it.
   ApiFailure? pageFailure;
 
+  /// Every assignment asked for: `assign:<order>:<shopper>` or
+  /// `reassign:<order>:<shopper>:<replaced assignment>`.
+  final List<String> changes = <String>[];
+
+  /// The order each assignment answers with, which also becomes the order's
+  /// detail from then on.
+  final Map<String, BoardOrder> afterAssignment = <String, BoardOrder>{};
+
+  /// When set, an assignment fails with it.
+  ApiFailure? assignmentFailure;
+
   Future<void> _held() async {
     final Completer<void>? hold = this.hold;
     if (hold != null) {
@@ -124,5 +135,27 @@ class FakeOperationsRepository implements OperationsRepository {
     loads.add('shoppers');
     await _held();
     return shopperList;
+  }
+
+  @override
+  Future<BoardOrder> assignShopper(String orderId, String shopperId) =>
+      _assign(orderId, 'assign:$orderId:$shopperId');
+
+  @override
+  Future<BoardOrder> reassignShopper(
+    String orderId,
+    String shopperId,
+    String replacesAssignmentId,
+  ) => _assign(orderId, 'reassign:$orderId:$shopperId:$replacesAssignmentId');
+
+  Future<BoardOrder> _assign(String orderId, String change) async {
+    changes.add(change);
+    await _held();
+    if (assignmentFailure != null) {
+      throw assignmentFailure!;
+    }
+    final BoardOrder order = afterAssignment[orderId]!;
+    details[orderId] = order;
+    return order;
   }
 }

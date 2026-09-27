@@ -73,6 +73,53 @@ class OperationsApi {
     return Paged.parse(response.data, parseShopper).items;
   }
 
+  /// `POST /operations/orders/{order}/shopper-assignment` (`docs/09`
+  /// section 39).
+  Future<BoardOrder> assignShopper(String orderId, String shopperId) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      _assignmentPath(orderId),
+      data: <String, String>{'shopper_id': shopperId},
+      options: _staff,
+    );
+    return _assigned(response, orderId, shopperId);
+  }
+
+  /// `PUT /operations/orders/{order}/shopper-assignment`, naming the
+  /// assignment it replaces (`DL-45` (8)).
+  Future<BoardOrder> reassignShopper(
+    String orderId,
+    String shopperId,
+    String replacesAssignmentId,
+  ) async {
+    final Response<dynamic> response = await _dio.put<dynamic>(
+      _assignmentPath(orderId),
+      data: <String, String>{
+        'shopper_id': shopperId,
+        'replaces_assignment_id': replacesAssignmentId,
+      },
+      options: _staff,
+    );
+    return _assigned(response, orderId, shopperId);
+  }
+
+  static String _assignmentPath(String orderId) =>
+      '/operations/orders/${Uri.encodeComponent(orderId)}/shopper-assignment';
+
+  /// The order after an assignment: the order asked about, with the Shopper
+  /// asked for as its current one.
+  static BoardOrder _assigned(
+    Response<dynamic> response,
+    String orderId,
+    String shopperId,
+  ) {
+    final BoardOrder order = parseOrder(ApiEnvelope.unwrap(response.data));
+    if (order.id != orderId.toLowerCase() ||
+        order.currentAssignment?.shopper.id != shopperId.toLowerCase()) {
+      throw const FormatException('the answer does not show the assignment');
+    }
+    return order;
+  }
+
   /// The query string of [query]: its page, and each filter that is set.
   static Map<String, Object> queryOf(BoardQuery query) => <String, Object>{
     'page': query.page,

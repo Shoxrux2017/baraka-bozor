@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart' show FutureProviderFamily;
+import 'package:flutter_riverpod/misc.dart'
+    show FutureProviderFamily, NotifierProviderFamily;
 
 import '../../../app/providers.dart';
 import '../../../core/network/paged.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/session/staff_account.dart';
+import '../../../core/state/account_mutation.dart';
+import '../../../core/state/mutation_state.dart';
 import '../data/operations_api.dart';
 import '../data/operations_repository_impl.dart';
 import '../domain/board.dart';
@@ -104,6 +107,50 @@ final FutureProviderFamily<BoardOrder, String> boardOrderProvider =
       }
       return ref.watch(operationsRepositoryProvider).order(id);
     });
+
+/// The Shopper assignment of one order, from its page (`docs/09` section
+/// 39): one change at a time, shown on that order's page only. After it,
+/// and after a conflict — the order changed under the Operator — the order,
+/// the board and the Shoppers' counts are loaded again (`DL-28` (11)).
+class ShopperAssignmentController extends AccountMutation {
+  ShopperAssignmentController(this.orderId);
+
+  final String orderId;
+
+  @override
+  Provider<String?> get account => staffAccountProvider;
+
+  OperationsRepository get _operations =>
+      ref.read(operationsRepositoryProvider);
+
+  Future<BoardOrder?> assign(String shopperId) => perform(
+    () => _operations.assignShopper(orderId, shopperId),
+    reload: (BoardOrder? _) => _reload(),
+  );
+
+  Future<BoardOrder?> reassign(String shopperId, String replacesAssignmentId) =>
+      perform(
+        () => _operations.reassignShopper(
+          orderId,
+          shopperId,
+          replacesAssignmentId,
+        ),
+        reload: (BoardOrder? _) => _reload(),
+      );
+
+  void _reload() => ref
+    ..invalidate(boardOrderProvider(orderId))
+    ..invalidate(boardPageProvider)
+    ..invalidate(boardSummaryProvider)
+    ..invalidate(attentionProvider)
+    ..invalidate(shopperOptionsProvider);
+}
+
+final NotifierProviderFamily<ShopperAssignmentController, MutationState, String>
+shopperAssignmentProvider = NotifierProvider.autoDispose
+    .family<ShopperAssignmentController, MutationState, String>(
+      ShopperAssignmentController.new,
+    );
 
 /// Loads the board again — its page, the summary and the attention list —
 /// as they are on the server now.

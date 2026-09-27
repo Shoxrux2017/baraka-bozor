@@ -627,5 +627,19 @@
   "boardFilteredShopper": "Выбранный сборщик",
   "boardFilterStatus": "Статус",
   "boardFilterPayment": "Способ оплаты",
-  "boardFilterShopper": "Сборщик"
+  "boardFilterShopper": "Сборщик",
+  "errorOrderStateConflict": "Заказ уже изменился, мы его обновили. Проверьте и попробуйте снова",
+  "errorStaffNotActive": "Этот сотрудник заблокирован. Выберите другого",
+  "assignShopper": "Назначить сборщика",
+  "reassignShopper": "Сменить сборщика",
+  "pickShopperTitle": "Выберите сборщика",
+  "pickShopperEmpty": "Нет активных сборщиков",
+  "shopperOrdersNow": "Сейчас {count, plural, one{{count} заказ} few{{count} заказа} many{{count} заказов} other{{count} заказа}}",
+  "@shopperOrdersNow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -1219,4 +1219,37 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get boardFilterShopper => 'Сборщик';
+
+  @override
+  String get errorOrderStateConflict =>
+      'Заказ уже изменился, мы его обновили. Проверьте и попробуйте снова';
+
+  @override
+  String get errorStaffNotActive =>
+      'Этот сотрудник заблокирован. Выберите другого';
+
+  @override
+  String get assignShopper => 'Назначить сборщика';
+
+  @override
+  String get reassignShopper => 'Сменить сборщика';
+
+  @override
+  String get pickShopperTitle => 'Выберите сборщика';
+
+  @override
+  String get pickShopperEmpty => 'Нет активных сборщиков';
+
+  @override
+  String shopperOrdersNow(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count заказа',
+      many: '$count заказов',
+      few: '$count заказа',
+      one: '$count заказ',
+    );
+    return 'Сейчас $_temp0';
+  }
 }

@@ -44,6 +44,8 @@ String _refusalText(AppLocalizations l10n, String code, int status) {
     'self_reset_not_allowed' => l10n.errorSelfResetNotAllowed,
     'phone_already_active' => l10n.errorPhoneAlreadyActive,
     'checkout_configuration_incomplete' => l10n.errorConfigurationIncomplete,
+    'order_state_conflict' => l10n.errorOrderStateConflict,
+    'staff_not_active' => l10n.errorStaffNotActive,
     'provider_unavailable' ||
     'payment_provider_unavailable' => l10n.errorProviderUnavailable,
     'service_unavailable' => l10n.errorServiceUnavailable,

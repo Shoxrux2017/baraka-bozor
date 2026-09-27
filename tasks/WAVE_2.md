@@ -24,7 +24,7 @@ None (`docs/06` section 5). The MapKit key the Owner set aside (`DL-36`) blocks 
 | W2-8 | Operations API, assignment: the Shopper picker, assignment and reassignment | Merged |
 | W2-9 | Panel: the Operator's shell, the board inside the Admin's, and a reload that keeps its page | Merged |
 | W2-10 | Panel: the board — list with filters, summary strip, attention, order detail with history | Merged |
-| W2-11 | Panel: Shopper assignment and reassignment from the board | Planned |
+| W2-11 | Panel: Shopper assignment and reassignment from the board | Merged |
 | W2-12 | App: cart — add from the product screen, the cart screen | Planned |
 | W2-13 | App: checkout — address, payment method, delivery wish, preview, confirm | Planned |
 | W2-14 | App: my orders — list, detail, edit, cancel | Planned |

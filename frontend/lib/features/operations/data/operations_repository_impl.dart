@@ -24,4 +24,17 @@ class OperationsRepositoryImpl implements OperationsRepository {
 
   @override
   Future<List<ShopperChoice>> shoppers() => guardApiCall(_api.shoppers);
+
+  @override
+  Future<BoardOrder> assignShopper(String orderId, String shopperId) =>
+      guardApiCall(() => _api.assignShopper(orderId, shopperId));
+
+  @override
+  Future<BoardOrder> reassignShopper(
+    String orderId,
+    String shopperId,
+    String replacesAssignmentId,
+  ) => guardApiCall(
+    () => _api.reassignShopper(orderId, shopperId, replacesAssignmentId),
+  );
 }
