@@ -44,6 +44,32 @@ trait ReadsPostgresCatalog
     }
 
     /**
+     * Asserts that $table has exactly these columns, each with its data type,
+     * its nullability and — where given — its maximum character length.
+     *
+     * @param  array<string, array{0: string, 1: bool, 2?: int}>  $expected
+     */
+    private function assertColumns(string $table, array $expected): void
+    {
+        $actual = $this->columnsOf($table);
+
+        $names = array_keys($actual);
+        sort($names);
+        $expectedNames = array_keys($expected);
+        sort($expectedNames);
+        $this->assertSame($expectedNames, $names, "{$table}: the columns");
+
+        foreach ($expected as $column => $spec) {
+            $this->assertSame($spec[0], $actual[$column]->data_type, "{$table}.{$column} type");
+            $this->assertSame($spec[1] ? 'YES' : 'NO', $actual[$column]->is_nullable, "{$table}.{$column} nullability");
+
+            if (isset($spec[2])) {
+                $this->assertSame($spec[2], (int) $actual[$column]->character_maximum_length, "{$table}.{$column} length");
+            }
+        }
+    }
+
+    /**
      * What PostgreSQL actually built for $table, keyed by column name.
      *
      * Asked of the catalog rather than read off the migration: a migration says

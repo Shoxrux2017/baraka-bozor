@@ -6,6 +6,7 @@ namespace Database\Factories;
 
 use App\Models\Enums\ItemRemovedReason;
 use App\Models\Enums\OrderItemStatus;
+use App\Models\Enums\PriceMode;
 use App\Models\Enums\SubstitutionPolicy;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -69,6 +70,13 @@ final class OrderItemFactory extends Factory
             'status' => OrderItemStatus::Purchased,
             'purchased_quantity' => fn (array $attributes): string => (string) $attributes['ordered_quantity'],
             'billable_quantity' => fn (array $attributes): string => (string) $attributes['ordered_quantity'],
+            // An estimate line is bought at its estimate's market price; the
+            // application requires the actual price for it (docs/08 section 14).
+            'actual_market_price_uzs' => fn (array $attributes): ?int => PriceMode::from(
+                $attributes['price_mode_snapshot'] instanceof PriceMode
+                    ? $attributes['price_mode_snapshot']->value
+                    : (string) $attributes['price_mode_snapshot']
+            ) === PriceMode::Estimate ? (int) $attributes['market_price_uzs_snapshot'] : null,
             'billable_unit_price_uzs' => fn (array $attributes): int => (int) $attributes['customer_unit_price_uzs_snapshot'],
             'line_total_uzs' => fn (array $attributes): int => intdiv(
                 (int) $attributes['customer_unit_price_uzs_snapshot'] * self::thousandths((string) $attributes['ordered_quantity']) + 500,

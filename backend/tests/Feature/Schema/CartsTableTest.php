@@ -57,6 +57,27 @@ final class CartsTableTest extends TestCase
         ], $overrides);
     }
 
+    public function test_both_tables_have_exactly_the_columns_the_schema_names(): void
+    {
+        $this->assertColumns('carts', [
+            'id' => ['uuid', false],
+            'customer_id' => ['uuid', false],
+            'status' => ['character varying', false, 16],
+            'created_at' => ['timestamp with time zone', false],
+            'updated_at' => ['timestamp with time zone', false],
+        ]);
+        $this->assertColumns('cart_items', [
+            'id' => ['uuid', false],
+            'cart_id' => ['uuid', false],
+            'product_id' => ['uuid', false],
+            'quantity' => ['numeric', false],
+            'customer_note' => ['character varying', true, 300],
+            'substitution_policy' => ['character varying', false, 40],
+            'created_at' => ['timestamp with time zone', false],
+            'updated_at' => ['timestamp with time zone', false],
+        ]);
+    }
+
     public function test_a_customer_holds_one_active_cart_and_any_number_of_converted_ones(): void
     {
         $customer = User::factory()->customer()->create();

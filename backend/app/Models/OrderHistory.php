@@ -8,6 +8,7 @@ use App\Models\Enums\CancellationReason;
 use App\Models\Enums\HistoryActorType;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderStatus;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -54,8 +55,26 @@ class OrderHistory extends Model
             'to_status' => OrderStatus::class,
             'actor_type' => HistoryActorType::class,
             'reason_code' => CancellationReason::class,
-            'details' => 'array',
         ];
+    }
+
+    /**
+     * `details` is a JSON object or nothing. An empty map is stored as null,
+     * because PHP's `[]` encodes as a JSON list, which
+     * `order_history_details_object_check` refuses.
+     *
+     * @return Attribute<array<string, mixed>|null, array<string, mixed>|null>
+     */
+    protected function details(): Attribute
+    {
+        return Attribute::make(
+            get: static fn (?string $value): ?array => $value === null
+                ? null
+                : json_decode($value, true, flags: JSON_THROW_ON_ERROR),
+            set: static fn (?array $value): ?string => $value === null || $value === []
+                ? null
+                : json_encode($value, JSON_THROW_ON_ERROR),
+        );
     }
 
     /**

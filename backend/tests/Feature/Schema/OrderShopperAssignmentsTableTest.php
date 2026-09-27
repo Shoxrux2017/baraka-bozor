@@ -44,6 +44,25 @@ final class OrderShopperAssignmentsTableTest extends TestCase
         ], $overrides);
     }
 
+    public function test_it_has_exactly_the_columns_the_schema_names(): void
+    {
+        $this->assertColumns(self::TABLE, [
+            'id' => ['uuid', false],
+            'order_id' => ['uuid', false],
+            'shopper_id' => ['uuid', false],
+            'assigned_by_user_id' => ['uuid', false],
+            'is_self_order' => ['boolean', false],
+            'assigned_at' => ['timestamp with time zone', false],
+            'accepted_at' => ['timestamp with time zone', true],
+            'started_at' => ['timestamp with time zone', true],
+            'completed_at' => ['timestamp with time zone', true],
+            'ended_at' => ['timestamp with time zone', true],
+            'ended_reason' => ['character varying', true, 24],
+            'created_at' => ['timestamp with time zone', false],
+            'updated_at' => ['timestamp with time zone', false],
+        ]);
+    }
+
     public function test_an_order_has_one_current_assignment_and_keeps_the_ended_ones(): void
     {
         $order = Order::factory()->create();
@@ -75,6 +94,12 @@ final class OrderShopperAssignmentsTableTest extends TestCase
             'order_shopper_assignments_completed_check',
             $this->row(['accepted_at' => now(), 'completed_at' => now()]),
             'Completion follows a start.'
+        );
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_shopper_assignments_completed_end_check',
+            $this->row(['accepted_at' => now(), 'started_at' => now(), 'ended_at' => now(), 'ended_reason' => 'completed']),
+            'An assignment ended as completed records its completion.'
         );
     }
 }

@@ -12,7 +12,11 @@ namespace Tests\Support\Database;
  * add tables, without naming them.
  *
  * The rollback runs inside the test's transaction; PostgreSQL DDL is
- * transactional, so the database is back as it was when the test ends.
+ * transactional, so the database is back as it was when the test ends. A
+ * later migration that cannot run inside it — `$withinTransaction = false`,
+ * for a concurrent index on a table with rows — or whose `down()` cannot be
+ * undone, must change this helper, or every earlier wave's rollback test
+ * fails with it.
  */
 trait RollsBackMigrations
 {

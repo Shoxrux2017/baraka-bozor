@@ -55,7 +55,7 @@ return new class extends Migration
             $table->string('payment_method', 16);
             $table->string('delivery_time_note', 160)->nullable();
 
-            $table->string('recipient_name_snapshot', 120);
+            $table->string('recipient_name_snapshot', 160);
             $table->string('recipient_phone_snapshot', 20);
             $table->decimal('latitude_snapshot', 9, 6);
             $table->decimal('longitude_snapshot', 10, 6);
@@ -134,6 +134,15 @@ return new class extends Migration
             .' or (final_merchandise_subtotal_uzs is not null and final_service_fee_uzs is not null and final_total_uzs is not null'
             .' and final_merchandise_subtotal_uzs >= 0 and final_service_fee_uzs >= 0'
             .' and final_total_uzs = final_merchandise_subtotal_uzs + final_service_fee_uzs + delivery_fee_uzs_snapshot)'
+        );
+        // BR-MONEY-005: the stored fee is the snapshotted rule applied to the
+        // stored subtotal; round() on a non-negative numeric is half-up.
+        $this->check(
+            'orders_final_service_fee_check',
+            'final_service_fee_uzs is null or final_merchandise_subtotal_uzs is null'
+            ." or (service_fee_mode_snapshot = 'fixed' and final_service_fee_uzs = service_fee_fixed_uzs_snapshot)"
+            ." or (service_fee_mode_snapshot = 'percentage'"
+            .' and final_service_fee_uzs = round(final_merchandise_subtotal_uzs * service_fee_percent_snapshot / 100))'
         );
         $this->check(
             'orders_after_shopping_state_check',

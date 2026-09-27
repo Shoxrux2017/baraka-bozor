@@ -125,6 +125,19 @@ return new class extends Migration
             .' and purchased_quantity >= billable_quantity and billable_unit_price_uzs is not null'
             .' and line_total_uzs is not null and fulfilled_product_id is not null)'
         );
+        // BR-MONEY-003, where both factors are stored: round() on a
+        // non-negative numeric is half-up to 1 UZS.
+        $this->check(
+            'order_items_line_total_check',
+            'line_total_uzs is null or billable_unit_price_uzs is null'
+            .' or line_total_uzs = round(billable_unit_price_uzs * billable_quantity)'
+        );
+        // BR-PRICE-002: a fixed line bought as itself is billed at its snapshot.
+        $this->check(
+            'order_items_fixed_price_check',
+            "status <> 'purchased' or price_mode_snapshot <> 'fixed' or fulfilled_product_id <> product_id"
+            .' or billable_unit_price_uzs = customer_unit_price_uzs_snapshot'
+        );
         $this->check(
             'order_items_removed_check',
             "(status = 'removed') = (removed_reason_code is not null) and (status = 'removed') = (removed_at is not null)"

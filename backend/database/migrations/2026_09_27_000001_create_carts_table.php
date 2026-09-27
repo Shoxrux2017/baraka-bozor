@@ -42,7 +42,6 @@ return new class extends Migration
         ));
 
         DB::statement("create unique index carts_customer_active_unique on carts (customer_id) where status = 'active'");
-        DB::statement('create index carts_customer_id_index on carts (customer_id)');
     }
 
     public function down(): void

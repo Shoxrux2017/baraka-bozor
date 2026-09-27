@@ -44,6 +44,10 @@ return new class extends Migration
         $this->check('order_shopper_assignments_ended_check', '(ended_at is null) = (ended_reason is null)');
         $this->check('order_shopper_assignments_started_check', 'started_at is null or accepted_at is not null');
         $this->check('order_shopper_assignments_completed_check', 'completed_at is null or started_at is not null');
+        $this->check(
+            'order_shopper_assignments_completed_end_check',
+            "ended_reason is null or ended_reason <> 'completed' or completed_at is not null"
+        );
 
         DB::statement(
             'create unique index order_shopper_assignments_order_current_unique on order_shopper_assignments (order_id) where ended_at is null'
@@ -51,6 +55,8 @@ return new class extends Migration
         DB::statement(
             'create index order_shopper_assignments_shopper_current_index on order_shopper_assignments (shopper_id) where ended_at is null'
         );
+        // Every assignment of an order, ended ones included, for the order's
+        // history on the board; the partial index above covers only the current.
         DB::statement('create index order_shopper_assignments_order_id_index on order_shopper_assignments (order_id)');
     }
 

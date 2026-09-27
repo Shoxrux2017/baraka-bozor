@@ -12,6 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\Database\AssertsDatabaseRejections;
+use Tests\Support\Database\ReadsPostgresCatalog;
 use Tests\TestCase;
 
 /**
@@ -21,6 +22,7 @@ use Tests\TestCase;
 final class OrderHistoryTableTest extends TestCase
 {
     use AssertsDatabaseRejections;
+    use ReadsPostgresCatalog;
     use RefreshDatabase;
 
     private const TABLE = 'order_history';
@@ -46,6 +48,24 @@ final class OrderHistoryTableTest extends TestCase
         ], $overrides);
     }
 
+    public function test_it_has_exactly_the_columns_the_schema_names(): void
+    {
+        $this->assertColumns(self::TABLE, [
+            'id' => ['uuid', false],
+            'order_id' => ['uuid', false],
+            'event_type' => ['character varying', false, 40],
+            'from_status' => ['character varying', true, 32],
+            'to_status' => ['character varying', true, 32],
+            'actor_type' => ['character varying', false, 24],
+            'actor_user_id' => ['uuid', true],
+            'reason_code' => ['character varying', true, 40],
+            'note' => ['text', true],
+            'details' => ['jsonb', true],
+            'created_at' => ['timestamp with time zone', false],
+        ]);
+        $this->assertStringContainsString('(order_id, created_at)', $this->indexesOn(self::TABLE)['order_history_order_id_created_at_index']);
+    }
+
     public function test_an_edit_with_its_details_is_accepted(): void
     {
         DB::table(self::TABLE)->insert($this->row([
@@ -62,6 +82,12 @@ final class OrderHistoryTableTest extends TestCase
         $this->assertRejectedBy(self::TABLE, 'order_history_event_type_check', $this->row(['event_type' => 'status_updated']), '08 Section 15.');
         $this->assertRejectedBy(self::TABLE, 'order_history_statuses_check', $this->row(['to_status' => 'approval_required']), 'DL-3 S-6.');
         $this->assertRejectedBy(self::TABLE, 'order_history_reason_code_check', $this->row(['reason_code' => 'bored']), 'DL-3 S-9.');
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_history_actor_type_check',
+            $this->row(['actor_type' => 'robot', 'actor_user_id' => null]),
+            'A user, the system or a payment provider.'
+        );
         $this->assertRejectedBy(
             self::TABLE,
             'order_history_details_object_check',

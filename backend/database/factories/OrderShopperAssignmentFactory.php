@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\Enums\AssignmentEndReason;
+use App\Models\Enums\OrderStatus;
 use App\Models\Enums\Role;
 use App\Models\Order;
 use App\Models\OrderShopperAssignment;
@@ -12,7 +13,8 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * Builds a current Shopper assignment made by an Operator; the states walk it
+ * Builds a current Shopper assignment made by an Operator, on an order that
+ * is `shopping_assigned` as a current assignment implies; the states walk it
  * through acceptance, the start of shopping and its end.
  *
  * @extends Factory<OrderShopperAssignment>
@@ -27,7 +29,7 @@ final class OrderShopperAssignmentFactory extends Factory
     public function definition(): array
     {
         return [
-            'order_id' => Order::factory(),
+            'order_id' => Order::factory()->state(['status' => OrderStatus::ShoppingAssigned]),
             'shopper_id' => User::factory()->role(Role::Shopper),
             'assigned_by_user_id' => User::factory()->role(Role::Operator),
             'is_self_order' => false,

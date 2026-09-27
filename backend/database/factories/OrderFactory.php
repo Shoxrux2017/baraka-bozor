@@ -19,12 +19,14 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 /**
  * Builds an order the database accepts in any of its nine states, for the
  * tests of this wave and the next: a cash order placed from the Customer's own
- * converted cart to the Customer's own address, under a 15 % markup, a fixed
- * service fee of 5 000 and a delivery fee of 15 000.
+ * converted cart to the Customer's own address — the recipient and the
+ * address snapshots copied from them — under a 15 % markup, a fixed service
+ * fee of 5 000 and a delivery fee of 15 000.
  *
  * The states set what each status implies (`orders_*_check`) and, where a
- * status implies a Shopper, create the assignment. Items are not created: a
- * test that needs lines says which with `OrderItem::factory()`.
+ * status implies a Shopper, create the assignment; [cancelled] goes last and
+ * ends a current assignment the way a cancellation does. Items are not
+ * created: a test that needs lines says which with `OrderItem::factory()`.
  *
  * @extends Factory<Order>
  */
@@ -53,16 +55,15 @@ final class OrderFactory extends Factory
             'status' => OrderStatus::New,
             'payment_method' => PaymentMethod::Cash,
             'delivery_time_note' => null,
-            'recipient_name_snapshot' => 'Aziza Karimova',
-            'recipient_phone_snapshot' => fn (array $attributes): string => User::query()
-                ->findOrFail($attributes['customer_id'])->phone,
-            'latitude_snapshot' => '41.311081',
-            'longitude_snapshot' => '69.240562',
-            'street_snapshot' => 'Amir Temur shoh ko\'chasi',
-            'house_snapshot' => '12',
-            'apartment_snapshot' => null,
-            'landmark_snapshot' => null,
-            'delivery_note_snapshot' => null,
+            'recipient_name_snapshot' => fn (array $attributes): string => $this->customer($attributes)->full_name ?? 'Aziza Karimova',
+            'recipient_phone_snapshot' => fn (array $attributes): string => $this->customer($attributes)->phone,
+            'latitude_snapshot' => fn (array $attributes): string => $this->address($attributes)->latitude,
+            'longitude_snapshot' => fn (array $attributes): string => $this->address($attributes)->longitude,
+            'street_snapshot' => fn (array $attributes): string => $this->address($attributes)->street,
+            'house_snapshot' => fn (array $attributes): string => $this->address($attributes)->house,
+            'apartment_snapshot' => fn (array $attributes): ?string => $this->address($attributes)->apartment,
+            'landmark_snapshot' => fn (array $attributes): ?string => $this->address($attributes)->landmark,
+            'delivery_note_snapshot' => fn (array $attributes): ?string => $this->address($attributes)->delivery_note,
             'markup_percent_snapshot' => '15.00',
             'price_tolerance_percent_snapshot' => '15.00',
             'service_fee_mode_snapshot' => ServiceFeeMode::Fixed,
@@ -121,13 +122,22 @@ final class OrderFactory extends Factory
         ]);
     }
 
+    /**
+     * Cancelled for a reason. Applied after a state that made a Shopper
+     * assignment, it ends that assignment with `order_cancelled`.
+     */
     public function cancelled(CancellationReason $reason = CancellationReason::CustomerCancelled): self
     {
         return $this->state(fn (): array => [
             'status' => OrderStatus::Cancelled,
             'cancelled_at' => now(),
             'cancellation_reason_code' => $reason,
-        ]);
+        ])->afterCreating(function (Order $order): void {
+            $order->shopperAssignments()->whereNull('ended_at')->update([
+                'ended_at' => now(),
+                'ended_reason' => AssignmentEndReason::OrderCancelled->value,
+            ]);
+        });
     }
 
     /**
@@ -143,6 +153,22 @@ final class OrderFactory extends Factory
             'shopping_started_at' => now(),
             'shopping_completed_at' => now(),
         ], self::SHOPPED, $more))->withShopper(OrderShopperAssignment::factory()->ended(AssignmentEndReason::Completed));
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function customer(array $attributes): User
+    {
+        return User::query()->findOrFail($attributes['customer_id']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function address(array $attributes): CustomerAddress
+    {
+        return CustomerAddress::query()->findOrFail($attributes['source_address_id']);
     }
 
     private function withShopper(OrderShopperAssignmentFactory $assignment): self

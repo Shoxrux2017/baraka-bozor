@@ -99,7 +99,7 @@ cancellation_reason_code?
 created_at, updated_at
 ```
 
-Status check on the nine values, and checks holding what a status implies: from `shopping` on a start, after shopping the completion and the final amounts, from `ready_for_delivery` on its instant, `on_the_way_at` for `on_the_way` and `completed`, `completed_at` exactly for `completed`, `cancelled_at` and a reason exactly for `cancelled`; the three final amounts all or none and the total their sum with the delivery fee; the service-fee snapshot's value by its mode (`DL-38`). Indexes `(customer_id, created_at)`, `(status, created_at)`, `(status, updated_at)`, `completed_at`, `cancelled_at`. The 30-minute online-payment attention instant lives on the payment row (Section 21).
+Status check on the nine values, and checks holding what a status implies: from `shopping` on a start, after shopping the completion and the final amounts, from `ready_for_delivery` on its instant, `on_the_way_at` for `on_the_way` and `completed`, `completed_at` exactly for `completed`, `cancelled_at` and a reason exactly for `cancelled`; the three final amounts all or none and the total their sum with the delivery fee; the stored service fee by the snapshotted rule; the service-fee snapshot's value by its mode (`DL-38`). Indexes `(customer_id, created_at)`, `(status, created_at)`, `(status, updated_at)`, `completed_at`, `cancelled_at`. The 30-minute online-payment attention instant lives on the payment row (Section 21).
 
 ## 14. `order_items`
 
@@ -128,17 +128,17 @@ removed_at?
 timestamps
 ```
 
-Checks: purchased requires `purchased_quantity ≥ billable_quantity > 0`, a billable price, a line total and a fulfilled product; removed has billable quantity and line total zero, a reason and `removed_at`; pending and awaiting lines bill nothing yet; a billable quantity never exceeds the ordered quantity or an approved cap, and a cap is below the ordered quantity (`DL-38`). `actual_market_price_uzs` is required by the application for estimate items and replacements. Index `(order_id, status)`, `fulfilled_product_id`.
+Checks: purchased requires `purchased_quantity ≥ billable_quantity > 0`, a billable price, a line total and a fulfilled product; removed has billable quantity and line total zero, a reason and `removed_at`; pending and awaiting lines bill nothing yet; a billable quantity (starting at zero) never exceeds the ordered quantity or an approved cap, and a cap is below the ordered quantity; a line total is its billable price times its billable quantity, half-up, and a fixed line bought as itself is billed at its snapshot (`DL-38`). `actual_market_price_uzs` is required by the application for estimate items and replacements. Index `(order_id, status)`, `fulfilled_product_id`.
 
 ## 15. `order_history`
 
-Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (user|system|payment_provider), actor_user_id?, reason_code?, note?, details jsonb?, created_at`. `details` holds structured facts an event needs to stay explainable: an edit's before and after, an assignment's id and `is_self_order` (`DL-37` (9), (14)). A trigger refuses every update and delete (`DL-38`).
+Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (user|system|payment_provider), actor_user_id?, reason_code?, note?, details jsonb?, created_at`. `details` holds structured facts an event needs to stay explainable: an edit's before and after, an assignment's id and `is_self_order` (`DL-37` (9), (14)). A `user` row names its actor and no other does; `details` is a JSON object. A trigger refuses every update and delete (`DL-38`).
 
 `event_type` in `status_changed, edited, payment_method_switched, price_corrected, shopper_assigned, shopper_reassigned, courier_assigned, courier_reassigned, delivery_failed, approval_requested, approval_decided, approval_expired, approval_resolved`. `reason_code` for cancellations in `customer_cancelled, cancellation_request_approved, unpaid_online, no_items_purchased, delivery_failed, system`. Index `(order_id, created_at)`.
 
 ## 16. `order_shopper_assignments`
 
-`id, order_id, shopper_id → users, assigned_by_user_id, is_self_order, assigned_at, accepted_at?, started_at?, completed_at?, ended_at?, ended_reason? (completed|reassigned|order_cancelled), timestamps`. Partial unique `(order_id) WHERE ended_at IS NULL`. Index `(shopper_id) WHERE ended_at IS NULL`. An end has its reason, a start follows acceptance, a completion follows a start.
+`id, order_id, shopper_id → users, assigned_by_user_id, is_self_order, assigned_at, accepted_at?, started_at?, completed_at?, ended_at?, ended_reason? (completed|reassigned|order_cancelled), timestamps`. Partial unique `(order_id) WHERE ended_at IS NULL`. Index `(shopper_id) WHERE ended_at IS NULL`. An end has its reason, a start follows acceptance, a completion follows a start, and an end as `completed` records the completion. Index `(order_id)` for every assignment of an order.
 
 ## 17. `order_courier_assignments`
 
@@ -186,7 +186,7 @@ Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per or
 
 ## 27. `idempotency_keys`
 
-`id, actor_user_id, operation varchar(80), idempotency_key uuid, request_hash char(64), state (processing|completed), attempt_token uuid, lease_expires_at, resource_type?, resource_id?, created_at, completed_at?`. `attempt_token` is renewed by every `begin` and takeover; completion and a refusal's delete act only on a `processing` row with their own token (`DL-37` (5)). Unique `(actor_user_id, operation, idempotency_key)`. Completed rows may be pruned after 30 days.
+`id, actor_user_id, operation varchar(80), idempotency_key uuid, request_hash char(64) (lower-case hex), state (processing|completed), attempt_token uuid, lease_expires_at, resource_type?, resource_id?, created_at, completed_at?`. A completed key names its resource. Index `completed_at` for pruning. `attempt_token` is renewed by every `begin` and takeover; completion and a refusal's delete act only on a `processing` row with their own token (`DL-37` (5)). Unique `(actor_user_id, operation, idempotency_key)`. Completed rows may be pruned after 30 days.
 
 ## 28. Deletion Strategy
 

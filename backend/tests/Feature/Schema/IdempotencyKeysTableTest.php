@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\Database\AssertsDatabaseRejections;
+use Tests\Support\Database\ReadsPostgresCatalog;
 use Tests\TestCase;
 
 /**
@@ -18,6 +19,7 @@ use Tests\TestCase;
 final class IdempotencyKeysTableTest extends TestCase
 {
     use AssertsDatabaseRejections;
+    use ReadsPostgresCatalog;
     use RefreshDatabase;
 
     private const TABLE = 'idempotency_keys';
@@ -39,6 +41,24 @@ final class IdempotencyKeysTableTest extends TestCase
             'lease_expires_at' => now()->addMinute(),
             'created_at' => now(),
         ], $overrides);
+    }
+
+    public function test_it_has_exactly_the_columns_the_schema_names(): void
+    {
+        $this->assertColumns(self::TABLE, [
+            'id' => ['uuid', false],
+            'actor_user_id' => ['uuid', false],
+            'operation' => ['character varying', false, 80],
+            'idempotency_key' => ['uuid', false],
+            'request_hash' => ['character', false, 64],
+            'state' => ['character varying', false, 16],
+            'attempt_token' => ['uuid', false],
+            'lease_expires_at' => ['timestamp with time zone', false],
+            'resource_type' => ['character varying', true, 40],
+            'resource_id' => ['uuid', true],
+            'created_at' => ['timestamp with time zone', false],
+            'completed_at' => ['timestamp with time zone', true],
+        ]);
     }
 
     public function test_a_key_is_unique_per_actor_and_operation(): void
@@ -82,6 +102,7 @@ final class IdempotencyKeysTableTest extends TestCase
     public function test_the_hash_is_a_sha256_hex_digest_and_the_state_is_known(): void
     {
         $this->assertRejectedBy(self::TABLE, 'idempotency_keys_request_hash_check', $this->row(['request_hash' => str_repeat('Z', 64)]), 'Lower-case hex SHA-256.');
+        $this->assertRejectedBy(self::TABLE, 'idempotency_keys_operation_not_blank_check', $this->row(['operation' => ' ']), 'An operation has a name.');
         $this->assertRejectedBy(self::TABLE, 'idempotency_keys_state_check', $this->row(['state' => 'failed']), 'A refusal deletes the row (DL-37 (5)); there is no failed state.');
     }
 }

@@ -35,6 +35,7 @@ return new class extends Migration
             $table->timestampTz('completed_at')->nullable();
 
             $table->unique(['actor_user_id', 'operation', 'idempotency_key']);
+            // Completed rows are pruned after 30 days (docs/08 section 27).
             $table->index('completed_at');
         });
 

@@ -8,7 +8,9 @@ use App\Models\CartItem;
 use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\CancellationReason;
 use App\Models\Enums\CartStatus;
+use App\Models\Enums\HistoryActorType;
 use App\Models\Enums\ItemRemovedReason;
+use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\PaymentMethod;
@@ -18,7 +20,9 @@ use App\Models\Enums\ServiceFeeMode;
 use App\Models\Enums\SubstitutionPolicy;
 use App\Models\Enums\UnitCode;
 use App\Models\Order;
+use App\Models\OrderHistory;
 use App\Models\OrderItem;
+use App\Models\OrderShopperAssignment;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -54,6 +58,9 @@ final class Wave2ModelsAndFactoriesTest extends TestCase
         $this->assertSame(CartStatus::Converted, $order->sourceCart->status);
         $this->assertSame($order->customer_id, $order->sourceAddress->customer_id);
         $this->assertSame($order->customer->phone, $order->recipient_phone_snapshot);
+        $this->assertSame($order->customer->full_name, $order->recipient_name_snapshot);
+        $this->assertSame($order->sourceAddress->street, $order->street_snapshot);
+        $this->assertSame($order->sourceAddress->latitude, $order->latitude_snapshot);
         $this->assertSame('15.00', $order->markup_percent_snapshot);
         $this->assertSame(ServiceFeeMode::Fixed, $order->service_fee_mode_snapshot);
         $this->assertNull($order->currentShopperAssignment);
@@ -88,6 +95,15 @@ final class Wave2ModelsAndFactoriesTest extends TestCase
         $this->assertSame(AssignmentEndReason::Completed, $ended->ended_reason);
         $this->assertSame(120000, $completed->final_total_uzs);
         $this->assertSame(PaymentMethod::Online, Order::factory()->finalPaymentPending()->create()->payment_method);
+
+        // A cancellation after an assignment ends it, as the action will.
+        $cancelled = Order::factory()->shoppingAssigned()->cancelled()->create();
+        $this->assertNull($cancelled->currentShopperAssignment);
+        $this->assertSame(AssignmentEndReason::OrderCancelled, $cancelled->shopperAssignments()->sole()->ended_reason);
+
+        // A current assignment made on its own sits on an order it implies.
+        $assignment = OrderShopperAssignment::factory()->create();
+        $this->assertSame(OrderStatus::ShoppingAssigned, $assignment->order->status);
     }
 
     public function test_a_line_snapshots_its_product_and_the_states_hold(): void
@@ -108,11 +124,41 @@ final class Wave2ModelsAndFactoriesTest extends TestCase
         $this->assertSame('3.000', $bought->fresh()?->billable_quantity);
         $this->assertSame(10350, $bought->line_total_uzs);
         $this->assertSame($product->id, $bought->fulfilled_product_id);
+        $this->assertNull($bought->actual_market_price_uzs, 'A fixed line bought as itself needs no actual price.');
+
+        $estimate = OrderItem::factory()->for($order)->purchased()->create();
+        $this->assertSame($estimate->market_price_uzs_snapshot, $estimate->actual_market_price_uzs);
 
         $removed = OrderItem::factory()->for($order)->removed(ItemRemovedReason::OrderCancelled)->create();
         $this->assertSame(ItemRemovedReason::OrderCancelled, $removed->removed_reason_code);
         $this->assertSame(0, $removed->line_total_uzs);
 
-        $this->assertSame(3, $order->items()->count());
+        $this->assertSame(4, $order->items()->count());
+    }
+
+    public function test_history_details_are_an_object_and_an_empty_map_is_none(): void
+    {
+        $order = Order::factory()->create();
+
+        $write = static function (Order $order, ?array $details): OrderHistory {
+            $row = (new OrderHistory)->forceFill([
+                'order_id' => $order->id,
+                'event_type' => OrderHistoryEvent::Edited,
+                'actor_type' => HistoryActorType::User,
+                'actor_user_id' => $order->customer_id,
+                'details' => $details,
+            ]);
+            $row->save();
+
+            return $row;
+        };
+
+        $this->assertNull($write($order, [])->fresh()?->details);
+        // jsonb keeps an object's keys in its own order, so the pairs are
+        // compared, not the order they were written in.
+        $this->assertEquals(
+            ['removed' => ['a-line'], 'wish' => ['before' => null, 'after' => 'после 18:00']],
+            $write($order, ['removed' => ['a-line'], 'wish' => ['before' => null, 'after' => 'после 18:00']])->fresh()?->details
+        );
     }
 }
