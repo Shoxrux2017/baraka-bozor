@@ -28,7 +28,7 @@ View and edit `full_name` and `preferred_language` (`uz` or `ru`). Checkout requ
 
 ## 4. Delivery Addresses
 
-Create, list, edit and deactivate own addresses. Required: a point on the map inside the service area, street, house. Optional: label, apartment, landmark, note for the Courier. The map is Yandex MapKit in the client; the backend stores coordinates and text only and checks the service-area circle.
+Create, list, edit and deactivate own addresses. Required: a point on the map inside the service area, street, house. Optional: label, apartment, landmark, note for the Courier. The map is Yandex MapKit in the client; the backend stores coordinates and text only and checks the service-area circle. Where the map is shown, the Customer can also open the point in Yandex Maps, and the app's "About" section links to the Yandex Maps terms, as the free MapKit terms require (`DL-36`).
 
 ## 5. Catalog
 
