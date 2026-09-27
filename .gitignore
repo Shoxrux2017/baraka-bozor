@@ -49,3 +49,6 @@ Desktop.ini
 
 # Local tooling
 .phpunit.cache/
+
+# Bytecode of the walkthrough scripts under tasks/scripts/
+__pycache__/

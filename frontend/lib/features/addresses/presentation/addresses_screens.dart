@@ -301,8 +301,6 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
         key: const ValueKey<String>('address-form'),
         padding: const EdgeInsets.all(16),
         children: <Widget>[
-          Text(l10n.addressMapHint),
-          const SizedBox(height: 8),
           picker(
             initial: _point,
             enabled: !change.isBusy,
