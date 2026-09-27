@@ -70,6 +70,11 @@ void main() {
 
       expect(redirect(failed, AppPaths.bootstrap), AppPaths.unreachable);
       expect(redirect(failed, AppPaths.unreachable), isNull);
+      expect(
+        redirect(failed, '${AppPaths.bootstrap}?next=%2Fadmin%2Fstaff'),
+        '${AppPaths.unreachable}?next=%2Fadmin%2Fstaff',
+        reason: 'the retry screen keeps the page',
+      );
     });
   });
 
@@ -104,6 +109,14 @@ void main() {
       );
 
       expect(redirect(unreachable, AppPaths.unreachable), isNull);
+      expect(
+        redirect(unreachable, '${AppPaths.bootstrap}?next=%2Foperations'),
+        '${AppPaths.unreachable}?next=%2Foperations',
+      );
+      expect(
+        redirect(unreachable, '${AppPaths.unreachable}?next=%2Foperations'),
+        isNull,
+      );
       expect(redirect(unreachable, AppPaths.auth), AppPaths.unreachable);
       expect(redirect(unreachable, AppPaths.shopper), AppPaths.unreachable);
     });
@@ -208,6 +221,8 @@ void main() {
       for (final String foreign in <String>[
         'https://evil.example/operations',
         '//evil.example/operations',
+        'http:/operations',
+        'javascript:alert(1)',
         'operations',
         '',
       ]) {
@@ -217,6 +232,16 @@ void main() {
           reason: foreign,
         );
       }
+
+      // A retry that succeeded opens the page the retry screen kept.
+      expect(
+        redirect(
+          signedIn(staff: user(role: UserRole.admin)),
+          '${AppPaths.unreachable}?next=%2Fadmin%2Fstaff',
+          surface: Surface.web,
+        ),
+        '/admin/staff',
+      );
 
       // Signed out, the login.
       expect(redirect(signedOut, '/?next=%2Fadmin'), AppPaths.auth);

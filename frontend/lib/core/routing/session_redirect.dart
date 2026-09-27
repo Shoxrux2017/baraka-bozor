@@ -17,15 +17,16 @@ import 'app_paths.dart';
 ///    treated as unreachable, so the person gets a retry rather than a
 ///    spinner;
 /// 2. signed out, only the public auth screens are reachable;
-/// 3. unreachable, only the retry screen;
+/// 3. unreachable, only the retry screen, which keeps remembering the page;
 /// 4. signed in on the wrong surface, only the screen naming the right one
 ///    (`docs/02-user-roles.md` section 10);
 /// 5. signed in behind the first-login gate, only the password change
 ///    (`docs/04-user-flows.md` section 3);
 /// 6. otherwise the active role's areas, plus the Customer-mode entry for a
 ///    Shopper or Courier who has no customer session yet; the page the
-///    bootstrap remembered opens when it lies inside those areas, and
-///    anything else goes to the role's home (`DL-37` (17), `DL-46` (1)).
+///    bootstrap or the retry screen remembered opens when it lies inside
+///    those areas, and anything else goes to the role's home (`DL-37` (17),
+///    `DL-46` (1)).
 String? sessionRedirect({
   required AsyncValue<SessionState> session,
   required Surface surface,
@@ -34,7 +35,7 @@ String? sessionRedirect({
   final String location = uri.path;
 
   if (session.hasError) {
-    return _only(AppPaths.unreachable, location);
+    return _unreachable(uri);
   }
 
   final SessionState? state = session.value;
@@ -46,7 +47,7 @@ String? sessionRedirect({
 
   return switch (state) {
     SignedOut() => _signedOut(location),
-    SessionUnreachable() => _only(AppPaths.unreachable, location),
+    SessionUnreachable() => _unreachable(uri),
     final SignedIn signedIn => _signedIn(signedIn, surface, uri),
   };
 }
@@ -85,7 +86,7 @@ String? _signedIn(SignedIn state, Surface surface, Uri uri) {
     return null;
   }
 
-  if (location == AppPaths.bootstrap) {
+  if (location == AppPaths.bootstrap || location == AppPaths.unreachable) {
     final String? next = _remembered(uri, areas);
     if (next != null) {
       return next;
@@ -93,6 +94,24 @@ String? _signedIn(SignedIn state, Surface surface, Uri uri) {
   }
 
   return AppPaths.homeOf(user.role);
+}
+
+/// The retry screen, carrying the page the bootstrap remembered, so a
+/// reload that met an unreachable server still returns to it once a retry
+/// succeeds.
+String? _unreachable(Uri uri) {
+  if (uri.path == AppPaths.unreachable) {
+    return null;
+  }
+  final String? next = uri.path == AppPaths.bootstrap
+      ? uri.queryParameters['next']
+      : null;
+  return next == null
+      ? AppPaths.unreachable
+      : Uri(
+          path: AppPaths.unreachable,
+          queryParameters: <String, String>{'next': next},
+        ).toString();
 }
 
 /// The page the bootstrap remembered, when it is a location of this app
