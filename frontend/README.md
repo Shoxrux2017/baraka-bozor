@@ -39,6 +39,11 @@ The API base URL is a build-time value:
 `--dart-define=BB_API_BASE_URL=https://.../api/v1` (default
 `http://localhost:8000/api/v1`, see `lib/core/config/api_config.dart`).
 
+The Yandex MapKit key is a build-time value too, never committed. Keep it in
+`frontend/.env.mapkit` (gitignored), one line `YANDEX_MAPKIT_API_KEY=<key>`,
+and add `--dart-define-from-file=.env.mapkit` to the Android build. A build
+without it has no map and takes the address point as coordinates (`DL-33`).
+
 ## Strings
 
 The client owns every user-facing string, in Uzbek (Latin) and Russian. They
