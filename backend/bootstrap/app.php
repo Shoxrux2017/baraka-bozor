@@ -30,10 +30,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // middleware, so that their refusals carry the identifier too.
         $middleware->prepend(AssignRequestId::class);
 
-        // No sign-in page exists to send a guest to: the framework's default,
-        // `route('login')`, threw on a request without `Accept: application/json`
-        // and turned the `401` into a `500`. Without a redirect the refusal is
-        // the API envelope whatever the request accepts.
+        // No sign-in page exists to send a guest to. The framework's default
+        // redirect, `route('login')`, would be looked up for any request that
+        // does not ask for JSON first, and throw; with no redirect every guest
+        // refusal is the API envelope's `401`.
         $middleware->redirectGuestsTo(null);
 
         // The framework's default global stack, with the input check placed

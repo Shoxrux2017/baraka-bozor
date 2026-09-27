@@ -87,7 +87,7 @@ Backend tasks first, in order; the panel screens after their APIs; the app scree
 
 ## Independent-review findings not acted on
 
-None beyond the risk rows above that name the review which found them (W1-7, W1-8, W1-9 and W1-14, and the review of `DL-34`), each left for the wave it belongs to. Every other finding of the reviews of pull requests #29 to #47 was acted on before merge, P3s included; the records are on the pull requests.
+None beyond the risk rows above that name the review which found them (W1-7, W1-8, W1-9 and W1-14, and the review of `DL-34`), each left for the wave it belongs to. Every other finding of the reviews of pull requests #29 to #47 was acted on before merge, P3s included; the records are on the pull requests. After the closure, the review of PR #48 noted that an `HttpResponseException` on `/api/*` would be answered `500 server_error`, since the renderer has no case for it; nothing throws one, and answering with its own response would let a body outside the envelope through, so it waits for the first code that needs it (a rate limiter's `response()` callback, for example).
 
 ## Closure
 
