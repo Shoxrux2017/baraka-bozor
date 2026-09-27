@@ -67,7 +67,7 @@ final readonly class OrderTotals
 
     /**
      * The same totals from the lines' sum and whether any is an estimate, as a
-     * list query computes them in SQL (`CustomerOrders::withLineSums`), so a
+     * list query computes them in SQL (`OrderLineSums`), so a
      * page of orders does not load every line.
      */
     public static function fromLines(Order $order, int $subtotal, bool $estimate): self

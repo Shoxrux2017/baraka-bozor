@@ -1,0 +1,147 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Orders\Http\Resources;
+
+use App\Models\Enums\OrderItemStatus;
+use App\Models\Order;
+use App\Models\OrderHistory;
+use App\Models\OrderItem;
+use App\Models\OrderShopperAssignment;
+use App\Modules\Orders\OrderTotals;
+use App\Modules\Orders\QuantityPolicy;
+use Carbon\CarbonInterface;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * An order as the Operator and the Admin see it (`docs/09` section 38): the
+ * Customer and the address, the delivery wish, every line with its snapshots
+ * — the market price among them, since staff reconcile what the Shopper pays
+ * — the totals, every Shopper assignment with its self-order mark, and the
+ * whole history with who did what. The Courier's assignments, approvals,
+ * the payment and refunds are empty until the waves that bring them.
+ *
+ * Expects `items`, `history.actor`, `shopperAssignments.shopper` and
+ * `shopperAssignments.assignedBy` loaded.
+ *
+ * @property-read Order $resource
+ */
+final class BoardOrderResource extends JsonResource
+{
+    public function __construct(Order $order)
+    {
+        parent::__construct($order);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        $order = $this->resource;
+        $items = $order->items->sortBy([['created_at', 'asc'], ['id', 'asc']])->values();
+        $totals = OrderTotals::of($order, $items);
+        $assignments = $order->shopperAssignments->sortBy([['assigned_at', 'asc'], ['id', 'asc']])->values();
+
+        return [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'status' => $order->status->value,
+            'payment_method' => $order->payment_method->value,
+            'delivery_time_note' => $order->delivery_time_note,
+            'customer' => [
+                'id' => $order->customer_id,
+                'full_name' => $order->recipient_name_snapshot,
+                'phone' => $order->recipient_phone_snapshot,
+            ],
+            'address' => [
+                'latitude' => $order->latitude_snapshot,
+                'longitude' => $order->longitude_snapshot,
+                'street' => $order->street_snapshot,
+                'house' => $order->house_snapshot,
+                'apartment' => $order->apartment_snapshot,
+                'landmark' => $order->landmark_snapshot,
+                'delivery_note' => $order->delivery_note_snapshot,
+            ],
+            'items' => $items->map(static fn (OrderItem $item): array => [
+                'id' => $item->id,
+                'product_id' => $item->product_id,
+                'name_uz' => $item->product_name_uz_snapshot,
+                'name_ru' => $item->product_name_ru_snapshot,
+                'unit_code' => $item->unit_code_snapshot->value,
+                'price_mode' => $item->price_mode_snapshot->value,
+                'quantity' => QuantityPolicy::format($item->unit_code_snapshot, $item->ordered_quantity),
+                'customer_note' => $item->customer_note_snapshot,
+                'substitution_policy' => $item->substitution_policy_snapshot->value,
+                'status' => $item->status->value,
+                'market_price_uzs' => $item->market_price_uzs_snapshot,
+                'customer_unit_price_uzs' => $item->customer_unit_price_uzs_snapshot,
+                'markup_percent' => $item->markup_percent_snapshot,
+                'line_total_uzs' => $item->status === OrderItemStatus::Removed ? 0 : OrderTotals::lineEstimate($item),
+                'removed_reason_code' => $item->removed_reason_code?->value,
+            ])->all(),
+            'totals' => [
+                'merchandise_subtotal_uzs' => $totals->merchandiseSubtotalUzs,
+                'service_fee_uzs' => $totals->serviceFeeUzs,
+                'delivery_fee_uzs' => $totals->deliveryFeeUzs,
+                'total_uzs' => $totals->totalUzs,
+                'total_kind' => $totals->kind,
+            ],
+            'shopper_assignments' => $assignments->map(static fn (OrderShopperAssignment $assignment): array => [
+                'id' => $assignment->id,
+                'shopper' => [
+                    'id' => $assignment->shopper->id,
+                    'full_name' => $assignment->shopper->full_name,
+                    'phone' => $assignment->shopper->phone,
+                ],
+                'assigned_by' => ['id' => $assignment->assignedBy->id, 'full_name' => $assignment->assignedBy->full_name],
+                'is_self_order' => $assignment->is_self_order,
+                'assigned_at' => self::instant($assignment->assigned_at),
+                'accepted_at' => self::instant($assignment->accepted_at),
+                'started_at' => self::instant($assignment->started_at),
+                'completed_at' => self::instant($assignment->completed_at),
+                'ended_at' => self::instant($assignment->ended_at),
+                'ended_reason' => $assignment->ended_reason?->value,
+            ])->all(),
+            'courier_assignments' => [],
+            'approvals' => [],
+            'payment' => null,
+            'refunds' => [],
+            'history' => $order->history->sortBy([['created_at', 'asc'], ['id', 'asc']])->values()->map(
+                static fn (OrderHistory $entry): array => [
+                    'id' => $entry->id,
+                    'event_type' => $entry->event_type->value,
+                    'from_status' => $entry->from_status?->value,
+                    'to_status' => $entry->to_status?->value,
+                    'actor_type' => $entry->actor_type->value,
+                    'actor' => $entry->actor === null ? null : [
+                        'id' => $entry->actor->id,
+                        'role' => $entry->actor->role->value,
+                        'full_name' => $entry->actor->full_name,
+                    ],
+                    'reason_code' => $entry->reason_code?->value,
+                    'note' => $entry->note,
+                    'details' => $entry->details,
+                    'created_at' => self::instant($entry->created_at),
+                ]
+            )->all(),
+            'cancellation_reason_code' => $order->cancellation_reason_code?->value,
+            'timestamps' => [
+                'created_at' => self::instant($order->created_at),
+                'shopping_started_at' => self::instant($order->shopping_started_at),
+                'shopping_completed_at' => self::instant($order->shopping_completed_at),
+                'ready_for_delivery_at' => self::instant($order->ready_for_delivery_at),
+                'on_the_way_at' => self::instant($order->on_the_way_at),
+                'completed_at' => self::instant($order->completed_at),
+                'cancelled_at' => self::instant($order->cancelled_at),
+            ],
+        ];
+    }
+
+    private static function instant(?CarbonInterface $instant): ?string
+    {
+        return $instant?->toIso8601ZuluString();
+    }
+}

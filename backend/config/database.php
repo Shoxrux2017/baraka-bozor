@@ -96,6 +96,10 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
+            // Laravel binds and saves an instant without its offset, so the
+            // session reads every one in UTC whatever the server's default
+            // (`DL-44` (8)).
+            'timezone' => 'UTC',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
             // A failed query's exception message names the statement, not its
             // values: those can be a phone, a name or a password hash, and the

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Orders\Http\Resources;
 
 use App\Models\Order;
-use App\Modules\Orders\OrderTotals;
+use App\Modules\Orders\OrderLineSums;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,7 +15,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * method, how many lines, the total and its kind, when it was placed. The
  * detail carries the rest.
  *
- * Expects the sums of `CustomerOrders::withLineSums`.
+ * Expects the sums of `OrderLineSums::add`.
  *
  * @property-read Order $resource
  */
@@ -32,11 +32,7 @@ final class CustomerOrderSummaryResource extends JsonResource
     public function toArray(Request $request): array
     {
         $order = $this->resource;
-        $totals = OrderTotals::fromLines(
-            $order,
-            (int) $order->getAttribute('lines_subtotal_uzs'),
-            (bool) $order->getAttribute('has_estimate_line'),
-        );
+        $totals = OrderLineSums::totals($order);
 
         return [
             'id' => $order->id,

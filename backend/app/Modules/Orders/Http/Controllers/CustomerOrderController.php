@@ -19,6 +19,7 @@ use App\Modules\Orders\Http\Requests\EditOrderItemsRequest;
 use App\Modules\Orders\Http\Requests\ListCustomerOrdersRequest;
 use App\Modules\Orders\Http\Resources\CustomerOrderResource;
 use App\Modules\Orders\Http\Resources\CustomerOrderSummaryResource;
+use App\Modules\Orders\OrderLineSums;
 use App\Support\Scope\ScopedLookup;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,7 +35,7 @@ final class CustomerOrderController extends Controller
 {
     public function index(ListCustomerOrdersRequest $request): JsonResponse
     {
-        $orders = CustomerOrders::withLineSums(CustomerOrders::own($this->customer($request)))
+        $orders = OrderLineSums::add(CustomerOrders::own($this->customer($request)))
             ->orderByDesc('created_at')
             ->orderByDesc('order_number')
             ->paginate($request->perPage(), ['*'], 'page', $request->page());
