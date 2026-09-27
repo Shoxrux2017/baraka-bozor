@@ -130,7 +130,7 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
   "checkout_token":"...","checkout_token_expires_at":"..."}}
 ```
 
-`total_kind` ∈ `final, estimate`; an order's totals also take `none`, with every amount `null`, once it is cancelled (`DL-37` (10)). Codes: `customer_profile_incomplete`, `address_incomplete`, `address_outside_service_area`, `cart_empty`, `product_unavailable` (`details.product_ids`), `minimum_order_not_reached` (`details.minimum_order_uzs`, `details.shortfall_uzs`), `checkout_configuration_incomplete`, `payment_method_unavailable`.
+`total_kind` ∈ `final, estimate`; an order's totals also take `none`, with every amount `null`, once it is cancelled (`DL-37` (10)). The preview also echoes `payment_method` and `delivery_time_note`; `opens_at` is `null` when the business is always open; `checkout_token_expires_at` is five minutes after the preview. Codes, checked in this order (`DL-37` (21), `DL-41`): `409 checkout_configuration_incomplete`; `409 customer_profile_incomplete`; the scope-safe `404` for an address that is not the Customer's own active one; `409 address_incomplete`; `422 address_outside_service_area` (`details` as in section 13); `409 cart_empty`; `409 product_unavailable` (`details.product_ids`, also for a line whose quantity no longer fits its product's unit); `409 minimum_order_not_reached` (`details.minimum_order_uzs`, `details.shortfall_uzs`, on the merchandise subtotal); `409 payment_method_unavailable`.
 
 ## 19. Create Order
 

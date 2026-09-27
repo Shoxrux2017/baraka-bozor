@@ -45,6 +45,20 @@ final class QuantityPolicy
     }
 
     /**
+     * Whether a stored quantity still fits its product's unit and the bounds —
+     * it may not, once an Admin has changed the product's unit under a cart
+     * line (`1.500` kg becoming 1.5 pieces); checkout refuses such a line.
+     */
+    public static function fits(UnitCode $unit, Quantity $quantity): bool
+    {
+        $limit = $unit->allowsFraction() ? 9_999_999 : 9_999_000;
+
+        return $quantity->thousandths > 0
+            && $quantity->thousandths <= $limit
+            && ($unit->allowsFraction() || $quantity->isWhole());
+    }
+
+    /**
      * How the API shows a stored quantity: three decimals for a unit that takes
      * a fraction (`"1.500"`), a whole number for the others (`"2"`).
      */

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\Idempotency;
 
-use InvalidArgumentException;
+use App\Support\CanonicalJson;
 
 /**
  * The request hash an idempotency key is bound to (`DL-37` (5)): SHA-256 over
@@ -13,12 +13,11 @@ use InvalidArgumentException;
  * different orders — the same operation, the same empty body — is a key
  * reused, not a replay of the first cancellation.
  *
- * Canonical means object keys sorted at every depth, lists left in their
- * order, and no escaping of slashes or non-ASCII text, so the same request
- * hashes the same however its JSON was written. Route parameters are ids and
- * enum values, compared in lower case, so one id in either case is one
- * request; a leaf that is an object is refused, since a bound model would
- * hash its current attributes and make a retry after a change look reused.
+ * The JSON is canonical (`CanonicalJson`), so the same request hashes the
+ * same however its JSON was written, and an object anywhere in it is refused,
+ * since a bound model would hash its current attributes and make a retry
+ * after a change look reused. Route parameters are ids and enum values,
+ * compared in lower case, so one id in either case is one request.
  */
 final class RequestFingerprint
 {
@@ -28,34 +27,10 @@ final class RequestFingerprint
      */
     public static function of(string $operation, array $routeParameters, array $body): string
     {
-        $canonical = self::canonical([
+        return CanonicalJson::sha256([
             'operation' => $operation,
             'route' => array_map(strtolower(...), $routeParameters),
             'body' => $body,
         ]);
-
-        return hash('sha256', json_encode(
-            $canonical,
-            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION | JSON_THROW_ON_ERROR
-        ));
-    }
-
-    private static function canonical(mixed $value): mixed
-    {
-        if (is_object($value)) {
-            throw new InvalidArgumentException('A request fingerprint holds scalars, nulls and arrays only.');
-        }
-
-        if (! is_array($value)) {
-            return $value;
-        }
-
-        $value = array_map(self::canonical(...), $value);
-
-        if (! array_is_list($value)) {
-            ksort($value, SORT_STRING);
-        }
-
-        return $value;
     }
 }

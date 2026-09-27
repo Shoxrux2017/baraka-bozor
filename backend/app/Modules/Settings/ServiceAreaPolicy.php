@@ -28,8 +28,15 @@ final class ServiceAreaPolicy
 
     public function assertDeliverable(string $latitude, string $longitude): void
     {
-        $settings = BusinessSettings::current();
+        self::assertDeliverableUnder(BusinessSettings::current(), $latitude, $longitude);
+    }
 
+    /**
+     * The same check against settings the caller has already read, so a
+     * checkout decides every rule from one reading of them (`DL-37` (7)).
+     */
+    public static function assertDeliverableUnder(BusinessSettings $settings, string $latitude, string $longitude): void
+    {
         if ($settings->service_centre_latitude === null
             || $settings->service_centre_longitude === null
             || $settings->service_radius_km === null) {
