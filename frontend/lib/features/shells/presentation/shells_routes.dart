@@ -12,14 +12,17 @@ import 'role_shell_screen.dart';
 final FeatureRoutes shellsRoutes = FeatureRoutes(
   feature: 'shells',
   routes: <RouteBase>[
-    // The Admin area (`features/admin`) and the Customer area, whose home is
-    // the catalog (`features/catalog`), have features of their own that
-    // serve their entries as well; the other areas keep this placeholder
-    // until their features arrive.
+    // The Admin area (`features/admin`), the Operator's board
+    // (`features/operations`) and the Customer area, whose home is the
+    // catalog (`features/catalog`), have features of their own that serve
+    // their entries as well; the other areas keep this placeholder until
+    // their features arrive.
     for (final UserRole role in UserRole.values)
-      if (role != UserRole.admin && role != UserRole.customer)
+      if (role != UserRole.admin &&
+          role != UserRole.operator &&
+          role != UserRole.customer)
         GoRoute(
-          path: AppPaths.areaOf(role),
+          path: AppPaths.homeOf(role),
           name: 'shell-${role.code}',
           builder: (BuildContext context, GoRouterState state) =>
               RoleShellScreen(role: role),

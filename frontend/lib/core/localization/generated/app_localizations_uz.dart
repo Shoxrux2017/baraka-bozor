@@ -169,6 +169,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get shellPlaceholder => 'Bu bo\'lim keyingi bosqichda paydo bo\'ladi';
 
   @override
+  String get panelSectionBoard => 'Buyurtmalar';
+
+  @override
   String get customerModeLabel => 'Mijoz rejimi';
 
   @override
@@ -241,12 +244,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get errorUnknown => 'Xatolik yuz berdi. Qayta urinib ko\'ring';
-
-  @override
-  String get adminHomeIntro => 'Bo\'limni tanlang';
-
-  @override
-  String get adminSectionHome => 'Asosiy';
 
   @override
   String get adminSectionSettings => 'Sozlamalar';

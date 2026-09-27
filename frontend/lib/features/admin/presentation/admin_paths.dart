@@ -1,13 +1,14 @@
 import '../../../core/routing/app_paths.dart';
 
 /// The locations inside the Admin area. The area itself is
-/// [AppPaths.admin]; the session guard keeps an Admin inside it.
+/// [AppPaths.admin]; the sections the panel's navigation links are declared
+/// in [AppPaths], which the shared shell reads.
 abstract final class AdminPaths {
-  static const String settings = '${AppPaths.admin}/settings';
-  static const String categories = '${AppPaths.admin}/categories';
-  static const String products = '${AppPaths.admin}/products';
+  static const String settings = AppPaths.adminSettings;
+  static const String categories = AppPaths.adminCategories;
+  static const String products = AppPaths.adminProducts;
   static const String newProduct = '$products/new';
-  static const String staff = '${AppPaths.admin}/staff';
+  static const String staff = AppPaths.adminStaff;
 
   /// The route pattern of one product's page.
   static const String productPattern = '$products/:product';

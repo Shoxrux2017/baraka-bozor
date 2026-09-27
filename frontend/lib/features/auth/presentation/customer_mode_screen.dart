@@ -24,7 +24,7 @@ class CustomerModeScreen extends ConsumerWidget {
     final SessionState? session = ref.read(sessionControllerProvider).value;
     context.go(
       session is SignedIn
-          ? AppPaths.areaOf(session.activeUser.role)
+          ? AppPaths.homeOf(session.activeUser.role)
           : AppPaths.auth,
     );
   }
