@@ -68,7 +68,7 @@ void main() {
     await openPanel(tester);
     await tester.tap(
       find.byKey(
-        const ValueKey<String>('admin-section-${AdminPaths.settings}'),
+        const ValueKey<String>('panel-section-${AdminPaths.settings}'),
       ),
     );
     await tester.pumpAndSettle();
@@ -86,12 +86,12 @@ void main() {
       await openPanel(tester);
 
       expect(find.text(l10n(tester).shellAdmin), findsOneWidget);
-      expect(find.byKey(const ValueKey<String>('admin-rail')), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('panel-rail')), findsOneWidget);
       expect(repository.loads, 0, reason: 'the landing page loads nothing');
 
       await tester.tap(
         find.byKey(
-          const ValueKey<String>('admin-section-${AdminPaths.settings}'),
+          const ValueKey<String>('panel-section-${AdminPaths.settings}'),
         ),
       );
       await tester.pumpAndSettle();
@@ -340,7 +340,7 @@ void main() {
   ) async {
     await openPanel(tester, size: const Size(600, 1200));
 
-    expect(find.byKey(const ValueKey<String>('admin-rail')), findsNothing);
+    expect(find.byKey(const ValueKey<String>('panel-rail')), findsNothing);
     await tester.tap(
       find.byTooltip(
         MaterialLocalizations.of(tester.element(find.byType(Scaffold).first))

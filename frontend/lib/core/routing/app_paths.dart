@@ -31,17 +31,39 @@ abstract final class AppPaths {
   static String customerAddress(String id) =>
       '$customerAddresses/${Uri.encodeComponent(id)}';
 
-  /// The area a role works in.
-  static String areaOf(UserRole role) => switch (role) {
+  // Inside the Admin area, where the panel's shared navigation links
+  // (`features/shells/presentation/panel_shell.dart`).
+  static const String adminCategories = '$admin/categories';
+  static const String adminProducts = '$admin/products';
+  static const String adminStaff = '$admin/staff';
+  static const String adminSettings = '$admin/settings';
+
+  /// Where a role lands: its area, except the Admin's, which is the board
+  /// (`DL-37` (17)).
+  static String homeOf(UserRole role) => switch (role) {
     UserRole.customer => customer,
     UserRole.shopper => shopper,
     UserRole.courier => courier,
     UserRole.operator => operations,
-    UserRole.admin => admin,
+    UserRole.admin => operations,
     UserRole.manager => manager,
+  };
+
+  /// The areas a role works in: its own, and for the Admin the board as
+  /// well (`DL-37` (17)).
+  static List<String> areasOf(UserRole role) => switch (role) {
+    UserRole.admin => const <String>[admin, operations],
+    _ => <String>[homeOf(role)],
   };
 
   /// Whether [location] is [area] or a page inside it.
   static bool isInside(String location, String area) =>
       location == area || location.startsWith('$area/');
+
+  /// The bootstrap screen, remembering [requested] as `next`, so the page a
+  /// reload asked for opens once the session is known (`DL-46` (1)).
+  static String bootstrapKeeping(Uri requested) => Uri(
+    path: bootstrap,
+    queryParameters: <String, String>{'next': requested.toString()},
+  ).toString();
 }

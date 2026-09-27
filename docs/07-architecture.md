@@ -223,7 +223,7 @@ Session, target and operation identity guard every async completion; a result th
 
 Areas: `/auth`, `/customer`, `/shopper`, `/courier`, `/operations`, `/admin`, `/manager`. Guards are UX; the backend is the authority.
 
-One session guard decides every navigation from the session state and the surface (`DL-15`): the bootstrap screen until the session is known, the retry screen if the bootstrap threw; signed out, only the login screens; unreachable, only the retry screen; a role on the wrong surface, only the screen naming the right one; the first-login gate, only the password change; otherwise the active role's area. The router re-evaluates the guard whenever the session changes, so a login, a mode switch or a dropped session moves the interface without any screen navigating. The login screens are flat routes with their own way back, never pages stacked over one another.
+One session guard decides every navigation from the session state and the surface (`DL-15`): the bootstrap screen until the session is known, the retry screen if the bootstrap threw; signed out, only the login screens; unreachable, only the retry screen; a role on the wrong surface, only the screen naming the right one; the first-login gate, only the password change; otherwise the active role's areas — the Admin's are `/admin` and the board at `/operations`, where it lands. The bootstrap screen remembers the page asked for and opens it once the session is known, when it lies inside those areas (`DL-46`). The router re-evaluates the guard whenever the session changes, so a login, a mode switch or a dropped session moves the interface without any screen navigating. The login screens are flat routes with their own way back, never pages stacked over one another.
 
 ## 30. API Style
 

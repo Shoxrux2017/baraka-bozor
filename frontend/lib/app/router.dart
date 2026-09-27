@@ -7,6 +7,7 @@ import '../features/admin/presentation/admin_routes.dart';
 import '../features/auth/presentation/auth_routes.dart';
 import '../features/addresses/presentation/addresses_routes.dart';
 import '../features/catalog/presentation/catalog_routes.dart';
+import '../features/operations/presentation/operations_routes.dart';
 import '../features/profile/presentation/profile_routes.dart';
 import '../features/shells/presentation/shells_routes.dart';
 
@@ -24,6 +25,7 @@ final List<FeatureRoutes> featureRouteFragments = <FeatureRoutes>[
   authRoutes,
   shellsRoutes,
   adminRoutes,
+  operationsRoutes,
   catalogRoutes,
   profileRoutes,
   addressesRoutes,

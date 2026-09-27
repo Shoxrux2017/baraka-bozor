@@ -121,7 +121,7 @@ final Provider<GoRouter> routerProvider = Provider<GoRouter>((Ref ref) {
     redirect: (BuildContext context, GoRouterState state) => sessionRedirect(
       session: ref.read(sessionControllerProvider),
       surface: surface,
-      location: state.matchedLocation,
+      uri: state.uri,
     ),
   );
   ref.onDispose(router.dispose);

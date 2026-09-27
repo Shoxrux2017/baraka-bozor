@@ -398,6 +398,12 @@ abstract class AppLocalizations {
   /// **'Bu bo\'lim keyingi bosqichda paydo bo\'ladi'**
   String get shellPlaceholder;
 
+  /// No description provided for @panelSectionBoard.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar'**
+  String get panelSectionBoard;
+
   /// No description provided for @customerModeLabel.
   ///
   /// In uz, this message translates to:
@@ -535,18 +541,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Xatolik yuz berdi. Qayta urinib ko\'ring'**
   String get errorUnknown;
-
-  /// No description provided for @adminHomeIntro.
-  ///
-  /// In uz, this message translates to:
-  /// **'Bo\'limni tanlang'**
-  String get adminHomeIntro;
-
-  /// No description provided for @adminSectionHome.
-  ///
-  /// In uz, this message translates to:
-  /// **'Asosiy'**
-  String get adminSectionHome;
 
   /// No description provided for @adminSectionSettings.
   ///

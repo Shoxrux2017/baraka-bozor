@@ -12,7 +12,11 @@ void main() {
     AsyncValue<SessionState> session,
     String location, {
     Surface surface = Surface.mobile,
-  }) => sessionRedirect(session: session, surface: surface, location: location);
+  }) => sessionRedirect(
+    session: session,
+    surface: surface,
+    uri: Uri.parse(location),
+  );
 
   const AsyncValue<SessionState> signedOut = AsyncData<SessionState>(
     SignedOut(),
@@ -32,13 +36,31 @@ void main() {
   );
 
   group('before the bootstrap answers', () {
-    test('everything waits on the bootstrap screen', () {
-      const AsyncValue<SessionState> loading = AsyncLoading<SessionState>();
+    test(
+      'everything waits on the bootstrap screen, which remembers the page',
+      () {
+        const AsyncValue<SessionState> loading = AsyncLoading<SessionState>();
 
-      expect(redirect(loading, AppPaths.bootstrap), isNull);
-      expect(redirect(loading, AppPaths.customer), AppPaths.bootstrap);
-      expect(redirect(loading, AppPaths.auth), AppPaths.bootstrap);
-    });
+        expect(redirect(loading, AppPaths.bootstrap), isNull);
+        expect(
+          redirect(loading, '${AppPaths.bootstrap}?next=%2Fadmin'),
+          isNull,
+          reason: 'the remembering bootstrap screen is the bootstrap screen',
+        );
+        expect(
+          redirect(loading, AppPaths.customer),
+          '${AppPaths.bootstrap}?next=%2Fcustomer',
+        );
+        expect(
+          redirect(loading, '/admin/products/p-1?page=2'),
+          '${AppPaths.bootstrap}?next=%2Fadmin%2Fproducts%2Fp-1%3Fpage%3D2',
+        );
+        expect(
+          redirect(loading, AppPaths.auth),
+          '${AppPaths.bootstrap}?next=%2Fauth',
+        );
+      },
+    );
 
     test('a bootstrap that threw offers the retry screen, not a spinner', () {
       final AsyncValue<SessionState> failed = AsyncError<SessionState>(
@@ -88,52 +110,116 @@ void main() {
   });
 
   group('signed in', () {
-    test('each role is sent to its own area and nowhere else', () {
-      final Map<UserRole, String> areas = <UserRole, String>{
-        UserRole.customer: AppPaths.customer,
-        UserRole.shopper: AppPaths.shopper,
-        UserRole.courier: AppPaths.courier,
-        UserRole.operator: AppPaths.operations,
-        UserRole.admin: AppPaths.admin,
-        UserRole.manager: AppPaths.manager,
-      };
+    test('each role lands on its home and moves only inside its areas', () {
+      // The Admin lands on the board and works in both the board and its
+      // own area; every other role has one area, which is its home.
+      final Map<UserRole, (String, List<String>)> roles =
+          <UserRole, (String, List<String>)>{
+            UserRole.customer: (AppPaths.customer, <String>[AppPaths.customer]),
+            UserRole.shopper: (AppPaths.shopper, <String>[AppPaths.shopper]),
+            UserRole.courier: (AppPaths.courier, <String>[AppPaths.courier]),
+            UserRole.operator: (
+              AppPaths.operations,
+              <String>[AppPaths.operations],
+            ),
+            UserRole.admin: (
+              AppPaths.operations,
+              <String>[AppPaths.admin, AppPaths.operations],
+            ),
+            UserRole.manager: (AppPaths.manager, <String>[AppPaths.manager]),
+          };
+      const List<String> everyArea = <String>[
+        AppPaths.customer,
+        AppPaths.shopper,
+        AppPaths.courier,
+        AppPaths.operations,
+        AppPaths.admin,
+        AppPaths.manager,
+      ];
 
-      for (final MapEntry<UserRole, String> entry in areas.entries) {
-        final AsyncValue<SessionState> session = entry.key == UserRole.customer
-            ? signedIn(customer: user(role: entry.key))
-            : signedIn(staff: user(role: entry.key));
-        final Surface surface = entry.key.surface;
+      for (final MapEntry<UserRole, (String, List<String>)> entry
+          in roles.entries) {
+        final UserRole role = entry.key;
+        final (String home, List<String> areas) = entry.value;
+        final AsyncValue<SessionState> session = role == UserRole.customer
+            ? signedIn(customer: user(role: role))
+            : signedIn(staff: user(role: role));
+        final Surface surface = role.surface;
 
         expect(
           redirect(session, AppPaths.bootstrap, surface: surface),
-          entry.value,
-          reason: '${entry.key} from bootstrap',
+          home,
+          reason: '$role from bootstrap',
         );
         expect(
           redirect(session, AppPaths.auth, surface: surface),
-          entry.value,
-          reason: '${entry.key} from the login',
+          home,
+          reason: '$role from the login',
         );
-        expect(
-          redirect(session, entry.value, surface: surface),
-          isNull,
-          reason: '${entry.key} in its area',
-        );
-        expect(
-          redirect(session, '${entry.value}/anything', surface: surface),
-          isNull,
-          reason: '${entry.key} inside its area',
-        );
-        for (final String other in areas.values) {
-          if (other != entry.value) {
-            expect(
-              redirect(session, other, surface: surface),
-              entry.value,
-              reason: '${entry.key} typing $other',
-            );
-          }
+        for (final String area in everyArea) {
+          final bool own = areas.contains(area);
+          expect(
+            redirect(session, area, surface: surface),
+            own ? isNull : home,
+            reason: '$role typing $area',
+          );
+          expect(
+            redirect(session, '$area/anything', surface: surface),
+            own ? isNull : home,
+            reason: '$role typing a page inside $area',
+          );
         }
       }
+    });
+
+    test('the page a reload asked for opens once the session is known, inside the role\'s areas only', () {
+      String? after(UserRole role, String next) => redirect(
+        role == UserRole.customer
+            ? signedIn(customer: user(role: role))
+            : signedIn(staff: user(role: role)),
+        Uri(
+          path: AppPaths.bootstrap,
+          queryParameters: <String, String>{'next': next},
+        ).toString(),
+        surface: role.surface,
+      );
+
+      expect(
+        after(UserRole.admin, '/admin/products/p-1'),
+        '/admin/products/p-1',
+      );
+      expect(after(UserRole.admin, '/operations'), '/operations');
+      expect(
+        after(UserRole.operator, '/operations/orders/o-1?tab=history'),
+        '/operations/orders/o-1?tab=history',
+      );
+      expect(
+        after(UserRole.customer, AppPaths.customerAddresses),
+        AppPaths.customerAddresses,
+      );
+
+      // A page the role may not see goes to its home.
+      expect(after(UserRole.operator, '/admin/staff'), AppPaths.operations);
+      expect(after(UserRole.admin, '/customer'), AppPaths.operations);
+      expect(after(UserRole.customer, '/admin'), AppPaths.customer);
+      expect(after(UserRole.admin, AppPaths.auth), AppPaths.operations);
+
+      // Nothing but a page of this app is ever opened.
+      for (final String foreign in <String>[
+        'https://evil.example/operations',
+        '//evil.example/operations',
+        'operations',
+        '',
+      ]) {
+        expect(
+          after(UserRole.admin, foreign),
+          AppPaths.operations,
+          reason: foreign,
+        );
+      }
+
+      // Signed out, the login.
+      expect(redirect(signedOut, '/?next=%2Fadmin'), AppPaths.auth);
     });
 
     test('a role on the wrong surface sees only the surface screen', () {
@@ -192,7 +278,7 @@ void main() {
           AppPaths.customerMode,
           surface: Surface.web,
         ),
-        AppPaths.admin,
+        AppPaths.operations,
         reason: 'an Admin has no Customer mode',
       );
       expect(

@@ -169,6 +169,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get shellPlaceholder => 'Этот раздел появится на следующем этапе';
 
   @override
+  String get panelSectionBoard => 'Заказы';
+
+  @override
   String get customerModeLabel => 'Режим клиента';
 
   @override
@@ -241,12 +244,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get errorUnknown => 'Произошла ошибка. Попробуйте снова';
-
-  @override
-  String get adminHomeIntro => 'Выберите раздел';
-
-  @override
-  String get adminSectionHome => 'Главная';
 
   @override
   String get adminSectionSettings => 'Настройки';

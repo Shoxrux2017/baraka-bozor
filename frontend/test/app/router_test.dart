@@ -44,7 +44,6 @@ void main() {
         AppPaths.wrongSurface,
         AppPaths.shopper,
         AppPaths.courier,
-        AppPaths.operations,
         AppPaths.manager,
         AppPaths.admin,
         AdminPaths.categories,
@@ -53,6 +52,7 @@ void main() {
         AdminPaths.productPattern,
         AdminPaths.staff,
         AdminPaths.settings,
+        AppPaths.operations,
         AppPaths.customer,
         CatalogPaths.categoryPattern,
         CatalogPaths.productPattern,
@@ -66,7 +66,15 @@ void main() {
     test('registers every feature fragment, in order', () {
       expect(
         featureRouteFragments.map((FeatureRoutes f) => f.feature),
-        <String>['auth', 'shells', 'admin', 'catalog', 'profile', 'addresses'],
+        <String>[
+          'auth',
+          'shells',
+          'admin',
+          'operations',
+          'catalog',
+          'profile',
+          'addresses',
+        ],
       );
     });
 
