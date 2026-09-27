@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/misc.dart' show FutureProviderFamily;
 
 import '../../../app/providers.dart';
 import '../../../core/network/paged.dart';
+import '../../../core/session/staff_account.dart';
 import '../../../core/state/mutation_state.dart';
 import '../data/admin_catalog_api.dart';
 import '../data/admin_catalog_repository_impl.dart';
 import '../domain/admin_catalog.dart';
 import '../domain/admin_catalog_repository.dart';
 import 'admin_mutation.dart';
-import 'admin_providers.dart';
 import 'product_image_picker.dart';
 
 final Provider<AdminCatalogRepository> adminCatalogRepositoryProvider =

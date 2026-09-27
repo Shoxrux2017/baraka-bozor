@@ -331,5 +331,276 @@
   "addressSaved": "Manzil saqlandi",
   "addressRemove": "O'chirish",
   "addressRemoveConfirm": "Bu manzil o'chirilsinmi?",
-  "errorConfigurationIncomplete": "Xizmat hali to'liq sozlanmagan. Keyinroq urinib ko'ring"
+  "errorConfigurationIncomplete": "Xizmat hali to'liq sozlanmagan. Keyinroq urinib ko'ring",
+  "orderStatusNew": "Yangi",
+  "orderStatusShoppingAssigned": "Yig'uvchi tayinlangan",
+  "orderStatusShopping": "Yig'ilmoqda",
+  "orderStatusFinalPaymentPending": "To'lov kutilmoqda",
+  "orderStatusReadyForDelivery": "Yetkazishga tayyor",
+  "orderStatusDeliveryAssigned": "Kuryer tayinlangan",
+  "orderStatusOnTheWay": "Yo'lda",
+  "orderStatusCompleted": "Yakunlangan",
+  "orderStatusCancelled": "Bekor qilingan",
+  "paymentCash": "Naqd pul",
+  "paymentOnline": "Onlayn",
+  "totalKindEstimate": "taxminiy",
+  "totalKindFinal": "yakuniy",
+  "totalNothingDue": "To'lanmaydi",
+  "itemStatusPending": "Kutilmoqda",
+  "itemStatusAwaitingCustomer": "Mijoz javobi kutilmoqda",
+  "itemStatusPurchased": "Sotib olindi",
+  "itemStatusRemoved": "Olib tashlandi",
+  "substitutionAllowSimilar": "O'xshashi bilan almashtirish mumkin",
+  "substitutionContactBefore": "Almashtirishdan oldin bog'lanish",
+  "substitutionRemoveIfUnavailable": "Bo'lmasa, olib tashlash",
+  "removedUnavailable": "mahsulot topilmadi",
+  "removedCustomerRejected": "mijoz rad etdi",
+  "removedApprovalExpired": "javob muddati o'tdi",
+  "removedCustomerRemoved": "mijoz olib tashladi",
+  "removedOperatorRemoved": "operator olib tashladi",
+  "removedOrderCancelled": "buyurtma bekor qilindi",
+  "cancelCustomerCancelled": "Mijoz bekor qildi",
+  "cancelRequestApproved": "Bekor qilish so'rovi qabul qilindi",
+  "cancelUnpaidOnline": "Onlayn to'lov qilinmadi",
+  "cancelNoItemsPurchased": "Hech narsa sotib olinmadi",
+  "cancelDeliveryFailed": "Yetkazib bo'lmadi",
+  "cancelSystem": "Tizim bekor qildi",
+  "boardRefresh": "Yangilash",
+  "boardSearch": "Raqam, telefon yoki ism",
+  "boardAllStatuses": "Barcha holatlar",
+  "boardAllPaymentMethods": "Barcha to'lov usullari",
+  "boardAllShoppers": "Barcha yig'uvchilar",
+  "boardDays": "Sanalar",
+  "boardClearDays": "Sanalarni tozalash",
+  "boardSelfOrdersOnly": "Faqat o'zi uchun buyurtmalar",
+  "boardClearFilters": "Filtrlarni tozalash",
+  "boardEmpty": "Hozircha buyurtma yo'q",
+  "boardEmptyFiltered": "Filtrlarga mos buyurtma yo'q",
+  "boardColumnNumber": "Raqam",
+  "boardColumnPlaced": "Vaqt",
+  "boardColumnCustomer": "Mijoz",
+  "boardColumnStatus": "Holat",
+  "boardColumnPayment": "To'lov",
+  "boardColumnTotal": "Summa",
+  "boardColumnShopper": "Yig'uvchi",
+  "boardItemCount": "{count} ta mahsulot",
+  "@boardItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "boardNoShopper": "Tayinlanmagan",
+  "boardOrderNumber": "№{number}",
+  "@boardOrderNumber": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "selfOrderMark": "O'zi uchun",
+  "selfOrderExplained": "Yig'uvchi — buyurtmachining o'zi",
+  "summaryCompletedToday": "Bugun yakunlangan",
+  "summaryCancelledToday": "Bugun bekor qilingan",
+  "summarySalesToday": "Bugungi savdo",
+  "summaryAttention": "E'tibor talab",
+  "attentionTitle": "E'tibor talab qiladi",
+  "attentionEmpty": "Hozircha hech narsa yo'q",
+  "attentionSince": "{time} dan beri",
+  "@attentionSince": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderTitle": "Buyurtma №{number}",
+  "@orderTitle": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "orderBackToBoard": "Buyurtmalarga qaytish",
+  "orderPlacedAt": "Qabul qilingan: {time}",
+  "@orderPlacedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderCompletedAt": "Yakunlangan: {time}",
+  "@orderCompletedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderCancelledAt": "Bekor qilingan: {time}",
+  "@orderCancelledAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderSectionCustomer": "Mijoz",
+  "orderSectionAddress": "Manzil",
+  "orderSectionDeliveryWish": "Yetkazish vaqti bo'yicha istak",
+  "orderSectionItems": "Mahsulotlar",
+  "orderSectionTotals": "Hisob",
+  "orderSectionShoppers": "Yig'uvchilar",
+  "orderSectionHistory": "Tarix",
+  "orderNoDeliveryWish": "Istak yo'q",
+  "orderCoordinates": "Koordinatalar: {latitude}, {longitude}",
+  "@orderCoordinates": {
+    "placeholders": {
+      "latitude": {
+        "type": "String"
+      },
+      "longitude": {
+        "type": "String"
+      }
+    }
+  },
+  "itemMarketPrice": "Bozor narxi: {price}",
+  "@itemMarketPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "itemCustomerPrice": "Mijoz narxi: {price}",
+  "@itemCustomerPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "itemMarkup": "Ustama: {percent}%",
+  "@itemMarkup": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "itemLineTotal": "Summa: {amount}",
+  "@itemLineTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "itemNote": "Izoh: {note}",
+  "@itemNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "itemRemovedBecause": "Olib tashlandi: {reason}",
+  "@itemRemovedBecause": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "totalsMerchandise": "Mahsulotlar",
+  "totalsServiceFee": "Xizmat haqi",
+  "totalsDeliveryFee": "Yetkazib berish",
+  "totalsTotal": "Jami",
+  "assignmentCurrent": "Hozirgi",
+  "assignmentAssignedBy": "{name} tayinladi, {time}",
+  "@assignmentAssignedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentAccepted": "Qabul qildi: {time}",
+  "@assignmentAccepted": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentStarted": "Yig'ishni boshladi: {time}",
+  "@assignmentStarted": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentEnded": "Tugadi: {time}, {reason}",
+  "@assignmentEnded": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentEndCompleted": "yig'ish yakunlandi",
+  "assignmentEndReassigned": "boshqa yig'uvchiga o'tkazildi",
+  "assignmentEndOrderCancelled": "buyurtma bekor qilindi",
+  "assignmentsNone": "Yig'uvchi hali tayinlanmagan",
+  "personWithoutName": "Ismsiz",
+  "historyNone": "Tarix hali bo'sh",
+  "historySystem": "Tizim",
+  "historyPaymentProvider": "To'lov tizimi",
+  "historyEventStatusChanged": "Holat o'zgardi",
+  "historyEventEdited": "Buyurtma o'zgartirildi",
+  "historyEventPaymentMethodSwitched": "To'lov usuli almashtirildi",
+  "historyEventPriceCorrected": "Narx tuzatildi",
+  "historyEventShopperAssigned": "Yig'uvchi tayinlandi",
+  "historyEventShopperReassigned": "Yig'uvchi almashtirildi",
+  "historyEventCourierAssigned": "Kuryer tayinlandi",
+  "historyEventCourierReassigned": "Kuryer almashtirildi",
+  "historyEventDeliveryFailed": "Yetkazib bo'lmadi",
+  "historyEventApprovalRequested": "Mijozdan tasdiq so'raldi",
+  "historyEventApprovalDecided": "Mijoz javob berdi",
+  "historyEventApprovalExpired": "Javob muddati o'tdi",
+  "historyEventApprovalResolved": "Tasdiq yopildi",
+  "historyEdit": "qo'shildi: {added}, olib tashlandi: {removed}, o'zgartirildi: {changed}",
+  "@historyEdit": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      },
+      "changed": {
+        "type": "int"
+      }
+    }
+  },
+  "historyDeliveryWishChanged": "yetkazish istagi o'zgardi",
+  "historyAssignedTo": "Yig'uvchi: {name}",
+  "@historyAssignedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

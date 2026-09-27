@@ -331,5 +331,276 @@
   "addressSaved": "Адрес сохранён",
   "addressRemove": "Удалить",
   "addressRemoveConfirm": "Удалить этот адрес?",
-  "errorConfigurationIncomplete": "Сервис ещё не настроен до конца. Попробуйте позже"
+  "errorConfigurationIncomplete": "Сервис ещё не настроен до конца. Попробуйте позже",
+  "orderStatusNew": "Новый",
+  "orderStatusShoppingAssigned": "Назначен сборщик",
+  "orderStatusShopping": "Собирается",
+  "orderStatusFinalPaymentPending": "Ожидает оплаты",
+  "orderStatusReadyForDelivery": "Готов к доставке",
+  "orderStatusDeliveryAssigned": "Назначен курьер",
+  "orderStatusOnTheWay": "В пути",
+  "orderStatusCompleted": "Выполнен",
+  "orderStatusCancelled": "Отменён",
+  "paymentCash": "Наличные",
+  "paymentOnline": "Онлайн",
+  "totalKindEstimate": "ориентировочно",
+  "totalKindFinal": "окончательно",
+  "totalNothingDue": "К оплате нет",
+  "itemStatusPending": "Ожидает",
+  "itemStatusAwaitingCustomer": "Ждёт ответа клиента",
+  "itemStatusPurchased": "Куплено",
+  "itemStatusRemoved": "Удалено",
+  "substitutionAllowSimilar": "Можно заменить похожим",
+  "substitutionContactBefore": "Связаться перед заменой",
+  "substitutionRemoveIfUnavailable": "Если нет — убрать",
+  "removedUnavailable": "товара не было",
+  "removedCustomerRejected": "клиент отказался",
+  "removedApprovalExpired": "истёк срок ответа",
+  "removedCustomerRemoved": "удалил клиент",
+  "removedOperatorRemoved": "удалил оператор",
+  "removedOrderCancelled": "заказ отменён",
+  "cancelCustomerCancelled": "Отменён клиентом",
+  "cancelRequestApproved": "Одобрен запрос на отмену",
+  "cancelUnpaidOnline": "Не оплачен онлайн",
+  "cancelNoItemsPurchased": "Ничего не куплено",
+  "cancelDeliveryFailed": "Доставка не удалась",
+  "cancelSystem": "Отменён системой",
+  "boardRefresh": "Обновить",
+  "boardSearch": "Номер, телефон или имя",
+  "boardAllStatuses": "Все статусы",
+  "boardAllPaymentMethods": "Все способы оплаты",
+  "boardAllShoppers": "Все сборщики",
+  "boardDays": "Даты",
+  "boardClearDays": "Сбросить даты",
+  "boardSelfOrdersOnly": "Только заказы для себя",
+  "boardClearFilters": "Сбросить фильтры",
+  "boardEmpty": "Заказов пока нет",
+  "boardEmptyFiltered": "Нет заказов по этим фильтрам",
+  "boardColumnNumber": "Номер",
+  "boardColumnPlaced": "Время",
+  "boardColumnCustomer": "Клиент",
+  "boardColumnStatus": "Статус",
+  "boardColumnPayment": "Оплата",
+  "boardColumnTotal": "Сумма",
+  "boardColumnShopper": "Сборщик",
+  "boardItemCount": "{count, plural, one{{count} позиция} few{{count} позиции} many{{count} позиций} other{{count} позиции}}",
+  "@boardItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "boardNoShopper": "Не назначен",
+  "boardOrderNumber": "№{number}",
+  "@boardOrderNumber": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "selfOrderMark": "Для себя",
+  "selfOrderExplained": "Сборщик — сам заказчик",
+  "summaryCompletedToday": "Выполнено сегодня",
+  "summaryCancelledToday": "Отменено сегодня",
+  "summarySalesToday": "Продажи сегодня",
+  "summaryAttention": "Требуют внимания",
+  "attentionTitle": "Требует внимания",
+  "attentionEmpty": "Пока ничего нет",
+  "attentionSince": "с {time}",
+  "@attentionSince": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderTitle": "Заказ №{number}",
+  "@orderTitle": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "orderBackToBoard": "К заказам",
+  "orderPlacedAt": "Создан: {time}",
+  "@orderPlacedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderCompletedAt": "Выполнен: {time}",
+  "@orderCompletedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderCancelledAt": "Отменён: {time}",
+  "@orderCancelledAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderSectionCustomer": "Клиент",
+  "orderSectionAddress": "Адрес",
+  "orderSectionDeliveryWish": "Пожелание по времени доставки",
+  "orderSectionItems": "Позиции",
+  "orderSectionTotals": "Расчёт",
+  "orderSectionShoppers": "Сборщики",
+  "orderSectionHistory": "История",
+  "orderNoDeliveryWish": "Пожеланий нет",
+  "orderCoordinates": "Координаты: {latitude}, {longitude}",
+  "@orderCoordinates": {
+    "placeholders": {
+      "latitude": {
+        "type": "String"
+      },
+      "longitude": {
+        "type": "String"
+      }
+    }
+  },
+  "itemMarketPrice": "Рыночная цена: {price}",
+  "@itemMarketPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "itemCustomerPrice": "Цена для клиента: {price}",
+  "@itemCustomerPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "itemMarkup": "Наценка: {percent}%",
+  "@itemMarkup": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "itemLineTotal": "Сумма: {amount}",
+  "@itemLineTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "itemNote": "Комментарий: {note}",
+  "@itemNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "itemRemovedBecause": "Удалено: {reason}",
+  "@itemRemovedBecause": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "totalsMerchandise": "Товары",
+  "totalsServiceFee": "Сервисный сбор",
+  "totalsDeliveryFee": "Доставка",
+  "totalsTotal": "Итого",
+  "assignmentCurrent": "Текущий",
+  "assignmentAssignedBy": "Назначил {name}, {time}",
+  "@assignmentAssignedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentAccepted": "Принял: {time}",
+  "@assignmentAccepted": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentStarted": "Начал сборку: {time}",
+  "@assignmentStarted": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentEnded": "Завершено: {time}, {reason}",
+  "@assignmentEnded": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "assignmentEndCompleted": "сборка завершена",
+  "assignmentEndReassigned": "передан другому сборщику",
+  "assignmentEndOrderCancelled": "заказ отменён",
+  "assignmentsNone": "Сборщик ещё не назначен",
+  "personWithoutName": "Без имени",
+  "historyNone": "История пока пуста",
+  "historySystem": "Система",
+  "historyPaymentProvider": "Платёжная система",
+  "historyEventStatusChanged": "Статус изменён",
+  "historyEventEdited": "Заказ изменён",
+  "historyEventPaymentMethodSwitched": "Способ оплаты изменён",
+  "historyEventPriceCorrected": "Цена исправлена",
+  "historyEventShopperAssigned": "Назначен сборщик",
+  "historyEventShopperReassigned": "Сборщик заменён",
+  "historyEventCourierAssigned": "Назначен курьер",
+  "historyEventCourierReassigned": "Курьер заменён",
+  "historyEventDeliveryFailed": "Доставка не удалась",
+  "historyEventApprovalRequested": "Запрошено согласие клиента",
+  "historyEventApprovalDecided": "Клиент ответил",
+  "historyEventApprovalExpired": "Срок ответа истёк",
+  "historyEventApprovalResolved": "Согласование закрыто",
+  "historyEdit": "добавлено: {added}, удалено: {removed}, изменено: {changed}",
+  "@historyEdit": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      },
+      "changed": {
+        "type": "int"
+      }
+    }
+  },
+  "historyDeliveryWishChanged": "изменено пожелание по доставке",
+  "historyAssignedTo": "Сборщик: {name}",
+  "@historyAssignedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/network/paged.dart';
+import '../../../core/session/staff_account.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../auth/domain/app_user.dart';
 import '../data/admin_staff_api.dart';
@@ -11,7 +12,6 @@ import '../data/admin_staff_repository_impl.dart';
 import '../domain/admin_staff.dart';
 import '../domain/admin_staff_repository.dart';
 import 'admin_mutation.dart';
-import 'admin_providers.dart';
 
 final Provider<AdminStaffRepository> adminStaffRepositoryProvider =
     Provider<AdminStaffRepository>(

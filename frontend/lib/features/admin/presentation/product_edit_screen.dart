@@ -11,6 +11,7 @@ import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/list_widgets.dart';
 import '../application/admin_catalog_controllers.dart';
 import '../domain/admin_catalog.dart';
 import 'admin_paths.dart';
