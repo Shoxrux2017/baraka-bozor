@@ -182,6 +182,12 @@ final class ShopperAssignmentApiTest extends TestCase
         // Nor is the order's state asked first.
         $this->assign(Order::factory()->shoppingAssigned()->create(), $shopper)->assertStatus(409)->assertJsonPath('code', 'staff_not_active');
         $this->assign(Order::factory()->cancelled()->create(), $shopper)->assertStatus(409)->assertJsonPath('code', 'staff_not_active');
+
+        // The way out: the Operator reassigns the order to an active Shopper.
+        $blocked = $this->currentAssignmentOf($order);
+        $data = $this->assign($order, $this->shopper(), method: 'put')->assertOk()->json('data');
+        $this->assertSame([$blocked?->id, 'reassigned'], [$data['shopper_assignments'][0]['id'], $data['shopper_assignments'][0]['ended_reason']]);
+        $this->assertSame('shopper_reassigned', $data['history'][1]['event_type']);
     }
 
     public function test_a_stale_or_retried_reassignment_never_undoes_a_newer_one(): void
@@ -239,6 +245,12 @@ final class ShopperAssignmentApiTest extends TestCase
         $this->assign($new, $shopper, method: 'put')->assertStatus(409)->assertJsonPath('code', 'order_state_conflict');
         $this->assign($shopping, $shopper, method: 'put')->assertStatus(409)->assertJsonPath('code', 'order_state_conflict');
         $this->assign($shopping, $shopper)->assertStatus(409)->assertJsonPath('code', 'order_state_conflict');
+        // A Shopper who has started keeps the order even before it shows `shopping` (`BR-ASSIGN-002`).
+        $started = Order::factory()->create();
+        OrderShopperAssignment::factory()->started()->create(['order_id' => $started->id]);
+        $started->forceFill(['status' => 'shopping_assigned'])->save();
+        $this->assign($started, $shopper, method: 'put')->assertStatus(409)->assertJsonPath('code', 'order_state_conflict');
+        $this->assertSame(1, OrderShopperAssignment::query()->where('order_id', $started->id)->count());
         $this->assign($cancelled, $shopper)->assertStatus(409)->assertJsonPath('code', 'order_state_conflict');
         $this->assign($cancelled, $shopper, method: 'put')->assertStatus(409)->assertJsonPath('code', 'order_state_conflict');
 
