@@ -7,8 +7,8 @@ namespace App\Modules\Orders\Http\Requests;
 use App\Http\Requests\ListRequest;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\PaymentMethod;
-use App\Modules\Catalog\CatalogSearch;
 use App\Modules\Orders\Operations\Attention;
+use App\Support\Search\TextSearch;
 use Carbon\CarbonImmutable;
 use Illuminate\Validation\Rule;
 
@@ -21,6 +21,15 @@ use Illuminate\Validation\Rule;
 final class ListBoardOrdersRequest extends ListRequest
 {
     /**
+     * The days a filter may name. Before 1924 `Asia/Tashkent` ran on local
+     * mean time, and the first days of the calendar have no UTC instant
+     * PostgreSQL takes, so a day outside this range is refused, not queried.
+     */
+    private const FIRST_DAY = '2000-01-01';
+
+    private const LAST_DAY = '2999-12-31';
+
+    /**
      * @return array<string, mixed>
      */
     protected function filters(): array
@@ -29,10 +38,10 @@ final class ListBoardOrdersRequest extends ListRequest
             'status' => ['sometimes', 'nullable', 'string', Rule::enum(OrderStatus::class)],
             'shopper_id' => ['sometimes', 'nullable', 'string', 'uuid'],
             'payment_method' => ['sometimes', 'nullable', 'string', Rule::enum(PaymentMethod::class)],
-            'from' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
-            'to' => ['sometimes', 'nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'from' => ['sometimes', 'nullable', 'date_format:Y-m-d', 'after_or_equal:'.self::FIRST_DAY, 'before_or_equal:'.self::LAST_DAY],
+            'to' => ['sometimes', 'nullable', 'date_format:Y-m-d', 'after_or_equal:'.self::FIRST_DAY, 'before_or_equal:'.self::LAST_DAY, 'after_or_equal:from'],
             'attention' => ['sometimes', 'nullable', 'string', Rule::in(Attention::TYPES)],
-            'search' => ['sometimes', 'nullable', 'string', 'max:'.CatalogSearch::MAX_TERM_LENGTH],
+            'search' => ['sometimes', 'nullable', 'string', 'max:'.TextSearch::MAX_TERM_LENGTH],
         ];
     }
 

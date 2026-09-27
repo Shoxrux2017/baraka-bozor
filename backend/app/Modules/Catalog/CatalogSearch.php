@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Catalog;
 
+use App\Support\Search\TextSearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -11,13 +12,8 @@ use Illuminate\Database\Eloquent\Model;
  * Catalog search and ordering shared by the Admin and Customer lists.
  *
  * Search matches either name as a substring (`BR-CAT-005`, `DL-17` (10)),
- * ignoring what a person typing on a phone does not control: letter case,
- * `ё` typed as `е` (мед finds Мёд), and the four ways the Uzbek oʻ and gʻ
- * apostrophe arrives (ʻ ‘ ’ `), all read as the plain `'` the catalog is
- * written with (`DL-16`). PostgreSQL folds both the column and the pattern,
- * so Cyrillic case folds the way the database folds it — which is why the
- * database must run a UTF-8 character type (`docs/08` section 1). The term's
- * own `%`, `_` and `\` are escaped, so "50%" looks for "50%".
+ * folded as `TextSearch` folds it, so the catalog, written with the plain `'`
+ * (`DL-16`), is found however a phone types the Uzbek apostrophe.
  *
  * Ordering is `sort_order`, then `name_uz`, then the id, so a page boundary
  * never shuffles two rows with equal sort keys. Columns are qualified with
@@ -26,12 +22,7 @@ use Illuminate\Database\Eloquent\Model;
 final class CatalogSearch
 {
     /** The longest search term accepted. */
-    public const MAX_TERM_LENGTH = 100;
-
-    /** Characters folded before comparing, and what each becomes. */
-    private const FOLD_FROM = 'ёʻ‘’`';
-
-    private const FOLD_TO = "е''''";
+    public const MAX_TERM_LENGTH = TextSearch::MAX_TERM_LENGTH;
 
     /**
      * @template TModel of Model
@@ -45,17 +36,12 @@ final class CatalogSearch
             return $query;
         }
 
-        $pattern = '%'.addcslashes($term, '\\%_').'%';
         $uz = $query->qualifyColumn('name_uz');
         $ru = $query->qualifyColumn('name_ru');
-        $folded = 'translate(lower(?), ?, ?)';
 
-        return $query->where(static function (Builder $names) use ($pattern, $uz, $ru, $folded): void {
-            $names->whereRaw("translate(lower({$uz}), ?, ?) like {$folded}", [
-                self::FOLD_FROM, self::FOLD_TO, $pattern, self::FOLD_FROM, self::FOLD_TO,
-            ])->orWhereRaw("translate(lower({$ru}), ?, ?) like {$folded}", [
-                self::FOLD_FROM, self::FOLD_TO, $pattern, self::FOLD_FROM, self::FOLD_TO,
-            ]);
+        return $query->where(static function (Builder $names) use ($term, $uz, $ru): void {
+            TextSearch::contains($names, $uz, $term);
+            TextSearch::contains($names, $ru, $term, 'or');
         });
     }
 

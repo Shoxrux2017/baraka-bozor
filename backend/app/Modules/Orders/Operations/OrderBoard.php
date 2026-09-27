@@ -9,6 +9,7 @@ use App\Models\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Modules\Orders\OrderLineSums;
 use App\Modules\Settings\WorkingHours;
+use App\Support\Search\TextSearch;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -18,7 +19,7 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
  * `DL-37` (16)): every order, newest first, narrowed by status, the current
  * Shopper, the payment method, the day it was placed in `Asia/Tashkent`, an
  * attention type, and a search over the order number, the Customer's phone
- * digits and name.
+ * digits and name, the name folded as `TextSearch` folds it (`DL-44` (4)).
  */
 final class OrderBoard
 {
@@ -82,11 +83,13 @@ final class OrderBoard
     private static function search(Builder $orders, string $term): void
     {
         $term = trim($term);
+        if ($term === '') {
+            return;
+        }
         $digits = (string) preg_replace('/\D/', '', $term);
-        $name = '%'.addcslashes(mb_strtolower($term), '\\%_').'%';
 
-        $orders->where(static function (Builder $match) use ($term, $digits, $name): void {
-            $match->whereRaw('lower(orders.recipient_name_snapshot) like ?', [$name]);
+        $orders->where(static function (Builder $match) use ($term, $digits): void {
+            TextSearch::contains($match, 'orders.recipient_name_snapshot', $term);
 
             if ($digits !== '' && ctype_digit($term) && strlen($digits) <= 18) {
                 $match->orWhere('orders.order_number', (int) $digits);
