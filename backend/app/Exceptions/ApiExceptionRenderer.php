@@ -91,15 +91,6 @@ final class ApiExceptionRenderer
     }
 
     /**
-     * Map a status with no machine code of its own onto one that has.
-     *
-     * A client error outside the table becomes a scope-safe 404: the answer for
-     * "what you asked for is not there in that form", and the one that reveals
-     * least — a 405 would otherwise disclose, through its status and its Allow
-     * header, which methods a path accepts. A server error keeps its status and
-     * carries `server_error`.
-     */
-    /**
      * Whether the request is for the API, decided on the raw path. The
      * framework's `is('api/*')` matches the decoded path with a UTF-8 pattern,
      * which fails on a path that is not UTF-8 — exactly the request whose
@@ -110,6 +101,15 @@ final class ApiExceptionRenderer
         return str_starts_with($request->getPathInfo(), '/api/');
     }
 
+    /**
+     * Map a status with no machine code of its own onto one that has.
+     *
+     * A client error outside the table becomes a scope-safe 404: the answer for
+     * "what you asked for is not there in that form", and the one that reveals
+     * least — a 405 would otherwise disclose, through its status and its Allow
+     * header, which methods a path accepts. A server error keeps its status and
+     * carries `server_error`.
+     */
     private static function normalizeStatus(int $status): int
     {
         if (isset(self::CODE_BY_STATUS[$status])) {

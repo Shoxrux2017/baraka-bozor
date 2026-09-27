@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -92,6 +93,32 @@ final class ApiFoundationTest extends TestCase
     public function test_missing_authentication_returns_authentication_required(): void
     {
         $this->assertEnvelope($this->getJson('/api/v1/testing/authenticated'), 401, 'authentication_required');
+    }
+
+    #[DataProvider('acceptHeaders')]
+    public function test_missing_authentication_is_the_envelope_whatever_the_request_accepts(string $accept): void
+    {
+        $this->assertEnvelope(
+            $this->get('/api/v1/testing/authenticated', ['Accept' => $accept]),
+            401,
+            'authentication_required',
+        );
+    }
+
+    /**
+     * An empty value is a request with no `Accept` at all, as `curl -H "Accept:"`
+     * sends it; leaving the header out would get the test client's browser
+     * default instead.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function acceptHeaders(): array
+    {
+        return [
+            'a browser' => ['text/html'],
+            'anything' => ['*/*'],
+            'none' => [''],
+        ];
     }
 
     public function test_denied_authorization_returns_forbidden(): void
