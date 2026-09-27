@@ -1255,4 +1255,81 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get assigningShopper => 'Назначаем сборщика';
+
+  @override
+  String get cartTitle => 'Корзина';
+
+  @override
+  String get cartOpen => 'Открыть корзину';
+
+  @override
+  String cartBadge(int count) {
+    return 'Корзина: $count';
+  }
+
+  @override
+  String get cartEmpty => 'Корзина пуста';
+
+  @override
+  String get cartAdd => 'В корзину';
+
+  @override
+  String get cartAdded => 'Добавлено в корзину';
+
+  @override
+  String get cartQuantity => 'Количество';
+
+  @override
+  String get cartQuantityFraction =>
+      'Число больше 0: до 4 цифр и до 3 знаков после запятой';
+
+  @override
+  String get cartQuantityWhole => 'Целое число от 1 до 9999';
+
+  @override
+  String get cartDecrease => 'Уменьшить';
+
+  @override
+  String get cartIncrease => 'Увеличить';
+
+  @override
+  String get cartNote => 'Комментарий для сборщика';
+
+  @override
+  String get cartSubstitution => 'Если товара нет';
+
+  @override
+  String cartSubtotal(String amount) {
+    return 'Ориентировочно итого: $amount';
+  }
+
+  @override
+  String cartLineEstimate(String amount) {
+    return '≈ $amount';
+  }
+
+  @override
+  String get cartLineUnavailable => 'Сейчас нет в продаже';
+
+  @override
+  String get cartUnavailableHint =>
+      'Уберите товары, которых нет в продаже, — с ними заказ не оформить';
+
+  @override
+  String get cartRemoveLine => 'Убрать из корзины';
+
+  @override
+  String get cartEditLine => 'Изменить';
+
+  @override
+  String get cartSaving => 'Сохраняем';
+
+  @override
+  String get errorCartItemAlreadyExists => 'Этот товар уже в корзине';
+
+  @override
+  String get errorCartFull => 'В корзине может быть не больше 100 позиций';
+
+  @override
+  String get errorProductUnavailable => 'Этого товара сейчас нет в продаже';
 }

@@ -15,6 +15,8 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../cart/presentation/add_to_cart.dart';
+import '../../cart/presentation/cart_widgets.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 import 'catalog_paths.dart';
@@ -73,6 +75,7 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
       appBar: AppBar(
         title: Text(l10n.appTitle),
         actions: <Widget>[
+          const CartButton(),
           const LanguageMenuButton(),
           IconButton(
             key: const ValueKey<String>('open-profile'),
@@ -240,7 +243,10 @@ class ProductScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: Text(product.value?.name(language) ?? '')),
+      appBar: AppBar(
+        title: Text(product.value?.name(language) ?? ''),
+        actions: const <Widget>[CartButton()],
+      ),
       body: SafeArea(
         child: Column(
           children: <Widget>[
@@ -280,6 +286,11 @@ class ProductScreen extends ConsumerWidget {
                         const SizedBox(height: 16),
                         Text(description),
                       ],
+                      const SizedBox(height: 16),
+                      AddToCartSection(
+                        productId: product.id,
+                        unit: product.unitCode,
+                      ),
                     ],
                   );
                 },

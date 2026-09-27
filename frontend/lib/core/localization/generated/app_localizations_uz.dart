@@ -1242,4 +1242,82 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get assigningShopper => 'Yig\'uvchi tayinlanmoqda';
+
+  @override
+  String get cartTitle => 'Savat';
+
+  @override
+  String get cartOpen => 'Savatni ochish';
+
+  @override
+  String cartBadge(int count) {
+    return 'Savat: $count';
+  }
+
+  @override
+  String get cartEmpty => 'Savat bo\'sh';
+
+  @override
+  String get cartAdd => 'Savatga qo\'shish';
+
+  @override
+  String get cartAdded => 'Savatga qo\'shildi';
+
+  @override
+  String get cartQuantity => 'Miqdori';
+
+  @override
+  String get cartQuantityFraction =>
+      '0 dan katta son: ko\'pi bilan 4 xona va 3 kasr';
+
+  @override
+  String get cartQuantityWhole => '1 dan 9999 gacha butun son';
+
+  @override
+  String get cartDecrease => 'Kamaytirish';
+
+  @override
+  String get cartIncrease => 'Ko\'paytirish';
+
+  @override
+  String get cartNote => 'Yig\'uvchi uchun izoh';
+
+  @override
+  String get cartSubstitution => 'Mahsulot bo\'lmasa';
+
+  @override
+  String cartSubtotal(String amount) {
+    return 'Taxminiy jami: $amount';
+  }
+
+  @override
+  String cartLineEstimate(String amount) {
+    return '≈ $amount';
+  }
+
+  @override
+  String get cartLineUnavailable => 'Hozir sotuvda yo\'q';
+
+  @override
+  String get cartUnavailableHint =>
+      'Sotuvda yo\'q mahsulotlarni olib tashlang — ular bilan buyurtma berib bo\'lmaydi';
+
+  @override
+  String get cartRemoveLine => 'Savatdan olib tashlash';
+
+  @override
+  String get cartEditLine => 'O\'zgartirish';
+
+  @override
+  String get cartSaving => 'Saqlanmoqda';
+
+  @override
+  String get errorCartItemAlreadyExists => 'Bu mahsulot allaqachon savatda';
+
+  @override
+  String get errorCartFull =>
+      'Savatda ko\'pi bilan 100 ta mahsulot bo\'lishi mumkin';
+
+  @override
+  String get errorProductUnavailable => 'Bu mahsulot hozir sotuvda yo\'q';
 }

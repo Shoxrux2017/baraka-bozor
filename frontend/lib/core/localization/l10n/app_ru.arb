@@ -642,5 +642,49 @@
       }
     }
   },
-  "assigningShopper": "Назначаем сборщика"
+  "assigningShopper": "Назначаем сборщика",
+  "cartTitle": "Корзина",
+  "cartOpen": "Открыть корзину",
+  "cartBadge": "Корзина: {count}",
+  "@cartBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cartEmpty": "Корзина пуста",
+  "cartAdd": "В корзину",
+  "cartAdded": "Добавлено в корзину",
+  "cartQuantity": "Количество",
+  "cartQuantityFraction": "Число больше 0: до 4 цифр и до 3 знаков после запятой",
+  "cartQuantityWhole": "Целое число от 1 до 9999",
+  "cartDecrease": "Уменьшить",
+  "cartIncrease": "Увеличить",
+  "cartNote": "Комментарий для сборщика",
+  "cartSubstitution": "Если товара нет",
+  "cartSubtotal": "Ориентировочно итого: {amount}",
+  "@cartSubtotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartLineEstimate": "≈ {amount}",
+  "@cartLineEstimate": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartLineUnavailable": "Сейчас нет в продаже",
+  "cartUnavailableHint": "Уберите товары, которых нет в продаже, — с ними заказ не оформить",
+  "cartRemoveLine": "Убрать из корзины",
+  "cartEditLine": "Изменить",
+  "cartSaving": "Сохраняем",
+  "errorCartItemAlreadyExists": "Этот товар уже в корзине",
+  "errorCartFull": "В корзине может быть не больше 100 позиций",
+  "errorProductUnavailable": "Этого товара сейчас нет в продаже"
 }

@@ -15,6 +15,10 @@ enum UnitCode {
 
   final String code;
 
+  /// Whether a quantity of this unit may have a fraction — three decimals
+  /// at most — or is a whole number (`DL-37` (6)).
+  bool get takesFraction => this == kg || this == liter || this == meter;
+
   static UnitCode? tryParse(String code) {
     for (final UnitCode unit in values) {
       if (unit.code == code) {

@@ -2359,6 +2359,144 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Yig\'uvchi tayinlanmoqda'**
   String get assigningShopper;
+
+  /// No description provided for @cartTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savat'**
+  String get cartTitle;
+
+  /// No description provided for @cartOpen.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatni ochish'**
+  String get cartOpen;
+
+  /// No description provided for @cartBadge.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savat: {count}'**
+  String cartBadge(int count);
+
+  /// No description provided for @cartEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savat bo\'sh'**
+  String get cartEmpty;
+
+  /// No description provided for @cartAdd.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga qo\'shish'**
+  String get cartAdd;
+
+  /// No description provided for @cartAdded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga qo\'shildi'**
+  String get cartAdded;
+
+  /// No description provided for @cartQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Miqdori'**
+  String get cartQuantity;
+
+  /// No description provided for @cartQuantityFraction.
+  ///
+  /// In uz, this message translates to:
+  /// **'0 dan katta son: ko\'pi bilan 4 xona va 3 kasr'**
+  String get cartQuantityFraction;
+
+  /// No description provided for @cartQuantityWhole.
+  ///
+  /// In uz, this message translates to:
+  /// **'1 dan 9999 gacha butun son'**
+  String get cartQuantityWhole;
+
+  /// No description provided for @cartDecrease.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kamaytirish'**
+  String get cartDecrease;
+
+  /// No description provided for @cartIncrease.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'paytirish'**
+  String get cartIncrease;
+
+  /// No description provided for @cartNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi uchun izoh'**
+  String get cartNote;
+
+  /// No description provided for @cartSubstitution.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot bo\'lmasa'**
+  String get cartSubstitution;
+
+  /// No description provided for @cartSubtotal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Taxminiy jami: {amount}'**
+  String cartSubtotal(String amount);
+
+  /// No description provided for @cartLineEstimate.
+  ///
+  /// In uz, this message translates to:
+  /// **'≈ {amount}'**
+  String cartLineEstimate(String amount);
+
+  /// No description provided for @cartLineUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir sotuvda yo\'q'**
+  String get cartLineUnavailable;
+
+  /// No description provided for @cartUnavailableHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotuvda yo\'q mahsulotlarni olib tashlang — ular bilan buyurtma berib bo\'lmaydi'**
+  String get cartUnavailableHint;
+
+  /// No description provided for @cartRemoveLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatdan olib tashlash'**
+  String get cartRemoveLine;
+
+  /// No description provided for @cartEditLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgartirish'**
+  String get cartEditLine;
+
+  /// No description provided for @cartSaving.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlanmoqda'**
+  String get cartSaving;
+
+  /// No description provided for @errorCartItemAlreadyExists.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu mahsulot allaqachon savatda'**
+  String get errorCartItemAlreadyExists;
+
+  /// No description provided for @errorCartFull.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatda ko\'pi bilan 100 ta mahsulot bo\'lishi mumkin'**
+  String get errorCartFull;
+
+  /// No description provided for @errorProductUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu mahsulot hozir sotuvda yo\'q'**
+  String get errorProductUnavailable;
 }
 
 class _AppLocalizationsDelegate

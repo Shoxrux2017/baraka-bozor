@@ -5,6 +5,7 @@ import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/routing/feature_routes.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
+import 'package:baraka_bozor/features/cart/presentation/cart_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/operations/presentation/operations_paths.dart';
 import 'package:flutter/material.dart';
@@ -62,6 +63,7 @@ void main() {
         AppPaths.customerAddresses,
         AppPaths.customerNewAddress,
         AppPaths.customerAddressPattern,
+        CartPaths.cart,
       ]);
     });
 
@@ -76,6 +78,7 @@ void main() {
           'catalog',
           'profile',
           'addresses',
+          'cart',
         ],
       );
     });

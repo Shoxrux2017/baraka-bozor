@@ -45,6 +45,9 @@ String _refusalText(AppLocalizations l10n, String code, int status) {
     'phone_already_active' => l10n.errorPhoneAlreadyActive,
     'checkout_configuration_incomplete' => l10n.errorConfigurationIncomplete,
     'order_state_conflict' => l10n.errorOrderStateConflict,
+    'cart_item_already_exists' => l10n.errorCartItemAlreadyExists,
+    'cart_full' => l10n.errorCartFull,
+    'product_unavailable' => l10n.errorProductUnavailable,
     'staff_not_active' => l10n.errorStaffNotActive,
     'provider_unavailable' ||
     'payment_provider_unavailable' => l10n.errorProviderUnavailable,
