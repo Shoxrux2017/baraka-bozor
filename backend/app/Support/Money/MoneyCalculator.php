@@ -38,6 +38,19 @@ final class MoneyCalculator
     }
 
     /**
+     * `half_up(unit price × quantity)` — a line total (`BR-MONEY-003`), and the
+     * cart's estimate of one. The quantity is in thousandths, so the product is
+     * exact; with a unit price of at most 10⁹ UZS and a quantity of at most
+     * 9 999.999 (`DL-37` (6)) the intermediate stays below 2 × 10¹⁶.
+     */
+    public static function lineTotal(int $unitPriceUzs, Quantity $quantity): int
+    {
+        self::assertNotNegative($unitPriceUzs);
+
+        return self::divideHalfUp($unitPriceUzs * $quantity->thousandths, 1000);
+    }
+
+    /**
      * `numerator / denominator`, rounded half up to a whole UZS, for
      * non-negative numerators and positive denominators.
      */
