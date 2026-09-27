@@ -60,6 +60,12 @@ class FakeOperationsRepository implements OperationsRepository {
   /// When set, the board's page fails with it.
   ApiFailure? pageFailure;
 
+  /// When set, an order's detail waits for it, and nothing else does.
+  Completer<void>? holdOrder;
+
+  /// When set, the Shopper list fails with it.
+  ApiFailure? shoppersFailure;
+
   /// Every assignment asked for: `assign:<order>:<shopper>` or
   /// `reassign:<order>:<shopper>:<replaced assignment>`.
   final List<String> changes = <String>[];
@@ -109,6 +115,10 @@ class FakeOperationsRepository implements OperationsRepository {
   Future<BoardOrder> order(String id) async {
     loads.add('order:$id');
     await _held();
+    final Completer<void>? holdOrder = this.holdOrder;
+    if (holdOrder != null) {
+      await holdOrder.future;
+    }
     final BoardOrder? order = details[id];
     if (order == null) {
       throw const ApiRefusal(ApiError(status: 404, code: 'resource_not_found'));
@@ -134,6 +144,9 @@ class FakeOperationsRepository implements OperationsRepository {
   Future<List<ShopperChoice>> shoppers() async {
     loads.add('shoppers');
     await _held();
+    if (shoppersFailure != null) {
+      throw shoppersFailure!;
+    }
     return shopperList;
   }
 

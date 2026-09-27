@@ -515,6 +515,10 @@ class _AssignmentActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final MutationState state = ref.watch(shopperAssignmentProvider(order.id));
+    // Until the order the last change reloaded has arrived, the buttons
+    // would act on the order as it was.
+    final bool busy =
+        state.isBusy || ref.watch(boardOrderProvider(order.id)).isLoading;
     final ShopperAssignment? current = order.currentAssignment;
     final bool assigns =
         order.status == OrderStatus.newOrder && current == null;
@@ -560,19 +564,22 @@ class _AssignmentActions extends ConsumerWidget {
                   key: const ValueKey<String>('assign-shopper'),
                   icon: const Icon(Icons.person_add_alt_1_outlined),
                   label: Text(l10n.assignShopper),
-                  onPressed: state.isBusy ? null : pick,
+                  onPressed: busy ? null : pick,
                 )
               else
                 OutlinedButton.icon(
                   key: const ValueKey<String>('reassign-shopper'),
                   icon: const Icon(Icons.swap_horiz),
                   label: Text(l10n.reassignShopper),
-                  onPressed: state.isBusy ? null : pick,
+                  onPressed: busy ? null : pick,
                 ),
               if (state.isBusy)
-                const SizedBox.square(
+                SizedBox.square(
                   dimension: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    semanticsLabel: l10n.assigningShopper,
+                  ),
                 ),
             ],
           ),
@@ -626,13 +633,20 @@ class _ShopperPicker extends ConsumerWidget {
                       ),
                   ],
                 ),
-          error: (Object error, StackTrace _) => LoadFailure(
-            error: error,
-            onRetry: () => ref.invalidate(shopperOptionsProvider),
+          // Both keep the dialog as small as what they show.
+          error: (Object error, StackTrace _) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              LoadFailure(
+                error: error,
+                onRetry: () => ref.invalidate(shopperOptionsProvider),
+              ),
+            ],
           ),
           loading: () => const Padding(
             padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(heightFactor: 1, child: CircularProgressIndicator()),
           ),
         ),
       ),

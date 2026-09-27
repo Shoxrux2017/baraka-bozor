@@ -1239,4 +1239,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String shopperOrdersNow(int count) {
     return 'Hozir $count ta buyurtma';
   }
+
+  @override
+  String get assigningShopper => 'Yig\'uvchi tayinlanmoqda';
 }

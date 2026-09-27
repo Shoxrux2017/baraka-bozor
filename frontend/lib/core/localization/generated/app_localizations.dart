@@ -2353,6 +2353,12 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Hozir {count} ta buyurtma'**
   String shopperOrdersNow(int count);
+
+  /// No description provided for @assigningShopper.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi tayinlanmoqda'**
+  String get assigningShopper;
 }
 
 class _AppLocalizationsDelegate

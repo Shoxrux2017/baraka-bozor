@@ -1252,4 +1252,7 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return 'Сейчас $_temp0';
   }
+
+  @override
+  String get assigningShopper => 'Назначаем сборщика';
 }

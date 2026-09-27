@@ -96,6 +96,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The height of the dialog's surface, not of the layer that centres it.
+  double dialogHeight(WidgetTester tester) => tester
+      .getSize(
+        find
+            .descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byType(Material),
+            )
+            .first,
+      )
+      .height;
+
   Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
     await tester.ensureVisible(finder);
     await tester.pumpAndSettle();
@@ -293,5 +305,98 @@ void main() {
 
     expect(byKey('pick-shopper-$otherShopperId'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('an order opened by an id in capitals reloads after a change', (
+    WidgetTester tester,
+  ) async {
+    operations.afterAssignment[orderB] = OperationsApi.parseOrder(
+      orderJson(id: orderB, history: <Object?>[]),
+    );
+    await openOrder(tester, orderB.toUpperCase());
+    operations.loads.clear();
+
+    await tapAndSettle(tester, byKey('assign-shopper'));
+    await tapAndSettle(tester, byKey('pick-shopper-$shopperId'));
+
+    expect(operations.loads, contains('order:$orderB'));
+    expect(byKey('reassign-shopper'), findsOneWidget);
+  });
+
+  testWidgets('the buttons wait for the order a change reloads', (
+    WidgetTester tester,
+  ) async {
+    operations.afterAssignment[orderB] = OperationsApi.parseOrder(
+      orderJson(id: orderB, history: <Object?>[]),
+    );
+    await openOrder(tester, orderB);
+    await tapAndSettle(tester, byKey('assign-shopper'));
+    final Completer<void> reload = Completer<void>();
+    operations.holdOrder = reload;
+
+    await tester.tap(byKey('pick-shopper-$shopperId'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(operations.changes, hasLength(1), reason: 'the change answered');
+    expect(
+      tester.widget<FilledButton>(byKey('assign-shopper')).onPressed,
+      isNull,
+      reason: 'the order the change reloads has not arrived',
+    );
+
+    operations.holdOrder = null;
+    reload.complete();
+    await tester.pumpAndSettle();
+    expect(byKey('reassign-shopper'), findsOneWidget);
+  });
+
+  testWidgets(
+    'the picker says when there is nobody to choose, and when the list failed',
+    (WidgetTester tester) async {
+      operations.shopperList = <ShopperChoice>[];
+      await openOrder(tester, orderB);
+
+      await tapAndSettle(tester, byKey('assign-shopper'));
+      expect(find.text(l10n(tester).pickShopperEmpty), findsOneWidget);
+      await tapAndSettle(tester, byKey('pick-shopper-cancel'));
+
+      operations.shoppersFailure = const NetworkFailure();
+      await tapAndSettle(tester, byKey('assign-shopper'));
+      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      expect(
+        dialogHeight(tester),
+        lessThan(600),
+        reason: 'the dialog is as small as what it shows',
+      );
+
+      operations
+        ..shoppersFailure = null
+        ..shopperList = <ShopperChoice>[
+          OperationsApi.parseShopper(shopperJson()),
+        ];
+      await tapAndSettle(tester, byKey('retry-load'));
+      expect(byKey('pick-shopper-$shopperId'), findsOneWidget);
+      expect(operations.changes, isEmpty);
+    },
+  );
+
+  testWidgets('the picker stays small while it loads', (
+    WidgetTester tester,
+  ) async {
+    await openOrder(tester, orderB);
+    final Completer<void> hold = Completer<void>();
+    operations.hold = hold;
+
+    await tester.tap(byKey('assign-shopper'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(CircularProgressIndicator), findsWidgets);
+    expect(dialogHeight(tester), lessThan(600));
+
+    operations.hold = null;
+    hold.complete();
+    await tester.pumpAndSettle();
   });
 }

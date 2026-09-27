@@ -641,5 +641,6 @@
         "type": "int"
       }
     }
-  }
+  },
+  "assigningShopper": "Назначаем сборщика"
 }

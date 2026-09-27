@@ -39,6 +39,9 @@ void main() {
           'service_unavailable': (AppLocalizations l) =>
               l.errorServiceUnavailable,
           'server_error': (AppLocalizations l) => l.errorServerError,
+          'order_state_conflict': (AppLocalizations l) =>
+              l.errorOrderStateConflict,
+          'staff_not_active': (AppLocalizations l) => l.errorStaffNotActive,
         };
 
     for (final MapEntry<String, String Function(AppLocalizations)> entry
