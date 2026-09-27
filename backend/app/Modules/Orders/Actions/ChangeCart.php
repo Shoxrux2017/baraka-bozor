@@ -100,7 +100,7 @@ final class ChangeCart
 
     private function visibleProduct(string $productId): Product
     {
-        $product = CustomerCatalogListing::visibleProducts()->whereKey($productId)->first();
+        $product = CustomerCatalogListing::visibleProducts()->without('image')->whereKey($productId)->first();
 
         if ($product === null) {
             throw ApiException::conflict('product_unavailable', ['product_ids' => [$productId]]);

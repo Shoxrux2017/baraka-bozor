@@ -79,7 +79,7 @@ final class CartApiTest extends TestCase
 
     public function test_a_line_estimate_rounds_half_up(): void
     {
-        // 18 400 × 0.125 = 2 300; 18 401 × 1.5 = 27 601.5, half-up to 27 602.
+        // 18 401 × 1.5 = 27 601.5, half-up to 27 602.
         $odd = Product::factory()->create(['market_price_uzs' => 16001]); // 18 401.15 → 18 401
         $response = $this->add($odd, '1.5')->assertCreated();
 
@@ -111,6 +111,30 @@ final class CartApiTest extends TestCase
     {
         $this->asCustomer()->postJson(self::ITEMS, ['product_id' => $this->tomatoes->id, 'quantity' => 2])
             ->assertStatus(422)->assertJsonStructure(['errors' => ['quantity']]);
+
+        $line = $this->add($this->tomatoes, '1')->json('data.items.0.id');
+        $this->asCustomer()->patchJson(self::ITEMS.'/'.$line, ['quantity' => 2])
+            ->assertStatus(422)->assertJsonStructure(['errors' => ['quantity']]);
+    }
+
+    public function test_an_undeclared_field_is_refused_and_a_blank_note_is_none(): void
+    {
+        $this->asCustomer()->postJson(self::ITEMS, [
+            'product_id' => $this->tomatoes->id,
+            'quantity' => '1',
+            'customer_unit_price_uzs' => 1,
+        ])->assertStatus(422)->assertJsonPath('code', 'validation_failed');
+
+        $line = $this->asCustomer()->postJson(self::ITEMS, [
+            'product_id' => $this->tomatoes->id,
+            'quantity' => '1',
+            'customer_note' => '   ',
+        ])->assertCreated()->assertJsonPath('data.items.0.customer_note', null)->json('data.items.0.id');
+
+        $this->asCustomer()->patchJson(self::ITEMS.'/'.$line, ['customer_note' => '  Pishgan  '])
+            ->assertOk()->assertJsonPath('data.items.0.customer_note', 'Pishgan');
+        $this->asCustomer()->patchJson(self::ITEMS.'/'.$line, ['customer_note' => ''])
+            ->assertOk()->assertJsonPath('data.items.0.customer_note', null);
     }
 
     public function test_a_product_is_added_once(): void
@@ -123,11 +147,11 @@ final class CartApiTest extends TestCase
             ->assertJsonPath('details.cart_item_id', $first->json('data.items.0.id'));
     }
 
-    public function test_the_hundred_and_first_line_is_refused(): void
+    public function test_the_hundredth_line_is_accepted_and_the_hundred_and_first_refused(): void
     {
         $cart = Cart::factory()->create(['customer_id' => $this->customer->id]);
         $category = Category::factory()->create();
-        $products = Product::factory()->count(ChangeCart::MAX_LINES)->create(['category_id' => $category->id]);
+        $products = Product::factory()->count(ChangeCart::MAX_LINES - 1)->create(['category_id' => $category->id]);
         DB::table('cart_items')->insert($products->map(static fn (Product $product): array => [
             'id' => (string) Str::uuid(),
             'cart_id' => $cart->id,
@@ -138,7 +162,9 @@ final class CartApiTest extends TestCase
             'updated_at' => now(),
         ])->all());
 
-        $this->add($this->tomatoes, '1')
+        $this->add($this->tomatoes, '1')->assertCreated()->assertJsonPath('data.item_count', ChangeCart::MAX_LINES);
+
+        $this->add(Product::factory()->create(), '1')
             ->assertStatus(409)
             ->assertJsonPath('code', 'cart_full')
             ->assertJsonPath('details.max_lines', ChangeCart::MAX_LINES);
@@ -150,7 +176,10 @@ final class CartApiTest extends TestCase
         $inHiddenCategory = Product::factory()->create(['category_id' => Category::factory()->archived()->create()->id]);
         $unknown = (string) Str::uuid();
 
-        foreach ([$archived->id, $inHiddenCategory->id, $unknown] as $id) {
+        $inactive = Product::factory()->create(['is_active' => false]);
+        $inInactiveCategory = Product::factory()->create(['category_id' => Category::factory()->create(['is_active' => false])->id]);
+
+        foreach ([$archived->id, $inHiddenCategory->id, $inactive->id, $inInactiveCategory->id, $unknown] as $id) {
             $this->asCustomer()->postJson(self::ITEMS, ['product_id' => $id, 'quantity' => '1'])
                 ->assertStatus(409)
                 ->assertJsonPath('code', 'product_unavailable')
@@ -172,6 +201,8 @@ final class CartApiTest extends TestCase
         $this->assertSame(6900, $cart->json('data.estimated_subtotal_uzs'), 'Only the available line counts.');
 
         $this->asCustomer()->patchJson(self::ITEMS.'/'.$line, ['quantity' => '3'])
+            ->assertStatus(409)->assertJsonPath('code', 'product_unavailable');
+        $this->asCustomer()->patchJson(self::ITEMS.'/'.$line, ['customer_note' => 'Baribir'])
             ->assertStatus(409)->assertJsonPath('code', 'product_unavailable');
         $this->asCustomer()->deleteJson(self::ITEMS.'/'.$line)->assertOk()->assertJsonPath('data.item_count', 1);
     }

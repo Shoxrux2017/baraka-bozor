@@ -9,6 +9,7 @@ use App\Http\Requests\EmptyBodyRequest;
 use App\Models\Cart;
 use App\Models\User;
 use App\Modules\Orders\Actions\ChangeCart;
+use App\Modules\Orders\CartView;
 use App\Modules\Orders\CustomerCart;
 use App\Modules\Orders\Http\Requests\AddCartItemRequest;
 use App\Modules\Orders\Http\Requests\UpdateCartItemRequest;
@@ -52,7 +53,7 @@ final class CartController extends Controller
 
     private function cart(Cart $cart): CartResource
     {
-        return new CartResource($cart, CustomerPriceCalculator::current());
+        return new CartResource(CartView::of($cart, CustomerPriceCalculator::current()));
     }
 
     private function customer(Request $request): User

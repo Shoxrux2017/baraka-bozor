@@ -48,8 +48,9 @@ final class QuantityTest extends TestCase
         // 18 401 × 1.5 = 27 601.5 → 27 602; 18 401 × 0.001 = 18.401 → 18.
         $this->assertSame(27602, MoneyCalculator::lineTotal(18401, Quantity::fromString('1.5')));
         $this->assertSame(18, MoneyCalculator::lineTotal(18401, Quantity::fromString('0.001')));
-        // The largest line the bounds allow stays exact.
-        $this->assertSame(9_999_999_000_000, MoneyCalculator::lineTotal(1_000_000_000, Quantity::fromString('9999.999')));
+        // The largest line the bounds allow — a market price of 10⁹ under a
+        // 999.99 % markup, 9 999.999 of it — stays exact.
+        $this->assertSame(109_998_989_000_100, MoneyCalculator::lineTotal(10_999_900_000, Quantity::fromString('9999.999')));
     }
 
     public function test_the_units_that_take_a_fraction(): void
