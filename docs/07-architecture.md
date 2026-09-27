@@ -140,7 +140,7 @@ cancelled from any non-terminal state under the rules of 05 Section 15
 
 ## 16. Transactions and Concurrency
 
-Transactions with row locks (`SELECT … FOR UPDATE` on the order row) for: order creation and cart conversion, editing, assignment, shopping start and completion, item recording, approval creation and decision and expiry, payment creation, provider events and reconciliation, switch to cash, cancellation and its decisions, delivery start, completion and failure, refund completion. Lock order: order, then items, then payment. Every cart mutation and order creation first lock the active cart row, and creation builds the checkout digest and the snapshots from the values it read under that lock; lock order there is the cart, then the order (`DL-37` (7)). Fresh locked state wins over a stale client.
+Transactions with row locks (`SELECT … FOR UPDATE` on the order row) for: order creation and cart conversion, editing, assignment, shopping start and completion, item recording, approval creation and decision and expiry, payment creation, provider events and reconciliation, switch to cash, cancellation and its decisions, delivery start, completion and failure, refund completion. Lock order: order, then items, then payment. An assignment locks the order and then shares a lock on the assignee's account, which a block locks for update, so a block and an assignment are serialised (`DL-45` (2)); an account row is never locked before an order row. Every cart mutation and order creation first lock the active cart row, and creation builds the checkout digest and the snapshots from the values it read under that lock; lock order there is the cart, then the order (`DL-37` (7)). Fresh locked state wins over a stale client.
 
 ## 17. Persisted Idempotency
 
