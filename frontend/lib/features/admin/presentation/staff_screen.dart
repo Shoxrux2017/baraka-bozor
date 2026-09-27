@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/localization/role_labels.dart';
 import '../../../core/network/paged.dart';
+import '../../../core/session/staff_account.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/list_widgets.dart';
 import '../../auth/domain/app_user.dart';
-import '../application/admin_providers.dart';
 import '../application/admin_staff_controllers.dart';
 import '../domain/admin_staff.dart';
 import 'catalog_form_rules.dart';
@@ -23,15 +25,6 @@ const List<UserRole> staffRoles = <UserRole>[
   UserRole.manager,
   UserRole.admin,
 ];
-
-String roleLabel(AppLocalizations l10n, UserRole role) => switch (role) {
-  UserRole.shopper => l10n.roleShopper,
-  UserRole.courier => l10n.roleCourier,
-  UserRole.operator => l10n.roleOperator,
-  UserRole.admin => l10n.roleAdmin,
-  UserRole.manager => l10n.roleManager,
-  UserRole.customer => l10n.shellCustomer,
-};
 
 /// The Admin's staff accounts (`docs/09-api-contracts.md` section 43,
 /// `docs/04-user-flows.md` section 32): the list with its role and status

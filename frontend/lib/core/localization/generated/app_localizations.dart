@@ -1573,6 +1573,744 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Xizmat hali to\'liq sozlanmagan. Keyinroq urinib ko\'ring'**
   String get errorConfigurationIncomplete;
+
+  /// No description provided for @orderStatusNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi'**
+  String get orderStatusNew;
+
+  /// No description provided for @orderStatusShoppingAssigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi tayinlangan'**
+  String get orderStatusShoppingAssigned;
+
+  /// No description provided for @orderStatusShopping.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ilmoqda'**
+  String get orderStatusShopping;
+
+  /// No description provided for @orderStatusFinalPaymentPending.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov kutilmoqda'**
+  String get orderStatusFinalPaymentPending;
+
+  /// No description provided for @orderStatusReadyForDelivery.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazishga tayyor'**
+  String get orderStatusReadyForDelivery;
+
+  /// No description provided for @orderStatusDeliveryAssigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer tayinlangan'**
+  String get orderStatusDeliveryAssigned;
+
+  /// No description provided for @orderStatusOnTheWay.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'lda'**
+  String get orderStatusOnTheWay;
+
+  /// No description provided for @orderStatusCompleted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yakunlangan'**
+  String get orderStatusCompleted;
+
+  /// No description provided for @orderStatusCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilingan'**
+  String get orderStatusCancelled;
+
+  /// No description provided for @paymentCash.
+  ///
+  /// In uz, this message translates to:
+  /// **'Naqd pul'**
+  String get paymentCash;
+
+  /// No description provided for @paymentOnline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Onlayn'**
+  String get paymentOnline;
+
+  /// No description provided for @totalKindEstimate.
+  ///
+  /// In uz, this message translates to:
+  /// **'taxminiy'**
+  String get totalKindEstimate;
+
+  /// No description provided for @totalKindFinal.
+  ///
+  /// In uz, this message translates to:
+  /// **'yakuniy'**
+  String get totalKindFinal;
+
+  /// No description provided for @totalNothingDue.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lanmaydi'**
+  String get totalNothingDue;
+
+  /// No description provided for @itemStatusPending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kutilmoqda'**
+  String get itemStatusPending;
+
+  /// No description provided for @itemStatusAwaitingCustomer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz javobi kutilmoqda'**
+  String get itemStatusAwaitingCustomer;
+
+  /// No description provided for @itemStatusPurchased.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib olindi'**
+  String get itemStatusPurchased;
+
+  /// No description provided for @itemStatusRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib tashlandi'**
+  String get itemStatusRemoved;
+
+  /// No description provided for @substitutionAllowSimilar.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'xshashi bilan almashtirish mumkin'**
+  String get substitutionAllowSimilar;
+
+  /// No description provided for @substitutionContactBefore.
+  ///
+  /// In uz, this message translates to:
+  /// **'Almashtirishdan oldin bog\'lanish'**
+  String get substitutionContactBefore;
+
+  /// No description provided for @substitutionRemoveIfUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bo\'lmasa, olib tashlash'**
+  String get substitutionRemoveIfUnavailable;
+
+  /// No description provided for @removedUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'mahsulot topilmadi'**
+  String get removedUnavailable;
+
+  /// No description provided for @removedCustomerRejected.
+  ///
+  /// In uz, this message translates to:
+  /// **'mijoz rad etdi'**
+  String get removedCustomerRejected;
+
+  /// No description provided for @removedApprovalExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'javob muddati o\'tdi'**
+  String get removedApprovalExpired;
+
+  /// No description provided for @removedCustomerRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'mijoz olib tashladi'**
+  String get removedCustomerRemoved;
+
+  /// No description provided for @removedOperatorRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'operator olib tashladi'**
+  String get removedOperatorRemoved;
+
+  /// No description provided for @removedOrderCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'buyurtma bekor qilindi'**
+  String get removedOrderCancelled;
+
+  /// No description provided for @cancelCustomerCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz bekor qildi'**
+  String get cancelCustomerCancelled;
+
+  /// No description provided for @cancelRequestApproved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish so\'rovi qabul qilindi'**
+  String get cancelRequestApproved;
+
+  /// No description provided for @cancelUnpaidOnline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Onlayn to\'lov qilinmadi'**
+  String get cancelUnpaidOnline;
+
+  /// No description provided for @cancelNoItemsPurchased.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hech narsa sotib olinmadi'**
+  String get cancelNoItemsPurchased;
+
+  /// No description provided for @cancelDeliveryFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib bo\'lmadi'**
+  String get cancelDeliveryFailed;
+
+  /// No description provided for @cancelSystem.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tizim bekor qildi'**
+  String get cancelSystem;
+
+  /// No description provided for @boardRefresh.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilash'**
+  String get boardRefresh;
+
+  /// No description provided for @boardSearch.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqam, telefon yoki ism'**
+  String get boardSearch;
+
+  /// No description provided for @boardAllStatuses.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha holatlar'**
+  String get boardAllStatuses;
+
+  /// No description provided for @boardAllPaymentMethods.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha to\'lov usullari'**
+  String get boardAllPaymentMethods;
+
+  /// No description provided for @boardAllShoppers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha yig\'uvchilar'**
+  String get boardAllShoppers;
+
+  /// No description provided for @boardDays.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sanalar'**
+  String get boardDays;
+
+  /// No description provided for @boardClearDays.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sanalarni tozalash'**
+  String get boardClearDays;
+
+  /// No description provided for @boardSelfOrdersOnly.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faqat o\'zi uchun buyurtmalar'**
+  String get boardSelfOrdersOnly;
+
+  /// No description provided for @boardClearFilters.
+  ///
+  /// In uz, this message translates to:
+  /// **'Filtrlarni tozalash'**
+  String get boardClearFilters;
+
+  /// No description provided for @boardEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha buyurtma yo\'q'**
+  String get boardEmpty;
+
+  /// No description provided for @boardEmptyFiltered.
+  ///
+  /// In uz, this message translates to:
+  /// **'Filtrlarga mos buyurtma yo\'q'**
+  String get boardEmptyFiltered;
+
+  /// No description provided for @boardColumnNumber.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqam'**
+  String get boardColumnNumber;
+
+  /// No description provided for @boardColumnPlaced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Vaqt'**
+  String get boardColumnPlaced;
+
+  /// No description provided for @boardColumnCustomer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz'**
+  String get boardColumnCustomer;
+
+  /// No description provided for @boardColumnStatus.
+  ///
+  /// In uz, this message translates to:
+  /// **'Holat'**
+  String get boardColumnStatus;
+
+  /// No description provided for @boardColumnPayment.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov'**
+  String get boardColumnPayment;
+
+  /// No description provided for @boardColumnTotal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Summa'**
+  String get boardColumnTotal;
+
+  /// No description provided for @boardColumnShopper.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi'**
+  String get boardColumnShopper;
+
+  /// No description provided for @boardItemCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta mahsulot'**
+  String boardItemCount(int count);
+
+  /// No description provided for @boardNoShopper.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayinlanmagan'**
+  String get boardNoShopper;
+
+  /// No description provided for @boardOrderNumber.
+  ///
+  /// In uz, this message translates to:
+  /// **'№{number}'**
+  String boardOrderNumber(String number);
+
+  /// No description provided for @selfOrderMark.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zi uchun'**
+  String get selfOrderMark;
+
+  /// No description provided for @selfOrderExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi — buyurtmachining o\'zi'**
+  String get selfOrderExplained;
+
+  /// No description provided for @summaryCompletedToday.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bugun yakunlangan'**
+  String get summaryCompletedToday;
+
+  /// No description provided for @summaryCancelledToday.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bugun bekor qilingan'**
+  String get summaryCancelledToday;
+
+  /// No description provided for @summarySalesToday.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bugungi savdo'**
+  String get summarySalesToday;
+
+  /// No description provided for @summaryAttention.
+  ///
+  /// In uz, this message translates to:
+  /// **'E\'tibor talab'**
+  String get summaryAttention;
+
+  /// No description provided for @attentionTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'E\'tibor talab qiladi'**
+  String get attentionTitle;
+
+  /// No description provided for @attentionEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha hech narsa yo\'q'**
+  String get attentionEmpty;
+
+  /// No description provided for @attentionSince.
+  ///
+  /// In uz, this message translates to:
+  /// **'{time} dan beri'**
+  String attentionSince(String time);
+
+  /// No description provided for @orderTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma №{number}'**
+  String orderTitle(String number);
+
+  /// No description provided for @orderBackToBoard.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalarga qaytish'**
+  String get orderBackToBoard;
+
+  /// No description provided for @orderPlacedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qilingan: {time}'**
+  String orderPlacedAt(String time);
+
+  /// No description provided for @orderCompletedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yakunlangan: {time}'**
+  String orderCompletedAt(String time);
+
+  /// No description provided for @orderCancelledAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilingan: {time}'**
+  String orderCancelledAt(String time);
+
+  /// No description provided for @orderSectionCustomer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz'**
+  String get orderSectionCustomer;
+
+  /// No description provided for @orderSectionAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil'**
+  String get orderSectionAddress;
+
+  /// No description provided for @orderSectionDeliveryWish.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish vaqti bo\'yicha istak'**
+  String get orderSectionDeliveryWish;
+
+  /// No description provided for @orderSectionItems.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotlar'**
+  String get orderSectionItems;
+
+  /// No description provided for @orderSectionTotals.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hisob'**
+  String get orderSectionTotals;
+
+  /// No description provided for @orderSectionShoppers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchilar'**
+  String get orderSectionShoppers;
+
+  /// No description provided for @orderSectionHistory.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarix'**
+  String get orderSectionHistory;
+
+  /// No description provided for @orderNoDeliveryWish.
+  ///
+  /// In uz, this message translates to:
+  /// **'Istak yo\'q'**
+  String get orderNoDeliveryWish;
+
+  /// No description provided for @orderCoordinates.
+  ///
+  /// In uz, this message translates to:
+  /// **'Koordinatalar: {latitude}, {longitude}'**
+  String orderCoordinates(String latitude, String longitude);
+
+  /// No description provided for @itemMarketPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bozor narxi: {price}'**
+  String itemMarketPrice(String price);
+
+  /// No description provided for @itemCustomerPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz narxi: {price}'**
+  String itemCustomerPrice(String price);
+
+  /// No description provided for @itemMarkup.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustama: {percent}%'**
+  String itemMarkup(String percent);
+
+  /// No description provided for @itemLineTotal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Summa: {amount}'**
+  String itemLineTotal(String amount);
+
+  /// No description provided for @itemNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Izoh: {note}'**
+  String itemNote(String note);
+
+  /// No description provided for @itemRemovedBecause.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib tashlandi: {reason}'**
+  String itemRemovedBecause(String reason);
+
+  /// No description provided for @totalsMerchandise.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotlar'**
+  String get totalsMerchandise;
+
+  /// No description provided for @totalsServiceFee.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xizmat haqi'**
+  String get totalsServiceFee;
+
+  /// No description provided for @totalsDeliveryFee.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berish'**
+  String get totalsDeliveryFee;
+
+  /// No description provided for @totalsTotal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Jami'**
+  String get totalsTotal;
+
+  /// No description provided for @assignmentCurrent.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozirgi'**
+  String get assignmentCurrent;
+
+  /// No description provided for @assignmentAssignedBy.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name} tayinladi, {time}'**
+  String assignmentAssignedBy(String name, String time);
+
+  /// No description provided for @assignmentAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qildi: {time}'**
+  String assignmentAccepted(String time);
+
+  /// No description provided for @assignmentStarted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ishni boshladi: {time}'**
+  String assignmentStarted(String time);
+
+  /// No description provided for @assignmentEnded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tugadi: {time}, {reason}'**
+  String assignmentEnded(String time, String reason);
+
+  /// No description provided for @assignmentEndCompleted.
+  ///
+  /// In uz, this message translates to:
+  /// **'yig\'ish yakunlandi'**
+  String get assignmentEndCompleted;
+
+  /// No description provided for @assignmentEndReassigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'boshqa yig\'uvchiga o\'tkazildi'**
+  String get assignmentEndReassigned;
+
+  /// No description provided for @assignmentEndOrderCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'buyurtma bekor qilindi'**
+  String get assignmentEndOrderCancelled;
+
+  /// No description provided for @assignmentsNone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi hali tayinlanmagan'**
+  String get assignmentsNone;
+
+  /// No description provided for @personWithoutName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismsiz'**
+  String get personWithoutName;
+
+  /// No description provided for @historyNone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarix hali bo\'sh'**
+  String get historyNone;
+
+  /// No description provided for @historySystem.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tizim'**
+  String get historySystem;
+
+  /// No description provided for @historyPaymentProvider.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov tizimi'**
+  String get historyPaymentProvider;
+
+  /// No description provided for @historyEventStatusChanged.
+  ///
+  /// In uz, this message translates to:
+  /// **'Holat o\'zgardi'**
+  String get historyEventStatusChanged;
+
+  /// No description provided for @historyEventEdited.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma o\'zgartirildi'**
+  String get historyEventEdited;
+
+  /// No description provided for @historyEventPaymentMethodSwitched.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov usuli almashtirildi'**
+  String get historyEventPaymentMethodSwitched;
+
+  /// No description provided for @historyEventPriceCorrected.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narx tuzatildi'**
+  String get historyEventPriceCorrected;
+
+  /// No description provided for @historyEventShopperAssigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi tayinlandi'**
+  String get historyEventShopperAssigned;
+
+  /// No description provided for @historyEventShopperReassigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi almashtirildi'**
+  String get historyEventShopperReassigned;
+
+  /// No description provided for @historyEventCourierAssigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer tayinlandi'**
+  String get historyEventCourierAssigned;
+
+  /// No description provided for @historyEventCourierReassigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer almashtirildi'**
+  String get historyEventCourierReassigned;
+
+  /// No description provided for @historyEventDeliveryFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib bo\'lmadi'**
+  String get historyEventDeliveryFailed;
+
+  /// No description provided for @historyEventApprovalRequested.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozdan tasdiq so\'raldi'**
+  String get historyEventApprovalRequested;
+
+  /// No description provided for @historyEventApprovalDecided.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz javob berdi'**
+  String get historyEventApprovalDecided;
+
+  /// No description provided for @historyEventApprovalExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob muddati o\'tdi'**
+  String get historyEventApprovalExpired;
+
+  /// No description provided for @historyEventApprovalResolved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tasdiq yopildi'**
+  String get historyEventApprovalResolved;
+
+  /// No description provided for @historyDeliveryWishChanged.
+  ///
+  /// In uz, this message translates to:
+  /// **'yetkazish istagi o\'zgardi'**
+  String get historyDeliveryWishChanged;
+
+  /// No description provided for @historyAssignedTo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi: {name}'**
+  String historyAssignedTo(String name);
+
+  /// No description provided for @historyEditAdded.
+  ///
+  /// In uz, this message translates to:
+  /// **'qo\'shildi: {count}'**
+  String historyEditAdded(int count);
+
+  /// No description provided for @historyEditRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'olib tashlandi: {count}'**
+  String historyEditRemoved(int count);
+
+  /// No description provided for @historyEditChanged.
+  ///
+  /// In uz, this message translates to:
+  /// **'o\'zgartirildi: {count}'**
+  String historyEditChanged(int count);
+
+  /// No description provided for @historyReassignedTo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi: {previous} → {name}'**
+  String historyReassignedTo(String previous, String name);
+
+  /// No description provided for @boardFilteredShopper.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tanlangan yig\'uvchi'**
+  String get boardFilteredShopper;
+
+  /// No description provided for @boardFilterStatus.
+  ///
+  /// In uz, this message translates to:
+  /// **'Holat'**
+  String get boardFilterStatus;
+
+  /// No description provided for @boardFilterPayment.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov usuli'**
+  String get boardFilterPayment;
+
+  /// No description provided for @boardFilterShopper.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi'**
+  String get boardFilterShopper;
 }
 
 class _AppLocalizationsDelegate

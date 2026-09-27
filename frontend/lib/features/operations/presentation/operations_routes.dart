@@ -5,6 +5,8 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import '../../shells/presentation/panel_shell.dart';
 import 'board_screen.dart';
+import 'operations_paths.dart';
+import 'order_detail_screen.dart';
 
 /// The board of the Operator and the Admin (`docs/07-architecture.md`
 /// section 27, `DL-37` (17)): feature `operations` under
@@ -23,6 +25,12 @@ final FeatureRoutes operationsRoutes = FeatureRoutes(
           name: 'operations-board',
           builder: (BuildContext context, GoRouterState state) =>
               const BoardScreen(),
+        ),
+        GoRoute(
+          path: OperationsPaths.orderPattern,
+          name: 'operations-order',
+          builder: (BuildContext context, GoRouterState state) =>
+              OrderDetailScreen(orderId: state.pathParameters['order']!),
         ),
       ],
     ),

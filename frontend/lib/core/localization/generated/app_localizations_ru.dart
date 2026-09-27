@@ -796,4 +796,427 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get errorConfigurationIncomplete =>
       'Сервис ещё не настроен до конца. Попробуйте позже';
+
+  @override
+  String get orderStatusNew => 'Новый';
+
+  @override
+  String get orderStatusShoppingAssigned => 'Назначен сборщик';
+
+  @override
+  String get orderStatusShopping => 'Собирается';
+
+  @override
+  String get orderStatusFinalPaymentPending => 'Ожидает оплаты';
+
+  @override
+  String get orderStatusReadyForDelivery => 'Готов к доставке';
+
+  @override
+  String get orderStatusDeliveryAssigned => 'Назначен курьер';
+
+  @override
+  String get orderStatusOnTheWay => 'В пути';
+
+  @override
+  String get orderStatusCompleted => 'Выполнен';
+
+  @override
+  String get orderStatusCancelled => 'Отменён';
+
+  @override
+  String get paymentCash => 'Наличные';
+
+  @override
+  String get paymentOnline => 'Онлайн';
+
+  @override
+  String get totalKindEstimate => 'ориентировочно';
+
+  @override
+  String get totalKindFinal => 'окончательно';
+
+  @override
+  String get totalNothingDue => 'К оплате нет';
+
+  @override
+  String get itemStatusPending => 'Ожидает';
+
+  @override
+  String get itemStatusAwaitingCustomer => 'Ждёт ответа клиента';
+
+  @override
+  String get itemStatusPurchased => 'Куплено';
+
+  @override
+  String get itemStatusRemoved => 'Удалено';
+
+  @override
+  String get substitutionAllowSimilar => 'Можно заменить похожим';
+
+  @override
+  String get substitutionContactBefore => 'Связаться перед заменой';
+
+  @override
+  String get substitutionRemoveIfUnavailable => 'Если нет — убрать';
+
+  @override
+  String get removedUnavailable => 'товара не было';
+
+  @override
+  String get removedCustomerRejected => 'клиент отказался';
+
+  @override
+  String get removedApprovalExpired => 'истёк срок ответа';
+
+  @override
+  String get removedCustomerRemoved => 'удалил клиент';
+
+  @override
+  String get removedOperatorRemoved => 'удалил оператор';
+
+  @override
+  String get removedOrderCancelled => 'заказ отменён';
+
+  @override
+  String get cancelCustomerCancelled => 'Отменён клиентом';
+
+  @override
+  String get cancelRequestApproved => 'Одобрен запрос на отмену';
+
+  @override
+  String get cancelUnpaidOnline => 'Не оплачен онлайн';
+
+  @override
+  String get cancelNoItemsPurchased => 'Ничего не куплено';
+
+  @override
+  String get cancelDeliveryFailed => 'Доставка не удалась';
+
+  @override
+  String get cancelSystem => 'Отменён системой';
+
+  @override
+  String get boardRefresh => 'Обновить';
+
+  @override
+  String get boardSearch => 'Номер, телефон или имя';
+
+  @override
+  String get boardAllStatuses => 'Все статусы';
+
+  @override
+  String get boardAllPaymentMethods => 'Все способы оплаты';
+
+  @override
+  String get boardAllShoppers => 'Все сборщики';
+
+  @override
+  String get boardDays => 'Даты';
+
+  @override
+  String get boardClearDays => 'Сбросить даты';
+
+  @override
+  String get boardSelfOrdersOnly => 'Только заказы для себя';
+
+  @override
+  String get boardClearFilters => 'Сбросить фильтры';
+
+  @override
+  String get boardEmpty => 'Заказов пока нет';
+
+  @override
+  String get boardEmptyFiltered => 'Нет заказов по этим фильтрам';
+
+  @override
+  String get boardColumnNumber => 'Номер';
+
+  @override
+  String get boardColumnPlaced => 'Время';
+
+  @override
+  String get boardColumnCustomer => 'Клиент';
+
+  @override
+  String get boardColumnStatus => 'Статус';
+
+  @override
+  String get boardColumnPayment => 'Оплата';
+
+  @override
+  String get boardColumnTotal => 'Сумма';
+
+  @override
+  String get boardColumnShopper => 'Сборщик';
+
+  @override
+  String boardItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count позиции',
+      many: '$count позиций',
+      few: '$count позиции',
+      one: '$count позиция',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get boardNoShopper => 'Не назначен';
+
+  @override
+  String boardOrderNumber(String number) {
+    return '№$number';
+  }
+
+  @override
+  String get selfOrderMark => 'Для себя';
+
+  @override
+  String get selfOrderExplained => 'Сборщик — сам заказчик';
+
+  @override
+  String get summaryCompletedToday => 'Выполнено сегодня';
+
+  @override
+  String get summaryCancelledToday => 'Отменено сегодня';
+
+  @override
+  String get summarySalesToday => 'Продажи сегодня';
+
+  @override
+  String get summaryAttention => 'Требуют внимания';
+
+  @override
+  String get attentionTitle => 'Требует внимания';
+
+  @override
+  String get attentionEmpty => 'Пока ничего нет';
+
+  @override
+  String attentionSince(String time) {
+    return 'с $time';
+  }
+
+  @override
+  String orderTitle(String number) {
+    return 'Заказ №$number';
+  }
+
+  @override
+  String get orderBackToBoard => 'К заказам';
+
+  @override
+  String orderPlacedAt(String time) {
+    return 'Создан: $time';
+  }
+
+  @override
+  String orderCompletedAt(String time) {
+    return 'Выполнен: $time';
+  }
+
+  @override
+  String orderCancelledAt(String time) {
+    return 'Отменён: $time';
+  }
+
+  @override
+  String get orderSectionCustomer => 'Клиент';
+
+  @override
+  String get orderSectionAddress => 'Адрес';
+
+  @override
+  String get orderSectionDeliveryWish => 'Пожелание по времени доставки';
+
+  @override
+  String get orderSectionItems => 'Позиции';
+
+  @override
+  String get orderSectionTotals => 'Расчёт';
+
+  @override
+  String get orderSectionShoppers => 'Сборщики';
+
+  @override
+  String get orderSectionHistory => 'История';
+
+  @override
+  String get orderNoDeliveryWish => 'Пожеланий нет';
+
+  @override
+  String orderCoordinates(String latitude, String longitude) {
+    return 'Координаты: $latitude, $longitude';
+  }
+
+  @override
+  String itemMarketPrice(String price) {
+    return 'Рыночная цена: $price';
+  }
+
+  @override
+  String itemCustomerPrice(String price) {
+    return 'Цена для клиента: $price';
+  }
+
+  @override
+  String itemMarkup(String percent) {
+    return 'Наценка: $percent%';
+  }
+
+  @override
+  String itemLineTotal(String amount) {
+    return 'Сумма: $amount';
+  }
+
+  @override
+  String itemNote(String note) {
+    return 'Комментарий: $note';
+  }
+
+  @override
+  String itemRemovedBecause(String reason) {
+    return 'Удалено: $reason';
+  }
+
+  @override
+  String get totalsMerchandise => 'Товары';
+
+  @override
+  String get totalsServiceFee => 'Сервисный сбор';
+
+  @override
+  String get totalsDeliveryFee => 'Доставка';
+
+  @override
+  String get totalsTotal => 'Итого';
+
+  @override
+  String get assignmentCurrent => 'Текущий';
+
+  @override
+  String assignmentAssignedBy(String name, String time) {
+    return 'Назначил $name, $time';
+  }
+
+  @override
+  String assignmentAccepted(String time) {
+    return 'Принял: $time';
+  }
+
+  @override
+  String assignmentStarted(String time) {
+    return 'Начал сборку: $time';
+  }
+
+  @override
+  String assignmentEnded(String time, String reason) {
+    return 'Завершено: $time, $reason';
+  }
+
+  @override
+  String get assignmentEndCompleted => 'сборка завершена';
+
+  @override
+  String get assignmentEndReassigned => 'передан другому сборщику';
+
+  @override
+  String get assignmentEndOrderCancelled => 'заказ отменён';
+
+  @override
+  String get assignmentsNone => 'Сборщик ещё не назначен';
+
+  @override
+  String get personWithoutName => 'Без имени';
+
+  @override
+  String get historyNone => 'История пока пуста';
+
+  @override
+  String get historySystem => 'Система';
+
+  @override
+  String get historyPaymentProvider => 'Платёжная система';
+
+  @override
+  String get historyEventStatusChanged => 'Статус изменён';
+
+  @override
+  String get historyEventEdited => 'Заказ изменён';
+
+  @override
+  String get historyEventPaymentMethodSwitched => 'Способ оплаты изменён';
+
+  @override
+  String get historyEventPriceCorrected => 'Цена исправлена';
+
+  @override
+  String get historyEventShopperAssigned => 'Назначен сборщик';
+
+  @override
+  String get historyEventShopperReassigned => 'Сборщик заменён';
+
+  @override
+  String get historyEventCourierAssigned => 'Назначен курьер';
+
+  @override
+  String get historyEventCourierReassigned => 'Курьер заменён';
+
+  @override
+  String get historyEventDeliveryFailed => 'Доставка не удалась';
+
+  @override
+  String get historyEventApprovalRequested => 'Запрошено согласие клиента';
+
+  @override
+  String get historyEventApprovalDecided => 'Клиент ответил';
+
+  @override
+  String get historyEventApprovalExpired => 'Срок ответа истёк';
+
+  @override
+  String get historyEventApprovalResolved => 'Согласование закрыто';
+
+  @override
+  String get historyDeliveryWishChanged => 'изменено пожелание по доставке';
+
+  @override
+  String historyAssignedTo(String name) {
+    return 'Сборщик: $name';
+  }
+
+  @override
+  String historyEditAdded(int count) {
+    return 'добавлено: $count';
+  }
+
+  @override
+  String historyEditRemoved(int count) {
+    return 'удалено: $count';
+  }
+
+  @override
+  String historyEditChanged(int count) {
+    return 'изменено: $count';
+  }
+
+  @override
+  String historyReassignedTo(String previous, String name) {
+    return 'Сборщик: $previous → $name';
+  }
+
+  @override
+  String get boardFilteredShopper => 'Выбранный сборщик';
+
+  @override
+  String get boardFilterStatus => 'Статус';
+
+  @override
+  String get boardFilterPayment => 'Способ оплаты';
+
+  @override
+  String get boardFilterShopper => 'Сборщик';
 }

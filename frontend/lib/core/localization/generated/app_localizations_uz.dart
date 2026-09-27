@@ -800,4 +800,419 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get errorConfigurationIncomplete =>
       'Xizmat hali to\'liq sozlanmagan. Keyinroq urinib ko\'ring';
+
+  @override
+  String get orderStatusNew => 'Yangi';
+
+  @override
+  String get orderStatusShoppingAssigned => 'Yig\'uvchi tayinlangan';
+
+  @override
+  String get orderStatusShopping => 'Yig\'ilmoqda';
+
+  @override
+  String get orderStatusFinalPaymentPending => 'To\'lov kutilmoqda';
+
+  @override
+  String get orderStatusReadyForDelivery => 'Yetkazishga tayyor';
+
+  @override
+  String get orderStatusDeliveryAssigned => 'Kuryer tayinlangan';
+
+  @override
+  String get orderStatusOnTheWay => 'Yo\'lda';
+
+  @override
+  String get orderStatusCompleted => 'Yakunlangan';
+
+  @override
+  String get orderStatusCancelled => 'Bekor qilingan';
+
+  @override
+  String get paymentCash => 'Naqd pul';
+
+  @override
+  String get paymentOnline => 'Onlayn';
+
+  @override
+  String get totalKindEstimate => 'taxminiy';
+
+  @override
+  String get totalKindFinal => 'yakuniy';
+
+  @override
+  String get totalNothingDue => 'To\'lanmaydi';
+
+  @override
+  String get itemStatusPending => 'Kutilmoqda';
+
+  @override
+  String get itemStatusAwaitingCustomer => 'Mijoz javobi kutilmoqda';
+
+  @override
+  String get itemStatusPurchased => 'Sotib olindi';
+
+  @override
+  String get itemStatusRemoved => 'Olib tashlandi';
+
+  @override
+  String get substitutionAllowSimilar => 'O\'xshashi bilan almashtirish mumkin';
+
+  @override
+  String get substitutionContactBefore => 'Almashtirishdan oldin bog\'lanish';
+
+  @override
+  String get substitutionRemoveIfUnavailable => 'Bo\'lmasa, olib tashlash';
+
+  @override
+  String get removedUnavailable => 'mahsulot topilmadi';
+
+  @override
+  String get removedCustomerRejected => 'mijoz rad etdi';
+
+  @override
+  String get removedApprovalExpired => 'javob muddati o\'tdi';
+
+  @override
+  String get removedCustomerRemoved => 'mijoz olib tashladi';
+
+  @override
+  String get removedOperatorRemoved => 'operator olib tashladi';
+
+  @override
+  String get removedOrderCancelled => 'buyurtma bekor qilindi';
+
+  @override
+  String get cancelCustomerCancelled => 'Mijoz bekor qildi';
+
+  @override
+  String get cancelRequestApproved => 'Bekor qilish so\'rovi qabul qilindi';
+
+  @override
+  String get cancelUnpaidOnline => 'Onlayn to\'lov qilinmadi';
+
+  @override
+  String get cancelNoItemsPurchased => 'Hech narsa sotib olinmadi';
+
+  @override
+  String get cancelDeliveryFailed => 'Yetkazib bo\'lmadi';
+
+  @override
+  String get cancelSystem => 'Tizim bekor qildi';
+
+  @override
+  String get boardRefresh => 'Yangilash';
+
+  @override
+  String get boardSearch => 'Raqam, telefon yoki ism';
+
+  @override
+  String get boardAllStatuses => 'Barcha holatlar';
+
+  @override
+  String get boardAllPaymentMethods => 'Barcha to\'lov usullari';
+
+  @override
+  String get boardAllShoppers => 'Barcha yig\'uvchilar';
+
+  @override
+  String get boardDays => 'Sanalar';
+
+  @override
+  String get boardClearDays => 'Sanalarni tozalash';
+
+  @override
+  String get boardSelfOrdersOnly => 'Faqat o\'zi uchun buyurtmalar';
+
+  @override
+  String get boardClearFilters => 'Filtrlarni tozalash';
+
+  @override
+  String get boardEmpty => 'Hozircha buyurtma yo\'q';
+
+  @override
+  String get boardEmptyFiltered => 'Filtrlarga mos buyurtma yo\'q';
+
+  @override
+  String get boardColumnNumber => 'Raqam';
+
+  @override
+  String get boardColumnPlaced => 'Vaqt';
+
+  @override
+  String get boardColumnCustomer => 'Mijoz';
+
+  @override
+  String get boardColumnStatus => 'Holat';
+
+  @override
+  String get boardColumnPayment => 'To\'lov';
+
+  @override
+  String get boardColumnTotal => 'Summa';
+
+  @override
+  String get boardColumnShopper => 'Yig\'uvchi';
+
+  @override
+  String boardItemCount(int count) {
+    return '$count ta mahsulot';
+  }
+
+  @override
+  String get boardNoShopper => 'Tayinlanmagan';
+
+  @override
+  String boardOrderNumber(String number) {
+    return '№$number';
+  }
+
+  @override
+  String get selfOrderMark => 'O\'zi uchun';
+
+  @override
+  String get selfOrderExplained => 'Yig\'uvchi — buyurtmachining o\'zi';
+
+  @override
+  String get summaryCompletedToday => 'Bugun yakunlangan';
+
+  @override
+  String get summaryCancelledToday => 'Bugun bekor qilingan';
+
+  @override
+  String get summarySalesToday => 'Bugungi savdo';
+
+  @override
+  String get summaryAttention => 'E\'tibor talab';
+
+  @override
+  String get attentionTitle => 'E\'tibor talab qiladi';
+
+  @override
+  String get attentionEmpty => 'Hozircha hech narsa yo\'q';
+
+  @override
+  String attentionSince(String time) {
+    return '$time dan beri';
+  }
+
+  @override
+  String orderTitle(String number) {
+    return 'Buyurtma №$number';
+  }
+
+  @override
+  String get orderBackToBoard => 'Buyurtmalarga qaytish';
+
+  @override
+  String orderPlacedAt(String time) {
+    return 'Qabul qilingan: $time';
+  }
+
+  @override
+  String orderCompletedAt(String time) {
+    return 'Yakunlangan: $time';
+  }
+
+  @override
+  String orderCancelledAt(String time) {
+    return 'Bekor qilingan: $time';
+  }
+
+  @override
+  String get orderSectionCustomer => 'Mijoz';
+
+  @override
+  String get orderSectionAddress => 'Manzil';
+
+  @override
+  String get orderSectionDeliveryWish => 'Yetkazish vaqti bo\'yicha istak';
+
+  @override
+  String get orderSectionItems => 'Mahsulotlar';
+
+  @override
+  String get orderSectionTotals => 'Hisob';
+
+  @override
+  String get orderSectionShoppers => 'Yig\'uvchilar';
+
+  @override
+  String get orderSectionHistory => 'Tarix';
+
+  @override
+  String get orderNoDeliveryWish => 'Istak yo\'q';
+
+  @override
+  String orderCoordinates(String latitude, String longitude) {
+    return 'Koordinatalar: $latitude, $longitude';
+  }
+
+  @override
+  String itemMarketPrice(String price) {
+    return 'Bozor narxi: $price';
+  }
+
+  @override
+  String itemCustomerPrice(String price) {
+    return 'Mijoz narxi: $price';
+  }
+
+  @override
+  String itemMarkup(String percent) {
+    return 'Ustama: $percent%';
+  }
+
+  @override
+  String itemLineTotal(String amount) {
+    return 'Summa: $amount';
+  }
+
+  @override
+  String itemNote(String note) {
+    return 'Izoh: $note';
+  }
+
+  @override
+  String itemRemovedBecause(String reason) {
+    return 'Olib tashlandi: $reason';
+  }
+
+  @override
+  String get totalsMerchandise => 'Mahsulotlar';
+
+  @override
+  String get totalsServiceFee => 'Xizmat haqi';
+
+  @override
+  String get totalsDeliveryFee => 'Yetkazib berish';
+
+  @override
+  String get totalsTotal => 'Jami';
+
+  @override
+  String get assignmentCurrent => 'Hozirgi';
+
+  @override
+  String assignmentAssignedBy(String name, String time) {
+    return '$name tayinladi, $time';
+  }
+
+  @override
+  String assignmentAccepted(String time) {
+    return 'Qabul qildi: $time';
+  }
+
+  @override
+  String assignmentStarted(String time) {
+    return 'Yig\'ishni boshladi: $time';
+  }
+
+  @override
+  String assignmentEnded(String time, String reason) {
+    return 'Tugadi: $time, $reason';
+  }
+
+  @override
+  String get assignmentEndCompleted => 'yig\'ish yakunlandi';
+
+  @override
+  String get assignmentEndReassigned => 'boshqa yig\'uvchiga o\'tkazildi';
+
+  @override
+  String get assignmentEndOrderCancelled => 'buyurtma bekor qilindi';
+
+  @override
+  String get assignmentsNone => 'Yig\'uvchi hali tayinlanmagan';
+
+  @override
+  String get personWithoutName => 'Ismsiz';
+
+  @override
+  String get historyNone => 'Tarix hali bo\'sh';
+
+  @override
+  String get historySystem => 'Tizim';
+
+  @override
+  String get historyPaymentProvider => 'To\'lov tizimi';
+
+  @override
+  String get historyEventStatusChanged => 'Holat o\'zgardi';
+
+  @override
+  String get historyEventEdited => 'Buyurtma o\'zgartirildi';
+
+  @override
+  String get historyEventPaymentMethodSwitched => 'To\'lov usuli almashtirildi';
+
+  @override
+  String get historyEventPriceCorrected => 'Narx tuzatildi';
+
+  @override
+  String get historyEventShopperAssigned => 'Yig\'uvchi tayinlandi';
+
+  @override
+  String get historyEventShopperReassigned => 'Yig\'uvchi almashtirildi';
+
+  @override
+  String get historyEventCourierAssigned => 'Kuryer tayinlandi';
+
+  @override
+  String get historyEventCourierReassigned => 'Kuryer almashtirildi';
+
+  @override
+  String get historyEventDeliveryFailed => 'Yetkazib bo\'lmadi';
+
+  @override
+  String get historyEventApprovalRequested => 'Mijozdan tasdiq so\'raldi';
+
+  @override
+  String get historyEventApprovalDecided => 'Mijoz javob berdi';
+
+  @override
+  String get historyEventApprovalExpired => 'Javob muddati o\'tdi';
+
+  @override
+  String get historyEventApprovalResolved => 'Tasdiq yopildi';
+
+  @override
+  String get historyDeliveryWishChanged => 'yetkazish istagi o\'zgardi';
+
+  @override
+  String historyAssignedTo(String name) {
+    return 'Yig\'uvchi: $name';
+  }
+
+  @override
+  String historyEditAdded(int count) {
+    return 'qo\'shildi: $count';
+  }
+
+  @override
+  String historyEditRemoved(int count) {
+    return 'olib tashlandi: $count';
+  }
+
+  @override
+  String historyEditChanged(int count) {
+    return 'o\'zgartirildi: $count';
+  }
+
+  @override
+  String historyReassignedTo(String previous, String name) {
+    return 'Yig\'uvchi: $previous → $name';
+  }
+
+  @override
+  String get boardFilteredShopper => 'Tanlangan yig\'uvchi';
+
+  @override
+  String get boardFilterStatus => 'Holat';
+
+  @override
+  String get boardFilterPayment => 'To\'lov usuli';
+
+  @override
+  String get boardFilterShopper => 'Yig\'uvchi';
 }

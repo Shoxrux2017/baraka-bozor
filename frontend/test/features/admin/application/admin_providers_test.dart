@@ -1,9 +1,9 @@
 import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/session/session_controller.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
-import 'package:baraka_bozor/features/admin/application/admin_providers.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
+import 'package:baraka_bozor/core/session/staff_account.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
