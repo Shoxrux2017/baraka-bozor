@@ -293,6 +293,11 @@ void main() {
       await tapAndSettle(tester, byKey('address-new'));
 
       expect(find.text(l10n(tester).addressMapUnavailable), findsOneWidget);
+      expect(
+        find.text(l10n(tester).addressMapHint),
+        findsNothing,
+        reason: 'no map to move in a build without a key',
+      );
       await tester.enterText(byKey('point-latitude'), '41.33');
       await tester.enterText(byKey('point-longitude'), '69.28');
       await tester.enterText(byKey('field-street'), 'Navoiy');
