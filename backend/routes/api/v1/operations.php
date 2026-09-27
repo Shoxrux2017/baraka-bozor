@@ -6,6 +6,7 @@ use App\Models\Enums\Role;
 use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Auth\Http\Middleware\RequireRole;
 use App\Modules\Orders\Http\Controllers\OperationsOrderController;
+use App\Modules\Orders\Http\Controllers\OperationsShopperController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -25,4 +26,10 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Operato
         Route::get('orders/{order}', [OperationsOrderController::class, 'show'])->name('operations.orders.show');
         Route::get('summary', [OperationsOrderController::class, 'summary'])->name('operations.summary');
         Route::get('attention', [OperationsOrderController::class, 'attention'])->name('operations.attention');
+
+        Route::get('shoppers', [OperationsShopperController::class, 'index'])->name('operations.shoppers.index');
+        Route::post('orders/{order}/shopper-assignment', [OperationsOrderController::class, 'assignShopper'])
+            ->name('operations.orders.shopper-assignment.store');
+        Route::put('orders/{order}/shopper-assignment', [OperationsOrderController::class, 'reassignShopper'])
+            ->name('operations.orders.shopper-assignment.update');
     });

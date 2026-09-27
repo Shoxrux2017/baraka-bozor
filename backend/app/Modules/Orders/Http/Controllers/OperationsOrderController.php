@@ -7,6 +7,9 @@ namespace App\Modules\Orders\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Pagination\PaginatedResponse;
 use App\Models\Order;
+use App\Models\User;
+use App\Modules\Orders\Actions\AssignShopper;
+use App\Modules\Orders\Http\Requests\AssignShopperRequest;
 use App\Modules\Orders\Http\Requests\ListBoardOrdersRequest;
 use App\Modules\Orders\Http\Resources\BoardOrderResource;
 use App\Modules\Orders\Http\Resources\BoardOrderRowResource;
@@ -15,13 +18,16 @@ use App\Modules\Orders\Operations\BoardSummary;
 use App\Modules\Orders\Operations\OrderBoard;
 use App\Support\Scope\ScopedLookup;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * The board of the Operator and the Admin (`docs/09` section 38, `DL-12`):
  * `GET /operations/orders`, `GET /operations/orders/{order}`,
- * `GET /operations/summary`, `GET /operations/attention`. Every order is in
- * scope for both roles; the route admits exactly them.
+ * `GET /operations/summary`, `GET /operations/attention`, and the Shopper
+ * assignment of section 39: `POST|PUT /operations/orders/{order}/shopper-assignment`,
+ * answering the order as the board shows it. Every order is in scope for
+ * both roles; the route admits exactly them.
  */
 final class OperationsOrderController extends Controller
 {
@@ -45,11 +51,17 @@ final class OperationsOrderController extends Controller
 
     public function show(string $order): BoardOrderResource
     {
-        return new BoardOrderResource(ScopedLookup::firstOrNotFound(
-            Order::query()
-                ->with(['items', 'history.actor', 'shopperAssignments.shopper', 'shopperAssignments.assignedBy'])
-                ->whereKey($order)
-        ));
+        return self::detail(ScopedLookup::firstOrNotFound(Order::query()->whereKey($order)));
+    }
+
+    public function assignShopper(AssignShopperRequest $request, string $order, AssignShopper $assign): BoardOrderResource
+    {
+        return self::detail($assign->assign($this->staff($request), $order, $request->shopperId()));
+    }
+
+    public function reassignShopper(AssignShopperRequest $request, string $order, AssignShopper $assign): BoardOrderResource
+    {
+        return self::detail($assign->reassign($this->staff($request), $order, $request->shopperId()));
     }
 
     public function summary(): JsonResponse
@@ -77,5 +89,26 @@ final class OperationsOrderController extends Controller
             new LengthAwarePaginator($items, $count, max($count, 1), 1),
             static fn (array $item): array => $item,
         );
+    }
+
+    private static function detail(Order $order): BoardOrderResource
+    {
+        return new BoardOrderResource($order->load([
+            'items',
+            'history.actor',
+            'shopperAssignments.shopper',
+            'shopperAssignments.assignedBy',
+        ]));
+    }
+
+    private function staff(Request $request): User
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            abort(401);
+        }
+
+        return $user;
     }
 }

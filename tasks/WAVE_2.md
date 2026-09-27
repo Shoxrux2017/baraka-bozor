@@ -21,7 +21,7 @@ None (`docs/06` section 5). The MapKit key the Owner set aside (`DL-36`) blocks 
 | W2-5 | Order creation and the Customer's orders: create (idempotent), list, detail | Merged |
 | W2-6 | Order editing and direct cancellation | Merged |
 | W2-7 | Operations API, read side: board list and detail, summary, attention | Merged |
-| W2-8 | Operations API, assignment: the Shopper picker, assignment and reassignment | Planned |
+| W2-8 | Operations API, assignment: the Shopper picker, assignment and reassignment | Merged |
 | W2-9 | Panel: the Operator's shell, the board inside the Admin's, and a reload that keeps its page | Planned |
 | W2-10 | Panel: the board — list with filters, summary strip, attention, order detail with history | Planned |
 | W2-11 | Panel: Shopper assignment and reassignment from the board | Planned |
