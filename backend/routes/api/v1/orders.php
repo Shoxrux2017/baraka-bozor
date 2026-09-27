@@ -37,4 +37,8 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Custome
             ->middleware(RequireIdempotencyKey::class)
             ->name('customer.orders.store');
         Route::get('orders/{order}', [CustomerOrderController::class, 'show'])->name('customer.orders.show');
+        Route::put('orders/{order}/items', [CustomerOrderController::class, 'editItems'])->name('customer.orders.items.update');
+        Route::post('orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])
+            ->middleware(RequireIdempotencyKey::class)
+            ->name('customer.orders.cancel');
     });
