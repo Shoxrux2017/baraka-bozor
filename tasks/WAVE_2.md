@@ -18,7 +18,7 @@ None (`docs/06` section 5). The MapKit key the Owner set aside (`DL-36`) blocks 
 | W2-2 | Idempotency store: `IdempotencyStore` with the lease, replay and conflict rules, and the `Idempotency-Key` header check | Merged |
 | W2-3 | Cart API: read, add, change, remove, with the quantity rules and the cart lock | Merged |
 | W2-4 | Checkout preview: `WorkingHours`, `ServiceFeeCalculator`, the signed checkout token, every refusal | Merged |
-| W2-5 | Order creation and the Customer's orders: create (idempotent), list, detail | Planned |
+| W2-5 | Order creation and the Customer's orders: create (idempotent), list, detail | Merged |
 | W2-6 | Order editing and direct cancellation | Planned |
 | W2-7 | Operations API, read side: board list and detail, summary, attention | Planned |
 | W2-8 | Operations API, assignment: the Shopper picker, assignment and reassignment | Planned |

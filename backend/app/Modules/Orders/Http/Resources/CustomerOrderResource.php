@@ -1,0 +1,120 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Orders\Http\Resources;
+
+use App\Models\Enums\OrderItemStatus;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Modules\Orders\OrderPermissions;
+use App\Modules\Orders\OrderTotals;
+use App\Modules\Orders\QuantityPolicy;
+use Carbon\CarbonInterface;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * An order as its Customer sees it (`docs/09` section 20): the snapshots it
+ * was placed under — never a market price — its lines, its totals as
+ * `DL-37` (10) defines them, the address it goes to, the delivery wish, what
+ * the Customer may do with it now, and its instants. Approvals, payments and
+ * refunds arrive with their waves; until then the count is zero and the
+ * lists are empty.
+ *
+ * Expects `items` and `currentShopperAssignment` loaded.
+ *
+ * @property-read Order $resource
+ */
+final class CustomerOrderResource extends JsonResource
+{
+    public function __construct(Order $order)
+    {
+        parent::__construct($order);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        $order = $this->resource;
+        $items = $order->items->sortBy([['created_at', 'asc'], ['id', 'asc']])->values();
+        $totals = OrderTotals::of($order, $items);
+        $changeable = OrderPermissions::canChange($order);
+
+        return [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'status' => $order->status->value,
+            'payment_method' => $order->payment_method->value,
+            'delivery_time_note' => $order->delivery_time_note,
+            'pending_approval_count' => 0,
+            'can_edit' => $changeable,
+            'can_cancel_directly' => $changeable,
+            'can_request_cancellation' => OrderPermissions::canRequestCancellation($order),
+            'items' => $items->map(fn (OrderItem $item): array => $this->item($item))->all(),
+            'totals' => [
+                'merchandise_subtotal_uzs' => $totals->merchandiseSubtotalUzs,
+                'service_fee_uzs' => $totals->serviceFeeUzs,
+                'delivery_fee_uzs' => $totals->deliveryFeeUzs,
+                'total_uzs' => $totals->totalUzs,
+                'total_kind' => $totals->kind,
+            ],
+            'address' => [
+                'latitude' => $order->latitude_snapshot,
+                'longitude' => $order->longitude_snapshot,
+                'street' => $order->street_snapshot,
+                'house' => $order->house_snapshot,
+                'apartment' => $order->apartment_snapshot,
+                'landmark' => $order->landmark_snapshot,
+                'delivery_note' => $order->delivery_note_snapshot,
+            ],
+            'cancellation_reason_code' => $order->cancellation_reason_code?->value,
+            'payment' => null,
+            'refunds' => [],
+            'timestamps' => [
+                'created_at' => self::instant($order->created_at),
+                'shopping_started_at' => self::instant($order->shopping_started_at),
+                'shopping_completed_at' => self::instant($order->shopping_completed_at),
+                'ready_for_delivery_at' => self::instant($order->ready_for_delivery_at),
+                'on_the_way_at' => self::instant($order->on_the_way_at),
+                'completed_at' => self::instant($order->completed_at),
+                'cancelled_at' => self::instant($order->cancelled_at),
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function item(OrderItem $item): array
+    {
+        $open = in_array($item->status, [OrderItemStatus::Pending, OrderItemStatus::AwaitingCustomer], true);
+
+        return [
+            'id' => $item->id,
+            'product_id' => $item->product_id,
+            'name_uz' => $item->product_name_uz_snapshot,
+            'name_ru' => $item->product_name_ru_snapshot,
+            'unit_code' => $item->unit_code_snapshot->value,
+            'price_mode' => $item->price_mode_snapshot->value,
+            'quantity' => QuantityPolicy::format($item->unit_code_snapshot, $item->ordered_quantity),
+            'customer_note' => $item->customer_note_snapshot,
+            'substitution_policy' => $item->substitution_policy_snapshot->value,
+            'status' => $item->status->value,
+            'customer_unit_price_uzs' => $item->customer_unit_price_uzs_snapshot,
+            'line_total_uzs' => $item->status === OrderItemStatus::Removed ? 0 : OrderTotals::lineEstimate($item),
+            'billable_quantity' => $open ? null : QuantityPolicy::format(
+                $item->fulfilled_unit_code_snapshot ?? $item->unit_code_snapshot,
+                $item->billable_quantity,
+            ),
+            'removed_reason_code' => $item->removed_reason_code?->value,
+        ];
+    }
+
+    private static function instant(?CarbonInterface $instant): ?string
+    {
+        return $instant?->toIso8601ZuluString();
+    }
+}
