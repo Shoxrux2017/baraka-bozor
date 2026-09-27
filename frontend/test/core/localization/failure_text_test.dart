@@ -61,6 +61,10 @@ void main() {
           'checkout_snapshot_stale': (AppLocalizations l) =>
               l.errorCheckoutStale,
           'idempotency_in_progress': (AppLocalizations l) => l.errorInProgress,
+          'order_editing_locked': (AppLocalizations l) =>
+              l.errorOrderEditingLocked,
+          'order_cancellation_not_allowed': (AppLocalizations l) =>
+              l.errorOrderCancellationNotAllowed,
         };
 
     for (final MapEntry<String, String Function(AppLocalizations)> entry
@@ -102,11 +106,11 @@ void main() {
 
   test('a status without a text of its own gets the generic text', () {
     expect(
-      failureText(uz, refusal(409, 'order_editing_locked')),
+      failureText(uz, refusal(409, 'a_conflict_without_text')),
       uz.errorUnknown,
     );
     expect(
-      failureText(ru, refusal(409, 'order_editing_locked')),
+      failureText(ru, refusal(409, 'a_conflict_without_text')),
       ru.errorUnknown,
     );
   });

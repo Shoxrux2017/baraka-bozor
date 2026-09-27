@@ -16,6 +16,21 @@ abstract final class OrderLabels {
         OrderStatus.cancelled => l10n.orderStatusCancelled,
       };
 
+  /// A status as the Customer reads it about their own order.
+  static String customerStatus(AppLocalizations l10n, OrderStatus status) =>
+      switch (status) {
+        OrderStatus.newOrder => l10n.customerStatusNew,
+        OrderStatus.shoppingAssigned => l10n.customerStatusShoppingAssigned,
+        OrderStatus.shopping => l10n.customerStatusShopping,
+        OrderStatus.finalPaymentPending =>
+          l10n.customerStatusFinalPaymentPending,
+        OrderStatus.readyForDelivery => l10n.customerStatusReadyForDelivery,
+        OrderStatus.deliveryAssigned => l10n.customerStatusDeliveryAssigned,
+        OrderStatus.onTheWay => l10n.customerStatusOnTheWay,
+        OrderStatus.completed => l10n.customerStatusCompleted,
+        OrderStatus.cancelled => l10n.customerStatusCancelled,
+      };
+
   static String paymentMethod(AppLocalizations l10n, PaymentMethod method) =>
       switch (method) {
         PaymentMethod.cash => l10n.paymentCash,

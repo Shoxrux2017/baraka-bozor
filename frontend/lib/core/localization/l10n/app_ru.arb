@@ -748,5 +748,40 @@
         "type": "String"
       }
     }
-  }
+  },
+  "myOrders": "Мои заказы",
+  "myOrdersEmpty": "Заказов пока нет",
+  "customerStatusNew": "Принят",
+  "customerStatusShoppingAssigned": "Назначен сборщик",
+  "customerStatusShopping": "Собирается",
+  "customerStatusFinalPaymentPending": "Ждёт оплаты",
+  "customerStatusReadyForDelivery": "Готов к доставке",
+  "customerStatusDeliveryAssigned": "Назначен курьер",
+  "customerStatusOnTheWay": "В пути",
+  "customerStatusCompleted": "Доставлен",
+  "customerStatusCancelled": "Отменён",
+  "orderEdit": "Изменить",
+  "orderEditTitle": "Изменение заказа",
+  "orderEditRemoveLine": "Убрать из заказа",
+  "orderEditKeepLine": "Вернуть",
+  "orderEditAtLeastOne": "В заказе должен остаться хотя бы один товар",
+  "orderEditSaving": "Сохраняем",
+  "orderEditClosed": "Этот заказ уже нельзя изменить",
+  "orderCancel": "Отменить заказ",
+  "orderCancelConfirm": "Отменить заказ?",
+  "orderCancelReason": "Причина (необязательно)",
+  "orderCancelRepeating": "Прошлый запрос остался без ответа: он повторится с той же причиной",
+  "orderCancelKeep": "Нет, оставить",
+  "orderCancelling": "Отменяем",
+  "orderOpen": "Открыть заказ",
+  "orderLineRemoved": "Убрано: {reason}",
+  "@orderLineRemoved": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "errorOrderEditingLocked": "Заказ уже нельзя изменить. Заказ обновлён",
+  "errorOrderCancellationNotAllowed": "Заказ уже нельзя отменить. Заказ обновлён"
 }

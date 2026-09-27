@@ -541,6 +541,15 @@ class _Placed extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         FilledButton(
+          key: const ValueKey<String>('checkout-open-order'),
+          onPressed: () {
+            final GoRouter router = GoRouter.of(context)..go(AppPaths.customer);
+            router.push(AppPaths.customerOrder(order.id));
+          },
+          child: Text(l10n.orderOpen),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton(
           key: const ValueKey<String>('checkout-back-to-catalog'),
           onPressed: () => context.go(AppPaths.customer),
           child: Text(l10n.checkoutBackToCatalog),

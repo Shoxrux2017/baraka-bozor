@@ -1,0 +1,275 @@
+import 'package:dio/dio.dart';
+
+import '../../../core/catalog/catalog_values.dart';
+import '../../../core/network/api_call.dart';
+import '../../../core/network/api_envelope.dart';
+import '../../../core/network/auth_interceptor.dart';
+import '../../../core/network/json_fields.dart';
+import '../../../core/network/paged.dart';
+import '../../../core/orders/order_values.dart';
+import '../../../core/orders/quantity_rules.dart';
+import '../../../core/storage/token_store.dart';
+import '../domain/customer_orders.dart';
+
+/// The data source for `docs/09-api-contracts.md` sections 20 to 22, on
+/// the Customer session, with its strict parsing. An answer is held to the
+/// request it answers (`DL-27` (6)).
+class CustomerOrdersApi {
+  CustomerOrdersApi(this._dio);
+
+  final Dio _dio;
+
+  static final Options _customer = RequestSlot.of(SessionSlot.customer);
+
+  Future<Paged<OrderSummary>> orders(int page) async {
+    final Response<dynamic> response = await _dio.get<dynamic>(
+      '/customer/orders',
+      queryParameters: <String, Object>{'page': page},
+      options: _customer,
+    );
+    final Paged<OrderSummary> orders = Paged.parse(response.data, parseSummary);
+    if (orders.page != page) {
+      throw const FormatException('another page than the one asked for');
+    }
+    return orders;
+  }
+
+  Future<CustomerOrder> order(String id) async {
+    final Response<dynamic> response = await _dio.get<dynamic>(
+      _path(id),
+      options: _customer,
+    );
+    return _theOrder(response, id);
+  }
+
+  Future<CustomerOrder> edit(
+    String id,
+    List<OrderEditLine> lines,
+    String? deliveryTimeNote,
+  ) async {
+    final Response<dynamic> response = await _dio.put<dynamic>(
+      '${_path(id)}/items',
+      data: <String, Object?>{
+        'items': <Map<String, Object?>>[
+          for (final OrderEditLine line in lines)
+            <String, Object?>{
+              'product_id': line.productId,
+              'quantity': line.quantity,
+              'customer_note': line.customerNote,
+              'substitution_policy': line.substitutionPolicy.code,
+            },
+        ],
+        'delivery_time_note': deliveryTimeNote,
+      },
+      options: _customer,
+    );
+    final CustomerOrder order = _theOrder(response, id);
+    if (order.deliveryTimeNote != deliveryTimeNote ||
+        order.openLines.length != lines.length) {
+      throw const FormatException('the order does not show the edit');
+    }
+    return order;
+  }
+
+  Future<CustomerOrder> cancel(
+    String id,
+    String? reason,
+    String idempotencyKey,
+  ) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '${_path(id)}/cancel',
+      data: <String, Object?>{'reason': ?reason},
+      options: _customer.copyWith(
+        headers: <String, Object?>{'Idempotency-Key': idempotencyKey},
+      ),
+    );
+    final CustomerOrder order = _theOrder(response, id);
+    if (order.status != OrderStatus.cancelled) {
+      throw const FormatException('the order is not cancelled');
+    }
+    return order;
+  }
+
+  static String _path(String id) =>
+      '/customer/orders/${Uri.encodeComponent(id)}';
+
+  static CustomerOrder _theOrder(Response<dynamic> response, String id) {
+    final CustomerOrder order = parseOrder(ApiEnvelope.unwrap(response.data));
+    // The API answers ids in lower case, whatever case the address had.
+    if (order.id != id.toLowerCase()) {
+      throw const FormatException('another order than the one asked for');
+    }
+    return order;
+  }
+
+  static final RegExp _quantity = RegExp(r'^\d{1,4}(\.\d{3})?$');
+
+  static int _amount(JsonFields json, String key) {
+    final int value = json.integer(key);
+    if (value < 0) {
+      throw FormatException('$key is negative');
+    }
+    return value;
+  }
+
+  static int? _nullableAmount(JsonFields json, String key) {
+    final int? value = json.nullableInteger(key);
+    if (value != null && value < 0) {
+      throw FormatException('$key is negative');
+    }
+    return value;
+  }
+
+  static int _number(JsonFields json) {
+    final int number = json.integer('order_number');
+    if (number < 1) {
+      throw const FormatException('order_number is not an order number');
+    }
+    return number;
+  }
+
+  /// One order of the list.
+  static OrderSummary parseSummary(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'order summary');
+    final OrderSummary summary = OrderSummary(
+      id: json.uuid('id'),
+      orderNumber: _number(json),
+      status: json.choice('status', OrderStatus.tryParse),
+      paymentMethod: json.choice('payment_method', PaymentMethod.tryParse),
+      itemCount: _amount(json, 'item_count'),
+      totalUzs: _nullableAmount(json, 'total_uzs'),
+      totalKind: json.choice('total_kind', TotalKind.tryParse),
+      createdAt: json.instant('created_at'),
+    );
+    if ((summary.totalUzs == null) != (summary.totalKind == TotalKind.none)) {
+      throw const FormatException('a total is null exactly when none is due');
+    }
+    return summary;
+  }
+
+  /// The whole order.
+  static CustomerOrder parseOrder(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'order');
+    final JsonFields totals = JsonFields.of(json.member('totals'), 'totals');
+    final JsonFields address = JsonFields.of(json.member('address'), 'address');
+    final JsonFields timestamps = JsonFields.of(
+      json.member('timestamps'),
+      'timestamps',
+    );
+    final Object? rawLines = json.member('items');
+    if (rawLines is! List<dynamic>) {
+      throw const FormatException('items is not a list');
+    }
+    final String? reason = json.nullableString('cancellation_reason_code');
+
+    final CustomerOrder order = CustomerOrder(
+      id: json.uuid('id'),
+      orderNumber: _number(json),
+      status: json.choice('status', OrderStatus.tryParse),
+      paymentMethod: json.choice('payment_method', PaymentMethod.tryParse),
+      deliveryTimeNote: json.nullableString('delivery_time_note'),
+      canEdit: json.boolean('can_edit'),
+      canCancelDirectly: json.boolean('can_cancel_directly'),
+      lines: rawLines.map(_line).toList(growable: false),
+      merchandiseSubtotalUzs: _nullableAmount(
+        totals,
+        'merchandise_subtotal_uzs',
+      ),
+      serviceFeeUzs: _nullableAmount(totals, 'service_fee_uzs'),
+      deliveryFeeUzs: _nullableAmount(totals, 'delivery_fee_uzs'),
+      totalUzs: _nullableAmount(totals, 'total_uzs'),
+      totalKind: totals.choice('total_kind', TotalKind.tryParse),
+      address: OrderAddress(
+        street: address.string('street'),
+        house: address.string('house'),
+        apartment: address.nullableString('apartment'),
+        landmark: address.nullableString('landmark'),
+        deliveryNote: address.nullableString('delivery_note'),
+      ),
+      cancellationReason: reason == null
+          ? null
+          : json.choice(
+              'cancellation_reason_code',
+              CancellationReason.tryParse,
+            ),
+      createdAt: timestamps.instant('created_at'),
+    );
+    final bool none = order.totalKind == TotalKind.none;
+    for (final int? amount in <int?>[
+      order.merchandiseSubtotalUzs,
+      order.serviceFeeUzs,
+      order.deliveryFeeUzs,
+      order.totalUzs,
+    ]) {
+      if ((amount == null) != none) {
+        throw const FormatException('amounts are null exactly when none');
+      }
+    }
+    if ((order.status == OrderStatus.cancelled) !=
+        (order.cancellationReason != null)) {
+      throw const FormatException('a cancelled order has its reason');
+    }
+    return order;
+  }
+
+  static CustomerOrderLine _line(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'order line');
+    final String quantity = json.string('quantity');
+    if (!_quantity.hasMatch(quantity) ||
+        QuantityRules.thousandths(quantity) == 0) {
+      throw FormatException('quantity is not in its form: $quantity');
+    }
+    final String? removed = json.nullableString('removed_reason_code');
+    final CustomerOrderLine line = CustomerOrderLine(
+      id: json.uuid('id'),
+      productId: json.uuid('product_id'),
+      nameUz: json.string('name_uz'),
+      nameRu: json.string('name_ru'),
+      unit: json.choice('unit_code', UnitCode.tryParse),
+      priceMode: json.choice('price_mode', PriceMode.tryParse),
+      quantity: quantity,
+      customerNote: json.nullableString('customer_note'),
+      substitutionPolicy: json.choice(
+        'substitution_policy',
+        SubstitutionPolicy.tryParse,
+      ),
+      status: json.choice('status', OrderItemStatus.tryParse),
+      customerUnitPriceUzs: _amount(json, 'customer_unit_price_uzs'),
+      lineTotalUzs: _amount(json, 'line_total_uzs'),
+      removedReason: removed == null
+          ? null
+          : json.choice('removed_reason_code', ItemRemovedReason.tryParse),
+    );
+    if (line.removed != (line.removedReason != null)) {
+      throw const FormatException('a removed line has its reason');
+    }
+    return line;
+  }
+}
+
+class CustomerOrdersRepositoryImpl implements CustomerOrdersRepository {
+  CustomerOrdersRepositoryImpl(this._api);
+
+  final CustomerOrdersApi _api;
+
+  @override
+  Future<Paged<OrderSummary>> orders(int page) =>
+      guardApiCall(() => _api.orders(page));
+
+  @override
+  Future<CustomerOrder> order(String id) => guardApiCall(() => _api.order(id));
+
+  @override
+  Future<CustomerOrder> edit(
+    String id,
+    List<OrderEditLine> lines,
+    String? deliveryTimeNote,
+  ) => guardApiCall(() => _api.edit(id, lines, deliveryTimeNote));
+
+  @override
+  Future<CustomerOrder> cancel(
+    String id,
+    String? reason,
+    String idempotencyKey,
+  ) => guardApiCall(() => _api.cancel(id, reason, idempotencyKey));
+}

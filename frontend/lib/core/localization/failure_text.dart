@@ -55,6 +55,8 @@ String _refusalText(AppLocalizations l10n, String code, int status) {
     'minimum_order_not_reached' => l10n.errorMinimumOrderPlain,
     'payment_method_unavailable' => l10n.errorPaymentMethodUnavailable,
     'checkout_snapshot_stale' => l10n.errorCheckoutStale,
+    'order_editing_locked' => l10n.errorOrderEditingLocked,
+    'order_cancellation_not_allowed' => l10n.errorOrderCancellationNotAllowed,
     'idempotency_in_progress' => l10n.errorInProgress,
     'staff_not_active' => l10n.errorStaffNotActive,
     'provider_unavailable' ||
