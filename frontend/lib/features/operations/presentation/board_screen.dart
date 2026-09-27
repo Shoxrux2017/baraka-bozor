@@ -7,6 +7,7 @@ import '../../../core/formatting/money_format.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/network/paged.dart';
 import '../../../core/orders/order_values.dart';
@@ -131,7 +132,7 @@ class _SummaryStrip extends ConsumerWidget {
             key: const ValueKey<String>('summary-sales'),
             label: Text(
               '${l10n.summarySalesToday}: '
-              '${MoneyFormat.uzs(summary.salesTodayUzs, languageOf(context))}',
+              '${MoneyFormat.uzs(summary.salesTodayUzs, interfaceLanguage(context))}',
             ),
           ),
           Chip(

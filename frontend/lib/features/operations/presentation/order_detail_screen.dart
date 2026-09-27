@@ -8,6 +8,7 @@ import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/localization/role_labels.dart';
 import '../../../core/orders/order_values.dart';
@@ -90,7 +91,7 @@ class _Order extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = languageOf(context);
+    final AppLanguage language = interfaceLanguage(context);
     final BoardAddress address = order.address;
 
     return Column(

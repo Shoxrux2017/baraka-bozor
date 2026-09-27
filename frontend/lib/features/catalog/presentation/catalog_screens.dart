@@ -9,12 +9,16 @@ import '../../../app/providers.dart';
 import '../../../core/catalog/catalog_values.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/language_menu.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/product_image.dart';
+import '../../cart/presentation/add_to_cart.dart';
+import '../../cart/presentation/cart_widgets.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 import 'catalog_paths.dart';
@@ -73,6 +77,7 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
       appBar: AppBar(
         title: Text(l10n.appTitle),
         actions: <Widget>[
+          const CartButton(),
           const LanguageMenuButton(),
           IconButton(
             key: const ValueKey<String>('open-profile'),
@@ -149,7 +154,7 @@ class _Categories extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = languageOf(context);
+    final AppLanguage language = interfaceLanguage(context);
 
     final AsyncValue<List<CatalogCategory>> sections = ref.watch(
       catalogCategoriesProvider,
@@ -197,7 +202,7 @@ class CategoryProductsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AppLanguage language = languageOf(context);
+    final AppLanguage language = interfaceLanguage(context);
     final List<CatalogCategory>? categories = ref
         .watch(catalogCategoriesProvider)
         .value;
@@ -206,7 +211,10 @@ class CategoryProductsScreen extends ConsumerWidget {
         .firstOrNull;
 
     return Scaffold(
-      appBar: AppBar(title: Text(category?.name(language) ?? '')),
+      appBar: AppBar(
+        title: Text(category?.name(language) ?? ''),
+        actions: const <Widget>[CartButton()],
+      ),
       body: SafeArea(
         child: Column(
           children: <Widget>[
@@ -234,13 +242,16 @@ class ProductScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = languageOf(context);
+    final AppLanguage language = interfaceLanguage(context);
     final AsyncValue<CatalogProduct> product = ref.watch(
       catalogProductProvider(productId),
     );
 
     return Scaffold(
-      appBar: AppBar(title: Text(product.value?.name(language) ?? '')),
+      appBar: AppBar(
+        title: Text(product.value?.name(language) ?? ''),
+        actions: const <Widget>[CartButton()],
+      ),
       body: SafeArea(
         child: Column(
           children: <Widget>[
@@ -280,6 +291,11 @@ class ProductScreen extends ConsumerWidget {
                         const SizedBox(height: 16),
                         Text(description),
                       ],
+                      const SizedBox(height: 16),
+                      AddToCartSection(
+                        productId: product.id,
+                        unit: product.unitCode,
+                      ),
                     ],
                   );
                 },

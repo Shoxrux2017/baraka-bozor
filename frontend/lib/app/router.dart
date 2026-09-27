@@ -6,6 +6,7 @@ import '../core/routing/feature_routes.dart';
 import '../features/admin/presentation/admin_routes.dart';
 import '../features/auth/presentation/auth_routes.dart';
 import '../features/addresses/presentation/addresses_routes.dart';
+import '../features/cart/presentation/cart_routes.dart';
 import '../features/catalog/presentation/catalog_routes.dart';
 import '../features/operations/presentation/operations_routes.dart';
 import '../features/profile/presentation/profile_routes.dart';
@@ -29,6 +30,7 @@ final List<FeatureRoutes> featureRouteFragments = <FeatureRoutes>[
   catalogRoutes,
   profileRoutes,
   addressesRoutes,
+  cartRoutes,
 ];
 
 /// The application's route table. [redirect] is the session guard the root

@@ -642,5 +642,48 @@
       }
     }
   },
-  "assigningShopper": "Yig'uvchi tayinlanmoqda"
+  "assigningShopper": "Yig'uvchi tayinlanmoqda",
+  "cartTitle": "Savat",
+  "cartOpen": "Savatni ochish",
+  "cartBadge": "Savat: {count}",
+  "@cartBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cartEmpty": "Savat bo'sh",
+  "cartAdd": "Savatga qo'shish",
+  "cartAdded": "Savatga qo'shildi",
+  "cartQuantity": "Miqdori",
+  "cartQuantityFraction": "0 dan katta son: ko'pi bilan 4 xona va 3 kasr",
+  "cartQuantityWhole": "1 dan 9999 gacha butun son",
+  "cartDecrease": "Kamaytirish",
+  "cartIncrease": "Ko'paytirish",
+  "cartNote": "Yig'uvchi uchun izoh",
+  "cartSubstitution": "Mahsulot bo'lmasa",
+  "cartSubtotal": "Taxminiy jami: {amount}",
+  "@cartSubtotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartLineEstimate": "≈ {amount}",
+  "@cartLineEstimate": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartLineUnavailable": "Hozir sotuvda yo'q",
+  "cartUnavailableHint": "Sotuvda yo'q mahsulotlarni olib tashlang — ular bilan buyurtma berib bo'lmaydi",
+  "cartRemoveLine": "Savatdan olib tashlash",
+  "cartSaving": "Saqlanmoqda",
+  "errorCartItemAlreadyExists": "Bu mahsulot allaqachon savatda",
+  "errorCartFull": "Savatda ko'pi bilan 100 ta mahsulot bo'lishi mumkin",
+  "errorProductUnavailable": "Bu mahsulot hozir sotuvda yo'q"
 }

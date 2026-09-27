@@ -7,16 +7,13 @@ import '../../../core/formatting/money_format.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/product_image.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 import 'catalog_paths.dart';
-
-/// The interface language, for choosing between a name's two versions.
-AppLanguage languageOf(BuildContext context) =>
-    AppLanguage.tryParse(Localizations.localeOf(context).languageCode) ??
-    AppLanguage.uz;
 
 /// A product's price as the Customer reads it: the customer price per unit,
 /// and for an estimate the words that say so (`BR-PRICE-003`).
@@ -30,7 +27,7 @@ class PriceLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final String price = l10n.catalogPricePerUnit(
-      MoneyFormat.uzs(product.customerUnitPriceUzs, languageOf(context)),
+      MoneyFormat.uzs(product.customerUnitPriceUzs, interfaceLanguage(context)),
       CatalogLabels.unit(l10n, product.unitCode),
     );
 
@@ -47,37 +44,6 @@ class PriceLine extends StatelessWidget {
                 ?.copyWith(fontStyle: FontStyle.italic),
           ),
       ],
-    );
-  }
-}
-
-/// A product's image, or a placeholder.
-class ProductImage extends StatelessWidget {
-  const ProductImage({required this.url, required this.size, super.key});
-
-  final String? url;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final Widget placeholder = SizedBox.square(
-      dimension: size,
-      child: Icon(Icons.shopping_basket_outlined, size: size / 2),
-    );
-    final String? url = this.url;
-    if (url == null) {
-      return placeholder;
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        url,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        errorBuilder: (BuildContext context, Object error, StackTrace? _) =>
-            placeholder,
-      ),
     );
   }
 }
@@ -197,7 +163,7 @@ class ProductTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppLanguage language = languageOf(context);
+    final AppLanguage language = interfaceLanguage(context);
 
     return ListTile(
       key: ValueKey<String>('product-${product.id}'),

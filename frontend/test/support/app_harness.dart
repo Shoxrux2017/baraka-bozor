@@ -1,4 +1,5 @@
 import 'package:baraka_bozor/app/providers.dart';
+import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
 import 'package:baraka_bozor/features/operations/application/board_controllers.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 
 import 'fake_auth_repository.dart';
+import 'fake_cart_repository.dart';
 import 'fake_catalog_repository.dart';
 import 'fake_operations_repository.dart';
 import 'in_memory_stores.dart';
@@ -20,6 +22,7 @@ Widget appUnderTest({
   FakeAuthRepository? repository,
   FakeCatalogRepository? catalog,
   FakeOperationsRepository? operations,
+  FakeCartRepository? cart,
   Surface surface = Surface.mobile,
   Locale device = const Locale('uz'),
   List<Override> overrides = const <Override>[],
@@ -40,6 +43,7 @@ Widget appUnderTest({
       operationsRepositoryProvider.overrideWithValue(
         operations ?? FakeOperationsRepository(),
       ),
+      cartRepositoryProvider.overrideWithValue(cart ?? FakeCartRepository()),
       ...overrides,
     ],
     child: const BarakaBozorApp(),
