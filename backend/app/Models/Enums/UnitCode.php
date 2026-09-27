@@ -6,8 +6,7 @@ namespace App\Models\Enums;
 
 /**
  * The units `01` Section 7 and `BR-QTY-001` approve, backed by the strings
- * `products_unit_code_check` lists. Which of them take a fractional quantity
- * is the cart's concern and arrives with it (Wave 2).
+ * `products_unit_code_check` lists.
  */
 enum UnitCode: string
 {
@@ -19,4 +18,16 @@ enum UnitCode: string
     case Box = 'box';
     case Bundle = 'bundle';
     case Meter = 'meter';
+
+    /**
+     * `kg`, `liter` and `meter` take up to three decimals; the others are
+     * counted in whole units (`BR-QTY-001`).
+     */
+    public function allowsFraction(): bool
+    {
+        return match ($this) {
+            self::Kg, self::Liter, self::Meter => true,
+            default => false,
+        };
+    }
 }

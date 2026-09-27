@@ -38,6 +38,21 @@ final class MoneyCalculator
     }
 
     /**
+     * `half_up(unit price × quantity)` — a line total (`BR-MONEY-003`), and the
+     * cart's estimate of one. The quantity is in thousandths, so the product is
+     * exact. A customer price is at most a market price of 10⁹ UZS under the
+     * largest markup the settings allow (999.99 %), about 1.1 × 10¹⁰; with a
+     * quantity of at most 9 999.999 (`DL-37` (6)) the intermediate stays below
+     * 2.3 × 10¹⁷, far inside a 64-bit integer.
+     */
+    public static function lineTotal(int $unitPriceUzs, Quantity $quantity): int
+    {
+        self::assertNotNegative($unitPriceUzs);
+
+        return self::divideHalfUp($unitPriceUzs * $quantity->thousandths, 1000);
+    }
+
+    /**
      * `numerator / denominator`, rounded half up to a whole UZS, for
      * non-negative numerators and positive denominators.
      */
