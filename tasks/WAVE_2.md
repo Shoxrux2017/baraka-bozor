@@ -1,6 +1,6 @@
 # Wave 2 — Cart and order on cash
 
-Status: **Planned** (2026-09-27). Plan under workflow v6 (`tasks/README.md`). Scope from `DL-5` and `docs/06-roadmap.md` sections 2 and 3; engineering decisions for the wave in `DL-37`.
+Status: **In progress** (planned 2026-09-27). Plan under workflow v6 (`tasks/README.md`). Scope from `DL-5` and `docs/06-roadmap.md` sections 2 and 3; engineering decisions for the wave in `DL-37`.
 
 ## Goal
 
@@ -14,7 +14,7 @@ None (`docs/06` section 5). The MapKit key the Owner set aside (`DL-36`) blocks 
 
 | # | Task | Status |
 |---|---|---|
-| W2-1 | Schema: `carts`, `cart_items`, `orders` with `orders_order_number_seq`, `order_items`, `order_history`, `order_shopper_assignments`, `idempotency_keys`; models and factories | Planned |
+| W2-1 | Schema: `carts`, `cart_items`, `orders` with `orders_order_number_seq`, `order_items`, `order_history`, `order_shopper_assignments`, `idempotency_keys`; models and factories | Merged |
 | W2-2 | Idempotency store: `IdempotencyStore` with the lease, replay and conflict rules, and the `Idempotency-Key` header check | Planned |
 | W2-3 | Cart API: read, add, change, remove, with the quantity rules and the cart lock | Planned |
 | W2-4 | Checkout preview: `WorkingHours`, `ServiceFeeCalculator`, the signed checkout token, every refusal | Planned |

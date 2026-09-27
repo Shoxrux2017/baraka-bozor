@@ -7,19 +7,18 @@ namespace Tests\Feature\Schema;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Tests\Support\Database\RollsBackMigrations;
 use Tests\TestCase;
 
 /**
  * What the Wave 1 migrations promise as a set: they roll back and run again,
  * every foreign key is `RESTRICT` rather than merely refusing, and every
  * numeric column has the precision `docs/08-database.md` section 1 fixes.
- *
- * The rollback runs inside the test's transaction; PostgreSQL DDL is
- * transactional, so the database is back as it was when the test ends.
  */
 final class Wave1MigrationsTest extends TestCase
 {
     use RefreshDatabase;
+    use RollsBackMigrations;
 
     /** In creation order; rolled back in reverse. */
     private const MIGRATIONS = [
@@ -34,15 +33,17 @@ final class Wave1MigrationsTest extends TestCase
 
     public function test_the_migrations_roll_back_in_reverse_order_and_run_again(): void
     {
-        foreach (array_reverse(self::MIGRATIONS, true) as $file => $table) {
-            $this->runMigration($file, 'down');
+        $rolledBack = $this->rollBackFrom(array_key_first(self::MIGRATIONS));
+
+        foreach (self::MIGRATIONS as $table) {
             $this->assertFalse(Schema::hasTable($table), "{$table} survived its rollback.");
         }
 
         $this->assertTrue(Schema::hasTable('users'), 'A Wave 1 rollback must not reach the Wave 0 tables.');
 
-        foreach (self::MIGRATIONS as $file => $table) {
-            $this->runMigration($file, 'up');
+        $this->runAgain($rolledBack);
+
+        foreach (self::MIGRATIONS as $table) {
             $this->assertTrue(Schema::hasTable($table), "{$table} was not recreated.");
         }
 
@@ -103,16 +104,5 @@ final class Wave1MigrationsTest extends TestCase
         }
 
         $this->assertSame($expected, $actual);
-    }
-
-    /**
-     * Runs one direction of one migration file. The file returns an anonymous
-     * class, so the method is called by name.
-     */
-    private function runMigration(string $file, string $direction): void
-    {
-        $migration = require database_path("migrations/{$file}.php");
-
-        $migration->{$direction}();
     }
 }
