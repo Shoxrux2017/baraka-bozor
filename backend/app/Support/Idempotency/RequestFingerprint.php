@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support\Idempotency;
 
+use InvalidArgumentException;
+
 /**
  * The request hash an idempotency key is bound to (`DL-37` (5)): SHA-256 over
  * the canonical JSON of the operation, the route parameters and the validated
@@ -13,19 +15,22 @@ namespace App\Support\Idempotency;
  *
  * Canonical means object keys sorted at every depth, lists left in their
  * order, and no escaping of slashes or non-ASCII text, so the same request
- * hashes the same however its JSON was written.
+ * hashes the same however its JSON was written. Route parameters are ids and
+ * enum values, compared in lower case, so one id in either case is one
+ * request; a leaf that is an object is refused, since a bound model would
+ * hash its current attributes and make a retry after a change look reused.
  */
 final class RequestFingerprint
 {
     /**
-     * @param  array<string, mixed>  $routeParameters
+     * @param  array<string, string>  $routeParameters
      * @param  array<string, mixed>  $body
      */
     public static function of(string $operation, array $routeParameters, array $body): string
     {
         $canonical = self::canonical([
             'operation' => $operation,
-            'route' => $routeParameters,
+            'route' => array_map(strtolower(...), $routeParameters),
             'body' => $body,
         ]);
 
@@ -37,6 +42,10 @@ final class RequestFingerprint
 
     private static function canonical(mixed $value): mixed
     {
+        if (is_object($value)) {
+            throw new InvalidArgumentException('A request fingerprint holds scalars, nulls and arrays only.');
+        }
+
         if (! is_array($value)) {
             return $value;
         }

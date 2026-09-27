@@ -15,6 +15,7 @@ use App\Support\Idempotency\RequestFingerprint;
 use DateTimeInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -193,6 +194,53 @@ final class IdempotencyStoreTest extends TestCase
         ));
 
         $this->assertSame(0, Cart::query()->count(), 'The work of an attempt that lost its key is rolled back.');
+    }
+
+    public function test_any_failure_of_the_operation_deletes_the_key(): void
+    {
+        try {
+            $this->store->run(
+                $this->customer->id,
+                'carts.create',
+                (string) Str::uuid(),
+                $this->hash(),
+                static fn (): Cart => throw new RuntimeException('The database went away.'),
+                static fn (string $id): Cart => Cart::query()->findOrFail($id),
+            );
+            $this->fail('The operation failed.');
+        } catch (RuntimeException) {
+        }
+
+        $this->assertSame(0, IdempotencyKey::query()->count());
+    }
+
+    public function test_a_key_past_its_lease_sent_with_another_request_is_still_a_key_reused(): void
+    {
+        $key = (string) Str::uuid();
+        $this->processingRow($key, leaseExpiresAt: now()->addSeconds(IdempotencyStore::LEASE_SECONDS));
+        $this->travel(IdempotencyStore::LEASE_SECONDS + 1)->seconds();
+
+        $this->assertRefusedWith('idempotency_key_reused', fn () => $this->attempt($key, $this->hash('b')));
+        $this->assertSame(0, $this->performed);
+    }
+
+    public function test_a_replay_the_actor_may_no_longer_see_is_refused_and_the_key_stays_completed(): void
+    {
+        $key = (string) Str::uuid();
+        $this->attempt($key, $this->hash());
+
+        // DL-39: the replay loads through the actor's current scope, so a
+        // resource outside it — here, all of them — is the scope-safe 404.
+        $this->assertRefusedWith('resource_not_found', fn () => $this->store->run(
+            $this->customer->id,
+            'carts.create',
+            $key,
+            $this->hash(),
+            static fn (): Cart => throw new RuntimeException('A replay does not run the operation.'),
+            static fn (string $id): Cart => throw ApiException::notFound(),
+        ));
+
+        $this->assertSame(IdempotencyState::Completed, IdempotencyKey::query()->sole()->state);
     }
 
     public function test_a_key_belongs_to_its_actor_and_operation(): void

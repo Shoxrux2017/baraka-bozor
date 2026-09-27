@@ -23,7 +23,8 @@ final class RequireIdempotencyKey
 
     private const ATTRIBUTE = 'idempotency_key';
 
-    private const UUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+    // `D`: the end is the end, not a trailing newline before it.
+    private const UUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iD';
 
     /**
      * @param  Closure(Request): Response  $next

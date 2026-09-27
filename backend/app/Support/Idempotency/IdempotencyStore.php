@@ -43,9 +43,22 @@ use Throwable;
  * nothing` against the unique `(actor, operation, key)`, and a key that exists
  * is read under `FOR UPDATE`, so two requests with one key cannot both begin.
  *
- * Callers use `run()`. `begin()`, `complete()` and `abandon()` are the steps it
- * composes, public so each can be proven on its own: a takeover commits in
- * another transaction, which one test transaction cannot stage mid-`run()`.
+ * Rules for a caller (`DL-39`):
+ *
+ * - Call `run()` at transaction level 0. Inside an outer transaction `begin()`
+ *   is only a savepoint: no lease is committed, a second request waits on the
+ *   unique key until the outer transaction ends, and a takeover can deadlock.
+ * - Only effects that roll back with the transaction belong in `$perform`. A
+ *   push, a queued job or a provider call is dispatched after commit
+ *   (`DB::afterCommit`) from inside `$perform`: a replay does not run
+ *   `$perform`, so such an effect is neither lost to a rollback nor repeated.
+ * - `$replay` loads the resource through the actor's current scope
+ *   (`ScopedLookup::firstOrNotFound`). A replay skips every check inside
+ *   `$perform`, so a record the actor may no longer see — a Shopper since
+ *   reassigned — must be the scope-safe `404`, never the record.
+ *
+ * `begin()`, `complete()` and `abandon()` are the steps `run()` composes,
+ * public so each can be proven on its own, against a second connection.
  */
 final class IdempotencyStore
 {
@@ -58,7 +71,7 @@ final class IdempotencyStore
      * @param  string  $key  the `Idempotency-Key`, already checked to be a UUID
      * @param  string  $requestHash  `RequestFingerprint::of(...)`
      * @param  Closure(): TModel  $perform  the operation; runs inside the transaction that completes the key
-     * @param  Closure(string): TModel  $replay  loads the resource a completed key names
+     * @param  Closure(string): TModel  $replay  loads the resource a completed key names, through the actor's current scope
      * @return TModel
      */
     public function run(string $actorId, string $operation, string $key, string $requestHash, Closure $perform, Closure $replay): Model
@@ -77,7 +90,13 @@ final class IdempotencyStore
                 return $resource;
             });
         } catch (Throwable $failure) {
-            $this->abandon($begun);
+            try {
+                $this->abandon($begun);
+            } catch (Throwable $abandonFailure) {
+                // The key then waits out its lease; the caller still learns
+                // why the operation failed, not why the clean-up did.
+                report($abandonFailure);
+            }
 
             throw $failure;
         }
@@ -118,7 +137,8 @@ final class IdempotencyStore
 
             if ($existing === null) {
                 // The conflicting row was deleted between the insert and the
-                // read: an attempt was refused and abandoned its key.
+                // read: an attempt was refused and abandoned its key. Only a
+                // real race reaches this; the client's retry begins afresh.
                 throw ApiException::conflict('idempotency_in_progress');
             }
 
