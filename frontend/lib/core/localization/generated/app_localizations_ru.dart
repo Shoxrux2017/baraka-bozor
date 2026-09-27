@@ -1329,4 +1329,98 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get errorProductUnavailable => 'Этого товара сейчас нет в продаже';
+
+  @override
+  String get checkoutTitle => 'Оформление заказа';
+
+  @override
+  String get checkoutGo => 'Оформить';
+
+  @override
+  String get checkoutAddress => 'Адрес доставки';
+
+  @override
+  String get checkoutNoAddress => 'Адресов пока нет';
+
+  @override
+  String get checkoutAddAddress => 'Добавить адрес';
+
+  @override
+  String get checkoutPayment => 'Способ оплаты';
+
+  @override
+  String get checkoutOnlineUnavailable =>
+      'Пока можно оплатить только наличными';
+
+  @override
+  String get checkoutCalculate => 'Рассчитать';
+
+  @override
+  String get checkoutCalculating => 'Рассчитываем';
+
+  @override
+  String get checkoutConfirm => 'Подтвердить заказ';
+
+  @override
+  String get checkoutPlacing => 'Отправляем заказ';
+
+  @override
+  String get checkoutEstimateExplain =>
+      'Есть товары с ориентировочной ценой: итог станет известен, когда сборщик их купит';
+
+  @override
+  String checkoutClosedUntil(String time) {
+    return 'Сейчас нерабочее время. Заказ начнут собирать с $time';
+  }
+
+  @override
+  String checkoutPlaced(String number) {
+    return 'Заказ №$number принят';
+  }
+
+  @override
+  String get checkoutBackToCatalog => 'Вернуться в каталог';
+
+  @override
+  String get checkoutOpenProfile => 'Указать имя';
+
+  @override
+  String get checkoutBackToCart => 'Вернуться в корзину';
+
+  @override
+  String get errorProfileIncomplete =>
+      'Чтобы оформить заказ, укажите имя в профиле';
+
+  @override
+  String get errorAddressIncomplete => 'Адрес неполный: укажите улицу и дом';
+
+  @override
+  String get errorAddressGone => 'Этот адрес не найден. Выберите другой';
+
+  @override
+  String get errorCartEmpty => 'Корзина пуста';
+
+  @override
+  String get errorCheckoutProductsUnavailable =>
+      'Некоторые товары сейчас нельзя заказать: уберите их из корзины или исправьте количество';
+
+  @override
+  String errorMinimumOrder(String minimum, String shortfall) {
+    return 'Минимальный заказ — $minimum. Добавьте товаров ещё на $shortfall';
+  }
+
+  @override
+  String get errorMinimumOrderPlain => 'Сумма заказа ниже минимальной';
+
+  @override
+  String get errorPaymentMethodUnavailable =>
+      'Этот способ оплаты сейчас недоступен';
+
+  @override
+  String get errorCheckoutStale =>
+      'Корзина или цены изменились — расчёт обновлён. Проверьте и подтвердите снова';
+
+  @override
+  String get errorOrderInProgress =>
+      'Заказ ещё отправляется. Подождите и подтвердите снова';
 }

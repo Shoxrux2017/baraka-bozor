@@ -27,6 +27,8 @@ abstract final class AppPaths {
   static const String customerAddresses = '$customer/addresses';
   static const String customerNewAddress = '$customerAddresses/new';
   static const String customerAddressPattern = '$customerAddresses/:address';
+  // The cart links to the checkout.
+  static const String customerCheckout = '$customer/checkout';
 
   static String customerAddress(String id) =>
       '$customerAddresses/${Uri.encodeComponent(id)}';

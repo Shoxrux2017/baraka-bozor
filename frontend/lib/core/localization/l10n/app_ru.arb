@@ -685,5 +685,56 @@
   "cartSaving": "Сохраняем",
   "errorCartItemAlreadyExists": "Этот товар уже в корзине",
   "errorCartFull": "В корзине может быть не больше 100 позиций",
-  "errorProductUnavailable": "Этого товара сейчас нет в продаже"
+  "errorProductUnavailable": "Этого товара сейчас нет в продаже",
+  "checkoutTitle": "Оформление заказа",
+  "checkoutGo": "Оформить",
+  "checkoutAddress": "Адрес доставки",
+  "checkoutNoAddress": "Адресов пока нет",
+  "checkoutAddAddress": "Добавить адрес",
+  "checkoutPayment": "Способ оплаты",
+  "checkoutOnlineUnavailable": "Пока можно оплатить только наличными",
+  "checkoutCalculate": "Рассчитать",
+  "checkoutCalculating": "Рассчитываем",
+  "checkoutConfirm": "Подтвердить заказ",
+  "checkoutPlacing": "Отправляем заказ",
+  "checkoutEstimateExplain": "Есть товары с ориентировочной ценой: итог станет известен, когда сборщик их купит",
+  "checkoutClosedUntil": "Сейчас нерабочее время. Заказ начнут собирать с {time}",
+  "@checkoutClosedUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "checkoutPlaced": "Заказ №{number} принят",
+  "@checkoutPlaced": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "checkoutBackToCatalog": "Вернуться в каталог",
+  "checkoutOpenProfile": "Указать имя",
+  "checkoutBackToCart": "Вернуться в корзину",
+  "errorProfileIncomplete": "Чтобы оформить заказ, укажите имя в профиле",
+  "errorAddressIncomplete": "Адрес неполный: укажите улицу и дом",
+  "errorAddressGone": "Этот адрес не найден. Выберите другой",
+  "errorCartEmpty": "Корзина пуста",
+  "errorCheckoutProductsUnavailable": "Некоторые товары сейчас нельзя заказать: уберите их из корзины или исправьте количество",
+  "errorMinimumOrder": "Минимальный заказ — {minimum}. Добавьте товаров ещё на {shortfall}",
+  "@errorMinimumOrder": {
+    "placeholders": {
+      "minimum": {
+        "type": "String"
+      },
+      "shortfall": {
+        "type": "String"
+      }
+    }
+  },
+  "errorMinimumOrderPlain": "Сумма заказа ниже минимальной",
+  "errorPaymentMethodUnavailable": "Этот способ оплаты сейчас недоступен",
+  "errorCheckoutStale": "Корзина или цены изменились — расчёт обновлён. Проверьте и подтвердите снова",
+  "errorOrderInProgress": "Заказ ещё отправляется. Подождите и подтвердите снова"
 }

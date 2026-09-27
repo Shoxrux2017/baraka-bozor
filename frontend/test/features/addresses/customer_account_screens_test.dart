@@ -7,7 +7,6 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
-import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/map_picker.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
@@ -78,9 +77,9 @@ void main() {
       appUnderTest(
         tokens: tokens,
         repository: auth,
+        addresses: addresses,
         overrides: [
           profileRepositoryProvider.overrideWithValue(profile),
-          addressesRepositoryProvider.overrideWithValue(addresses),
           if (fakeMap) mapPickerProvider.overrideWithValue(_fakeMap),
         ],
       ),
@@ -428,9 +427,9 @@ void main() {
       appUnderTest(
         tokens: tokens,
         repository: auth,
+        addresses: addresses,
         overrides: [
           profileRepositoryProvider.overrideWithValue(profile),
-          addressesRepositoryProvider.overrideWithValue(addresses),
           mapPickerProvider.overrideWithValue(_fakeMap),
         ],
       ),
@@ -511,10 +510,8 @@ void main() {
             tokens: tokens,
             repository: auth,
             device: device,
-            overrides: [
-              profileRepositoryProvider.overrideWithValue(profile),
-              addressesRepositoryProvider.overrideWithValue(addresses),
-            ],
+            addresses: addresses,
+            overrides: [profileRepositoryProvider.overrideWithValue(profile)],
           ),
         );
         await tester.pumpAndSettle();

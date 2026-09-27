@@ -42,6 +42,26 @@ void main() {
           'order_state_conflict': (AppLocalizations l) =>
               l.errorOrderStateConflict,
           'staff_not_active': (AppLocalizations l) => l.errorStaffNotActive,
+          'cart_item_already_exists': (AppLocalizations l) =>
+              l.errorCartItemAlreadyExists,
+          'cart_full': (AppLocalizations l) => l.errorCartFull,
+          'product_unavailable': (AppLocalizations l) =>
+              l.errorProductUnavailable,
+          'customer_profile_incomplete': (AppLocalizations l) =>
+              l.errorProfileIncomplete,
+          'address_incomplete': (AppLocalizations l) =>
+              l.errorAddressIncomplete,
+          'address_outside_service_area': (AppLocalizations l) =>
+              l.addressOutsideAreaPlain,
+          'cart_empty': (AppLocalizations l) => l.errorCartEmpty,
+          'minimum_order_not_reached': (AppLocalizations l) =>
+              l.errorMinimumOrderPlain,
+          'payment_method_unavailable': (AppLocalizations l) =>
+              l.errorPaymentMethodUnavailable,
+          'checkout_snapshot_stale': (AppLocalizations l) =>
+              l.errorCheckoutStale,
+          'idempotency_in_progress': (AppLocalizations l) =>
+              l.errorOrderInProgress,
         };
 
     for (final MapEntry<String, String Function(AppLocalizations)> entry
@@ -69,7 +89,7 @@ void main() {
   test('a code without a text of its own falls back on its status', () {
     expect(failureText(uz, refusal(404, 'order_not_found')), uz.errorNotFound);
     expect(
-      failureText(uz, refusal(422, 'minimum_order_not_reached')),
+      failureText(uz, refusal(422, 'quantity_out_of_range')),
       uz.errorValidationFailed,
     );
     expect(failureText(uz, refusal(429, 'too_many')), uz.errorRateLimited);

@@ -1317,4 +1317,100 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get errorProductUnavailable => 'Bu mahsulot hozir sotuvda yo\'q';
+
+  @override
+  String get checkoutTitle => 'Buyurtmani rasmiylashtirish';
+
+  @override
+  String get checkoutGo => 'Rasmiylashtirish';
+
+  @override
+  String get checkoutAddress => 'Yetkazish manzili';
+
+  @override
+  String get checkoutNoAddress => 'Hali manzil yo\'q';
+
+  @override
+  String get checkoutAddAddress => 'Manzil qo\'shish';
+
+  @override
+  String get checkoutPayment => 'To\'lov usuli';
+
+  @override
+  String get checkoutOnlineUnavailable =>
+      'Hozircha faqat naqd pul bilan to\'lash mumkin';
+
+  @override
+  String get checkoutCalculate => 'Hisoblash';
+
+  @override
+  String get checkoutCalculating => 'Hisoblanmoqda';
+
+  @override
+  String get checkoutConfirm => 'Buyurtmani tasdiqlash';
+
+  @override
+  String get checkoutPlacing => 'Buyurtma yuborilmoqda';
+
+  @override
+  String get checkoutEstimateExplain =>
+      'Narxi taxminiy mahsulotlar bor: yakuniy summa yig\'uvchi ularni sotib olgach aniqlanadi';
+
+  @override
+  String checkoutClosedUntil(String time) {
+    return 'Hozir ish vaqti emas. Buyurtma $time dan yig\'ila boshlaydi';
+  }
+
+  @override
+  String checkoutPlaced(String number) {
+    return 'Buyurtma №$number qabul qilindi';
+  }
+
+  @override
+  String get checkoutBackToCatalog => 'Katalogga qaytish';
+
+  @override
+  String get checkoutOpenProfile => 'Ismni kiritish';
+
+  @override
+  String get checkoutBackToCart => 'Savatga qaytish';
+
+  @override
+  String get errorProfileIncomplete =>
+      'Buyurtma berish uchun profilga ismingizni kiriting';
+
+  @override
+  String get errorAddressIncomplete =>
+      'Manzil to\'liq emas: ko\'cha va uyni kiriting';
+
+  @override
+  String get errorAddressGone => 'Bu manzil topilmadi. Boshqasini tanlang';
+
+  @override
+  String get errorCartEmpty => 'Savat bo\'sh';
+
+  @override
+  String get errorCheckoutProductsUnavailable =>
+      'Ba\'zi mahsulotlarni hozir buyurtma qilib bo\'lmaydi: savatda ularni olib tashlang yoki miqdorini to\'g\'rilang';
+
+  @override
+  String errorMinimumOrder(String minimum, String shortfall) {
+    return 'Eng kam buyurtma — $minimum. Yana $shortfall lik mahsulot qo\'shing';
+  }
+
+  @override
+  String get errorMinimumOrderPlain =>
+      'Buyurtma summasi eng kam miqdordan past';
+
+  @override
+  String get errorPaymentMethodUnavailable =>
+      'Bu to\'lov usuli hozir mavjud emas';
+
+  @override
+  String get errorCheckoutStale =>
+      'Savat yoki narxlar o\'zgardi — hisob yangilandi. Ko\'rib chiqib, qayta tasdiqlang';
+
+  @override
+  String get errorOrderInProgress =>
+      'Buyurtma hali yuborilmoqda. Biroz kutib, qayta tasdiqlang';
 }
