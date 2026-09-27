@@ -232,6 +232,7 @@ void main() {
     'a confirmation whose outcome is unknown waits in the cart after the Customer left',
     (WidgetTester tester) async {
       await open(tester);
+      await tester.enterText(byKey('checkout-delivery-wish'), 'Kechqurun');
       await calculate(tester);
       checkout.placeFailure = const NetworkFailure();
       await tapAndSettle(tester, byKey('checkout-confirm'));
@@ -243,6 +244,22 @@ void main() {
 
       await tapAndSettle(tester, byKey('cart-check-unconfirmed'));
       expect(byKey('checkout-unconfirmed'), findsOneWidget);
+      // As it was sent: the address, the wish, and nothing else to change.
+      expect(
+        tester
+            .widget<TextFormField>(byKey('checkout-delivery-wish'))
+            .controller!
+            .text,
+        'Kechqurun',
+      );
+      expect(
+        find.text('${l10n(tester).checkoutAddress}: Amir Temur, 12'),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<TextButton>(byKey('checkout-add-address')).onPressed,
+        isNull,
+      );
       await tapAndSettle(tester, byKey('checkout-confirm'));
 
       expect(checkout.placements.last, (token, key));
@@ -512,6 +529,88 @@ void main() {
     hold.complete();
     await tester.pumpAndSettle();
     expect(checkout.placements, hasLength(1));
+  });
+
+  testWidgets('a preview never sent is not kept once the Customer leaves', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await calculate(tester);
+    expect(byKey('checkout-confirm'), findsOneWidget);
+
+    GoRouter.of(anywhere(tester)).pop();
+    await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('go-to-checkout'));
+
+    expect(byKey('checkout-confirm'), findsNothing);
+    expect(byKey('cart-unconfirmed-order'), findsNothing);
+  });
+
+  testWidgets('a replay of an order cancelled meanwhile says it is cancelled', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await calculate(tester);
+    checkout.placedAnswer = placedJson()
+      ..['totals'] = <String, Object?>{
+        'merchandise_subtotal_uzs': null,
+        'service_fee_uzs': null,
+        'delivery_fee_uzs': null,
+        'total_uzs': null,
+        'total_kind': 'none',
+      };
+
+    await tapAndSettle(tester, byKey('checkout-confirm'));
+
+    expect(
+      find.text(l10n(tester).checkoutPlacedCancelled('1001')),
+      findsOneWidget,
+    );
+    expect(find.text(l10n(tester).totalNothingDue), findsOneWidget);
+  });
+
+  testWidgets('leaving while a stale confirmation previews again is safe', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await calculate(tester);
+    checkout.placeFailure = const ApiRefusal(
+      ApiError(status: 409, code: 'checkout_snapshot_stale'),
+    );
+    // The placement answers stale at once; the preview it asks for waits.
+    final Completer<void> hold = Completer<void>();
+    checkout.previewHold = hold;
+
+    await tester.tap(byKey('checkout-confirm'));
+    await tester.pump();
+    await tester.pump();
+    expect(checkout.previews, hasLength(2), reason: 'the new preview runs');
+    GoRouter.of(anywhere(tester)).pop();
+    await tester.pumpAndSettle();
+    checkout.previewHold = null;
+    hold.complete();
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a server error on confirming asks for the cart again', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await calculate(tester);
+    final int before = cart.calls.where((String c) => c == 'cart').length;
+    checkout.placeFailure = const ApiRefusal(
+      ApiError(status: 500, code: 'server_error'),
+    );
+
+    await tapAndSettle(tester, byKey('checkout-confirm'));
+
+    expect(byKey('checkout-unconfirmed'), findsOneWidget);
+    expect(
+      cart.calls.where((String c) => c == 'cart').length,
+      greaterThan(before),
+    );
   });
 
   for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {

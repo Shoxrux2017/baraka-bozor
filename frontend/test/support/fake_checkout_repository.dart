@@ -67,13 +67,20 @@ class FakeCheckoutRepository implements CheckoutRepository {
 
   ApiFailure? previewFailure;
   ApiFailure? placeFailure;
+
+  /// When set, a placement answers with this order instead.
+  Map<String, Object?>? placedAnswer;
   bool outsideHours = false;
   Completer<void>? hold;
+
+  /// When set, a preview — and only a preview — waits for it.
+  Completer<void>? previewHold;
 
   @override
   Future<CheckoutPreview> preview(CheckoutRequest request) async {
     previews.add(request);
     await hold?.future;
+    await previewHold?.future;
     final ApiFailure? failure = previewFailure;
     if (failure != null) {
       previewFailure = null;
@@ -97,6 +104,6 @@ class FakeCheckoutRepository implements CheckoutRepository {
       placeFailure = null;
       throw failure;
     }
-    return CheckoutApi.parsePlaced(placedJson());
+    return CheckoutApi.parsePlaced(placedAnswer ?? placedJson());
   }
 }

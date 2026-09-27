@@ -1438,4 +1438,9 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get errorInProgress =>
       'Запрос ещё выполняется. Подождите и попробуйте снова';
+
+  @override
+  String checkoutPlacedCancelled(String number) {
+    return 'Заказ №$number отменён';
+  }
 }

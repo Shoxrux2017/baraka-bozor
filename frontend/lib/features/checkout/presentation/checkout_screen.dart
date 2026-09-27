@@ -57,12 +57,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
-    // Back to a checkout whose confirmation is unknown: as it was sent.
+    // Back to a checkout whose confirmation is unknown: as it was sent. A
+    // preview never sent is not kept — the cart may have changed since.
     final PreparedCheckout? prepared = ref.read(preparedCheckoutProvider);
-    _addressId = prepared?.request.addressId;
-    _note = TextEditingController(
-      text: prepared?.request.deliveryTimeNote ?? '',
-    );
+    final PreparedCheckout? sent = prepared != null && prepared.sent
+        ? prepared
+        : null;
+    _addressId = sent?.request.addressId;
+    _note = TextEditingController(text: sent?.request.deliveryTimeNote ?? '');
+    if (prepared != null && sent == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(preparedCheckoutProvider.notifier).clear();
+        }
+      });
+    }
   }
 
   @override
@@ -89,13 +98,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Future<void> _calculate(String? address) async {
-    final CheckoutRequest? request = _request(address);
+  Future<void> _calculate(Address address) async {
+    final CheckoutRequest? request = _request(address.id);
     if (request == null) {
       return;
     }
     final int revision = _revision;
-    await ref.read(checkoutPreviewProvider.notifier).preview(request);
+    await ref
+        .read(checkoutPreviewProvider.notifier)
+        .preview(request, addressLine: _addressLine(address));
     if (mounted && revision != _revision) {
       ref.read(preparedCheckoutProvider.notifier).clear();
     }
@@ -123,9 +134,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       // could not change meanwhile.
       await ref
           .read(checkoutPreviewProvider.notifier)
-          .preview(prepared.request);
+          .preview(prepared.request, addressLine: prepared.addressLine);
+      if (!mounted) {
+        return;
+      }
       final PreparedCheckout? fresh = ref.read(preparedCheckoutProvider);
-      if (mounted && fresh != null) {
+      if (fresh != null) {
         setState(() => _refreshedKey = fresh.idempotencyKey);
       }
     }
@@ -247,7 +261,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           key: const ValueKey<String>('checkout-calculate'),
           onPressed: locked || address == null
               ? null
-              : () => _calculate(address.id),
+              : () => _calculate(address),
           child: previewing.isBusy
               ? _Busy(label: l10n.checkoutCalculating)
               : Text(l10n.checkoutCalculate),
@@ -255,7 +269,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         CheckoutRefusal(previewing.failure),
         if (prepared != null) ...<Widget>[
           const SizedBox(height: 16),
-          _Preview(prepared: prepared, address: address),
+          _Preview(prepared: prepared),
           if (_refreshedKey != null && _refreshedKey == prepared.idempotencyKey)
             _Note(
               l10n.errorCheckoutStale,
@@ -385,10 +399,9 @@ class _Addresses extends StatelessWidget {
 /// the fees, the total and its kind, and when the order starts being
 /// collected outside the hours.
 class _Preview extends StatelessWidget {
-  const _Preview({required this.prepared, required this.address});
+  const _Preview({required this.prepared});
 
   final PreparedCheckout prepared;
-  final Address? address;
 
   @override
   Widget build(BuildContext context) {
@@ -397,7 +410,6 @@ class _Preview extends StatelessWidget {
     final CheckoutPreview preview = prepared.preview;
     final String? opensAt = preview.opensAt;
     final String? wish = prepared.request.deliveryTimeNote;
-    final Address? address = this.address;
 
     Widget line(String label, String amount, {Key? key, bool strong = false}) {
       final TextStyle? style = strong
@@ -423,17 +435,16 @@ class _Preview extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (address != null)
-              Text(
-                '${l10n.checkoutAddress}: ${_addressLine(address)}',
-                key: const ValueKey<String>('checkout-preview-address'),
-              ),
+            Text(
+              '${l10n.checkoutAddress}: ${prepared.addressLine}',
+              key: const ValueKey<String>('checkout-preview-address'),
+            ),
             if (wish != null)
               Text(
                 '${l10n.orderSectionDeliveryWish}: $wish',
                 key: const ValueKey<String>('checkout-preview-wish'),
               ),
-            if (address != null || wish != null) const Divider(),
+            const Divider(),
             for (final PreviewLine item in preview.lines)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -511,8 +522,12 @@ class _Placed extends StatelessWidget {
           color: Theme.of(context).colorScheme.primary,
         ),
         const SizedBox(height: 16),
+        // A replay answers the order as it is now: cancelled meanwhile, it
+        // is said so.
         Text(
-          l10n.checkoutPlaced('${order.orderNumber}'),
+          total == null
+              ? l10n.checkoutPlacedCancelled('${order.orderNumber}')
+              : l10n.checkoutPlaced('${order.orderNumber}'),
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleLarge,
         ),

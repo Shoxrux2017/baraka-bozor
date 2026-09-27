@@ -740,5 +740,13 @@
   "checkoutUnconfirmed": "Не удалось узнать, принят ли заказ. Нажмите «Подтвердить заказ» ещё раз — дважды он не оформится",
   "cartUnconfirmedOrder": "Не удалось узнать, принят ли ваш последний заказ",
   "cartCheckUnconfirmed": "Проверить",
-  "errorInProgress": "Запрос ещё выполняется. Подождите и попробуйте снова"
+  "errorInProgress": "Запрос ещё выполняется. Подождите и попробуйте снова",
+  "checkoutPlacedCancelled": "Заказ №{number} отменён",
+  "@checkoutPlacedCancelled": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  }
 }

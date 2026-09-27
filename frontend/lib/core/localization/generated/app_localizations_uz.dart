@@ -1428,4 +1428,9 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get errorInProgress =>
       'So\'rov hali bajarilmoqda. Biroz kutib, qayta urinib ko\'ring';
+
+  @override
+  String checkoutPlacedCancelled(String number) {
+    return 'Buyurtma №$number bekor qilingan';
+  }
 }

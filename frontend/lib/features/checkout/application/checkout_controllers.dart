@@ -29,13 +29,29 @@ class PreparedCheckoutController extends Notifier<PreparedCheckout?> {
     return null;
   }
 
-  void prepare(CheckoutRequest request, CheckoutPreview preview) => _set(
-    PreparedCheckout(
-      request: request,
-      preview: preview,
-      idempotencyKey: newIdempotencyKey(),
-    ),
-  );
+  /// A preview ready to confirm under a new key — never over a checkout
+  /// whose confirmation may have placed the order.
+  void prepare(
+    CheckoutRequest request,
+    CheckoutPreview preview, {
+    required String addressLine,
+  }) {
+    if (state?.sent ?? false) {
+      return;
+    }
+    _set(
+      PreparedCheckout(
+        request: request,
+        preview: preview,
+        idempotencyKey: newIdempotencyKey(),
+        addressLine: addressLine,
+      ),
+    );
+  }
+
+  /// Whether a confirmation's outcome is unknown: then nothing but that
+  /// confirmation may go.
+  bool get sent => state?.sent ?? false;
 
   /// Drops the prepared checkout — never one whose confirmation may have
   /// placed the order.
@@ -45,12 +61,15 @@ class PreparedCheckoutController extends Notifier<PreparedCheckout?> {
     }
   }
 
-  /// The confirmation under [key] is on its way.
-  void markSent(String key) {
+  /// The confirmation under [key] is on its way; `false` when [key] is not
+  /// the prepared checkout's, which must then not be sent.
+  bool markSent(String key) {
     final PreparedCheckout? prepared = state;
-    if (prepared != null && prepared.idempotencyKey == key) {
-      _set(prepared.withSent(true));
+    if (prepared == null || prepared.idempotencyKey != key) {
+      return false;
     }
+    _set(prepared.withSent(true));
+    return true;
   }
 
   /// The confirmation under [key] was answered for sure: placed, or not.
@@ -81,15 +100,23 @@ preparedCheckoutProvider =
 class CheckoutPreviewController extends CartMutation {
   CheckoutRepository get _checkout => ref.read(checkoutRepositoryProvider);
 
-  Future<CheckoutPreview?> preview(CheckoutRequest request) {
+  Future<CheckoutPreview?> preview(
+    CheckoutRequest request, {
+    required String addressLine,
+  }) async {
     final PreparedCheckoutController prepared = ref.read(
       preparedCheckoutProvider.notifier,
-    )..clear();
+    );
+    // A confirmation whose outcome is unknown holds the checkout.
+    if (prepared.sent) {
+      return null;
+    }
+    prepared.clear();
     return perform(
       () => _checkout.preview(request),
       reload: (CheckoutPreview? preview) {
         if (preview != null) {
-          prepared.prepare(request, preview);
+          prepared.prepare(request, preview, addressLine: addressLine);
           return;
         }
         ref.invalidate(addressesProvider);
@@ -117,7 +144,11 @@ class PlaceOrderController extends CartMutation {
   Future<PlacedOrder?> place(PreparedCheckout prepared) async {
     final PreparedCheckoutController checkout = ref.read(
       preparedCheckoutProvider.notifier,
-    )..markSent(prepared.idempotencyKey);
+    );
+    // Only the checkout prepared now is confirmed, and it is marked first.
+    if (!checkout.markSent(prepared.idempotencyKey)) {
+      return null;
+    }
     final PlacedOrder? order = await perform(
       () => _checkout.place(prepared.preview.token, prepared.idempotencyKey),
       reload: (PlacedOrder? order) {
@@ -131,6 +162,9 @@ class PlaceOrderController extends CartMutation {
       final ApiFailure? failure = state.failure;
       if (failure != null && !isUncertain(failure)) {
         checkout.markAnswered(prepared.idempotencyKey, placed: false);
+      } else if (failure != null) {
+        // The order may exist, and with it a new, empty cart.
+        showCart(null);
       }
     }
     return order;

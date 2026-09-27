@@ -94,12 +94,17 @@ final class PreparedCheckout {
     required this.request,
     required this.preview,
     required this.idempotencyKey,
+    required this.addressLine,
     this.sent = false,
   });
 
   final CheckoutRequest request;
   final CheckoutPreview preview;
   final String idempotencyKey;
+
+  /// The address as the Customer chose it for this preview, shown with it
+  /// even if the address book changes meanwhile.
+  final String addressLine;
 
   /// A confirmation was sent and no answer has said for sure whether it
   /// placed the order. Until one does, only the same confirmation may go
@@ -110,6 +115,7 @@ final class PreparedCheckout {
     request: request,
     preview: preview,
     idempotencyKey: idempotencyKey,
+    addressLine: addressLine,
     sent: sent,
   );
 }

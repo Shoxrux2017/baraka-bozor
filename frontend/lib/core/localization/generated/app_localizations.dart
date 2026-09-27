@@ -2677,6 +2677,12 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'So\'rov hali bajarilmoqda. Biroz kutib, qayta urinib ko\'ring'**
   String get errorInProgress;
+
+  /// No description provided for @checkoutPlacedCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma №{number} bekor qilingan'**
+  String checkoutPlacedCancelled(String number);
 }
 
 class _AppLocalizationsDelegate

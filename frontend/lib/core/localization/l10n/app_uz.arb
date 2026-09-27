@@ -740,5 +740,13 @@
   "checkoutUnconfirmed": "Buyurtma qabul qilingani aniqlanmadi. «Buyurtmani tasdiqlash»ni yana bosing — u ikki marta qabul qilinmaydi",
   "cartUnconfirmedOrder": "Oxirgi buyurtmangiz qabul qilingani aniqlanmadi",
   "cartCheckUnconfirmed": "Tekshirish",
-  "errorInProgress": "So'rov hali bajarilmoqda. Biroz kutib, qayta urinib ko'ring"
+  "errorInProgress": "So'rov hali bajarilmoqda. Biroz kutib, qayta urinib ko'ring",
+  "checkoutPlacedCancelled": "Buyurtma №{number} bekor qilingan",
+  "@checkoutPlacedCancelled": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  }
 }
