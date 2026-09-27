@@ -37,8 +37,8 @@ android {
         applicationId = "uz.barakabozor.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        // Yandex MapKit needs Android 8.0, API 26 (`DL-33`); pending the
-        // Owner's decision on the oldest Android the app supports.
+        // Android 8.0, API 26: Yandex MapKit needs it, and the Owner chose it
+        // as the oldest Android the app supports (`DL-33` (10)).
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
