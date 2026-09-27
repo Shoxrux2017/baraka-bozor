@@ -10,6 +10,7 @@ use App\Modules\Settings\WorkingHours;
 use App\Support\Money\MoneyCalculator;
 use App\Support\Money\Percentage;
 use Carbon\CarbonImmutable;
+use OverflowException;
 use Tests\TestCase;
 
 /**
@@ -64,6 +65,21 @@ final class WorkingHoursAndFeeTest extends TestCase
         $this->assertSame(3000, $percent->feeOn(100016));
         $this->assertSame(0, $percent->feeOn(0));
         $this->assertSame(1, MoneyCalculator::percentOf(1, Percentage::fromString('50.00')));
+    }
+
+    public function test_a_percentage_of_a_huge_subtotal_is_exact_and_a_sum_never_turns_into_a_float(): void
+    {
+        // 999.99 % of 10¹⁶ UZS would overflow if formed before dividing.
+        $this->assertSame(99_999_000_000_000_000, MoneyCalculator::percentOf(10_000_000_000_000_000, Percentage::fromString('999.99')));
+        $this->assertSame(1_500_000_000_000_001, MoneyCalculator::percentOf(10_000_000_000_000_005, Percentage::fromString('15.00')));
+        $this->assertSame(6, MoneyCalculator::sum(1, 2, 3));
+
+        try {
+            $sum = MoneyCalculator::sum(PHP_INT_MAX, 1);
+            $this->fail("The sum overflowed into {$sum}.");
+        } catch (OverflowException) {
+            $this->addToAssertionCount(1);
+        }
     }
 
     private function tashkent(string $time): CarbonImmutable

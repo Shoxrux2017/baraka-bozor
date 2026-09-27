@@ -21,6 +21,7 @@ use App\Modules\Settings\ServiceAreaPolicy;
 use App\Modules\Settings\ServiceFeeCalculator;
 use App\Modules\Settings\WorkingHours;
 use App\Support\CanonicalJson;
+use App\Support\Money\MoneyCalculator;
 use App\Support\Money\Percentage;
 use App\Support\Money\Quantity;
 use App\Support\Scope\ScopedLookup;
@@ -120,7 +121,7 @@ final readonly class CheckoutState
             $view->estimatedSubtotalUzs,
             $fee,
             $delivery,
-            $view->estimatedSubtotalUzs + $fee + $delivery,
+            MoneyCalculator::sum($view->estimatedSubtotalUzs, $fee, $delivery),
             WorkingHours::of((string) $settings->opens_at, (string) $settings->closes_at),
         );
     }
@@ -146,16 +147,21 @@ final readonly class CheckoutState
     }
 
     /**
-     * SHA-256 over everything the order would snapshot: the recipient, each
-     * line's product as it is sold now, the address, the payment method, the
-     * delivery wish and the settings. Any change to any of them is a new
+     * A keyed hash over everything the order would snapshot: the recipient,
+     * each line's product as it is sold now, the address, the payment method,
+     * the delivery wish and the settings. Any change to any of them is a new
      * digest, and a token bound to the old one is stale.
+     *
+     * Keyed, because the token shows the digest to the Customer, who knows
+     * every bound value but the market prices, the markup, the tolerance and
+     * the delay threshold; a plain hash of a known layout would let those be
+     * found by trying candidates offline (`DL-41` (7)).
      */
     public function digest(): string
     {
         $settings = $this->settings;
 
-        return CanonicalJson::sha256([
+        return hash_hmac('sha256', CanonicalJson::encode([
             'customer' => [
                 'id' => $this->customer->id,
                 'name' => trim((string) $this->customer->full_name),
@@ -196,7 +202,7 @@ final readonly class CheckoutState
                 'delivery_fee_uzs' => $settings->delivery_fee_uzs,
                 'delivery_delay_threshold_minutes' => $settings->delivery_delay_threshold_minutes,
             ],
-        ]);
+        ]), CheckoutSecrets::key(CheckoutSecrets::DIGEST));
     }
 
     /**

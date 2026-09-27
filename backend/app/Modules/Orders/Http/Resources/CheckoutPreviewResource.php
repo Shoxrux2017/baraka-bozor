@@ -55,7 +55,7 @@ final class CheckoutPreviewResource extends JsonResource
             'outside_working_hours' => $this->resource->outsideWorkingHours,
             'opens_at' => $state->hours->isAlwaysOpen() ? null : $state->hours->opensAt(),
             'checkout_token' => $this->resource->token->token,
-            'checkout_token_expires_at' => $this->resource->token->expiresAt->utc()->format('Y-m-d\TH:i:s\Z'),
+            'checkout_token_expires_at' => $this->resource->token->expiresAt->toIso8601ZuluString(),
         ];
     }
 }

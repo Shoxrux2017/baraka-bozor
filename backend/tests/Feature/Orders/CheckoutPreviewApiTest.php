@@ -13,6 +13,7 @@ use App\Models\Enums\Role;
 use App\Models\Enums\UnitCode;
 use App\Models\Product;
 use App\Models\User;
+use App\Modules\Orders\Checkout\CheckoutSecrets;
 use App\Modules\Orders\Checkout\CheckoutState;
 use App\Modules\Orders\Checkout\CheckoutToken;
 use App\Modules\Orders\CustomerCart;
@@ -21,6 +22,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use LogicException;
 use Tests\TestCase;
 
 /**
@@ -121,7 +123,13 @@ final class CheckoutPreviewApiTest extends TestCase
 
         $this->preview()->assertStatus(409)->assertJsonPath('code', 'checkout_configuration_incomplete');
 
-        foreach ([['opens_at' => null, 'closes_at' => null], ['service_radius_km' => null], ['service_fee_fixed_uzs' => null], ['minimum_order_uzs' => null]] as $missing) {
+        foreach ([
+            ['opens_at' => null, 'closes_at' => null],
+            ['service_radius_km' => null],
+            ['service_fee_fixed_uzs' => null],
+            ['minimum_order_uzs' => null],
+            ['service_fee_mode' => 'percentage', 'service_fee_fixed_uzs' => null, 'service_fee_percent' => null],
+        ] as $missing) {
             $this->configure();
             $this->settings($missing);
             $this->preview()->assertStatus(409)->assertJsonPath('code', 'checkout_configuration_incomplete');
@@ -259,6 +267,21 @@ final class CheckoutPreviewApiTest extends TestCase
             'the note' => fn () => $line->forceFill(['customer_note' => 'Qizil'])->save(),
             'the rule' => fn () => $line->forceFill(['substitution_policy' => 'remove_if_unavailable'])->save(),
             'the name' => fn () => $this->customer->forceFill(['full_name' => 'Aziza K.'])->save(),
+            'the unit, to one the quantity still fits' => fn () => Product::query()->whereKey($this->tomatoes->id)->update(['unit_code' => 'piece']),
+            'a line added' => fn () => $this->line($this->bread, '20.000'),
+            'the line removed and another added' => function () use ($line): void {
+                $line->delete();
+                $this->line($this->bread, '20.000');
+            },
+            'the product name' => fn () => Product::query()->whereKey($this->tomatoes->id)->update(['name_ru' => 'Томаты']),
+            'the price mode' => fn () => Product::query()->whereKey($this->tomatoes->id)->update(['price_mode' => 'fixed']),
+            'the street' => fn () => $this->address->forceFill(['street' => 'Navoiy'])->save(),
+            'the house' => fn () => $this->address->forceFill(['house' => '14'])->save(),
+            'the apartment' => fn () => $this->address->forceFill(['apartment' => '7'])->save(),
+            'the landmark' => fn () => $this->address->forceFill(['landmark' => 'Maktab'])->save(),
+            'the delivery note' => fn () => $this->address->forceFill(['delivery_note' => 'Domofon 7'])->save(),
+            'the fee mode' => fn () => $this->settings(['service_fee_mode' => 'percentage', 'service_fee_fixed_uzs' => null, 'service_fee_percent' => '8.00']),
+            'the delay threshold' => fn () => $this->settings(['delivery_delay_threshold_minutes' => 90]),
         ];
 
         foreach ($changes as $what => $change) {
@@ -272,6 +295,61 @@ final class CheckoutPreviewApiTest extends TestCase
         }
 
         $this->assertNotSame($shown, $this->digest('Kechqurun'), 'A different delivery wish is a different checkout.');
+    }
+
+    public function test_the_digest_is_keyed_so_the_hidden_prices_cannot_be_recovered_from_it(): void
+    {
+        $this->line($this->tomatoes, '3.000');
+        $underThisKey = $this->digest();
+
+        config(['app.key' => 'base64:'.base64_encode(random_bytes(32))]);
+
+        $this->assertNotSame($underThisKey, $this->digest(), 'DL-41 (7): the digest depends on a secret.');
+    }
+
+    public function test_a_token_signed_under_another_key_is_stale(): void
+    {
+        $this->line($this->tomatoes, '3');
+        $token = (string) $this->preview()->json('data.checkout_token');
+
+        config(['app.key' => 'base64:'.base64_encode(random_bytes(32))]);
+
+        $this->expectExceptionObject(CheckoutToken::stale());
+        CheckoutToken::read($token, $this->customer, now());
+    }
+
+    public function test_a_signature_has_one_spelling(): void
+    {
+        $this->line($this->tomatoes, '3');
+        $token = (string) $this->preview()->json('data.checkout_token');
+
+        // The last character of a 43-character base64 signature carries two
+        // spare bits; flipping one spells the same bytes differently.
+        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+        $last = strpos($alphabet, $token[strlen($token) - 1]);
+        $this->assertIsInt($last);
+        $respelt = substr($token, 0, -1).$alphabet[$last ^ 1];
+
+        try {
+            CheckoutToken::read($respelt, $this->customer, now());
+            $this->fail('A second spelling of the signature was read.');
+        } catch (ApiException $stale) {
+            $this->assertSame('checkout_snapshot_stale', $stale->apiCode());
+        }
+    }
+
+    public function test_an_application_key_that_cannot_be_read_fails_closed(): void
+    {
+        foreach (['base64:', 'base64:%%%', ''] as $broken) {
+            config(['app.key' => $broken]);
+
+            try {
+                CheckoutSecrets::key(CheckoutSecrets::SIGNING);
+                $this->fail("The key \"{$broken}\" was used.");
+            } catch (LogicException) {
+                $this->addToAssertionCount(1);
+            }
+        }
     }
 
     private function digest(?string $note = null): string

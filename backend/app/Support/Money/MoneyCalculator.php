@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support\Money;
 
 use InvalidArgumentException;
+use OverflowException;
 
 /**
  * The one place a UZS amount is rounded (`docs/07-architecture.md` section 14,
@@ -15,11 +16,12 @@ use InvalidArgumentException;
  * system are never negative, so "half up" and "half away from zero" agree, and
  * the method refuses a negative input rather than pick one.
  *
- * The largest intermediate is `2 × amount × (10000 + 99999) + 10000`, which
- * stays inside a 64-bit integer for amounts up to about 4.19 × 10¹³ UZS. Every
- * amount that reaches here is bounded far below that by its request (a market
- * price at most 10⁹ UZS); beyond it PHP raises a `TypeError` rather than
- * rounding silently.
+ * `increaseByPercent` forms `2 × amount × (10000 + 99999) + 10000`, inside a
+ * 64-bit integer for amounts up to about 4.19 × 10¹³ UZS; it takes a market
+ * price, at most 10⁹ UZS. `percentOf` takes a subtotal, which the cart's
+ * bounds let grow further, so it divides before it multiplies and is exact
+ * for any amount. Sums go through `sum()`, which refuses to overflow rather
+ * than let PHP turn the result into a float.
  */
 final class MoneyCalculator
 {
@@ -45,7 +47,30 @@ final class MoneyCalculator
     {
         self::assertNotNegative($amountUzs);
 
-        return self::divideHalfUp($amountUzs * $percent->basisPoints, self::BASIS);
+        // amount = whole × 10000 + rest: whole × bp is already whole UZS, so
+        // only the rest is rounded, and no product outgrows 64 bits.
+        $whole = intdiv($amountUzs, self::BASIS);
+        $rest = $amountUzs % self::BASIS;
+
+        return $whole * $percent->basisPoints + self::divideHalfUp($rest * $percent->basisPoints, self::BASIS);
+    }
+
+    /**
+     * The sum of UZS amounts, refused rather than turned into a float when it
+     * would not fit a 64-bit integer.
+     */
+    public static function sum(int ...$amountsUzs): int
+    {
+        $total = 0;
+        foreach ($amountsUzs as $amount) {
+            self::assertNotNegative($amount);
+            if ($total > PHP_INT_MAX - $amount) {
+                throw new OverflowException('A UZS sum outgrew a 64-bit integer.');
+            }
+            $total += $amount;
+        }
+
+        return $total;
     }
 
     /**

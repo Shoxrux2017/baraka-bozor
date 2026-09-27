@@ -10,7 +10,6 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use JsonException;
-use LogicException;
 
 /**
  * The signed checkout token of `BR-CHK-006` and `DL-37` (4). Stateless: it
@@ -19,9 +18,11 @@ use LogicException;
  * delivery wish, the expiry — and the digest of the state the preview showed,
  * all signed with HMAC-SHA256.
  *
- * The key is derived from the application key for this purpose alone, so the
- * signature never shares a key with Laravel's encrypter; rotating the
- * application key makes tokens in flight stale, which costs a new preview.
+ * The signing key is derived from the application key for this purpose
+ * alone (`CheckoutSecrets`), so it never shares a key with Laravel's
+ * encrypter or with the digest; rotating the application key makes tokens in
+ * flight stale, which costs a new preview. The signature is compared as text,
+ * so a token has exactly one spelling.
  * Anything wrong with a token — its shape, its signature, its version, its
  * owner, its age — is the same `409 checkout_snapshot_stale`, and the client
  * previews again.
@@ -31,8 +32,6 @@ final class CheckoutToken
     public const TTL_SECONDS = 300;
 
     private const VERSION = 1;
-
-    private const PURPOSE = 'checkout-token/v1';
 
     public static function issue(CheckoutState $state, CarbonInterface $now): IssuedCheckoutToken
     {
@@ -63,8 +62,9 @@ final class CheckoutToken
         }
         [$payload, $signature] = $parts;
 
-        $given = self::decode($signature);
-        if ($given === null || ! hash_equals(self::sign($payload), $given)) {
+        // Compared as text, so a token has one spelling: base64 leaves spare
+        // bits a decoder would ignore.
+        if (! hash_equals(self::encode(self::sign($payload)), $signature)) {
             throw self::stale();
         }
 
@@ -102,20 +102,7 @@ final class CheckoutToken
 
     private static function sign(string $payload): string
     {
-        return hash_hmac('sha256', $payload, self::key(), true);
-    }
-
-    private static function key(): string
-    {
-        $appKey = (string) config('app.key');
-        if ($appKey === '') {
-            throw new LogicException('The application key is not set.');
-        }
-        if (str_starts_with($appKey, 'base64:')) {
-            $appKey = (string) base64_decode(substr($appKey, 7), true);
-        }
-
-        return hash_hmac('sha256', self::PURPOSE, $appKey, true);
+        return hash_hmac('sha256', $payload, CheckoutSecrets::key(CheckoutSecrets::SIGNING), true);
     }
 
     private static function encode(string $bytes): string

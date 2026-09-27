@@ -14,8 +14,8 @@ use App\Modules\Orders\CustomerCart;
 /**
  * `POST /customer/checkout/preview` (`docs/09` section 18): checks the
  * checkout, shows its lines and amounts, and signs them into a token valid for
- * five minutes. It changes nothing and locks nothing; order creation checks
- * everything again under the cart lock.
+ * five minutes. It locks nothing and changes nothing but the cart it creates
+ * on first access; order creation checks everything again under the cart lock.
  */
 final class PreviewCheckout
 {

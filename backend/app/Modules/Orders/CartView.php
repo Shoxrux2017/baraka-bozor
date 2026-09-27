@@ -50,7 +50,7 @@ final readonly class CartView
             $estimate = $price === null ? null : MoneyCalculator::lineTotal($price, Quantity::fromString($item->quantity));
 
             $lines[] = new CartLine($item, $item->product, $available, $price, $estimate);
-            $subtotal += $estimate ?? 0;
+            $subtotal = MoneyCalculator::sum($subtotal, $estimate ?? 0);
         }
 
         return new self($cart, $lines, $subtotal);
