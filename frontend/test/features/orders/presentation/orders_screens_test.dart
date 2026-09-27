@@ -282,6 +282,7 @@ void main() {
         );
         expect(reason.controller!.text, 'Kerak emas');
         expect(reason.readOnly, isTrue);
+        expect(find.text(l10n(tester).orderCancelRepeating), findsOneWidget);
         await tapAndSettle(tester, byKey('cancel-confirm'));
 
         expect(orders.cancels, hasLength(2));
@@ -404,6 +405,77 @@ void main() {
       );
       expect(byKey('order-status'), findsOneWidget);
     });
+
+    testWidgets('an editor opened by its address leaves for the order', (
+      WidgetTester tester,
+    ) async {
+      String top() =>
+          GoRouter.of(anywhere(tester))
+              .routerDelegate
+              .currentConfiguration
+              .last
+              .matchedLocation;
+
+      await open(tester, at: AppPaths.customerOrderEdit(orderOne), alone: true);
+      await tapAndSettle(tester, byKey('edit-save'));
+      expect(orders.edits, isEmpty, reason: 'nothing changed');
+      expect(top(), AppPaths.customerOrder(orderOne));
+
+      GoRouter.of(anywhere(tester)).go(AppPaths.customerOrderEdit(orderOne));
+      await tester.pumpAndSettle();
+      await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
+      orders.answer = customerOrderJson(note: 'Ertalab');
+      await tapAndSettle(tester, byKey('edit-save'));
+      expect(orders.edits, hasLength(1));
+      expect(tester.takeException(), isNull);
+      expect(top(), AppPaths.customerOrder(orderOne));
+      expect(byKey('order-status'), findsOneWidget);
+    });
+
+    testWidgets('an order gone meanwhile is said so, not edited', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, at: AppPaths.customerOrderEdit(orderOne));
+      orders
+        ..failure = const ApiRefusal(
+          ApiError(status: 404, code: 'resource_not_found'),
+        )
+        ..rows = <Map<String, Object?>>[];
+      await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
+
+      await tapAndSettle(tester, byKey('edit-save'));
+
+      expect(byKey('order-editor'), findsNothing);
+      expect(find.text(l10n(tester).errorNotFound), findsOneWidget);
+    });
+
+    testWidgets(
+      'a reload that failed is said so, and retried, never the old form',
+      (WidgetTester tester) async {
+        await open(tester, at: AppPaths.customerOrderEdit(orderOne));
+        orders
+          ..failure = const ApiRefusal(
+            ApiError(status: 409, code: 'order_editing_locked'),
+          )
+          ..loadFailure = const NetworkFailure()
+          ..rows = <Map<String, Object?>>[
+            customerOrderJson(status: 'shopping', changeable: false),
+          ];
+        await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
+
+        await tapAndSettle(tester, byKey('edit-save'));
+        expect(byKey('order-editor'), findsNothing);
+        expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+
+        await tester.tap(byKey('retry-load'));
+        await tester.pump();
+        expect(byKey('order-editor'), findsNothing, reason: 'not the old form');
+        expect(byKey('retry-load'), findsNothing);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        await tester.pumpAndSettle();
+        expect(byKey('edit-closed'), findsOneWidget);
+      },
+    );
 
     testWidgets('a rule changed alone is sent', (WidgetTester tester) async {
       await open(tester, at: AppPaths.customerOrderEdit(orderOne));

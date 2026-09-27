@@ -1499,6 +1499,10 @@ class AppLocalizationsUz extends AppLocalizations {
   String get orderCancelReason => 'Sabab (ixtiyoriy)';
 
   @override
+  String get orderCancelRepeating =>
+      'Avvalgi so\'rov javobsiz qoldi: u shu sabab bilan qayta yuboriladi';
+
+  @override
   String get orderCancelKeep => 'Yo\'q, qoldirish';
 
   @override

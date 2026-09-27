@@ -1509,6 +1509,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get orderCancelReason => 'Причина (необязательно)';
 
   @override
+  String get orderCancelRepeating =>
+      'Прошлый запрос остался без ответа: он повторится с той же причиной';
+
+  @override
   String get orderCancelKeep => 'Нет, оставить';
 
   @override

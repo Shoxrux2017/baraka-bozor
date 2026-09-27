@@ -43,13 +43,12 @@ class OrderEditScreen extends ConsumerWidget {
           children: <Widget>[
             const ActiveModeBar(),
             Expanded(
+              // A reload that failed shows the failure, and a retry its
+              // progress, never the form held before.
               child: switch (order) {
-                AsyncValue<CustomerOrder>(:final CustomerOrder value)
-                    when !value.canEdit =>
-                  _Closed(orderId: value.id),
-                AsyncValue<CustomerOrder>(:final CustomerOrder value) =>
-                  _Editor(key: ValueKey<String>(value.id), order: value),
-                AsyncError<CustomerOrder>(:final Object error) => Padding(
+                AsyncValue<CustomerOrder>(hasError: true, isLoading: true) =>
+                  const Center(child: CircularProgressIndicator()),
+                AsyncValue<CustomerOrder>(:final Object error) => Padding(
                   padding: const EdgeInsets.all(16),
                   child: LoadFailure(
                     error: error,
@@ -57,6 +56,11 @@ class OrderEditScreen extends ConsumerWidget {
                         ref.invalidate(customerOrderProvider(orderId)),
                   ),
                 ),
+                AsyncValue<CustomerOrder>(:final CustomerOrder value)
+                    when !value.canEdit =>
+                  _Closed(orderId: value.id),
+                AsyncValue<CustomerOrder>(:final CustomerOrder value) =>
+                  _Editor(key: ValueKey<String>(value.id), order: value),
                 _ => const Center(child: CircularProgressIndicator()),
               },
             ),
@@ -64,6 +68,16 @@ class OrderEditScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// Leaves the editor for the order: back to it when the editor was opened
+/// over it, to it when the editor was opened by its address alone.
+void _backToOrder(GoRouter router, String orderId) {
+  if (router.canPop()) {
+    router.pop();
+  } else {
+    router.go(AppPaths.customerOrder(orderId));
   }
 }
 
@@ -85,14 +99,7 @@ class _Closed extends StatelessWidget {
         const SizedBox(height: 16),
         FilledButton(
           key: const ValueKey<String>('edit-back-to-order'),
-          onPressed: () {
-            final GoRouter router = GoRouter.of(context);
-            if (router.canPop()) {
-              router.pop();
-            } else {
-              router.go(AppPaths.customerOrder(orderId));
-            }
-          },
+          onPressed: () => _backToOrder(GoRouter.of(context), orderId),
           child: Text(l10n.orderOpen),
         ),
       ],
@@ -180,13 +187,13 @@ class _EditorState extends ConsumerState<_Editor> {
     }
     final String wish = trimLikeServer(_wish.text);
     final String? deliveryTimeNote = wish.isEmpty ? null : wish;
-    final NavigatorState navigator = Navigator.of(context);
+    final GoRouter router = GoRouter.of(context);
 
     // Nothing changed: nothing is sent (`DL-28` (9)).
     if (kept.length == _lines.length &&
         kept.every((_LineDraft line) => line.unchanged) &&
         deliveryTimeNote == widget.order.deliveryTimeNote) {
-      navigator.pop();
+      _backToOrder(router, widget.order.id);
       return;
     }
     final CustomerOrder? answer = await ref
@@ -195,7 +202,7 @@ class _EditorState extends ConsumerState<_Editor> {
           for (final _LineDraft line in kept) line.toEdit(),
         ], deliveryTimeNote);
     if (answer != null && mounted) {
-      navigator.pop();
+      _backToOrder(router, widget.order.id);
     }
   }
 

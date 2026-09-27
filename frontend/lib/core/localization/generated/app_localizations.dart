@@ -2810,6 +2810,12 @@ abstract class AppLocalizations {
   /// **'Sabab (ixtiyoriy)'**
   String get orderCancelReason;
 
+  /// No description provided for @orderCancelRepeating.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avvalgi so\'rov javobsiz qoldi: u shu sabab bilan qayta yuboriladi'**
+  String get orderCancelRepeating;
+
   /// No description provided for @orderCancelKeep.
   ///
   /// In uz, this message translates to:

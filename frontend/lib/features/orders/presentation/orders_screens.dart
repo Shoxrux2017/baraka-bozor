@@ -363,7 +363,11 @@ class _CancelDialogState extends State<_CancelDialog> {
           readOnly: widget.unconfirmed,
           minLines: 1,
           maxLines: 3,
-          decoration: InputDecoration(labelText: l10n.orderCancelReason),
+          decoration: InputDecoration(
+            labelText: l10n.orderCancelReason,
+            helperText: widget.unconfirmed ? l10n.orderCancelRepeating : null,
+            helperMaxLines: 3,
+          ),
           validator: (String? text) =>
               trimLikeServer(text ?? '').runes.length > 300
               ? l10n.fieldTooLong(300)

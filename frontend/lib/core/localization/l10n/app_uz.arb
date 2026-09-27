@@ -770,6 +770,7 @@
   "orderCancel": "Buyurtmani bekor qilish",
   "orderCancelConfirm": "Buyurtma bekor qilinsinmi?",
   "orderCancelReason": "Sabab (ixtiyoriy)",
+  "orderCancelRepeating": "Avvalgi so'rov javobsiz qoldi: u shu sabab bilan qayta yuboriladi",
   "orderCancelKeep": "Yo'q, qoldirish",
   "orderCancelling": "Bekor qilinmoqda",
   "orderOpen": "Buyurtmani ochish",

@@ -127,7 +127,8 @@ Map<String, Object?> orderSummaryJson({
 };
 
 /// The Customer's orders in memory. A change answers with [answer] when set
-/// (a test decides what the server says), or fails once with [failure].
+/// (a test decides what the server says), or fails once with [failure]; an
+/// order's load fails once with [loadFailure].
 class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   FakeCustomerOrdersRepository({List<Map<String, Object?>>? orders})
     : rows = orders ?? <Map<String, Object?>>[customerOrderJson()];
@@ -135,6 +136,7 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   List<Map<String, Object?>> rows;
   Map<String, Object?>? answer;
   ApiFailure? failure;
+  ApiFailure? loadFailure;
   Completer<void>? hold;
 
   final List<String> loads = <String>[];
@@ -183,6 +185,11 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   @override
   Future<CustomerOrder> order(String id) async {
     loads.add('order:$id');
+    final ApiFailure? failure = loadFailure;
+    if (failure != null) {
+      loadFailure = null;
+      throw failure;
+    }
     for (final Map<String, Object?> row in rows) {
       if (row['id'] == id) {
         return CustomerOrdersApi.parseOrder(row);

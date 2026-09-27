@@ -770,6 +770,7 @@
   "orderCancel": "Отменить заказ",
   "orderCancelConfirm": "Отменить заказ?",
   "orderCancelReason": "Причина (необязательно)",
+  "orderCancelRepeating": "Прошлый запрос остался без ответа: он повторится с той же причиной",
   "orderCancelKeep": "Нет, оставить",
   "orderCancelling": "Отменяем",
   "orderOpen": "Открыть заказ",
