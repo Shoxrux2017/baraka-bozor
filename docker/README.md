@@ -129,6 +129,31 @@ For an interactive shell:
 docker compose -f docker/compose.yaml exec app bash
 ```
 
+## Walk a wave on the real stack
+
+`compose.yaml` publishes no port. Serve the API on the loopback address from a
+one-off container, and stop it when done:
+
+```text
+docker compose -f docker/compose.yaml run --rm -d --name baraka-bozor-serve -p 127.0.0.1:8000:8000 app php artisan serve --host 0.0.0.0 --port 8000
+docker stop baraka-bozor-serve
+```
+
+The walkthrough's staff accounts are the Shopper, the Courier (behind the
+first-login gate), the Operator, the Admin and the Manager on +998 90 000 00 02
+to 06. A seeder creates them in the local environment only, with the password
+set as `WALKTHROUGH_STAFF_PASSWORD` in `backend/.env` (`DL-35`); a second run
+leaves them as they are:
+
+```text
+docker compose -f docker/compose.yaml exec app php artisan db:seed --class=WalkthroughSeeder
+```
+
+Customers sign in with a phone from `LOGIN_CODE_TEST_PHONES` and the code
+`LOGIN_CODE_TEST_CODE`. Each wave's API walkthrough is a script under
+`tasks/scripts/`, which reads the same three settings from `backend/.env`:
+`python tasks/scripts/wave1_api_walkthrough.py`.
+
 ## Stop
 
 ```text
