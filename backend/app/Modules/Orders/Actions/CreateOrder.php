@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\User;
+use App\Modules\Customer\CustomerAddresses;
 use App\Modules\Orders\CartLine;
 use App\Modules\Orders\Checkout\CheckoutState;
 use App\Modules\Orders\Checkout\CheckoutToken;
@@ -34,7 +35,8 @@ use Illuminate\Support\Str;
  *
  * 1. reads the token — anything wrong with it is `checkout_snapshot_stale`;
  * 2. locks the Customer's active cart (`DL-37` (7)); a cart other than the
- *    token's has been converted since, and the token is stale;
+ *    token's has been converted since, and the token is stale, as it is when
+ *    the token's address has been removed;
  * 3. checks the checkout again from the locked cart and one reading of the
  *    settings, and compares its digest with the token's — any difference is
  *    stale, and the Customer previews again;
@@ -68,6 +70,13 @@ final class CreateOrder
         $cart = CustomerCart::lock($customer);
 
         if ($cart->id !== $claims->cartId) {
+            throw CheckoutToken::stale();
+        }
+
+        // An address removed since the preview: the token no longer names a
+        // checkout that can be made, and a 404 would give the client nothing
+        // to act on; a new preview gives the exact refusal.
+        if (! CustomerAddresses::own($customer)->whereKey($claims->addressId)->exists()) {
             throw CheckoutToken::stale();
         }
 

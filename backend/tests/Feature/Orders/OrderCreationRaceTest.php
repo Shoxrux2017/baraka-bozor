@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Modules\Orders\Actions\PreviewCheckout;
 use App\Modules\Orders\CustomerCart;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -27,9 +28,10 @@ use Tests\TestCase;
  *
  * A second connection plays the first creation — it holds the cart and
  * converts it — and the second creation runs in another process. No test
- * transaction wraps this class: it restores the settings it changed and
- * removes what it committed. No order is committed, so the append-only
- * history needs no clean-up.
+ * transaction wraps this class: it restores the settings it changed first and
+ * removes what it committed. When the test passes no order is committed; were
+ * one committed, its append-only history could not be removed, and the next
+ * `migrate:fresh` of the test database takes it.
  */
 final class OrderCreationRaceTest extends TestCase
 {
@@ -75,37 +77,56 @@ final class OrderCreationRaceTest extends TestCase
 
     protected function tearDown(): void
     {
-        $second = DB::connection(self::SECOND);
-        while ($second->transactionLevel() > 0) {
-            $second->rollBack();
-        }
-        DB::purge(self::SECOND);
-
-        $users = [];
-        if ($this->customer !== null) {
-            DB::table('idempotency_keys')->where('actor_user_id', $this->customer->id)->delete();
-            $carts = DB::table('carts')->where('customer_id', $this->customer->id)->pluck('id');
-            DB::table('cart_items')->whereIn('cart_id', $carts)->delete();
-            DB::table('carts')->whereIn('id', $carts)->delete();
-            DB::table('customer_addresses')->where('customer_id', $this->customer->id)->delete();
-            $users[] = $this->customer->id;
-        }
-        if ($this->product !== null) {
-            $category = Category::query()->find($this->product->category_id);
-            DB::table('products')->where('id', $this->product->id)->delete();
-            $users[] = $this->product->created_by_user_id;
-            if ($category !== null) {
-                DB::table('categories')->where('id', $category->id)->delete();
-                $users[] = $category->created_by_user_id;
-            }
-        }
-        DB::table('users')->whereIn('id', $users)->delete();
-
+        // The settings first: a later test in this run must never see the race's.
         if ($this->settingsBefore !== []) {
             DB::table('business_settings')->where('id', BusinessSettings::SINGLETON_ID)->update($this->settingsBefore);
         }
 
+        if (config()->has('database.connections.'.self::SECOND)) {
+            $second = DB::connection(self::SECOND);
+            while ($second->transactionLevel() > 0) {
+                $second->rollBack();
+            }
+            DB::purge(self::SECOND);
+        }
+
+        // Each removal on its own, so one refused — a committed order holds its
+        // cart, and its append-only history cannot be removed at all — does not
+        // keep the others from running.
+        $users = [];
+        if ($this->customer !== null) {
+            $customer = $this->customer->id;
+            $carts = DB::table('carts')->where('customer_id', $customer)->pluck('id');
+            $this->quietly(static fn () => DB::table('idempotency_keys')->where('actor_user_id', $customer)->delete());
+            $this->quietly(static fn () => DB::table('cart_items')->whereIn('cart_id', $carts)->delete());
+            $this->quietly(static fn () => DB::table('carts')->whereIn('id', $carts)->delete());
+            $this->quietly(static fn () => DB::table('customer_addresses')->where('customer_id', $customer)->delete());
+            $users[] = $customer;
+        }
+        if ($this->product !== null) {
+            $product = $this->product;
+            $category = Category::query()->find($product->category_id);
+            $this->quietly(static fn () => DB::table('products')->where('id', $product->id)->delete());
+            $users[] = $product->created_by_user_id;
+            if ($category !== null) {
+                $this->quietly(static fn () => DB::table('categories')->where('id', $category->id)->delete());
+                $users[] = $category->created_by_user_id;
+            }
+        }
+        foreach ($users as $user) {
+            $this->quietly(static fn () => DB::table('users')->where('id', $user)->delete());
+        }
+
         parent::tearDown();
+    }
+
+    private function quietly(callable $removal): void
+    {
+        try {
+            $removal();
+        } catch (QueryException) {
+            // Left behind only when the test already failed on what it checks.
+        }
     }
 
     public function test_a_creation_that_waited_on_another_from_the_same_cart_is_stale(): void

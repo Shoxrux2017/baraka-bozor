@@ -10,12 +10,14 @@ use App\Models\CartItem;
 use App\Models\CustomerAddress;
 use App\Models\Enums\CartStatus;
 use App\Models\Enums\OrderStatus;
+use App\Models\Enums\Role;
 use App\Models\Enums\UnitCode;
 use App\Models\IdempotencyKey;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\Product;
 use App\Models\User;
+use App\Modules\Orders\Checkout\CheckoutToken;
 use App\Modules\Orders\CustomerCart;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -208,6 +210,53 @@ final class CreateOrderApiTest extends TestCase
 
         Product::query()->whereKey($this->bread->id)->update(['is_active' => true]);
         $this->create($token, $key)->assertCreated();
+    }
+
+    public function test_a_retry_after_the_token_expired_still_answers_the_order(): void
+    {
+        $token = $this->token();
+        $key = (string) Str::uuid();
+        $first = $this->create($token, $key)->assertCreated()->json('data.id');
+
+        $this->travel(CheckoutToken::TTL_SECONDS + 1)->seconds();
+
+        $this->create($token, $key)->assertCreated()->assertJsonPath('data.id', $first);
+        $this->assertSame(1, Order::query()->count());
+    }
+
+    public function test_after_an_order_the_old_lines_are_gone_and_a_new_line_lands_in_the_new_cart(): void
+    {
+        $oldLine = CartItem::query()->where('product_id', $this->tomatoes->id)->value('id');
+        $this->create($this->token())->assertCreated();
+
+        $this->asCustomer()->patchJson('/api/v1/customer/cart/items/'.$oldLine, ['quantity' => '5'])->assertStatus(404);
+        $this->asCustomer()->deleteJson('/api/v1/customer/cart/items/'.$oldLine)->assertStatus(404);
+        $cart = $this->asCustomer()->postJson('/api/v1/customer/cart/items', ['product_id' => $this->tomatoes->id, 'quantity' => '1'])
+            ->assertCreated();
+        $this->assertSame(CustomerCart::of($this->customer)->id, $cart->json('data.id'));
+        $this->assertSame(1, $cart->json('data.item_count'));
+    }
+
+    public function test_an_address_removed_since_the_preview_makes_the_token_stale(): void
+    {
+        $token = $this->token();
+        $this->address->forceFill(['is_active' => false])->save();
+
+        $this->create($token)->assertStatus(409)->assertJsonPath('code', 'checkout_snapshot_stale');
+        $this->assertSame(0, Order::query()->count());
+    }
+
+    public function test_staff_cannot_reach_the_customers_orders(): void
+    {
+        $shopper = User::factory()->role(Role::Shopper)->create();
+        $asShopper = $this->withToken($shopper->createToken('t')->plainTextToken);
+        $order = Order::factory()->create(['customer_id' => $this->customer->id]);
+
+        $asShopper->getJson(self::ORDERS)->assertStatus(403);
+        $asShopper->getJson(self::ORDERS.'/'.$order->id)->assertStatus(403);
+        $asShopper->postJson(self::ORDERS, ['checkout_token' => 'x'], ['Idempotency-Key' => (string) Str::uuid()])->assertStatus(403);
+        // The role is checked before the key: no key is still 403, not 400.
+        $asShopper->postJson(self::ORDERS, ['checkout_token' => 'x'])->assertStatus(403);
     }
 
     public function test_the_key_is_required_after_the_session_and_the_body_is_held_to_its_shape(): void

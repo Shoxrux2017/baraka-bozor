@@ -28,8 +28,7 @@ final class CustomerOrderController extends Controller
 {
     public function index(ListCustomerOrdersRequest $request): JsonResponse
     {
-        $orders = CustomerOrders::own($this->customer($request))
-            ->with('items')
+        $orders = CustomerOrders::withLineSums(CustomerOrders::own($this->customer($request)))
             ->orderByDesc('created_at')
             ->orderByDesc('order_number')
             ->paginate($request->perPage(), ['*'], 'page', $request->page());

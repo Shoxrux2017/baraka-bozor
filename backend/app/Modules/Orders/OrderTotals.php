@@ -62,6 +62,30 @@ final readonly class OrderTotals
             $estimate = $estimate || $item->price_mode_snapshot === PriceMode::Estimate;
         }
 
+        return self::fromLines($order, $subtotal, $estimate);
+    }
+
+    /**
+     * The same totals from the lines' sum and whether any is an estimate, as a
+     * list query computes them in SQL (`CustomerOrders::withLineSums`), so a
+     * page of orders does not load every line.
+     */
+    public static function fromLines(Order $order, int $subtotal, bool $estimate): self
+    {
+        if ($order->status === OrderStatus::Cancelled) {
+            return new self(null, null, null, null, 'none');
+        }
+
+        if ($order->final_total_uzs !== null) {
+            return new self(
+                $order->final_merchandise_subtotal_uzs,
+                $order->final_service_fee_uzs,
+                $order->delivery_fee_uzs_snapshot,
+                $order->final_total_uzs,
+                'final',
+            );
+        }
+
         $fee = (new ServiceFeeCalculator(
             $order->service_fee_mode_snapshot,
             $order->service_fee_fixed_uzs_snapshot,
