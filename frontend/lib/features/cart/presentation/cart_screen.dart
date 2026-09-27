@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/catalog/catalog_values.dart';
 import '../../../core/formatting/money_format.dart';
@@ -11,6 +12,8 @@ import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
+import '../../../core/orders/unconfirmed_order.dart';
+import '../../../core/routing/app_paths.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
@@ -96,6 +99,18 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         child: Column(
           children: <Widget>[
             const ActiveModeBar(),
+            if (ref.watch(unconfirmedOrderProvider))
+              MaterialBanner(
+                key: const ValueKey<String>('cart-unconfirmed-order'),
+                content: Text(l10n.cartUnconfirmedOrder),
+                actions: <Widget>[
+                  TextButton(
+                    key: const ValueKey<String>('cart-check-unconfirmed'),
+                    onPressed: () => context.push(AppPaths.customerCheckout),
+                    child: Text(l10n.cartCheckUnconfirmed),
+                  ),
+                ],
+              ),
             Expanded(
               child: cart.when(
                 skipLoadingOnRefresh: !cart.hasError,
@@ -133,6 +148,19 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         ),
                         key: const ValueKey<String>('cart-subtotal'),
                         style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      // A line no longer sold must go first; the server
+                      // would refuse it (`docs/09` section 18).
+                      FilledButton(
+                        key: const ValueKey<String>('go-to-checkout'),
+                        onPressed:
+                            cart.lines.every(
+                              (CartLine line) => line.isAvailable,
+                            )
+                            ? () => context.push(AppPaths.customerCheckout)
+                            : null,
+                        child: Text(l10n.checkoutGo),
                       ),
                     ],
                   );

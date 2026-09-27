@@ -2491,6 +2491,198 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Bu mahsulot hozir sotuvda yo\'q'**
   String get errorProductUnavailable;
+
+  /// No description provided for @checkoutTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani rasmiylashtirish'**
+  String get checkoutTitle;
+
+  /// No description provided for @checkoutGo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasmiylashtirish'**
+  String get checkoutGo;
+
+  /// No description provided for @checkoutAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish manzili'**
+  String get checkoutAddress;
+
+  /// No description provided for @checkoutNoAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hali manzil yo\'q'**
+  String get checkoutNoAddress;
+
+  /// No description provided for @checkoutAddAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil qo\'shish'**
+  String get checkoutAddAddress;
+
+  /// No description provided for @checkoutPayment.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov usuli'**
+  String get checkoutPayment;
+
+  /// No description provided for @checkoutOnlineUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha faqat naqd pul bilan to\'lash mumkin'**
+  String get checkoutOnlineUnavailable;
+
+  /// No description provided for @checkoutCalculate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hisoblash'**
+  String get checkoutCalculate;
+
+  /// No description provided for @checkoutCalculating.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hisoblanmoqda'**
+  String get checkoutCalculating;
+
+  /// No description provided for @checkoutConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani tasdiqlash'**
+  String get checkoutConfirm;
+
+  /// No description provided for @checkoutPlacing.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma yuborilmoqda'**
+  String get checkoutPlacing;
+
+  /// No description provided for @checkoutEstimateExplain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narxi taxminiy mahsulotlar bor: yakuniy summa yig\'uvchi ularni sotib olgach aniqlanadi'**
+  String get checkoutEstimateExplain;
+
+  /// No description provided for @checkoutClosedUntil.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir ish vaqti emas. Buyurtma {time} dan yig\'ila boshlaydi'**
+  String checkoutClosedUntil(String time);
+
+  /// No description provided for @checkoutPlaced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma №{number} qabul qilindi'**
+  String checkoutPlaced(String number);
+
+  /// No description provided for @checkoutBackToCatalog.
+  ///
+  /// In uz, this message translates to:
+  /// **'Katalogga qaytish'**
+  String get checkoutBackToCatalog;
+
+  /// No description provided for @checkoutOpenProfile.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismni kiritish'**
+  String get checkoutOpenProfile;
+
+  /// No description provided for @checkoutBackToCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga qaytish'**
+  String get checkoutBackToCart;
+
+  /// No description provided for @errorProfileIncomplete.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma berish uchun profilga ismingizni kiriting'**
+  String get errorProfileIncomplete;
+
+  /// No description provided for @errorAddressIncomplete.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil to\'liq emas: ko\'cha va uyni kiriting'**
+  String get errorAddressIncomplete;
+
+  /// No description provided for @errorAddressGone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu manzil topilmadi. Boshqasini tanlang'**
+  String get errorAddressGone;
+
+  /// No description provided for @errorCartEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savat bo\'sh'**
+  String get errorCartEmpty;
+
+  /// No description provided for @errorCheckoutProductsUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ba\'zi mahsulotlarni hozir buyurtma qilib bo\'lmaydi: savatda ularni olib tashlang yoki miqdorini to\'g\'rilang'**
+  String get errorCheckoutProductsUnavailable;
+
+  /// No description provided for @errorMinimumOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Eng kam buyurtma — {minimum}. Yana {shortfall}lik mahsulot qo\'shing'**
+  String errorMinimumOrder(String minimum, String shortfall);
+
+  /// No description provided for @errorMinimumOrderPlain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma summasi eng kam miqdordan past'**
+  String get errorMinimumOrderPlain;
+
+  /// No description provided for @errorPaymentMethodUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu to\'lov usuli hozir mavjud emas'**
+  String get errorPaymentMethodUnavailable;
+
+  /// No description provided for @errorCheckoutStale.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hisob eskirgan edi va yangilandi. Ko\'rib chiqib, qayta tasdiqlang'**
+  String get errorCheckoutStale;
+
+  /// No description provided for @errorOrderInProgress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma hali yuborilmoqda. Biroz kutib, qayta tasdiqlang'**
+  String get errorOrderInProgress;
+
+  /// No description provided for @checkoutUnconfirmed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma qabul qilingani aniqlanmadi. «Buyurtmani tasdiqlash»ni yana bosing — u ikki marta qabul qilinmaydi'**
+  String get checkoutUnconfirmed;
+
+  /// No description provided for @cartUnconfirmedOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi buyurtmangiz qabul qilingani aniqlanmadi'**
+  String get cartUnconfirmedOrder;
+
+  /// No description provided for @cartCheckUnconfirmed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tekshirish'**
+  String get cartCheckUnconfirmed;
+
+  /// No description provided for @errorInProgress.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'rov hali bajarilmoqda. Biroz kutib, qayta urinib ko\'ring'**
+  String get errorInProgress;
+
+  /// No description provided for @checkoutPlacedCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma №{number} bekor qilingan'**
+  String checkoutPlacedCancelled(String number);
 }
 
 class _AppLocalizationsDelegate

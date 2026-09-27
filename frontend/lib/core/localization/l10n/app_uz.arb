@@ -685,5 +685,68 @@
   "cartSaving": "Saqlanmoqda",
   "errorCartItemAlreadyExists": "Bu mahsulot allaqachon savatda",
   "errorCartFull": "Savatda ko'pi bilan 100 ta mahsulot bo'lishi mumkin",
-  "errorProductUnavailable": "Bu mahsulot hozir sotuvda yo'q"
+  "errorProductUnavailable": "Bu mahsulot hozir sotuvda yo'q",
+  "checkoutTitle": "Buyurtmani rasmiylashtirish",
+  "checkoutGo": "Rasmiylashtirish",
+  "checkoutAddress": "Yetkazish manzili",
+  "checkoutNoAddress": "Hali manzil yo'q",
+  "checkoutAddAddress": "Manzil qo'shish",
+  "checkoutPayment": "To'lov usuli",
+  "checkoutOnlineUnavailable": "Hozircha faqat naqd pul bilan to'lash mumkin",
+  "checkoutCalculate": "Hisoblash",
+  "checkoutCalculating": "Hisoblanmoqda",
+  "checkoutConfirm": "Buyurtmani tasdiqlash",
+  "checkoutPlacing": "Buyurtma yuborilmoqda",
+  "checkoutEstimateExplain": "Narxi taxminiy mahsulotlar bor: yakuniy summa yig'uvchi ularni sotib olgach aniqlanadi",
+  "checkoutClosedUntil": "Hozir ish vaqti emas. Buyurtma {time} dan yig'ila boshlaydi",
+  "@checkoutClosedUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "checkoutPlaced": "Buyurtma №{number} qabul qilindi",
+  "@checkoutPlaced": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "checkoutBackToCatalog": "Katalogga qaytish",
+  "checkoutOpenProfile": "Ismni kiritish",
+  "checkoutBackToCart": "Savatga qaytish",
+  "errorProfileIncomplete": "Buyurtma berish uchun profilga ismingizni kiriting",
+  "errorAddressIncomplete": "Manzil to'liq emas: ko'cha va uyni kiriting",
+  "errorAddressGone": "Bu manzil topilmadi. Boshqasini tanlang",
+  "errorCartEmpty": "Savat bo'sh",
+  "errorCheckoutProductsUnavailable": "Ba'zi mahsulotlarni hozir buyurtma qilib bo'lmaydi: savatda ularni olib tashlang yoki miqdorini to'g'rilang",
+  "errorMinimumOrder": "Eng kam buyurtma — {minimum}. Yana {shortfall}lik mahsulot qo'shing",
+  "@errorMinimumOrder": {
+    "placeholders": {
+      "minimum": {
+        "type": "String"
+      },
+      "shortfall": {
+        "type": "String"
+      }
+    }
+  },
+  "errorMinimumOrderPlain": "Buyurtma summasi eng kam miqdordan past",
+  "errorPaymentMethodUnavailable": "Bu to'lov usuli hozir mavjud emas",
+  "errorCheckoutStale": "Hisob eskirgan edi va yangilandi. Ko'rib chiqib, qayta tasdiqlang",
+  "errorOrderInProgress": "Buyurtma hali yuborilmoqda. Biroz kutib, qayta tasdiqlang",
+  "checkoutUnconfirmed": "Buyurtma qabul qilingani aniqlanmadi. «Buyurtmani tasdiqlash»ni yana bosing — u ikki marta qabul qilinmaydi",
+  "cartUnconfirmedOrder": "Oxirgi buyurtmangiz qabul qilingani aniqlanmadi",
+  "cartCheckUnconfirmed": "Tekshirish",
+  "errorInProgress": "So'rov hali bajarilmoqda. Biroz kutib, qayta urinib ko'ring",
+  "checkoutPlacedCancelled": "Buyurtma №{number} bekor qilingan",
+  "@checkoutPlacedCancelled": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  }
 }
