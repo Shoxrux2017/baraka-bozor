@@ -122,7 +122,7 @@ Order
 
 ## 13. Snapshot Boundary
 
-At creation: product names in both languages, unit, price mode, market price, customer unit price, ordered quantity, note, substitution rule per line; recipient name and phone; address coordinates and text; markup percentage, tolerance percentage, service fee rule, delivery fee, delay threshold; payment method. An edit before shopping adds new lines with fresh line snapshots and leaves every other snapshot as it was (`DL-6`). Later catalog or settings changes never touch them.
+At creation: product names in both languages, unit, price mode, market price, customer unit price, markup, ordered quantity, note, substitution rule per line (`DL-37` (8)); recipient name and phone; address coordinates and text; markup percentage, tolerance percentage, service fee rule, delivery fee, delay threshold; payment method. An edit before shopping adds new lines with fresh line snapshots and leaves every other snapshot as it was (`DL-6`). Later catalog or settings changes never touch them.
 
 ## 14. Money and Quantity
 
@@ -140,7 +140,7 @@ cancelled from any non-terminal state under the rules of 05 Section 15
 
 ## 16. Transactions and Concurrency
 
-Transactions with row locks (`SELECT … FOR UPDATE` on the order row) for: order creation and cart conversion, editing, assignment, shopping start and completion, item recording, approval creation and decision and expiry, payment creation, provider events and reconciliation, switch to cash, cancellation and its decisions, delivery start, completion and failure, refund completion. Lock order: order, then items, then payment. Fresh locked state wins over a stale client.
+Transactions with row locks (`SELECT … FOR UPDATE` on the order row) for: order creation and cart conversion, editing, assignment, shopping start and completion, item recording, approval creation and decision and expiry, payment creation, provider events and reconciliation, switch to cash, cancellation and its decisions, delivery start, completion and failure, refund completion. Lock order: order, then items, then payment. Every cart mutation and order creation first lock the active cart row, and creation builds the checkout digest and the snapshots from the values it read under that lock; lock order there is the cart, then the order (`DL-37` (7)). Fresh locked state wins over a stale client.
 
 ## 17. Persisted Idempotency
 
@@ -150,7 +150,7 @@ IdempotencyStore
   complete(resource reference)
 ```
 
-Unique `(actor_user_id, operation, idempotency_key)`, request hash, state `processing` or `completed`, and a 60-second lease on `processing`. Same key and hash while completed → the same logical result. Same key inside the lease → `409 idempotency_in_progress`. Same key after the lease with no completion → the operation runs again and takes the row over. Different hash → `409 idempotency_key_reused`. Provider callbacks use provider event identity instead.
+Unique `(actor_user_id, operation, idempotency_key)`, request hash, state `processing` or `completed`, and a 60-second lease on `processing`. Same key and hash while completed → the same logical result. Same key inside the lease → `409 idempotency_in_progress`. Same key after the lease with no completion → the operation runs again and takes the row over. Different hash → `409 idempotency_key_reused`. `begin` commits the `processing` row in its own transaction; the operation's writes and `complete` commit together; a business refusal deletes the row so a retry is judged again. The request hash covers the operation, the route parameters and the body (`DL-37` (5)). Provider callbacks use provider event identity instead.
 
 ## 18. Assignment
 

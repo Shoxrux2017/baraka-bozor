@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** current. Rewritten on 2026-09-24 to `DL-2`–`DL-4` in `docs/DECISIONS.md`. Tables marked *(migrated)* exist: `users` and `customer_otp_challenges` from Wave 0, and the seven Wave 1 tables of sections 5 to 8, 11, 12 and 25 (`DL-18`). Every other table is created by the wave that first needs it, by forward migrations only.
+**Status:** current. Rewritten on 2026-09-24 to `DL-2`–`DL-4` in `docs/DECISIONS.md`. Tables marked *(migrated)* exist: `users` and `customer_otp_challenges` from Wave 0, and the seven Wave 1 tables of sections 5 to 8, 11, 12 and 25 (`DL-18`); Wave 2 creates sections 9, 10, 13 to 16 and 27 (`tasks/WAVE_2.md`, W2-1). Every other table is created by the wave that first needs it, by forward migrations only.
 
 ## 1. Baseline
 
@@ -78,7 +78,7 @@ Singleton `id = 1`: `markup_percent ≥ 0, service_fee_mode (fixed|percentage), 
 
 ```text
 id uuid PK
-order_number bigint unique, from sequence orders_order_number_seq
+order_number bigint unique, from sequence orders_order_number_seq (starts at 1001, DL-37)
 customer_id → users
 source_cart_id → carts, unique
 source_address_id → customer_addresses
@@ -109,6 +109,7 @@ product_name_uz_snapshot, product_name_ru_snapshot, unit_code_snapshot
 price_mode_snapshot            fixed|estimate
 market_price_uzs_snapshot
 customer_unit_price_uzs_snapshot          fixed price, or the estimate
+markup_percent_snapshot                   the markup this line was priced with (DL-37)
 ordered_quantity > 0
 purchased_quantity?
 billable_quantity ≥ 0, ≤ ordered_quantity (or ≤ approved_quantity_cap when set)
@@ -131,7 +132,7 @@ Checks: purchased requires `purchased_quantity ≥ billable_quantity > 0`, a bil
 
 ## 15. `order_history`
 
-Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (user|system|payment_provider), actor_user_id?, reason_code?, note?, created_at`.
+Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (user|system|payment_provider), actor_user_id?, reason_code?, note?, details jsonb?, created_at`. `details` holds structured facts an event needs to stay explainable: an edit's before and after, an assignment's id and `is_self_order` (`DL-37` (9), (14)).
 
 `event_type` in `status_changed, edited, payment_method_switched, price_corrected, shopper_assigned, shopper_reassigned, courier_assigned, courier_reassigned, delivery_failed, approval_requested, approval_decided, approval_expired, approval_resolved`. `reason_code` for cancellations in `customer_cancelled, cancellation_request_approved, unpaid_online, no_items_purchased, delivery_failed, system`. Index `(order_id, created_at)`.
 
@@ -185,7 +186,7 @@ Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per or
 
 ## 27. `idempotency_keys`
 
-`id, actor_user_id, operation varchar(80), idempotency_key uuid, request_hash char(64), state (processing|completed), lease_expires_at, resource_type?, resource_id?, created_at, completed_at?`. Unique `(actor_user_id, operation, idempotency_key)`. Completed rows may be pruned after 30 days.
+`id, actor_user_id, operation varchar(80), idempotency_key uuid, request_hash char(64), state (processing|completed), attempt_token uuid, lease_expires_at, resource_type?, resource_id?, created_at, completed_at?`. `attempt_token` is renewed by every `begin` and takeover; completion and a refusal's delete act only on a `processing` row with their own token (`DL-37` (5)). Unique `(actor_user_id, operation, idempotency_key)`. Completed rows may be pruned after 30 days.
 
 ## 28. Deletion Strategy
 
