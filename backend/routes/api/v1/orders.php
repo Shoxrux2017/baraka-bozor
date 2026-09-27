@@ -37,4 +37,12 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Custome
             ->middleware(RequireIdempotencyKey::class)
             ->name('customer.orders.store');
         Route::get('orders/{order}', [CustomerOrderController::class, 'show'])->name('customer.orders.show');
+        // Each edit may keep a removed line, so edits are throttled per
+        // Customer to bound what a client can pile up (DL-43).
+        Route::put('orders/{order}/items', [CustomerOrderController::class, 'editItems'])
+            ->middleware('throttle:30,1')
+            ->name('customer.orders.items.update');
+        Route::post('orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])
+            ->middleware(RequireIdempotencyKey::class)
+            ->name('customer.orders.cancel');
     });
