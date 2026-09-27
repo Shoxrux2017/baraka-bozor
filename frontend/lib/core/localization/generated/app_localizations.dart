@@ -2311,6 +2311,54 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Yig\'uvchi'**
   String get boardFilterShopper;
+
+  /// No description provided for @errorOrderStateConflict.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma allaqachon o\'zgargan va yangilandi. Uni ko\'rib chiqib, qayta urinib ko\'ring'**
+  String get errorOrderStateConflict;
+
+  /// No description provided for @errorStaffNotActive.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu xodim bloklangan. Boshqasini tanlang'**
+  String get errorStaffNotActive;
+
+  /// No description provided for @assignShopper.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi tayinlash'**
+  String get assignShopper;
+
+  /// No description provided for @reassignShopper.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchini almashtirish'**
+  String get reassignShopper;
+
+  /// No description provided for @pickShopperTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchini tanlang'**
+  String get pickShopperTitle;
+
+  /// No description provided for @pickShopperEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faol yig\'uvchilar yo\'q'**
+  String get pickShopperEmpty;
+
+  /// No description provided for @shopperOrdersNow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir {count} ta buyurtma'**
+  String shopperOrdersNow(int count);
+
+  /// No description provided for @assigningShopper.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi tayinlanmoqda'**
+  String get assigningShopper;
 }
 
 class _AppLocalizationsDelegate

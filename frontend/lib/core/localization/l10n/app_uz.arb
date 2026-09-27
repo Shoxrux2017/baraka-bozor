@@ -627,5 +627,20 @@
   "boardFilteredShopper": "Tanlangan yig'uvchi",
   "boardFilterStatus": "Holat",
   "boardFilterPayment": "To'lov usuli",
-  "boardFilterShopper": "Yig'uvchi"
+  "boardFilterShopper": "Yig'uvchi",
+  "errorOrderStateConflict": "Buyurtma allaqachon o'zgargan va yangilandi. Uni ko'rib chiqib, qayta urinib ko'ring",
+  "errorStaffNotActive": "Bu xodim bloklangan. Boshqasini tanlang",
+  "assignShopper": "Yig'uvchi tayinlash",
+  "reassignShopper": "Yig'uvchini almashtirish",
+  "pickShopperTitle": "Yig'uvchini tanlang",
+  "pickShopperEmpty": "Faol yig'uvchilar yo'q",
+  "shopperOrdersNow": "Hozir {count} ta buyurtma",
+  "@shopperOrdersNow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "assigningShopper": "Yig'uvchi tayinlanmoqda"
 }

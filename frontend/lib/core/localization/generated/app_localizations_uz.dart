@@ -1215,4 +1215,31 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get boardFilterShopper => 'Yig\'uvchi';
+
+  @override
+  String get errorOrderStateConflict =>
+      'Buyurtma allaqachon o\'zgargan va yangilandi. Uni ko\'rib chiqib, qayta urinib ko\'ring';
+
+  @override
+  String get errorStaffNotActive => 'Bu xodim bloklangan. Boshqasini tanlang';
+
+  @override
+  String get assignShopper => 'Yig\'uvchi tayinlash';
+
+  @override
+  String get reassignShopper => 'Yig\'uvchini almashtirish';
+
+  @override
+  String get pickShopperTitle => 'Yig\'uvchini tanlang';
+
+  @override
+  String get pickShopperEmpty => 'Faol yig\'uvchilar yo\'q';
+
+  @override
+  String shopperOrdersNow(int count) {
+    return 'Hozir $count ta buyurtma';
+  }
+
+  @override
+  String get assigningShopper => 'Yig\'uvchi tayinlanmoqda';
 }

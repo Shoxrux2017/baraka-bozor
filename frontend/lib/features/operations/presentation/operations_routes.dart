@@ -30,7 +30,11 @@ final FeatureRoutes operationsRoutes = FeatureRoutes(
           path: OperationsPaths.orderPattern,
           name: 'operations-order',
           builder: (BuildContext context, GoRouterState state) =>
-              OrderDetailScreen(orderId: state.pathParameters['order']!),
+              // In lower case, as the API answers ids, so the page, its
+              // reloads and its controller all name one order.
+              OrderDetailScreen(
+                orderId: state.pathParameters['order']!.toLowerCase(),
+              ),
         ),
       ],
     ),

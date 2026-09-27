@@ -60,6 +60,23 @@ class FakeOperationsRepository implements OperationsRepository {
   /// When set, the board's page fails with it.
   ApiFailure? pageFailure;
 
+  /// When set, an order's detail waits for it, and nothing else does.
+  Completer<void>? holdOrder;
+
+  /// When set, the Shopper list fails with it.
+  ApiFailure? shoppersFailure;
+
+  /// Every assignment asked for: `assign:<order>:<shopper>` or
+  /// `reassign:<order>:<shopper>:<replaced assignment>`.
+  final List<String> changes = <String>[];
+
+  /// The order each assignment answers with, which also becomes the order's
+  /// detail from then on.
+  final Map<String, BoardOrder> afterAssignment = <String, BoardOrder>{};
+
+  /// When set, an assignment fails with it.
+  ApiFailure? assignmentFailure;
+
   Future<void> _held() async {
     final Completer<void>? hold = this.hold;
     if (hold != null) {
@@ -98,6 +115,10 @@ class FakeOperationsRepository implements OperationsRepository {
   Future<BoardOrder> order(String id) async {
     loads.add('order:$id');
     await _held();
+    final Completer<void>? holdOrder = this.holdOrder;
+    if (holdOrder != null) {
+      await holdOrder.future;
+    }
     final BoardOrder? order = details[id];
     if (order == null) {
       throw const ApiRefusal(ApiError(status: 404, code: 'resource_not_found'));
@@ -123,6 +144,31 @@ class FakeOperationsRepository implements OperationsRepository {
   Future<List<ShopperChoice>> shoppers() async {
     loads.add('shoppers');
     await _held();
+    if (shoppersFailure != null) {
+      throw shoppersFailure!;
+    }
     return shopperList;
+  }
+
+  @override
+  Future<BoardOrder> assignShopper(String orderId, String shopperId) =>
+      _assign(orderId, 'assign:$orderId:$shopperId');
+
+  @override
+  Future<BoardOrder> reassignShopper(
+    String orderId,
+    String shopperId,
+    String replacesAssignmentId,
+  ) => _assign(orderId, 'reassign:$orderId:$shopperId:$replacesAssignmentId');
+
+  Future<BoardOrder> _assign(String orderId, String change) async {
+    changes.add(change);
+    await _held();
+    if (assignmentFailure != null) {
+      throw assignmentFailure!;
+    }
+    final BoardOrder order = afterAssignment[orderId]!;
+    details[orderId] = order;
+    return order;
   }
 }

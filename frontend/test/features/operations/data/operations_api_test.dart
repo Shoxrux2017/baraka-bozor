@@ -434,6 +434,62 @@ void main() {
       );
     });
 
+    test('an assignment is a POST and a reassignment a PUT naming what it replaces', () async {
+      const String second = '0192f0a0-0000-7000-8000-0000000000a2';
+      await repository.assignShopper(orderA, shopperId);
+      orderAnswer = orderJson(
+        assignments: <Object?>[
+          assignmentJson(
+            endedAt: '2026-09-27T07:10:00Z',
+            endedReason: 'reassigned',
+          ),
+          assignmentJson(id: second, shopper: otherShopperId),
+        ],
+      );
+      await repository.reassignShopper(orderA, otherShopperId, assignmentId);
+
+      final RequestOptions assign = adapter.requests[0];
+      final RequestOptions reassign = adapter.requests[1];
+      expect(assign.method, 'POST');
+      expect(assign.path, '/operations/orders/$orderA/shopper-assignment');
+      expect(assign.data, <String, String>{'shopper_id': shopperId});
+      expect(reassign.method, 'PUT');
+      expect(reassign.path, '/operations/orders/$orderA/shopper-assignment');
+      expect(reassign.data, <String, String>{
+        'shopper_id': otherShopperId,
+        'replaces_assignment_id': assignmentId,
+      });
+      for (final RequestOptions request in adapter.requests) {
+        expect(
+          RequestSlot.resolve(request, () => SessionSlot.customer),
+          SessionSlot.staff,
+        );
+      }
+    });
+
+    test(
+      'an answer that does not show the assignment asked for is malformed',
+      () async {
+        // The answer's current Shopper is another one.
+        await expectLater(
+          repository.assignShopper(orderA, otherShopperId),
+          throwsA(isA<MalformedResponseFailure>()),
+        );
+
+        orderAnswer = orderJson(id: orderB);
+        await expectLater(
+          repository.assignShopper(orderA, shopperId),
+          throwsA(isA<MalformedResponseFailure>()),
+        );
+
+        orderAnswer = orderJson(assignments: <Object?>[]);
+        await expectLater(
+          repository.reassignShopper(orderA, shopperId, assignmentId),
+          throwsA(isA<MalformedResponseFailure>()),
+        );
+      },
+    );
+
     test('a page parses', () async {
       final Paged<BoardRow> page = await repository.orders(const BoardQuery());
       expect(page.items.single.id, orderA);
