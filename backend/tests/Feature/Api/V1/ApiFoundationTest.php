@@ -94,6 +94,19 @@ final class ApiFoundationTest extends TestCase
         $this->assertEnvelope($this->getJson('/api/v1/testing/authenticated'), 401, 'authentication_required');
     }
 
+    public function test_missing_authentication_is_the_envelope_whatever_the_request_accepts(): void
+    {
+        foreach (['text/html', '*/*', null] as $accept) {
+            $headers = $accept === null ? [] : ['Accept' => $accept];
+
+            $this->assertEnvelope(
+                $this->get('/api/v1/testing/authenticated', $headers),
+                401,
+                'authentication_required',
+            );
+        }
+    }
+
     public function test_denied_authorization_returns_forbidden(): void
     {
         $this->assertEnvelope($this->getJson('/api/v1/testing/forbidden'), 403, 'forbidden');
