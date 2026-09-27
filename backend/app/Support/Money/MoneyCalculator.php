@@ -38,6 +38,17 @@ final class MoneyCalculator
     }
 
     /**
+     * `half_up(amount × percent / 100)` — a percentage service fee on the
+     * merchandise subtotal (`BR-MONEY-005`).
+     */
+    public static function percentOf(int $amountUzs, Percentage $percent): int
+    {
+        self::assertNotNegative($amountUzs);
+
+        return self::divideHalfUp($amountUzs * $percent->basisPoints, self::BASIS);
+    }
+
+    /**
      * `half_up(unit price × quantity)` — a line total (`BR-MONEY-003`), and the
      * cart's estimate of one. The quantity is in thousandths, so the product is
      * exact. A customer price is at most a market price of 10⁹ UZS under the
