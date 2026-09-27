@@ -285,7 +285,7 @@ One route set per provider exactly as its official documentation requires; nothi
 
 ## 48. Required `Idempotency-Key`
 
-Create order, customer approval decision, cancel order, record purchase, complete shopping, initiate payment attempt, courier delivered, reorder. Scope `(actor, operation, key)` plus a request hash over the operation, the route parameters and the body, so one key used on two orders is `idempotency_key_reused` (`DL-37` (5)). Same key and hash → same result; same key inside the processing lease → `409 idempotency_in_progress`; different hash → `409 idempotency_key_reused`; missing → `400 idempotency_key_required`.
+Create order, customer approval decision, cancel order, record purchase, complete shopping, initiate payment attempt, courier delivered, reorder. Scope `(actor, operation, key)` plus a request hash over the operation, the route parameters and the body, so one key used on two orders is `idempotency_key_reused` (`DL-37` (5)). Same key and hash → same result; same key inside the processing lease → `409 idempotency_in_progress`; different hash → `409 idempotency_key_reused`; missing → `400 idempotency_key_required`; a key that is not a UUID → `422 validation_failed` on `Idempotency-Key`. A replay answers the resource as it is now, with the status of the original success (`DL-39`).
 
 ## 49. Natural Repeats
 
