@@ -4,10 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'order_edit_screen.dart';
+import 'order_product_picker.dart';
 import 'orders_screens.dart';
 
-/// The Customer's orders, inside the Customer area: the list, an order and
-/// its editor. Each opens over the screen it was reached from, so the system
+/// The Customer's orders, inside the Customer area: the list, an order, its
+/// editor and the product picker the editor adds from. Each opens over the screen it was reached from, so the system
 /// back returns there. An order's id is taken in lower case, as the API
 /// answers it.
 final FeatureRoutes ordersRoutes = FeatureRoutes(
@@ -31,6 +32,14 @@ final FeatureRoutes ordersRoutes = FeatureRoutes(
       builder: (BuildContext context, GoRouterState state) => OrderEditScreen(
         orderId: state.pathParameters['order']!.toLowerCase(),
       ),
+    ),
+    GoRoute(
+      path: AppPaths.customerOrderAddPattern,
+      name: 'customer-order-add',
+      builder: (BuildContext context, GoRouterState state) =>
+          OrderProductPickerScreen(
+            orderId: state.pathParameters['order']!.toLowerCase(),
+          ),
     ),
   ],
 );

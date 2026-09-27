@@ -28,7 +28,7 @@ None (`docs/06` section 5). The MapKit key the Owner set aside (`DL-36`) blocks 
 | W2-12 | App: cart — add from the product screen, the cart screen | Merged |
 | W2-13 | App: checkout — address, payment method, delivery wish, preview, confirm | Merged |
 | W2-14 | App: my orders — list, detail, edit, cancel | Merged |
-| W2-16 | App: add a product to a placed order | Planned |
+| W2-16 | App: add a product to a placed order | Merged |
 | W2-15 | Wave closure: full suites, builds, real-stack walkthrough of the wave's scenario, Owner checklist and report | Planned |
 
 Backend first, in order; the panel after W2-7 and W2-8 (W2-9 needs no API and may go earlier); the app after W2-6. As in Wave 1 the split is by layer (`tasks/README.md` section 2 prefers slices): the panel and the app consume the same order API, and each screen task then tests against a merged contract.

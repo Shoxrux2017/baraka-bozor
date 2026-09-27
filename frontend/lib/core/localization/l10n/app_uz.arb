@@ -767,6 +767,18 @@
   "orderEditAtLeastOne": "Buyurtmada kamida bitta mahsulot qolishi kerak",
   "orderEditSaving": "Saqlanmoqda",
   "orderEditClosed": "Bu buyurtmani endi o'zgartirib bo'lmaydi",
+  "orderAddProduct": "Mahsulot qo'shish",
+  "orderAddTitle": "Buyurtmaga qo'shish",
+  "orderAddedLine": "Qo'shilmoqda, bugungi narxda",
+  "orderAddAlreadyIn": "Bu mahsulot buyurtmada bor, uni o'zgartirishingiz mumkin",
+  "orderAddFull": "Buyurtmada ko'pi bilan {count} ta mahsulot bo'ladi",
+  "@orderAddFull": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "orderCancel": "Buyurtmani bekor qilish",
   "orderCancelConfirm": "Buyurtma bekor qilinsinmi?",
   "orderCancelReason": "Sabab (ixtiyoriy)",

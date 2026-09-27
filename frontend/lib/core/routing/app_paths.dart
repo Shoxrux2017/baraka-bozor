@@ -33,11 +33,14 @@ abstract final class AppPaths {
   static const String customerOrders = '$customer/orders';
   static const String customerOrderPattern = '$customerOrders/:order';
   static const String customerOrderEditPattern = '$customerOrderPattern/edit';
+  static const String customerOrderAddPattern = '$customerOrderEditPattern/add';
 
   static String customerOrder(String id) =>
       '$customerOrders/${Uri.encodeComponent(id)}';
 
   static String customerOrderEdit(String id) => '${customerOrder(id)}/edit';
+
+  static String customerOrderAdd(String id) => '${customerOrderEdit(id)}/add';
 
   static String customerAddress(String id) =>
       '$customerAddresses/${Uri.encodeComponent(id)}';

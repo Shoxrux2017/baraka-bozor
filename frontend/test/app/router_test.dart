@@ -68,6 +68,7 @@ void main() {
         AppPaths.customerOrders,
         AppPaths.customerOrderPattern,
         AppPaths.customerOrderEditPattern,
+        AppPaths.customerOrderAddPattern,
       ]);
     });
 

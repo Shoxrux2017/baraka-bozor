@@ -50,11 +50,13 @@ class PriceLine extends StatelessWidget {
 
 /// A product list that loads its next page when its end comes into view,
 /// with the state of that last page at the bottom: loading, a failure with a
-/// retry, or nothing at the end.
+/// retry, or nothing at the end. A tap opens the product, or picks it with
+/// [onPick] when the list is shown to choose one.
 class ProductList extends ConsumerWidget {
-  const ProductList({required this.query, super.key});
+  const ProductList({required this.query, this.onPick, super.key});
 
   final ProductListQuery query;
+  final ValueChanged<CatalogProduct>? onPick;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -85,7 +87,7 @@ class ProductList extends ConsumerWidget {
           itemCount: state.items.length + (state.hasMore ? 1 : 0),
           itemBuilder: (BuildContext context, int index) {
             if (index < state.items.length) {
-              return ProductTile(product: state.items[index]);
+              return ProductTile(product: state.items[index], onPick: onPick);
             }
             return _ListEnd(query: query, state: state);
           },
@@ -157,9 +159,10 @@ class _ListEnd extends ConsumerWidget {
 }
 
 class ProductTile extends StatelessWidget {
-  const ProductTile({required this.product, super.key});
+  const ProductTile({required this.product, this.onPick, super.key});
 
   final CatalogProduct product;
+  final ValueChanged<CatalogProduct>? onPick;
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +173,10 @@ class ProductTile extends StatelessWidget {
       leading: ProductImage(url: product.imageUrl, size: 56),
       title: Text(product.name(language)),
       subtitle: PriceLine(product: product),
-      onTap: () => context.push(CatalogPaths.product(product.id)),
+      onTap: switch (onPick) {
+        final ValueChanged<CatalogProduct> pick => () => pick(product),
+        null => () => context.push(CatalogPaths.product(product.id)),
+      },
     );
   }
 }
