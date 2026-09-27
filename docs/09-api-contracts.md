@@ -134,13 +134,13 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
 
 ## 19. Create Order
 
-`POST /customer/orders` with `Idempotency-Key: <UUID>`, body `{"checkout_token":"..."}`. Revalidates, snapshots, converts the cart, creates the new cart, assigns `order_number`, answers `201` with the order. Stale token → `409 checkout_snapshot_stale`. Until the payment adapters of Wave 5 exist, `online` answers `409 payment_method_unavailable` at preview and creation whatever the provider switches say (`DL-37` (3)). Before shopping completes an order's `totals` are computed from its snapshots over the lines not removed and labelled like the preview; from completion they are the stored final amounts with the kind `final`; a cancelled order's totals are `null` with the kind `none` (`DL-37` (10)).
+`POST /customer/orders` with `Idempotency-Key: <UUID>`, body `{"checkout_token":"..."}`. Revalidates, snapshots, converts the cart, creates the new cart, assigns `order_number`, answers `201` with the order; a replay of the same key and token answers `201` with that order as it is now. Stale token → `409 checkout_snapshot_stale`: the token is not the Customer's, is past its five minutes, was made for a cart that has since been ordered, or no longer matches the checkout; a check of section 18 that now fails answers its own code (`DL-42`). Until the payment adapters of Wave 5 exist, `online` answers `409 payment_method_unavailable` at preview and creation whatever the provider switches say (`DL-37` (3)). Before shopping completes an order's `totals` are computed from its snapshots over the lines not removed and labelled like the preview; from completion they are the stored final amounts with the kind `final`; a cancelled order's totals are `null` with the kind `none` (`DL-37` (10)).
 
 # Customer Orders
 
 ## 20. Orders
 
-`GET /customer/orders`, `GET /customer/orders/{order}`. Own orders only. The order resource:
+`GET /customer/orders`, `GET /customer/orders/{order}`. Own orders only; another Customer's order is the scope-safe `404`. The list is newest first and answers a summary per order — `id, order_number, status, payment_method, item_count, total_uzs, total_kind, created_at` — and the detail answers the order resource (`DL-42`):
 
 ```json
 {"id":"...","order_number":1042,"status":"shopping","payment_method":"cash",
@@ -148,6 +148,8 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
  "items":[...],"totals":{"merchandise_subtotal_uzs":225000,"service_fee_uzs":11250,"delivery_fee_uzs":15000,"total_uzs":251250,"total_kind":"estimate"},
  "address":{...},"delivery_time_note":"...","payment":null,"refunds":[],"timestamps":{...}}
 ```
+
+An item carries `id, product_id, name_uz, name_ru, unit_code, price_mode, quantity` (ordered), `customer_note, substitution_policy, status, customer_unit_price_uzs, line_total_uzs` (the snapshotted price times the ordered quantity until the line is bought, then the stored total, `0` when removed), `billable_quantity` (`null` until bought or removed) and `removed_reason_code`; removed lines are listed with their status. The order also carries `cancellation_reason_code`. Until their waves, `pending_approval_count` is `0`, `payment` is `null`, `refunds` is empty and `can_request_cancellation` is `false`.
 
 ## 21. Edit Order
 

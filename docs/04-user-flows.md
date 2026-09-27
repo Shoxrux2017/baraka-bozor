@@ -55,7 +55,7 @@ The Customer browses categories, searches (both languages), sees unit, price mod
 4. It returns a signed five-minute checkout token bound to the current state.
 5. The Customer confirms.
 
-If anything changed, order creation returns `checkout_snapshot_stale` and the Customer previews again.
+If anything changed, order creation refuses: a check of the preview that now fails answers its own code — a product gone is `product_unavailable`, naming it — and any other change, an expired token or an address since removed is `checkout_snapshot_stale`; the Customer previews again (`DL-42`).
 
 ## 8. Order Creation
 

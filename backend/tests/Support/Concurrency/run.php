@@ -20,6 +20,7 @@ declare(strict_types=1);
 use App\Exceptions\ApiException;
 use App\Models\User;
 use App\Modules\Orders\Actions\ChangeCart;
+use App\Modules\Orders\Actions\CreateOrder;
 use Illuminate\Contracts\Console\Kernel;
 
 require __DIR__.'/../../../vendor/autoload.php';
@@ -42,6 +43,13 @@ try {
             'cart_id' => (new ChangeCart)->add(
                 User::query()->findOrFail($arguments[0]),
                 ['product_id' => $arguments[1], 'quantity' => '1'],
+            )->id,
+        ],
+        'orders.create' => [
+            'order_id' => $app->make(CreateOrder::class)->create(
+                User::query()->findOrFail($arguments[0]),
+                $arguments[1],
+                $arguments[2],
             )->id,
         ],
         default => throw new InvalidArgumentException("Unknown scenario {$scenario}."),
