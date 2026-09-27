@@ -1,6 +1,6 @@
 # Wave 1 — Catalog and account
 
-Status: **Planned** (2026-09-26). Plan under workflow v6 (`tasks/README.md`). Scope from `DL-5` and `docs/06-roadmap.md` section 3; engineering decisions for the wave in `DL-17`.
+Status: **Closed** (2026-09-27). Planned 2026-09-26. Plan under workflow v6 (`tasks/README.md`). Scope from `DL-5` and `docs/06-roadmap.md` section 3; engineering decisions for the wave in `DL-17`.
 
 ## Goal
 
@@ -26,9 +26,9 @@ The Yandex MapKit API key (`docs/06` section 5). Only W1-13 needs it; every othe
 | W1-10 | Panel: categories and products management with image upload | Merged |
 | W1-11 | Panel: staff management | Merged |
 | W1-12 | App: Customer catalog, search and product screen | Merged |
-| W1-13 | App: profile, addresses list and form with the Yandex map picker | In review |
+| W1-13 | App: profile, addresses list and form with the Yandex map picker | Merged |
 | W1-14 | App and panel: push token registration behind a token source | Merged |
-| W1-15 | Wave closure: full suites, builds, real-stack walkthrough of the wave's scenario, Owner checklist and report | Planned |
+| W1-15 | Wave closure: full suites, builds, real-stack walkthrough of the wave's scenario, Owner checklist and report | Merged, see Closure |
 
 Backend tasks first, in order; the panel screens after their APIs; the app screens after theirs; W1-13 last because of the gate. This is a split by layer rather than by vertical slice (`tasks/README.md` section 2), chosen because the panel and the app consume the same APIs and each screen task then tests against a merged contract; the trade-off is that no feature is usable end to end before its screen task lands.
 
@@ -68,7 +68,7 @@ Backend tasks first, in order; the panel screens after their APIs; the app scree
 
 | Item | Status |
 |---|---|
-| The Yandex MapKit key is not there yet | Open; W1-13 is last and can close without device verification |
+| The Yandex MapKit key is not there yet | Open, Owner; W1-13 merged without the map verified on a device, and builds without the key take the point as coordinates (`DL-33` (4)) |
 | The MapKit package has no web implementation while the frontend CI job builds the web panel on every pull request | W1-13 must keep `flutter build web` green: the map widget is imported only by the mobile-only `addresses` feature, and the package chosen must take the key from Dart (`--dart-define`), not from committed native files |
 | A body the JSON decoder cannot read reaches every endpoint as an empty body: a POST fails its required fields and every PATCH refuses an empty body with `422`, but no endpoint answers the `400 malformed_request` of `docs/09` section 3. A string with an interior NUL byte is silently cut at the NUL by the input handling | Closed by one global middleware (`DL-24`) |
 | The Yandex map is verified only with the Owner's MapKit key, which the wave still waits for; builds without it type the point as coordinates (`DL-33` (4)) | Open until the key arrives; the closure's device check of the map then covers dragging the map inside the form (north and south too), a drag that starts on the pin, and the merged manifest's remaining permissions (`DL-33` (9)) |
@@ -83,13 +83,43 @@ Backend tasks first, in order; the panel screens after their APIs; the app scree
 | Bodyless actions — archive, restore, block, activate, reset-password, logout, address and push-device delete — take a plain request and ignore a body, where `docs/09` section 4 says unknown fields are refused (found by the W1-7 review) | Closed by one empty strict request for all of them (`DL-31`) |
 | Paynet and xazna have rows and switches but no adapter before Wave 5; enabling one would satisfy `BR-CHK-004` with a provider that cannot take a payment | Wave 5 decides "enabled" as "enabled and an adapter is registered"; until then online payment is shown as unavailable anyway (Wave 2) |
 | No product images exist and no brand assets; the panel needs no placeholder art beyond a neutral icon | Accepted |
-| The walkthrough seed and API script of Wave 0 are local files; Wave 1's closure commits a seeder guarded to the local environment and a script under `tasks/scripts/` | Planned in W1-15 |
+| The walkthrough seed and API script of Wave 0 are local files; Wave 1's closure commits a seeder guarded to the local environment and a script under `tasks/scripts/` | Closed by `WalkthroughSeeder` and `tasks/scripts/wave1_api_walkthrough.py`, the password kept in the local `.env` (`DL-35`) |
 | The frontend CI job is not yet a required check on `main` | Open, Owner |
 
 ## Independent-review findings not acted on
 
-None yet.
+None. Every finding of the reviews of pull requests #29 to #47 was acted on before merge, P3s included; the records are on the pull requests.
 
 ## Closure
 
-Not yet.
+Closed on 2026-09-27 at `main` = merge of PR #45 (`97fa12a`) plus the closure pull request: the map hint of a build without a key, the walkthrough seeder and script, and this record.
+
+**Verified by the agent:**
+
+| Check | Result |
+|---|---|
+| Backend suite in the Compose container, `php artisan test` | 454 passed, 3730 assertions |
+| Backend Pint and PHPStan | 236 files pass; no errors |
+| Backend and frontend CI on `main`'s last merged head (`97fa12a`) | pass |
+| Frontend suite, `flutter test` | 391 passed |
+| Frontend analyze, format and `gen-l10n` | no issues, 0 of 178 files changed, nothing regenerated |
+| Browser tests (`*_browser_test.dart`) | CI only, pass there (risk row above) |
+| `flutter build web --release` | built |
+| `flutter build apk --release`, `BB_API_BASE_URL=http://10.0.2.2:8000/api/v1`, no MapKit key | built |
+| Real stack (PostgreSQL 17 and PHP 8.4 in Compose, `php artisan serve` in a one-off container), the API walkthrough `tasks/scripts/wave1_api_walkthrough.py` | 41 of 41 steps pass: the Admin saves the business settings, and a fee of the mode not chosen is refused; a payment provider is switched; a category, an estimate product (market 16 000, customer 18 400 at 15 %) and a fixed one; a PNG image is uploaded and served, a file that is not an image refused; a bodyless action with a body refused (`DL-31`); archive and restore; a Shopper created with a one-time password meets the password gate, which also refuses push registration, changes the password and registers a device; a password reset ends the Shopper's sessions; block, activate, the staff list filtered by role; the Customer signs in with a test phone, keeps a name and a language, saves an address inside the area, is refused outside it with both distances (40.05 km, 5.00 km), edits the address; sees the new section and its products at the customer price without the market price, finds the product by search, is refused a search over 100 characters, sees the image and the estimate mode, cannot reach the Admin catalog; registers and revokes a device, removes the address, logs out, and the token stops working |
+| Real stack, the web panel (`build/web` on loopback, headless Chrome 153 driven over the DevTools protocol) | the Admin signs in; saves the business settings; creates a product; uploads the product image through the browser's own file chooser and sees it in the list; creates a staff member and sees the one-time password dialog; opens the categories. Found and fixed: images from another origin than the panel's showed as the placeholder (`DL-34`, PR #46). Found and left for Wave 2: a reload on a deep page lands on the area's home (risk row above) |
+| Real stack, the Android app on the emulator (`barakabozor` AVD, Android 16 `google_apis` x86_64, the release APK above, `APP_URL=http://10.0.2.2:8000` for the walk) | the Customer signs in with a test phone and code; the catalog's sections with images and customer prices and the estimate note; the product screen; search; the profile shows the phone, keeps the name, says "no changes" for an unchanged one, switches to Russian; an address outside the area is refused with "40,05 км" and "5,00 км", one inside is saved and listed, one is removed after the confirmation; logout; no crash and no plugin registration error in logcat. Found and fixed here: a build without a key still asked the Customer to move the map; checked again on the emulator after the fix |
+
+**Not verified by the agent, on the Owner's checklist or waiting for a gate:** the Yandex map itself, which needs the MapKit key (dragging inside the form in every direction, a drag that starts on the pin, the merged manifest's permissions, `DL-33` (9)); iOS, which needs a Mac; a real phone; the panel in a headed browser with a person's keyboard and mouse; push delivery, which arrives with FCM in Wave 4 (registration and revocation are verified through the API and the tests).
+
+**Owner's manual check.** Serve the stack and seed the staff accounts as `docker/README.md` "Walk a wave on the real stack" says; the staff password, the test phones and their code are in the local `backend/.env`. Images are absolute URLs built from `APP_URL`, so set `APP_URL=http://10.0.2.2:8000` for the emulator and `http://localhost:8000` for the panel, restarting the serve container after a change. The emulator: install `frontend/build/app/outputs/flutter-apk/app-release.apk`, built for `http://10.0.2.2:8000/api/v1` without a MapKit key. The panel: `flutter run -d chrome --dart-define=BB_API_BASE_URL=http://127.0.0.1:8000/api/v1`.
+
+1. Panel, the Admin (+998 90 000 00 05): the business settings — markup, the service fee as a fixed amount or a percentage (only the chosen one is taken), the delivery fee, the minimum order, the working hours, the service centre and radius; save, reload, the values stay. Payment providers can be switched on and off.
+2. Panel, the catalog: a category with Uzbek and Russian names; a product in it with a unit, the price mode (estimate or fixed) and the market price; the list shows the customer price with the markup. A JPEG or PNG photo up to 5 MB appears in the product list; a file that is not a picture is refused. Archive a product: the Customer no longer sees it; restore it.
+3. Panel, staff: create a Shopper; the one-time password is shown once. In the app, "Войти как сотрудник" with it leads to the password change and nowhere else. Block the Shopper: they cannot sign in; activate; reset the password: a new one-time password, and the Shopper's open session ends.
+4. App, the Customer (a test phone and the code): the sections, products with photos at the customer price, the note that an estimate price may change; search in Uzbek or Russian; the product screen.
+5. App, profile (the person icon): the phone, the name saved, an unchanged name answered with "no changes", the language switch.
+6. App, "My addresses": a new address — this build has no map, so the point is typed as coordinates, starting at the centre of Tashkent; street and house are required. Saved inside the area; a point far away (for example 41.55, 69.60) is refused with its distance and the radius; edit an address; remove it after the confirmation.
+7. When the MapKit key arrives: build with `--dart-define=YANDEX_MAPKIT_API_KEY=<key>`; the form shows the map; drag it in every direction without the form scrolling, including a drag that starts on the pin; the point saved is where the pin stood.
+
+**What remains open:** the risk rows above marked Open; for the Owner, the frontend CI job as a required check on `main` with "Include administrators", and the Yandex MapKit key. Wave 2 (the cart and an order paid in cash, the Operator's board) starts next.
