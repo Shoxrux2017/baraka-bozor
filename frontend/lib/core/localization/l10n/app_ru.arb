@@ -580,20 +580,6 @@
   "historyEventApprovalDecided": "Клиент ответил",
   "historyEventApprovalExpired": "Срок ответа истёк",
   "historyEventApprovalResolved": "Согласование закрыто",
-  "historyEdit": "добавлено: {added}, удалено: {removed}, изменено: {changed}",
-  "@historyEdit": {
-    "placeholders": {
-      "added": {
-        "type": "int"
-      },
-      "removed": {
-        "type": "int"
-      },
-      "changed": {
-        "type": "int"
-      }
-    }
-  },
   "historyDeliveryWishChanged": "изменено пожелание по доставке",
   "historyAssignedTo": "Сборщик: {name}",
   "@historyAssignedTo": {
@@ -602,5 +588,44 @@
         "type": "String"
       }
     }
-  }
+  },
+  "historyEditAdded": "добавлено: {count}",
+  "@historyEditAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "historyEditRemoved": "удалено: {count}",
+  "@historyEditRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "historyEditChanged": "изменено: {count}",
+  "@historyEditChanged": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "historyReassignedTo": "Сборщик: {previous} → {name}",
+  "@historyReassignedTo": {
+    "placeholders": {
+      "previous": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "boardFilteredShopper": "Выбранный сборщик",
+  "boardFilterStatus": "Статус",
+  "boardFilterPayment": "Способ оплаты",
+  "boardFilterShopper": "Сборщик"
 }

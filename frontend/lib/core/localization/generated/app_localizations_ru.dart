@@ -1181,15 +1181,42 @@ class AppLocalizationsRu extends AppLocalizations {
   String get historyEventApprovalResolved => 'Согласование закрыто';
 
   @override
-  String historyEdit(int added, int removed, int changed) {
-    return 'добавлено: $added, удалено: $removed, изменено: $changed';
-  }
-
-  @override
   String get historyDeliveryWishChanged => 'изменено пожелание по доставке';
 
   @override
   String historyAssignedTo(String name) {
     return 'Сборщик: $name';
   }
+
+  @override
+  String historyEditAdded(int count) {
+    return 'добавлено: $count';
+  }
+
+  @override
+  String historyEditRemoved(int count) {
+    return 'удалено: $count';
+  }
+
+  @override
+  String historyEditChanged(int count) {
+    return 'изменено: $count';
+  }
+
+  @override
+  String historyReassignedTo(String previous, String name) {
+    return 'Сборщик: $previous → $name';
+  }
+
+  @override
+  String get boardFilteredShopper => 'Выбранный сборщик';
+
+  @override
+  String get boardFilterStatus => 'Статус';
+
+  @override
+  String get boardFilterPayment => 'Способ оплаты';
+
+  @override
+  String get boardFilterShopper => 'Сборщик';
 }

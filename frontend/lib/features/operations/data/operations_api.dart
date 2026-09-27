@@ -41,7 +41,8 @@ class OperationsApi {
       options: _staff,
     );
     final BoardOrder order = parseOrder(ApiEnvelope.unwrap(response.data));
-    if (order.id != id) {
+    // The API answers ids in lower case, whatever case the address had.
+    if (order.id != id.toLowerCase()) {
       throw const FormatException('another order than the one asked for');
     }
     return order;
@@ -92,13 +93,12 @@ class OperationsApi {
       '${day.day.toString().padLeft(2, '0')}';
 
   /// Whether [row] can be an answer to [query]'s filters. The dates and the
-  /// search are the server's to judge.
+  /// search are the server's to judge, and so are the Shopper and the
+  /// self-order filters: a row's Shopper is read after its page, so a
+  /// reassignment in between is not a malformed answer (`DL-47` (3)).
   static bool _answers(BoardQuery query, BoardRow row) =>
       (query.status == null || row.status == query.status) &&
-      (query.paymentMethod == null ||
-          row.paymentMethod == query.paymentMethod) &&
-      (query.shopperId == null || row.shopper?.id == query.shopperId) &&
-      (!query.selfOrdersOnly || row.isSelfOrder);
+      (query.paymentMethod == null || row.paymentMethod == query.paymentMethod);
 
   static final RegExp _phone = RegExp(r'^\+998\d{9}$');
   static final RegExp _day = RegExp(r'^\d{4}-\d{2}-\d{2}$');

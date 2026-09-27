@@ -276,33 +276,37 @@ class _Totals extends StatelessWidget {
       return Text(l10n.totalNothingDue, key: const ValueKey<String>('totals'));
     }
 
-    Widget line(String label, int amount) => Row(
+    Widget line(String label, String amount, {TextStyle? style}) => Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Expanded(child: Text(label)),
-        Text(MoneyFormat.uzs(amount, language)),
+        Expanded(child: Text(label, style: style)),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(amount, style: style, textAlign: TextAlign.end),
+        ),
       ],
     );
 
     return Column(
       key: const ValueKey<String>('totals'),
       children: <Widget>[
-        line(l10n.totalsMerchandise, totals.merchandiseSubtotalUzs!),
-        line(l10n.totalsServiceFee, totals.serviceFeeUzs!),
-        line(l10n.totalsDeliveryFee, totals.deliveryFeeUzs!),
+        line(
+          l10n.totalsMerchandise,
+          MoneyFormat.uzs(totals.merchandiseSubtotalUzs!, language),
+        ),
+        line(
+          l10n.totalsServiceFee,
+          MoneyFormat.uzs(totals.serviceFeeUzs!, language),
+        ),
+        line(
+          l10n.totalsDeliveryFee,
+          MoneyFormat.uzs(totals.deliveryFeeUzs!, language),
+        ),
         const Divider(),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                l10n.totalsTotal,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            Text(
-              totalText(context, l10n, totals.totalUzs, totals.kind),
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
+        line(
+          l10n.totalsTotal,
+          totalText(context, l10n, totals.totalUzs, totals.kind),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ],
     );
@@ -410,7 +414,16 @@ class _History extends StatelessWidget {
           Text('${TashkentTime.format(entry.createdAt)} · ${_actor(l10n)}'),
           if (entry.reason != null)
             Text(OrderLabels.cancellationReason(l10n, entry.reason!)),
-          if (details != null) Text(details),
+          if (details != null)
+            Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: <Widget>[
+                Text(details),
+                if (entry.details case AssignmentDetails(isSelfOrder: true))
+                  const SelfOrderMark(),
+              ],
+            ),
           if (entry.note != null) Text(entry.note!),
         ],
       ),
@@ -426,28 +439,43 @@ class _History extends StatelessWidget {
   };
 
   /// The facts the entry carries, in words: the Shopper an assignment went
-  /// to, and what an edit changed.
+  /// to — and from, on a reassignment — and what an edit changed.
   String? _details(AppLocalizations l10n) {
     final HistoryDetails? details = entry.details;
     switch (details) {
       case AssignmentDetails():
-        ShopperAssignment? assignment;
-        for (final ShopperAssignment candidate in order.shopperAssignments) {
-          if (candidate.id == details.assignmentId) {
-            assignment = candidate;
-          }
-        }
-        return assignment == null
+        final String? name = _shopperName(l10n, details.assignmentId);
+        final String? previousId = details.previousAssignmentId;
+        final String? previous = previousId == null
             ? null
-            : l10n.historyAssignedTo(nameOf(l10n, assignment.shopper));
+            : _shopperName(l10n, previousId);
+        if (name == null) {
+          return null;
+        }
+        return previous == null
+            ? l10n.historyAssignedTo(name)
+            : l10n.historyReassignedTo(previous, name);
       case EditDetails():
-        return <String>[
-          l10n.historyEdit(details.added, details.removed, details.changed),
+        final List<String> parts = <String>[
+          if (details.added > 0) l10n.historyEditAdded(details.added),
+          if (details.removed > 0) l10n.historyEditRemoved(details.removed),
+          if (details.changed > 0) l10n.historyEditChanged(details.changed),
           if (details.deliveryTimeNoteChanged) l10n.historyDeliveryWishChanged,
-        ].join('; ');
+        ];
+        return parts.isEmpty ? null : parts.join('; ');
       case null:
         return null;
     }
+  }
+
+  /// The name of the Shopper of the order's assignment [assignmentId].
+  String? _shopperName(AppLocalizations l10n, String assignmentId) {
+    for (final ShopperAssignment assignment in order.shopperAssignments) {
+      if (assignment.id == assignmentId) {
+        return nameOf(l10n, assignment.shopper);
+      }
+    }
+    return null;
   }
 
   static String _event(

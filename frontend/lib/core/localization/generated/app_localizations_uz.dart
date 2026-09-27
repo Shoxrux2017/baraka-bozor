@@ -1177,15 +1177,42 @@ class AppLocalizationsUz extends AppLocalizations {
   String get historyEventApprovalResolved => 'Tasdiq yopildi';
 
   @override
-  String historyEdit(int added, int removed, int changed) {
-    return 'qo\'shildi: $added, olib tashlandi: $removed, o\'zgartirildi: $changed';
-  }
-
-  @override
   String get historyDeliveryWishChanged => 'yetkazish istagi o\'zgardi';
 
   @override
   String historyAssignedTo(String name) {
     return 'Yig\'uvchi: $name';
   }
+
+  @override
+  String historyEditAdded(int count) {
+    return 'qo\'shildi: $count';
+  }
+
+  @override
+  String historyEditRemoved(int count) {
+    return 'olib tashlandi: $count';
+  }
+
+  @override
+  String historyEditChanged(int count) {
+    return 'o\'zgartirildi: $count';
+  }
+
+  @override
+  String historyReassignedTo(String previous, String name) {
+    return 'Yig\'uvchi: $previous → $name';
+  }
+
+  @override
+  String get boardFilteredShopper => 'Tanlangan yig\'uvchi';
+
+  @override
+  String get boardFilterStatus => 'Holat';
+
+  @override
+  String get boardFilterPayment => 'To\'lov usuli';
+
+  @override
+  String get boardFilterShopper => 'Yig\'uvchi';
 }

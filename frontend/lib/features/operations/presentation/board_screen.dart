@@ -23,8 +23,10 @@ import 'operations_paths.dart';
 class BoardScreen extends ConsumerWidget {
   const BoardScreen({super.key});
 
-  /// From this width the attention list stands beside the orders.
-  static const double sideBySide = 1100;
+  /// From this width the attention list stands beside the orders and the
+  /// orders beside it are still a table: the table's own width, the gap,
+  /// the list and the board's padding.
+  static const double sideBySide = _Orders.tableWidth + 16 + 320 + 48;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -189,9 +191,12 @@ class _FiltersState extends ConsumerState<_Filters> {
     final BoardQueryController queries = ref.read(boardQueryProvider.notifier);
     final List<ShopperChoice> shoppers =
         ref.watch(shopperOptionsProvider).value ?? const <ShopperChoice>[];
-    final bool shopperListed = shoppers.any(
-      (ShopperChoice shopper) => shopper.id == query.shopperId,
-    );
+    final String? shopperId = query.shopperId;
+    // A Shopper the options do not hold — blocked since, or not loaded
+    // yet — is still the filter, and the control says one is chosen.
+    final bool shopperUnlisted =
+        shopperId != null &&
+        !shoppers.any((ShopperChoice shopper) => shopper.id == shopperId);
 
     return Wrap(
       spacing: 16,
@@ -215,7 +220,8 @@ class _FiltersState extends ConsumerState<_Filters> {
             onSubmitted: queries.search,
           ),
         ),
-        SizedBox(
+        _Labelled(
+          label: l10n.boardFilterStatus,
           width: 240,
           child: DropdownButton<OrderStatus?>(
             key: const ValueKey<String>('board-status-filter'),
@@ -237,7 +243,8 @@ class _FiltersState extends ConsumerState<_Filters> {
             onChanged: queries.filterByStatus,
           ),
         ),
-        SizedBox(
+        _Labelled(
+          label: l10n.boardFilterPayment,
           width: 220,
           child: DropdownButton<PaymentMethod?>(
             key: const ValueKey<String>('board-payment-filter'),
@@ -259,12 +266,13 @@ class _FiltersState extends ConsumerState<_Filters> {
             onChanged: queries.filterByPaymentMethod,
           ),
         ),
-        SizedBox(
+        _Labelled(
+          label: l10n.boardFilterShopper,
           width: 260,
           child: DropdownButton<String?>(
             key: const ValueKey<String>('board-shopper-filter'),
             isExpanded: true,
-            value: shopperListed ? query.shopperId : null,
+            value: shopperId,
             items: <DropdownMenuItem<String?>>[
               DropdownMenuItem<String?>(
                 child: Text(
@@ -272,6 +280,14 @@ class _FiltersState extends ConsumerState<_Filters> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (shopperUnlisted)
+                DropdownMenuItem<String?>(
+                  value: shopperId,
+                  child: Text(
+                    l10n.boardFilteredShopper,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               for (final ShopperChoice shopper in shoppers)
                 DropdownMenuItem<String?>(
                   value: shopper.id,
@@ -328,6 +344,35 @@ class _FiltersState extends ConsumerState<_Filters> {
   static String _day(DateTime day) =>
       '${day.day.toString().padLeft(2, '0')}.'
       '${day.month.toString().padLeft(2, '0')}.${day.year}';
+}
+
+/// A filter's control framed with its name, which stays visible — and is
+/// read out — once a value is chosen.
+class _Labelled extends StatelessWidget {
+  const _Labelled({
+    required this.label,
+    required this.width,
+    required this.child,
+  });
+
+  final String label;
+  final double width;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        ),
+        child: DropdownButtonHideUnderline(child: child),
+      ),
+    );
+  }
 }
 
 /// The page of orders: a table on a wide window, cards on a narrow one.
@@ -398,6 +443,9 @@ class _Table extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: DataTable(
         showCheckboxColumn: false,
+        // A row grows with its two-line cells, so large text is never cut.
+        dataRowMinHeight: kMinInteractiveDimension,
+        dataRowMaxHeight: double.infinity,
         columns: <DataColumn>[
           DataColumn(label: Text(l10n.boardColumnNumber)),
           DataColumn(label: Text(l10n.boardColumnPlaced)),

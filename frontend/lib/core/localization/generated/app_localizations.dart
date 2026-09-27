@@ -2252,12 +2252,6 @@ abstract class AppLocalizations {
   /// **'Tasdiq yopildi'**
   String get historyEventApprovalResolved;
 
-  /// No description provided for @historyEdit.
-  ///
-  /// In uz, this message translates to:
-  /// **'qo\'shildi: {added}, olib tashlandi: {removed}, o\'zgartirildi: {changed}'**
-  String historyEdit(int added, int removed, int changed);
-
   /// No description provided for @historyDeliveryWishChanged.
   ///
   /// In uz, this message translates to:
@@ -2269,6 +2263,54 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Yig\'uvchi: {name}'**
   String historyAssignedTo(String name);
+
+  /// No description provided for @historyEditAdded.
+  ///
+  /// In uz, this message translates to:
+  /// **'qo\'shildi: {count}'**
+  String historyEditAdded(int count);
+
+  /// No description provided for @historyEditRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'olib tashlandi: {count}'**
+  String historyEditRemoved(int count);
+
+  /// No description provided for @historyEditChanged.
+  ///
+  /// In uz, this message translates to:
+  /// **'o\'zgartirildi: {count}'**
+  String historyEditChanged(int count);
+
+  /// No description provided for @historyReassignedTo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi: {previous} → {name}'**
+  String historyReassignedTo(String previous, String name);
+
+  /// No description provided for @boardFilteredShopper.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tanlangan yig\'uvchi'**
+  String get boardFilteredShopper;
+
+  /// No description provided for @boardFilterStatus.
+  ///
+  /// In uz, this message translates to:
+  /// **'Holat'**
+  String get boardFilterStatus;
+
+  /// No description provided for @boardFilterPayment.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov usuli'**
+  String get boardFilterPayment;
+
+  /// No description provided for @boardFilterShopper.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi'**
+  String get boardFilterShopper;
 }
 
 class _AppLocalizationsDelegate

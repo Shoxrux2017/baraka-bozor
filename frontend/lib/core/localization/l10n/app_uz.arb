@@ -580,20 +580,6 @@
   "historyEventApprovalDecided": "Mijoz javob berdi",
   "historyEventApprovalExpired": "Javob muddati o'tdi",
   "historyEventApprovalResolved": "Tasdiq yopildi",
-  "historyEdit": "qo'shildi: {added}, olib tashlandi: {removed}, o'zgartirildi: {changed}",
-  "@historyEdit": {
-    "placeholders": {
-      "added": {
-        "type": "int"
-      },
-      "removed": {
-        "type": "int"
-      },
-      "changed": {
-        "type": "int"
-      }
-    }
-  },
   "historyDeliveryWishChanged": "yetkazish istagi o'zgardi",
   "historyAssignedTo": "Yig'uvchi: {name}",
   "@historyAssignedTo": {
@@ -602,5 +588,44 @@
         "type": "String"
       }
     }
-  }
+  },
+  "historyEditAdded": "qo'shildi: {count}",
+  "@historyEditAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "historyEditRemoved": "olib tashlandi: {count}",
+  "@historyEditRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "historyEditChanged": "o'zgartirildi: {count}",
+  "@historyEditChanged": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "historyReassignedTo": "Yig'uvchi: {previous} → {name}",
+  "@historyReassignedTo": {
+    "placeholders": {
+      "previous": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "boardFilteredShopper": "Tanlangan yig'uvchi",
+  "boardFilterStatus": "Holat",
+  "boardFilterPayment": "To'lov usuli",
+  "boardFilterShopper": "Yig'uvchi"
 }

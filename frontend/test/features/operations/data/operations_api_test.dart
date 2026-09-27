@@ -117,6 +117,28 @@ void main() {
       expect(shopper.currentAssignmentCount, 1);
     });
 
+    test(
+      'a whole-number quantity and a markup of nothing are in the contract',
+      () {
+        final BoardOrder order = OperationsApi.parseOrder(
+          orderJson(
+            items: <Object?>[
+              <String, Object?>{
+                ...itemJson(),
+                'unit_code': 'piece',
+                'price_mode': 'fixed',
+                'quantity': '2',
+                'markup_percent': '0.00',
+              },
+            ],
+          ),
+        );
+
+        expect(order.items.single.quantity, '2');
+        expect(order.items.single.markupPercent, '0.00');
+      },
+    );
+
     test('an order with its lines, totals, assignments and history', () {
       final BoardOrder order = OperationsApi.parseOrder(orderJson());
 
@@ -365,15 +387,9 @@ void main() {
         throwsA(isA<MalformedResponseFailure>()),
       );
 
-      pageAnswer = pageJson(<Object?>[rowJson()]);
+      pageAnswer = pageJson(<Object?>[rowJson(paymentMethod: 'online')]);
       await expectLater(
-        repository.orders(const BoardQuery(selfOrdersOnly: true)),
-        throwsA(isA<MalformedResponseFailure>()),
-      );
-
-      pageAnswer = pageJson(<Object?>[rowJson(shopper: otherShopperId)]);
-      await expectLater(
-        repository.orders(const BoardQuery(shopperId: shopperId)),
+        repository.orders(const BoardQuery(paymentMethod: PaymentMethod.cash)),
         throwsA(isA<MalformedResponseFailure>()),
       );
 
@@ -381,6 +397,40 @@ void main() {
       await expectLater(
         repository.order(orderA),
         throwsA(isA<MalformedResponseFailure>()),
+      );
+    });
+
+    test(
+      'a row whose Shopper changed after its page was read is kept',
+      () async {
+        // The page is filtered in one statement and its rows' Shoppers read in
+        // another, so a reassignment in between is no malformed answer.
+        pageAnswer = pageJson(<Object?>[rowJson(shopper: otherShopperId)]);
+        expect(
+          (await repository.orders(const BoardQuery(shopperId: shopperId)))
+              .items
+              .single
+              .shopper
+              ?.id,
+          otherShopperId,
+        );
+
+        pageAnswer = pageJson(<Object?>[rowJson()]);
+        expect(
+          (await repository.orders(const BoardQuery(selfOrdersOnly: true)))
+              .items,
+          hasLength(1),
+        );
+      },
+    );
+
+    test('an id in capitals asks for the same order', () async {
+      final BoardOrder order = await repository.order(orderA.toUpperCase());
+
+      expect(order.id, orderA);
+      expect(
+        adapter.requests.single.path,
+        '/operations/orders/${orderA.toUpperCase()}',
       );
     });
 
