@@ -29,6 +29,15 @@ abstract final class AppPaths {
   static const String customerAddressPattern = '$customerAddresses/:address';
   // The cart links to the checkout.
   static const String customerCheckout = '$customer/checkout';
+  // The catalog, the cart and the checkout link to the Customer's orders.
+  static const String customerOrders = '$customer/orders';
+  static const String customerOrderPattern = '$customerOrders/:order';
+  static const String customerOrderEditPattern = '$customerOrderPattern/edit';
+
+  static String customerOrder(String id) =>
+      '$customerOrders/${Uri.encodeComponent(id)}';
+
+  static String customerOrderEdit(String id) => '${customerOrder(id)}/edit';
 
   static String customerAddress(String id) =>
       '$customerAddresses/${Uri.encodeComponent(id)}';

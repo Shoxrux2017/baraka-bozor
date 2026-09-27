@@ -1433,4 +1433,87 @@ class AppLocalizationsUz extends AppLocalizations {
   String checkoutPlacedCancelled(String number) {
     return 'Buyurtma №$number bekor qilingan';
   }
+
+  @override
+  String get myOrders => 'Buyurtmalarim';
+
+  @override
+  String get myOrdersEmpty => 'Hali buyurtma yo\'q';
+
+  @override
+  String get customerStatusNew => 'Qabul qilindi';
+
+  @override
+  String get customerStatusShoppingAssigned => 'Yig\'uvchi tayinlandi';
+
+  @override
+  String get customerStatusShopping => 'Yig\'ilmoqda';
+
+  @override
+  String get customerStatusFinalPaymentPending => 'To\'lovni kutmoqda';
+
+  @override
+  String get customerStatusReadyForDelivery => 'Yetkazishga tayyor';
+
+  @override
+  String get customerStatusDeliveryAssigned => 'Kuryer tayinlandi';
+
+  @override
+  String get customerStatusOnTheWay => 'Yo\'lda';
+
+  @override
+  String get customerStatusCompleted => 'Yetkazildi';
+
+  @override
+  String get customerStatusCancelled => 'Bekor qilindi';
+
+  @override
+  String get orderEdit => 'O\'zgartirish';
+
+  @override
+  String get orderEditTitle => 'Buyurtmani o\'zgartirish';
+
+  @override
+  String get orderEditRemoveLine => 'Buyurtmadan olib tashlash';
+
+  @override
+  String get orderEditKeepLine => 'Qaytarish';
+
+  @override
+  String get orderEditAtLeastOne =>
+      'Buyurtmada kamida bitta mahsulot qolishi kerak';
+
+  @override
+  String get orderEditSaving => 'Saqlanmoqda';
+
+  @override
+  String get orderCancel => 'Buyurtmani bekor qilish';
+
+  @override
+  String get orderCancelConfirm => 'Buyurtma bekor qilinsinmi?';
+
+  @override
+  String get orderCancelReason => 'Sabab (ixtiyoriy)';
+
+  @override
+  String get orderCancelKeep => 'Yo\'q, qoldirish';
+
+  @override
+  String get orderCancelling => 'Bekor qilinmoqda';
+
+  @override
+  String get orderOpen => 'Buyurtmani ochish';
+
+  @override
+  String orderLineRemoved(String reason) {
+    return 'Olib tashlandi: $reason';
+  }
+
+  @override
+  String get errorOrderEditingLocked =>
+      'Buyurtmani endi o\'zgartirib bo\'lmaydi: yig\'ish boshlangan. Buyurtma yangilandi';
+
+  @override
+  String get errorOrderCancellationNotAllowed =>
+      'Buyurtmani endi bekor qilib bo\'lmaydi. Buyurtma yangilandi';
 }

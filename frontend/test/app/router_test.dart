@@ -65,6 +65,9 @@ void main() {
         AppPaths.customerAddressPattern,
         CartPaths.cart,
         AppPaths.customerCheckout,
+        AppPaths.customerOrders,
+        AppPaths.customerOrderPattern,
+        AppPaths.customerOrderEditPattern,
       ]);
     });
 
@@ -81,6 +84,7 @@ void main() {
           'addresses',
           'cart',
           'checkout',
+          'orders',
         ],
       );
     });

@@ -2683,6 +2683,162 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtma №{number} bekor qilingan'**
   String checkoutPlacedCancelled(String number);
+
+  /// No description provided for @myOrders.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalarim'**
+  String get myOrders;
+
+  /// No description provided for @myOrdersEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hali buyurtma yo\'q'**
+  String get myOrdersEmpty;
+
+  /// No description provided for @customerStatusNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qilindi'**
+  String get customerStatusNew;
+
+  /// No description provided for @customerStatusShoppingAssigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi tayinlandi'**
+  String get customerStatusShoppingAssigned;
+
+  /// No description provided for @customerStatusShopping.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ilmoqda'**
+  String get customerStatusShopping;
+
+  /// No description provided for @customerStatusFinalPaymentPending.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lovni kutmoqda'**
+  String get customerStatusFinalPaymentPending;
+
+  /// No description provided for @customerStatusReadyForDelivery.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazishga tayyor'**
+  String get customerStatusReadyForDelivery;
+
+  /// No description provided for @customerStatusDeliveryAssigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer tayinlandi'**
+  String get customerStatusDeliveryAssigned;
+
+  /// No description provided for @customerStatusOnTheWay.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'lda'**
+  String get customerStatusOnTheWay;
+
+  /// No description provided for @customerStatusCompleted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazildi'**
+  String get customerStatusCompleted;
+
+  /// No description provided for @customerStatusCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilindi'**
+  String get customerStatusCancelled;
+
+  /// No description provided for @orderEdit.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgartirish'**
+  String get orderEdit;
+
+  /// No description provided for @orderEditTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani o\'zgartirish'**
+  String get orderEditTitle;
+
+  /// No description provided for @orderEditRemoveLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmadan olib tashlash'**
+  String get orderEditRemoveLine;
+
+  /// No description provided for @orderEditKeepLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaytarish'**
+  String get orderEditKeepLine;
+
+  /// No description provided for @orderEditAtLeastOne.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmada kamida bitta mahsulot qolishi kerak'**
+  String get orderEditAtLeastOne;
+
+  /// No description provided for @orderEditSaving.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlanmoqda'**
+  String get orderEditSaving;
+
+  /// No description provided for @orderCancel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani bekor qilish'**
+  String get orderCancel;
+
+  /// No description provided for @orderCancelConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma bekor qilinsinmi?'**
+  String get orderCancelConfirm;
+
+  /// No description provided for @orderCancelReason.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sabab (ixtiyoriy)'**
+  String get orderCancelReason;
+
+  /// No description provided for @orderCancelKeep.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'q, qoldirish'**
+  String get orderCancelKeep;
+
+  /// No description provided for @orderCancelling.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilinmoqda'**
+  String get orderCancelling;
+
+  /// No description provided for @orderOpen.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani ochish'**
+  String get orderOpen;
+
+  /// No description provided for @orderLineRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib tashlandi: {reason}'**
+  String orderLineRemoved(String reason);
+
+  /// No description provided for @errorOrderEditingLocked.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani endi o\'zgartirib bo\'lmaydi: yig\'ish boshlangan. Buyurtma yangilandi'**
+  String get errorOrderEditingLocked;
+
+  /// No description provided for @errorOrderCancellationNotAllowed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani endi bekor qilib bo\'lmaydi. Buyurtma yangilandi'**
+  String get errorOrderCancellationNotAllowed;
 }
 
 class _AppLocalizationsDelegate

@@ -117,9 +117,23 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 data: (Cart cart) {
                   _openAsked(cart);
                   if (cart.lines.isEmpty) {
+                    // After an order, the way to see it.
                     return Center(
                       key: const ValueKey<String>('cart-empty'),
-                      child: Text(l10n.cartEmpty),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(l10n.cartEmpty),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            key: const ValueKey<String>('cart-open-orders'),
+                            icon: const Icon(Icons.receipt_long_outlined),
+                            label: Text(l10n.myOrders),
+                            onPressed: () =>
+                                context.push(AppPaths.customerOrders),
+                          ),
+                        ],
+                      ),
                     );
                   }
                   return ListView(

@@ -1443,4 +1443,87 @@ class AppLocalizationsRu extends AppLocalizations {
   String checkoutPlacedCancelled(String number) {
     return 'Заказ №$number отменён';
   }
+
+  @override
+  String get myOrders => 'Мои заказы';
+
+  @override
+  String get myOrdersEmpty => 'Заказов пока нет';
+
+  @override
+  String get customerStatusNew => 'Принят';
+
+  @override
+  String get customerStatusShoppingAssigned => 'Назначен сборщик';
+
+  @override
+  String get customerStatusShopping => 'Собирается';
+
+  @override
+  String get customerStatusFinalPaymentPending => 'Ждёт оплаты';
+
+  @override
+  String get customerStatusReadyForDelivery => 'Готов к доставке';
+
+  @override
+  String get customerStatusDeliveryAssigned => 'Назначен курьер';
+
+  @override
+  String get customerStatusOnTheWay => 'В пути';
+
+  @override
+  String get customerStatusCompleted => 'Доставлен';
+
+  @override
+  String get customerStatusCancelled => 'Отменён';
+
+  @override
+  String get orderEdit => 'Изменить';
+
+  @override
+  String get orderEditTitle => 'Изменение заказа';
+
+  @override
+  String get orderEditRemoveLine => 'Убрать из заказа';
+
+  @override
+  String get orderEditKeepLine => 'Вернуть';
+
+  @override
+  String get orderEditAtLeastOne =>
+      'В заказе должен остаться хотя бы один товар';
+
+  @override
+  String get orderEditSaving => 'Сохраняем';
+
+  @override
+  String get orderCancel => 'Отменить заказ';
+
+  @override
+  String get orderCancelConfirm => 'Отменить заказ?';
+
+  @override
+  String get orderCancelReason => 'Причина (необязательно)';
+
+  @override
+  String get orderCancelKeep => 'Нет, оставить';
+
+  @override
+  String get orderCancelling => 'Отменяем';
+
+  @override
+  String get orderOpen => 'Открыть заказ';
+
+  @override
+  String orderLineRemoved(String reason) {
+    return 'Убрано: $reason';
+  }
+
+  @override
+  String get errorOrderEditingLocked =>
+      'Заказ уже нельзя изменить: сборка началась. Заказ обновлён';
+
+  @override
+  String get errorOrderCancellationNotAllowed =>
+      'Заказ уже нельзя отменить. Заказ обновлён';
 }

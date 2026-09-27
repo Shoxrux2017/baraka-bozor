@@ -78,6 +78,12 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
         title: Text(l10n.appTitle),
         actions: <Widget>[
           const CartButton(),
+          IconButton(
+            key: const ValueKey<String>('open-orders'),
+            icon: const Icon(Icons.receipt_long_outlined),
+            tooltip: l10n.myOrders,
+            onPressed: () => context.push(AppPaths.customerOrders),
+          ),
           const LanguageMenuButton(),
           IconButton(
             key: const ValueKey<String>('open-profile'),

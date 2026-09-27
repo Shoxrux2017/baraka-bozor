@@ -15,6 +15,7 @@ import '../../../support/app_harness.dart';
 import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_checkout_repository.dart';
+import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/fake_customer_repositories.dart';
 import '../../../support/in_memory_stores.dart';
 
@@ -26,6 +27,7 @@ void main() {
   late FakeCartRepository cart;
   late FakeCheckoutRepository checkout;
   late FakeAddressesRepository addresses;
+  late FakeCustomerOrdersRepository orders;
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
@@ -53,6 +55,9 @@ void main() {
       cart: cartOf(<Map<String, Object?>>[cartLineJson()]),
     );
     checkout = FakeCheckoutRepository();
+    orders = FakeCustomerOrdersRepository(
+      orders: <Map<String, Object?>>[customerOrderJson(id: placedOrderId)],
+    );
     addresses = FakeAddressesRepository(
       rows: <Address>[
         address(),
@@ -80,6 +85,7 @@ void main() {
         cart: cart,
         checkout: checkout,
         addresses: addresses,
+        orders: orders,
         device: device,
       ),
     );
@@ -170,6 +176,22 @@ void main() {
     expect(find.text(words.checkoutPlaced('1001')), findsOneWidget);
     expect(cart.calls.length, greaterThan(cartLoads), reason: 'cart reloaded');
     await tapAndSettle(tester, byKey('checkout-back-to-catalog'));
+    expect(byKey('catalog-search'), findsOneWidget);
+  });
+
+  testWidgets('the placed order opens over the catalog, not the checkout', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await calculate(tester);
+    await tapAndSettle(tester, byKey('checkout-confirm'));
+
+    await tapAndSettle(tester, byKey('checkout-open-order'));
+    expect(top(tester), AppPaths.customerOrder(placedOrderId));
+    expect(byKey('order-status'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
     expect(byKey('catalog-search'), findsOneWidget);
   });
 

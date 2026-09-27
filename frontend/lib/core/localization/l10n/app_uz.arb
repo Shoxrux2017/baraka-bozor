@@ -748,5 +748,38 @@
         "type": "String"
       }
     }
-  }
+  },
+  "myOrders": "Buyurtmalarim",
+  "myOrdersEmpty": "Hali buyurtma yo'q",
+  "customerStatusNew": "Qabul qilindi",
+  "customerStatusShoppingAssigned": "Yig'uvchi tayinlandi",
+  "customerStatusShopping": "Yig'ilmoqda",
+  "customerStatusFinalPaymentPending": "To'lovni kutmoqda",
+  "customerStatusReadyForDelivery": "Yetkazishga tayyor",
+  "customerStatusDeliveryAssigned": "Kuryer tayinlandi",
+  "customerStatusOnTheWay": "Yo'lda",
+  "customerStatusCompleted": "Yetkazildi",
+  "customerStatusCancelled": "Bekor qilindi",
+  "orderEdit": "O'zgartirish",
+  "orderEditTitle": "Buyurtmani o'zgartirish",
+  "orderEditRemoveLine": "Buyurtmadan olib tashlash",
+  "orderEditKeepLine": "Qaytarish",
+  "orderEditAtLeastOne": "Buyurtmada kamida bitta mahsulot qolishi kerak",
+  "orderEditSaving": "Saqlanmoqda",
+  "orderCancel": "Buyurtmani bekor qilish",
+  "orderCancelConfirm": "Buyurtma bekor qilinsinmi?",
+  "orderCancelReason": "Sabab (ixtiyoriy)",
+  "orderCancelKeep": "Yo'q, qoldirish",
+  "orderCancelling": "Bekor qilinmoqda",
+  "orderOpen": "Buyurtmani ochish",
+  "orderLineRemoved": "Olib tashlandi: {reason}",
+  "@orderLineRemoved": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "errorOrderEditingLocked": "Buyurtmani endi o'zgartirib bo'lmaydi: yig'ish boshlangan. Buyurtma yangilandi",
+  "errorOrderCancellationNotAllowed": "Buyurtmani endi bekor qilib bo'lmaydi. Buyurtma yangilandi"
 }

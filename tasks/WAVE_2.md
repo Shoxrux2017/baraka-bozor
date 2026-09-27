@@ -27,7 +27,8 @@ None (`docs/06` section 5). The MapKit key the Owner set aside (`DL-36`) blocks 
 | W2-11 | Panel: Shopper assignment and reassignment from the board | Merged |
 | W2-12 | App: cart — add from the product screen, the cart screen | Merged |
 | W2-13 | App: checkout — address, payment method, delivery wish, preview, confirm | Merged |
-| W2-14 | App: my orders — list, detail, edit, cancel | Planned |
+| W2-14 | App: my orders — list, detail, edit, cancel | Merged |
+| W2-16 | App: add a product to a placed order | Planned |
 | W2-15 | Wave closure: full suites, builds, real-stack walkthrough of the wave's scenario, Owner checklist and report | Planned |
 
 Backend first, in order; the panel after W2-7 and W2-8 (W2-9 needs no API and may go earlier); the app after W2-6. As in Wave 1 the split is by layer (`tasks/README.md` section 2 prefers slices): the panel and the app consume the same order API, and each screen task then tests against a merged contract.
@@ -62,6 +63,8 @@ Backend first, in order; the panel after W2-7 and W2-8 (W2-9 needs no API and ma
 
 **W2-14.** App feature `orders`: list (newest first, paginated) and detail — status wording for the nine states, items with snapshots, totals with their kind, address, delivery wish; edit (the cart-like editor over the order's lines not removed, sending the full list) and cancel with a confirmation, each shown only when the server's `can_edit` / `can_cancel_directly` says so, and a `409` answered by reloading the order. Tests: the state wordings, the edit body, the lock refusals.
 
+**W2-16.** App: the order editor adds products — `docs/03` section 11 lets the Customer add lines until shopping starts, and W2-14's editor only changes and takes out the lines already there (`DL-51` (5)). A product is picked from the catalog the Customer sees, with its quantity by unit, note and rule as in the cart; a product already in the order opens its line instead; the full list goes as in W2-14. Runs before the closure. Tests: the picker, the added line in the body, the duplicate, a product that can no longer be ordered.
+
 **W2-15.** Closure per `tasks/README.md` section 4 with the committed walkthrough tooling (`DL-35`): a `tasks/scripts/wave2_api_walkthrough.py`, the panel and the emulator. The scenario: Admin completes the settings; a Customer fills a cart, is refused below the minimum and with online, orders with cash, edits the order, cancels a second one; the Operator sees both on the board, assigns a Shopper, reassigns, sees a self-order flagged when the Shopper orders from their own phone through Customer mode; the summary strip counts them.
 
 ## Risks and housekeeping
@@ -73,7 +76,7 @@ Backend first, in order; the panel after W2-7 and W2-8 (W2-9 needs no API and ma
 | An estimate line added by an edit is billed at its own markup (`DL-37` (8)); billing arrives with Wave 3's purchase recording, which must test it | Planned in Wave 3 |
 | For Wave 3: the board's self-order mark and the `self_order` attention item follow the current Shopper assignment (`DL-37` (16)); once shopping completes and that assignment ends `completed`, both go while the order is still open. Wave 3 decides, with the Courier's own self-order flag, whether the mark stays until the order ends | Open for Wave 3 |
 | For Wave 3: a Shopper blocked after an assignment keeps the order — the assignment committed before the block (`DL-45` (2)) — and nothing on the board says so; the Shopper's own screens and the attention types of Wave 3 must surface it, or blocking must say which orders to reassign | Open for Wave 3 |
-| For W2-14: a confirmation whose outcome is unknown is kept in memory only (`DL-50` (4)); after a restart the Customer learns whether the order exists from "my orders", so W2-14 makes them reachable from the catalog and from an empty cart | Open for W2-14 |
+| For W2-14: a confirmation whose outcome is unknown is kept in memory only (`DL-50` (4)); after a restart the Customer learns whether the order exists from "my orders", so W2-14 makes them reachable from the catalog and from an empty cart | Closed by W2-14 (`DL-51` (1)) |
 | The MapKit key and the free tier's fitness (`DL-36`) | Open, Owner; nothing in the wave depends on it |
 | Carried from Wave 1, for Wave 4: CORS for the API and for the image host in production, device pruning, the push token change stream | Open for Wave 4 |
 | Carried from Wave 1: iOS hands MapKit its key in `AppDelegate`, which needs a Mac (`DL-33` (6)) | Open until a Mac exists |
