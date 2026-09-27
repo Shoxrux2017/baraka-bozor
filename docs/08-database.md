@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** current. Rewritten on 2026-09-24 to `DL-2`–`DL-4` in `docs/DECISIONS.md`. Tables marked *(migrated)* exist: `users` and `customer_otp_challenges` from Wave 0, and the seven Wave 1 tables of sections 5 to 8, 11, 12 and 25 (`DL-18`). Every other table is created by the wave that first needs it, by forward migrations only.
+**Status:** current. Rewritten on 2026-09-24 to `DL-2`–`DL-4` in `docs/DECISIONS.md`. Tables marked *(migrated)* exist: `users` and `customer_otp_challenges` from Wave 0, and the seven Wave 1 tables of sections 5 to 8, 11, 12 and 25 (`DL-18`); Wave 2 creates sections 9, 10, 13 to 16 and 27 (`tasks/WAVE_2.md`, W2-1). Every other table is created by the wave that first needs it, by forward migrations only.
 
 ## 1. Baseline
 
@@ -78,7 +78,7 @@ Singleton `id = 1`: `markup_percent ≥ 0, service_fee_mode (fixed|percentage), 
 
 ```text
 id uuid PK
-order_number bigint unique, from sequence orders_order_number_seq
+order_number bigint unique, from sequence orders_order_number_seq (starts at 1001, DL-37)
 customer_id → users
 source_cart_id → carts, unique
 source_address_id → customer_addresses

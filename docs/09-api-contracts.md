@@ -134,7 +134,7 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
 
 ## 19. Create Order
 
-`POST /customer/orders` with `Idempotency-Key: <UUID>`, body `{"checkout_token":"..."}`. Revalidates, snapshots, converts the cart, creates the new cart, assigns `order_number`, answers `201` with the order. Stale token → `409 checkout_snapshot_stale`.
+`POST /customer/orders` with `Idempotency-Key: <UUID>`, body `{"checkout_token":"..."}`. Revalidates, snapshots, converts the cart, creates the new cart, assigns `order_number`, answers `201` with the order. Stale token → `409 checkout_snapshot_stale`. Until the payment adapters of Wave 5 exist, `online` answers `409 payment_method_unavailable` at preview and creation whatever the provider switches say (`DL-37` (3)).
 
 # Customer Orders
 
@@ -155,7 +155,7 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
 
 ## 22. Cancel or Request Cancellation
 
-`POST /customer/orders/{order}/cancel` with `Idempotency-Key`, `{"reason":"..."}`. While `new` or `shopping_assigned`: cancels at once. From `shopping` through `delivery_assigned`: creates a pending request (`409 cancellation_already_pending` if one exists). From `on_the_way`: `409 order_cancellation_not_allowed`.
+`POST /customer/orders/{order}/cancel` with `Idempotency-Key`, `{"reason":"..."}` (up to 300 characters; optional for a direct cancellation, required for a request, `DL-37` (9)). While `new` or `shopping_assigned`: cancels at once. From `shopping` through `delivery_assigned`: creates a pending request (`409 cancellation_already_pending` if one exists). From `on_the_way`: `409 order_cancellation_not_allowed`.
 
 ## 23. Approvals
 
@@ -233,11 +233,11 @@ Approval resource: `type`, `status`, the item with both names, `proposed_custome
 
 ## 38. Board
 
-`GET /operations/orders?status=&attention=&shopper_id=&courier_id=&payment_method=&from=&to=&search=&page=`, `GET /operations/orders/{order}` (full projection with history, assignments, approvals, payment, refunds, `is_self_order`). `GET /operations/summary` → today's counts by status, today's sales, attention count. `GET /operations/attention` → items typed `approval_pending`, `approval_expired`, `customer_no_response`, `payment_overdue`, `refund_outstanding`, `courier_delayed`, `delivery_failed`, `cancellation_request`, `self_order`.
+`GET /operations/orders?status=&attention=&shopper_id=&courier_id=&payment_method=&from=&to=&search=&page=`, `GET /operations/orders/{order}` (full projection with history, assignments, approvals, payment, refunds, `is_self_order`). `GET /operations/summary` → today's counts by status, today's sales, attention count; the day is `Asia/Tashkent`, and `search` matches the order number or the Customer's phone digits or name (`DL-37` (11)). `GET /operations/attention` → items typed `approval_pending`, `approval_expired`, `customer_no_response`, `payment_overdue`, `refund_outstanding`, `courier_delayed`, `delivery_failed`, `cancellation_request`, `self_order`.
 
 ## 39. Assignment
 
-`POST|PUT /operations/orders/{order}/shopper-assignment` `{"shopper_id":"..."}` (order `new`; reassignment before start). `POST|PUT /operations/orders/{order}/courier-assignment` `{"courier_id":"..."}` (order `ready_for_delivery`; reassignment before `on_the_way`). Codes: `order_state_conflict`, `staff_not_active`, `shopper_not_assigned`, `courier_not_assigned`.
+`POST|PUT /operations/orders/{order}/shopper-assignment` `{"shopper_id":"..."}` (order `new`; reassignment before start). `POST|PUT /operations/orders/{order}/courier-assignment` `{"courier_id":"..."}` (order `ready_for_delivery`; reassignment before `on_the_way`). Codes: `order_state_conflict`, `staff_not_active`, `shopper_not_assigned`, `courier_not_assigned`. The pickers: `GET /operations/shoppers` answers the active Shoppers as `{id, full_name, phone, current_assignment_count}`, newest first, for Operator and Admin, because `/admin/staff` is Admin-only; `GET /operations/couriers` does the same for Couriers from Wave 3 (`DL-37` (7)).
 
 ## 40. Approvals and Cancellation Requests
 
