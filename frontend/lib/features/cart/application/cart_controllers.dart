@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/misc.dart'
     show AsyncNotifierProviderFamily, NotifierProviderFamily;
 
 import '../../../app/providers.dart';
+import '../../../core/errors/report_unexpected_error.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/state/account_mutation.dart';
@@ -38,11 +39,22 @@ class CartController extends AsyncNotifier<Cart> {
   @override
   Future<Cart> build() async {
     final int version = _version;
-    final Cart cart = await ref.watch(cartRepositoryProvider).cart();
-    // An answer shown while this load ran is newer than what it read.
-    final Cart? shown = state.value;
-    return version != _version && shown != null ? shown : cart;
+    final CartRepository carts = ref.watch(cartRepositoryProvider);
+    try {
+      final Cart cart = await carts.cart();
+      return _newer(version) ?? cart;
+    } on Object {
+      // A newer answer stands, whether this load succeeded or not.
+      final Cart? shown = _newer(version);
+      if (shown != null) {
+        return shown;
+      }
+      rethrow;
+    }
   }
+
+  /// The cart shown since the load of [version] started, if any.
+  Cart? _newer(int version) => version != _version ? state.value : null;
 
   /// The cart as a change answered it.
   void show(Cart cart) {
@@ -54,6 +66,11 @@ class CartController extends AsyncNotifier<Cart> {
   /// change does when its outcome may have left the cart stale.
   Future<void> refresh() async {
     final int version = ++_version;
+    // A retry after a failure shows progress (`DL-30` (11)); over a cart
+    // already shown, the lines stay until the answer.
+    if (state.hasError) {
+      state = const AsyncLoading<Cart>();
+    }
     try {
       final Cart cart = await _carts.cart();
       if (version == _version && ref.mounted) {
@@ -62,6 +79,11 @@ class CartController extends AsyncNotifier<Cart> {
     } on ApiFailure catch (failure, stackTrace) {
       if (version == _version && ref.mounted) {
         state = AsyncError<Cart>(failure, stackTrace);
+      }
+    } catch (error, stackTrace) {
+      reportUnexpectedError(error, stackTrace, 'while loading the cart');
+      if (version == _version && ref.mounted) {
+        state = AsyncError<Cart>(const UnexpectedFailure(), stackTrace);
       }
     }
   }
@@ -93,7 +115,9 @@ abstract class CartMutation extends AccountMutation {
   /// Called only while the account the change was made for is signed in.
   void showCart(Cart? cart) {
     final String? customer = ref.read(customerAccountProvider);
-    if (customer == null) {
+    // A cart no screen shows is loaded afresh when one opens; nothing to
+    // update, and nothing to ask for now.
+    if (customer == null || !ref.exists(cartProvider(customer))) {
       return;
     }
     final CartController controller = ref.read(cartProvider(customer).notifier);

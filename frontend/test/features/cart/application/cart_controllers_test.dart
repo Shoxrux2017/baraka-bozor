@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
@@ -83,7 +84,8 @@ void main() {
       container.read(cartProvider('customer-a').notifier).show(answered);
       carts.hold = null;
       hold.complete();
-      await container.read(cartProvider('customer-a').future);
+      // Let the held load finish; `.future` already holds the shown answer.
+      await Future<void>.delayed(Duration.zero);
 
       expect(container.read(cartProvider('customer-a')).value?.itemCount, 2);
 
@@ -104,4 +106,45 @@ void main() {
       expect(container.read(cartProvider('customer-a')).value?.itemCount, 2);
     },
   );
+
+  test(
+    'a first load that fails after a newer answer leaves that answer',
+    () async {
+      final Completer<void> hold = Completer<void>();
+      carts.hold = hold;
+      container.listen(cartProvider('customer-a'), (_, _) {});
+
+      container
+          .read(cartProvider('customer-a').notifier)
+          .show(cartOf(<Map<String, Object?>>[cartLineJson(), bread()]));
+      carts
+        ..hold = null
+        ..failure = const NetworkFailure();
+      hold.complete();
+      await Future<void>.delayed(Duration.zero);
+
+      final AsyncValue<Cart> cart = container.read(cartProvider('customer-a'));
+      expect(cart.hasError, isFalse);
+      expect(cart.value?.itemCount, 2);
+    },
+  );
+
+  test('a refresh after a failure shows progress', () async {
+    carts.failure = const NetworkFailure();
+    container.listen(cartProvider('customer-a'), (_, _) {});
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(cartProvider('customer-a')).hasError, isTrue);
+
+    final Completer<void> hold = Completer<void>();
+    carts.hold = hold;
+    final Future<void> refresh = container
+        .read(cartProvider('customer-a').notifier)
+        .refresh();
+
+    expect(container.read(cartProvider('customer-a')).isLoading, isTrue);
+    carts.hold = null;
+    hold.complete();
+    await refresh;
+    expect(container.read(cartProvider('customer-a')).value?.itemCount, 1);
+  });
 }

@@ -322,9 +322,21 @@ void main() {
         expect(find.text(l10n(tester).fieldTooLong(300)), findsOneWidget);
         expect(cart.added, isEmpty);
 
+        // 300 tomatoes: 300 code points, 600 UTF-16 units \u2014 within the limit.
+        final String tomatoes = List<String>.filled(300, '\u{1F345}').join();
+        await tester.enterText(byKey('line-note'), tomatoes);
+        await tapAndSettle(tester, byKey('add-to-cart'));
+        expect(cart.added.single.customerNote, tomatoes);
+
+        // A trailing zero-width space is trimmed by the server, not counted.
+        await tester.enterText(byKey('line-note'), '$tomatoes\u200B');
+        await tapAndSettle(tester, byKey('add-to-cart'));
+        expect(cart.added, hasLength(2), reason: 'sent, not refused');
+        expect(cart.added.last.customerNote, tomatoes);
+
         await tester.enterText(byKey('line-note'), '\u200B Qizilini \u200E');
         await tapAndSettle(tester, byKey('add-to-cart'));
-        expect(cart.added.single.customerNote, 'Qizilini');
+        expect(cart.added.last.customerNote, 'Qizilini');
       },
     );
 
@@ -539,6 +551,65 @@ void main() {
       );
       await tapAndSettle(tester, byKey('open-cart'));
       expect(byKey('cart-lines'), findsOneWidget);
+    });
+  });
+
+  group('the cart button', () {
+    testWidgets('stands on a section too and is announced once, in words', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/categories/c-1');
+
+      expect(byKey('open-cart'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp(r'^1$')),
+        findsNothing,
+        reason: 'the badge number is not announced on its own',
+      );
+      expect(find.byTooltip(l10n(tester).cartBadge(1)), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('keeps the count it knew when a reload fails', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester);
+      cart.failure = const NetworkFailure();
+
+      await tapAndSettle(tester, byKey('open-cart'));
+      expect(byKey('retry-load'), findsOneWidget);
+      GoRouter.of(anywhere(tester)).pop();
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(of: byKey('open-cart'), matching: find.text('1')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets("the cart screen's retry shows progress", (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester);
+      cart.failure = const NetworkFailure();
+      await tapAndSettle(tester, byKey('open-cart'));
+      expect(byKey('retry-load'), findsOneWidget);
+
+      final Completer<void> hold = Completer<void>();
+      cart.hold = hold;
+      await tester.tap(byKey('retry-load'));
+      await tester.pump();
+
+      expect(byKey('retry-load'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      cart.hold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('cart-line-$tomatoLine'), findsOneWidget);
     });
   });
 

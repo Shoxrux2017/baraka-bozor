@@ -12,6 +12,7 @@ void main() {
     expect(trimLikeServer('Qizil\u200Bini'), 'Qizil\u200Bini');
     expect(trimLikeServer('\u{1D159}x\u{E0020}'), 'x');
     expect(trimLikeServer(' \t\n'), isEmpty);
+    expect(trimLikeServer('Qizilini\u0085'), 'Qizilini', reason: 'NEL');
   });
 
   test('a quantity reads with the decimal comma and no trailing zeros', () {

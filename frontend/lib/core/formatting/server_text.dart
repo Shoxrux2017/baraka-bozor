@@ -5,7 +5,9 @@
 /// before sending, and before comparing what it sent with what came back.
 String trimLikeServer(String text) => text.replaceAll(_ends, '');
 
-/// `Str::INVISIBLE_CHARACTERS` of Laravel 13, with `\s` and NUL.
+/// `Str::INVISIBLE_CHARACTERS` of Laravel 13, with NUL, and the next-line
+/// character U+0085, which PCRE's `\s` covers under `/u` and Dart's does
+/// not.
 const String _invisible =
     r'\u{0009}\u{0020}\u{00A0}\u{00AD}\u{034F}\u{061C}\u{115F}\u{1160}'
     r'\u{17B4}\u{17B5}\u{180E}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}'
@@ -14,7 +16,7 @@ const String _invisible =
     r'\u{2063}\u{2064}\u{2065}\u{206A}\u{206B}\u{206C}\u{206D}\u{206E}'
     r'\u{206F}\u{3000}\u{2800}\u{3164}\u{FEFF}\u{FFA0}\u{1D159}\u{1D173}'
     r'\u{1D174}\u{1D175}\u{1D176}\u{1D177}\u{1D178}\u{1D179}\u{1D17A}'
-    r'\u{E0020}\u{0000}';
+    r'\u{E0020}\u{0000}\u{0085}';
 
 final RegExp _ends = RegExp(
   '^[\\s$_invisible]+|[\\s$_invisible]+\$',

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/catalog/catalog_values.dart';
+import '../../../core/formatting/server_text.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/order_labels.dart';
@@ -23,7 +24,8 @@ class CartButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<Cart> cart = ref.watch(currentCartProvider);
-    final int count = cart.hasError ? 0 : cart.value?.itemCount ?? 0;
+    // The last count known for this account, a failed reload included.
+    final int count = cart.value?.itemCount ?? 0;
 
     return IconButton(
       key: const ValueKey<String>('open-cart'),
@@ -82,7 +84,7 @@ class LineOptionsFields extends StatelessWidget {
             border: const OutlineInputBorder(),
           ),
           validator: (String? text) =>
-              (text ?? '').trim().runes.length > cartNoteMaxLength
+              trimLikeServer(text ?? '').runes.length > cartNoteMaxLength
               ? l10n.fieldTooLong(cartNoteMaxLength)
               : null,
         ),

@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/formatting/money_format.dart';
-import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/orders/order_values.dart';
 import '../domain/board.dart';
-
-/// The interface language of [context], for money.
-AppLanguage languageOf(BuildContext context) =>
-    AppLanguage.tryParse(Localizations.localeOf(context).languageCode) ??
-    AppLanguage.uz;
 
 /// A person's name, or a word saying there is none.
 String nameOf(AppLocalizations l10n, PersonRef person) =>
@@ -82,9 +77,9 @@ String totalText(
 ) => switch (kind) {
   TotalKind.none => l10n.totalNothingDue,
   TotalKind.estimate =>
-    '${MoneyFormat.uzs(totalUzs ?? 0, languageOf(context))} · '
+    '${MoneyFormat.uzs(totalUzs ?? 0, interfaceLanguage(context))} · '
         '${l10n.totalKindEstimate}',
   TotalKind.finalTotal =>
-    '${MoneyFormat.uzs(totalUzs ?? 0, languageOf(context))} · '
+    '${MoneyFormat.uzs(totalUzs ?? 0, interfaceLanguage(context))} · '
         '${l10n.totalKindFinal}',
 };

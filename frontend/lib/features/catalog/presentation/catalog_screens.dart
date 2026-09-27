@@ -9,6 +9,7 @@ import '../../../app/providers.dart';
 import '../../../core/catalog/catalog_values.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/language_menu.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/routing/app_paths.dart';
@@ -153,7 +154,7 @@ class _Categories extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = languageOf(context);
+    final AppLanguage language = interfaceLanguage(context);
 
     final AsyncValue<List<CatalogCategory>> sections = ref.watch(
       catalogCategoriesProvider,
@@ -201,7 +202,7 @@ class CategoryProductsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AppLanguage language = languageOf(context);
+    final AppLanguage language = interfaceLanguage(context);
     final List<CatalogCategory>? categories = ref
         .watch(catalogCategoriesProvider)
         .value;
@@ -241,7 +242,7 @@ class ProductScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = languageOf(context);
+    final AppLanguage language = interfaceLanguage(context);
     final AsyncValue<CatalogProduct> product = ref.watch(
       catalogProductProvider(productId),
     );
