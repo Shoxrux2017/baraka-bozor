@@ -159,7 +159,10 @@ final class EditAndCancelOrderApiTest extends TestCase
         $line = ['product_id' => $this->tomatoes->id, 'quantity' => '3'];
 
         $this->edit([])->assertStatus(422)->assertJsonStructure(['errors' => ['items']]);
-        $this->edit([$line, $line])->assertStatus(422);
+        $this->edit([$line, $line])->assertStatus(422)->assertJsonStructure(['errors' => ['items.1.product_id']]);
+        $this->edit([$line, ['product_id' => strtoupper($this->tomatoes->id), 'quantity' => '1']])->assertStatus(422);
+        $this->edit(array_map(static fn (int $n): array => ['product_id' => (string) Str::uuid(), 'quantity' => '1'], range(1, 101)))
+            ->assertStatus(422)->assertJsonStructure(['errors' => ['items']]);
         $this->edit([$line + ['customer_unit_price_uzs' => 1]])->assertStatus(422);
         $this->asCustomer()->putJson($this->url(), ['items' => [$line]])->assertStatus(422)->assertJsonStructure(['errors' => ['delivery_time_note']]);
         $this->edit([['product_id' => $this->bread->id, 'quantity' => '2.5'], $line])
@@ -185,6 +188,51 @@ final class EditAndCancelOrderApiTest extends TestCase
 
         $this->assertSame(OrderItemStatus::Pending, $this->tomatoLine->fresh()?->status);
         $this->assertSame(0, OrderHistory::query()->count());
+    }
+
+    public function test_a_minimum_raised_after_the_order_reaches_it_only_through_an_edit_that_lowers_it(): void
+    {
+        DB::table('business_settings')->update(['minimum_order_uzs' => 100000]);
+        $both = [['product_id' => $this->tomatoes->id, 'quantity' => '3'], ['product_id' => $this->bread->id, 'quantity' => '2']];
+
+        $this->edit($both, 'Ertalab')->assertOk();
+        $this->assertSame(0, OrderHistory::query()->count(), 'An unchanged list is a natural repeat.');
+        $this->edit($both, 'Kechqurun')->assertOk();
+        $this->edit([['product_id' => $this->tomatoes->id, 'quantity' => '4'], ['product_id' => $this->bread->id, 'quantity' => '2']], 'Kechqurun')
+            ->assertOk();
+
+        $this->edit([['product_id' => $this->tomatoes->id, 'quantity' => '4']], 'Kechqurun')
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'minimum_order_not_reached')
+            ->assertJsonPath('details.shortfall_uzs', 26400);
+    }
+
+    public function test_the_markup_and_fees_moving_never_reach_a_line_that_stays_or_the_order(): void
+    {
+        DB::table('business_settings')->update(['markup_percent' => '40.00', 'delivery_fee_uzs' => 99000, 'service_fee_fixed_uzs' => 9900]);
+
+        $this->edit([['product_id' => $this->tomatoes->id, 'quantity' => '5'], ['product_id' => $this->bread->id, 'quantity' => '2']])->assertOk();
+
+        $kept = $this->tomatoLine->fresh();
+        $order = $this->order->fresh();
+        $this->assertNotNull($kept);
+        $this->assertNotNull($order);
+        $this->assertSame(18400, $kept->customer_unit_price_uzs_snapshot);
+        $this->assertSame('15.00', $kept->markup_percent_snapshot);
+        $this->assertSame(15000, $order->delivery_fee_uzs_snapshot);
+        $this->assertSame(5000, $order->service_fee_fixed_uzs_snapshot);
+    }
+
+    public function test_a_line_that_stays_is_kept_although_its_product_changed_unit_or_was_hidden(): void
+    {
+        Product::query()->whereKey($this->tomatoes->id)->update(['unit_code' => 'piece', 'is_active' => false]);
+
+        $this->edit([
+            ['product_id' => strtoupper($this->tomatoes->id), 'quantity' => '3.5'],
+            ['product_id' => $this->bread->id, 'quantity' => '2'],
+        ])->assertOk();
+
+        $this->assertSame('3.500', $this->tomatoLine->fresh()?->ordered_quantity, 'Held to the unit it was ordered in.');
     }
 
     public function test_an_order_is_edited_only_before_shopping_starts(): void
@@ -258,6 +306,10 @@ final class EditAndCancelOrderApiTest extends TestCase
 
     public function test_an_order_in_shopping_or_later_is_not_cancelled_directly(): void
     {
+        $started = Order::factory()->shoppingAssigned()->create(['customer_id' => $this->customer->id]);
+        $started->currentShopperAssignment?->forceFill(['accepted_at' => now(), 'started_at' => now()])->save();
+        $this->cancel($started)->assertStatus(409)->assertJsonPath('code', 'order_cancellation_not_allowed');
+
         foreach ([Order::factory()->shopping(), Order::factory()->readyForDelivery(), Order::factory()->completed()] as $factory) {
             $this->cancel($factory->create(['customer_id' => $this->customer->id]))
                 ->assertStatus(409)->assertJsonPath('code', 'order_cancellation_not_allowed');

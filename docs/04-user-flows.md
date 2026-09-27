@@ -66,7 +66,7 @@ If anything changed, order creation refuses: a check of the preview that now fai
 
 ## 9. Order Editing
 
-While the order is `new` or `shopping_assigned` and shopping has not started, the Customer sends the full desired item list and delivery wish. The backend locks the order, validates it like a checkout (active products, quantities, minimum amount), marks the lines that are gone `removed` with `customer_removed`, updates quantity, note and rule on the lines that stay while keeping their price snapshots, adds new lines with current prices and the current markup on each, leaves the order's fee and markup snapshots untouched (`DL-6`, `DL-37` (8)), writes an `edited` history entry with what changed, and returns the order; an unchanged list is a natural repeat. Once shopping has started the request is refused with `order_editing_locked`.
+While the order is `new` or `shopping_assigned` and shopping has not started, the Customer sends the full desired item list and delivery wish. The backend locks the order and validates it — each added product must be one the Customer may see now, each quantity fits its line's unit, and an edit that lowers the merchandise must still reach the minimum amount (`DL-43`) — then marks the lines that are gone `removed` with `customer_removed`, updates quantity, note and rule on the lines that stay while keeping their price snapshots, adds new lines with current prices and the current markup on each, leaves the order's fee and markup snapshots untouched (`DL-6`, `DL-37` (8)), writes an `edited` history entry with what changed, and returns the order; an unchanged list is a natural repeat. Once shopping has started the request is refused with `order_editing_locked`.
 
 ## 10. Customer Cancels Before Shopping
 

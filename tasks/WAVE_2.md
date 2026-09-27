@@ -70,6 +70,7 @@ Backend first, in order; the panel after W2-7 and W2-8 (W2-9 needs no API and ma
 |---|---|
 | Push notifications for `order_accepted`, `shopping_assigned` and `shopping_order_cancelled` are Wave 4's (`DL-37` (15)); until then a Shopper learns of an assignment only from the board or a phone call, and the Shopper's own screens are Wave 3 | Accepted for the wave |
 | The courier assignment moves to Wave 3, where `ready_for_delivery` is first reachable (`DL-37` (12)) | Planned in Wave 3 |
+| An estimate line added by an edit is billed at its own markup (`DL-37` (8)); billing arrives with Wave 3's purchase recording, which must test it | Planned in Wave 3 |
 | The MapKit key and the free tier's fitness (`DL-36`) | Open, Owner; nothing in the wave depends on it |
 | Carried from Wave 1, for Wave 4: CORS for the API and for the image host in production, device pruning, the push token change stream | Open for Wave 4 |
 | Carried from Wave 1: iOS hands MapKit its key in `AppDelegate`, which needs a Mac (`DL-33` (6)) | Open until a Mac exists |
