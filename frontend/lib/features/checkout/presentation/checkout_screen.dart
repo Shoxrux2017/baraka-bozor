@@ -25,9 +25,11 @@ import '../domain/checkout.dart';
 /// The checkout (`docs/09` sections 18 and 19, `tasks/WAVE_2.md` W2-13):
 /// an active address — or a way to add one — cash, with online shown as not
 /// yet available, the delivery wish, then the server's preview of the lines,
-/// fees and total and its kind, and the confirmation. A change to what was
-/// previewed asks for a new preview; a stale confirmation asks for one by
-/// itself and says so.
+/// fees and total and its kind, and the confirmation. What the preview was
+/// asked for cannot change while it or the confirmation runs, and a change
+/// afterwards drops it, so a confirmation is always of what the Customer
+/// sees. A confirmation whose outcome is unknown locks the checkout until
+/// the same confirmation, sent again, answers for sure (`DL-50`).
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
 
@@ -37,10 +39,31 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
-  final TextEditingController _note = TextEditingController();
+  late final TextEditingController _note;
   String? _addressId;
   PlacedOrder? _placed;
-  bool _refreshedAfterStale = false;
+
+  /// Counts the Customer's changes, so an answer to what they no longer
+  /// ask is not shown.
+  int _revision = 0;
+
+  /// The confirmation the last placement failure belongs to.
+  String? _failedKey;
+
+  /// The key of the preview a stale confirmation brought, while its note
+  /// stands.
+  String? _refreshedKey;
+
+  @override
+  void initState() {
+    super.initState();
+    // Back to a checkout whose confirmation is unknown: as it was sent.
+    final PreparedCheckout? prepared = ref.read(preparedCheckoutProvider);
+    _addressId = prepared?.request.addressId;
+    _note = TextEditingController(
+      text: prepared?.request.deliveryTimeNote ?? '',
+    );
+  }
 
   @override
   void dispose() {
@@ -50,12 +73,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   /// What changed since the preview is not what the token confirms.
   void _changed() {
+    _revision++;
     ref.read(preparedCheckoutProvider.notifier).clear();
-    setState(() => _refreshedAfterStale = false);
   }
 
-  CheckoutRequest? _request() {
-    final String? address = _addressId;
+  CheckoutRequest? _request(String? address) {
     if (address == null || !_form.currentState!.validate()) {
       return null;
     }
@@ -67,16 +89,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Future<void> _calculate() async {
-    final CheckoutRequest? request = _request();
+  Future<void> _calculate(String? address) async {
+    final CheckoutRequest? request = _request(address);
     if (request == null) {
       return;
     }
-    setState(() => _refreshedAfterStale = false);
+    final int revision = _revision;
     await ref.read(checkoutPreviewProvider.notifier).preview(request);
+    if (mounted && revision != _revision) {
+      ref.read(preparedCheckoutProvider.notifier).clear();
+    }
   }
 
   Future<void> _confirm(PreparedCheckout prepared) async {
+    setState(() {
+      _failedKey = null;
+      _refreshedKey = null;
+    });
     final PlacedOrder? order = await ref
         .read(placeOrderProvider.notifier)
         .place(prepared);
@@ -87,14 +116,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       setState(() => _placed = order);
       return;
     }
+    setState(() => _failedKey = prepared.idempotencyKey);
     final ApiFailure? failure = ref.read(placeOrderProvider).failure;
     if (failure is ApiRefusal && failure.code == 'checkout_snapshot_stale') {
-      // A new preview — and with it a new key — for the same checkout.
-      final CheckoutPreview? fresh = await ref
+      // A new preview — and with it a new key — of the same checkout, which
+      // could not change meanwhile.
+      await ref
           .read(checkoutPreviewProvider.notifier)
           .preview(prepared.request);
+      final PreparedCheckout? fresh = ref.read(preparedCheckoutProvider);
       if (mounted && fresh != null) {
-        setState(() => _refreshedAfterStale = true);
+        setState(() => _refreshedKey = fresh.idempotencyKey);
       }
     }
   }
@@ -127,6 +159,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final MutationState placing = ref.watch(placeOrderProvider);
     final PreparedCheckout? prepared = ref.watch(preparedCheckoutProvider);
     final bool busy = previewing.isBusy || placing.isBusy;
+    // A confirmation whose outcome is unknown: only it may go again.
+    final bool unconfirmed = prepared?.sent ?? false;
+    final bool locked = busy || unconfirmed;
+    final List<Address> list = addresses.value ?? const <Address>[];
+    final Address? address = list
+        .where((Address a) => a.id == _addressId)
+        .firstOrNull;
 
     return ListView(
       key: const ValueKey<String>('checkout'),
@@ -137,7 +176,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           skipLoadingOnRefresh: !addresses.hasError,
           data: (List<Address> list) => _Addresses(
             addresses: list,
-            selected: _addressId,
+            selected: address?.id,
+            enabled: !locked,
             onSelected: (String id) {
               setState(() => _addressId = id);
               _changed();
@@ -155,7 +195,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             key: const ValueKey<String>('checkout-add-address'),
             icon: const Icon(Icons.add_location_alt_outlined),
             label: Text(l10n.checkoutAddAddress),
-            onPressed: () => context.push(AppPaths.customerNewAddress),
+            onPressed: locked
+                ? null
+                : () => context.push(AppPaths.customerNewAddress),
           ),
         ),
         const SizedBox(height: 16),
@@ -186,6 +228,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         TextFormField(
           key: const ValueKey<String>('checkout-delivery-wish'),
           controller: _note,
+          enabled: !locked,
           minLines: 1,
           maxLines: 3,
           decoration: InputDecoration(
@@ -202,7 +245,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         const SizedBox(height: 16),
         OutlinedButton(
           key: const ValueKey<String>('checkout-calculate'),
-          onPressed: busy || _addressId == null ? null : _calculate,
+          onPressed: locked || address == null
+              ? null
+              : () => _calculate(address.id),
           child: previewing.isBusy
               ? _Busy(label: l10n.checkoutCalculating)
               : Text(l10n.checkoutCalculate),
@@ -210,15 +255,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         CheckoutRefusal(previewing.failure),
         if (prepared != null) ...<Widget>[
           const SizedBox(height: 16),
-          _Preview(preview: prepared.preview),
-          if (_refreshedAfterStale)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                l10n.errorCheckoutStale,
-                key: const ValueKey<String>('checkout-refreshed'),
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
+          _Preview(prepared: prepared, address: address),
+          if (_refreshedKey != null && _refreshedKey == prepared.idempotencyKey)
+            _Note(
+              l10n.errorCheckoutStale,
+              key: const ValueKey<String>('checkout-refreshed'),
+            ),
+          if (unconfirmed && !placing.isBusy)
+            _Note(
+              l10n.checkoutUnconfirmed,
+              key: const ValueKey<String>('checkout-unconfirmed'),
             ),
           const SizedBox(height: 16),
           FilledButton(
@@ -229,7 +275,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 : Text(l10n.checkoutConfirm),
           ),
         ],
-        if (!_refreshedAfterStale) CheckoutRefusal(placing.failure),
+        // A placement's failure stands only under the confirmation it
+        // belongs to.
+        if (_failedKey != null && _failedKey == prepared?.idempotencyKey)
+          CheckoutRefusal(placing.failure),
       ],
     );
   }
@@ -250,6 +299,25 @@ class _Heading extends StatelessWidget {
   );
 }
 
+/// A notice about the checkout's state, announced when it appears.
+class _Note extends StatelessWidget {
+  const _Note(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    liveRegion: true,
+    child: Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Text(
+        text,
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
+      ),
+    ),
+  );
+}
+
 class _Busy extends StatelessWidget {
   const _Busy({required this.label});
 
@@ -262,16 +330,20 @@ class _Busy extends StatelessWidget {
   );
 }
 
+String _addressLine(Address address) => '${address.street}, ${address.house}';
+
 /// The Customer's active addresses to deliver to.
 class _Addresses extends StatelessWidget {
   const _Addresses({
     required this.addresses,
     required this.selected,
+    required this.enabled,
     required this.onSelected,
   });
 
   final List<Address> addresses;
   final String? selected;
+  final bool enabled;
   final ValueChanged<String> onSelected;
 
   @override
@@ -296,13 +368,12 @@ class _Addresses extends StatelessWidget {
             RadioListTile<String>(
               key: ValueKey<String>('checkout-address-${address.id}'),
               value: address.id,
+              enabled: enabled,
               contentPadding: EdgeInsets.zero,
-              title: Text(
-                address.label ?? '${address.street}, ${address.house}',
-              ),
+              title: Text(address.label ?? _addressLine(address)),
               subtitle: address.label == null
                   ? null
-                  : Text('${address.street}, ${address.house}'),
+                  : Text(_addressLine(address)),
             ),
         ],
       ),
@@ -310,18 +381,23 @@ class _Addresses extends StatelessWidget {
   }
 }
 
-/// The server's preview: every line at its price, the fees, the total and
-/// its kind, and when the order starts being collected outside the hours.
+/// The server's preview: where and when it goes, every line at its price,
+/// the fees, the total and its kind, and when the order starts being
+/// collected outside the hours.
 class _Preview extends StatelessWidget {
-  const _Preview({required this.preview});
+  const _Preview({required this.prepared, required this.address});
 
-  final CheckoutPreview preview;
+  final PreparedCheckout prepared;
+  final Address? address;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
+    final CheckoutPreview preview = prepared.preview;
     final String? opensAt = preview.opensAt;
+    final String? wish = prepared.request.deliveryTimeNote;
+    final Address? address = this.address;
 
     Widget line(String label, String amount, {Key? key, bool strong = false}) {
       final TextStyle? style = strong
@@ -347,6 +423,17 @@ class _Preview extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            if (address != null)
+              Text(
+                '${l10n.checkoutAddress}: ${_addressLine(address)}',
+                key: const ValueKey<String>('checkout-preview-address'),
+              ),
+            if (wish != null)
+              Text(
+                '${l10n.orderSectionDeliveryWish}: $wish',
+                key: const ValueKey<String>('checkout-preview-wish'),
+              ),
+            if (address != null || wish != null) const Divider(),
             for (final PreviewLine item in preview.lines)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -402,7 +489,7 @@ class _Preview extends StatelessWidget {
   }
 }
 
-/// The placed order: its number and total, and the way back.
+/// The placed order: its number and what is due, and the way back.
 class _Placed extends StatelessWidget {
   const _Placed({required this.order});
 
@@ -412,6 +499,7 @@ class _Placed extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
+    final int? total = order.totalUzs;
 
     return ListView(
       key: const ValueKey<String>('checkout-placed'),
@@ -430,8 +518,10 @@ class _Placed extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          '${MoneyFormat.uzs(order.totalUzs, language)} · '
-          '${order.totalKind == TotalKind.estimate ? l10n.totalKindEstimate : l10n.totalKindFinal}',
+          total == null
+              ? l10n.totalNothingDue
+              : '${MoneyFormat.uzs(total, language)} · '
+                    '${order.totalKind == TotalKind.estimate ? l10n.totalKindEstimate : l10n.totalKindFinal}',
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -465,23 +555,21 @@ class CheckoutRefusal extends StatelessWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final Map<String, Object?> details = failure.error.details;
 
+    Widget backToCart() => TextButton(
+      key: const ValueKey<String>('checkout-back-to-cart'),
+      onPressed: () => context.pop(),
+      child: Text(l10n.checkoutBackToCart),
+    );
+
     final (String? text, Widget? action) = switch (failure.code) {
       'minimum_order_not_reached' => (
         _minimum(context, l10n, details),
-        TextButton(
-          key: const ValueKey<String>('checkout-back-to-cart'),
-          onPressed: () => context.pop(),
-          child: Text(l10n.checkoutBackToCart),
-        ),
+        backToCart(),
       ),
       'address_outside_service_area' => (_outside(l10n, details), null),
       'product_unavailable' => (
         l10n.errorCheckoutProductsUnavailable,
-        TextButton(
-          key: const ValueKey<String>('checkout-back-to-cart'),
-          onPressed: () => context.pop(),
-          child: Text(l10n.checkoutBackToCart),
-        ),
+        backToCart(),
       ),
       'customer_profile_incomplete' => (
         l10n.errorProfileIncomplete,
@@ -492,6 +580,7 @@ class CheckoutRefusal extends StatelessWidget {
         ),
       ),
       'resource_not_found' => (l10n.errorAddressGone, null),
+      'idempotency_in_progress' => (l10n.errorOrderInProgress, null),
       _ => (null, null),
     };
     if (text == null) {

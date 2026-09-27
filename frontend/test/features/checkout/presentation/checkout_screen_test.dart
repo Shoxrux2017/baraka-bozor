@@ -35,6 +35,16 @@ void main() {
   AppLocalizations l10n(WidgetTester tester) =>
       AppLocalizations.of(anywhere(tester));
 
+  String top(WidgetTester tester) =>
+      GoRouter.of(anywhere(tester))
+          .routerDelegate
+          .currentConfiguration
+          .last
+          .matchedLocation;
+
+  bool enabled(WidgetTester tester, String key) =>
+      tester.widget<RadioListTile<String>>(byKey(key)).enabled ?? true;
+
   setUp(() {
     tokens = InMemoryTokenStore()..tokens[SessionSlot.customer] = 'c';
     auth = FakeAuthRepository()
@@ -43,12 +53,17 @@ void main() {
       cart: cartOf(<Map<String, Object?>>[cartLineJson()]),
     );
     checkout = FakeCheckoutRepository();
-    addresses = FakeAddressesRepository();
+    addresses = FakeAddressesRepository(
+      rows: <Address>[
+        address(),
+        address(id: 'a-2', label: 'Ish', street: 'Navoiy', house: '5'),
+      ],
+    );
   });
 
   Future<void> open(
     WidgetTester tester, {
-    Size size = const Size(800, 2000),
+    Size size = const Size(800, 2400),
     double textScale = 1,
     Locale device = const Locale('uz'),
   }) async {
@@ -71,19 +86,43 @@ void main() {
     await tester.pumpAndSettle();
     GoRouter.of(anywhere(tester)).push('/customer/cart');
     await tester.pumpAndSettle();
+    // On a small window the way to the checkout is below the lines.
+    await tester.scrollUntilVisible(
+      byKey('go-to-checkout'),
+      300,
+      scrollable: find
+          .descendant(
+            of: byKey('cart-lines'),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     await tester.tap(byKey('go-to-checkout'));
     await tester.pumpAndSettle();
   }
 
   Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
+    // A lazy list builds only what is near the screen: scroll to it first.
+    if (finder.evaluate().isEmpty) {
+      await tester.scrollUntilVisible(
+        finder,
+        300,
+        scrollable: find
+            .descendant(
+              of: find.byType(ListView).last,
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+    }
     await tester.ensureVisible(finder);
     await tester.pumpAndSettle();
     await tester.tap(finder);
     await tester.pumpAndSettle();
   }
 
-  Future<void> calculate(WidgetTester tester) async {
-    await tapAndSettle(tester, byKey('checkout-address-a-1'));
+  Future<void> calculate(WidgetTester tester, {String address = 'a-1'}) async {
+    await tapAndSettle(tester, byKey('checkout-address-$address'));
     await tapAndSettle(tester, byKey('checkout-calculate'));
   }
 
@@ -107,6 +146,15 @@ void main() {
     expect(checkout.previews.single.addressId, 'a-1');
     expect(checkout.previews.single.deliveryTimeNote, 'Kechqurun');
     expect(
+      find.text('${words.checkoutAddress}: Amir Temur, 12'),
+      findsOneWidget,
+      reason: 'the preview says where',
+    );
+    expect(
+      find.text('${words.orderSectionDeliveryWish}: Kechqurun'),
+      findsOneWidget,
+    );
+    expect(
       find.text(
         '${MoneyFormat.uzs(47600, AppLanguage.uz)} · ${words.totalKindEstimate}',
       ),
@@ -120,52 +168,125 @@ void main() {
 
     expect(checkout.placements.single.$1, 'token-1');
     expect(find.text(words.checkoutPlaced('1001')), findsOneWidget);
-    expect(
-      cart.calls.length,
-      greaterThan(cartLoads),
-      reason: 'the cart is asked for again',
-    );
+    expect(cart.calls.length, greaterThan(cartLoads), reason: 'cart reloaded');
     await tapAndSettle(tester, byKey('checkout-back-to-catalog'));
-    expect(
-      find.byKey(const ValueKey<String>('catalog-search')),
-      findsOneWidget,
-    );
+    expect(byKey('catalog-search'), findsOneWidget);
   });
 
-  testWidgets('a retry reuses the key; a new preview brings a new one', (
+  testWidgets('what a preview was asked for cannot change while it runs', (
     WidgetTester tester,
   ) async {
     await open(tester);
-    await calculate(tester);
+    await tapAndSettle(tester, byKey('checkout-address-a-1'));
+    final Completer<void> hold = Completer<void>();
+    checkout.hold = hold;
 
-    checkout.placeFailure = const NetworkFailure();
-    await tapAndSettle(tester, byKey('checkout-confirm'));
-    expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
-    checkout.placeFailure = const NetworkFailure();
-    await tapAndSettle(tester, byKey('checkout-confirm'));
-
-    expect(checkout.placements, hasLength(2));
-    expect(
-      checkout.placements[1],
-      checkout.placements[0],
-      reason: 'the same token and key',
-    );
-
-    // A changed wish asks for a new preview, and that for a new key.
-    await tester.enterText(byKey('checkout-delivery-wish'), 'Ertalab');
+    await tester.tap(byKey('checkout-calculate'));
     await tester.pump();
-    expect(byKey('checkout-confirm'), findsNothing);
-    await tapAndSettle(tester, byKey('checkout-calculate'));
-    await tapAndSettle(tester, byKey('checkout-confirm'));
 
-    final (String token, String key) = checkout.placements.last;
-    expect(token, 'token-2');
-    expect(key, isNot(checkout.placements.first.$2));
-    expect(find.text(l10n(tester).checkoutPlaced('1001')), findsOneWidget);
+    expect(enabled(tester, 'checkout-address-a-2'), isFalse);
+    expect(
+      tester.widget<TextFormField>(byKey('checkout-delivery-wish')).enabled,
+      isFalse,
+    );
+    checkout.hold = null;
+    hold.complete();
+    await tester.pumpAndSettle();
+    expect(enabled(tester, 'checkout-address-a-2'), isTrue);
+
+    // A change afterwards drops the preview.
+    await tapAndSettle(tester, byKey('checkout-address-a-2'));
+    expect(byKey('checkout-confirm'), findsNothing);
   });
 
   testWidgets(
-    'a stale confirmation asks for a new preview by itself and says so',
+    'a retry of a confirmation whose outcome is unknown reuses its key, and nothing else may change',
+    (WidgetTester tester) async {
+      await open(tester);
+      await calculate(tester);
+
+      checkout.placeFailure = const NetworkFailure();
+      await tapAndSettle(tester, byKey('checkout-confirm'));
+
+      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      expect(byKey('checkout-unconfirmed'), findsOneWidget);
+      expect(
+        tester.widget<OutlinedButton>(byKey('checkout-calculate')).onPressed,
+        isNull,
+      );
+      expect(enabled(tester, 'checkout-address-a-2'), isFalse);
+      expect(
+        tester.widget<TextFormField>(byKey('checkout-delivery-wish')).enabled,
+        isFalse,
+      );
+
+      // The order was placed after all: the same confirmation replays it.
+      await tapAndSettle(tester, byKey('checkout-confirm'));
+      expect(checkout.placements, hasLength(2));
+      expect(checkout.placements[1], checkout.placements[0]);
+      expect(find.text(l10n(tester).checkoutPlaced('1001')), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a confirmation whose outcome is unknown waits in the cart after the Customer left',
+    (WidgetTester tester) async {
+      await open(tester);
+      await calculate(tester);
+      checkout.placeFailure = const NetworkFailure();
+      await tapAndSettle(tester, byKey('checkout-confirm'));
+      final (String token, String key) = checkout.placements.single;
+
+      GoRouter.of(anywhere(tester)).pop();
+      await tester.pumpAndSettle();
+      expect(byKey('cart-unconfirmed-order'), findsOneWidget);
+
+      await tapAndSettle(tester, byKey('cart-check-unconfirmed'));
+      expect(byKey('checkout-unconfirmed'), findsOneWidget);
+      await tapAndSettle(tester, byKey('checkout-confirm'));
+
+      expect(checkout.placements.last, (token, key));
+      expect(find.text(l10n(tester).checkoutPlaced('1001')), findsOneWidget);
+      GoRouter.of(anywhere(tester)).pop();
+      await tester.pumpAndSettle();
+      expect(byKey('cart-unconfirmed-order'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a refused confirmation frees the checkout, and a new preview brings a new key',
+    (WidgetTester tester) async {
+      await open(tester);
+      await calculate(tester);
+      checkout.placeFailure = const ApiRefusal(
+        ApiError(status: 409, code: 'product_unavailable'),
+      );
+      await tapAndSettle(tester, byKey('checkout-confirm'));
+      expect(
+        find.text(l10n(tester).errorCheckoutProductsUnavailable),
+        findsOneWidget,
+      );
+      expect(byKey('checkout-unconfirmed'), findsNothing);
+
+      await tester.enterText(byKey('checkout-delivery-wish'), 'Ertalab');
+      await tester.pump();
+      expect(byKey('checkout-confirm'), findsNothing);
+      await tapAndSettle(tester, byKey('checkout-calculate'));
+      expect(
+        find.text(l10n(tester).errorCheckoutProductsUnavailable),
+        findsNothing,
+        reason: "the old confirmation's failure is gone with it",
+      );
+      await tapAndSettle(tester, byKey('checkout-confirm'));
+
+      final (String token, String key) = checkout.placements.last;
+      expect(token, 'token-2');
+      expect(key, isNot(checkout.placements.first.$2));
+    },
+  );
+
+  testWidgets(
+    'a stale confirmation previews again by itself and says so, and a later failure shows as itself',
     (WidgetTester tester) async {
       await open(tester);
       await calculate(tester);
@@ -176,9 +297,10 @@ void main() {
       await tapAndSettle(tester, byKey('checkout-confirm'));
 
       expect(checkout.previews, hasLength(2));
+      expect(checkout.previews[1].addressId, 'a-1');
       expect(byKey('checkout-refreshed'), findsOneWidget);
-      expect(find.text(l10n(tester).errorCheckoutStale), findsOneWidget);
 
+      checkout.placeFailure = const NetworkFailure();
       await tapAndSettle(tester, byKey('checkout-confirm'));
       expect(checkout.placements.last.$1, 'token-2');
       expect(
@@ -186,8 +308,46 @@ void main() {
         isNot(checkout.placements.first.$2),
         reason: 'a new preview, a new key',
       );
+      expect(byKey('checkout-refreshed'), findsNothing);
+      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
     },
   );
+
+  testWidgets('a refused recalculation leaves no old total to confirm', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await calculate(tester);
+    expect(byKey('checkout-confirm'), findsOneWidget);
+
+    checkout.previewFailure = const ApiRefusal(
+      ApiError(status: 422, code: 'address_outside_service_area'),
+    );
+    await tapAndSettle(tester, byKey('checkout-calculate'));
+
+    expect(byKey('checkout-confirm'), findsNothing);
+    expect(find.text(l10n(tester).addressOutsideAreaPlain), findsOneWidget);
+  });
+
+  testWidgets('an address gone is no longer chosen', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    checkout.previewFailure = const ApiRefusal(
+      ApiError(status: 404, code: 'resource_not_found'),
+    );
+    addresses.rows = <Address>[
+      address(id: 'a-2', label: 'Ish', street: 'Navoiy', house: '5'),
+    ];
+    await calculate(tester);
+
+    expect(find.text(l10n(tester).errorAddressGone), findsOneWidget);
+    expect(byKey('checkout-address-a-1'), findsNothing);
+    expect(
+      tester.widget<OutlinedButton>(byKey('checkout-calculate')).onPressed,
+      isNull,
+    );
+  });
 
   group('each refusal has its own words', () {
     Future<void> refused(
@@ -223,7 +383,8 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(byKey('checkout-back-to-cart'), findsOneWidget);
+      await tapAndSettle(tester, byKey('checkout-back-to-cart'));
+      expect(top(tester), '/customer/cart');
     });
 
     testWidgets('an address outside the area, with the distances', (
@@ -250,15 +411,20 @@ void main() {
       await refused(tester, 'customer_profile_incomplete');
       expect(find.text(l10n(tester).errorProfileIncomplete), findsOneWidget);
       await tapAndSettle(tester, byKey('checkout-open-profile'));
-      expect(
-        GoRouter.of(anywhere(tester))
-            .routerDelegate
-            .currentConfiguration
-            .last
-            .matchedLocation,
-        AppPaths.customerProfile,
-      );
+      expect(top(tester), AppPaths.customerProfile);
     });
+
+    testWidgets(
+      'a product that cannot be ordered, with the way back to the cart',
+      (WidgetTester tester) async {
+        await refused(tester, 'product_unavailable');
+        expect(
+          find.text(l10n(tester).errorCheckoutProductsUnavailable),
+          findsOneWidget,
+        );
+        expect(byKey('checkout-back-to-cart'), findsOneWidget);
+      },
+    );
 
     for (final (String code, int status, String Function(AppLocalizations) text)
         in <(String, int, String Function(AppLocalizations))>[
@@ -267,17 +433,7 @@ void main() {
             409,
             (AppLocalizations l) => l.errorAddressIncomplete,
           ),
-          (
-            'resource_not_found',
-            404,
-            (AppLocalizations l) => l.errorAddressGone,
-          ),
           ('cart_empty', 409, (AppLocalizations l) => l.errorCartEmpty),
-          (
-            'product_unavailable',
-            409,
-            (AppLocalizations l) => l.errorCheckoutProductsUnavailable,
-          ),
           (
             'payment_method_unavailable',
             409,
@@ -296,15 +452,19 @@ void main() {
       });
     }
 
-    testWidgets('an order still being sent', (WidgetTester tester) async {
-      await open(tester);
-      await calculate(tester);
-      checkout.placeFailure = const ApiRefusal(
-        ApiError(status: 409, code: 'idempotency_in_progress'),
-      );
-      await tapAndSettle(tester, byKey('checkout-confirm'));
-      expect(find.text(l10n(tester).errorOrderInProgress), findsOneWidget);
-    });
+    testWidgets(
+      'an order still being sent, which also keeps the checkout as it was sent',
+      (WidgetTester tester) async {
+        await open(tester);
+        await calculate(tester);
+        checkout.placeFailure = const ApiRefusal(
+          ApiError(status: 409, code: 'idempotency_in_progress'),
+        );
+        await tapAndSettle(tester, byKey('checkout-confirm'));
+        expect(find.text(l10n(tester).errorOrderInProgress), findsOneWidget);
+        expect(byKey('checkout-unconfirmed'), findsOneWidget);
+      },
+    );
   });
 
   testWidgets('without an address it says so and offers to add one', (
@@ -319,14 +479,7 @@ void main() {
       isNull,
     );
     await tapAndSettle(tester, byKey('checkout-add-address'));
-    expect(
-      GoRouter.of(anywhere(tester))
-          .routerDelegate
-          .currentConfiguration
-          .last
-          .matchedLocation,
-      AppPaths.customerNewAddress,
-    );
+    expect(top(tester), AppPaths.customerNewAddress);
   });
 
   testWidgets('a wish longer than 160 characters is refused before sending', (
@@ -363,17 +516,32 @@ void main() {
 
   for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets(
-      'the checkout fits a phone with large text (${language.languageCode})',
+      'the checkout, a refusal and the placed order fit a phone with large text (${language.languageCode})',
       (WidgetTester tester) async {
         checkout.outsideHours = true;
         await open(
           tester,
-          size: const Size(360, 3200),
+          size: const Size(360, 800),
           textScale: 2,
           device: language,
         );
+        checkout.previewFailure = const ApiRefusal(
+          ApiError(
+            status: 409,
+            code: 'minimum_order_not_reached',
+            details: <String, Object?>{
+              'minimum_order_uzs': 100000,
+              'shortfall_uzs': 72400,
+            },
+          ),
+        );
         await calculate(tester);
+        expect(tester.takeException(), isNull);
+
+        await tapAndSettle(tester, byKey('checkout-calculate'));
         expect(byKey('checkout-preview'), findsOneWidget);
+        await tapAndSettle(tester, byKey('checkout-confirm'));
+        expect(byKey('checkout-placed'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

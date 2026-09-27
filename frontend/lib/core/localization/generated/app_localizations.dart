@@ -2627,7 +2627,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorMinimumOrder.
   ///
   /// In uz, this message translates to:
-  /// **'Eng kam buyurtma — {minimum}. Yana {shortfall} lik mahsulot qo\'shing'**
+  /// **'Eng kam buyurtma — {minimum}. Yana {shortfall}lik mahsulot qo\'shing'**
   String errorMinimumOrder(String minimum, String shortfall);
 
   /// No description provided for @errorMinimumOrderPlain.
@@ -2645,7 +2645,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorCheckoutStale.
   ///
   /// In uz, this message translates to:
-  /// **'Savat yoki narxlar o\'zgardi — hisob yangilandi. Ko\'rib chiqib, qayta tasdiqlang'**
+  /// **'Hisob eskirgan edi va yangilandi. Ko\'rib chiqib, qayta tasdiqlang'**
   String get errorCheckoutStale;
 
   /// No description provided for @errorOrderInProgress.
@@ -2653,6 +2653,30 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtma hali yuborilmoqda. Biroz kutib, qayta tasdiqlang'**
   String get errorOrderInProgress;
+
+  /// No description provided for @checkoutUnconfirmed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma qabul qilingani aniqlanmadi. «Buyurtmani tasdiqlash»ni yana bosing — u ikki marta qabul qilinmaydi'**
+  String get checkoutUnconfirmed;
+
+  /// No description provided for @cartUnconfirmedOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi buyurtmangiz qabul qilingani aniqlanmadi'**
+  String get cartUnconfirmedOrder;
+
+  /// No description provided for @cartCheckUnconfirmed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tekshirish'**
+  String get cartCheckUnconfirmed;
+
+  /// No description provided for @errorInProgress.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'rov hali bajarilmoqda. Biroz kutib, qayta urinib ko\'ring'**
+  String get errorInProgress;
 }
 
 class _AppLocalizationsDelegate

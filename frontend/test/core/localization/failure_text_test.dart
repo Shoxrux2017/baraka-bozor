@@ -60,8 +60,7 @@ void main() {
               l.errorPaymentMethodUnavailable,
           'checkout_snapshot_stale': (AppLocalizations l) =>
               l.errorCheckoutStale,
-          'idempotency_in_progress': (AppLocalizations l) =>
-              l.errorOrderInProgress,
+          'idempotency_in_progress': (AppLocalizations l) => l.errorInProgress,
         };
 
     for (final MapEntry<String, String Function(AppLocalizations)> entry

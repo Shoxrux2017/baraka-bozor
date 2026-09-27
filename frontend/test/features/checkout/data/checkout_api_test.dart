@@ -75,6 +75,24 @@ void main() {
       expect(order.id, placedOrderId);
       expect(order.orderNumber, 1001);
       expect(order.totalUzs, 47600);
+
+      // A replay answers the order as it is now: cancelled, nothing is due.
+      final Map<String, Object?> cancelled = placedJson();
+      cancelled['totals'] = <String, Object?>{
+        'merchandise_subtotal_uzs': null,
+        'service_fee_uzs': null,
+        'delivery_fee_uzs': null,
+        'total_uzs': null,
+        'total_kind': 'none',
+      };
+      expect(CheckoutApi.parsePlaced(cancelled).totalUzs, isNull);
+
+      final Map<String, Object?> broken = placedJson();
+      broken['totals'] = <String, Object?>{
+        ...(placedJson()['totals']! as Map<String, Object?>),
+        'total_kind': 'none',
+      };
+      expect(() => CheckoutApi.parsePlaced(broken), throwsFormatException);
     });
   });
 

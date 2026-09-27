@@ -12,6 +12,7 @@ import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
+import '../../../core/orders/unconfirmed_order.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/state/mutation_state.dart';
@@ -98,6 +99,18 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         child: Column(
           children: <Widget>[
             const ActiveModeBar(),
+            if (ref.watch(unconfirmedOrderProvider))
+              MaterialBanner(
+                key: const ValueKey<String>('cart-unconfirmed-order'),
+                content: Text(l10n.cartUnconfirmedOrder),
+                actions: <Widget>[
+                  TextButton(
+                    key: const ValueKey<String>('cart-check-unconfirmed'),
+                    onPressed: () => context.push(AppPaths.customerCheckout),
+                    child: Text(l10n.cartCheckUnconfirmed),
+                  ),
+                ],
+              ),
             Expanded(
               child: cart.when(
                 skipLoadingOnRefresh: !cart.hasError,

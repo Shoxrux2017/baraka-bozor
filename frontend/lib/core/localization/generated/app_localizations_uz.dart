@@ -1395,7 +1395,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String errorMinimumOrder(String minimum, String shortfall) {
-    return 'Eng kam buyurtma — $minimum. Yana $shortfall lik mahsulot qo\'shing';
+    return 'Eng kam buyurtma — $minimum. Yana ${shortfall}lik mahsulot qo\'shing';
   }
 
   @override
@@ -1408,9 +1408,24 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get errorCheckoutStale =>
-      'Savat yoki narxlar o\'zgardi — hisob yangilandi. Ko\'rib chiqib, qayta tasdiqlang';
+      'Hisob eskirgan edi va yangilandi. Ko\'rib chiqib, qayta tasdiqlang';
 
   @override
   String get errorOrderInProgress =>
       'Buyurtma hali yuborilmoqda. Biroz kutib, qayta tasdiqlang';
+
+  @override
+  String get checkoutUnconfirmed =>
+      'Buyurtma qabul qilingani aniqlanmadi. «Buyurtmani tasdiqlash»ni yana bosing — u ikki marta qabul qilinmaydi';
+
+  @override
+  String get cartUnconfirmedOrder =>
+      'Oxirgi buyurtmangiz qabul qilingani aniqlanmadi';
+
+  @override
+  String get cartCheckUnconfirmed => 'Tekshirish';
+
+  @override
+  String get errorInProgress =>
+      'So\'rov hali bajarilmoqda. Biroz kutib, qayta urinib ko\'ring';
 }

@@ -122,7 +122,8 @@ class CheckoutApi {
     );
   }
 
-  /// The order a confirmation placed: its id, number and total.
+  /// The order a confirmation placed: its id, number and total; a replay
+  /// answers it as it is now, cancelled included.
   static PlacedOrder parsePlaced(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'order');
     final JsonFields totals = JsonFields.of(json.member('totals'), 'totals');
@@ -131,13 +132,14 @@ class CheckoutApi {
       throw const FormatException('order_number is not an order number');
     }
     final TotalKind kind = totals.choice('total_kind', TotalKind.tryParse);
-    if (kind == TotalKind.none) {
-      throw const FormatException('a placed order owes its total');
+    final int? total = totals.nullableInteger('total_uzs');
+    if ((total == null) != (kind == TotalKind.none) || (total ?? 0) < 0) {
+      throw const FormatException('a total is null exactly when none is due');
     }
     return PlacedOrder(
       id: json.uuid('id'),
       orderNumber: number,
-      totalUzs: _amount(totals, 'total_uzs'),
+      totalUzs: total,
       totalKind: kind,
     );
   }

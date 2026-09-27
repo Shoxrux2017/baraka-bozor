@@ -94,14 +94,28 @@ final class PreparedCheckout {
     required this.request,
     required this.preview,
     required this.idempotencyKey,
+    this.sent = false,
   });
 
   final CheckoutRequest request;
   final CheckoutPreview preview;
   final String idempotencyKey;
+
+  /// A confirmation was sent and no answer has said for sure whether it
+  /// placed the order. Until one does, only the same confirmation may go
+  /// again (`DL-50` (4)).
+  final bool sent;
+
+  PreparedCheckout withSent(bool sent) => PreparedCheckout(
+    request: request,
+    preview: preview,
+    idempotencyKey: idempotencyKey,
+    sent: sent,
+  );
 }
 
-/// The order a confirmation placed.
+/// The order a confirmation placed — as it is now, when the confirmation
+/// was a replay: cancelled meanwhile, it owes nothing (`DL-39` (1)).
 final class PlacedOrder {
   const PlacedOrder({
     required this.id,
@@ -112,7 +126,9 @@ final class PlacedOrder {
 
   final String id;
   final int orderNumber;
-  final int totalUzs;
+
+  /// `null` exactly when [totalKind] is [TotalKind.none].
+  final int? totalUzs;
   final TotalKind totalKind;
 }
 

@@ -1418,9 +1418,24 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get errorCheckoutStale =>
-      'Корзина или цены изменились — расчёт обновлён. Проверьте и подтвердите снова';
+      'Расчёт устарел и обновлён. Проверьте и подтвердите снова';
 
   @override
   String get errorOrderInProgress =>
       'Заказ ещё отправляется. Подождите и подтвердите снова';
+
+  @override
+  String get checkoutUnconfirmed =>
+      'Не удалось узнать, принят ли заказ. Нажмите «Подтвердить заказ» ещё раз — дважды он не оформится';
+
+  @override
+  String get cartUnconfirmedOrder =>
+      'Не удалось узнать, принят ли ваш последний заказ';
+
+  @override
+  String get cartCheckUnconfirmed => 'Проверить';
+
+  @override
+  String get errorInProgress =>
+      'Запрос ещё выполняется. Подождите и попробуйте снова';
 }

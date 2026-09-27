@@ -722,7 +722,7 @@
   "errorAddressGone": "Bu manzil topilmadi. Boshqasini tanlang",
   "errorCartEmpty": "Savat bo'sh",
   "errorCheckoutProductsUnavailable": "Ba'zi mahsulotlarni hozir buyurtma qilib bo'lmaydi: savatda ularni olib tashlang yoki miqdorini to'g'rilang",
-  "errorMinimumOrder": "Eng kam buyurtma — {minimum}. Yana {shortfall} lik mahsulot qo'shing",
+  "errorMinimumOrder": "Eng kam buyurtma — {minimum}. Yana {shortfall}lik mahsulot qo'shing",
   "@errorMinimumOrder": {
     "placeholders": {
       "minimum": {
@@ -735,6 +735,10 @@
   },
   "errorMinimumOrderPlain": "Buyurtma summasi eng kam miqdordan past",
   "errorPaymentMethodUnavailable": "Bu to'lov usuli hozir mavjud emas",
-  "errorCheckoutStale": "Savat yoki narxlar o'zgardi — hisob yangilandi. Ko'rib chiqib, qayta tasdiqlang",
-  "errorOrderInProgress": "Buyurtma hali yuborilmoqda. Biroz kutib, qayta tasdiqlang"
+  "errorCheckoutStale": "Hisob eskirgan edi va yangilandi. Ko'rib chiqib, qayta tasdiqlang",
+  "errorOrderInProgress": "Buyurtma hali yuborilmoqda. Biroz kutib, qayta tasdiqlang",
+  "checkoutUnconfirmed": "Buyurtma qabul qilingani aniqlanmadi. «Buyurtmani tasdiqlash»ni yana bosing — u ikki marta qabul qilinmaydi",
+  "cartUnconfirmedOrder": "Oxirgi buyurtmangiz qabul qilingani aniqlanmadi",
+  "cartCheckUnconfirmed": "Tekshirish",
+  "errorInProgress": "So'rov hali bajarilmoqda. Biroz kutib, qayta urinib ko'ring"
 }
