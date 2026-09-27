@@ -130,11 +130,11 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
   "checkout_token":"...","checkout_token_expires_at":"..."}}
 ```
 
-`total_kind` ∈ `final, estimate`. Codes: `customer_profile_incomplete`, `address_incomplete`, `address_outside_service_area`, `cart_empty`, `product_unavailable` (`details.product_ids`), `minimum_order_not_reached` (`details.minimum_order_uzs`, `details.shortfall_uzs`), `checkout_configuration_incomplete`, `payment_method_unavailable`.
+`total_kind` ∈ `final, estimate`; an order's totals also take `none`, with every amount `null`, once it is cancelled (`DL-37` (10)). Codes: `customer_profile_incomplete`, `address_incomplete`, `address_outside_service_area`, `cart_empty`, `product_unavailable` (`details.product_ids`), `minimum_order_not_reached` (`details.minimum_order_uzs`, `details.shortfall_uzs`), `checkout_configuration_incomplete`, `payment_method_unavailable`.
 
 ## 19. Create Order
 
-`POST /customer/orders` with `Idempotency-Key: <UUID>`, body `{"checkout_token":"..."}`. Revalidates, snapshots, converts the cart, creates the new cart, assigns `order_number`, answers `201` with the order. Stale token → `409 checkout_snapshot_stale`. Until the payment adapters of Wave 5 exist, `online` answers `409 payment_method_unavailable` at preview and creation whatever the provider switches say (`DL-37` (3)). Before shopping completes an order's `totals` are computed from its snapshots over the lines not removed and labelled like the preview; from completion they are the stored final amounts (`DL-37` (10)).
+`POST /customer/orders` with `Idempotency-Key: <UUID>`, body `{"checkout_token":"..."}`. Revalidates, snapshots, converts the cart, creates the new cart, assigns `order_number`, answers `201` with the order. Stale token → `409 checkout_snapshot_stale`. Until the payment adapters of Wave 5 exist, `online` answers `409 payment_method_unavailable` at preview and creation whatever the provider switches say (`DL-37` (3)). Before shopping completes an order's `totals` are computed from its snapshots over the lines not removed and labelled like the preview; from completion they are the stored final amounts with the kind `final`; a cancelled order's totals are `null` with the kind `none` (`DL-37` (10)).
 
 # Customer Orders
 
@@ -289,7 +289,7 @@ Create order, customer approval decision, cancel order, record purchase, complet
 
 ## 49. Natural Repeats
 
-Accept an accepted assignment, start a started one, deliver a completed one from the same assignment, block a blocked account, activate an active account: current resource, no duplicate history.
+Accept an accepted assignment, start a started one, deliver a completed one from the same assignment, block a blocked account, activate an active account, an order edit that changes nothing, assign the current Shopper again, cancel a cancelled order: current resource, no duplicate history.
 
 ## 50. Concurrency
 

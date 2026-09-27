@@ -314,7 +314,7 @@ Deferred past the pilot. When built: orders created by `created_at`; completed b
 
 **BR-CON-004** — Duplicate provider events never duplicate transitions.
 
-**BR-CON-005** — Natural repeats (accept an accepted assignment, mark delivered a completed order from the same assignment) return the current resource without duplicate history.
+**BR-CON-005** — Natural repeats (accept an accepted assignment, mark delivered a completed order from the same assignment, an order edit that changes nothing, assigning the current Shopper again, cancelling a cancelled order) return the current resource without duplicate history.
 
 # 22. Traceability
 

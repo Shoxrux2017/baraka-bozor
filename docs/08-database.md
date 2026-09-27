@@ -186,7 +186,7 @@ Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per or
 
 ## 27. `idempotency_keys`
 
-`id, actor_user_id, operation varchar(80), idempotency_key uuid, request_hash char(64), state (processing|completed), lease_expires_at, resource_type?, resource_id?, created_at, completed_at?`. Unique `(actor_user_id, operation, idempotency_key)`. Completed rows may be pruned after 30 days.
+`id, actor_user_id, operation varchar(80), idempotency_key uuid, request_hash char(64), state (processing|completed), attempt_token uuid, lease_expires_at, resource_type?, resource_id?, created_at, completed_at?`. `attempt_token` is renewed by every `begin` and takeover; completion and a refusal's delete act only on a `processing` row with their own token (`DL-37` (5)). Unique `(actor_user_id, operation, idempotency_key)`. Completed rows may be pruned after 30 days.
 
 ## 28. Deletion Strategy
 

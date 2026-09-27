@@ -122,7 +122,7 @@ Order
 
 ## 13. Snapshot Boundary
 
-At creation: product names in both languages, unit, price mode, market price, customer unit price, ordered quantity, note, substitution rule per line; recipient name and phone; address coordinates and text; markup percentage, tolerance percentage, service fee rule, delivery fee, delay threshold; payment method. An edit before shopping adds new lines with fresh line snapshots and leaves every other snapshot as it was (`DL-6`). Later catalog or settings changes never touch them.
+At creation: product names in both languages, unit, price mode, market price, customer unit price, markup, ordered quantity, note, substitution rule per line (`DL-37` (8)); recipient name and phone; address coordinates and text; markup percentage, tolerance percentage, service fee rule, delivery fee, delay threshold; payment method. An edit before shopping adds new lines with fresh line snapshots and leaves every other snapshot as it was (`DL-6`). Later catalog or settings changes never touch them.
 
 ## 14. Money and Quantity
 
