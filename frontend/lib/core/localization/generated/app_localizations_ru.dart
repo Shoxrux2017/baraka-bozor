@@ -712,4 +712,91 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get catalogLoadMore => 'Загрузить ещё';
+
+  @override
+  String get profileTitle => 'Профиль';
+
+  @override
+  String get profileName => 'Ваше имя';
+
+  @override
+  String get profileNameNeeded => 'Чтобы оформить заказ, укажите имя';
+
+  @override
+  String get profileSaved => 'Имя сохранено';
+
+  @override
+  String get addressesTitle => 'Мои адреса';
+
+  @override
+  String get addressNone => 'Адресов пока нет';
+
+  @override
+  String get addressNew => 'Новый адрес';
+
+  @override
+  String get addressEdit => 'Изменить адрес';
+
+  @override
+  String get addressLabel => 'Название, например, Дом или Работа';
+
+  @override
+  String get addressStreet => 'Улица';
+
+  @override
+  String get addressHouse => 'Дом';
+
+  @override
+  String get addressApartment => 'Квартира';
+
+  @override
+  String get addressLandmark => 'Ориентир';
+
+  @override
+  String get addressDeliveryNote => 'Комментарий для курьера';
+
+  @override
+  String get addressMapHint =>
+      'Двигайте карту, чтобы метка стояла у вашей двери';
+
+  @override
+  String get addressMapUnavailable =>
+      'В этой сборке нет карты. Введите координаты точки';
+
+  @override
+  String get addressLatitude => 'Широта';
+
+  @override
+  String get addressLongitude => 'Долгота';
+
+  @override
+  String get addressLatitudeInvalid => 'Широта должна быть числом от -90 до 90';
+
+  @override
+  String get addressLongitudeInvalid =>
+      'Долгота должна быть числом от -180 до 180';
+
+  @override
+  String get addressOutsideAreaPlain => 'Этот адрес вне зоны доставки';
+
+  @override
+  String get noChanges => 'Изменений нет';
+
+  @override
+  String addressOutsideArea(String distance, String max) {
+    return 'Адрес вне зоны доставки: $distance км. Мы доставляем в радиусе $max км';
+  }
+
+  @override
+  String get addressSaved => 'Адрес сохранён';
+
+  @override
+  String get addressRemove => 'Удалить';
+
+  @override
+  String get addressRemoveConfirm => 'Удалить этот адрес?';
+
+  @override
+  String get errorConfigurationIncomplete =>
+      'Сервис ещё не настроен до конца. Попробуйте позже';
 }

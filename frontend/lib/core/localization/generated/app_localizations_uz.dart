@@ -714,4 +714,93 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get catalogLoadMore => 'Yana yuklash';
+
+  @override
+  String get profileTitle => 'Profil';
+
+  @override
+  String get profileName => 'Ismingiz';
+
+  @override
+  String get profileNameNeeded => 'Buyurtma berish uchun ismingizni kiriting';
+
+  @override
+  String get profileSaved => 'Ism saqlandi';
+
+  @override
+  String get addressesTitle => 'Manzillarim';
+
+  @override
+  String get addressNone => 'Hali manzil qo\'shilmagan';
+
+  @override
+  String get addressNew => 'Yangi manzil';
+
+  @override
+  String get addressEdit => 'Manzilni tahrirlash';
+
+  @override
+  String get addressLabel => 'Nomi, masalan, Uy yoki Ish';
+
+  @override
+  String get addressStreet => 'Ko\'cha';
+
+  @override
+  String get addressHouse => 'Uy';
+
+  @override
+  String get addressApartment => 'Xonadon';
+
+  @override
+  String get addressLandmark => 'Mo\'ljal';
+
+  @override
+  String get addressDeliveryNote => 'Kuryer uchun izoh';
+
+  @override
+  String get addressMapHint =>
+      'Xaritani suring: belgi eshigingiz ustida tursin';
+
+  @override
+  String get addressMapUnavailable =>
+      'Bu ilova versiyasida xarita yo\'q. Nuqtaning koordinatalarini kiriting';
+
+  @override
+  String get addressLatitude => 'Kenglik';
+
+  @override
+  String get addressLongitude => 'Uzunlik';
+
+  @override
+  String get addressLatitudeInvalid =>
+      'Kenglik -90 dan 90 gacha son bo\'lishi kerak';
+
+  @override
+  String get addressLongitudeInvalid =>
+      'Uzunlik -180 dan 180 gacha son bo\'lishi kerak';
+
+  @override
+  String get addressOutsideAreaPlain =>
+      'Bu manzil yetkazib berish hududidan tashqarida';
+
+  @override
+  String get noChanges => 'O\'zgarish yo\'q';
+
+  @override
+  String addressOutsideArea(String distance, String max) {
+    return 'Bu manzil yetkazib berish hududidan tashqarida: $distance km. Biz $max km gacha yetkazib beramiz';
+  }
+
+  @override
+  String get addressSaved => 'Manzil saqlandi';
+
+  @override
+  String get addressRemove => 'O\'chirish';
+
+  @override
+  String get addressRemoveConfirm => 'Bu manzil o\'chirilsinmi?';
+
+  @override
+  String get errorConfigurationIncomplete =>
+      'Xizmat hali to\'liq sozlanmagan. Keyinroq urinib ko\'ring';
 }

@@ -1417,6 +1417,168 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Yana yuklash'**
   String get catalogLoadMore;
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profil'**
+  String get profileTitle;
+
+  /// No description provided for @profileName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismingiz'**
+  String get profileName;
+
+  /// No description provided for @profileNameNeeded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma berish uchun ismingizni kiriting'**
+  String get profileNameNeeded;
+
+  /// No description provided for @profileSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism saqlandi'**
+  String get profileSaved;
+
+  /// No description provided for @addressesTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzillarim'**
+  String get addressesTitle;
+
+  /// No description provided for @addressNone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hali manzil qo\'shilmagan'**
+  String get addressNone;
+
+  /// No description provided for @addressNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi manzil'**
+  String get addressNew;
+
+  /// No description provided for @addressEdit.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzilni tahrirlash'**
+  String get addressEdit;
+
+  /// No description provided for @addressLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nomi, masalan, Uy yoki Ish'**
+  String get addressLabel;
+
+  /// No description provided for @addressStreet.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'cha'**
+  String get addressStreet;
+
+  /// No description provided for @addressHouse.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uy'**
+  String get addressHouse;
+
+  /// No description provided for @addressApartment.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xonadon'**
+  String get addressApartment;
+
+  /// No description provided for @addressLandmark.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mo\'ljal'**
+  String get addressLandmark;
+
+  /// No description provided for @addressDeliveryNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer uchun izoh'**
+  String get addressDeliveryNote;
+
+  /// No description provided for @addressMapHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaritani suring: belgi eshigingiz ustida tursin'**
+  String get addressMapHint;
+
+  /// No description provided for @addressMapUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu ilova versiyasida xarita yo\'q. Nuqtaning koordinatalarini kiriting'**
+  String get addressMapUnavailable;
+
+  /// No description provided for @addressLatitude.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kenglik'**
+  String get addressLatitude;
+
+  /// No description provided for @addressLongitude.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uzunlik'**
+  String get addressLongitude;
+
+  /// No description provided for @addressLatitudeInvalid.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kenglik -90 dan 90 gacha son bo\'lishi kerak'**
+  String get addressLatitudeInvalid;
+
+  /// No description provided for @addressLongitudeInvalid.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uzunlik -180 dan 180 gacha son bo\'lishi kerak'**
+  String get addressLongitudeInvalid;
+
+  /// No description provided for @addressOutsideAreaPlain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu manzil yetkazib berish hududidan tashqarida'**
+  String get addressOutsideAreaPlain;
+
+  /// No description provided for @noChanges.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgarish yo\'q'**
+  String get noChanges;
+
+  /// No description provided for @addressOutsideArea.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu manzil yetkazib berish hududidan tashqarida: {distance} km. Biz {max} km gacha yetkazib beramiz'**
+  String addressOutsideArea(String distance, String max);
+
+  /// No description provided for @addressSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil saqlandi'**
+  String get addressSaved;
+
+  /// No description provided for @addressRemove.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chirish'**
+  String get addressRemove;
+
+  /// No description provided for @addressRemoveConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu manzil o\'chirilsinmi?'**
+  String get addressRemoveConfirm;
+
+  /// No description provided for @errorConfigurationIncomplete.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xizmat hali to\'liq sozlanmagan. Keyinroq urinib ko\'ring'**
+  String get errorConfigurationIncomplete;
 }
 
 class _AppLocalizationsDelegate

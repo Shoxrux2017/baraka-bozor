@@ -43,6 +43,7 @@ String _refusalText(AppLocalizations l10n, String code, int status) {
     'last_active_admin_required' => l10n.errorLastActiveAdminRequired,
     'self_reset_not_allowed' => l10n.errorSelfResetNotAllowed,
     'phone_already_active' => l10n.errorPhoneAlreadyActive,
+    'checkout_configuration_incomplete' => l10n.errorConfigurationIncomplete,
     'provider_unavailable' ||
     'payment_provider_unavailable' => l10n.errorProviderUnavailable,
     'service_unavailable' => l10n.errorServiceUnavailable,

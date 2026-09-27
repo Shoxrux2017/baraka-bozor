@@ -49,3 +49,20 @@ class ActiveModeBar extends ConsumerWidget {
     );
   }
 }
+
+/// [child] under the [ActiveModeBar], filling the rest of the screen.
+class UnderActiveMode extends StatelessWidget {
+  const UnderActiveMode({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        const ActiveModeBar(),
+        Expanded(child: child),
+      ],
+    );
+  }
+}

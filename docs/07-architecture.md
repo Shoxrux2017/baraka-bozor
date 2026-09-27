@@ -25,7 +25,7 @@ package:web for the panel's image file dialog (DL-28)
 Yandex MapKit for the address picker
 ```
 
-Targets: **Android** and the **web panel** from the first client wave; **iOS** once a Mac and an Apple developer account exist (iOS code is written throughout). No Windows or Linux desktop build.
+Targets: **Android** 8.0 (API 26) and newer — the Owner's choice, since Yandex MapKit needs it (`DL-33` (10)) — and the **web panel** from the first client wave; **iOS** once a Mac and an Apple developer account exist (iOS code is written throughout). No Windows or Linux desktop build.
 
 ## 3. Repository Baseline
 
@@ -203,7 +203,7 @@ Layout, fixed:
 ```text
 lib/
   app/        root router and root providers
-  core/       everything no single feature owns: network, storage, theme, error mapping, localization, formatting, routing registry, config, map
+  core/       everything no single feature owns: network, storage, theme, error mapping, localization, formatting, routing registry, config
   features/<feature>/{data,domain,application,presentation}
 ```
 

@@ -11,6 +11,7 @@ import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/language_menu.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
@@ -73,6 +74,12 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
         title: Text(l10n.appTitle),
         actions: <Widget>[
           const LanguageMenuButton(),
+          IconButton(
+            key: const ValueKey<String>('open-profile'),
+            icon: const Icon(Icons.person_outline),
+            tooltip: l10n.profileTitle,
+            onPressed: () => context.push(AppPaths.customerProfile),
+          ),
           if (session?.staffUser != null)
             IconButton(
               key: const ValueKey<String>('switch-to-staff-button'),
