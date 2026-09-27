@@ -682,7 +682,6 @@
   "cartLineUnavailable": "Сейчас нет в продаже",
   "cartUnavailableHint": "Уберите товары, которых нет в продаже, — с ними заказ не оформить",
   "cartRemoveLine": "Убрать из корзины",
-  "cartEditLine": "Изменить",
   "cartSaving": "Сохраняем",
   "errorCartItemAlreadyExists": "Этот товар уже в корзине",
   "errorCartFull": "В корзине может быть не больше 100 позиций",

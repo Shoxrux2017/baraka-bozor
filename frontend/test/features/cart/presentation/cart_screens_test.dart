@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
@@ -5,7 +7,9 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
+import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -156,30 +160,173 @@ void main() {
       },
     );
 
-    testWidgets('a product already in the cart opens its line there', (
+    testWidgets(
+      'a product already in the cart opens the line the answer names',
+      (WidgetTester tester) async {
+        cart.current = cartOf(<Map<String, Object?>>[
+          cartLineJson(),
+          cartLineJson(
+            id: breadLine,
+            productId: breadProduct,
+            unit: 'piece',
+            quantity: '2',
+          ),
+        ]);
+        await open(tester, at: '/customer/products/$breadProduct');
+        cart.failure = const ApiRefusal(
+          ApiError(
+            status: 409,
+            code: 'cart_item_already_exists',
+            details: <String, Object?>{'cart_item_id': breadLine},
+          ),
+        );
+
+        await tapAndSettle(tester, byKey('add-to-cart'));
+
+        expect(find.text(l10n(tester).cartTitle), findsOneWidget);
+        expect(byKey('line-editor'), findsOneWidget);
+        expect(
+          tester.widget<TextFormField>(byKey('line-quantity')).controller!.text,
+          '2',
+          reason: "the bread line's, not the first line's",
+        );
+      },
+    );
+
+    testWidgets(
+      'an answer that arrives after the Customer left the product navigates nowhere',
+      (WidgetTester tester) async {
+        cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+        await open(tester, at: '/customer/products/$tomatoProduct');
+        final Completer<void> hold = Completer<void>();
+        cart
+          ..hold = hold
+          ..failure = const ApiRefusal(
+            ApiError(
+              status: 409,
+              code: 'cart_item_already_exists',
+              details: <String, Object?>{'cart_item_id': tomatoLine},
+            ),
+          );
+
+        await tester.tap(byKey('add-to-cart'));
+        await tester.pump();
+        // The Customer opens the cart while the add is on its way.
+        await tester.tap(byKey('open-cart'));
+        await tester.pump();
+        cart.hold = null;
+        hold.complete();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CartScreen), findsOneWidget, reason: 'not a second');
+        expect(byKey('line-editor'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      "the snackbar's way to the cart works after the product was left",
+      (WidgetTester tester) async {
+        cart.answer = cartOf(<Map<String, Object?>>[
+          cartLineJson(productId: tomatoProduct),
+        ]);
+        await open(tester, at: '/customer/products/$tomatoProduct');
+        await tapAndSettle(tester, byKey('add-to-cart'));
+
+        GoRouter.of(anywhere(tester)).pop();
+        await tester.pump();
+        await tester.tap(find.text(l10n(tester).cartOpen));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(CartScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets('what the Customer set survives scrolling out of the page', (
       WidgetTester tester,
     ) async {
-      cart.current = cartOf(<Map<String, Object?>>[
-        cartLineJson(productId: tomatoProduct),
-      ]);
-      await open(tester, at: '/customer/products/$tomatoProduct');
-      cart.failure = const ApiRefusal(
-        ApiError(
-          status: 409,
-          code: 'cart_item_already_exists',
-          details: <String, Object?>{'cart_item_id': tomatoLine},
-        ),
+      catalog = FakeCatalogRepository(
+        categories: <CatalogCategory>[catalogCategory()],
+        products: <CatalogProduct>[
+          catalogProduct(
+            id: tomatoProduct,
+            descriptionUz: List<String>.filled(
+              600,
+              'Juda mazali pomidor.',
+            ).join(' '),
+          ),
+        ],
+      );
+      await open(
+        tester,
+        at: '/customer/products/$tomatoProduct',
+        size: const Size(360, 640),
       );
 
-      await tapAndSettle(tester, byKey('add-to-cart'));
+      // The page's own list, not a text field's.
+      final Finder page = find
+          .descendant(
+            of: find.byType(ListView).first,
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      await tester.scrollUntilVisible(
+        byKey('line-note'),
+        600,
+        scrollable: page,
+      );
+      await tester.enterText(byKey('line-note'), 'Qizilini oling');
+      await tester.enterText(byKey('line-quantity'), '2,5');
+      await tester.ensureVisible(byKey('substitution-remove_if_unavailable'));
+      await tester.tap(byKey('substitution-remove_if_unavailable'));
+      await tester.pumpAndSettle();
 
-      expect(find.text(l10n(tester).cartTitle), findsOneWidget);
-      expect(byKey('line-editor'), findsOneWidget);
+      // The keyboard closed: no focused field keeps the section alive.
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.drag(page, const Offset(0, 20000));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        byKey('add-to-cart'),
+        600,
+        scrollable: page,
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+        'Qizilini oling',
+      );
       expect(
         tester.widget<TextFormField>(byKey('line-quantity')).controller!.text,
-        '1.500',
+        '2,5',
+      );
+      await tapAndSettle(tester, byKey('add-to-cart'));
+      expect(
+        cart.added.single.substitutionPolicy,
+        SubstitutionPolicy.removeIfUnavailable,
       );
     });
+
+    testWidgets(
+      'a note is counted as the server counts it and trimmed as it trims',
+      (WidgetTester tester) async {
+        await open(tester, at: '/customer/products/$tomatoProduct');
+
+        // 151 flags: 151 marks to the eye, 302 code points to the server.
+        await tester.enterText(
+          byKey('line-note'),
+          List<String>.filled(151, '\u{1F1FA}\u{1F1FF}').join(),
+        );
+        await tapAndSettle(tester, byKey('add-to-cart'));
+        expect(find.text(l10n(tester).fieldTooLong(300)), findsOneWidget);
+        expect(cart.added, isEmpty);
+
+        await tester.enterText(byKey('line-note'), '\u200B Qizilini \u200E');
+        await tapAndSettle(tester, byKey('add-to-cart'));
+        expect(cart.added.single.customerNote, 'Qizilini');
+      },
+    );
 
     testWidgets('a full cart and a product gone have their own words', (
       WidgetTester tester,
@@ -216,7 +363,11 @@ void main() {
         final AppLocalizations words = l10n(tester);
 
         expect(byKey('cart-line-$tomatoLine'), findsOneWidget);
-        expect(find.text('1.500 ${words.unitKg}'), findsOneWidget);
+        expect(
+          find.text('1,5 ${words.unitKg}'),
+          findsOneWidget,
+          reason: 'with the decimal comma, without trailing zeros',
+        );
         expect(
           find.text(
             words.cartLineEstimate(MoneyFormat.uzs(27600, AppLanguage.uz)),
@@ -265,9 +416,95 @@ void main() {
         expect(patch.customerNote, isNull);
         expect(patch.substitutionPolicy, isNull);
         expect(byKey('line-editor'), findsNothing);
-        expect(find.text('2.000 ${l10n(tester).unitKg}'), findsOneWidget);
+        expect(find.text('2 ${l10n(tester).unitKg}'), findsOneWidget);
       },
     );
+
+    testWidgets('the editor stays while its change runs', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/cart');
+      await tapAndSettle(tester, byKey('cart-line-$tomatoLine'));
+      await tester.enterText(byKey('line-quantity'), '2');
+      final Completer<void> hold = Completer<void>();
+      cart
+        ..hold = hold
+        ..answer = cartOf(<Map<String, Object?>>[
+          cartLineJson(quantity: '2.000', total: 36800),
+        ]);
+
+      await tester.tap(byKey('save-line'));
+      await tester.pump();
+      await tester.drag(byKey('line-editor'), const Offset(0, 600));
+      await tester.pump();
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(
+        byKey('line-editor'),
+        findsOneWidget,
+        reason: 'neither a drag nor back closes it',
+      );
+
+      cart.hold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(
+        byKey('line-editor'),
+        findsNothing,
+        reason: 'it closes with the answer',
+      );
+    });
+
+    testWidgets('a whole-unit line that kept its decimals is set anew', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(unit: 'piece', quantity: '1.500'),
+      ]);
+      await open(tester, at: '/customer/cart');
+
+      await tapAndSettle(tester, byKey('cart-line-$tomatoLine'));
+
+      expect(
+        tester.widget<TextFormField>(byKey('line-quantity')).controller!.text,
+        isEmpty,
+      );
+      await tapAndSettle(tester, byKey('save-line'));
+      expect(find.text(l10n(tester).cartQuantityWhole), findsOneWidget);
+      expect(cart.patches, isEmpty);
+    });
+
+    testWidgets('the cart is asked for again whenever it opens', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      final int before = cart.calls.where((String c) => c == 'cart').length;
+
+      await tapAndSettle(tester, byKey('open-cart'));
+
+      expect(
+        cart.calls.where((String c) => c == 'cart').length,
+        greaterThan(before),
+      );
+    });
+
+    testWidgets('the cart shows the active mode while two sessions exist', (
+      WidgetTester tester,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      auth.identities[SessionSlot.staff] = user(
+        id: 's',
+        role: UserRole.courier,
+      );
+      await open(tester);
+      await tapAndSettle(tester, byKey('switch-to-customer-button'));
+
+      await tapAndSettle(tester, byKey('open-cart'));
+
+      expect(find.byType(CartScreen), findsOneWidget);
+      expect(byKey('active-mode'), findsOneWidget);
+    });
 
     testWidgets('a line is removed, and an empty cart says so', (
       WidgetTester tester,

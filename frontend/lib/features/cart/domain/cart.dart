@@ -13,9 +13,6 @@ final class Cart {
     required this.estimatedSubtotalUzs,
   });
 
-  /// The most lines a cart holds (`DL-37` (6)).
-  static const int maxLines = 100;
-
   final String id;
   final List<CartLine> lines;
   final int estimatedSubtotalUzs;

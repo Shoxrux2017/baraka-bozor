@@ -1319,9 +1319,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get cartRemoveLine => 'Убрать из корзины';
 
   @override
-  String get cartEditLine => 'Изменить';
-
-  @override
   String get cartSaving => 'Сохраняем';
 
   @override

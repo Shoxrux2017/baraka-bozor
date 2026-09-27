@@ -24,6 +24,16 @@ abstract final class QuantityRules {
     return value;
   }
 
+  /// [quantity] as a person reads it in Uzbek and Russian: the decimal
+  /// comma, and no trailing zeros — `1.500` is `1,5`, `2.000` is `2`.
+  static String display(String quantity) {
+    if (!quantity.contains('.')) {
+      return quantity;
+    }
+    final String trimmed = quantity.replaceFirst(RegExp(r'\.?0+$'), '');
+    return trimmed.replaceAll('.', ',');
+  }
+
   /// [quantity], a decimal string of this shape, in thousandths.
   static int thousandths(String quantity) {
     final List<String> parts = quantity.split('.');

@@ -15,6 +15,7 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/product_image.dart';
 import '../../cart/presentation/add_to_cart.dart';
 import '../../cart/presentation/cart_widgets.dart';
 import '../application/catalog_controllers.dart';
@@ -209,7 +210,10 @@ class CategoryProductsScreen extends ConsumerWidget {
         .firstOrNull;
 
     return Scaffold(
-      appBar: AppBar(title: Text(category?.name(language) ?? '')),
+      appBar: AppBar(
+        title: Text(category?.name(language) ?? ''),
+        actions: const <Widget>[CartButton()],
+      ),
       body: SafeArea(
         child: Column(
           children: <Widget>[

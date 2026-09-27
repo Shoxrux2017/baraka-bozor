@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/catalog/catalog_values.dart';
+import '../../../core/formatting/server_text.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/orders/order_values.dart';
@@ -16,8 +17,9 @@ import 'cart_widgets.dart';
 
 /// "Add to cart" on a product's screen (`docs/09` section 17): the quantity
 /// in the product's unit, a note and the substitution rule, which starts at
-/// `allow_similar_substitution`. A product already in the cart is answered
-/// by opening its line there.
+/// `allow_similar_substitution`. What the Customer set survives scrolling
+/// out of the page. A product already in the cart is answered by opening
+/// its line there — while this product's page is still the one shown.
 class AddToCartSection extends ConsumerStatefulWidget {
   const AddToCartSection({
     required this.productId,
@@ -32,11 +34,17 @@ class AddToCartSection extends ConsumerStatefulWidget {
   ConsumerState<AddToCartSection> createState() => _AddToCartSectionState();
 }
 
-class _AddToCartSectionState extends ConsumerState<AddToCartSection> {
+class _AddToCartSectionState extends ConsumerState<AddToCartSection>
+    with AutomaticKeepAliveClientMixin<AddToCartSection> {
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
   final TextEditingController _quantity = TextEditingController(text: '1');
   final TextEditingController _note = TextEditingController();
   SubstitutionPolicy _policy = SubstitutionPolicy.allowSimilar;
+
+  // The page is a lazy list: without this, scrolling the section out of
+  // view would forget the quantity, the note and the rule.
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void dispose() {
@@ -45,34 +53,39 @@ class _AddToCartSectionState extends ConsumerState<AddToCartSection> {
     super.dispose();
   }
 
+  /// Whether this product's page is still the one the Customer sees.
+  bool get _current => mounted && (ModalRoute.of(context)?.isCurrent ?? false);
+
   Future<void> _add() async {
     if (!_form.currentState!.validate()) {
       return;
     }
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final String note = _note.text.trim();
-    final AddToCartController cart = ref.read(
-      addToCartProvider(widget.productId).notifier,
-    );
+    // Kept before the wait: the snackbar may outlive this page.
+    final GoRouter router = GoRouter.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final String note = trimLikeServer(_note.text);
 
-    final Cart? answer = await cart.add(
-      NewCartLine(
-        productId: widget.productId,
-        quantity: QuantityRules.normalize(widget.unit, _quantity.text)!,
-        customerNote: note.isEmpty ? null : note,
-        substitutionPolicy: _policy,
-      ),
-    );
-    if (!mounted) {
+    final Cart? answer = await ref
+        .read(addToCartProvider(widget.productId).notifier)
+        .add(
+          NewCartLine(
+            productId: widget.productId,
+            quantity: QuantityRules.normalize(widget.unit, _quantity.text)!,
+            customerNote: note.isEmpty ? null : note,
+            substitutionPolicy: _policy,
+          ),
+        );
+    if (!_current) {
       return;
     }
     if (answer != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(l10n.cartAdded),
           action: SnackBarAction(
             label: l10n.cartOpen,
-            onPressed: () => context.push(CartPaths.cart),
+            onPressed: () => router.push(CartPaths.cart),
           ),
         ),
       );
@@ -84,13 +97,14 @@ class _AddToCartSectionState extends ConsumerState<AddToCartSection> {
     if (failure is ApiRefusal && failure.code == 'cart_item_already_exists') {
       final Object? line = failure.error.details['cart_item_id'];
       if (line is String) {
-        await context.push(CartPaths.line(line));
+        await router.push(CartPaths.line(line));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final AppLocalizations l10n = AppLocalizations.of(context);
     final MutationState state = ref.watch(addToCartProvider(widget.productId));
 

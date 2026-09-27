@@ -682,7 +682,6 @@
   "cartLineUnavailable": "Hozir sotuvda yo'q",
   "cartUnavailableHint": "Sotuvda yo'q mahsulotlarni olib tashlang — ular bilan buyurtma berib bo'lmaydi",
   "cartRemoveLine": "Savatdan olib tashlash",
-  "cartEditLine": "O'zgartirish",
   "cartSaving": "Saqlanmoqda",
   "errorCartItemAlreadyExists": "Bu mahsulot allaqachon savatda",
   "errorCartFull": "Savatda ko'pi bilan 100 ta mahsulot bo'lishi mumkin",

@@ -10,24 +10,29 @@ import '../../../core/localization/order_labels.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../application/cart_controllers.dart';
+import '../domain/cart.dart';
 import 'cart_paths.dart';
 
 /// The way to the cart from the Customer's screens, with the number of its
-/// lines — in words for assistive technology, not the badge alone.
+/// lines. The count is the signed-in Customer's own, never another
+/// account's, and is announced once, in words.
 class CartButton extends ConsumerWidget {
   const CartButton({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final int count = ref.watch(cartProvider).value?.itemCount ?? 0;
+    final AsyncValue<Cart> cart = ref.watch(currentCartProvider);
+    final int count = cart.hasError ? 0 : cart.value?.itemCount ?? 0;
 
     return IconButton(
       key: const ValueKey<String>('open-cart'),
       tooltip: l10n.cartBadge(count),
       icon: Badge(
         isLabelVisible: count > 0,
-        label: Text('$count', key: const ValueKey<String>('cart-count')),
+        label: ExcludeSemantics(
+          child: Text('$count', key: const ValueKey<String>('cart-count')),
+        ),
         child: const Icon(Icons.shopping_cart_outlined),
       ),
       onPressed: () => context.push(CartPaths.cart),
@@ -35,7 +40,8 @@ class CartButton extends ConsumerWidget {
   }
 }
 
-/// The note to the Shopper: at most 300 characters (`docs/09` section 17).
+/// The note to the Shopper: at most 300 characters, counted as the server
+/// counts them — code points, not what the eye sees as one (`DL-30` (7)).
 const int cartNoteMaxLength = 300;
 
 /// What the Customer sets on a line — the quantity in its unit, a note to
@@ -71,38 +77,43 @@ class LineOptionsFields extends StatelessWidget {
           controller: note,
           minLines: 1,
           maxLines: 3,
-          inputFormatters: <TextInputFormatter>[
-            LengthLimitingTextInputFormatter(cartNoteMaxLength),
-          ],
           decoration: InputDecoration(
             labelText: l10n.cartNote,
             border: const OutlineInputBorder(),
           ),
+          validator: (String? text) =>
+              (text ?? '').trim().runes.length > cartNoteMaxLength
+              ? l10n.fieldTooLong(cartNoteMaxLength)
+              : null,
         ),
         const SizedBox(height: 12),
-        DropdownButtonFormField<SubstitutionPolicy>(
-          key: const ValueKey<String>('line-substitution'),
-          initialValue: policy,
-          isExpanded: true,
-          decoration: InputDecoration(
-            labelText: l10n.cartSubstitution,
-            border: const OutlineInputBorder(),
+        Semantics(
+          header: true,
+          child: Text(
+            l10n.cartSubstitution,
+            style: Theme.of(context).textTheme.titleSmall,
           ),
-          items: <DropdownMenuItem<SubstitutionPolicy>>[
-            for (final SubstitutionPolicy option in SubstitutionPolicy.values)
-              DropdownMenuItem<SubstitutionPolicy>(
-                value: option,
-                child: Text(
-                  OrderLabels.substitution(l10n, option),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-          ],
+        ),
+        // A radio for each rule, so a long rule wraps rather than being cut.
+        RadioGroup<SubstitutionPolicy>(
+          groupValue: policy,
           onChanged: (SubstitutionPolicy? option) {
             if (option != null) {
               onPolicy(option);
             }
           },
+          child: Column(
+            key: const ValueKey<String>('line-substitution'),
+            children: <Widget>[
+              for (final SubstitutionPolicy option in SubstitutionPolicy.values)
+                RadioListTile<SubstitutionPolicy>(
+                  key: ValueKey<String>('substitution-${option.code}'),
+                  value: option,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(OrderLabels.substitution(l10n, option)),
+                ),
+            ],
+          ),
         ),
       ],
     );
@@ -180,3 +191,12 @@ class QuantityField extends StatelessWidget {
     );
   }
 }
+
+/// A line's quantity as its editor starts it: as the person reads it, or
+/// empty when the line's product has since become a whole unit and the
+/// quantity kept its decimals — the Customer sets it anew rather than
+/// editing a number the field would read differently.
+String editableQuantity(UnitCode unit, String quantity) =>
+    QuantityRules.normalize(unit, quantity) == null
+    ? ''
+    : QuantityRules.display(quantity);

@@ -3,17 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/catalog/catalog_values.dart';
 import '../../../core/formatting/money_format.dart';
+import '../../../core/formatting/server_text.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
+import '../../../core/session/customer_account.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/list_widgets.dart';
-import '../../catalog/presentation/catalog_widgets.dart';
+import '../../../core/widgets/product_image.dart';
 import '../application/cart_controllers.dart';
 import '../domain/cart.dart';
 import 'cart_widgets.dart';
@@ -35,9 +38,31 @@ class CartScreen extends ConsumerStatefulWidget {
 class _CartScreenState extends ConsumerState<CartScreen> {
   bool _opened = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Prices and availability change: the cart is asked for again whenever
+    // the Customer opens it.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _refresh();
+      }
+    });
+  }
+
+  Future<void> _refresh() async {
+    final String? customer = ref.read(customerAccountProvider);
+    if (customer != null) {
+      await ref.read(cartProvider(customer).notifier).refresh();
+    }
+  }
+
   Future<void> _edit(CartLine line) => showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    // Only its own buttons and the back gesture close it, and not while its
+    // change runs.
+    enableDrag: false,
     builder: (BuildContext context) => _LineEditor(line: line),
   );
 
@@ -62,7 +87,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<Cart> cart = ref.watch(cartProvider);
+    final AsyncValue<Cart> cart = ref.watch(currentCartProvider);
     final MutationState actions = ref.watch(cartListActionsProvider);
 
     return Scaffold(
@@ -103,7 +128,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         l10n.cartSubtotal(
                           MoneyFormat.uzs(
                             cart.estimatedSubtotalUzs,
-                            languageOf(context),
+                            interfaceLanguage(context),
                           ),
                         ),
                         key: const ValueKey<String>('cart-subtotal'),
@@ -114,10 +139,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 },
                 error: (Object error, StackTrace _) => Padding(
                   padding: const EdgeInsets.all(16),
-                  child: LoadFailure(
-                    error: error,
-                    onRetry: () => ref.invalidate(cartProvider),
-                  ),
+                  child: LoadFailure(error: error, onRetry: _refresh),
                 ),
                 loading: () => const Center(child: CircularProgressIndicator()),
               ),
@@ -143,7 +165,7 @@ class _LineTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = languageOf(context);
+    final AppLanguage language = interfaceLanguage(context);
     final String unit = CatalogLabels.unit(l10n, line.unit);
     final int? price = line.customerUnitPriceUzs;
     final int? total = line.estimatedLineTotalUzs;
@@ -158,7 +180,7 @@ class _LineTile extends ConsumerWidget {
           spacing: 12,
           runSpacing: 4,
           children: <Widget>[
-            Text('${line.quantity} $unit'),
+            Text('${QuantityRules.display(line.quantity)} $unit'),
             if (price != null && total != null) ...<Widget>[
               Text(
                 l10n.catalogPricePerUnit(
@@ -212,7 +234,7 @@ class _LineEditor extends ConsumerStatefulWidget {
 class _LineEditorState extends ConsumerState<_LineEditor> {
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
   late final TextEditingController _quantity = TextEditingController(
-    text: widget.line.quantity,
+    text: editableQuantity(widget.line.unit, widget.line.quantity),
   );
   late final TextEditingController _note = TextEditingController(
     text: widget.line.customerNote ?? '',
@@ -230,7 +252,7 @@ class _LineEditorState extends ConsumerState<_LineEditor> {
     if (!_form.currentState!.validate()) {
       return;
     }
-    final String note = _note.text.trim();
+    final String note = trimLikeServer(_note.text);
     final CartLinePatch patch = CartLinePatch.between(
       widget.line,
       quantity: QuantityRules.normalize(widget.line.unit, _quantity.text)!,
@@ -272,7 +294,7 @@ class _LineEditorState extends ConsumerState<_LineEditor> {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  widget.line.name(languageOf(context)),
+                  widget.line.name(interfaceLanguage(context)),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),

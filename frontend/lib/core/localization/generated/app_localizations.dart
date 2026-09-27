@@ -2468,12 +2468,6 @@ abstract class AppLocalizations {
   /// **'Savatdan olib tashlash'**
   String get cartRemoveLine;
 
-  /// No description provided for @cartEditLine.
-  ///
-  /// In uz, this message translates to:
-  /// **'O\'zgartirish'**
-  String get cartEditLine;
-
   /// No description provided for @cartSaving.
   ///
   /// In uz, this message translates to:

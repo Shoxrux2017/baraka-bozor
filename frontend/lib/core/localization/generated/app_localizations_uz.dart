@@ -1306,9 +1306,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get cartRemoveLine => 'Savatdan olib tashlash';
 
   @override
-  String get cartEditLine => 'O\'zgartirish';
-
-  @override
   String get cartSaving => 'Saqlanmoqda';
 
   @override
