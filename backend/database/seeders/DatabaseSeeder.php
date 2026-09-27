@@ -18,6 +18,10 @@ class DatabaseSeeder extends Seeder
      * created by `bootstrap:first-admin`, a controlled one-time CLI — BR-ROLE-009
      * — never by a seeder and never by a public API. A seeder runs unattended and
      * would have to carry a password in the repository to do it.
+     *
+     * `WalkthroughSeeder` is no exception to this: it creates local fixture
+     * accounts, an Admin among them, only in the local environment and with the
+     * password from the local `.env`, and it is not called from here (`DL-35`).
      */
     public function run(): void
     {

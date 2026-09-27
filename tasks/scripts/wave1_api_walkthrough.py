@@ -7,8 +7,9 @@ Needs the stack served as `docker/README.md` says, the staff accounts of
 `WalkthroughSeeder` and a test phone. The staff password, the test phone and
 its code are read from `backend/.env` (`WALKTHROUGH_STAFF_PASSWORD`, the first
 of `LOGIN_CODE_TEST_PHONES`, `LOGIN_CODE_TEST_CODE`); variables of the same
-names in the environment take precedence. Rerunning within a minute waits
-out the code resend limit.
+names in the environment take precedence. Image URLs are built from
+`APP_URL`, which must be `http://localhost:8000` for the run. Rerunning
+within a minute waits out the code resend limit.
 
 Admin configures the business, the catalog with an image, and a Shopper;
 the Customer keeps a name, saves an address inside and one outside the
@@ -19,6 +20,7 @@ never printed.
 
 import json
 import os
+import secrets
 import pathlib
 import struct
 import sys
@@ -141,8 +143,11 @@ status, answer = call("POST", f"/admin/products/{product}/image", admin, raw=raw
 image_url = answer["data"]["image_url"] if status == 200 else None
 check("Admin uploads the product image", status == 200 and image_url, f"{status} {image_url}")
 if image_url:
-    with urllib.request.urlopen(image_url.replace("localhost", "127.0.0.1"), timeout=30) as response:
-        check("The image is served", response.status == 200 and response.read(8) == b"\x89PNG\r\n\x1a\n")
+    try:
+        with urllib.request.urlopen(image_url.replace("localhost", "127.0.0.1"), timeout=30) as response:
+            check("The image is served", response.status == 200 and response.read(8) == b"\x89PNG\r\n\x1a\n")
+    except OSError as error:
+        check("The image is served", False, f"{error}; APP_URL must be http://localhost:8000")
 raw, content_type = multipart("image", "fake.png", b"GIF89a....", "image/png")
 status, answer = call("POST", f"/admin/products/{product}/image", admin, raw=raw, content_type=content_type)
 check("A file that is not an image is refused", status == 422, f"{status}")
@@ -161,6 +166,7 @@ check("Admin creates a Shopper with a temporary password",
       f"{status}")
 shopper_id = answer["data"]["user"]["id"]
 temporary = answer["data"]["temporary_password"]
+new_password = secrets.token_urlsafe(16)
 status, answer = call("POST", "/auth/staff/login", body={"phone": shopper_phone, "password": temporary})
 check("The Shopper signs in with it and meets the password gate",
       status == 200 and answer["data"]["user"]["must_change_password"] is True, f"{status}")
@@ -168,7 +174,7 @@ shopper = answer["data"]["token"]
 status, _ = call("POST", "/push-devices", shopper, {"platform": "android", "token": "fcm-shopper"})
 check("The gate refuses push registration before the change", status == 403, f"{status}")
 status, _ = call("POST", "/auth/change-password", shopper, {
-    "current_password": temporary, "new_password": "Yangi-parol-2026", "new_password_confirmation": "Yangi-parol-2026"})
+    "current_password": temporary, "new_password": new_password, "new_password_confirmation": new_password})
 check("The Shopper changes the password", status in (200, 204), f"{status}")
 status, answer = call("POST", "/push-devices", shopper, {"platform": "android", "token": "fcm-shopper"})
 check("Past the gate the Shopper's device registers", status == 200, f"{status}")

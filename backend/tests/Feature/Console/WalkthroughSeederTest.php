@@ -42,7 +42,9 @@ final class WalkthroughSeederTest extends TestCase
         foreach ($staff as $user) {
             $this->assertSame(UserStatus::Active, $user->status);
             $this->assertTrue(Hash::check(self::PASSWORD, (string) $user->password));
-            $this->assertSame($user->role === Role::Courier, $user->must_change_password);
+            $gated = $user->role === Role::Courier;
+            $this->assertSame($gated, $user->must_change_password);
+            $this->assertSame($gated, $user->password_changed_at === null);
             $this->assertNull($user->created_by_user_id);
         }
     }
@@ -64,6 +66,7 @@ final class WalkthroughSeederTest extends TestCase
 
     public function test_it_refuses_outside_the_local_environment(): void
     {
+        $this->app->detectEnvironment(static fn (): string => 'production');
         config(['walkthrough.staff_password' => self::PASSWORD]);
 
         $this->assertRefused('The walkthrough accounts are for the local environment only.');
@@ -84,13 +87,19 @@ final class WalkthroughSeederTest extends TestCase
 
     private function assertRefused(string $message): void
     {
+        // Held and asserted after the `try`: PHPUnit's own failure is a
+        // `RuntimeException` too, and would be caught as the refusal.
+        $refusal = null;
         try {
-            $this->artisan('db:seed', ['--class' => WalkthroughSeeder::class])->run();
-            $this->fail('The seeder ran.');
-        } catch (RuntimeException $refusal) {
-            $this->assertSame($message, $refusal->getMessage());
+            // `--force` answers the production confirmation, as an operator
+            // would; the seeder must refuse all the same.
+            $this->artisan('db:seed', ['--class' => WalkthroughSeeder::class, '--force' => true])->run();
+        } catch (RuntimeException $caught) {
+            $refusal = $caught;
         }
 
+        $this->assertNotNull($refusal, 'The seeder ran.');
+        $this->assertSame($message, $refusal->getMessage());
         $this->assertSame(0, User::query()->count());
     }
 }
