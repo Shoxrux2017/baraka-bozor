@@ -166,6 +166,67 @@ final class ShopperAssignmentApiTest extends TestCase
         $this->assertNothingWritten($order);
     }
 
+    public function test_a_blocked_shopper_is_refused_before_the_repeat_and_the_order_state(): void
+    {
+        $order = Order::factory()->create();
+        $shopper = $this->shopper();
+        $this->assign($order, $shopper)->assertOk();
+        $shopper->forceFill(['status' => 'blocked', 'blocked_at' => now()])->save();
+
+        // A Shopper blocked since is not a repeat: the Operator must reassign.
+        $this->assign($order, $shopper)->assertStatus(409)->assertJsonPath('code', 'staff_not_active');
+        $this->assign($order, $shopper, method: 'put')->assertStatus(409)->assertJsonPath('code', 'staff_not_active');
+        $this->assertSame(1, OrderShopperAssignment::query()->where('order_id', $order->id)->count());
+        $this->assertSame(1, OrderHistory::query()->where('order_id', $order->id)->count());
+
+        // Nor is the order's state asked first.
+        $this->assign(Order::factory()->shoppingAssigned()->create(), $shopper)->assertStatus(409)->assertJsonPath('code', 'staff_not_active');
+        $this->assign(Order::factory()->cancelled()->create(), $shopper)->assertStatus(409)->assertJsonPath('code', 'staff_not_active');
+    }
+
+    public function test_a_stale_or_retried_reassignment_never_undoes_a_newer_one(): void
+    {
+        $order = Order::factory()->create();
+        [$a, $b, $c] = [$this->shopper('A'), $this->shopper('B'), $this->shopper('C')];
+        $this->assign($order, $a)->assertOk();
+        $first = $this->currentAssignmentOf($order)?->id;
+
+        // One Operator moves the order from A to B.
+        $this->assign($order, $b, method: 'put', replaces: $first)->assertOk();
+        $second = $this->currentAssignmentOf($order)?->id;
+        // Another, whose board still shows A, is refused and reloads.
+        $this->assign($order, $c, method: 'put', replaces: $first)->assertStatus(409)->assertJsonPath('code', 'order_state_conflict');
+        // The first Operator's retry is a natural repeat.
+        $this->assign($order, $b, method: 'put', replaces: $first)->assertOk();
+
+        // Once the order has moved on to C, the same retry is refused, not a move back to B.
+        $this->assign($order, $c, method: 'put', replaces: $second)->assertOk();
+        $this->assign($order, $b, method: 'put', replaces: $first)->assertStatus(409)->assertJsonPath('code', 'order_state_conflict');
+
+        $this->assertSame($c->id, $this->currentAssignmentOf($order)?->shopper_id);
+        $this->assertSame(3, OrderShopperAssignment::query()->where('order_id', $order->id)->count());
+        $this->assertSame(3, OrderHistory::query()->where('order_id', $order->id)->count());
+    }
+
+    public function test_a_reassignment_names_the_assignment_it_replaces_and_an_assignment_does_not(): void
+    {
+        $order = Order::factory()->shoppingAssigned()->create();
+        $shopper = $this->shopper();
+        $url = '/api/v1/operations/orders/'.$order->id.'/shopper-assignment';
+
+        $this->as($this->operator)->putJson($url, ['shopper_id' => $shopper->id])
+            ->assertStatus(422)->assertJsonValidationErrors(['replaces_assignment_id']);
+        $this->as($this->operator)->putJson($url, ['shopper_id' => $shopper->id, 'replaces_assignment_id' => 'nope'])
+            ->assertStatus(422)->assertJsonValidationErrors(['replaces_assignment_id']);
+        $this->postBody(Order::factory()->create(), ['shopper_id' => $shopper->id, 'replaces_assignment_id' => (string) Str::uuid()])
+            ->assertStatus(422);
+        // The id in capitals is the same assignment.
+        $this->as($this->operator)->putJson($url, [
+            'shopper_id' => $shopper->id,
+            'replaces_assignment_id' => strtoupper((string) $this->currentAssignmentOf($order)?->id),
+        ])->assertOk();
+    }
+
     public function test_an_order_in_another_state_is_a_conflict(): void
     {
         $shopper = $this->shopper();
@@ -224,13 +285,29 @@ final class ShopperAssignmentApiTest extends TestCase
         return ($blocked ? $factory->blocked() : $factory)->create(['full_name' => $name]);
     }
 
-    private function assign(Order $order, User $shopper, ?User $as = null, string $method = 'post'): TestResponse
+    /**
+     * A `PUT` replaces [$replaces], by default the order's current assignment
+     * as the Operator would have seen it.
+     */
+    private function assign(Order $order, User $shopper, ?User $as = null, string $method = 'post', ?string $replaces = null): TestResponse
     {
+        $body = ['shopper_id' => $shopper->id];
+        if ($method === 'put') {
+            $body['replaces_assignment_id'] = $replaces
+                ?? $this->currentAssignmentOf($order)->id
+                ?? (string) Str::uuid();
+        }
+
         return $this->as($as ?? $this->operator)->json(
             strtoupper($method),
             '/api/v1/operations/orders/'.$order->id.'/shopper-assignment',
-            ['shopper_id' => $shopper->id],
+            $body,
         );
+    }
+
+    private function currentAssignmentOf(Order $order): ?OrderShopperAssignment
+    {
+        return OrderShopperAssignment::query()->where('order_id', $order->id)->whereNull('ended_at')->first();
     }
 
     /**

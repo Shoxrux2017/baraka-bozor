@@ -72,6 +72,7 @@ Backend first, in order; the panel after W2-7 and W2-8 (W2-9 needs no API and ma
 | The courier assignment moves to Wave 3, where `ready_for_delivery` is first reachable (`DL-37` (12)) | Planned in Wave 3 |
 | An estimate line added by an edit is billed at its own markup (`DL-37` (8)); billing arrives with Wave 3's purchase recording, which must test it | Planned in Wave 3 |
 | For Wave 3: the board's self-order mark and the `self_order` attention item follow the current Shopper assignment (`DL-37` (16)); once shopping completes and that assignment ends `completed`, both go while the order is still open. Wave 3 decides, with the Courier's own self-order flag, whether the mark stays until the order ends | Open for Wave 3 |
+| For Wave 3: a Shopper blocked after an assignment keeps the order — the assignment committed before the block (`DL-45` (2)) — and nothing on the board says so; the Shopper's own screens and the attention types of Wave 3 must surface it, or blocking must say which orders to reassign | Open for Wave 3 |
 | The MapKit key and the free tier's fitness (`DL-36`) | Open, Owner; nothing in the wave depends on it |
 | Carried from Wave 1, for Wave 4: CORS for the API and for the image host in production, device pruning, the push token change stream | Open for Wave 4 |
 | Carried from Wave 1: iOS hands MapKit its key in `AppDelegate`, which needs a Mac (`DL-33` (6)) | Open until a Mac exists |

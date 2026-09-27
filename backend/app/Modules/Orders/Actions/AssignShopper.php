@@ -15,7 +15,6 @@ use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\OrderShopperAssignment;
 use App\Models\User;
-use App\Modules\Orders\OrderPermissions;
 use App\Support\Scope\ScopedLookup;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -31,8 +30,11 @@ use Illuminate\Validation\ValidationException;
  * - an id that is not a Shopper's account is `422 validation_failed` on
  *   `shopper_id`, a blocked Shopper `409 staff_not_active`;
  * - the current Shopper again is a natural repeat (`BR-CON-005`);
- * - an assignment needs a `new` order, a reassignment a `shopping_assigned`
- *   one whose Shopper has not started, else `409 order_state_conflict`;
+ * - an assignment needs a `new` order; a reassignment a `shopping_assigned`
+ *   one whose current assignment is the one the Operator replaces and has
+ *   not started (`BR-ASSIGN-002`), so a stale or retried reassignment never
+ *   undoes a newer one (`DL-45` (8)); anything else is
+ *   `409 order_state_conflict`;
  * - a reassignment ends the current assignment with `reassigned`;
  * - the new assignment is a self-order when the Shopper's phone is the
  *   Customer's, and one history row, `shopper_assigned` with the move to
@@ -45,17 +47,21 @@ final class AssignShopper
 {
     public function assign(User $staff, string $orderId, string $shopperId): Order
     {
-        return $this->change($staff, $orderId, $shopperId, reassign: false);
+        return $this->change($staff, $orderId, $shopperId, replaces: null);
     }
 
-    public function reassign(User $staff, string $orderId, string $shopperId): Order
+    public function reassign(User $staff, string $orderId, string $shopperId, string $replacesAssignmentId): Order
     {
-        return $this->change($staff, $orderId, $shopperId, reassign: true);
+        return $this->change($staff, $orderId, $shopperId, replaces: $replacesAssignmentId);
     }
 
-    private function change(User $staff, string $orderId, string $shopperId, bool $reassign): Order
+    /**
+     * @param  string|null  $replaces  the assignment a reassignment replaces;
+     *                                 null for a first assignment
+     */
+    private function change(User $staff, string $orderId, string $shopperId, ?string $replaces): Order
     {
-        return DB::transaction(function () use ($staff, $orderId, $shopperId, $reassign): Order {
+        return DB::transaction(function () use ($staff, $orderId, $shopperId, $replaces): Order {
             $order = ScopedLookup::lockOrNotFound(Order::query()->whereKey($orderId));
             $shopper = $this->lockShopper($shopperId);
 
@@ -70,9 +76,12 @@ final class AssignShopper
                 return $order;
             }
 
-            $allowed = $reassign
-                ? $order->status === OrderStatus::ShoppingAssigned && $current !== null && OrderPermissions::canChange($order)
-                : $order->status === OrderStatus::New && $current === null;
+            $allowed = $replaces === null
+                ? $order->status === OrderStatus::New && $current === null
+                : $order->status === OrderStatus::ShoppingAssigned
+                    && $current !== null
+                    && $current->id === $replaces
+                    && $current->started_at === null;
             if (! $allowed) {
                 throw ApiException::conflict('order_state_conflict');
             }

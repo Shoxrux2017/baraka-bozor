@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Modules\Orders\Actions\AssignShopper;
 use App\Modules\Orders\Http\Requests\AssignShopperRequest;
 use App\Modules\Orders\Http\Requests\ListBoardOrdersRequest;
+use App\Modules\Orders\Http\Requests\ReassignShopperRequest;
 use App\Modules\Orders\Http\Resources\BoardOrderResource;
 use App\Modules\Orders\Http\Resources\BoardOrderRowResource;
 use App\Modules\Orders\Operations\Attention;
@@ -59,9 +60,14 @@ final class OperationsOrderController extends Controller
         return self::detail($assign->assign($this->staff($request), $order, $request->shopperId()));
     }
 
-    public function reassignShopper(AssignShopperRequest $request, string $order, AssignShopper $assign): BoardOrderResource
+    public function reassignShopper(ReassignShopperRequest $request, string $order, AssignShopper $assign): BoardOrderResource
     {
-        return self::detail($assign->reassign($this->staff($request), $order, $request->shopperId()));
+        return self::detail($assign->reassign(
+            $this->staff($request),
+            $order,
+            $request->shopperId(),
+            $request->replacesAssignmentId(),
+        ));
     }
 
     public function summary(): JsonResponse
