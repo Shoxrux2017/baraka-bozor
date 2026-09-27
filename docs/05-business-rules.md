@@ -78,7 +78,7 @@
 
 **BR-PRICE-002 — Fixed.** The order snapshots the customer price; the billable unit price is that snapshot regardless of what the Shopper paid.
 
-**BR-PRICE-003 — Estimate.** The order snapshots the estimate customer price, the markup and the tolerance. The billable unit price is `half_up(actual_market_price × (1 + markup_snapshot / 100))`. The ceiling is `half_up(estimate_snapshot × (1 + tolerance_snapshot / 100))`, or a higher ceiling an approval set. A billable unit price above the ceiling requires approval before purchase.
+**BR-PRICE-003 — Estimate.** The order snapshots the estimate customer price, the markup and the tolerance; each line keeps the markup it was priced with (`DL-37` (8)). The billable unit price is `half_up(actual_market_price × (1 + line_markup_snapshot / 100))`. The ceiling is `half_up(estimate_snapshot × (1 + tolerance_snapshot / 100))`, or a higher ceiling an approval set. A billable unit price above the ceiling requires approval before purchase.
 
 **BR-PRICE-004 — Replacement.** A replacement is billed at its own customer price computed the same way, subject to the original item's ceiling or an approval.
 
@@ -158,7 +158,7 @@ cancelled
 
 **BR-ORDER-003** — "Awaiting the Customer" is derived from pending approvals; the order stays `shopping`.
 
-**BR-ORDER-004** — The Customer may edit items and the delivery wish while `new` or `shopping_assigned` and shopping has not started. Added lines are priced at current catalog prices; lines that stay keep their price snapshots; fee, markup, tolerance and delay snapshots stay as at creation; the minimum amount is re-checked; history is written (`DL-6`).
+**BR-ORDER-004** — The Customer may edit items and the delivery wish while `new` or `shopping_assigned` and shopping has not started. Added lines are priced at current catalog prices and keep the current markup on the line; lines that stay keep their price and markup snapshots; the order's fee, markup, tolerance and delay snapshots stay as at creation; removed lines become `removed` with `customer_removed`; the minimum amount is re-checked; history is written (`DL-6`).
 
 **BR-ORDER-005** — Order numbers are short, sequential and unique.
 

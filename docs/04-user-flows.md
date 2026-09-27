@@ -66,7 +66,7 @@ If anything changed, order creation returns `checkout_snapshot_stale` and the Cu
 
 ## 9. Order Editing
 
-While the order is `new` or `shopping_assigned` and shopping has not started, the Customer sends the full desired item list and delivery wish. The backend locks the order, validates it like a checkout (active products, quantities, minimum amount), removes the lines that are gone, updates quantity, note and rule on the lines that stay while keeping their price snapshots, adds new lines with current prices, leaves the fee and markup snapshots untouched (`DL-6`), writes an `edited` history entry, and returns the order. Once shopping has started the request is refused with `order_editing_locked`.
+While the order is `new` or `shopping_assigned` and shopping has not started, the Customer sends the full desired item list and delivery wish. The backend locks the order, validates it like a checkout (active products, quantities, minimum amount), marks the lines that are gone `removed` with `customer_removed`, updates quantity, note and rule on the lines that stay while keeping their price snapshots, adds new lines with current prices, leaves the fee and markup snapshots untouched (`DL-6`), writes an `edited` history entry, and returns the order. Once shopping has started the request is refused with `order_editing_locked`.
 
 ## 10. Customer Cancels Before Shopping
 

@@ -109,6 +109,7 @@ product_name_uz_snapshot, product_name_ru_snapshot, unit_code_snapshot
 price_mode_snapshot            fixed|estimate
 market_price_uzs_snapshot
 customer_unit_price_uzs_snapshot          fixed price, or the estimate
+markup_percent_snapshot                   the markup this line was priced with (DL-37)
 ordered_quantity > 0
 purchased_quantity?
 billable_quantity ≥ 0, ≤ ordered_quantity (or ≤ approved_quantity_cap when set)
@@ -131,7 +132,7 @@ Checks: purchased requires `purchased_quantity ≥ billable_quantity > 0`, a bil
 
 ## 15. `order_history`
 
-Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (user|system|payment_provider), actor_user_id?, reason_code?, note?, created_at`.
+Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (user|system|payment_provider), actor_user_id?, reason_code?, note?, details jsonb?, created_at`. `details` holds structured facts an event needs to stay explainable: an edit's before and after, an assignment's id and `is_self_order` (`DL-37` (9), (14)).
 
 `event_type` in `status_changed, edited, payment_method_switched, price_corrected, shopper_assigned, shopper_reassigned, courier_assigned, courier_reassigned, delivery_failed, approval_requested, approval_decided, approval_expired, approval_resolved`. `reason_code` for cancellations in `customer_cancelled, cancellation_request_approved, unpaid_online, no_items_purchased, delivery_failed, system`. Index `(order_id, created_at)`.
 

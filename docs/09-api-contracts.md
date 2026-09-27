@@ -115,7 +115,7 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
 
 ## 17. Cart
 
-`GET /customer/cart`, `POST /customer/cart/items` `{"product_id":"...","quantity":"5.000","customer_note":"...","substitution_policy":"allow_similar_substitution"}`, `PATCH /customer/cart/items/{item}`, `DELETE /customer/cart/items/{item}`. Duplicate product → `409 cart_item_already_exists`. Unit precision validated. The cart response carries current customer prices and an `estimated_subtotal_uzs`.
+`GET /customer/cart`, `POST /customer/cart/items` `{"product_id":"...","quantity":"5.000","customer_note":"...","substitution_policy":"allow_similar_substitution"}`, `PATCH /customer/cart/items/{item}`, `DELETE /customer/cart/items/{item}`. Duplicate product → `409 cart_item_already_exists`. Unit precision validated; a quantity is at most 9 999.999 for `kg`, `liter`, `meter` and 9 999 otherwise, and a cart holds at most 100 lines (`409 cart_full`). A hidden product and an unknown id both answer `409 product_unavailable`. The cart response carries current customer prices, each line's `is_available`, and an `estimated_subtotal_uzs` over the available lines (`DL-37` (6), (20)).
 
 ## 18. Checkout Preview
 
@@ -134,7 +134,7 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
 
 ## 19. Create Order
 
-`POST /customer/orders` with `Idempotency-Key: <UUID>`, body `{"checkout_token":"..."}`. Revalidates, snapshots, converts the cart, creates the new cart, assigns `order_number`, answers `201` with the order. Stale token → `409 checkout_snapshot_stale`. Until the payment adapters of Wave 5 exist, `online` answers `409 payment_method_unavailable` at preview and creation whatever the provider switches say (`DL-37` (3)).
+`POST /customer/orders` with `Idempotency-Key: <UUID>`, body `{"checkout_token":"..."}`. Revalidates, snapshots, converts the cart, creates the new cart, assigns `order_number`, answers `201` with the order. Stale token → `409 checkout_snapshot_stale`. Until the payment adapters of Wave 5 exist, `online` answers `409 payment_method_unavailable` at preview and creation whatever the provider switches say (`DL-37` (3)). Before shopping completes an order's `totals` are computed from its snapshots over the lines not removed and labelled like the preview; from completion they are the stored final amounts (`DL-37` (10)).
 
 # Customer Orders
 
@@ -145,17 +145,17 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
 ```json
 {"id":"...","order_number":1042,"status":"shopping","payment_method":"cash",
  "pending_approval_count":1,"can_edit":false,"can_cancel_directly":false,"can_request_cancellation":true,
- "items":[...],"totals":{"merchandise_subtotal_uzs":null,"service_fee_uzs":null,"delivery_fee_uzs":15000,"total_uzs":null,"total_kind":"estimate"},
+ "items":[...],"totals":{"merchandise_subtotal_uzs":225000,"service_fee_uzs":11250,"delivery_fee_uzs":15000,"total_uzs":251250,"total_kind":"estimate"},
  "address":{...},"delivery_time_note":"...","payment":null,"refunds":[],"timestamps":{...}}
 ```
 
 ## 21. Edit Order
 
-`PUT /customer/orders/{order}/items` `{"items":[{"product_id":"...","quantity":"2","customer_note":null,"substitution_policy":"contact_before_substitution"}],"delivery_time_note":"..."}` → the order. Allowed while `new` or `shopping_assigned` and shopping has not started; otherwise `409 order_editing_locked`. Codes as in Section 18 for products and the minimum amount.
+`PUT /customer/orders/{order}/items` `{"items":[{"product_id":"...","quantity":"2","customer_note":null,"substitution_policy":"contact_before_substitution"}],"delivery_time_note":"..."}` → the order. Allowed while `new` or `shopping_assigned` and shopping has not started; otherwise `409 order_editing_locked`. At most 100 items (`422` on `items`); lines that are gone stay as `removed` with `customer_removed`; an unchanged list is a natural repeat (`DL-37` (9)). Codes as in Section 18 for products and the minimum amount.
 
 ## 22. Cancel or Request Cancellation
 
-`POST /customer/orders/{order}/cancel` with `Idempotency-Key`, `{"reason":"..."}` (up to 300 characters; optional for a direct cancellation, required for a request, `DL-37` (9)). While `new` or `shopping_assigned`: cancels at once. From `shopping` through `delivery_assigned`: creates a pending request (`409 cancellation_already_pending` if one exists). From `on_the_way`: `409 order_cancellation_not_allowed`.
+`POST /customer/orders/{order}/cancel` with `Idempotency-Key`, `{"reason":"..."}` (up to 300 characters; optional for a direct cancellation, required for a request, `DL-37` (13)). While `new` or `shopping_assigned`: cancels at once, and pending lines become `removed` with `order_cancelled`; an already cancelled order is a natural repeat. From `shopping` through `delivery_assigned` *(Wave 3)*: creates a pending request (`409 cancellation_already_pending` if one exists). From `on_the_way`: `409 order_cancellation_not_allowed`.
 
 ## 23. Approvals
 
@@ -233,11 +233,11 @@ Approval resource: `type`, `status`, the item with both names, `proposed_custome
 
 ## 38. Board
 
-`GET /operations/orders?status=&attention=&shopper_id=&courier_id=&payment_method=&from=&to=&search=&page=`, `GET /operations/orders/{order}` (full projection with history, assignments, approvals, payment, refunds, `is_self_order`). `GET /operations/summary` → today's counts by status, today's sales, attention count; the day is `Asia/Tashkent`, and `search` matches the order number or the Customer's phone digits or name (`DL-37` (11)). `GET /operations/attention` → items typed `approval_pending`, `approval_expired`, `customer_no_response`, `payment_overdue`, `refund_outstanding`, `courier_delayed`, `delivery_failed`, `cancellation_request`, `self_order`.
+`GET /operations/orders?status=&attention=&shopper_id=&courier_id=&payment_method=&from=&to=&search=&page=`, `GET /operations/orders/{order}` (full projection with history, assignments, approvals, payment, refunds, `is_self_order`). The list's `search` matches the order number or the Customer's phone digits or name; `from` and `to` are dates of `created_at` in `Asia/Tashkent`; `courier_id` from Wave 3. `GET /operations/summary` → every open order by its current status whatever day it was placed, today's completed and cancelled orders by `completed_at` and `cancelled_at`, today's sales (the sum of `final_total_uzs` of orders completed today) and the attention count; the day is `Asia/Tashkent` (`DL-37` (16)). `GET /operations/attention` → items typed `approval_pending`, `approval_expired`, `customer_no_response`, `payment_overdue`, `refund_outstanding`, `courier_delayed`, `delivery_failed`, `cancellation_request`, `self_order`.
 
 ## 39. Assignment
 
-`POST|PUT /operations/orders/{order}/shopper-assignment` `{"shopper_id":"..."}` (order `new`; reassignment before start). `POST|PUT /operations/orders/{order}/courier-assignment` `{"courier_id":"..."}` (order `ready_for_delivery`; reassignment before `on_the_way`). Codes: `order_state_conflict`, `staff_not_active`, `shopper_not_assigned`, `courier_not_assigned`. The pickers: `GET /operations/shoppers` answers the active Shoppers as `{id, full_name, phone, current_assignment_count}`, newest first, for Operator and Admin, because `/admin/staff` is Admin-only; `GET /operations/couriers` does the same for Couriers from Wave 3 (`DL-37` (7)).
+`POST|PUT /operations/orders/{order}/shopper-assignment` `{"shopper_id":"..."}`: `POST` assigns an order that is `new`, `PUT` reassigns before shopping starts; the current Shopper again is a natural repeat; an id that is not a Shopper is `422 validation_failed` (`DL-37` (14)). `POST|PUT /operations/orders/{order}/courier-assignment` `{"courier_id":"..."}` *(Wave 3)* (order `ready_for_delivery`; reassignment before `on_the_way`). Codes: `order_state_conflict`, `staff_not_active`, `shopper_not_assigned`, `courier_not_assigned`. The pickers: `GET /operations/shoppers` answers the active Shoppers as `{id, full_name, phone, current_assignment_count}`, paginated and ordered by name, for Operator and Admin, because `/admin/staff` is Admin-only; `GET /operations/couriers` does the same for Couriers from Wave 3 (`DL-37` (11)).
 
 ## 40. Approvals and Cancellation Requests
 
@@ -285,7 +285,7 @@ One route set per provider exactly as its official documentation requires; nothi
 
 ## 48. Required `Idempotency-Key`
 
-Create order, customer approval decision, cancel order, record purchase, complete shopping, initiate payment attempt, courier delivered, reorder. Scope `(actor, operation, key)` plus request hash. Same key and hash → same result; same key inside the processing lease → `409 idempotency_in_progress`; different hash → `409 idempotency_key_reused`; missing → `400 idempotency_key_required`.
+Create order, customer approval decision, cancel order, record purchase, complete shopping, initiate payment attempt, courier delivered, reorder. Scope `(actor, operation, key)` plus a request hash over the operation, the route parameters and the body, so one key used on two orders is `idempotency_key_reused` (`DL-37` (5)). Same key and hash → same result; same key inside the processing lease → `409 idempotency_in_progress`; different hash → `409 idempotency_key_reused`; missing → `400 idempotency_key_required`.
 
 ## 49. Natural Repeats
 
@@ -307,7 +307,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 53. Catalog, Cart, Checkout, Editing
 
-`product_unavailable`, `product_archived`, `cart_item_already_exists`, `cart_empty`, `customer_profile_incomplete`, `address_incomplete`, `address_outside_service_area`, `minimum_order_not_reached`, `checkout_snapshot_stale`, `checkout_configuration_incomplete`, `payment_method_unavailable`, `order_editing_locked`.
+`product_unavailable`, `product_archived`, `cart_item_already_exists`, `cart_full`, `cart_empty`, `customer_profile_incomplete`, `address_incomplete`, `address_outside_service_area`, `minimum_order_not_reached`, `checkout_snapshot_stale`, `checkout_configuration_incomplete`, `payment_method_unavailable`, `order_editing_locked`.
 
 ## 54. Order, Shopping, Approval
 
