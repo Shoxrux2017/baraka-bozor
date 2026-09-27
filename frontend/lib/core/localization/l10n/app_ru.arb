@@ -766,6 +766,7 @@
   "orderEditKeepLine": "Вернуть",
   "orderEditAtLeastOne": "В заказе должен остаться хотя бы один товар",
   "orderEditSaving": "Сохраняем",
+  "orderEditClosed": "Этот заказ уже нельзя изменить",
   "orderCancel": "Отменить заказ",
   "orderCancelConfirm": "Отменить заказ?",
   "orderCancelReason": "Причина (необязательно)",
@@ -780,6 +781,6 @@
       }
     }
   },
-  "errorOrderEditingLocked": "Заказ уже нельзя изменить: сборка началась. Заказ обновлён",
+  "errorOrderEditingLocked": "Заказ уже нельзя изменить. Заказ обновлён",
   "errorOrderCancellationNotAllowed": "Заказ уже нельзя отменить. Заказ обновлён"
 }

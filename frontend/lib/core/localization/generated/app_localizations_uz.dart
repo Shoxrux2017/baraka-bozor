@@ -1487,6 +1487,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get orderEditSaving => 'Saqlanmoqda';
 
   @override
+  String get orderEditClosed => 'Bu buyurtmani endi o\'zgartirib bo\'lmaydi';
+
+  @override
   String get orderCancel => 'Buyurtmani bekor qilish';
 
   @override
@@ -1511,7 +1514,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get errorOrderEditingLocked =>
-      'Buyurtmani endi o\'zgartirib bo\'lmaydi: yig\'ish boshlangan. Buyurtma yangilandi';
+      'Buyurtmani endi o\'zgartirib bo\'lmaydi. Buyurtma yangilandi';
 
   @override
   String get errorOrderCancellationNotAllowed =>

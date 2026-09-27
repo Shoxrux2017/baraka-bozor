@@ -44,6 +44,7 @@ void main() {
   Future<void> open(
     WidgetTester tester, {
     String? at,
+    bool alone = false,
     Size size = const Size(800, 2400),
     double textScale = 1,
     Locale device = const Locale('uz'),
@@ -64,7 +65,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     if (at != null) {
-      GoRouter.of(anywhere(tester)).push(at);
+      final GoRouter router = GoRouter.of(anywhere(tester));
+      alone ? router.go(at) : router.push(at);
       await tester.pumpAndSettle();
     }
   }
@@ -91,26 +93,68 @@ void main() {
   test(
     'every status has its own words for the Customer, in both languages',
     () {
-      for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
-        final AppLocalizations words = lookupAppLocalizations(locale);
-        final Set<String> texts = <String>{
-          for (final OrderStatus status in OrderStatus.values)
-            OrderLabels.customerStatus(words, status),
-        };
-        expect(texts, hasLength(OrderStatus.values.length), reason: '$locale');
-      }
-      expect(
-        OrderLabels.customerStatus(
-          lookupAppLocalizations(const Locale('uz')),
+      final Map<OrderStatus, String Function(AppLocalizations)> expected =
+          <OrderStatus, String Function(AppLocalizations)>{
+            OrderStatus.newOrder: (AppLocalizations l) => l.customerStatusNew,
+            OrderStatus.shoppingAssigned: (AppLocalizations l) =>
+                l.customerStatusShoppingAssigned,
+            OrderStatus.shopping: (AppLocalizations l) =>
+                l.customerStatusShopping,
+            OrderStatus.finalPaymentPending: (AppLocalizations l) =>
+                l.customerStatusFinalPaymentPending,
+            OrderStatus.readyForDelivery: (AppLocalizations l) =>
+                l.customerStatusReadyForDelivery,
+            OrderStatus.deliveryAssigned: (AppLocalizations l) =>
+                l.customerStatusDeliveryAssigned,
+            OrderStatus.onTheWay: (AppLocalizations l) =>
+                l.customerStatusOnTheWay,
+            OrderStatus.completed: (AppLocalizations l) =>
+                l.customerStatusCompleted,
+            OrderStatus.cancelled: (AppLocalizations l) =>
+                l.customerStatusCancelled,
+          };
+      expect(expected.keys, unorderedEquals(OrderStatus.values));
+      final AppLocalizations uz = lookupAppLocalizations(const Locale('uz'));
+      final AppLocalizations ru = lookupAppLocalizations(const Locale('ru'));
+      for (final AppLocalizations words in <AppLocalizations>[uz, ru]) {
+        for (final MapEntry<OrderStatus, String Function(AppLocalizations)>
+            entry
+            in expected.entries) {
+          expect(
+            OrderLabels.customerStatus(words, entry.key),
+            entry.value(words),
+            reason: '${entry.key} in ${words.localeName}',
+          );
+        }
+        expect(
+          <String>{
+            for (final OrderStatus status in OrderStatus.values)
+              OrderLabels.customerStatus(words, status),
+          },
+          hasLength(OrderStatus.values.length),
+          reason: 'no two states read alike in ${words.localeName}',
+        );
+        // Where the board speaks as the staff, the Customer reads their own
+        // words (`DL-51` (2)).
+        for (final OrderStatus status in const <OrderStatus>[
+          OrderStatus.newOrder,
+          OrderStatus.finalPaymentPending,
           OrderStatus.completed,
-        ),
-        isNot(
-          OrderLabels.customerStatus(
-            lookupAppLocalizations(const Locale('ru')),
-            OrderStatus.completed,
-          ),
-        ),
-      );
+        ]) {
+          expect(
+            OrderLabels.customerStatus(words, status),
+            isNot(OrderLabels.status(words, status)),
+            reason: '$status in ${words.localeName}',
+          );
+        }
+      }
+      for (final OrderStatus status in OrderStatus.values) {
+        expect(
+          OrderLabels.customerStatus(uz, status),
+          isNot(OrderLabels.customerStatus(ru, status)),
+          reason: '$status must be translated, not copied',
+        );
+      }
     },
   );
 
@@ -218,6 +262,7 @@ void main() {
 
         orders.failure = const NetworkFailure();
         await tapAndSettle(tester, byKey('order-cancel'));
+        await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
         await tapAndSettle(tester, byKey('cancel-confirm'));
         expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
 
@@ -228,10 +273,20 @@ void main() {
           customerOrderJson(status: 'shopping', changeable: false),
         ];
         await tapAndSettle(tester, byKey('order-cancel'));
+        // The retry is the same request: its reason is shown and kept.
+        final TextField reason = tester.widget<TextField>(
+          find.descendant(
+            of: byKey('cancel-reason'),
+            matching: find.byType(TextField),
+          ),
+        );
+        expect(reason.controller!.text, 'Kerak emas');
+        expect(reason.readOnly, isTrue);
         await tapAndSettle(tester, byKey('cancel-confirm'));
 
         expect(orders.cancels, hasLength(2));
         expect(orders.cancels[1].$3, orders.cancels[0].$3, reason: 'same key');
+        expect(orders.cancels[1].$2, 'Kerak emas', reason: 'same reason');
         expect(
           find.text(l10n(tester).errorOrderCancellationNotAllowed),
           findsOneWidget,
@@ -303,20 +358,107 @@ void main() {
       expect(orders.edits, isEmpty);
     });
 
-    testWidgets('an order whose shopping started is said so, and reloaded', (
+    testWidgets(
+      'an order whose shopping started is reloaded, and no longer edited',
+      (WidgetTester tester) async {
+        await open(tester, at: AppPaths.customerOrder(orderOne));
+        await tapAndSettle(tester, byKey('order-edit'));
+        orders
+          ..failure = const ApiRefusal(
+            ApiError(status: 409, code: 'order_editing_locked'),
+          )
+          ..rows = <Map<String, Object?>>[
+            customerOrderJson(status: 'shopping', changeable: false),
+          ];
+        await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
+
+        await tapAndSettle(tester, byKey('edit-save'));
+
+        expect(byKey('edit-closed'), findsOneWidget);
+        expect(find.text(l10n(tester).orderEditClosed), findsOneWidget);
+        expect(byKey('edit-save'), findsNothing);
+        await tapAndSettle(tester, byKey('edit-back-to-order'));
+        expect(find.text(l10n(tester).customerStatusShopping), findsOneWidget);
+        expect(byKey('order-edit'), findsNothing);
+      },
+    );
+
+    testWidgets('an order past editing opened by its address is not edited', (
+      WidgetTester tester,
+    ) async {
+      orders.rows = <Map<String, Object?>>[
+        customerOrderJson(status: 'cancelled', changeable: false),
+      ];
+      await open(tester, at: AppPaths.customerOrderEdit(orderOne), alone: true);
+
+      expect(byKey('edit-closed'), findsOneWidget);
+      expect(byKey('order-editor'), findsNothing);
+      await tapAndSettle(tester, byKey('edit-back-to-order'));
+      expect(
+        GoRouter.of(anywhere(tester))
+            .routerDelegate
+            .currentConfiguration
+            .last
+            .matchedLocation,
+        AppPaths.customerOrder(orderOne),
+      );
+      expect(byKey('order-status'), findsOneWidget);
+    });
+
+    testWidgets('a rule changed alone is sent', (WidgetTester tester) async {
+      await open(tester, at: AppPaths.customerOrderEdit(orderOne));
+      Finder inLine(String line, String key) => find
+          .descendant(of: byKey('edit-line-$line'), matching: byKey(key))
+          .first;
+
+      await tapAndSettle(
+        tester,
+        inLine(lineTomato, 'substitution-contact_before_substitution'),
+      );
+      orders.answer = customerOrderJson();
+      await tapAndSettle(tester, byKey('edit-save'));
+      expect(
+        orders.edits.single.$2.first.substitutionPolicy,
+        SubstitutionPolicy.contactBefore,
+      );
+      expect(orders.edits.single.$2, hasLength(2));
+    });
+
+    testWidgets('a note changed alone is sent, trimmed', (
       WidgetTester tester,
     ) async {
       await open(tester, at: AppPaths.customerOrderEdit(orderOne));
-      orders.failure = const ApiRefusal(
-        ApiError(status: 409, code: 'order_editing_locked'),
-      );
-      await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
-      final int before = orders.loads.length;
+      Finder inLine(String line, String key) => find
+          .descendant(of: byKey('edit-line-$line'), matching: byKey(key))
+          .first;
 
+      await tester.enterText(inLine(lineBread, 'line-note'), '  Yangi  ');
+      orders.answer = customerOrderJson();
+      await tapAndSettle(tester, byKey('edit-save'));
+      expect(orders.edits.single.$2[1].customerNote, 'Yangi');
+    });
+
+    testWidgets('a wish longer than 160 characters is refused before sending', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, at: AppPaths.customerOrderEdit(orderOne));
+      await tester.enterText(byKey('edit-delivery-wish'), 'a' * 161);
       await tapAndSettle(tester, byKey('edit-save'));
 
-      expect(find.text(l10n(tester).errorOrderEditingLocked), findsOneWidget);
-      expect(orders.loads.length, greaterThan(before));
+      expect(find.text(l10n(tester).fieldTooLong(160)), findsOneWidget);
+      expect(orders.edits, isEmpty);
+
+      await tester.enterText(
+        byKey('edit-delivery-wish'),
+        '  ${'a' * 160}\u0085',
+      );
+      orders.answer = customerOrderJson(note: 'a' * 160);
+      await tapAndSettle(tester, byKey('edit-save'));
+      expect(
+        orders.edits.single.$3,
+        'a' * 160,
+        reason: 'trimmed as the server',
+      );
     });
 
     testWidgets('one save at a time', (WidgetTester tester) async {

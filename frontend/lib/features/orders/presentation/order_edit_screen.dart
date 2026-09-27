@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/formatting/server_text.dart';
 import '../../../core/localization/app_language.dart';
@@ -7,6 +8,7 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
+import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
@@ -19,7 +21,9 @@ import '../domain/customer_orders.dart';
 /// Customer still orders, each with its quantity, note and rule and the way
 /// to take it out, and the delivery wish. It sends the whole list the order
 /// is to keep, and nothing when nothing changed; a line taken out is
-/// dropped from the list, and at least one must stay.
+/// dropped from the list, and at least one must stay. An order the server
+/// no longer lets change (`can_edit`) is not edited: after a refusal the
+/// order loads again and the editor gives way to saying so.
 class OrderEditScreen extends ConsumerWidget {
   const OrderEditScreen({required this.orderId, super.key});
 
@@ -40,6 +44,9 @@ class OrderEditScreen extends ConsumerWidget {
             const ActiveModeBar(),
             Expanded(
               child: switch (order) {
+                AsyncValue<CustomerOrder>(:final CustomerOrder value)
+                    when !value.canEdit =>
+                  _Closed(orderId: value.id),
                 AsyncValue<CustomerOrder>(:final CustomerOrder value) =>
                   _Editor(key: ValueKey<String>(value.id), order: value),
                 AsyncError<CustomerOrder>(:final Object error) => Padding(
@@ -56,6 +63,39 @@ class OrderEditScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The order can no longer be changed; the way back to it.
+class _Closed extends StatelessWidget {
+  const _Closed({required this.orderId});
+
+  final String orderId;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    return ListView(
+      key: const ValueKey<String>('edit-closed'),
+      padding: const EdgeInsets.all(16),
+      children: <Widget>[
+        Text(l10n.orderEditClosed),
+        const SizedBox(height: 16),
+        FilledButton(
+          key: const ValueKey<String>('edit-back-to-order'),
+          onPressed: () {
+            final GoRouter router = GoRouter.of(context);
+            if (router.canPop()) {
+              router.pop();
+            } else {
+              router.go(AppPaths.customerOrder(orderId));
+            }
+          },
+          child: Text(l10n.orderOpen),
+        ),
+      ],
     );
   }
 }

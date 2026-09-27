@@ -2786,6 +2786,12 @@ abstract class AppLocalizations {
   /// **'Saqlanmoqda'**
   String get orderEditSaving;
 
+  /// No description provided for @orderEditClosed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu buyurtmani endi o\'zgartirib bo\'lmaydi'**
+  String get orderEditClosed;
+
   /// No description provided for @orderCancel.
   ///
   /// In uz, this message translates to:
@@ -2831,7 +2837,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorOrderEditingLocked.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtmani endi o\'zgartirib bo\'lmaydi: yig\'ish boshlangan. Buyurtma yangilandi'**
+  /// **'Buyurtmani endi o\'zgartirib bo\'lmaydi. Buyurtma yangilandi'**
   String get errorOrderEditingLocked;
 
   /// No description provided for @errorOrderCancellationNotAllowed.

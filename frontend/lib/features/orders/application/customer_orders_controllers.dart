@@ -21,7 +21,8 @@ final Provider<CustomerOrdersRepository> customerOrdersRepositoryProvider =
       ),
     );
 
-/// The page of the Customer's orders shown; another account starts over.
+/// The page of the Customer's orders shown while the list is open; the
+/// list opens on the newest orders again, and another account starts over.
 class OrdersPageController extends Notifier<int> {
   @override
   int build() {
@@ -33,7 +34,9 @@ class OrdersPageController extends Notifier<int> {
 }
 
 final NotifierProvider<OrdersPageController, int> ordersPageProvider =
-    NotifierProvider<OrdersPageController, int>(OrdersPageController.new);
+    NotifierProvider.autoDispose<OrdersPageController, int>(
+      OrdersPageController.new,
+    );
 
 /// The Customer's orders, newest first, one page at a time.
 final FutureProvider<Paged<OrderSummary>> customerOrdersProvider =
@@ -103,11 +106,28 @@ class OrderCancelController extends OrderMutation {
   OrderCancelController(super.orderId);
 
   String? _key;
+  String? _reason;
+
+  /// Whether a cancel was sent and no answer has said for sure what it did;
+  /// a retry then sends [unconfirmedReason] again, under the same key, so the
+  /// server sees the same request.
+  bool get unconfirmed => _key != null;
+
+  String? get unconfirmedReason => _reason;
 
   Future<CustomerOrder?> cancel(String? reason) async {
-    final String key = _key ??= newIdempotencyKey();
+    // A tap while a cancel runs is not another attempt, and leaves the key.
+    if (state.isBusy) {
+      return null;
+    }
+    if (_key == null) {
+      _key = newIdempotencyKey();
+      _reason = reason;
+    }
+    final String key = _key!;
+    final String? sent = _reason;
     final CustomerOrder? order = await perform(
-      () => orders.cancel(orderId, reason, key),
+      () => orders.cancel(orderId, sent, key),
       reload: reload,
     );
     final ApiFailure? failure = ref.mounted ? state.failure : null;
@@ -118,6 +138,7 @@ class OrderCancelController extends OrderMutation {
             failure.code == 'idempotency_in_progress');
     if (!uncertain) {
       _key = null;
+      _reason = null;
     }
     return order;
   }

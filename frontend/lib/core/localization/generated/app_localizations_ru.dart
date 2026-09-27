@@ -1497,6 +1497,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get orderEditSaving => 'Сохраняем';
 
   @override
+  String get orderEditClosed => 'Этот заказ уже нельзя изменить';
+
+  @override
   String get orderCancel => 'Отменить заказ';
 
   @override
@@ -1521,7 +1524,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get errorOrderEditingLocked =>
-      'Заказ уже нельзя изменить: сборка началась. Заказ обновлён';
+      'Заказ уже нельзя изменить. Заказ обновлён';
 
   @override
   String get errorOrderCancellationNotAllowed =>

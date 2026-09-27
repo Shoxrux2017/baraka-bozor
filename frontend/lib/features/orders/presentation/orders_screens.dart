@@ -120,17 +120,21 @@ class OrderScreen extends ConsumerWidget {
   final String orderId;
 
   Future<void> _cancel(BuildContext context, WidgetRef ref) async {
+    final OrderCancelController cancelling = ref.read(
+      orderCancelProvider(orderId).notifier,
+    );
     final String? reason = await showDialog<String>(
       context: context,
-      builder: (BuildContext context) => const _CancelDialog(),
+      builder: (BuildContext context) => _CancelDialog(
+        unconfirmed: cancelling.unconfirmed,
+        reason: cancelling.unconfirmedReason,
+      ),
     );
     if (reason == null || !context.mounted) {
       return;
     }
     final String trimmed = trimLikeServer(reason);
-    await ref
-        .read(orderCancelProvider(orderId).notifier)
-        .cancel(trimmed.isEmpty ? null : trimmed);
+    await cancelling.cancel(trimmed.isEmpty ? null : trimmed);
   }
 
   @override
@@ -321,9 +325,13 @@ class _Line extends StatelessWidget {
 
 /// Asks before cancelling, with an optional reason of up to 300
 /// characters; answers the reason, or `null` when the Customer keeps the
-/// order.
+/// order. After a cancel whose outcome is unknown it shows that cancel's
+/// reason, which a retry sends again unchanged.
 class _CancelDialog extends StatefulWidget {
-  const _CancelDialog();
+  const _CancelDialog({required this.unconfirmed, required this.reason});
+
+  final bool unconfirmed;
+  final String? reason;
 
   @override
   State<_CancelDialog> createState() => _CancelDialogState();
@@ -331,7 +339,9 @@ class _CancelDialog extends StatefulWidget {
 
 class _CancelDialogState extends State<_CancelDialog> {
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
-  final TextEditingController _reason = TextEditingController();
+  late final TextEditingController _reason = TextEditingController(
+    text: widget.reason ?? '',
+  );
 
   @override
   void dispose() {
@@ -350,6 +360,7 @@ class _CancelDialogState extends State<_CancelDialog> {
         child: TextFormField(
           key: const ValueKey<String>('cancel-reason'),
           controller: _reason,
+          readOnly: widget.unconfirmed,
           minLines: 1,
           maxLines: 3,
           decoration: InputDecoration(labelText: l10n.orderCancelReason),
