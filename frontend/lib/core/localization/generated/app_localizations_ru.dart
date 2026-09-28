@@ -1181,6 +1181,32 @@ class AppLocalizationsRu extends AppLocalizations {
   String get historyEventApprovalResolved => 'Согласование закрыто';
 
   @override
+  String get historyEventShopperAccepted => 'Сборщик принял заказ';
+
+  @override
+  String get historyEventCourierAccepted => 'Курьер принял заказ';
+
+  @override
+  String get historyEventItemPurchased => 'Товар куплен';
+
+  @override
+  String get historyEventItemUnavailable => 'Товара нет в наличии';
+
+  @override
+  String get historyEventItemSubstituted => 'Товар заменён';
+
+  @override
+  String get historyEventCancellationRequested =>
+      'Клиент попросил отменить заказ';
+
+  @override
+  String get historyEventCancellationRequestDecided =>
+      'Запрос на отмену рассмотрен';
+
+  @override
+  String get historyEventPaymentRecorded => 'Оплата получена';
+
+  @override
   String get historyDeliveryWishChanged => 'изменено пожелание по доставке';
 
   @override

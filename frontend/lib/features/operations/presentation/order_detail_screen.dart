@@ -500,6 +500,16 @@ class _History extends StatelessWidget {
     OrderHistoryEvent.approvalDecided => l10n.historyEventApprovalDecided,
     OrderHistoryEvent.approvalExpired => l10n.historyEventApprovalExpired,
     OrderHistoryEvent.approvalResolved => l10n.historyEventApprovalResolved,
+    OrderHistoryEvent.shopperAccepted => l10n.historyEventShopperAccepted,
+    OrderHistoryEvent.courierAccepted => l10n.historyEventCourierAccepted,
+    OrderHistoryEvent.itemPurchased => l10n.historyEventItemPurchased,
+    OrderHistoryEvent.itemUnavailable => l10n.historyEventItemUnavailable,
+    OrderHistoryEvent.itemSubstituted => l10n.historyEventItemSubstituted,
+    OrderHistoryEvent.cancellationRequested =>
+      l10n.historyEventCancellationRequested,
+    OrderHistoryEvent.cancellationRequestDecided =>
+      l10n.historyEventCancellationRequestDecided,
+    OrderHistoryEvent.paymentRecorded => l10n.historyEventPaymentRecorded,
   };
 }
 

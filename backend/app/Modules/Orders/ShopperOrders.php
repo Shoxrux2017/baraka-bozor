@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders;
 
+use App\Exceptions\ApiException;
 use App\Models\Enums\ItemRemovedReason;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderShopperAssignment;
 use App\Models\User;
+use App\Support\Scope\ScopedLookup;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 
@@ -34,6 +37,30 @@ final class ShopperOrders
             ->whereColumn('order_shopper_assignments.order_id', 'orders.id')
             ->where('order_shopper_assignments.shopper_id', $shopper->id)
             ->whereNull('order_shopper_assignments.ended_at'));
+    }
+
+    /**
+     * The order under its lock, with the Shopper's own current assignment read
+     * after the lock (`DL-56` (6)).
+     *
+     * The scope's `EXISTS` is judged on the statement's snapshot, before the
+     * lock is granted, and PostgreSQL does not judge it again when the lock
+     * waited on a reassignment: the replaced Shopper would still find the
+     * order. The assignment is therefore read afresh under the lock, and an
+     * order the Shopper no longer holds is the scope-safe `404`.
+     *
+     * @return array{Order, OrderShopperAssignment}
+     */
+    public static function lockCurrent(User $shopper, string $orderId): array
+    {
+        $order = ScopedLookup::lockOrNotFound(self::current($shopper)->whereKey($orderId));
+        $assignment = $order->currentShopperAssignment()->where('shopper_id', $shopper->id)->first();
+
+        if ($assignment === null) {
+            throw ApiException::notFound();
+        }
+
+        return [$order->setRelation('currentShopperAssignment', $assignment), $assignment];
     }
 
     /**

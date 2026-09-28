@@ -48,8 +48,9 @@ final class MoneyCalculator
      * `2 × m × (10000 + bp) ≤ (2C + 1) × 10000 − 1`, since the rounded value
      * stays at or under C while the exact one stays under C + ½; the increase
      * never falls as the amount grows, so the largest such m is the floor of
-     * that bound. A ceiling of at most 10¹⁰ UZS keeps every product inside a
-     * 64-bit integer.
+     * that bound. The products stay inside a 64-bit integer for ceilings up to
+     * about 4.6 × 10¹⁴ UZS, far above the largest a line can have (a customer
+     * price of about 1.1 × 10¹⁰ under a tolerance of up to 999.99 %).
      */
     public static function largestBaseWithin(int $ceilingUzs, Percentage $percent): int
     {

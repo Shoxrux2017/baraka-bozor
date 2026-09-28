@@ -183,7 +183,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 - **Expiry** (`DL-54` (8)):
   - the step of W3-5, made the first step of every action on an order, the merged ones of W3-3 and W3-4 included;
   - `approvals:expire`, scheduled every minute in `routes/console.php`;
-  - derived on every read.
+  - derived on every read, the Shopper's list and detail included: `open_item_count` and `pending_approval` stop counting an approval past its expiry.
 - `POST /operations/approvals/{approval}/resolve-expired`:
   - removes the line with `approval_expired` and writes `approval_resolved`;
   - an approval not yet expired is `409 approval_not_expired`;

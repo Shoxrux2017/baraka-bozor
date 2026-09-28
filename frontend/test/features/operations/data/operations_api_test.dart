@@ -166,6 +166,27 @@ void main() {
       );
     });
 
+    test('every event of Wave 3\'s actions is read (DL-54 (2))', () {
+      for (final String code in <String>[
+        'shopper_accepted',
+        'courier_accepted',
+        'item_purchased',
+        'item_unavailable',
+        'item_substituted',
+        'cancellation_requested',
+        'cancellation_request_decided',
+        'payment_recorded',
+      ]) {
+        final BoardOrder order = OperationsApi.parseOrder(
+          orderJson(
+            history: <Object?>[historyJson(event: code, details: null)],
+          ),
+        );
+
+        expect(order.history.single.event.code, code);
+      }
+    });
+
     test('an edit\'s details are counted and other events\' are not read', () {
       final BoardOrder order = OperationsApi.parseOrder(
         orderJson(

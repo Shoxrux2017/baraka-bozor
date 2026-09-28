@@ -10,34 +10,30 @@ use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderHistory;
-use App\Models\OrderShopperAssignment;
 use App\Models\User;
 use App\Modules\Orders\ShopperOrders;
-use App\Support\Scope\ScopedLookup;
 use Illuminate\Support\Facades\DB;
 
 /**
  * `POST /shopper/orders/{order}/start` (`docs/09` section 29,
  * `docs/04` section 12, `BR-ASSIGN-003`).
  *
- * Under the order lock, through the Shopper's own current assignment
- * (`DL-54` (3)). A start needs the assignment accepted (`409
- * order_state_conflict` otherwise, `DL-56` (3)); it moves the order from
- * `shopping_assigned` to `shopping` with `shopping_started_at`, records the
- * start on the assignment, and writes one `status_changed` row (`DL-54`
- * (23)). From then on the Customer can no longer edit or cancel the order
- * directly (`BR-ORDER-004`, `BR-CAN-001`): the edit and the cancellation take
- * the same lock and read the start. A started shopping started again is a
- * natural repeat (`BR-CON-005`).
+ * Under the order lock, through the Shopper's own current assignment read
+ * after the lock (`DL-54` (3), `DL-56` (6)). A start needs the assignment
+ * accepted (`409 order_state_conflict` otherwise, `DL-56` (3)); it moves the
+ * order from `shopping_assigned` to `shopping` with `shopping_started_at`,
+ * records the start on the assignment, and writes one `status_changed` row
+ * (`DL-54` (23)). From then on the Customer can no longer edit or cancel the
+ * order directly (`BR-ORDER-004`, `BR-CAN-001`): the edit and the
+ * cancellation take the same lock and read the start. A started shopping
+ * started again is a natural repeat (`BR-CON-005`).
  */
 final class StartShopping
 {
     public function start(User $shopper, string $orderId): Order
     {
         return DB::transaction(function () use ($shopper, $orderId): Order {
-            $order = ScopedLookup::lockOrNotFound(ShopperOrders::current($shopper)->whereKey($orderId));
-            /** @var OrderShopperAssignment $assignment the scope guarantees it */
-            $assignment = $order->currentShopperAssignment()->firstOrFail();
+            [$order, $assignment] = ShopperOrders::lockCurrent($shopper, $orderId);
 
             if ($assignment->started_at !== null) {
                 return $order;

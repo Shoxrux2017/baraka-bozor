@@ -62,6 +62,8 @@ final class ShopperOrdersApiTest extends TestCase
         OrderItem::factory()->for($earlier)->count(2)->create();
         OrderItem::factory()->for($earlier)->removed(ItemRemovedReason::CustomerRemoved)->create();
         OrderItem::factory()->for($earlier)->purchased()->create();
+        OrderItem::factory()->for($earlier)->awaitingCustomer()->create();
+        OrderItem::factory()->for($earlier)->removed(ItemRemovedReason::Unavailable)->create();
 
         // Not the Shopper's now: replaced, shopped, or someone else's.
         OrderShopperAssignment::factory()->ended(AssignmentEndReason::Reassigned)->create(['shopper_id' => $this->shopper->id]);
@@ -77,9 +79,13 @@ final class ShopperOrdersApiTest extends TestCase
             'id', 'order_number', 'status', 'item_count', 'open_item_count', 'delivery_time_note', 'assignment',
         ], array_keys($row));
         $this->assertSame('shopping_assigned', $row['status']);
-        $this->assertSame(3, $row['item_count'], 'The line the Customer took out is not the Shopper\'s.');
-        $this->assertSame(2, $row['open_item_count']);
+        $this->assertSame(5, $row['item_count'], 'The line the Customer took out is not the Shopper\'s; the unavailable one is.');
+        $this->assertSame(3, $row['open_item_count'], 'Pending and awaiting lines are open.');
         $this->assertNull($row['assignment']['accepted_at']);
+
+        $second = $this->as($this->shopper)->getJson('/api/v1/shopper/orders?per_page=1&page=2')->assertOk();
+        $this->assertSame([$later->id], array_column($second->json('data'), 'id'));
+        $this->assertSame(2, $second->json('meta.pagination.last_page'));
     }
 
     public function test_an_order_shows_what_to_buy_and_the_bound_of_each_product_never_the_address(): void
@@ -158,6 +164,46 @@ final class ShopperOrdersApiTest extends TestCase
         foreach ([$order->street_snapshot, $order->recipient_name_snapshot, '"address"', 'latitude', '"totals"', 'payment'] as $hidden) {
             $this->assertStringNotContainsString($hidden, $json, "docs/02 section 11: the Shopper never sees {$hidden}.");
         }
+    }
+
+    public function test_an_approved_price_and_a_cap_show_on_the_line_and_a_removed_line_stays_in_view(): void
+    {
+        $order = $this->shopping();
+        $replacement = Product::factory()->create(['market_price_uzs' => 17000]);
+        $replaced = OrderItem::factory()->for($order)->create([
+            'fulfilled_product_id' => $replacement->id,
+            'fulfilled_product_name_uz_snapshot' => $replacement->name_uz,
+            'fulfilled_product_name_ru_snapshot' => $replacement->name_ru,
+            'fulfilled_unit_code_snapshot' => UnitCode::Kg,
+            'substitution_resolution' => SubstitutionResolution::Approved,
+            'approved_replacement_price_uzs' => 22000,
+            'approved_quantity_cap' => '1.5',
+        ]);
+        $automatic = OrderItem::factory()->for($order)->create([
+            'fulfilled_product_id' => $replacement->id,
+            'fulfilled_product_name_uz_snapshot' => $replacement->name_uz,
+            'fulfilled_product_name_ru_snapshot' => $replacement->name_ru,
+            'fulfilled_unit_code_snapshot' => UnitCode::Kg,
+            'substitution_resolution' => SubstitutionResolution::Automatic,
+        ]);
+        $gone = OrderItem::factory()->for($order)->removed(ItemRemovedReason::Unavailable)->create();
+
+        $items = collect($this->as($this->shopper)->getJson("/api/v1/shopper/orders/{$order->id}")->assertOk()->json('data.items'))
+            ->keyBy('id');
+
+        $line = $items[$replaced->id];
+        $this->assertSame('1.500', $line['approved_quantity_cap']);
+        $this->assertSame(['customer_unit_price_uzs' => 21160, 'market_price_uzs' => 18400], $line['bound'], 'The original keeps its own bound.');
+        $this->assertSame('approved', $line['replacement']['substitution_resolution']);
+        $this->assertSame(17000, $line['replacement']['market_price_uzs']);
+        // BR-APP-009: the price the Customer approved for this replacement; 19 130 × 1.15 = 21 999.5 → 22 000.
+        $this->assertSame(['customer_unit_price_uzs' => 22000, 'market_price_uzs' => 19130], $line['replacement']['bound']);
+
+        // BR-PRICE-005: an estimate's replacement meets the estimate's ceiling.
+        $this->assertSame(['customer_unit_price_uzs' => 21160, 'market_price_uzs' => 18400], $items[$automatic->id]['replacement']['bound']);
+
+        $this->assertSame('removed', $items[$gone->id]['status']);
+        $this->assertSame('unavailable', $items[$gone->id]['removed_reason_code']);
     }
 
     public function test_the_customers_phone_shows_only_while_the_order_is_shopped(): void

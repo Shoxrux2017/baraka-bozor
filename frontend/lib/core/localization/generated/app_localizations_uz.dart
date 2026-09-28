@@ -1177,6 +1177,32 @@ class AppLocalizationsUz extends AppLocalizations {
   String get historyEventApprovalResolved => 'Tasdiq yopildi';
 
   @override
+  String get historyEventShopperAccepted => 'Yig\'uvchi buyurtmani qabul qildi';
+
+  @override
+  String get historyEventCourierAccepted => 'Kuryer buyurtmani qabul qildi';
+
+  @override
+  String get historyEventItemPurchased => 'Mahsulot sotib olindi';
+
+  @override
+  String get historyEventItemUnavailable => 'Mahsulot topilmadi';
+
+  @override
+  String get historyEventItemSubstituted => 'Mahsulot almashtirildi';
+
+  @override
+  String get historyEventCancellationRequested =>
+      'Mijoz bekor qilishni so\'radi';
+
+  @override
+  String get historyEventCancellationRequestDecided =>
+      'Bekor qilish so\'rovi ko\'rib chiqildi';
+
+  @override
+  String get historyEventPaymentRecorded => 'To\'lov qabul qilindi';
+
+  @override
   String get historyDeliveryWishChanged => 'yetkazish istagi o\'zgardi';
 
   @override

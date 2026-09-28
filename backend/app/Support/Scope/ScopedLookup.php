@@ -27,6 +27,14 @@ use LogicException;
  * `Builder`; a relation such as `$customer->orders()` is converted with
  * `->getQuery()`.
  *
+ * A scope judged on another table — `whereExists` on an assignment — is
+ * evaluated on the statement's snapshot, before `FOR UPDATE` is granted, and
+ * PostgreSQL does not evaluate it again after waiting on the lock. A mutation
+ * whose scope may change under that lock (a Shopper replaced while waiting)
+ * reads the scoping row again once it holds the lock (`DL-56` (6),
+ * `ShopperOrders::lockCurrent`); a scope on the locked row's own columns, such
+ * as the Customer's `customer_id`, needs nothing more.
+ *
  * Route parameters that carry a UUID are constrained by `UuidRouteParameters`,
  * so a malformed id never reaches a query and answers the same 404.
  */

@@ -185,7 +185,7 @@ Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54
 
 ## 28. Assigned Orders
 
-`GET /shopper/orders`, `GET /shopper/orders/{order}`. Current assignments only; any other order, a replaced Shopper's included, is the scope-safe `404` (`DL-54` (3)). The list is paginated, the longest-waiting assignment first, a row `{id, order_number, status, item_count, open_item_count, delivery_time_note, assignment{id, assigned_at, accepted_at, started_at}}`: `item_count` counts the lines the Shopper sees — every line but those the Customer removed before shopping — and `open_item_count` those still `pending` or `awaiting_customer`. The detail adds `customer_phone` (the recipient's, `null` unless the order is `shopping`), `can_accept`, `can_start` and `items`, oldest first:
+`GET /shopper/orders`, `GET /shopper/orders/{order}`. Current assignments only; any other order, a replaced Shopper's included, is the scope-safe `404` (`DL-54` (3)). The list is paginated, the longest-waiting assignment first, a row `{id, order_number, status, item_count, open_item_count, delivery_time_note, assignment{id, assigned_at, accepted_at, started_at}}`: `item_count` counts the lines the Shopper sees — every line but those the Customer removed before shopping — and `open_item_count` those still `pending` or `awaiting_customer`. The detail is `{id, order_number, status, delivery_time_note, customer_phone, assignment, can_accept, can_start, items}` — `customer_phone` the recipient's, `null` unless the order is `shopping` — with `items` oldest first:
 
 ```json
 {"id":"...","product_id":"...","name_uz":"...","name_ru":"...","unit_code":"kg","price_mode":"estimate",
