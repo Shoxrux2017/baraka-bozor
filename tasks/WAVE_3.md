@@ -30,7 +30,7 @@ None (`docs/06` section 5). The MapKit key (`DL-36`) blocks nothing here: no sta
 | W3-6 | Approvals: expiry, the scheduled command, the Operator's removal of an expired line, their attention types and the board's filter | Merged |
 | W3-7 | Shopper API: complete shopping with the final amounts | Merged |
 | W3-8 | Operations API: the Courier picker, assignment and reassignment; the board's Courier; the self-order mark; blocked assignees | Merged |
-| W3-9 | Courier API: deliveries, accept, start; the delay | Planned |
+| W3-9 | Courier API: deliveries, accept, start; the delay | Merged |
 | W3-10 | Courier API: delivered with cash, not delivered | Planned |
 | W3-11 | Cancellation requests and their decision; the Operator's cancellation after a failed delivery | Planned |
 | W3-12 | Admin API: price correction | Planned |

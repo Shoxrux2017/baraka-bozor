@@ -776,3 +776,21 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - Its row fixture now carries `courier` and `pending_approval_count`, as the contract does.
    - The Courier columns and the Courier picker in the panel are W3-13's.
 6. **An attention item read after its order stopped qualifying is left out.** The list narrows the orders in one statement and reads the people in another. A reassignment or an unblock committed in between leaves nothing to name and no instant, and the order no longer needs that attention.
+
+## DL-63 — The Courier's deliveries, accept and start, from W3-9 (2026-09-29, agent)
+
+1. **The Courier's scope mirrors the Shopper's** (`DL-54` (3), `DL-56` (6)).
+   - `CourierOrders::current` is the orders with the caller's current assignment. Any other order is the scope-safe `404`.
+   - `lockCurrent` reads the assignment again under the order lock, so an accept or a start that waited on a reassignment finds the order gone. A race test proves it for both.
+2. **One shape for the list and the order.** Unlike the Shopper, the Courier needs the whole order on every row to plan a route. The list and the detail are the same object:
+   - the recipient, the address, the delivery wishes and the payment method;
+   - the cash to collect, the final total for a cash order and `null` online;
+   - whether a cancellation request is pending;
+   - the caller's own assignment, with `can_accept` and `can_start`.
+   The lines, the prices and the Customer's account are never shown.
+3. **The handoff point** is the configuration `delivery.handoff_point`, from `DELIVERY_HANDOFF_POINT`, true by default. While it is false, the order carries `shopper_phone`, the phone of the Shopper who completed the shopping (`BR-DEL-006`, `DL-54` (11)). Otherwise the key is absent, not `null`, so a client cannot mistake a missing phone for a missing handoff point.
+4. **Accept and start.**
+   - Accept records the instant and writes one `courier_accepted` row. Start sets `on_the_way` with `on_the_way_at`, `delivery_started_at` and `delay_at`, and writes one `status_changed` row. Each again is a natural repeat.
+   - Start before accept, or on an order not `delivery_assigned`, is `409 delivery_state_conflict`. While a cancellation request is pending, it is refused the same way with `details.reason` `cancellation_request_pending`.
+   - `courier_not_assigned` and `delivery_not_ready` are not answered. An order without the caller's current assignment is the scope-safe `404` (`BR-ASSIGN-004`). An order not yet ready has no Courier assignment, so it is never in a Courier's scope. `shopper_not_assigned` is likewise unused.
+5. **`courier_delayed`.** It covers an order `on_the_way` whose current assignment's `delay_at` has come, at that instant exactly. Its `since` is `delay_at` and it names the Courier. Delay is attention, not a state (`BR-DEL-002`). The panel's words for it came with `DL-60` (5).

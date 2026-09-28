@@ -31,6 +31,9 @@ use Illuminate\Support\Facades\DB;
  * - `staff_blocked` — the order's current Shopper or Courier has been blocked,
  *   and the Operator reassigns it where the rules allow (`DL-54` (13)); since
  *   the earliest such block, naming the one blocked.
+ * - `courier_delayed` — an order on the way past its assignment's `delay_at`,
+ *   the start plus the threshold snapshotted on the order (`BR-DEL-002`,
+ *   `DL-63`); since `delay_at`, naming the Courier.
  * - `approval_pending` — a question has waited ten minutes without an answer
  *   and has not expired: the Operator calls the Customer (`BR-APP-002`), since
  *   the earliest such `attention_at`.
@@ -53,8 +56,10 @@ final class Attention
 
     public const STAFF_BLOCKED = 'staff_blocked';
 
+    public const COURIER_DELAYED = 'courier_delayed';
+
     /** @var list<string> */
-    public const TYPES = [self::APPROVAL_PENDING, self::APPROVAL_EXPIRED, self::SELF_ORDER, self::STAFF_BLOCKED];
+    public const TYPES = [self::APPROVAL_PENDING, self::APPROVAL_EXPIRED, self::COURIER_DELAYED, self::SELF_ORDER, self::STAFF_BLOCKED];
 
     /**
      * Narrows orders to those with an item of the type.
@@ -69,6 +74,9 @@ final class Attention
             self::STAFF_BLOCKED => self::open($orders)->where(static fn (Builder $blocked) => $blocked
                 ->whereHas('currentShopperAssignment.shopper', static fn (Builder $staff) => $staff->where('status', UserStatus::Blocked->value))
                 ->orWhereHas('currentCourierAssignment.courier', static fn (Builder $staff) => $staff->where('status', UserStatus::Blocked->value))),
+            self::COURIER_DELAYED => self::open($orders)
+                ->where('orders.status', OrderStatus::OnTheWay->value)
+                ->whereHas('currentCourierAssignment', static fn (Builder $assignment) => $assignment->where('delay_at', '<=', now())),
             self::APPROVAL_PENDING => self::open($orders)->whereExists(static fn (QueryBuilder $approval) => self::waitingTooLong(
                 $approval->selectRaw('1')->from('customer_approvals')->whereColumn('customer_approvals.order_id', 'orders.id'),
                 now(),
@@ -105,6 +113,7 @@ final class Attention
         $items = [
             ...self::selfOrderItems(),
             ...self::staffBlockedItems(),
+            ...self::courierDelayedItems(),
             ...self::approvalItems(self::APPROVAL_PENDING, $now),
             ...self::approvalItems(self::APPROVAL_EXPIRED, $now),
         ];
@@ -177,6 +186,34 @@ final class Attention
                 'since' => $since->toIso8601ZuluString(),
                 'shopper' => $shopper === null ? null : self::person($shopper),
                 'courier' => $courier === null ? null : self::person($courier),
+            ];
+        })->filter()->values()->all();
+    }
+
+    /**
+     * @return list<Item>
+     */
+    private static function courierDelayedItems(): array
+    {
+        $orders = self::narrow(Order::query(), self::COURIER_DELAYED)
+            ->with('currentCourierAssignment.courier')
+            ->get();
+
+        return $orders->map(static function (Order $order): ?array {
+            $assignment = $order->currentCourierAssignment;
+            // Read in a statement of its own: a delivery that ended in between
+            // needs nothing any more.
+            if ($assignment?->delay_at === null) {
+                return null;
+            }
+
+            return [
+                'type' => self::COURIER_DELAYED,
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'since' => $assignment->delay_at->toIso8601ZuluString(),
+                'shopper' => null,
+                'courier' => self::person($assignment->courier),
             ];
         })->filter()->values()->all();
     }
