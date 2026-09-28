@@ -24,9 +24,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * Once the Courier's assignment has ended — the answer to a retry of
  * delivered or not-delivered — the order tells the outcome but no longer who
- * receives it or where: `recipient`, `address` and `delivery_note` are `null`
- * and `shopper_phone` is absent, since the delivery is no longer the
- * Courier's (`DL-64` (7)).
+ * receives it, where or when: `recipient`, `address`, `delivery_note` and
+ * `delivery_time_note` are `null` and `shopper_phone` is absent, since the
+ * delivery is no longer the Courier's (`DL-64` (7)).
  *
  * Expects what `CourierOrders::withDetails()` loads.
  *
@@ -66,7 +66,7 @@ final class CourierOrderResource extends JsonResource
                 'landmark' => $order->landmark_snapshot,
             ],
             'delivery_note' => $holds ? $order->delivery_note_snapshot : null,
-            'delivery_time_note' => $order->delivery_time_note,
+            'delivery_time_note' => $holds ? $order->delivery_time_note : null,
             'payment_method' => $order->payment_method->value,
             'amount_to_collect_uzs' => $order->payment_method === PaymentMethod::Cash ? $order->final_total_uzs : null,
             'cancellation_request_pending' => $pending,

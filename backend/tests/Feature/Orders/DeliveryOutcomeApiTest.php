@@ -9,6 +9,7 @@ use App\Models\Enums\DeliveryFailureReason;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\PaymentMethod;
+use App\Models\Enums\PaymentProvider;
 use App\Models\Enums\PaymentStatus;
 use App\Models\Enums\Role;
 use App\Models\Order;
@@ -46,7 +47,13 @@ final class DeliveryOutcomeApiTest extends TestCase
 
         Carbon::setTestNow(CarbonImmutable::parse('2026-09-29T11:00:00Z'));
         $this->courier = User::factory()->role(Role::Courier)->create(['full_name' => 'Kamol Courier']);
-        $this->order = Order::factory()->onTheWay()->create(['ready_for_delivery_at' => now()->subHour()]);
+        $this->order = Order::factory()->onTheWay()->create([
+            'ready_for_delivery_at' => now()->subHour(),
+            'apartment_snapshot' => '12',
+            'landmark_snapshot' => 'Напротив школы',
+            'delivery_note_snapshot' => 'Позвонить у подъезда',
+            'delivery_time_note' => 'после 18:00',
+        ]);
         $this->assignment()->forceFill(['courier_id' => $this->courier->id])->save();
     }
 
@@ -149,6 +156,7 @@ final class DeliveryOutcomeApiTest extends TestCase
         $this->assertNull($first['data']['recipient']);
         $this->assertNull($first['data']['address']);
         $this->assertNull($first['data']['delivery_note']);
+        $this->assertNull($first['data']['delivery_time_note']);
         config(['delivery.handoff_point' => false]);
         $this->assertArrayNotHasKey('shopper_phone', $this->delivered(['cash_received_uzs' => self::TOTAL], $key)->assertOk()->json('data'));
 
@@ -278,16 +286,25 @@ final class DeliveryOutcomeApiTest extends TestCase
 
     public function test_the_orders_show_the_live_payment_not_a_cancelled_one(): void
     {
-        $order = Order::factory()->online()->completed()->create();
-        $paid = Payment::query()->where('order_id', $order->id)->sole();
+        // As in life, the cancelled payment came first and the paid one after.
+        $order = Order::factory()->online()->completedWithoutPayment()->create();
         Payment::factory()->create([
             'order_id' => $order->id,
             'method' => PaymentMethod::Online,
-            'provider' => $paid->provider,
-            'amount_uzs' => $paid->amount_uzs,
+            'provider' => PaymentProvider::Payme,
+            'amount_uzs' => $order->final_total_uzs,
             'status' => PaymentStatus::Cancelled,
             'cancelled_at' => now()->subHour(),
             'paid_at' => null,
+            'recorded_by_user_id' => null,
+        ]);
+        $paid = Payment::factory()->create([
+            'order_id' => $order->id,
+            'method' => PaymentMethod::Online,
+            'provider' => PaymentProvider::Payme,
+            'amount_uzs' => $order->final_total_uzs,
+            'status' => PaymentStatus::Paid,
+            'paid_at' => now(),
             'recorded_by_user_id' => null,
         ]);
 

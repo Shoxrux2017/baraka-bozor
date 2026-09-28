@@ -371,6 +371,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - calls to the recipient and, without a handoff point, to the Shopper;
   - opening the point in the map app (`DL-54` (16));
   - the refresh of `DL-54` (15).
+- The answers to delivered and not-delivered carry no recipient, address or notes (`DL-64` (7)): the app keeps what it showed before and reads only the outcome.
 - Tests: DTOs, the cash mismatch text with the expected amount, the reasons, both languages at phone width.
 
 **W3-19. Closure.**
