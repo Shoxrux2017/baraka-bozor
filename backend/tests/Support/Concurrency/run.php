@@ -22,6 +22,7 @@ use App\Models\User;
 use App\Modules\Orders\Actions\AssignShopper;
 use App\Modules\Orders\Actions\ChangeCart;
 use App\Modules\Orders\Actions\CreateOrder;
+use App\Modules\Orders\Actions\EditOrderItems;
 use Illuminate\Contracts\Console\Kernel;
 
 require __DIR__.'/../../../vendor/autoload.php';
@@ -58,6 +59,14 @@ try {
                 User::query()->findOrFail($arguments[0]),
                 $arguments[1],
                 $arguments[2],
+            )->id,
+        ],
+        'orders.edit' => [
+            'order_id' => $app->make(EditOrderItems::class)->edit(
+                User::query()->findOrFail($arguments[0]),
+                $arguments[1],
+                [['product_id' => $arguments[2], 'quantity' => $arguments[3]]],
+                null,
             )->id,
         ],
         default => throw new InvalidArgumentException("Unknown scenario {$scenario}."),

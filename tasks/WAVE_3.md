@@ -23,7 +23,7 @@ None (`docs/06` section 5). The MapKit key (`DL-36`) blocks nothing here: no sta
 | # | Task | Status |
 |---|---|---|
 | W3-1 | Schema: `order_courier_assignments`, `customer_approvals`, `order_cancellation_requests`, `order_item_price_corrections`, `payments`; the history events; models and factories | Merged |
-| W3-2 | Shopper API: assigned orders, accept, start | Planned |
+| W3-2 | Shopper API: assigned orders, accept, start | Merged |
 | W3-3 | Shopper API: record a purchase, mark a line unavailable | Planned |
 | W3-4 | Shopper API: ask about a price, a replacement or a smaller quantity; the replacement search | Planned |
 | W3-5 | Approvals: the Customer's list, detail and decision | Planned |

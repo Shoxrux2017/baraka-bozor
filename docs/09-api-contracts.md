@@ -185,11 +185,25 @@ Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54
 
 ## 28. Assigned Orders
 
-`GET /shopper/orders`, `GET /shopper/orders/{order}`. Current assignments only. While the order is `shopping` the resource carries `customer_phone`; it never carries the address.
+`GET /shopper/orders`, `GET /shopper/orders/{order}`. Current assignments only; any other order, a replaced Shopper's included, is the scope-safe `404` (`DL-54` (3)). The list is paginated, the longest-waiting assignment first, a row `{id, order_number, status, item_count, open_item_count, delivery_time_note, assignment{id, assigned_at, accepted_at, started_at}}`: `item_count` counts the lines the Shopper sees — every line but those the Customer removed before shopping — and `open_item_count` those still `pending` or `awaiting_customer`. The detail adds `customer_phone` (the recipient's, `null` unless the order is `shopping`), `can_accept`, `can_start` and `items`, oldest first:
+
+```json
+{"id":"...","product_id":"...","name_uz":"...","name_ru":"...","unit_code":"kg","price_mode":"estimate",
+ "quantity":"2.000","approved_quantity_cap":null,"customer_note":"...","substitution_policy":"allow_similar_substitution","status":"pending",
+ "market_price_uzs":16000,"customer_unit_price_uzs":18400,
+ "bound":{"customer_unit_price_uzs":21160,"market_price_uzs":18400},
+ "replacement":{"product_id":"...","name_uz":"...","name_ru":"...","market_price_uzs":15500,"substitution_resolution":"automatic",
+                "bound":{"customer_unit_price_uzs":21160,"market_price_uzs":18400}},
+ "purchase":{"product_id":"...","purchased_quantity":"2.000","billable_quantity":"2.000","actual_market_price_uzs":16000,"billable_unit_price_uzs":18400,"line_total_uzs":36800},
+ "removed_reason_code":null,
+ "pending_approval":{"id":"...","type":"price_over_tolerance","expires_at":"..."}}
+```
+
+`bound` is the bound of the original (`DL-54` (5)), `null` for a fixed line bought as itself; `replacement` is the authorized replacement, with its current market price and its own bound, or `null`; each bound is the customer price and the highest market price within it under the line's markup (`DL-54` (6)); `purchase` is `null` until the line is bought, `pending_approval` while no question is pending. The resource never carries the address, the Customer's name or any amount the order owes (`docs/02` section 11, `DL-56`).
 
 ## 29. Accept and Start
 
-`POST /shopper/orders/{order}/accept`, `POST /shopper/orders/{order}/start`. Natural no-op repeats. Start requires acceptance.
+`POST /shopper/orders/{order}/accept`, `POST /shopper/orders/{order}/start`, no body (`DL-31`); both answer `200` with the order of section 28. Natural no-op repeats. Start requires acceptance and a `shopping_assigned` order, else `409 order_state_conflict`; it moves the order to `shopping`, after which the Customer can no longer edit or cancel it directly (`DL-56` (3), (4)).
 
 ## 30. Record Purchase
 
