@@ -175,6 +175,14 @@ final class CompleteShoppingApiTest extends TestCase
             $this->assertSame(404, $refused->status());
         }
 
+        // The key names this order only: on another it is refused, not
+        // answered with this one (docs/09 section 48).
+        $another = Order::factory()->shopping()->create();
+        $another->shopperAssignments()->update(['shopper_id' => $this->shopper->id]);
+        $this->buy(OrderItem::factory()->for($another)->create(), ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 16000]);
+        $this->complete($key, order: $another->id)->assertStatus(409)->assertJsonPath('code', 'idempotency_key_reused');
+        $this->assertSame(OrderStatus::Shopping, $another->fresh()?->status);
+
         // Once another Shopper holds the order, the replay no longer reaches it.
         OrderShopperAssignment::factory()->create(['order_id' => $this->order->id, 'assigned_at' => now()->addMinute()]);
         $this->complete($key)->assertStatus(404);
@@ -186,24 +194,28 @@ final class CompleteShoppingApiTest extends TestCase
         $this->buy($bought, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 16000]);
         // A question still pending counts even on a line that no longer waits,
         // a state no action leaves but the contract names (docs/09 section 35).
-        $settled = $this->estimateLine();
+        // The lines are added in another order than they were placed, so the
+        // refusal's oldest-first list is the placing order, not the insertion.
+        $settled = $this->estimateLine(['created_at' => now()->subMinutes(2)]);
         $this->buy($settled, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 16000]);
         $stray = CustomerApproval::factory()->create(['order_item_id' => $settled->id, 'attention_at' => now()->addMinutes(10), 'expires_at' => now()->addMinutes(30)]);
-        $pending = $this->estimateLine();
+        $pending = $this->estimateLine(['created_at' => now()->subMinutes(3)]);
         $waiting = CustomerApproval::factory()->create([
-            'order_item_id' => OrderItem::factory()->for($this->order)->awaitingCustomer()->create()->id,
+            'order_item_id' => OrderItem::factory()->for($this->order)->awaitingCustomer()->create(['created_at' => now()->subMinute()])->id,
             'attention_at' => now()->subMinutes(5),
             'expires_at' => now()->addMinutes(15),
         ]);
         $overdue = CustomerApproval::factory()->create([
-            'order_item_id' => OrderItem::factory()->for($this->order)->awaitingCustomer()->create()->id,
+            'order_item_id' => OrderItem::factory()->for($this->order)->awaitingCustomer()->create(['created_at' => now()->subMinutes(4)])->id,
             'attention_at' => now()->subMinutes(21),
             'expires_at' => now()->subMinute(),
         ]);
         $key = (string) Str::uuid();
 
-        $refused = $this->complete($key)->assertStatus(409)->assertJsonPath('code', 'shopping_incomplete');
-        $this->assertEqualsCanonicalizing([$pending->id, $waiting->order_item_id, $overdue->order_item_id, $settled->id], $refused->json('details.item_ids'));
+        $this->complete($key)
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'shopping_incomplete')
+            ->assertJsonPath('details.item_ids', [$overdue->order_item_id, $pending->id, $settled->id, $waiting->order_item_id]);
         $stray->forceFill(['status' => ApprovalStatus::Cancelled, 'resolved_at' => now()])->save();
 
         $this->assertSame(OrderStatus::Shopping, $this->order->fresh()?->status);
