@@ -74,7 +74,7 @@ Operators and Admins assign one active Shopper to a `new` order (reassignment un
 
 ## 14. Market Shopping
 
-The Shopper accepts, starts, and per item: records purchased quantity and, for estimate items and replacements, the actual market price; marks unavailable; proposes a replacement; requests approval for a price over tolerance, a substitution needing consent, or a reduced quantity; continues with other items while one awaits the Customer; completes shopping when every item is `purchased` or `removed` and no approval is pending. If nothing was purchased the order is cancelled.
+The Shopper accepts, starts, and per item: records purchased quantity and, for estimate items and replacements, the actual market price; marks unavailable; proposes a replacement; requests approval for a price over tolerance, a substitution needing consent, or a reduced quantity; continues with other items while one awaits the Customer; completes shopping when every item is `purchased` or `removed` and no approval is pending. An action that removes the last line with nothing bought cancels the order at once (`DL-54` (7)).
 
 ## 15. Availability and Substitution
 
@@ -82,11 +82,11 @@ Rules `allow_similar_substitution`, `contact_before_substitution`, `remove_if_un
 
 ## 16. Customer Approval
 
-Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pending`, `approved`, `rejected`, `expired`. Ten minutes: Operator attention. Thirty minutes: expired. Approve applies the persisted proposal and returns the item to `pending` for the Shopper to record the purchase; reject removes the item; an expired approval can only be resolved by an Operator or Admin removing the item.
+Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pending`, `approved`, `rejected`, `expired`, and `cancelled` for an approval whose order is cancelled (`DL-54` (8)). Ten minutes: Operator attention. Thirty minutes: expired. Approve applies the persisted proposal and returns the item to `pending` for the Shopper to record the purchase; reject removes the item; an expired approval can only be resolved by an Operator or Admin removing the item.
 
 ## 17. Final Amount
 
-Each purchased item: billable unit price × billable quantity, rounded half-up to 1 UZS. Merchandise subtotal is the sum of rounded lines. Service fee: fixed, or the percentage of the subtotal rounded half-up. Total = subtotal + service fee + delivery fee. Computed once at shopping completion and again after an Admin price correction while the order is unpaid.
+Each purchased item: billable unit price × billable quantity, rounded half-up to 1 UZS. Merchandise subtotal is the sum of rounded lines. Service fee: fixed, or the percentage of the subtotal rounded half-up. Total = subtotal + service fee + delivery fee. Computed once at shopping completion and again after an Admin price correction while the order is unpaid and before the Courier sets off (`DL-54` (18)).
 
 ## 18. Payment
 
@@ -107,7 +107,7 @@ Accept, start (`on_the_way`, delay snapshot), delivered with cash received for c
 
 ## 22. Operator and Admin Panel
 
-Web panel. Order board with filters and the summary strip; attention list (pending and expired approvals, Customer no-response, unpaid online orders, outstanding refunds, delayed Couriers, failed deliveries, cancellation requests, self-orders); assignment; cancellation decisions; switch to cash; refund tracking; Admin-only catalog, staff, settings and provider enablement; audited price correction.
+Web panel. Order board with filters and the summary strip; attention list (approvals the Customer has not answered for ten minutes, expired approvals, unpaid online orders, outstanding refunds, delayed Couriers, failed deliveries, cancellation requests, self-orders, blocked assignees; `DL-54` (13)); assignment; cancellation decisions; switch to cash; refund tracking; Admin-only catalog, staff, settings and provider enablement; audited price correction.
 
 ## 23. Notifications
 

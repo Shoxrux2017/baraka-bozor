@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** current. Rewritten on 2026-09-24 to `DL-2`–`DL-4` in `docs/DECISIONS.md`. Tables marked *(migrated)* exist: `users` and `customer_otp_challenges` from Wave 0, and the seven Wave 1 tables of sections 5 to 8, 11, 12 and 25 (`DL-18`); the seven Wave 2 tables of sections 9, 10, 13 to 16 and 27 (`DL-38`). Every other table is created by the wave that first needs it, by forward migrations only.
+**Status:** current. Rewritten on 2026-09-24 to `DL-2`–`DL-4` in `docs/DECISIONS.md`. Tables marked *(migrated)* exist: `users` and `customer_otp_challenges` from Wave 0, and the seven Wave 1 tables of sections 5 to 8, 11, 12 and 25 (`DL-18`); the seven Wave 2 tables of sections 9, 10, 13 to 16 and 27 (`DL-38`). Wave 3 creates the five tables of sections 17 to 21, `payments` whole although it writes only cash rows (`DL-54` (2)). Every other table is created by the wave that first needs it, by forward migrations only.
 
 ## 1. Baseline
 
@@ -116,7 +116,8 @@ billable_quantity ≥ 0, ≤ ordered_quantity (or ≤ approved_quantity_cap when
 customer_note_snapshot?, substitution_policy_snapshot
 status                          pending|awaiting_customer|purchased|removed
 approved_quantity_cap?
-approved_unit_price_ceiling_uzs?
+approved_unit_price_ceiling_uzs?          the original's approved ceiling
+approved_replacement_price_uzs?           the price approved for the authorized replacement (Wave 3, DL-54 (5))
 fulfilled_product_id? → products
 fulfilled_product_name_uz_snapshot?, fulfilled_product_name_ru_snapshot?, fulfilled_unit_code_snapshot?
 substitution_resolution?        automatic|approved
@@ -134,7 +135,7 @@ Checks: purchased requires `purchased_quantity ≥ billable_quantity > 0`, a bil
 
 Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (user|system|payment_provider), actor_user_id?, reason_code?, note?, details jsonb?, created_at`. `details` holds structured facts an event needs to stay explainable: an edit's before and after, an assignment's id and `is_self_order` (`DL-37` (9), (14)). A `user` row names its actor and no other does; `details` is a JSON object. A trigger refuses every update and delete (`DL-38`).
 
-`event_type` in `status_changed, edited, payment_method_switched, price_corrected, shopper_assigned, shopper_reassigned, courier_assigned, courier_reassigned, delivery_failed, approval_requested, approval_decided, approval_expired, approval_resolved`. `reason_code` for cancellations in `customer_cancelled, cancellation_request_approved, unpaid_online, no_items_purchased, delivery_failed, system`. Index `(order_id, created_at)`.
+`event_type` in `status_changed, edited, payment_method_switched, price_corrected, shopper_assigned, shopper_reassigned, courier_assigned, courier_reassigned, delivery_failed, approval_requested, approval_decided, approval_expired, approval_resolved`, and from Wave 3 `shopper_accepted, courier_accepted, item_purchased, item_unavailable, item_substituted, cancellation_requested, cancellation_request_decided, payment_recorded` (`DL-54` (2)). `reason_code` for cancellations in `customer_cancelled, cancellation_request_approved, unpaid_online, no_items_purchased, delivery_failed, system`. Index `(order_id, created_at)`.
 
 ## 16. `order_shopper_assignments`
 
@@ -146,9 +147,9 @@ Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (us
 
 ## 18. `customer_approvals`
 
-`id, order_id, order_item_id, type (price_over_tolerance|substitution|reduced_quantity), status (pending|approved|rejected|expired), requested_by_user_id, proposed_customer_unit_price_uzs?, proposed_actual_market_price_uzs?, proposed_quantity?, replacement_product_id?, replacement_name_uz_snapshot?, replacement_name_ru_snapshot?, replacement_unit_code_snapshot?, request_note?, attention_at, expires_at, resolved_by_user_id?, resolved_at?, resolution? (approved|rejected|remove_item), timestamps`.
+`id, order_id, order_item_id, type (price_over_tolerance|substitution|reduced_quantity), status (pending|approved|rejected|expired|cancelled), requested_by_user_id, proposed_customer_unit_price_uzs?, proposed_actual_market_price_uzs?, proposed_quantity?, replacement_product_id?, replacement_name_uz_snapshot?, replacement_name_ru_snapshot?, replacement_unit_code_snapshot?, request_note?, attention_at, expires_at, resolved_by_user_id?, resolved_at?, resolution? (approved|rejected|remove_item), timestamps`.
 
-Partial unique `(order_item_id) WHERE status='pending'`. Indexes `(order_id, status)`, `(status, attention_at)`, `(status, expires_at)`.
+An approval whose order is cancelled ends `cancelled`, with no resolution (`DL-54` (8)). A `price_over_tolerance` approval carries `replacement_product_id` and its snapshots when it is about the line's authorized replacement (`DL-54` (5)). Partial unique `(order_item_id) WHERE status='pending'`. Indexes `(order_id, status)`, `(status, attention_at)`, `(status, expires_at)`.
 
 ## 19. `order_item_price_corrections`
 
@@ -156,7 +157,7 @@ Append-only: `id, order_item_id, old_actual_market_price_uzs, new_actual_market_
 
 ## 20. `order_cancellation_requests`
 
-`id, order_id, origin (customer|staff), requested_by_user_id, status (pending|approved|rejected), reason, resolved_by_user_id?, resolution_note?, resolved_at?, timestamps`. Partial unique `(order_id) WHERE status='pending'`.
+A request still pending when its order is cancelled another way ends `closed` (`DL-54` (12)). `id, order_id, origin (customer|staff), requested_by_user_id, status (pending|approved|rejected|closed), reason, resolved_by_user_id?, resolution_note?, resolved_at?, timestamps`. Partial unique `(order_id) WHERE status='pending'`.
 
 ## 21. `payments`
 
