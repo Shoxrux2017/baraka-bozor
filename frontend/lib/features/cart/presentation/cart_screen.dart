@@ -172,7 +172,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                             cart.lines.every(
                               (CartLine line) => line.isAvailable,
                             )
-                            ? () => context.push(AppPaths.customerCheckout)
+                            ? () {
+                                // The "added" notices stay behind, queued
+                                // ones too.
+                                ScaffoldMessenger.of(context).clearSnackBars();
+                                context.push(AppPaths.customerCheckout);
+                              }
                             : null,
                         child: Text(l10n.checkoutGo),
                       ),

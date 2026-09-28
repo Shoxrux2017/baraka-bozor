@@ -1,6 +1,6 @@
 # Wave 2 — Cart and order on cash
 
-Status: **In progress** (planned 2026-09-27). Plan under workflow v6 (`tasks/README.md`). Scope from `DL-5` and `docs/06-roadmap.md` sections 2 and 3; engineering decisions for the wave in `DL-37`.
+Status: **Closed** on 2026-09-28 (planned 2026-09-27). Plan under workflow v6 (`tasks/README.md`). Scope from `DL-5` and `docs/06-roadmap.md` sections 2 and 3; engineering decisions for the wave in `DL-37`.
 
 ## Goal
 
@@ -29,7 +29,7 @@ None (`docs/06` section 5). The MapKit key the Owner set aside (`DL-36`) blocks 
 | W2-13 | App: checkout — address, payment method, delivery wish, preview, confirm | Merged |
 | W2-14 | App: my orders — list, detail, edit, cancel | Merged |
 | W2-16 | App: add a product to a placed order | Merged |
-| W2-15 | Wave closure: full suites, builds, real-stack walkthrough of the wave's scenario, Owner checklist and report | Planned |
+| W2-15 | Wave closure: full suites, builds, real-stack walkthrough of the wave's scenario, Owner checklist and report | Merged |
 
 Backend first, in order; the panel after W2-7 and W2-8 (W2-9 needs no API and may go earlier); the app after W2-6. As in Wave 1 the split is by layer (`tasks/README.md` section 2 prefers slices): the panel and the app consume the same order API, and each screen task then tests against a merged contract.
 
@@ -78,6 +78,9 @@ Backend first, in order; the panel after W2-7 and W2-8 (W2-9 needs no API and ma
 | For Wave 3: a Shopper blocked after an assignment keeps the order — the assignment committed before the block (`DL-45` (2)) — and nothing on the board says so; the Shopper's own screens and the attention types of Wave 3 must surface it, or blocking must say which orders to reassign | Open for Wave 3 |
 | For W2-14: a confirmation whose outcome is unknown is kept in memory only (`DL-50` (4)); after a restart the Customer learns whether the order exists from "my orders", so W2-14 makes them reachable from the catalog and from an empty cart | Closed by W2-14 (`DL-51` (1)) |
 | The MapKit key and the free tier's fitness (`DL-36`) | Open, Owner; nothing in the wave depends on it |
+| Found in the closure walk: a build whose MapKit key Yandex refuses aborts about six seconds after launch (`DL-53` (1)) — the Owner's key today, and any key refused later for a lapsed tariff or an exceeded limit; before the map returns, MapKit must start only when the map is opened, not with the app | Open, before the map returns |
+| Found in the closure walk: in Customer mode a Shopper's or Courier's app bar holds six actions, and on a phone the title shortens to "Baraka…" | Open for Wave 4 (P3) |
+| For Wave 3: the board's attention list has no height of its own; below 1 584 px it stands above the orders, and as Wave 3 adds its attention types it can push them out of sight — cap it or let it fold | Open for Wave 3 |
 | Carried from Wave 1, for Wave 4: CORS for the API and for the image host in production, device pruning, the push token change stream | Open for Wave 4 |
 | Carried from Wave 1: iOS hands MapKit its key in `AppDelegate`, which needs a Mac (`DL-33` (6)) | Open until a Mac exists |
 | Carried from Wave 1: browser tests do not load on the development machine and run in CI only | Open until the local runner works |
@@ -91,4 +94,34 @@ None yet.
 
 ## Closure
 
-Not yet.
+Closed on 2026-09-28 at `main` = merge of PR #65 (`44d4e5b`) plus the closure pull request: the three fixes of `DL-53`, the walkthrough script `tasks/scripts/wave2_api_walkthrough.py`, and this record.
+
+**Verified by the agent:**
+
+| Check | Result |
+|---|---|
+| Backend suite in the Compose container, `php artisan test` | 631 passed, 5276 assertions |
+| Backend Pint and PHPStan | 353 files pass; no errors |
+| Backend and frontend CI on `main`'s last merged head (`44d4e5b`) | pass |
+| Frontend suite, `flutter test`, with the closure's fixes | 568 passed |
+| Frontend analyze, format and `gen-l10n` | no issues, 0 of 241 files changed, nothing regenerated |
+| Browser tests (`*_browser_test.dart`) | CI only, pass there (risk row above) |
+| `flutter build web --release` | built |
+| `flutter build apk --release`, `BB_API_BASE_URL=http://10.0.2.2:8000/api/v1`, no MapKit key | built, 127.7 MB |
+| Real stack (PostgreSQL 17 and PHP 8.4 in Compose, `php artisan serve` in a one-off container), the API walkthrough `tasks/scripts/wave2_api_walkthrough.py` | 45 of 45 steps pass: the Admin completes the settings, a category and three products (estimate by weight, fixed by the piece) and a second Shopper; the Customer fills a cart — a repeated product refused naming its line, a fraction of a piece refused — is refused below the minimum with the shortfall (15 500) and with online payment, previews cash (82 100, estimate), orders once whatever the retries, finds the cart empty and the order first among theirs; an edit below the minimum is refused, then one changes a quantity, takes a line out and adds a product; a second order is cancelled directly with nothing due, its retry answers the cancelled order, and a cancelled order can no longer be edited; the Customer cannot reach the board; the Shopper orders from their own phone in Customer mode; the Operator sees the three orders on the board, finds one by its number, filters by status, reads the summary strip, lists the active Shoppers, assigns, reassigns, is refused a stale reassignment, reads the history, assigns the Shopper their own order and sees it flagged as a self-order on the board and in the attention list, and the summary strip moves the assigned orders; the Customer may still edit and cancel before shopping starts |
+| Real stack, the web panel (`build/web` on loopback, headless Chrome 153 driven over the DevTools protocol) | the Operator signs in and lands on the board: the summary strip, the attention list with the self-order, the orders with their totals and kinds; opens an order — Customer, address, wish, lines with market and customer prices, totals, Shoppers, history; assigns a Shopper through the picker, which shows each Shopper's current orders, then changes the Shopper: the first assignment ends "handed to another Shopper" and the history says who replaced whom; a reload keeps the board; the Admin signs in to the same board in the Admin's shell. Found and fixed: at 1 366 and 1 440 px the Shopper column and the self-order mark needed scrolling sideways (`DL-53` (2)); checked again at 1 366, 1 400 and 1 920 px |
+| Real stack, the Android app on the emulator (`barakabozor` AVD, Android 16 `google_apis` x86_64, the release APK above) | the Customer signs in with a test phone and code; "my orders" from the catalog lists the orders in the Customer's words; an order shows its lines, totals and kind, address and the edit and cancel buttons; the editor adds tomatoes through the picker (category, product, "being added, at the current price"), sets 1,5 kg and saves: the order shows the new line and the estimate total with its explanation; a cart of 3 kg goes to the checkout — cash, online shown unavailable, the preview (75 200, estimate, the working-hours note) — and the order is placed; "open the order" leads to it, and back from it to the catalog; the order is cancelled with a reason: struck-through line, "cancelled by the Customer", nothing due, no buttons; the empty cart leads to "my orders"; the Shopper signs in as staff, continues as a Customer with the code to their own phone, and sees only their own order; no crash in logcat. Found and fixed: the keyless APK aborted about six seconds after every launch (`DL-53` (1)), and the "added to cart" notice never left and covered the checkout's confirm button (`DL-53` (3)); both checked again on the emulator or in the tests — the final keyless APK ran twelve minutes in use, through three cold starts and a return from the background, with no crash. Found and left: the title shortened in Customer mode (risk row above) |
+
+**Not verified by the agent, on the Owner's checklist or waiting for a gate:** the Yandex map, which needs a key Yandex accepts (`DL-36`) — and a build with a refused key aborts at launch (risk row above); iOS, which needs a Mac; a real phone; the panel in a headed browser with a person's keyboard and mouse; push, which arrives with FCM in Wave 4.
+
+**Owner's manual check.** Serve the stack and seed the staff accounts as `docker/README.md` "Walk a wave on the real stack" says; the staff password, the test phones and their code are in the local `backend/.env`. The emulator: install `frontend/build/app/outputs/flutter-apk/app-release.apk`, built for `http://10.0.2.2:8000/api/v1` without a MapKit key; do not install a build with the MapKit key until Yandex accepts it. The panel: `flutter run -d chrome --dart-define=BB_API_BASE_URL=http://127.0.0.1:8000/api/v1`.
+
+1. Panel, the Admin (+998 90 000 00 05): the settings have a minimum order, the service fee, the delivery fee and the working hours (for example 50 000, 5 000, 15 000, 08:00–22:00); a category with a product sold by weight at an estimate price and one sold by the piece at a fixed price.
+2. App, the Customer (a test phone and the code): add the weighed product with a fractional quantity (1,5) and the other by the piece, with a note and a rule; the cart shows the lines and the estimate subtotal; the "added to cart" notice leaves by itself.
+3. App, checkout below the minimum: the refusal names the minimum and what is missing; add more; online payment is shown but not selectable; the preview shows the lines, the service fee, the delivery, the total and that it is an estimate; confirm: the order number. Confirm only once, even on a slow network.
+4. App, "my orders" (the receipt icon in the catalog): the order in the Customer's words; "Change": change a quantity, take a line out, "Add a product" from a category or by search, save — the order shows the change and the new total; a product already in the order is not added twice.
+5. App: place a second order and cancel it, with or without a reason: it says it is cancelled and nothing is due.
+6. Panel, the Operator (+998 90 000 00 04): the board shows both orders with the summary strip; search by the order number, filter by status; open the first order and assign a Shopper; change the Shopper; the history says who did what. The Customer can still change or cancel that order in the app.
+7. The Shopper's own order — +998 90 000 00 02 must be among `LOGIN_CODE_TEST_PHONES` in `backend/.env` for the code: sign in to the app as the Shopper ("Sign in as staff"), "Continue as a Customer" with the code, order something; on the panel assign that order to the same Shopper: the board marks it "for self" and the attention list shows it.
+
+**What remains open:** the risk rows above marked Open; for the Owner, the MapKit key that Yandex still refuses and whether the free tier suits (`DL-36`) — and, once the map returns, MapKit starting only with the map (`DL-53` (1)). Wave 3 (fulfilment: the Shopper's and the Courier's screens, purchases, approvals, delivery with cash) starts next.

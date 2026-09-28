@@ -80,15 +80,21 @@ class _AddToCartSectionState extends ConsumerState<AddToCartSection>
       return;
     }
     if (answer != null) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(l10n.cartAdded),
-          action: SnackBarAction(
-            label: l10n.cartOpen,
-            onPressed: () => router.push(CartPaths.cart),
+      // A new notice replaces the last rather than queueing behind it.
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(l10n.cartAdded),
+            // With an action a snackbar would otherwise stay until dismissed,
+            // over the checkout's confirmation among others.
+            persist: false,
+            action: SnackBarAction(
+              label: l10n.cartOpen,
+              onPressed: () => router.push(CartPaths.cart),
+            ),
           ),
-        ),
-      );
+        );
       return;
     }
     final ApiFailure? failure = ref

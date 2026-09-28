@@ -25,9 +25,10 @@ class BoardScreen extends ConsumerWidget {
   const BoardScreen({super.key});
 
   /// From this width the attention list stands beside the orders and the
-  /// orders beside it are still a table: the table's own width, the gap,
-  /// the list and the board's padding.
-  static const double sideBySide = _Orders.tableWidth + 16 + 320 + 48;
+  /// table beside it still shows every column, the Shopper's included: the
+  /// table's usual width, the gap, the list and the board's padding. Below
+  /// it the list goes above the orders, which keep the whole width.
+  static const double sideBySide = _Table.usualWidth + 16 + 320 + 48;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -380,8 +381,9 @@ class _Labelled extends StatelessWidget {
 class _Orders extends ConsumerWidget {
   const _Orders();
 
-  /// From this width the orders are a table.
-  static const double tableWidth = 760;
+  /// From this width the orders are a table whose columns all show; below
+  /// it, cards, which show the same (`DL-53` (2)).
+  static const double tableWidth = _Table.usualWidth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -431,62 +433,105 @@ class _Orders extends ConsumerWidget {
   }
 }
 
-class _Table extends StatelessWidget {
+class _Table extends StatefulWidget {
   const _Table({required this.rows});
 
+  /// About the most the table takes in a desktop font: it measured 1 125 px
+  /// on the real stack in either language, and the Customer's and the
+  /// Shopper's cells, the ones names widen, wrap at [nameWidth] and
+  /// [shopperWidth] (`DL-53` (2)).
+  static const double usualWidth = 1200;
+  static const double nameWidth = 180;
+  static const double shopperWidth = 170;
+
   final List<BoardRow> rows;
+
+  @override
+  State<_Table> createState() => _TableState();
+}
+
+class _TableState extends State<_Table> {
+  // A table wider than its room shows that it scrolls sideways, which on the
+  // web a mouse would otherwise not reveal.
+  final ScrollController _sideways = ScrollController();
+
+  @override
+  void dispose() {
+    _sideways.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        showCheckboxColumn: false,
-        // A row grows with its two-line cells, so large text is never cut.
-        dataRowMinHeight: kMinInteractiveDimension,
-        dataRowMaxHeight: double.infinity,
-        columns: <DataColumn>[
-          DataColumn(label: Text(l10n.boardColumnNumber)),
-          DataColumn(label: Text(l10n.boardColumnPlaced)),
-          DataColumn(label: Text(l10n.boardColumnCustomer)),
-          DataColumn(label: Text(l10n.boardColumnStatus)),
-          DataColumn(label: Text(l10n.boardColumnPayment)),
-          DataColumn(label: Text(l10n.boardColumnTotal)),
-          DataColumn(label: Text(l10n.boardColumnShopper)),
-        ],
-        rows: <DataRow>[
-          for (final BoardRow row in rows)
-            DataRow(
-              onSelectChanged: (_) => context.go(OperationsPaths.order(row.id)),
-              cells: <DataCell>[
-                DataCell(
-                  Text(
-                    l10n.boardOrderNumber('${row.orderNumber}'),
-                    key: ValueKey<String>('board-row-${row.id}'),
+    return Scrollbar(
+      controller: _sideways,
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        controller: _sideways,
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          showCheckboxColumn: false,
+          columnSpacing: 24,
+          // A row grows with its two-line cells, so large text is never cut.
+          dataRowMinHeight: kMinInteractiveDimension,
+          dataRowMaxHeight: double.infinity,
+          columns: <DataColumn>[
+            DataColumn(label: Text(l10n.boardColumnNumber)),
+            DataColumn(label: Text(l10n.boardColumnPlaced)),
+            DataColumn(label: Text(l10n.boardColumnCustomer)),
+            DataColumn(label: Text(l10n.boardColumnStatus)),
+            DataColumn(label: Text(l10n.boardColumnPayment)),
+            DataColumn(label: Text(l10n.boardColumnTotal)),
+            DataColumn(label: Text(l10n.boardColumnShopper)),
+          ],
+          rows: <DataRow>[
+            for (final BoardRow row in widget.rows)
+              DataRow(
+                onSelectChanged: (_) =>
+                    context.go(OperationsPaths.order(row.id)),
+                cells: <DataCell>[
+                  DataCell(
+                    Text(
+                      l10n.boardOrderNumber('${row.orderNumber}'),
+                      key: ValueKey<String>('board-row-${row.id}'),
+                    ),
                   ),
-                ),
-                DataCell(Text(TashkentTime.format(row.createdAt))),
-                DataCell(
-                  Text(
-                    '${row.customerName}\n${formatPhone(row.customerPhone)}',
+                  DataCell(Text(TashkentTime.format(row.createdAt))),
+                  DataCell(
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: _Table.nameWidth,
+                      ),
+                      child: Text(
+                        '${row.customerName}\n${formatPhone(row.customerPhone)}',
+                        key: ValueKey<String>('board-customer-${row.id}'),
+                      ),
+                    ),
                   ),
-                ),
-                DataCell(OrderStatusChip(row.status)),
-                DataCell(
-                  Text(OrderLabels.paymentMethod(l10n, row.paymentMethod)),
-                ),
-                DataCell(
-                  Text(
-                    '${totalText(context, l10n, row.totalUzs, row.totalKind)}'
-                    '\n${l10n.boardItemCount(row.itemCount)}',
+                  DataCell(OrderStatusChip(row.status)),
+                  DataCell(
+                    Text(OrderLabels.paymentMethod(l10n, row.paymentMethod)),
                   ),
-                ),
-                DataCell(_ShopperCell(row: row)),
-              ],
-            ),
-        ],
+                  DataCell(
+                    Text(
+                      '${totalText(context, l10n, row.totalUzs, row.totalKind)}'
+                      '\n${l10n.boardItemCount(row.itemCount)}',
+                    ),
+                  ),
+                  DataCell(
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: _Table.shopperWidth,
+                      ),
+                      child: _ShopperCell(row: row),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
