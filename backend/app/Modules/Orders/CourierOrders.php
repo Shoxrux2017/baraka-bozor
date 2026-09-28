@@ -20,7 +20,8 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
  * Courier holds a current assignment on. Any other order — one whose
  * assignment was replaced or has ended included — stays outside the scope and
  * answers the scope-safe `404` (`ScopedLookup`), as `ShopperOrders` does for
- * the Shopper.
+ * the Shopper. The one way past that is `endedBy`: a retry of delivered or
+ * not-delivered learns the outcome of the Courier's own last assignment.
  */
 final class CourierOrders
 {

@@ -38,8 +38,11 @@ use Illuminate\Validation\ValidationException;
  * The online branch is Wave 5's: an online order cannot be on the way before
  * it (`DL-54` (1)), and one met here is refused rather than completed unpaid.
  *
- * A replay answers the order through the assignment delivered ended, while it
- * is the order's latest Courier assignment (`DL-54` (3)).
+ * A replay by the key, and a natural repeat with a new key — "deliver a
+ * completed one from the same assignment" (`docs/09` section 49,
+ * `BR-CON-005`) — answer the order through the assignment delivered ended,
+ * while it is the order's latest Courier assignment (`DL-54` (3)), and write
+ * nothing.
  */
 final class DeliverOrder
 {
@@ -61,7 +64,15 @@ final class DeliverOrder
 
     private function deliverNow(User $courier, string $orderId, ?int $cashReceivedUzs): Order
     {
-        [$order, $assignment] = CourierOrders::lockCurrent($courier, $orderId);
+        try {
+            [$order, $assignment] = CourierOrders::lockCurrent($courier, $orderId);
+        } catch (ApiException $refused) {
+            if ($refused->status() !== 404) {
+                throw $refused;
+            }
+
+            return CourierOrders::endedBy($courier, $orderId, AssignmentEndReason::Completed);
+        }
 
         if ($order->status !== OrderStatus::OnTheWay || $assignment->delivery_started_at === null
             || $order->payment_method !== PaymentMethod::Cash || $order->final_total_uzs === null) {

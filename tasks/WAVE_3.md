@@ -420,6 +420,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 | Task | Finding | Why not acted on |
 |---|---|---|
 | W3-9 (P3) | No test proves that an action's answer loads the Courier's own assignment rather than any current one | Closed by W3-10: the answer now keeps the assignment the action read under the order lock, or ended (`DL-64` (5)), and the delivered test fails when the answer reads it again |
+| W3-10 (P3) | No race test of delivered against not-delivered, or of two delivered with different keys | Both take the order lock and read the caller's assignment again under it, which `CourierReplacedRaceTest` proves for the Courier's actions; the first to commit ends the assignment, so the second finds none and answers its natural repeat or the scope-safe `404`; and `payments_order_live_unique` refuses a second live payment whatever happens |
 
 ## Closure
 

@@ -137,8 +137,22 @@ final class DeliveryOutcomeApiTest extends TestCase
         $this->assertSame(1, OrderHistory::query()->count());
         $this->delivered(['cash_received_uzs' => self::TOTAL - 1], $key)->assertStatus(409)->assertJsonPath('code', 'idempotency_key_reused');
 
-        // Anything else needs a current assignment.
-        $this->delivered(['cash_received_uzs' => self::TOTAL])->assertStatus(404);
+        // Delivered again with a new key is a natural repeat (docs/09 section
+        // 49, BR-CON-005): the order as it is, and no second payment.
+        $this->delivered(['cash_received_uzs' => self::TOTAL])->assertOk()->assertJsonPath('data.status', 'completed');
+        $this->assertSame(1, Payment::query()->count());
+        $this->assertSame(1, OrderHistory::query()->count());
+        // Another Courier's is not.
+        $this->delivered(['cash_received_uzs' => self::TOTAL], as: User::factory()->role(Role::Courier)->create())->assertStatus(404);
+
+        // The outcome, not the recipient: the delivery is no longer the Courier's.
+        $this->assertNull($first['data']['recipient']);
+        $this->assertNull($first['data']['address']);
+        $this->assertNull($first['data']['delivery_note']);
+        config(['delivery.handoff_point' => false]);
+        $this->assertArrayNotHasKey('shopper_phone', $this->delivered(['cash_received_uzs' => self::TOTAL], $key)->assertOk()->json('data'));
+
+        // A read needs a current assignment.
         $this->as($this->courier)->getJson("/api/v1/courier/orders/{$this->order->id}")->assertStatus(404);
         $this->assertSame([], $this->as($this->courier)->getJson('/api/v1/courier/orders')->json('data'));
 
@@ -197,8 +211,13 @@ final class DeliveryOutcomeApiTest extends TestCase
         $this->assertSame([OrderStatus::OnTheWay, OrderStatus::ReadyForDelivery], [$row->from_status, $row->to_status]);
         $this->assertEquals(['assignment_id' => $failed->id, 'reason_code' => 'no_answer'], $row->details);
 
-        // A repeat answers the order as it is and writes nothing, whatever its reason.
-        $this->notDelivered(['reason_code' => 'no_answer'])->assertOk()->assertJsonPath('data.status', 'ready_for_delivery');
+        // A repeat answers the order as it is and writes nothing, whatever its
+        // reason, telling the outcome but not the recipient any more.
+        $this->notDelivered(['reason_code' => 'no_answer'])->assertOk()->assertJsonPath('data.status', 'ready_for_delivery')
+            ->assertJsonPath('data.recipient', null)->assertJsonPath('data.address', null);
+        $this->assertNull($data['recipient'], 'The first answer already ended the assignment.');
+        // No other Courier reaches it that way.
+        $this->notDelivered(['reason_code' => 'no_answer'], as: User::factory()->role(Role::Courier)->create())->assertStatus(404);
         $this->notDelivered(['reason_code' => 'refused'])->assertOk();
         $this->assertSame(1, OrderHistory::query()->count());
         $this->assertSame(DeliveryFailureReason::NoAnswer, $this->assignment()->failed_reason_code);
@@ -228,6 +247,54 @@ final class DeliveryOutcomeApiTest extends TestCase
         $this->assertTrue($this->order->fresh()?->on_the_way_at?->equalTo(now()));
         $this->delivered(['cash_received_uzs' => self::TOTAL], as: $next)->assertOk()->assertJsonPath('data.status', 'completed');
         $this->assertSame($next->id, Payment::query()->where('order_id', $this->order->id)->sole()->recorded_by_user_id);
+    }
+
+    public function test_a_second_failure_is_the_one_that_counts(): void
+    {
+        $operator = User::factory()->role(Role::Operator)->create();
+        $this->notDelivered(['reason_code' => 'no_answer'])->assertOk();
+
+        Carbon::setTestNow(now()->addMinutes(30));
+        $next = User::factory()->role(Role::Courier)->create(['full_name' => 'Botir Courier']);
+        $this->as($operator)->postJson("/api/v1/operations/orders/{$this->order->id}/courier-assignment", ['courier_id' => $next->id])->assertOk();
+        $this->as($next)->postJson("/api/v1/courier/orders/{$this->order->id}/accept")->assertOk();
+        $this->as($next)->postJson("/api/v1/courier/orders/{$this->order->id}/start")->assertOk();
+        Carbon::setTestNow(now()->addMinutes(15));
+        $this->notDelivered(['reason_code' => 'refused'], as: $next)->assertOk();
+
+        // The first Courier's failure is no longer the order's latest.
+        $this->notDelivered(['reason_code' => 'no_answer'])->assertStatus(404);
+        $this->notDelivered(['reason_code' => 'refused'], as: $next)->assertOk();
+
+        $this->assertSame([[
+            'type' => 'delivery_failed',
+            'order_id' => $this->order->id,
+            'order_number' => $this->order->fresh()?->order_number,
+            'since' => now()->toIso8601ZuluString(),
+            'shopper' => null,
+            'courier' => ['id' => $next->id, 'full_name' => 'Botir Courier'],
+        ]], $this->as($operator)->getJson('/api/v1/operations/attention')->json('data'));
+    }
+
+    public function test_the_orders_show_the_live_payment_not_a_cancelled_one(): void
+    {
+        $order = Order::factory()->online()->completed()->create();
+        $paid = Payment::query()->where('order_id', $order->id)->sole();
+        Payment::factory()->create([
+            'order_id' => $order->id,
+            'method' => PaymentMethod::Online,
+            'provider' => $paid->provider,
+            'amount_uzs' => $paid->amount_uzs,
+            'status' => PaymentStatus::Cancelled,
+            'cancelled_at' => now()->subHour(),
+            'paid_at' => null,
+            'recorded_by_user_id' => null,
+        ]);
+
+        $customer = User::query()->findOrFail($order->customer_id);
+        $this->as($customer)->getJson("/api/v1/customer/orders/{$order->id}")->assertOk()->assertJsonPath('data.payment.status', 'paid');
+        $this->as(User::factory()->role(Role::Admin)->create())->getJson("/api/v1/operations/orders/{$order->id}")
+            ->assertOk()->assertJsonPath('data.payment.id', $paid->id);
     }
 
     public function test_not_delivered_takes_a_known_reason_and_a_note_with_other(): void
@@ -263,9 +330,9 @@ final class DeliveryOutcomeApiTest extends TestCase
     /**
      * @param  array<string, mixed>  $body
      */
-    private function notDelivered(array $body, ?Order $order = null): TestResponse
+    private function notDelivered(array $body, ?Order $order = null, ?User $as = null): TestResponse
     {
-        return $this->as($this->courier)->postJson('/api/v1/courier/orders/'.($order ?? $this->order)->id.'/not-delivered', $body);
+        return $this->as($as ?? $this->courier)->postJson('/api/v1/courier/orders/'.($order ?? $this->order)->id.'/not-delivered', $body);
     }
 
     private function as(User $user): self

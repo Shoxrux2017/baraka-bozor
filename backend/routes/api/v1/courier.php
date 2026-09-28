@@ -15,8 +15,9 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | The Courier's current deliveries and the actions on them. Every route
-| reaches an order only through the Courier's own current assignment
-| (DL-54 (3)).
+| reaches an order only through the Courier's own current assignment, but for
+| a retry of delivered or not-delivered, which learns the outcome through the
+| assignment it ended (DL-54 (3), DL-64 (3)).
 |
 */
 

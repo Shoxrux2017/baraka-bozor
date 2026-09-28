@@ -817,7 +817,7 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - One `delivery_failed` row carries the move, the reason in its `details` (the history's `reason_code` holds cancellation reasons only) and the note.
 3. **Retries after a lost answer** (`DL-54` (3)).
    - Both reach the order through the caller's own assignment the action ended — `completed` for delivered, `delivery_failed` for not delivered — only while it is the order's latest Courier assignment (`CourierOrders::endedBy`). Otherwise the answer is the scope-safe `404`.
-   - Delivered retries by its key.
+   - Delivered retries by its key, and also with a new key as the natural repeat of `docs/09` section 49 and `BR-CON-005`, "deliver a completed one from the same assignment": when the caller holds no current assignment, the delivery they completed answers and nothing is written. The new key then names the order.
    - Not delivered, unkeyed, retries as a natural repeat: when the caller holds no current assignment, the failure they recorded answers, whatever the repeat's reason. The failure is recorded once and a second reason changes nothing.
    - An assignment ended any other way, a cancellation's for one, answers nothing.
 4. **The payment in the orders.**
@@ -829,3 +829,4 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - `CourierOrders::loadDetails` no longer reads the caller's assignment again. It keeps the one set under the order lock, or the one the action ended, so delivered answers with the assignment it completed.
    - A reassignment committed after the action cannot change the answer. This closes the W3-9 finding recorded as not acted on.
 6. **`delivery_failed` attention** covers an order back in `ready_for_delivery` that a delivery failed on. Its `since` is the latest failure and it names that Courier. Assigning a Courier moves the order to `delivery_assigned`, which takes it off the list.
+7. **A retry learns the outcome, not the recipient** (`AGENTS.md` section 5). The Courier's answer through an ended assignment carries the order's status and the Courier's assignment, but `recipient`, `address` and `delivery_note` are `null` and `shopper_phone` is absent. Without this, a failed Courier could read the recipient's name, phone and address for as long as no later Courier is assigned — indefinitely, once W3-11's Operator cancels a failed order — by repeating not-delivered, and a Courier who delivered likewise by repeating delivered with new keys. A retry after a lost answer needs only the outcome.
