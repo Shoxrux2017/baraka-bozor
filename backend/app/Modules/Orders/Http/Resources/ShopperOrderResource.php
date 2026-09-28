@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Modules\Orders\PriceBound;
 use App\Modules\Orders\QuantityPolicy;
+use App\Modules\Orders\ShopperLine;
 use App\Modules\Orders\ShopperOrders;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -74,7 +75,7 @@ final class ShopperOrderResource extends JsonResource
     private function line(OrderItem $line, Order $order): array
     {
         $original = PriceBound::original($line, $order);
-        $replaced = $line->fulfilled_product_id !== null && $line->fulfilled_product_id !== $line->product_id;
+        $replaced = ShopperLine::replacementOf($line) !== null;
         $question = $line->approvals->first(static fn (CustomerApproval $approval): bool => $approval->status === ApprovalStatus::Pending);
 
         return [

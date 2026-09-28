@@ -20,7 +20,8 @@ use Illuminate\Validation\ValidationException;
  */
 final class QuantityPolicy
 {
-    private const DECIMAL = '/^\d{1,4}(\.\d{1,3})?\z/';
+    /** A quantity as a decimal string; a whole unit also takes it without the fraction. */
+    public const DECIMAL = '/^\d{1,4}(\.\d{1,3})?\z/';
 
     private const WHOLE = '/^\d{1,4}\z/';
 

@@ -605,3 +605,33 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - **The test.** A race test plays the reassignment on a second connection while the accept, and then the start, waits in another process. It fails without the fix.
    - **The rule.** `ScopedLookup` now states it: a scope that reads another table and can change under the lock is read again once the lock is held. A scope on the locked row's own columns, such as the Customer's `customer_id`, needs nothing more.
 7. **The panel reads every Wave 3 history event** (`DL-54` (21)). The panel's parser refused a history event it did not know. The first `shopper_accepted` row would therefore have stopped the Operator opening that order, just when a reassignment is still allowed. So the panel now knows all eight events of `DL-55` (7), with their words, and the later backend tasks do not break it.
+
+## DL-57 — Recording a purchase and an unavailable line, from W3-3 (2026-09-28, agent)
+
+1. **One gate for every Shopper action on a line.** `ShopperLine::lockPending()` runs these checks in this order:
+   - the order under its lock, through the caller's own assignment read after it (`DL-56` (6));
+   - shopping started (`409 shopping_not_active`);
+   - the line locked after the order (`docs/07` section 16). It must be one the Shopper sees; a line the Customer removed, and another order's, are the scope-safe `404`;
+   - the line still `pending` (`409 item_already_resolved`).
+
+   The questions of W3-4 go through the same gate.
+2. **The purchase** (`DL-54` (4)).
+   - **What is checked, in order:**
+     - the request's form: the quantity by the line's own unit, and the price paid as a JSON integer up to the catalog's bound of 10⁹;
+     - the product bought: the line's own or its authorized replacement, or else `422` on `fulfilled_product_id`. Left out, it is the replacement when there is one;
+     - the price paid, when it is needed;
+     - the quantity: below the ordered quantity or an approved cap, `409 customer_approval_required` with `reduced_quantity` and the quantity required;
+     - the price: above the bound of the product bought, the same code with `price_over_tolerance`, the bound and the price proposed.
+   - **What is billed.** The billable quantity is the ordered quantity or the cap, so the excess is never billed. The total is `MoneyCalculator::lineTotal`.
+   - **Buying the original** copies its names and unit from the line (`DL-55` (12)) and drops a replacement's authorization and approved price.
+   - **Keys and history.** It is idempotent: a replay answers the order through the Shopper's current scope. It writes one `item_purchased` row whose `details` hold the purchase.
+3. **An unavailable line.**
+   - It is removed with `unavailable`, whatever its rule, and writes one `item_unavailable` row with the Shopper's note.
+   - `NothingLeftToBuy` cancels an order left with every line removed: the Shopper's assignment ends with `order_cancelled` and a pending request closes. The same row then carries the move, the reason and the closed request (`DL-54` (7), (12), (23)).
+   - The answer is the cancelled order, without the Shopper's assignment. The next read is the scope-safe `404`: the order has left the Shopper's hands.
+4. **What each reader sees of a purchase.**
+   - **The Customer:** the quantity and the price to pay for one unit once bought (`billable_quantity`, `billable_unit_price_uzs`), and the replacement's names. Never the price paid at the market (`BR-PRICE-001`), and not the quantity bought: the Customer's view is the bill, and the excess stays off it (`docs/04` section 15).
+   - **Staff** (`DL-44` (5)), on the board: the quantities bought and billed, the price paid, the billable price, and the replacement with how it was authorized. Staff judge the Shopper by these.
+   - **The merged clients** ignore members they do not know, so neither needed a change (`DL-54` (21)).
+5. **One purchase, however it is written.** The fingerprint (`DL-39` (7)) compares the purchase as it was meant. A quantity written `"2"` or `"2.000"` is one quantity, an id in either case is one id, and an absent price is a `null` price. A retry written differently by the app is therefore a replay, not `idempotency_key_reused`. Naming the product and leaving it out stay two requests, since only the line says what left out means.
+6. **A removed line shows no replacement.** Whatever was authorized on a removed line is moot once nothing will be bought, so every reader sees `replacement` as `null` for it (`ShopperLine::replacementOf`). The line's columns keep the authorization, as the history of what happened.

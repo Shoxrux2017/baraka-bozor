@@ -11,6 +11,7 @@ use App\Models\OrderItem;
 use App\Models\OrderShopperAssignment;
 use App\Modules\Orders\OrderTotals;
 use App\Modules\Orders\QuantityPolicy;
+use App\Modules\Orders\ShopperLine;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -81,6 +82,22 @@ final class BoardOrderResource extends JsonResource
                 'markup_percent' => $item->markup_percent_snapshot,
                 'line_total_uzs' => $item->status === OrderItemStatus::Removed ? 0 : OrderTotals::lineEstimate($item),
                 'removed_reason_code' => $item->removed_reason_code?->value,
+                // The purchase, with the price paid, which staff judge the
+                // Shopper by (DL-44 (5), DL-57 (4)).
+                'purchased_quantity' => $item->purchased_quantity === null
+                    ? null
+                    : QuantityPolicy::format($item->unit_code_snapshot, $item->purchased_quantity),
+                'billable_quantity' => in_array($item->status, [OrderItemStatus::Pending, OrderItemStatus::AwaitingCustomer], true)
+                    ? null
+                    : QuantityPolicy::format($item->unit_code_snapshot, $item->billable_quantity),
+                'actual_market_price_uzs' => $item->actual_market_price_uzs,
+                'billable_unit_price_uzs' => $item->billable_unit_price_uzs,
+                'replacement' => ShopperLine::replacementOf($item) === null ? null : [
+                    'product_id' => $item->fulfilled_product_id,
+                    'name_uz' => $item->fulfilled_product_name_uz_snapshot,
+                    'name_ru' => $item->fulfilled_product_name_ru_snapshot,
+                    'substitution_resolution' => $item->substitution_resolution?->value,
+                ],
             ])->all(),
             'totals' => [
                 'merchandise_subtotal_uzs' => $totals->merchandiseSubtotalUzs,
