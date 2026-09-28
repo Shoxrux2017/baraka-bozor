@@ -86,7 +86,7 @@ Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pendin
 
 ## 17. Final Amount
 
-Each purchased item: billable unit price × billable quantity, rounded half-up to 1 UZS. Merchandise subtotal is the sum of rounded lines. Service fee: fixed, or the percentage of the subtotal rounded half-up. Total = subtotal + service fee + delivery fee. Computed once at shopping completion and again after an Admin price correction while the order is unpaid.
+Each purchased item: billable unit price × billable quantity, rounded half-up to 1 UZS. Merchandise subtotal is the sum of rounded lines. Service fee: fixed, or the percentage of the subtotal rounded half-up. Total = subtotal + service fee + delivery fee. Computed once at shopping completion and again after an Admin price correction while the order is unpaid and before the Courier sets off (`DL-54` (18)).
 
 ## 18. Payment
 

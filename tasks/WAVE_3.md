@@ -46,7 +46,7 @@ The order of work:
 
 - **Backend** first, in the order of the table.
 - **Panel** after W3-12.
-- **App**, for the Shopper after W3-7, for the Customer after W3-11, and for the Courier after W3-10.
+- **App**, for the Shopper after W3-7, for the Customer and the Courier after W3-11.
 
 As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task that changes an answer a merged screen reads also changes that screen's reading in the same pull request (`DL-54` (21)).
 
@@ -61,10 +61,15 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - one pending cancellation request per order;
   - one live payment per order.
 - `payments` is created whole: provider, statuses, `attention_at` (`DL-54` (2)).
-- A forward migration of the `order_history` event check adds the Wave 3 events (`DL-54` (2)).
+- Forward migrations of Wave 2's tables (`DL-54` (2)):
+  - the `order_history` event check gains the Wave 3 events;
+  - `order_items` gains `approved_replacement_price_uzs`, only on a line with an authorized replacement.
 - Checks that hold for any writer:
   - **Courier assignments.** An ended assignment has its reason, and a failed one its failure reason. A delivery start follows acceptance, and `delay_at` comes with the start.
-  - **Approval proposals** match their type: a price for `price_over_tolerance`, a quantity for `reduced_quantity`, and a replacement with its snapshots for `substitution`.
+  - **Approval proposals** match their type:
+    - a price for `price_over_tolerance`, with a replacement and its snapshots when it is about one;
+    - a quantity for `reduced_quantity`;
+    - a replacement with its snapshots for `substitution`.
   - **Approval statuses** hold their columns:
     - `pending` has no resolver, instant or resolution;
     - `approved` and `rejected` have the Customer as resolver, the instant, and the resolution of the same name;
@@ -141,9 +146,10 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - writes `approval_requested`;
   - sets the line to `awaiting_customer`.
 - `GET /shopper/orders/{order}/items/{item}/replacements?search=` (`DL-54` (17)).
+- The board's order detail lists the approvals (`docs/09` section 38).
 - Tests:
   - each branch of the substitution, per rule and ceiling;
-  - a replacement's approved price is not carried to another replacement;
+  - a replacement's approved price is not carried to another replacement, and the original's approved ceiling survives a new one;
   - the same automatic replacement again, and a different one;
   - a fixed original's automatic ceiling;
   - a second question on an awaiting line;
@@ -157,7 +163,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - approve applies the proposal onto the line and returns it to `pending`;
   - reject removes the line with `customer_rejected`;
   - `approval_decided` is written either way;
-  - an overdue approval is expired first, in a transaction of its own, then refused with `409 approval_expired`;
+  - an overdue approval is expired first, in a transaction of its own, then refused with `409 approval_expired`. This task writes that shared step, and W3-6 runs it before every other action;
   - an already resolved approval is `409 approval_already_resolved`.
 - The Customer's order carries each line's pending approval, and the list carries `pending_approval_count`.
 - Tests:
@@ -171,7 +177,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 **W3-6. Expiry and the Operator's removal.**
 
 - **Expiry** (`DL-54` (8)):
-  - the first step of every action on an order;
+  - the step of W3-5, made the first step of every action on an order, the merged ones of W3-3 and W3-4 included;
   - `approvals:expire`, scheduled every minute in `routes/console.php`;
   - derived on every read.
 - `POST /operations/approvals/{approval}/resolve-expired`:
@@ -180,7 +186,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - the same removal again is a natural repeat.
 - Attention types `approval_pending` and `approval_expired`.
 - The board's `awaiting_customer` filter and each row's `pending_approval_count`.
-- The panel reads the new types and nullable fields (`DL-54` (21)).
+- The panel reads every attention type of `docs/09` section 38, and nullable `shopper` and `courier`, with the words for this task's types. It shows a type it has no words for yet generically, so the later tasks' types never break it (`DL-54` (21)).
 - Tests:
   - the command, run twice;
   - expiry on the way through an action that then refuses;
@@ -196,7 +202,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 - The final amounts come from `MoneyCalculator` over the rounded lines, with the snapshotted fee rule (`BR-MONEY-003` to `006`).
 - The order becomes `ready_for_delivery`, with `shopping_completed_at` and `ready_for_delivery_at`. The assignment ends `completed`.
 - From then on, the totals are the stored final amounts (`DL-37` (10)).
-- A replay answers through the ended assignment (`DL-54` (3)).
+- A replay answers through the ended assignment while no later Shopper holds the order (`DL-54` (3)).
 - The online branch comes with Wave 5.
 - Tests:
   - the amounts for fixed, estimate, excess, capped and replaced lines, in both fee modes, checked against the database's own checks (`DL-38` (2));
@@ -209,6 +215,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 - The board:
   - the `courier_id` filter;
   - a row's Courier, and the detail's `courier_assignments`;
+  - the `shopper_id` and `courier_id` filters matching the person a row names;
   - the self-order mark, and a row's Shopper and Courier, as `DL-54` (14) sets them;
   - the `staff_blocked` attention type (`DL-54` (13)).
 - The panel reads the rows and items that no longer have a current Shopper (`DL-54` (21)).
@@ -225,7 +232,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 
 - `GET /courier/orders` and `GET /courier/orders/{order}` (`docs/09` section 36), with `shopper_phone` per `DL-54` (11).
 - `accept` and `start` are natural repeats: accept writes `courier_accepted`, and start sets `on_the_way` with `delay_at`.
-- Attention type `courier_delayed`.
+- Attention type `courier_delayed`, with its words in the panel (`DL-54` (21)).
 - Tests:
   - scope;
   - the handoff setting both ways;
@@ -239,12 +246,12 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - writes the cash payment, and `payment_recorded`;
   - completes the order and the assignment, in one transaction.
 - The Customer's order and the board's order show the payment.
-- Not delivered returns the order to `ready_for_delivery`, with `delivery_failed`.
+- Not delivered returns the order to `ready_for_delivery`, with `delivery_failed`. History rows per `DL-54` (23).
 - A replay of delivered, and a repeat of not-delivered, answer through the ended assignment (`DL-54` (3)).
-- Attention type `delivery_failed`.
+- Attention type `delivery_failed`, with its words in the panel.
 - Tests:
   - the cash mismatch, with its expected amount;
-  - the replay and the repeat after the assignment ended;
+  - the replay and the repeat after the assignment ended, and the scope-safe `404` once another Courier holds the order;
   - a failed delivery, reassigned and then delivered;
   - the summary's completed count and sales.
 
@@ -256,7 +263,8 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 - The Courier's start is refused while a request is pending.
 - `cancellation_requested` and `cancellation_request_decided` are written.
 - The Customer's order carries its latest request, and the board's detail its `cancellation_requests`.
-- Attention type `cancellation_request`.
+- Attention type `cancellation_request`, with its words in the panel.
+- History rows per `DL-54` (23).
 - Tests:
   - the state window, `shopping` to `delivery_assigned`;
   - one pending request per order;
@@ -265,6 +273,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - the same and the other decision repeated;
   - the Courier's start refused while pending;
   - the Operator's cancellation only after a failed delivery and with no request pending;
+  - a decision on a `closed` request;
   - a request closed by the last line removed.
 
 **W3-12. Price correction.**
@@ -387,6 +396,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 | A started shopping whose Shopper is blocked, and a delivery on the way whose Courier is blocked, cannot move to someone else (`BR-ASSIGN-002`). The attention list shows both (`DL-54` (13)). A started shopping ends by the Customer's cancellation request. A delivery on the way has no way out but the Admin unblocking the Courier, so the block confirmation names the person's current orders (W3-13). The documents settle this; changing it would be the Owner's decision | Accepted for the wave |
 | A weighed line bought below its ordered weight needs the Customer's approval (`BR-QTY-005`), so the Shopper buys at or above it and the company absorbs the excess (`BR-QTY-004`). If the pilot shows short weights to be common, a tolerance for them is the Owner's decision | Open, Owner, after the pilot |
 | The handoff point is the server configuration `delivery.handoff_point`, on by default (interview 1.1, option A). The Owner confirms at deployment whether it exists at launch | Open for Wave 4 |
+| For Wave 5: the `unpaid_online` cancellation must close or refuse a pending cancellation request, as the last line removed does (`DL-54` (12)) | Open for Wave 5 |
 | The scheduler runs nowhere until Wave 4 deploys one; until then expiry is written by actions and derived by reads (`DL-54` (8)) | Open for Wave 4 |
 | Carried from Wave 2: a build whose MapKit key Yandex refuses aborts at launch (`DL-53` (1)). Before the map returns, MapKit must start only when the map is opened | Open, before the map returns |
 | Carried from Wave 2: in Customer mode a Shopper's or Courier's app bar holds six actions, and the title shortens on a phone. The areas of W3-15 and W3-18 must not repeat it | Open for Wave 4 (P3) |

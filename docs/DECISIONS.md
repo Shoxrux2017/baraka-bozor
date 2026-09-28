@@ -326,12 +326,16 @@ Taken while planning `tasks/WAVE_3.md` and revised by its review; each task reco
 2. **Tables and vocabularies.**
    - W3-1 creates `order_courier_assignments`, `customer_approvals`, `order_cancellation_requests`, `order_item_price_corrections` and `payments` as `docs/08` describes them. `payments` is created whole, although this wave writes only the cash row that a delivery records. Wave 5 then adds `payment_attempts`, `provider_events` and `refunds` beside a table it need not reshape.
    - A forward migration of the `order_history.event_type` check adds the events this wave's actions write besides status changes: `shopper_accepted`, `courier_accepted`, `item_purchased`, `item_unavailable`, `item_substituted` (an automatic replacement), `cancellation_requested`, `cancellation_request_decided` and `payment_recorded`. The history then explains every action (`docs/05` section 22), and a purchase's instant is its row's.
+   - A forward migration gives `order_items` the column `approved_replacement_price_uzs`: the price the Customer approved for the authorized replacement. It sits beside `approved_unit_price_ceiling_uzs`, which stays the original's approved ceiling ((5)).
+   - A `price_over_tolerance` approval names the replacement when it is about the authorized one ((5)).
    - Approvals gain the status `cancelled` ((8)), and cancellation requests the status `closed` ((12)).
 3. **The Shopper's and the Courier's scope.**
    - Their endpoints live under `/shopper` and `/courier`, in the `Orders` module (`DL-37` (1)).
    - They reach an order only through the caller's current assignment of that kind. Any other order is the scope-safe `404` (`BR-ASSIGN-004`), including one whose assignment was replaced or has ended.
    - Completion ends the Shopper's assignment, so a shopped order leaves the Shopper's list. Delivery, or a failed delivery, ends the Courier's.
-   - **A retry after a lost answer.** A replay of a keyed action (`DL-39` (1)) and a natural repeat of a failed delivery load the order through the caller's own assignment that the action ended: the Shopper's, ended `completed` by completion; the Courier's, ended `completed` by delivery or `delivery_failed` by a failed delivery. A Shopper or Courier whose answer was lost thus learns the outcome (`BR-CON-005`, `docs/09` section 49). Reads and every other action still need a current assignment.
+   - **A retry after a lost answer.** A replay of a keyed action (`DL-39` (1)) and a natural repeat of a failed delivery load the order through the caller's own assignment that the action ended: the Shopper's, ended `completed` by completion; the Courier's, ended `completed` by delivery or `delivery_failed` by a failed delivery. A Shopper or Courier whose answer was lost thus learns the outcome (`BR-CON-005`, `docs/09` section 49).
+     - This reach lasts only while that assignment is the order's latest of its kind. Once another Shopper or Courier holds the order, the answer is the scope-safe `404`, so a Courier whose delivery failed cannot keep reading an order handed to someone else.
+     - Reads and every other action still need a current assignment.
    - A Shopper's keyless action that cancelled the order ((7)) answers the cancelled order. A retry of it after a lost answer finds the order gone from the Shopper's list, which is what happened.
 4. **Recording a purchase.**
    - **Quantity.** The billable quantity is the purchased quantity, capped at the ordered quantity or at an approved cap (`BR-QTY-003`, `BR-QTY-004`).
@@ -343,9 +347,12 @@ Taken while planning `tasks/WAVE_3.md` and revised by its review; each task reco
    - **What the Customer sees** is the billable customer price, never the price paid (`BR-PRICE-001`).
 5. **Replacements and approved prices.**
    - **One replacement at a time.** A line carries at most one authorized replacement. A new substitution replaces it, judged afresh and with its own history row. The same product again, judged the same, is a natural repeat.
-   - **An approved price belongs to the product it was approved for.**
-     - A `price_over_tolerance` approval raises the ceiling of the product the line is then to be fulfilled with; the price question names that product as a purchase does ((4)).
-     - A `substitution` approval authorizes its replacement at its proposed price and no higher.
+   - **An approved price belongs to the product it was approved for.** The price question names its product as a purchase does ((4)).
+     - A `price_over_tolerance` approval about the original raises the original's ceiling, `approved_unit_price_ceiling_uzs`.
+     - One about the authorized replacement names that replacement, and sets `approved_replacement_price_uzs`.
+     - A `substitution` approval authorizes its replacement at its proposed price and no higher, also in `approved_replacement_price_uzs`.
+     - A new substitution clears `approved_replacement_price_uzs` and keeps the original's ceiling.
+     - A purchase of the original is held to the original's ceiling. A purchase of the replacement is held to its approved price, or else to the automatic ceiling.
    - **Judging a substitution.** A substitution is judged against the automatic ceiling of `BR-PRICE-005`: a fixed original's snapshot, or an estimate original's estimate plus tolerance, or a higher ceiling approved for the original. It is never judged against a price approved for another replacement, so the Customer's yes to one replacement's price never authorizes another.
 6. **The ceiling as a market price.** The Shopper's line carries its ceiling as a customer price, and as the highest whole market price whose customer price stays within it, computed by the server. The Shopper then compares the stall's price with a number of the same kind, and the client computes no money (`DL-37` (19)).
    - With the line's markup as `K` hundredths of a percent and the ceiling as `C`, that price is `floor(((2C + 1) × 10 000 − 1) / (2 × (10 000 + K)))`: the largest whole `m` with `half_up(m × (10 000 + K) / 10 000) ≤ C`.
@@ -366,7 +373,7 @@ Taken while planning `tasks/WAVE_3.md` and revised by its review; each task reco
      - Approve writes the persisted proposal onto the line (the ceiling, the replacement with its price, or the cap) and returns the line to `pending` (`DL-3` S-7).
      - Reject removes the line with `customer_rejected`.
      - The Operator's resolution of an expired approval removes the line with `approval_expired`.
-   - **Finding what waits on the Customer.** The board filters on pending approvals (`DL-3` S-6): it gains `awaiting_customer`, and each row its `pending_approval_count`. The Customer's own order list carries the count too.
+   - **Finding what waits on the Customer.** The board filters on pending approvals (`DL-3` S-6): it gains `awaiting_customer`, and each row its `pending_approval_count`. The Customer's own order list carries the count too. Both leave out approvals past their expiry, as a read does.
 9. **Keys.**
    - An `Idempotency-Key` is required where `docs/09` section 48 lists it: the approval decision, a purchase, completion, delivered, and the cancel endpoint, whose request branch shares its key.
    - Accept, start and the Operator's decisions are natural repeats.
@@ -400,7 +407,7 @@ Taken while planning `tasks/WAVE_3.md` and revised by its review; each task reco
       - lines already bought stay bought, and nothing is due (`BR-CAN-006`, `DL-37` (10)).
     - **Reject.** The order goes on, and the Operator's note is kept.
     - **Deciding twice.** The same decision again is a natural repeat. The other decision is `409 cancellation_request_already_decided`.
-    - **Closed without a decision.** A request can still be pending when its order is cancelled by the only other path then open: the last line removed ((7)). The request then ends `closed`, in the same transaction, a status `docs/08` lacked.
+    - **Closed without a decision.** A request can still be pending when its order is cancelled by the only other path then open: the last line removed ((7)). The request then ends `closed`, in the same transaction, a status `docs/08` lacked. A decision on a `closed` request is `409 cancellation_request_already_decided`. Wave 5's `unpaid_online` cancellation, in `final_payment_pending` where a request can also be pending, must close or refuse it the same way.
     - **The Operator's own cancellation** takes `delivery_failed`, for an order back in `ready_for_delivery` after a failed delivery and without a Courier (`docs/09` section 41). `unpaid_online` is Wave 5's.
 13. **Attention.** Wave 3 brings these types:
     - `approval_pending`: a pending approval past its ten minutes, when the Operator calls the Customer (`BR-APP-002`);
@@ -416,6 +423,8 @@ Taken while planning `tasks/WAVE_3.md` and revised by its review; each task reco
     - **Before work.** An assignment replaced before its assignee started stops marking the order.
     - **Why.** The mark is the Owner's audit flag (interview 6.4), and a self-order Courier who failed a delivery, or a self-order Shopper whose shopping was cancelled, is what it exists to show.
     - **The row.** A board row names the current Shopper, or else the one who completed the shopping, and likewise the current Courier or else the one who delivered.
+      - The mark can come from an assignment the row does not name, such as a Shopper whose shopping was cancelled or a Courier whose delivery failed. The order's detail shows that assignment with its flag.
+      - The `shopper_id` and `courier_id` filters match the person the row names. That changes `DL-44` (3) for orders past shopping, so that filtering by the person shown finds the row.
     - This supersedes the part of `DL-37` (16) that tied the mark to the current Shopper assignment.
 15. **Staying current without push.** Push is Wave 4's (`DL-37` (15)).
     - The screens that wait on another person refresh themselves while they are shown:
@@ -456,3 +465,14 @@ Taken while planning `tasks/WAVE_3.md` and revised by its review; each task reco
 20. **The client** shows the money the server computed and never sums it (`DL-37` (19)). The typo guard is the client's (`DL-3` S-35), against the market price of the product being bought: the line's snapshot for the original, and the replacement's current market price for a replacement.
 21. **The merged client keeps working.** A backend task may change an answer a merged screen reads: a new attention type, a nullable Shopper, a self-order row without a current Shopper. That task changes the screen's reading in the same pull request, with the words it needs, so `main`'s panel and app never fail against `main`'s server. The screen tasks then build the new behaviour.
 22. **Split by layer.** As in Waves 1 and 2, the wave is split by layer rather than by vertical slice (`tasks/README.md` section 2). Four surfaces act on the same order through the same actions: the panel and the app's three areas. Each screen task therefore tests against a merged contract rather than one still moving, and (21) keeps `main` whole in between.
+23. **One action, one history row.** Each action writes one history row, and when it moves the order the row carries the move in `from_status` and `to_status` (`DL-45` (5)).
+    - A plain move is `status_changed`:
+      - start, `shopping_assigned` to `shopping`;
+      - completion, `shopping` to `ready_for_delivery`;
+      - the Courier's start, `delivery_assigned` to `on_the_way`.
+    - An action with an event of its own carries its move on that row:
+      - delivered writes `payment_recorded` with `on_the_way` to `completed`;
+      - a failed delivery writes `delivery_failed` with `on_the_way` to `ready_for_delivery`;
+      - an approved request writes `cancellation_request_decided`, with the move to `cancelled` and `cancellation_request_approved`;
+      - the action that removes the last line writes its own event (`item_unavailable`, `approval_decided` or `approval_resolved`), with the move to `cancelled` and `no_items_purchased`.
+    - A request closed and approvals cancelled on the way are listed in that row's `details`.

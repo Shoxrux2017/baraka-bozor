@@ -116,7 +116,8 @@ billable_quantity ≥ 0, ≤ ordered_quantity (or ≤ approved_quantity_cap when
 customer_note_snapshot?, substitution_policy_snapshot
 status                          pending|awaiting_customer|purchased|removed
 approved_quantity_cap?
-approved_unit_price_ceiling_uzs?
+approved_unit_price_ceiling_uzs?          the original's approved ceiling
+approved_replacement_price_uzs?           the price approved for the authorized replacement (Wave 3, DL-54 (5))
 fulfilled_product_id? → products
 fulfilled_product_name_uz_snapshot?, fulfilled_product_name_ru_snapshot?, fulfilled_unit_code_snapshot?
 substitution_resolution?        automatic|approved
@@ -148,7 +149,7 @@ Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (us
 
 `id, order_id, order_item_id, type (price_over_tolerance|substitution|reduced_quantity), status (pending|approved|rejected|expired|cancelled), requested_by_user_id, proposed_customer_unit_price_uzs?, proposed_actual_market_price_uzs?, proposed_quantity?, replacement_product_id?, replacement_name_uz_snapshot?, replacement_name_ru_snapshot?, replacement_unit_code_snapshot?, request_note?, attention_at, expires_at, resolved_by_user_id?, resolved_at?, resolution? (approved|rejected|remove_item), timestamps`.
 
-An approval whose order is cancelled ends `cancelled`, with no resolution (`DL-54` (8)). Partial unique `(order_item_id) WHERE status='pending'`. Indexes `(order_id, status)`, `(status, attention_at)`, `(status, expires_at)`.
+An approval whose order is cancelled ends `cancelled`, with no resolution (`DL-54` (8)). A `price_over_tolerance` approval carries `replacement_product_id` and its snapshots when it is about the line's authorized replacement (`DL-54` (5)). Partial unique `(order_item_id) WHERE status='pending'`. Indexes `(order_id, status)`, `(status, attention_at)`, `(status, expires_at)`.
 
 ## 19. `order_item_price_corrections`
 
