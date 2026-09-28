@@ -11,6 +11,8 @@ use App\Models\Enums\SubstitutionPolicy;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Support\Money\MoneyCalculator;
+use App\Support\Money\Percentage;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -38,10 +40,11 @@ final class OrderItemFactory extends Factory
             'unit_code_snapshot' => fn (array $attributes) => $this->product($attributes)->unit_code,
             'price_mode_snapshot' => fn (array $attributes) => $this->product($attributes)->price_mode,
             'market_price_uzs_snapshot' => fn (array $attributes): int => $this->product($attributes)->market_price_uzs,
-            // half_up(market × 1.15) in integer arithmetic, as BR-PRICE-001.
-            'customer_unit_price_uzs_snapshot' => fn (array $attributes): int => intdiv(
-                $this->product($attributes)->market_price_uzs * 11500 + 5000,
-                10000
+            // half_up(market × (1 + the line's markup / 100)), as BR-PRICE-001,
+            // so a line priced under another markup stays consistent (DL-37 (8)).
+            'customer_unit_price_uzs_snapshot' => fn (array $attributes): int => MoneyCalculator::increaseByPercent(
+                $this->product($attributes)->market_price_uzs,
+                Percentage::fromString((string) $attributes['markup_percent_snapshot']),
             ),
             'markup_percent_snapshot' => '15.00',
             'ordered_quantity' => '2.000',

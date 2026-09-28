@@ -110,6 +110,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - the order is `shopping`, and the assignment is the caller's and started (`409 shopping_not_active`);
   - the line is `pending` (`409 item_already_resolved`).
 - The billable quantity, price and line total come from `MoneyCalculator`.
+- Buying the original copies its names and unit from the line, not from the catalog (`DL-55` (12)).
 - Writes:
   - a purchase writes `item_purchased`;
   - unavailable removes the line with `unavailable`, whatever its rule, and writes `item_unavailable`.
@@ -125,6 +126,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - an estimate line added by an edit, billed at its own markup (Wave 2 risk row);
   - the authorized replacement bought with and without `fulfilled_product_id`, and the original bought instead, which drops the authorization;
   - a replay;
+  - the original bought after an Admin changed its product's unit;
   - the last line marked unavailable cancels the order and closes a pending request.
 
 **W3-4. Ask about a price, a replacement or a smaller quantity.**
@@ -184,6 +186,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 - `POST /operations/approvals/{approval}/resolve-expired`:
   - removes the line with `approval_expired` and writes `approval_resolved`;
   - an approval not yet expired is `409 approval_not_expired`;
+  - an order no longer open is `409 order_state_conflict`, and its expired approvals leave the attention list (`DL-55` (11));
   - the same removal again is a natural repeat.
 - Attention types `approval_pending` and `approval_expired`.
 - The board's `awaiting_customer` filter and each row's `pending_approval_count`.

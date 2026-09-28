@@ -19,6 +19,11 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  * walk it through acceptance, the start of the delivery — late an hour later,
  * the default threshold — and its end.
  *
+ * The states set the assignment's row only: an ended one leaves its order as
+ * the definition built it. The order a failed delivery leaves is
+ * `Order::factory()->deliveryFailed()`, and a delivered one
+ * `Order::factory()->completed()`.
+ *
  * @extends Factory<OrderCourierAssignment>
  */
 final class OrderCourierAssignmentFactory extends Factory

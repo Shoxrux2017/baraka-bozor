@@ -12,9 +12,9 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * Builds the cash a Courier records at handover (`BR-PAY-003`): the order's
- * final total, paid, recorded by the Courier who is delivering it. An order
- * made `completed` by its factory already has this payment; on its own the
- * factory takes an order on the way, the moment before the handover.
+ * final total, paid, recorded by the Courier who delivered it, on the order
+ * the handover completed. `Order::factory()->completed()` makes this payment
+ * itself.
  *
  * @extends Factory<Payment>
  */
@@ -28,7 +28,7 @@ final class PaymentFactory extends Factory
     public function definition(): array
     {
         return [
-            'order_id' => Order::factory()->onTheWay(),
+            'order_id' => Order::factory()->completedWithoutPayment(),
             'method' => PaymentMethod::Cash,
             'provider' => null,
             'amount_uzs' => fn (array $attributes): int => (int) $this->order($attributes)->final_total_uzs,

@@ -23,6 +23,9 @@ final class Wave3MigrationsTest extends TestCase
 
     private const FIRST = '2026_09_28_000001_create_order_courier_assignments_table';
 
+    /** The event list the Wave 2 migration created, which a rollback restores exactly. */
+    private const WAVE_2_EVENTS = "CHECK (((event_type)::text = ANY ((ARRAY['status_changed'::character varying, 'edited'::character varying, 'payment_method_switched'::character varying, 'price_corrected'::character varying, 'shopper_assigned'::character varying, 'shopper_reassigned'::character varying, 'courier_assigned'::character varying, 'courier_reassigned'::character varying, 'delivery_failed'::character varying, 'approval_requested'::character varying, 'approval_decided'::character varying, 'approval_expired'::character varying, 'approval_resolved'::character varying])::text[])))";
+
     private const TABLES = [
         'order_courier_assignments',
         'customer_approvals',
@@ -39,8 +42,10 @@ final class Wave3MigrationsTest extends TestCase
             $this->assertFalse(Schema::hasTable($table), "{$table} survived its rollback.");
         }
         $this->assertFalse(Schema::hasColumn('order_items', 'approved_replacement_price_uzs'));
-        $this->assertStringNotContainsString('shopper_accepted', $this->eventCheck());
-        $this->assertFalse($this->functionExists(), 'The corrections\' append-only function survived its table.');
+        $this->assertSame(self::WAVE_2_EVENTS, $this->eventCheck());
+        $this->assertFalse($this->functionExists('order_item_price_corrections_append_only'), 'The corrections\' append-only function survived its table.');
+        $this->assertFalse($this->functionExists('customer_approvals_guard'), 'The approvals\' guard survived its table.');
+        $this->assertFalse($this->indexExists('order_items_id_order_id_unique'), 'The line-in-order key survived the approvals.');
         $this->assertTrue(Schema::hasTable('orders'), 'A Wave 3 rollback must not reach the Wave 2 tables.');
 
         $this->runAgain($rolledBack);
@@ -49,8 +54,10 @@ final class Wave3MigrationsTest extends TestCase
             $this->assertTrue(Schema::hasTable($table), "{$table} was not recreated.");
         }
         $this->assertTrue(Schema::hasColumn('order_items', 'approved_replacement_price_uzs'));
-        $this->assertStringContainsString('payment_recorded', $this->eventCheck());
-        $this->assertTrue($this->functionExists());
+        $this->assertStringContainsString("'payment_recorded'", $this->eventCheck());
+        $this->assertTrue($this->functionExists('order_item_price_corrections_append_only'));
+        $this->assertTrue($this->functionExists('customer_approvals_guard'));
+        $this->assertTrue($this->indexExists('order_items_id_order_id_unique'));
     }
 
     public function test_every_wave_3_foreign_key_is_restrict(): void
@@ -68,6 +75,7 @@ final class Wave3MigrationsTest extends TestCase
         }
 
         $this->assertSame([
+            'customer_approvals_item_in_order_foreign' => 'r',
             'customer_approvals_order_id_foreign' => 'r',
             'customer_approvals_order_item_id_foreign' => 'r',
             'customer_approvals_replacement_product_id_foreign' => 'r',
@@ -111,8 +119,13 @@ final class Wave3MigrationsTest extends TestCase
         )->definition;
     }
 
-    private function functionExists(): bool
+    private function functionExists(string $name): bool
     {
-        return DB::selectOne("select exists (select 1 from pg_proc where proname = 'order_item_price_corrections_append_only') as present")->present;
+        return DB::selectOne('select exists (select 1 from pg_proc where proname = ?) as present', [$name])->present;
+    }
+
+    private function indexExists(string $name): bool
+    {
+        return DB::selectOne('select to_regclass(?) is not null as present', [$name])->present;
     }
 }

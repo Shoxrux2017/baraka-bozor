@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -280,6 +281,54 @@ final class CustomerApprovalsTableTest extends TestCase
         );
     }
 
+    public function test_the_line_belongs_to_the_approvals_order(): void
+    {
+        $this->assertRejectedBy(
+            self::TABLE,
+            'customer_approvals_item_in_order_foreign',
+            $this->row(['order_id' => Order::factory()->shopping()->create()->id]),
+            'An approval is about a line of its own order.'
+        );
+    }
+
+    public function test_the_proposal_is_immutable_and_a_resolution_final(): void
+    {
+        $customer = $this->item->order->customer;
+        $pending = $this->row();
+        DB::table(self::TABLE)->insert($pending);
+
+        $this->assertRefusedChange(
+            fn () => DB::table(self::TABLE)->where('id', $pending['id'])->update(['proposed_customer_unit_price_uzs' => 22000]),
+            'a customer_approvals proposal is immutable',
+            'BR-APP-001: the Customer decides on the proposal as it was made.'
+        );
+        $this->assertRefusedChange(
+            fn () => DB::table(self::TABLE)->where('id', $pending['id'])->delete(),
+            'customer_approvals are never deleted',
+            'An approval is history.'
+        );
+
+        DB::table(self::TABLE)->where('id', $pending['id'])->update(['status' => 'approved', ...$this->resolvedBy($customer, 'approved')]);
+        $this->assertRefusedChange(
+            fn () => DB::table(self::TABLE)->where('id', $pending['id'])->update(['status' => 'rejected', 'resolution' => 'rejected']),
+            'a resolved customer_approvals row never changes',
+            'BR-APP-005: a decision is final.'
+        );
+
+        // An expired approval is resolved once more, by an Operator removing the line.
+        $expired = $this->row(['status' => 'expired', 'order_item_id' => OrderItem::factory()->for($this->item->order)->awaitingCustomer()->create()->id]);
+        DB::table(self::TABLE)->insert($expired);
+        DB::table(self::TABLE)->where('id', $expired['id'])->update($this->resolvedBy(User::factory()->role(Role::Operator)->create(), 'remove_item'));
+        $this->assertRefusedChange(
+            fn () => DB::table(self::TABLE)->where('id', $expired['id'])->update(['resolved_at' => now()->addMinute()]),
+            'a resolved customer_approvals row never changes',
+            'BR-APP-007: the removal is final.'
+        );
+
+        $this->assertSame('approved', DB::table(self::TABLE)->where('id', $pending['id'])->value('status'));
+        $this->assertSame('remove_item', DB::table(self::TABLE)->where('id', $expired['id'])->value('resolution'));
+    }
+
     public function test_the_vocabularies_the_timers_and_the_note_are_enforced(): void
     {
         $this->assertRejectedBy(self::TABLE, 'customer_approvals_note_check', $this->row(['request_note' => ' ']), 'A note says something.');
@@ -292,12 +341,27 @@ final class CustomerApprovalsTableTest extends TestCase
             '08 Section 18.'
         );
         $this->assertRejectedBy(self::TABLE, 'customer_approvals_status_check', $this->row(['status' => 'waiting']), 'DL-54 (8).');
+        $at = now()->addMinutes(30);
         $this->assertRejectedBy(
             self::TABLE,
             'customer_approvals_timers_check',
-            $this->row(['attention_at' => now()->addMinutes(30), 'expires_at' => now()->addMinutes(30)]),
+            $this->row(['attention_at' => $at, 'expires_at' => $at]),
             'BR-APP-002, BR-APP-003: attention comes before expiry.'
         );
         $this->assertRejectedBy(self::TABLE, 'customer_approvals_type_check', $this->row(['type' => 'discount']), 'Three kinds of question.');
+    }
+
+    private function assertRefusedChange(callable $change, string $refusal, string $why): void
+    {
+        DB::beginTransaction();
+
+        try {
+            $change();
+            $this->fail("PostgreSQL accepted the change. {$why}");
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString($refusal, $exception->getMessage(), $why);
+        } finally {
+            DB::rollBack();
+        }
     }
 }

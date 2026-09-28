@@ -307,6 +307,26 @@ final class OrderItemsTableTest extends TestCase
             'BR-PRICE-003: half_up(16 000 × 1.15) = 18 400, not 18 401.'
         );
 
+        // A fixed line bought as a replacement is billed from the price paid
+        // too (BR-PRICE-004): the rule is the replacement's, not the mode's.
+        $replaced = [
+            'price_mode_snapshot' => 'fixed',
+            'fulfilled_product_id' => Product::factory()->create()->id,
+            'substitution_resolution' => 'automatic',
+        ];
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_actual_price_check',
+            $this->purchased([...$replaced, 'actual_market_price_uzs' => null]),
+            'A replacement of a fixed line records the price paid.'
+        );
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_billable_price_check',
+            $this->purchased([...$replaced, 'actual_market_price_uzs' => 15652]),
+            'A replacement at 15 652 paid is billed 18 000, not the original\'s 18 400.'
+        );
+
         // A line keeps the markup it was priced with (DL-37 (8)): 16 000 at
         // 12.5 % is 18 000.
         DB::table(self::TABLE)->insert($this->purchased([
@@ -332,7 +352,7 @@ final class OrderItemsTableTest extends TestCase
             'fulfilled_product_name_uz_snapshot' => 'Olcha',
             'fulfilled_product_name_ru_snapshot' => 'Вишня',
             'fulfilled_unit_code_snapshot' => 'kg',
-            'substitution_resolution' => 'approved',
+            'substitution_resolution' => 'automatic',
         ];
 
         $this->assertRejectedBy(
@@ -366,8 +386,54 @@ final class OrderItemsTableTest extends TestCase
             'The original bought as itself is no replacement.'
         );
 
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_approved_replacement_price_check',
+            $this->purchased(['approved_replacement_price_uzs' => 20000]),
+            'DL-54 (4): buying the original drops the replacement\'s approved price.'
+        );
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_approved_substitution_check',
+            $this->row([...$authorized, 'substitution_resolution' => 'approved']),
+            'An approved substitution carries the price the Customer approved.'
+        );
+
         DB::table(self::TABLE)->insert($this->row([...$authorized, 'approved_replacement_price_uzs' => 20000]));
-        $this->assertSame(1, DB::table(self::TABLE)->count());
+        DB::table(self::TABLE)->insert($this->row([...$authorized, 'substitution_resolution' => 'approved', 'approved_replacement_price_uzs' => 12650]));
+        $this->assertSame(2, DB::table(self::TABLE)->count());
+    }
+
+    public function test_an_approved_price_binds_what_is_bought_and_a_fixed_line_takes_none(): void
+    {
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_fixed_ceiling_check',
+            $this->row(['price_mode_snapshot' => 'fixed', 'approved_unit_price_ceiling_uzs' => 20000]),
+            'DL-54 (5): no approval raises a fixed original\'s ceiling.'
+        );
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_within_approval_check',
+            $this->purchased(['approved_unit_price_ceiling_uzs' => 18000]),
+            'BR-APP-008: the original is bought within its approved ceiling.'
+        );
+
+        $replacement = [
+            'fulfilled_product_id' => Product::factory()->create()->id,
+            'substitution_resolution' => 'approved',
+        ];
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_within_approval_check',
+            $this->purchased([...$replacement, 'approved_replacement_price_uzs' => 18000]),
+            'BR-APP-009: the replacement is bought within the price approved for it.'
+        );
+
+        // The original's ceiling does not bind the replacement, nor the other way round.
+        DB::table(self::TABLE)->insert($this->purchased([...$replacement, 'approved_unit_price_ceiling_uzs' => 18000, 'approved_replacement_price_uzs' => 18400]));
+        DB::table(self::TABLE)->insert($this->purchased(['approved_unit_price_ceiling_uzs' => 18400]));
+        $this->assertSame(2, DB::table(self::TABLE)->count());
     }
 
     public function test_the_vocabularies_and_the_names_are_enforced(): void

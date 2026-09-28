@@ -122,18 +122,23 @@ final class OrderFactory extends Factory
     }
 
     /**
+     * Back in `ready_for_delivery` after a failed delivery: the Courier's
+     * assignment ended `delivery_failed` and no Courier holds the order
+     * (`BR-DEL-003`).
+     */
+    public function deliveryFailed(): self
+    {
+        return $this->readyForDelivery()->withCourier(OrderCourierAssignment::factory()->ended(AssignmentEndReason::DeliveryFailed));
+    }
+
+    /**
      * Delivered: the Courier's assignment ended as completed, and the payment
      * recorded — the cash the Courier collected, or for an online order the
      * provider's confirmed payment.
      */
     public function completed(): self
     {
-        return $this->shopped(OrderStatus::Completed, [
-            'ready_for_delivery_at' => now(),
-            'on_the_way_at' => now(),
-            'completed_at' => now(),
-        ])->afterCreating(function (Order $order): void {
-            $assignment = OrderCourierAssignment::factory()->ended(AssignmentEndReason::Completed)->create(['order_id' => $order->id]);
+        return $this->completedWithoutPayment()->afterCreating(function (Order $order): void {
             $online = $order->payment_method === PaymentMethod::Online;
 
             Payment::factory()->create([
@@ -143,9 +148,22 @@ final class OrderFactory extends Factory
                 'amount_uzs' => $order->final_total_uzs,
                 'status' => PaymentStatus::Paid,
                 'paid_at' => now(),
-                'recorded_by_user_id' => $online ? null : $assignment->courier_id,
+                'recorded_by_user_id' => $online ? null : $order->courierAssignments()->sole()->courier_id,
             ]);
         });
+    }
+
+    /**
+     * Delivered, without its payment — for `PaymentFactory`, whose row is that
+     * payment. On its own it is a state no action commits.
+     */
+    public function completedWithoutPayment(): self
+    {
+        return $this->shopped(OrderStatus::Completed, [
+            'ready_for_delivery_at' => now(),
+            'on_the_way_at' => now(),
+            'completed_at' => now(),
+        ])->withCourier(OrderCourierAssignment::factory()->ended(AssignmentEndReason::Completed));
     }
 
     /**

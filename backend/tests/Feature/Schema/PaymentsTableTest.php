@@ -94,6 +94,7 @@ final class PaymentsTableTest extends TestCase
             'created_at' => ['timestamp with time zone', false],
             'updated_at' => ['timestamp with time zone', false],
         ]);
+        $this->assertStringContainsString('(order_id)', $this->indexesOn(self::TABLE)['payments_order_id_index']);
     }
 
     public function test_an_order_has_one_live_payment_and_keeps_the_cancelled_ones(): void

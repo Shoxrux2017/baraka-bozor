@@ -481,31 +481,81 @@ Taken while planning `tasks/WAVE_3.md` and revised by its review; each task reco
 
 ## DL-55 — The Wave 3 schema from W3-1 (2026-09-28, agent)
 
-The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions. As `DL-38` did for Wave 2, the database holds, for any writer, what each row implies.
+The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions. As `DL-38` did for Wave 2, the database holds what each row implies, for any writer.
 
 1. **Courier assignments.**
-   - A start follows acceptance and fixes `delay_at` after it.
-   - A failure is a delivery that set off, with one of the four reasons, and `other` comes with a note. Only a failure carries a reason or a note.
+   - A start follows acceptance, and fixes `delay_at` after it.
+   - A completion is the end as `completed`, and nothing else is.
+   - A replacement or a cancellation ends an assignment before it set off (`BR-ASSIGN-002`, `BR-CAN-003`).
+   - A failure is a delivery that set off, with one of the four reasons; `other` comes with a note. Only a failure carries a reason or a note.
 2. **Approvals.**
-   - The proposal has the shape of its type: a price question has both prices, and names its replacement when it is about one; a substitution has its replacement, with both names and the unit snapshotted, and both prices; a smaller quantity has only the quantity. Its values are positive, and attention comes before expiry.
-   - Each status holds its columns:
+   - **The proposal's shape follows its type:**
+     - a price question has both prices, and names its replacement when it is about one;
+     - a substitution has its replacement, with both names and the unit snapshotted, and both prices;
+     - a smaller quantity has only the quantity.
+
+     Its values are positive, and attention comes before expiry.
+   - **Each status holds its columns:**
      - nobody resolved a pending approval;
-     - the Customer resolved an approved or a rejected one, with the resolution of that name;
-     - an expired one has no resolution until an Operator removes the line, and then has `remove_item` with that Operator and instant;
-     - a cancelled one has its instant, and no resolution.
-3. **Cancellation requests.** A request has a reason. A decision names its Operator and instant; a closed request has only its instant; a resolution note belongs to whoever decided.
-4. **Price corrections.** Prices are positive, the market price changes, and a correction has a reason. A trigger keeps the table append-only, as `order_history`'s does (`DL-38` (4)).
+     - the Customer resolved an approved or rejected one, with the resolution of that name;
+     - an expired one has no resolution until an Operator removes the line, and then `remove_item` with that Operator and instant;
+     - a cancelled one has its instant and no resolution.
+   - **The line belongs to the approval's order.** A foreign key to the pair `(id, order_id)` of `order_items` holds it, through a unique index created for the purpose.
+   - **A trigger enforces `BR-APP-001` and the finality of a decision:**
+     - the proposal never changes;
+     - an update changes only the resolution, and only of a pending approval, or of an expired one an Operator resolves;
+     - no approval is deleted.
+3. **Cancellation requests.**
+   - A request has a reason.
+   - A decision names its Operator and instant; a closed request has only its instant.
+   - A resolution note belongs to whoever decided.
+4. **Price corrections.**
+   - Prices are positive, the market price changes, and a correction has a reason.
+   - A trigger keeps the table append-only, as for `order_history` (`DL-38` (4)).
 5. **Payments.**
    - Cash exists only as `paid`, with its recorder, no provider and no attention instant (`BR-PAY-003`).
    - No person records an online payment (`BR-PAY-004`).
    - A paid or cancelled payment says when.
-6. **Rules the application held alone now sit on `order_items`.** A forward migration adds `approved_replacement_price_uzs`, present only on a line with a replacement (`DL-54` (5)), and four rules:
-   - A line billed from the price paid (an estimate, or any replacement) records that price. This is the application rule of `docs/08` section 14.
-   - That line is billed at `half_up(price × (1 + line markup / 100))`. With `DL-38`'s check on a fixed line bought as itself, every billable price the database stores is now fixed by its inputs (`BR-PRICE-002` to `004`).
+6. **`order_items`: seven rules the application held alone.** A forward migration adds `approved_replacement_price_uzs`, present only on a line with a replacement (`DL-54` (5)), and these rules:
+   - A line billed from the price paid (an estimate, or any replacement) records that price. Until now this was the application rule of `docs/08` section 14.
+   - That line is billed at `half_up(price × (1 + line markup / 100))`. With `DL-38`'s check on a fixed line bought as itself, every billable price the database stores is now fixed by its inputs (`BR-PRICE-002` to `004`). PostgreSQL's `round()` of the exact quotient and `MoneyCalculator` agreed on about 47 million sampled pairs of price and markup, up to 10⁹ UZS.
    - A replacement has the original's unit (`BR-ITEM-004`). `docs/08` section 29 listed this rule under the application.
-   - A replacement says how it was authorized, and only a replacement does.
+   - A replacement says how it was authorized, and only a replacement does. An approved one carries the price approved for it.
+   - A fixed line never has an approved ceiling. No approval raises a fixed original's ceiling (`BR-PRICE-005`), since a raised one would let an automatic replacement pass at a price nobody approved.
+   - A purchase is billed within the price approved for what was bought (`BR-APP-008`, `BR-APP-009`): the original's approved ceiling when bought as itself, and the replacement's approved price when bought as the replacement.
+
+   The ceiling a purchase meets without an approval depends on the order's tolerance, which sits in another table, so the application keeps that check.
 
    One Wave 2 test row billed a replacement at 18 000 from 16 000 paid, which gives 18 400. It now pays 15 652, the price that gives 18 000.
-7. **History events.** The history's event check is replaced by a forward migration, not by editing Wave 2's, which has run where the table holds rows. Its rollback restores the Wave 2 list.
-8. **How checks are tested.** Each check is proven by a row only it refuses (`DL-38` (8)). `customer_approvals_resolution_check` is a vocabulary that every status already constrains, so it is proven by a row whose status is itself unknown.
-9. **Factories.** An order that is `delivery_assigned` or `on_the_way` has its Courier assignment. A `completed` order has its Courier's completed assignment and its payment: the Courier's cash, or the provider's payment for an online order. A cancellation ends every current assignment. The approval, request, correction and payment factories build a row at each step of the wave.
+7. **History events.** The history's event check is replaced by a forward migration, not by editing Wave 2's, which has run where the table holds rows. Its rollback restores exactly the Wave 2 list.
+   - That rollback is only possible before any Wave 3 event exists. Re-adding the narrower check then fails, and the history cannot be rewritten to let it pass.
+8. **How checks are tested.** Each check is proven by a row only it refuses (`DL-38` (8)).
+   - `customer_approvals_resolution_check` is a vocabulary every status already constrains, so it is proven by a row whose status is itself unknown.
+   - Each branch of a check with two branches has its own row: the original and the replacement, an estimate and a fixed line.
+   - Two checks were weakened on purpose to see their tests fail, then restored.
+9. **Factories.** A factory's states leave the line and the order as the action they stand for does:
+   - **Orders.**
+     - `delivery_assigned` and `on_the_way` have their Courier assignment, and `deliveryFailed()` is back in `ready_for_delivery` with the failed one.
+     - `completed` has its Courier's completed assignment and its payment: the Courier's cash, or the provider's for an online order.
+     - A cancellation ends every current assignment.
+   - **Approvals.**
+     - An approved one writes its proposal onto the line, which returns to `pending`.
+     - A rejected one, and an expired one an Operator resolved, remove the line.
+     - A cancelled one sits on the order a request cancelled.
+     - A substitution is asked on a line whose rule asks the Customer about every replacement.
+   - **Requests.** An approved one cancels its order, and a closed one finds it cancelled for want of anything to buy.
+   - **Price corrections.** A correction's line carries the corrected price.
+   - **Payments.** A payment sits on the order its handover completed.
+   - **Order lines** are priced under their own markup (`DL-37` (8)).
+
+   The one exception is the Courier assignment factory, which sets its own row only; the note on the factory says so.
+10. **What `docs/08` did not name.**
+    - **Indexes:**
+      - every Courier assignment of an order, and `delay_at`;
+      - `(order_id)` and `(status, created_at)` on cancellation requests;
+      - `(order_item_id, created_at)` on price corrections;
+      - `(order_id)` on payments;
+      - the pair `(id, order_id)` on `order_items`, which (2) needs.
+    - **Lengths:** notes and reasons are at most 300 characters, as `DL-38` (6) set for Wave 2; names follow the columns they copy.
+11. **An expired approval on an order cancelled later** keeps its status and has no resolution. Only a pending approval ends `cancelled` (`DL-54` (8)). Once the order has ended, no Operator is asked to remove its line: the attention list shows open orders only, and removing an expired line needs an open order (`409 order_state_conflict`, W3-6).
+12. **Buying the original.** The purchase copies the original's names and unit from the line, not from the catalog. An Admin may have changed the product's unit since the order was placed (`DL-43` (2)), and the line keeps the unit it was ordered in (W3-3).

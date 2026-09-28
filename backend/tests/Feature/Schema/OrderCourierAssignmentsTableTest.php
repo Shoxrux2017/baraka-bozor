@@ -111,6 +111,8 @@ final class OrderCourierAssignmentsTableTest extends TestCase
 
     public function test_the_delivery_steps_come_in_order_with_their_delay_instant(): void
     {
+        $now = now();
+
         $this->assertRejectedBy(
             self::TABLE,
             'order_courier_assignments_completed_check',
@@ -131,6 +133,17 @@ final class OrderCourierAssignmentsTableTest extends TestCase
         );
         $this->assertRejectedBy(
             self::TABLE,
+            'order_courier_assignments_completed_end_check',
+            $this->row([
+                'accepted_at' => $now,
+                'delivery_started_at' => $now,
+                'delay_at' => $now->copy()->addHour(),
+                'completed_at' => $now,
+            ]),
+            'A completion is the end as completed.'
+        );
+        $this->assertRejectedBy(
+            self::TABLE,
             'order_courier_assignments_delay_check',
             $this->row(['accepted_at' => now(), 'delivery_started_at' => now()]),
             'BR-DEL-002: a start fixes when the order becomes late.'
@@ -138,7 +151,7 @@ final class OrderCourierAssignmentsTableTest extends TestCase
         $this->assertRejectedBy(
             self::TABLE,
             'order_courier_assignments_delay_check',
-            $this->row(['accepted_at' => now(), 'delivery_started_at' => now(), 'delay_at' => now()]),
+            $this->row(['accepted_at' => $now, 'delivery_started_at' => $now, 'delay_at' => $now]),
             'The delay instant is after the start.'
         );
         $this->assertRejectedBy(
@@ -200,6 +213,15 @@ final class OrderCourierAssignmentsTableTest extends TestCase
             $this->failed(['failed_reason_code' => 'other']),
             'docs/09 section 37: `other` comes with a note.'
         );
+
+        foreach (['reassigned', 'order_cancelled'] as $reason) {
+            $this->assertRejectedBy(
+                self::TABLE,
+                'order_courier_assignments_unstarted_end_check',
+                $this->failed(['ended_reason' => $reason, 'failed_reason_code' => null]),
+                "BR-ASSIGN-002, BR-CAN-003: an assignment ends {$reason} only before it set off."
+            );
+        }
 
         DB::table(self::TABLE)->insert($this->failed(['failed_reason_code' => 'other', 'failed_note' => 'Шлагбаум закрыт']));
         $this->assertSame(1, DB::table(self::TABLE)->count());

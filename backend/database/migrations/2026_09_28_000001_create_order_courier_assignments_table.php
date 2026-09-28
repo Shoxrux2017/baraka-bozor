@@ -13,7 +13,10 @@ use Illuminate\Support\Facades\Schema;
  * One current assignment per order is a database rule (`BR-CON-002`), as for
  * the Shopper's. A delivery start follows acceptance and carries the instant
  * the order becomes late (`BR-DEL-002`); a failed delivery says why
- * (`BR-DEL-003`), with a note when the reason is `other`.
+ * (`BR-DEL-003`), with a note when the reason is `other`. A completion is
+ * the end as `completed`, and nothing else is; a replacement or a
+ * cancellation ends an assignment before it set off (`BR-ASSIGN-002`,
+ * `BR-CAN-003`, `DL-55` (1)).
  */
 return new class extends Migration
 {
@@ -57,7 +60,7 @@ return new class extends Migration
         $this->check('order_courier_assignments_completed_check', 'completed_at is null or delivery_started_at is not null');
         $this->check(
             'order_courier_assignments_completed_end_check',
-            "ended_reason is null or ended_reason <> 'completed' or completed_at is not null"
+            "(coalesce(ended_reason, '') = 'completed') = (completed_at is not null)"
         );
         $this->check(
             'order_courier_assignments_failed_reason_check',
@@ -77,6 +80,10 @@ return new class extends Migration
         $this->check(
             'order_courier_assignments_other_note_check',
             "failed_reason_code is null or failed_reason_code <> 'other' or failed_note is not null"
+        );
+        $this->check(
+            'order_courier_assignments_unstarted_end_check',
+            "coalesce(ended_reason, '') not in ('reassigned', 'order_cancelled') or delivery_started_at is null"
         );
 
         DB::statement(

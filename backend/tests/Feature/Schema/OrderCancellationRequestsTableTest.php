@@ -81,7 +81,9 @@ final class OrderCancellationRequestsTableTest extends TestCase
             'updated_at' => ['timestamp with time zone', false],
         ]);
 
-        $this->assertStringContainsString('(status, created_at)', $this->indexesOn(self::TABLE)['order_cancellation_requests_status_created_at_index']);
+        $indexes = $this->indexesOn(self::TABLE);
+        $this->assertStringContainsString('(status, created_at)', $indexes['order_cancellation_requests_status_created_at_index']);
+        $this->assertStringContainsString('(order_id)', $indexes['order_cancellation_requests_order_id_index']);
     }
 
     public function test_an_order_has_one_pending_request_and_keeps_the_others(): void
