@@ -80,6 +80,7 @@ Backend first, in order; the panel after W2-7 and W2-8 (W2-9 needs no API and ma
 | The MapKit key and the free tier's fitness (`DL-36`) | Open, Owner; nothing in the wave depends on it |
 | Found in the closure walk: a build whose MapKit key Yandex refuses aborts about six seconds after launch (`DL-53` (1)) — the Owner's key today, and any key refused later for a lapsed tariff or an exceeded limit; before the map returns, MapKit must start only when the map is opened, not with the app | Open, before the map returns |
 | Found in the closure walk: in Customer mode a Shopper's or Courier's app bar holds six actions, and on a phone the title shortens to "Baraka…" | Open for Wave 4 (P3) |
+| For Wave 3: the board's attention list has no height of its own; below 1 534 px it stands above the orders, and as Wave 3 adds its attention types it can push them out of sight — cap it or let it fold | Open for Wave 3 |
 | Carried from Wave 1, for Wave 4: CORS for the API and for the image host in production, device pruning, the push token change stream | Open for Wave 4 |
 | Carried from Wave 1: iOS hands MapKit its key in `AppDelegate`, which needs a Mac (`DL-33` (6)) | Open until a Mac exists |
 | Carried from Wave 1: browser tests do not load on the development machine and run in CI only | Open until the local runner works |
@@ -102,7 +103,7 @@ Closed on 2026-09-28 at `main` = merge of PR #65 (`44d4e5b`) plus the closure pu
 | Backend suite in the Compose container, `php artisan test` | 631 passed, 5276 assertions |
 | Backend Pint and PHPStan | 353 files pass; no errors |
 | Backend and frontend CI on `main`'s last merged head (`44d4e5b`) | pass |
-| Frontend suite, `flutter test`, with the closure's fixes | 564 passed |
+| Frontend suite, `flutter test`, with the closure's fixes | 566 passed |
 | Frontend analyze, format and `gen-l10n` | no issues, 0 of 241 files changed, nothing regenerated |
 | Browser tests (`*_browser_test.dart`) | CI only, pass there (risk row above) |
 | `flutter build web --release` | built |
@@ -121,6 +122,6 @@ Closed on 2026-09-28 at `main` = merge of PR #65 (`44d4e5b`) plus the closure pu
 4. App, "my orders" (the receipt icon in the catalog): the order in the Customer's words; "Change": change a quantity, take a line out, "Add a product" from a category or by search, save — the order shows the change and the new total; a product already in the order is not added twice.
 5. App: place a second order and cancel it, with or without a reason: it says it is cancelled and nothing is due.
 6. Panel, the Operator (+998 90 000 00 04): the board shows both orders with the summary strip; search by the order number, filter by status; open the first order and assign a Shopper; change the Shopper; the history says who did what. The Customer can still change or cancel that order in the app.
-7. The Shopper's own order: sign in to the app as the Shopper (+998 90 000 00 02, "Sign in as staff"), "Continue as a Customer" with the code, order something; on the panel assign that order to the same Shopper: the board marks it "for self" and the attention list shows it.
+7. The Shopper's own order — +998 90 000 00 02 must be among `LOGIN_CODE_TEST_PHONES` in `backend/.env` for the code: sign in to the app as the Shopper ("Sign in as staff"), "Continue as a Customer" with the code, order something; on the panel assign that order to the same Shopper: the board marks it "for self" and the attention list shows it.
 
 **What remains open:** the risk rows above marked Open; for the Owner, the MapKit key that Yandex still refuses and whether the free tier suits (`DL-36`) — and, once the map returns, MapKit starting only with the map (`DL-53` (1)). Wave 3 (fulfilment: the Shopper's and the Courier's screens, purchases, approvals, delivery with cash) starts next.

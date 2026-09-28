@@ -381,8 +381,9 @@ class _Labelled extends StatelessWidget {
 class _Orders extends ConsumerWidget {
   const _Orders();
 
-  /// From this width the orders are a table.
-  static const double tableWidth = 760;
+  /// From this width the orders are a table whose columns all show; below
+  /// it, cards, which show the same (`DL-53` (2)).
+  static const double tableWidth = _Table.usualWidth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

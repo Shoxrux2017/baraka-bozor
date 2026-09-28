@@ -323,6 +323,17 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a window narrower than the whole table shows cards, not a clipped table',
+    (WidgetTester tester) async {
+      await open(tester, size: const Size(1100, 2400));
+
+      expect(find.byType(DataTable), findsNothing);
+      expect(byKey('board-row-$orderA'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('large text makes a table row taller rather than cutting it', (
     WidgetTester tester,
   ) async {

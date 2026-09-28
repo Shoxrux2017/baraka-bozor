@@ -199,6 +199,27 @@ void main() {
     );
 
     testWidgets(
+      'the notice stays behind when the Customer goes to the checkout',
+      (WidgetTester tester) async {
+        cart.answer = cartOf(<Map<String, Object?>>[
+          cartLineJson(productId: tomatoProduct, quantity: '1.500'),
+        ]);
+        await open(tester, at: '/customer/products/$tomatoProduct');
+        await tester.enterText(byKey('line-quantity'), '1,5');
+        await tapAndSettle(tester, byKey('add-to-cart'));
+        await tester.tap(byKey('open-cart'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.text(l10n(tester).cartAdded), findsOneWidget);
+
+        await tester.tap(byKey('go-to-checkout'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.text(l10n(tester).cartAdded), findsNothing);
+      },
+    );
+
+    testWidgets(
       'an answer that arrives after the Customer left the product navigates nowhere',
       (WidgetTester tester) async {
         cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
