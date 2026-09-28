@@ -137,6 +137,9 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   Map<String, Object?>? answer;
   ApiFailure? failure;
   ApiFailure? loadFailure;
+
+  /// Holds an order's load back until the test completes it.
+  Completer<void>? loadHold;
   Completer<void>? hold;
 
   final List<String> loads = <String>[];
@@ -185,6 +188,7 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   @override
   Future<CustomerOrder> order(String id) async {
     loads.add('order:$id');
+    await loadHold?.future;
     final ApiFailure? failure = loadFailure;
     if (failure != null) {
       loadFailure = null;

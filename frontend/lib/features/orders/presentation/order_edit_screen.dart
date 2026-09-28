@@ -171,6 +171,16 @@ final class _LineDraft {
   String name(AppLanguage language) =>
       line?.name(language) ?? product!.name(language);
 
+  /// Whether sending this line adds it to [order]: a product picked here, or
+  /// a line the order no longer holds — taken out by a save whose answer was
+  /// lost — which the server adds anew at the current price (`DL-43`).
+  bool adds(CustomerOrder order) {
+    final String id = productId.toLowerCase();
+    return !order.openLines.any(
+      (CustomerOrderLine line) => line.productId.toLowerCase() == id,
+    );
+  }
+
   /// The first of its fields holding what the server would refuse, as their
   /// validators judge them, or `null` when both are right.
   FocusNode? get wrongField =>
@@ -225,7 +235,10 @@ class _EditorState extends ConsumerState<_Editor> {
     super.initState();
     final CatalogProduct? adding = widget.adding;
     if (adding != null) {
-      _take(adding);
+      final _LineDraft? present = _take(adding);
+      if (present != null) {
+        _showPresent(present);
+      }
     }
   }
 
@@ -261,8 +274,6 @@ class _EditorState extends ConsumerState<_Editor> {
   /// twice: its line is kept and brought into view, and the Customer is
   /// told.
   Future<void> _add() async {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final CatalogProduct? product = await GoRouter.of(context)
         .push<CatalogProduct>(AppPaths.customerOrderAdd(widget.order.id));
     if (product == null || !mounted) {
@@ -271,13 +282,23 @@ class _EditorState extends ConsumerState<_Editor> {
     _LineDraft? present;
     setState(() => present = _take(product));
     final _LineDraft? line = present;
-    if (line == null) {
-      return;
+    if (line != null) {
+      _showPresent(line);
     }
-    messenger.showSnackBar(SnackBar(content: Text(l10n.orderAddAlreadyIn)));
+  }
+
+  /// Tells the Customer the product is already in the order, and brings its
+  /// line into view, once the line is built.
+  void _showPresent(_LineDraft line) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).orderAddAlreadyIn)),
+      );
       final BuildContext? card = line.card.currentContext;
-      if (card != null && card.mounted) {
+      if (card != null) {
         Scrollable.ensureVisible(card);
       }
     });
@@ -352,8 +373,13 @@ class _EditorState extends ConsumerState<_Editor> {
     final String? deliveryTimeNote = wish.isEmpty ? null : wish;
     final GoRouter router = GoRouter.of(context);
 
-    // Nothing to change: nothing is sent (`DL-28` (9)).
-    if (_changesNothing(lines, deliveryTimeNote)) {
+    // Nothing to change: nothing is sent (`DL-28` (9)). While the order
+    // loads again it is not yet known what it holds, and the edit goes: the
+    // server answers a list that changes nothing as it is (`DL-37` (9)).
+    final bool known = !ref
+        .read(customerOrderProvider(widget.order.id))
+        .isLoading;
+    if (known && _changesNothing(lines, deliveryTimeNote)) {
       _backToOrder(router, widget.order.id);
       return;
     }
@@ -432,13 +458,15 @@ class _EditorState extends ConsumerState<_Editor> {
                                       : null,
                                 ),
                           ),
-                          if (draft.product
-                              case final CatalogProduct product) ...<Widget>[
+                          if (!draft.removed &&
+                              draft.adds(widget.order)) ...<Widget>[
                             Text(
                               l10n.orderAddedLine,
+                              key: ValueKey<String>('edit-adds-${draft.key}'),
                               style: Theme.of(context).textTheme.labelMedium,
                             ),
-                            PriceLine(product: product),
+                            if (draft.product case final CatalogProduct product)
+                              PriceLine(product: product),
                           ],
                           if (draft.unavailable)
                             Text(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
@@ -354,6 +356,46 @@ void main() {
       expect(top(tester), AppPaths.customerOrder(orderOne));
     });
 
+    testWidgets('dropping it while the order still loads again is sent', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await addMilk(tester);
+      final Completer<void> reload = Completer<void>();
+      orders
+        ..failure = const NetworkFailure()
+        ..loadHold = reload
+        ..rows = <Map<String, Object?>>[
+          customerOrderJson(
+            lines: <Object?>[
+              orderLineJson(),
+              orderLineJson(
+                id: lineBread,
+                productId: productBread,
+                unit: 'piece',
+                quantity: '2',
+              ),
+              milkLine(),
+            ],
+          ),
+        ];
+      await tapAndSettle(tester, byKey('edit-save'));
+      await tapAndSettle(tester, byKey('edit-remove-added-$productMilk'));
+      orders.answer = customerOrderJson();
+      await tester.tap(byKey('edit-save'));
+      await tester.pump();
+
+      expect(
+        orders.edits,
+        hasLength(2),
+        reason: 'what the order holds is unknown',
+      );
+      orders.loadHold = null;
+      reload.complete();
+      await tester.pumpAndSettle();
+      expect(top(tester), AppPaths.customerOrder(orderOne));
+    });
+
     testWidgets('keeping it is what the order holds, and nothing is sent', (
       WidgetTester tester,
     ) async {
@@ -363,6 +405,64 @@ void main() {
       expect(orders.edits, hasLength(1));
       expect(top(tester), AppPaths.customerOrder(orderOne));
     });
+  });
+
+  testWidgets(
+    'a line kept again after its removal was made is shown as added, and sent',
+    (WidgetTester tester) async {
+      await open(tester);
+      await tapAndSettle(tester, byKey('edit-remove-$lineTomato'));
+      await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
+      orders
+        ..failure = const NetworkFailure()
+        ..rows = <Map<String, Object?>>[
+          customerOrderJson(
+            note: 'Ertalab',
+            lines: <Object?>[
+              orderLineJson(
+                status: 'removed',
+                removedReason: 'customer_removed',
+              ),
+              orderLineJson(
+                id: lineBread,
+                productId: productBread,
+                unit: 'piece',
+                quantity: '2',
+              ),
+            ],
+          ),
+        ];
+      await tapAndSettle(tester, byKey('edit-save'));
+      expect(byKey('edit-adds-$lineTomato'), findsNothing);
+
+      await tapAndSettle(tester, byKey('edit-remove-$lineTomato'));
+      expect(byKey('edit-adds-$lineTomato'), findsOneWidget);
+      orders.answer = customerOrderJson(note: 'Ertalab');
+      await tapAndSettle(tester, byKey('edit-save'));
+      expect(
+        orders.edits.last.$2.map((OrderEditLine l) => l.productId),
+        <String>[productTomato, productBread],
+      );
+    },
+  );
+
+  testWidgets('a save that goes hides the keyboard', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
+    expect(tester.testTextInput.isVisible, isTrue);
+    final Completer<void> hold = Completer<void>();
+    orders
+      ..hold = hold
+      ..answer = customerOrderJson(note: 'Ertalab');
+
+    await tester.tap(byKey('edit-save'));
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isFalse);
+    orders.hold = null;
+    hold.complete();
+    await tester.pumpAndSettle();
   });
 
   testWidgets('a product already in the order is brought into view', (
@@ -534,6 +634,28 @@ void main() {
     expect(top(tester), AppPaths.customerOrderEdit(orderOne));
     expect(byKey('edit-line-added-$productMilk'), findsOneWidget);
   });
+
+  testWidgets(
+    'a picker opened alone that picks a product in the order says so',
+    (WidgetTester tester) async {
+      await open(tester, at: AppPaths.customerOrderAdd(orderOne), alone: true);
+      await search(tester, 'pom');
+      await tapAndSettle(
+        tester,
+        byKey('product-${productTomato.toUpperCase()}'),
+      );
+
+      expect(find.text(l10n(tester).orderAddAlreadyIn), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (Widget w) =>
+              w.key is ValueKey<String> &&
+              (w.key! as ValueKey<String>).value.startsWith('edit-line-added-'),
+        ),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('a search in the picker looks through the whole catalog', (
     WidgetTester tester,
