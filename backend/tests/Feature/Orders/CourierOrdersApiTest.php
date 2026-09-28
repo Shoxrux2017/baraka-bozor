@@ -134,6 +134,7 @@ final class CourierOrdersApiTest extends TestCase
             'accepted_at' => null,
             'started_at' => null,
             'completed_at' => null,
+            'ended_at' => now()->subHours(3),
             'ended_reason' => AssignmentEndReason::Reassigned,
         ])->save();
         $shopper = OrderShopperAssignment::factory()->ended(AssignmentEndReason::Completed)->create([
