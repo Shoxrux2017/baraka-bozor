@@ -15,8 +15,9 @@ use Tests\TestCase;
 
 /**
  * The Customer's decision racing the expiry (W3-5, `DL-54` (8),
- * `BR-APP-004`): a decision that waited on the order lock the expiry held
- * reads the expiry and is refused, so a late answer never counts as consent.
+ * `BR-APP-004`): a decision that waited on the approval's row lock the
+ * expiry held reads the expiry and is refused, so a late answer never counts
+ * as consent.
  *
  * A second connection plays the scheduled expiry — it holds the approval,
  * marks it expired and commits, without the history row this test could not
