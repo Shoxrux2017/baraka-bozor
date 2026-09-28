@@ -7,6 +7,7 @@ namespace Tests\Feature\Orders;
 use App\Models\CustomerApproval;
 use App\Models\Enums\ApprovalResolution;
 use App\Models\Enums\ApprovalStatus;
+use App\Models\Enums\ApprovalType;
 use App\Models\Enums\CancellationReason;
 use App\Models\Enums\CancellationRequestStatus;
 use App\Models\Enums\ItemRemovedReason;
@@ -24,6 +25,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
@@ -108,6 +110,62 @@ final class CustomerApprovalsApiTest extends TestCase
         $this->assertSame(1, $this->as($this->customer)->getJson('/api/v1/customer/orders')->json('data.0.pending_approval_count'));
     }
 
+    public function test_at_its_expiry_instant_a_question_reads_as_expired_everywhere(): void
+    {
+        Carbon::setTestNow(CarbonImmutable::parse('2026-09-28T10:30:00Z'));
+        $due = $this->question(['attention_at' => now()->subMinutes(20), 'expires_at' => now()]);
+
+        $this->assertSame([], $this->as($this->customer)->getJson('/api/v1/customer/approvals?status=pending')->json('data'));
+        $this->assertSame([$due->id], array_column($this->as($this->customer)->getJson('/api/v1/customer/approvals?status=expired')->json('data'), 'id'));
+        $this->assertSame('expired', $this->as($this->customer)->getJson("/api/v1/customer/approvals/{$due->id}")->json('data.status'));
+        $this->assertSame(0, $this->as($this->customer)->getJson("/api/v1/customer/orders/{$this->order->id}")->json('data.pending_approval_count'));
+        $this->assertSame(0, $this->as($this->customer)->getJson('/api/v1/customer/orders')->json('data.0.pending_approval_count'));
+        Carbon::setTestNow();
+    }
+
+    public function test_what_the_customer_approved_is_what_the_shopper_may_buy(): void
+    {
+        $approval = $this->question();
+        $this->decide($approval, 'approve')->assertOk();
+
+        $shopper = $this->withToken($this->order->currentShopperAssignment?->shopper->createToken('s')->plainTextToken ?? '');
+        $url = "/api/v1/shopper/orders/{$this->order->id}/items/{$approval->order_item_id}/purchase";
+        // 20 001 × 1.15 = 23 001: one UZS above the 23 000 approved.
+        $shopper->withHeader('Idempotency-Key', (string) Str::uuid())
+            ->postJson($url, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 20001])
+            ->assertStatus(409)->assertJsonPath('details.ceiling_customer_unit_price_uzs', 23000);
+        $shopper->withHeader('Idempotency-Key', (string) Str::uuid())
+            ->postJson($url, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 20000])
+            ->assertOk();
+        $this->assertSame(23000, $approval->item->fresh()->billable_unit_price_uzs);
+    }
+
+    public function test_a_decision_is_held_to_the_locked_state_of_the_order_and_the_line(): void
+    {
+        $onACancelledOrder = $this->question();
+        $this->order->forceFill(['status' => OrderStatus::Cancelled, 'cancelled_at' => now(), 'cancellation_reason_code' => CancellationReason::System])->save();
+        $this->decide($onACancelledOrder, 'approve')->assertStatus(409)->assertJsonPath('code', 'order_state_conflict');
+
+        $this->order = Order::factory()->shopping()->create();
+        $this->customer = $this->order->customer;
+        $notWaiting = $this->question();
+        $notWaiting->item->forceFill(['status' => OrderItemStatus::Pending])->save();
+        $this->decide($notWaiting, 'approve')->assertStatus(409)->assertJsonPath('code', 'order_state_conflict');
+
+        $aboutAnother = CustomerApproval::factory()->aboutTheReplacement()->create();
+        $other = Product::factory()->create();
+        $aboutAnother->item->forceFill([
+            'fulfilled_product_id' => $other->id,
+            'fulfilled_product_name_uz_snapshot' => $other->name_uz,
+            'fulfilled_product_name_ru_snapshot' => $other->name_ru,
+        ])->save();
+        $this->decide($aboutAnother, 'approve', $aboutAnother->order->customer)
+            ->assertStatus(409)->assertJsonPath('code', 'order_state_conflict');
+        $this->assertNull($aboutAnother->item->fresh()?->approved_replacement_price_uzs);
+
+        $this->assertSame(0, DB::table('idempotency_keys')->count(), 'A refusal frees its key.');
+    }
+
     public function test_approving_a_price_raises_the_ceiling_of_what_it_asked_about(): void
     {
         // About the original: its ceiling rises, and a replacement authorized
@@ -157,6 +215,7 @@ final class CustomerApprovalsApiTest extends TestCase
         $fewer = $this->question(state: 'reducedQuantity');
         $this->decide($fewer, 'approve')->assertOk();
         $this->assertSame('1.000', $fewer->item->fresh()?->approved_quantity_cap);
+        $this->assertSame(OrderItemStatus::Pending, $fewer->item->fresh()->status);
     }
 
     public function test_rejecting_removes_the_line_and_the_last_line_cancels_the_order(): void
@@ -169,7 +228,11 @@ final class CustomerApprovalsApiTest extends TestCase
         $this->assertSame(OrderStatus::Shopping, $this->order->fresh()?->status);
 
         $request = OrderCancellationRequest::factory()->create(['order_id' => $this->order->id]);
-        $this->decide($kept, 'reject')->assertOk();
+        $key = (string) Str::uuid();
+        $this->decide($kept, 'reject', key: $key)->assertOk();
+        // A replay after the order was cancelled answers the approval.
+        $this->decide($kept, 'reject', key: $key)->assertOk()->assertJsonPath('data.status', 'rejected');
+        $this->assertSame(2, OrderHistory::query()->where('order_id', $this->order->id)->count(), 'One row per decision (DL-54 (23)).');
 
         $order = $this->order->fresh();
         $this->assertSame(OrderStatus::Cancelled, $order->status);
@@ -224,6 +287,33 @@ final class CustomerApprovalsApiTest extends TestCase
         $foreign = CustomerApproval::factory()->create();
         $this->decide($foreign, 'approve')->assertStatus(404);
         $this->decide($other, 'approve', User::factory()->role(Role::Shopper)->create())->assertStatus(403);
+
+        $cancelled = CustomerApproval::factory()->cancelled()->create();
+        $this->decide($cancelled, 'approve', $cancelled->order->customer)->assertStatus(409)->assertJsonPath('code', 'approval_already_resolved');
+        $expired = CustomerApproval::factory()->expired()->create();
+        $this->decide($expired, 'approve', $expired->order->customer)->assertStatus(409)->assertJsonPath('code', 'approval_expired');
+        $this->assertSame(0, OrderHistory::query()->where('event_type', OrderHistoryEvent::ApprovalExpired)->count(), 'An expiry already written is not written again.');
+
+        $this->assertSame(1, DB::table('idempotency_keys')->count(), 'Only the successful decision keeps its key.');
+    }
+
+    public function test_a_line_waiting_on_an_expired_substitution_shows_no_earlier_replacement(): void
+    {
+        $substitution = $this->question(['attention_at' => now()->subMinutes(25), 'expires_at' => now()->subMinute()], 'substitution');
+        $substitution->item->forceFill([
+            'fulfilled_product_id' => Product::factory()->create()->id,
+            'fulfilled_product_name_uz_snapshot' => 'Eski',
+            'fulfilled_product_name_ru_snapshot' => 'Старая',
+            'fulfilled_unit_code_snapshot' => $substitution->item->unit_code_snapshot,
+            'substitution_resolution' => SubstitutionResolution::Automatic,
+        ])->save();
+
+        $line = collect($this->as($this->customer)->getJson("/api/v1/customer/orders/{$this->order->id}")->json('data.items'))
+            ->firstWhere('id', $substitution->order_item_id);
+
+        $this->assertNull($line['pending_approval']);
+        $this->assertNull($line['replacement'], 'DL-59 (2): no one will buy the earlier replacement.');
+        $this->assertSame(ApprovalType::Substitution, $substitution->type);
     }
 
     public function test_the_order_shows_the_open_question_on_its_line(): void

@@ -23,9 +23,11 @@ use App\Modules\Orders\ApprovalExpiry;
 use App\Modules\Orders\CustomerApprovals;
 use App\Modules\Orders\CustomerOrders;
 use App\Modules\Orders\NothingLeftToBuy;
+use App\Modules\Orders\ShopperLine;
 use App\Support\Idempotency\IdempotencyStore;
 use App\Support\Idempotency\RequestFingerprint;
 use App\Support\Scope\ScopedLookup;
+use Carbon\CarbonInterface;
 
 /**
  * `POST /customer/approvals/{approval}/decision` (`docs/09` section 23,
@@ -35,7 +37,10 @@ use App\Support\Scope\ScopedLookup;
  * proposal as persisted (`BR-APP-005`). An overdue approval is expired first,
  * in a transaction of its own, and then refused with `409 approval_expired`,
  * which the refusal cannot roll back; a resolved one is
- * `409 approval_already_resolved`. Idempotent (`DL-39`).
+ * `409 approval_already_resolved`. One instant serves the expiry and the
+ * decision. Under the lock the order must still be shopped, the line still
+ * waiting, and a question about the replacement about the one on the line
+ * (`409 order_state_conflict` otherwise). Idempotent (`DL-39`).
  *
  * Under the order lock, the approval and then its line:
  *
@@ -60,25 +65,28 @@ final class DecideApproval
     public function decide(User $customer, string $approvalId, string $decision, string $idempotencyKey): CustomerApproval
     {
         $approval = ScopedLookup::firstOrNotFound(CustomerApprovals::own($customer)->whereKey($approvalId));
-        ApprovalExpiry::expireOverdueOf($approval->order_id);
+        // One instant for the whole decision: the expiry written first and the
+        // decision's own reading agree, whatever the lock wait (DL-59 (3)).
+        $now = now();
+        ApprovalExpiry::expireOverdueOf($approval->order_id, $now);
 
         return $this->idempotency->run(
             $customer->id,
             self::OPERATION,
             $idempotencyKey,
             RequestFingerprint::of(self::OPERATION, ['approval' => $approvalId], ['decision' => $decision]),
-            fn (): CustomerApproval => $this->decideNow($customer, $approval->order_id, $approvalId, $decision),
+            fn (): CustomerApproval => $this->decideNow($customer, $approval->order_id, $approvalId, $decision, $now),
             static fn (string $id): CustomerApproval => ScopedLookup::firstOrNotFound(CustomerApprovals::own($customer)->whereKey($id)),
         );
     }
 
-    private function decideNow(User $customer, string $orderId, string $approvalId, string $decision): CustomerApproval
+    private function decideNow(User $customer, string $orderId, string $approvalId, string $decision, CarbonInterface $now): CustomerApproval
     {
         $order = ScopedLookup::lockOrNotFound(CustomerOrders::own($customer)->whereKey($orderId));
         /** @var CustomerApproval $approval */
         $approval = $order->approvals()->whereKey($approvalId)->lockForUpdate()->firstOrFail();
 
-        if (ApprovalExpiry::shownStatus($approval) === ApprovalStatus::Expired) {
+        if (ApprovalExpiry::shownStatus($approval, $now) === ApprovalStatus::Expired) {
             throw ApiException::conflict('approval_expired');
         }
         if ($approval->status !== ApprovalStatus::Pending) {
@@ -87,8 +95,19 @@ final class DecideApproval
 
         /** @var OrderItem $line */
         $line = $order->items()->whereKey($approval->order_item_id)->lockForUpdate()->firstOrFail();
+
+        // Decided from the locked state (backend/AGENTS.md): the order is being
+        // shopped, the line still waits, and a question about the replacement
+        // is about the one still on the line (DL-59 (3)).
+        if ($order->status !== OrderStatus::Shopping
+            || $line->status !== OrderItemStatus::AwaitingCustomer
+            || ($approval->type === ApprovalType::PriceOverTolerance
+                && $approval->replacement_product_id !== null
+                && $approval->replacement_product_id !== ShopperLine::replacementOf($line))) {
+            throw ApiException::conflict('order_state_conflict');
+        }
+
         $approve = $decision === 'approve';
-        $now = now();
 
         $approval->forceFill([
             'status' => $approve ? ApprovalStatus::Approved : ApprovalStatus::Rejected,

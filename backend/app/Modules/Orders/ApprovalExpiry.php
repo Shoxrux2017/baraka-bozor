@@ -10,6 +10,7 @@ use App\Models\Enums\HistoryActorType;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Order;
 use App\Models\OrderHistory;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -29,11 +30,15 @@ use Illuminate\Support\Facades\DB;
 final class ApprovalExpiry
 {
     /**
-     * Expires the order's overdue approvals; returns how many.
+     * Expires the order's approvals overdue at the given instant (now by
+     * default); returns how many. An action passes its own instant, so the
+     * expiry and the action's own reading agree (`DL-59` (3)).
      */
-    public static function expireOverdueOf(string $orderId): int
+    public static function expireOverdueOf(string $orderId, ?CarbonInterface $at = null): int
     {
-        return DB::transaction(static function () use ($orderId): int {
+        $at ??= now();
+
+        return DB::transaction(static function () use ($orderId, $at): int {
             /** @var Order|null $order */
             $order = Order::query()->whereKey($orderId)->lockForUpdate()->first();
             if ($order === null) {
@@ -42,7 +47,7 @@ final class ApprovalExpiry
 
             $overdue = $order->approvals()
                 ->where('status', ApprovalStatus::Pending->value)
-                ->where('expires_at', '<=', now())
+                ->where('expires_at', '<=', $at)
                 ->lockForUpdate()
                 ->get();
 
@@ -65,9 +70,9 @@ final class ApprovalExpiry
     /**
      * The status a read shows: a pending approval past its expiry is expired.
      */
-    public static function shownStatus(CustomerApproval $approval): ApprovalStatus
+    public static function shownStatus(CustomerApproval $approval, ?CarbonInterface $at = null): ApprovalStatus
     {
-        return $approval->status === ApprovalStatus::Pending && ! $approval->expires_at->isFuture()
+        return $approval->status === ApprovalStatus::Pending && $approval->expires_at->lessThanOrEqualTo($at ?? now())
             ? ApprovalStatus::Expired
             : $approval->status;
     }

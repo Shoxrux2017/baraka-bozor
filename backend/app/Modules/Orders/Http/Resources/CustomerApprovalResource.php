@@ -34,17 +34,7 @@ final class CustomerApprovalResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return self::fields($this->resource);
-    }
-
-    /**
-     * The fields, shared with the Customer's order, which shows a line's open
-     * question in the same shape.
-     *
-     * @return array<string, mixed>
-     */
-    public static function fields(CustomerApproval $approval): array
-    {
+        $approval = $this->resource;
         $line = $approval->item;
 
         return [

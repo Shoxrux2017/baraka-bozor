@@ -22,11 +22,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * An order as its Customer sees it (`docs/09` section 20): the snapshots it
  * was placed under — never a market price — its lines, its totals as
  * `DL-37` (10) defines them, the address it goes to, the delivery wish, what
- * the Customer may do with it now, and its instants. Approvals, payments and
- * refunds arrive with their waves; until then the count is zero and the
- * lists are empty.
+ * the Customer may do with it now, its open questions (`DL-59` (2)), and its
+ * instants. Payments and refunds arrive with their waves; until then the
+ * payment is null and the list empty.
  *
- * Expects `items` and `currentShopperAssignment` loaded.
+ * Expects `items`, `currentShopperAssignment` and `approvals` loaded.
  *
  * @property-read Order $resource
  */
@@ -57,7 +57,7 @@ final class CustomerOrderResource extends JsonResource
             'can_edit' => $changeable,
             'can_cancel_directly' => $changeable,
             'can_request_cancellation' => OrderPermissions::canRequestCancellation($order),
-            'items' => $items->map(fn (OrderItem $item): array => $this->item($item, self::openQuestionOf($order, $item)))->all(),
+            'items' => $items->map(fn (OrderItem $item): array => $this->item($item, $order))->all(),
             'totals' => [
                 'merchandise_subtotal_uzs' => $totals->merchandiseSubtotalUzs,
                 'service_fee_uzs' => $totals->serviceFeeUzs,
@@ -92,8 +92,10 @@ final class CustomerOrderResource extends JsonResource
     /**
      * @return array<string, mixed>
      */
-    private function item(OrderItem $item, ?CustomerApproval $question): array
+    private function item(OrderItem $item, Order $order): array
     {
+        $question = self::openQuestionOf($order, $item);
+
         $open = in_array($item->status, [OrderItemStatus::Pending, OrderItemStatus::AwaitingCustomer], true);
 
         return [
@@ -117,9 +119,10 @@ final class CustomerOrderResource extends JsonResource
             // What the Customer pays for one unit once the line is bought — never
             // the price paid at the market (BR-PRICE-001, DL-57 (4)).
             'billable_unit_price_uzs' => $item->status === OrderItemStatus::Purchased ? $item->billable_unit_price_uzs : null,
-            // While a substitution question is open, the replacement is the one
-            // asked about, in `pending_approval`, not an earlier one (DL-58 (3)).
-            'replacement' => ShopperLine::replacementOf($item) === null || $question?->type === ApprovalType::Substitution ? null : [
+            // While the line waits on a substitution question — open, or
+            // expired until an Operator removes the line — the replacement is
+            // the one asked about, not an earlier one no one will buy (DL-58 (3)).
+            'replacement' => ShopperLine::replacementOf($item) === null || self::waitsOnASubstitution($order, $item) ? null : [
                 'name_uz' => $item->fulfilled_product_name_uz_snapshot,
                 'name_ru' => $item->fulfilled_product_name_ru_snapshot,
             ],
@@ -139,6 +142,23 @@ final class CustomerOrderResource extends JsonResource
                 'expires_at' => $question->expires_at->toIso8601ZuluString(),
             ],
         ];
+    }
+
+    /**
+     * Whether the line waits on a substitution question.
+     */
+    private static function waitsOnASubstitution(Order $order, OrderItem $item): bool
+    {
+        if ($item->status !== OrderItemStatus::AwaitingCustomer) {
+            return false;
+        }
+
+        $latest = $order->approvals
+            ->filter(static fn (CustomerApproval $approval): bool => $approval->order_item_id === $item->id)
+            ->sortBy([['created_at', 'desc'], ['id', 'desc']])
+            ->first();
+
+        return $latest?->type === ApprovalType::Substitution;
     }
 
     /**

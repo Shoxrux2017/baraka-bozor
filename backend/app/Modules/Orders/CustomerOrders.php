@@ -34,10 +34,10 @@ final class CustomerOrders
      */
     public static function withPendingApprovalCount(Builder $orders): Builder
     {
-        return $orders->selectSub(static fn (QueryBuilder $approvals) => $approvals->from('customer_approvals')
+        return $orders->addSelect(['pending_approval_count' => static fn (QueryBuilder $approvals) => $approvals->from('customer_approvals')
             ->selectRaw('count(*)')
             ->whereColumn('customer_approvals.order_id', 'orders.id')
             ->where('customer_approvals.status', ApprovalStatus::Pending->value)
-            ->where('customer_approvals.expires_at', '>', now()), 'pending_approval_count');
+            ->where('customer_approvals.expires_at', '>', now())]);
     }
 }

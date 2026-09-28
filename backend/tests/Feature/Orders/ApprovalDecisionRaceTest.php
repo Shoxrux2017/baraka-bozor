@@ -18,9 +18,11 @@ use Tests\TestCase;
  * `BR-APP-004`): a decision that waited on the order lock the expiry held
  * reads the expiry and is refused, so a late answer never counts as consent.
  *
- * A second connection plays the scheduled expiry — it holds the order, marks
- * the approval expired and commits, without the history row this test could
- * not remove — and the decision runs in another process. No test transaction
+ * A second connection plays the scheduled expiry — it holds the approval,
+ * marks it expired and commits, without the history row this test could not
+ * remove — and the decision runs in another process. The approval is not yet
+ * overdue, so the decision passes its own expiry step and waits on the
+ * approval's row lock inside the decision (`DL-59` (4)). No test transaction
  * wraps this class: it removes what it committed, the approval with its guard
  * trigger set aside inside the removal's own transaction.
  */
@@ -69,7 +71,7 @@ final class ApprovalDecisionRaceTest extends TestCase
 
         $second = DB::connection(self::SECOND);
         $second->beginTransaction();
-        $second->table('orders')->where('id', $order->id)->lockForUpdate()->first();
+        $second->table('customer_approvals')->where('id', $approval->id)->lockForUpdate()->first();
 
         $process = $this->startElsewhere('customer.decide', $order->customer_id, $approval->id, 'approve', (string) Str::uuid());
         $this->waitUntilAnotherBackendWaitsOnALock();

@@ -675,7 +675,7 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
 2. **The Customer's order shows its open questions.**
    - `pending_approval_count` counts the questions still open, on the order and in the list, where it is counted in SQL.
    - Each line carries its open question in the shape of `docs/09` section 20.
-   - While a substitution question is open, the line's `replacement` is `null`: the replacement the Customer should see is the one asked about, in `pending_approval` (`DL-58` (3)).
+   - While the line waits on a substitution question — open, or expired until an Operator removes the line — its `replacement` is `null`. The replacement the Customer should see is the one asked about, in `pending_approval` (`DL-58` (3)). A price question whose `replacement` is `null` is about the original, and approving it drops the replacement the line shows.
 3. **The decision.**
    - **Expiry first.** An overdue approval is expired first, in a transaction of its own under the order lock (`ApprovalExpiry::expireOverdueOf`), writing one `approval_expired` row by the system. The decision is then refused with `409 approval_expired`, and the expiry stands (`DL-54` (8)).
    - **Under the lock.** Under the order lock, through `CustomerOrders::own`, whose scope is the order row's own column, the approval and then its line are locked and read again.
@@ -685,7 +685,9 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
      - a substitution authorizes its replacement at its price;
      - a smaller quantity sets the cap.
    - **Reject** removes the line with `customer_rejected`. When that leaves nothing to buy, `NothingLeftToBuy` cancels the order (`DL-54` (7)).
+   - **Checked under the lock.** The order must still be `shopping`, the line still `awaiting_customer`, and a price question about a replacement must be about the one still on the line. Otherwise the answer is `409 order_state_conflict`: a decision never reopens a line or prices a replacement the Customer did not see.
+   - **One instant.** The expiry written first and the decision's own reading use one instant taken when the request arrives, so a lock wait cannot refuse as expired an approval nobody wrote as expired. `resolved_at` is that instant too.
    - **The record.** One `approval_decided` row records it, carrying the order's move when the order was cancelled (`DL-54` (23)).
    - **Idempotency.** It is idempotent (`DL-39`), and its answer is the approval as it now stands.
    - **A second decision.** Deciding again with another key is `409 approval_already_resolved`, and the database's guard refuses any change to a resolved approval anyway (`DL-55` (2)).
-4. **The race with the expiry.** A test holds the order on a second connection, as the expiry would, marks the approval expired and commits. The decision waiting in another process is then refused with `approval_expired`, and the line stays awaiting. The test removes its rows with the guard trigger set aside inside the removal's own transaction, so a failed removal leaves the trigger on.
+4. **The race with the expiry.** A test locks the approval on a second connection, as the expiry command would, marks it expired and commits. The decision in another process has passed its own expiry step, since the approval was not overdue, and waits on the approval's row lock inside the decision. It is then refused with `approval_expired`, and the line stays awaiting. The lock order is order, then approvals, then items (`docs/07` section 16). The test removes its rows with the guard trigger set aside inside the removal's own transaction, so a failed removal leaves the trigger on.
