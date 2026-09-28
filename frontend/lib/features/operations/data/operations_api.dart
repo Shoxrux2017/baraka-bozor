@@ -272,12 +272,15 @@ class OperationsApi {
   /// One attention item.
   static AttentionItem parseAttention(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'attention item');
+    final Object? shopper = json.member('shopper');
+    final Object? courier = json.member('courier');
     return AttentionItem(
-      type: json.choice('type', AttentionType.tryParse),
+      type: AttentionType.of(json.string('type')),
       orderId: json.uuid('order_id'),
       orderNumber: _orderNumber(json, 'order_number'),
       since: json.instant('since'),
-      shopper: _person(json.member('shopper'), 'shopper'),
+      shopper: shopper == null ? null : _person(shopper, 'shopper'),
+      courier: courier == null ? null : _person(courier, 'courier'),
     );
   }
 

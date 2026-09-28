@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\Enums\Role;
 use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Auth\Http\Middleware\RequireRole;
+use App\Modules\Orders\Http\Controllers\OperationsApprovalController;
 use App\Modules\Orders\Http\Controllers\OperationsOrderController;
 use App\Modules\Orders\Http\Controllers\OperationsShopperController;
 use Illuminate\Support\Facades\Route;
@@ -32,4 +33,7 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Operato
             ->name('operations.orders.shopper-assignment.store');
         Route::put('orders/{order}/shopper-assignment', [OperationsOrderController::class, 'reassignShopper'])
             ->name('operations.orders.shopper-assignment.update');
+
+        Route::post('approvals/{approval}/resolve-expired', [OperationsApprovalController::class, 'resolveExpired'])
+            ->name('operations.approvals.resolve-expired');
     });

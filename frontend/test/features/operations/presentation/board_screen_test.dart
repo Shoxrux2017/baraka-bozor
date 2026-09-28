@@ -111,9 +111,54 @@ void main() {
     expect(byKey('board-row-$orderA'), findsOneWidget);
     expect(byKey('board-row-$orderB'), findsOneWidget);
     expect(find.text(l10n(tester).boardNoShopper), findsOneWidget);
-    expect(byKey('attention-$orderA'), findsOneWidget);
+    expect(byKey('attention-selfOrder-$orderA'), findsOneWidget);
     expect(lastQuery(), const BoardQuery());
   });
+
+  testWidgets(
+    'each attention type has its words, and one order may need two things',
+    (WidgetTester tester) async {
+      operations.attentionAnswer = <AttentionItem>[
+        OperationsApi.parseAttention(<String, Object?>{
+          ...attentionJson(),
+          'type': 'approval_pending',
+        }),
+        OperationsApi.parseAttention(attentionJson()),
+        OperationsApi.parseAttention(<String, Object?>{
+          ...attentionJson(order: orderB, number: 1002),
+          'type': 'approval_expired',
+          'shopper': null,
+        }),
+        OperationsApi.parseAttention(<String, Object?>{
+          ...attentionJson(order: orderB, number: 1002),
+          'type': 'a_later_type',
+        }),
+      ];
+
+      for (final Locale language in const <Locale>[
+        Locale('uz'),
+        Locale('ru'),
+      ]) {
+        await open(tester, device: language);
+        final AppLocalizations words = l10n(tester);
+
+        expect(byKey('attention-approvalPending-$orderA'), findsOneWidget);
+        expect(byKey('attention-selfOrder-$orderA'), findsOneWidget);
+        expect(byKey('attention-approvalExpired-$orderB'), findsOneWidget);
+        expect(byKey('attention-other-$orderB'), findsOneWidget);
+        expect(
+          find.textContaining(words.attentionApprovalPending),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(words.attentionApprovalExpired),
+          findsOneWidget,
+        );
+        expect(find.textContaining(words.attentionOther), findsWidgets);
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
 
   testWidgets(
     'each filter narrows what the board asks for, and one tap clears them',

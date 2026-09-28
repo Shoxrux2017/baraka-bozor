@@ -32,6 +32,8 @@ final class AskAboutPrice
 {
     public function ask(User $shopper, string $orderId, string $itemId, int $actualMarketPriceUzs, ?string $named, ?string $note): Order
     {
+        ShopperLine::expireFirst($shopper, $orderId);
+
         return DB::transaction(function () use ($shopper, $orderId, $itemId, $actualMarketPriceUzs, $named, $note): Order {
             [$order, , $line] = ShopperLine::lockPending($shopper, $orderId, $itemId);
             $product = ShopperLine::productNamed($line, $named);

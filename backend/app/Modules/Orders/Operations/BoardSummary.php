@@ -68,7 +68,7 @@ final readonly class BoardSummary
                 ->where('cancelled_at', '<', $end)
                 ->count(),
             (int) (clone $completed)->sum('final_total_uzs'),
-            Attention::selfOrders(Order::query())->count(),
+            Attention::count(),
         );
     }
 }

@@ -996,6 +996,37 @@ class AppLocalizationsRu extends AppLocalizations {
   String get attentionEmpty => 'Пока ничего нет';
 
   @override
+  String get attentionApprovalPending =>
+      'Клиент не отвечает 10 минут — позвоните';
+
+  @override
+  String get attentionApprovalExpired =>
+      'Время ответа клиента истекло — уберите товар';
+
+  @override
+  String get attentionPaymentOverdue => 'Онлайн-оплата просрочена';
+
+  @override
+  String get attentionRefundOutstanding => 'Ожидает возврат денег';
+
+  @override
+  String get attentionCourierDelayed => 'Курьер опаздывает';
+
+  @override
+  String get attentionDeliveryFailed =>
+      'Доставка не удалась — назначьте курьера или отмените';
+
+  @override
+  String get attentionCancellationRequest => 'Клиент просит отменить заказ';
+
+  @override
+  String get attentionStaffBlocked =>
+      'Исполнитель заблокирован — назначьте другого';
+
+  @override
+  String get attentionOther => 'Требует внимания';
+
+  @override
   String attentionSince(String time) {
     return 'с $time';
   }

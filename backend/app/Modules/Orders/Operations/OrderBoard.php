@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Operations;
 
+use App\Models\Enums\ApprovalStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\PaymentMethod;
 use App\Models\Order;
+use App\Modules\Orders\CustomerOrders;
 use App\Modules\Orders\OrderLineSums;
 use App\Modules\Settings\WorkingHours;
 use App\Support\Search\TextSearch;
@@ -45,8 +47,9 @@ final class OrderBoard
         ?CarbonImmutable $to = null,
         ?string $attention = null,
         ?string $search = null,
+        ?bool $awaitingCustomer = null,
     ): Builder {
-        $orders = OrderLineSums::add(Order::query())->with('currentShopperAssignment.shopper');
+        $orders = CustomerOrders::withPendingApprovalCount(OrderLineSums::add(Order::query()))->with('currentShopperAssignment.shopper');
 
         if ($status !== null) {
             $orders->where('orders.status', $status->value);
@@ -67,8 +70,18 @@ final class OrderBoard
         if ($to !== null) {
             $orders->where('orders.created_at', '<', $to->setTimezone(WorkingHours::ZONE)->startOfDay()->addDay()->utc());
         }
-        if ($attention === Attention::SELF_ORDER) {
-            Attention::selfOrders($orders);
+        if ($attention !== null) {
+            Attention::narrow($orders, $attention);
+        }
+        if ($awaitingCustomer !== null) {
+            // DL-3 S-6: orders waiting on the Customer — an approval still
+            // open, one past its expiry left out as every read leaves it.
+            $open = static fn (QueryBuilder $approval) => $approval->selectRaw('1')
+                ->from('customer_approvals')
+                ->whereColumn('customer_approvals.order_id', 'orders.id')
+                ->where('customer_approvals.status', ApprovalStatus::Pending->value)
+                ->where('customer_approvals.expires_at', '>', now());
+            $awaitingCustomer ? $orders->whereExists($open) : $orders->whereNotExists($open);
         }
         if ($search !== null) {
             self::search($orders, $search);

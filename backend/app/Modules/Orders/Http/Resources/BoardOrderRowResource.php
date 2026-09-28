@@ -46,6 +46,7 @@ final class BoardOrderRowResource extends JsonResource
                 'phone' => $order->recipient_phone_snapshot,
             ],
             'item_count' => (int) $order->getAttribute('item_count'),
+            'pending_approval_count' => (int) $order->getAttribute('pending_approval_count'),
             'total_uzs' => $totals->totalUzs,
             'total_kind' => $totals->kind,
             'shopper' => $assignment === null ? null : [

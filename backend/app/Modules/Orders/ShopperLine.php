@@ -49,6 +49,18 @@ final class ShopperLine
     }
 
     /**
+     * Expires the approvals of an order the Shopper holds before an action on
+     * it, in a transaction of its own (`DL-54` (8)); an order the Shopper does
+     * not hold is left alone, and the action answers the scope-safe `404`.
+     */
+    public static function expireFirst(User $shopper, string $orderId): void
+    {
+        if (ShopperOrders::current($shopper)->whereKey($orderId)->exists()) {
+            ApprovalExpiry::expireOverdueOf($orderId);
+        }
+    }
+
+    /**
      * The product a purchase or a price question is about: the one named,
      * which must be the line's own or its authorized replacement (`422` on
      * `fulfilled_product_id` otherwise), or else the replacement when there is

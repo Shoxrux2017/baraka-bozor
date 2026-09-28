@@ -42,6 +42,7 @@ final class ListBoardOrdersRequest extends ListRequest
             'to' => ['sometimes', 'nullable', 'date_format:Y-m-d', 'after_or_equal:'.self::FIRST_DAY, 'before_or_equal:'.self::LAST_DAY, 'after_or_equal:from'],
             'attention' => ['sometimes', 'nullable', 'string', Rule::in(Attention::TYPES)],
             'search' => ['sometimes', 'nullable', 'string', 'max:'.TextSearch::MAX_TERM_LENGTH],
+            'awaiting_customer' => ['sometimes', 'nullable', 'string', Rule::in(['true', 'false'])],
         ];
     }
 
@@ -84,6 +85,17 @@ final class ListBoardOrdersRequest extends ListRequest
     public function search(): ?string
     {
         return $this->text('search');
+    }
+
+    /**
+     * `true` for the orders waiting on the Customer, `false` for the others,
+     * null for both (`DL-54` (8), `DL-60`).
+     */
+    public function awaitingCustomer(): ?bool
+    {
+        $value = $this->text('awaiting_customer');
+
+        return $value === null ? null : $value === 'true';
     }
 
     private function day(string $key): ?CarbonImmutable

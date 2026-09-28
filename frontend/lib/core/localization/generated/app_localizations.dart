@@ -1946,6 +1946,60 @@ abstract class AppLocalizations {
   /// **'Hozircha hech narsa yo\'q'**
   String get attentionEmpty;
 
+  /// No description provided for @attentionApprovalPending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz 10 daqiqadan beri javob bermayapti — qo\'ng\'iroq qiling'**
+  String get attentionApprovalPending;
+
+  /// No description provided for @attentionApprovalExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozning javob muddati o\'tdi — mahsulotni olib tashlang'**
+  String get attentionApprovalExpired;
+
+  /// No description provided for @attentionPaymentOverdue.
+  ///
+  /// In uz, this message translates to:
+  /// **'Onlayn to\'lov kechikmoqda'**
+  String get attentionPaymentOverdue;
+
+  /// No description provided for @attentionRefundOutstanding.
+  ///
+  /// In uz, this message translates to:
+  /// **'Pulni qaytarish kutilmoqda'**
+  String get attentionRefundOutstanding;
+
+  /// No description provided for @attentionCourierDelayed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer kechikmoqda'**
+  String get attentionCourierDelayed;
+
+  /// No description provided for @attentionDeliveryFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib bo\'lmadi — kuryer tayinlang yoki bekor qiling'**
+  String get attentionDeliveryFailed;
+
+  /// No description provided for @attentionCancellationRequest.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz bekor qilishni so\'ramoqda'**
+  String get attentionCancellationRequest;
+
+  /// No description provided for @attentionStaffBlocked.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ijrochi bloklangan — boshqasini tayinlang'**
+  String get attentionStaffBlocked;
+
+  /// No description provided for @attentionOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'E\'tibor talab qiladi'**
+  String get attentionOther;
+
   /// No description provided for @attentionSince.
   ///
   /// In uz, this message translates to:

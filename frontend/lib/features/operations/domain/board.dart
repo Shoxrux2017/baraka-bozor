@@ -157,19 +157,32 @@ final class BoardSummary {
 /// The kinds of attention item the backend produces; each later wave adds
 /// its own (`DL-44` (7)).
 enum AttentionType {
-  selfOrder('self_order');
+  approvalPending('approval_pending'),
+  approvalExpired('approval_expired'),
+  paymentOverdue('payment_overdue'),
+  refundOutstanding('refund_outstanding'),
+  courierDelayed('courier_delayed'),
+  deliveryFailed('delivery_failed'),
+  cancellationRequest('cancellation_request'),
+  staffBlocked('staff_blocked'),
+  selfOrder('self_order'),
+
+  /// A type this client does not know yet: a later wave's, shown in general
+  /// words rather than refusing the whole list (`DL-54` (21), `DL-60`).
+  other('');
 
   const AttentionType(this.code);
 
   final String code;
 
-  static AttentionType? tryParse(String code) {
+  /// The type of [code]; one this client does not know is [other].
+  static AttentionType of(String code) {
     for (final AttentionType type in values) {
-      if (type.code == code) {
+      if (type != other && type.code == code) {
         return type;
       }
     }
-    return null;
+    return other;
   }
 }
 
@@ -181,13 +194,18 @@ final class AttentionItem {
     required this.orderNumber,
     required this.since,
     required this.shopper,
+    required this.courier,
   });
 
   final AttentionType type;
   final String orderId;
   final int orderNumber;
   final DateTime since;
-  final PersonRef shopper;
+
+  /// The Shopper and the Courier concerned, when the item names them
+  /// (`DL-54` (13)).
+  final PersonRef? shopper;
+  final PersonRef? courier;
 }
 
 /// An order as the Operator and the Admin see it (`docs/09` section 38).

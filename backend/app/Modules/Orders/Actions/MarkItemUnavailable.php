@@ -35,6 +35,8 @@ final class MarkItemUnavailable
 {
     public function markUnavailable(User $shopper, string $orderId, string $itemId, ?string $note): Order
     {
+        ShopperLine::expireFirst($shopper, $orderId);
+
         return DB::transaction(function () use ($shopper, $orderId, $itemId, $note): Order {
             [$order, , $line] = ShopperLine::lockPending($shopper, $orderId, $itemId);
 

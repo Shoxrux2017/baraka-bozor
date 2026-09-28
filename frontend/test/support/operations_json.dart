@@ -84,6 +84,7 @@ Map<String, Object?> attentionJson({
   'order_number': number,
   'since': '2026-09-27T07:05:00Z',
   'shopper': <String, Object?>{'id': shopperId, 'full_name': 'Sardor Yusupov'},
+  'courier': null,
 };
 
 Map<String, Object?> shopperJson({
