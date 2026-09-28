@@ -166,6 +166,28 @@ final class ShopperQuestionsApiTest extends TestCase
         $this->assertSame(0, CustomerApproval::query()->count());
     }
 
+    public function test_an_approved_replacement_proposed_again_meets_its_approved_price(): void
+    {
+        $replacement = Product::factory()->create();
+        $line = $this->authorized($this->line(), $replacement, approvedPrice: 25000);
+
+        // 20 000 × 1.15 = 23 000: above the automatic 21 160, within the 25 000
+        // approved for it.
+        $this->ask($line, 'substitution', ['replacement_product_id' => $replacement->id, 'actual_market_price_uzs' => 20000])->assertOk();
+        // 21 740 × 1.15 = 25 001.
+        $this->ask($line, 'substitution', ['replacement_product_id' => $replacement->id, 'actual_market_price_uzs' => 21740])
+            ->assertStatus(409)
+            ->assertJsonPath('details.ceiling_customer_unit_price_uzs', 25000);
+
+        // Hidden from the catalog since, it is still the authorized one.
+        $replacement->forceFill(['is_active' => false])->save();
+        $this->ask($line, 'substitution', ['replacement_product_id' => $replacement->id, 'actual_market_price_uzs' => 20000])->assertOk();
+
+        $this->assertSame(0, CustomerApproval::query()->count());
+        $this->assertSame(0, OrderHistory::query()->count());
+        $this->assertSame(OrderItemStatus::Pending, $line->fresh()?->status);
+    }
+
     public function test_the_originals_approved_ceiling_raises_the_automatic_one_and_survives_a_replacement(): void
     {
         // BR-PRICE-005: an approved higher ceiling for the original is the

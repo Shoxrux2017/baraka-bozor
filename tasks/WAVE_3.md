@@ -170,7 +170,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - a repeated decision answers from what is stored and never writes the approval again (`DL-55` (2));
   - an already resolved approval is `409 approval_already_resolved`.
 - The Customer's order carries each line's pending approval, and the list carries `pending_approval_count`. A line with a pending substitution shows the question's replacement, not an earlier authorized one (`DL-58` (3)).
-- Approving a price question about the original drops a replacement authorized on the line, as buying the original does (`DL-54` (4)): the Shopper named the original, and the replacement's bound must not rise with the original's approved ceiling.
+- Approving a price question about the original drops a replacement authorized on the line, as buying the original does (`DL-54` (4)), since the Shopper named the original. The Shopper may propose that replacement again, and `BR-PRICE-005` then judges it against the raised ceiling; record the decision in `DECISIONS.md` with the task.
 - Tests:
   - an approval at 29:59 is approved, and at 30:00 refused with the expiry kept, under a controlled clock;
   - a decision racing the Shopper's next question;

@@ -60,22 +60,13 @@ final class ProposeSubstitution
                 throw ValidationException::withMessages(['replacement_product_id' => 'A replacement is another product than the original.']);
             }
 
-            /** @var Product|null $product */
-            $product = CustomerCatalogListing::visibleProducts()->whereKey($replacementId)->first();
-            if ($product === null) {
-                throw ApiException::conflict('product_unavailable', ['product_ids' => [$replacementId]]);
-            }
-
-            if ($product->unit_code !== $line->unit_code_snapshot) {
-                throw ApiException::conflict('replacement_unit_mismatch');
-            }
-
             $proposed = MoneyCalculator::increaseByPercent($actualMarketPriceUzs, Percentage::fromString($line->markup_percent_snapshot));
 
+            // Already authorized — checked when it was, even if hidden since, as
+            // a purchase of it would still be: within its bound a natural
+            // repeat; above it, what a purchase would answer (DL-58 (3)).
             $previous = ShopperLine::replacementOf($line);
-            if ($previous === $product->id) {
-                // Already authorized: within its bound a natural repeat; above
-                // it, what a purchase would answer (DL-58 (3)).
+            if ($previous === $replacementId) {
                 $bound = PriceBound::replacement($line, $order);
                 if ($proposed > $bound) {
                     throw ApiException::conflict('customer_approval_required', [
@@ -86,6 +77,16 @@ final class ProposeSubstitution
                 }
 
                 return $order;
+            }
+
+            /** @var Product|null $product */
+            $product = CustomerCatalogListing::visibleProducts()->whereKey($replacementId)->first();
+            if ($product === null) {
+                throw ApiException::conflict('product_unavailable', ['product_ids' => [$replacementId]]);
+            }
+
+            if ($product->unit_code !== $line->unit_code_snapshot) {
+                throw ApiException::conflict('replacement_unit_mismatch');
             }
 
             $automatic = $line->substitution_policy_snapshot === SubstitutionPolicy::AllowSimilar
