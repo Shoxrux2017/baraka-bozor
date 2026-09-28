@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Orders\Http\Resources;
 
 use App\Models\CustomerApproval;
-use App\Models\Enums\ApprovalStatus;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Modules\Orders\ApprovalExpiry;
 use App\Modules\Orders\PriceBound;
 use App\Modules\Orders\QuantityPolicy;
 use App\Modules\Orders\ShopperLine;
@@ -76,7 +76,7 @@ final class ShopperOrderResource extends JsonResource
     {
         $original = PriceBound::original($line, $order);
         $replaced = ShopperLine::replacementOf($line) !== null;
-        $question = $line->approvals->first(static fn (CustomerApproval $approval): bool => $approval->status === ApprovalStatus::Pending);
+        $question = $line->approvals->first(static fn (CustomerApproval $approval): bool => ApprovalExpiry::isOpen($approval));
 
         return [
             'id' => $line->id,

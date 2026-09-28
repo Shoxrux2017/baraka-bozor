@@ -62,6 +62,8 @@ final class RecordPurchase
      */
     public function purchase(User $shopper, string $orderId, string $itemId, array $body, string $idempotencyKey): Order
     {
+        ShopperLine::expireFirst($shopper, $orderId);
+
         return $this->idempotency->run(
             $shopper->id,
             self::OPERATION,

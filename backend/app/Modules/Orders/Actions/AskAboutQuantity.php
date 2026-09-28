@@ -27,6 +27,8 @@ final class AskAboutQuantity
 {
     public function ask(User $shopper, string $orderId, string $itemId, string $proposedQuantity, ?string $note): Order
     {
+        ShopperLine::expireFirst($shopper, $orderId);
+
         return DB::transaction(function () use ($shopper, $orderId, $itemId, $proposedQuantity, $note): Order {
             [$order, , $line] = ShopperLine::lockPending($shopper, $orderId, $itemId);
 

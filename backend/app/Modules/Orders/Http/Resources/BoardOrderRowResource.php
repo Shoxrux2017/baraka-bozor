@@ -15,7 +15,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * and the total with its kind, and the current Shopper with the self-order
  * mark (`BR-ASSIGN-005`).
  *
- * Expects the sums of `OrderLineSums::add` and `currentShopperAssignment.shopper`.
+ * Expects the sums of `OrderLineSums::add`, the `pending_approval_count` of
+ * `CustomerOrders::withPendingApprovalCount` and `currentShopperAssignment.shopper`.
  *
  * @property-read Order $resource
  */
@@ -46,6 +47,7 @@ final class BoardOrderRowResource extends JsonResource
                 'phone' => $order->recipient_phone_snapshot,
             ],
             'item_count' => (int) $order->getAttribute('item_count'),
+            'pending_approval_count' => (int) $order->getAttribute('pending_approval_count'),
             'total_uzs' => $totals->totalUzs,
             'total_kind' => $totals->kind,
             'shopper' => $assignment === null ? null : [

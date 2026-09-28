@@ -66,7 +66,7 @@ final class OperationsBoardApiTest extends TestCase
 
         $this->assertSame([$newer->id, $older->id], array_column($rows, 'id'));
         $this->assertSame(
-            ['id', 'order_number', 'created_at', 'status', 'payment_method', 'customer', 'item_count', 'total_uzs', 'total_kind', 'shopper', 'is_self_order'],
+            ['id', 'order_number', 'created_at', 'status', 'payment_method', 'customer', 'item_count', 'pending_approval_count', 'total_uzs', 'total_kind', 'shopper', 'is_self_order'],
             array_keys($rows[0])
         );
         $this->assertNotNull($rows[0]['shopper']);
@@ -208,7 +208,7 @@ final class OperationsBoardApiTest extends TestCase
 
         $items = $this->as($this->operator)->getJson('/api/v1/operations/attention')->assertOk()->json('data');
         $this->assertSame([$replaced->id, $cancelled->id, $ended->id], array_column($items, 'order_id'), 'The longest-waiting first.');
-        $this->assertSame(['type', 'order_id', 'order_number', 'since', 'shopper'], array_keys($items[0]));
+        $this->assertSame(['type', 'order_id', 'order_number', 'since', 'shopper', 'courier'], array_keys($items[0]));
         $this->assertSame('self_order', $items[0]['type']);
         $this->assertSame($replaced->fresh()?->order_number, $items[0]['order_number']);
         $this->assertSame(now()->subHour()->toIso8601ZuluString(), $items[0]['since']);

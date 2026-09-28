@@ -111,9 +111,70 @@ void main() {
     expect(byKey('board-row-$orderA'), findsOneWidget);
     expect(byKey('board-row-$orderB'), findsOneWidget);
     expect(find.text(l10n(tester).boardNoShopper), findsOneWidget);
-    expect(byKey('attention-$orderA'), findsOneWidget);
+    expect(byKey('attention-self_order-$orderA'), findsOneWidget);
     expect(lastQuery(), const BoardQuery());
   });
+
+  testWidgets(
+    'each attention type has its words, and one order may need two things',
+    (WidgetTester tester) async {
+      operations.attentionAnswer = <AttentionItem>[
+        OperationsApi.parseAttention(<String, Object?>{
+          ...attentionJson(),
+          'type': 'approval_pending',
+        }),
+        OperationsApi.parseAttention(attentionJson()),
+        OperationsApi.parseAttention(<String, Object?>{
+          ...attentionJson(order: orderB, number: 1002),
+          'type': 'approval_expired',
+          'shopper': null,
+        }),
+        OperationsApi.parseAttention(<String, Object?>{
+          ...attentionJson(order: orderB, number: 1002),
+          'type': 'a_later_type',
+        }),
+        OperationsApi.parseAttention(<String, Object?>{
+          ...attentionJson(order: orderB, number: 1002),
+          'type': 'another_later_type',
+        }),
+      ];
+
+      for (final Locale language in const <Locale>[
+        Locale('uz'),
+        Locale('ru'),
+      ]) {
+        await open(tester, device: language);
+        final AppLocalizations words = l10n(tester);
+
+        expect(byKey('attention-approval_pending-$orderA'), findsOneWidget);
+        expect(byKey('attention-self_order-$orderA'), findsOneWidget);
+        expect(byKey('attention-approval_expired-$orderB'), findsOneWidget);
+        expect(
+          find.textContaining(words.attentionApprovalPending),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(words.attentionApprovalExpired),
+          findsOneWidget,
+        );
+        // Two types this client does not know are two rows, each in general
+        // words.
+        for (final String later in const <String>[
+          'a_later_type',
+          'another_later_type',
+        ]) {
+          expect(
+            find.descendant(
+              of: byKey('attention-$later-$orderB'),
+              matching: find.textContaining(words.attentionOther),
+            ),
+            findsOneWidget,
+          );
+        }
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
 
   testWidgets(
     'each filter narrows what the board asks for, and one tap clears them',

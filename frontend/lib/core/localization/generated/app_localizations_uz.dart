@@ -992,6 +992,37 @@ class AppLocalizationsUz extends AppLocalizations {
   String get attentionEmpty => 'Hozircha hech narsa yo\'q';
 
   @override
+  String get attentionApprovalPending =>
+      'Mijoz 10 daqiqadan beri javob bermayapti — qo\'ng\'iroq qiling';
+
+  @override
+  String get attentionApprovalExpired =>
+      'Mijozning javob muddati o\'tdi — mahsulotni olib tashlang';
+
+  @override
+  String get attentionPaymentOverdue => 'Onlayn to\'lov kechikmoqda';
+
+  @override
+  String get attentionRefundOutstanding => 'Pulni qaytarish kutilmoqda';
+
+  @override
+  String get attentionCourierDelayed => 'Kuryer kechikmoqda';
+
+  @override
+  String get attentionDeliveryFailed =>
+      'Yetkazib bo\'lmadi — kuryer tayinlang yoki bekor qiling';
+
+  @override
+  String get attentionCancellationRequest => 'Mijoz bekor qilishni so\'ramoqda';
+
+  @override
+  String get attentionStaffBlocked =>
+      'Ijrochi bloklangan — boshqasini tayinlang';
+
+  @override
+  String get attentionOther => 'E\'tibor talab qiladi';
+
+  @override
   String attentionSince(String time) {
     return '$time dan beri';
   }

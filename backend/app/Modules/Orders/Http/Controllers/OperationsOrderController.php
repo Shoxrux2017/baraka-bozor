@@ -42,6 +42,7 @@ final class OperationsOrderController extends Controller
             to: $request->to(),
             attention: $request->attention(),
             search: $request->search(),
+            awaitingCustomer: $request->awaitingCustomer(),
         )->paginate($request->perPage(), ['*'], 'page', $request->page());
 
         return PaginatedResponse::of(
@@ -97,7 +98,7 @@ final class OperationsOrderController extends Controller
         );
     }
 
-    private static function detail(Order $order): BoardOrderResource
+    public static function detail(Order $order): BoardOrderResource
     {
         return new BoardOrderResource($order->load([
             'items',

@@ -627,16 +627,29 @@ class _AttentionList extends ConsumerWidget {
                       children: <Widget>[
                         for (final AttentionItem item in items)
                           ListTile(
-                            key: ValueKey<String>('attention-${item.orderId}'),
+                            key: ValueKey<String>(
+                              'attention-${item.code}-${item.orderId}',
+                            ),
                             contentPadding: EdgeInsets.zero,
-                            leading: const Icon(Icons.person_pin_outlined),
+                            leading: Icon(
+                              item.type == AttentionType.selfOrder
+                                  ? Icons.person_pin_outlined
+                                  : Icons.notification_important_outlined,
+                            ),
                             title: Text(
                               '${l10n.boardOrderNumber('${item.orderNumber}')}'
                               ' · ${_describe(l10n, item)}',
                             ),
                             subtitle: Text(
-                              '${nameOf(l10n, item.shopper)} · '
-                              '${l10n.attentionSince(TashkentTime.format(item.since))}',
+                              <String>[
+                                if (item.shopper != null)
+                                  nameOf(l10n, item.shopper!),
+                                if (item.courier != null)
+                                  nameOf(l10n, item.courier!),
+                                l10n.attentionSince(
+                                  TashkentTime.format(item.since),
+                                ),
+                              ].join(' · '),
                             ),
                             onTap: () =>
                                 context.go(OperationsPaths.order(item.orderId)),
@@ -658,5 +671,14 @@ class _AttentionList extends ConsumerWidget {
   static String _describe(AppLocalizations l10n, AttentionItem item) =>
       switch (item.type) {
         AttentionType.selfOrder => l10n.selfOrderExplained,
+        AttentionType.approvalPending => l10n.attentionApprovalPending,
+        AttentionType.approvalExpired => l10n.attentionApprovalExpired,
+        AttentionType.paymentOverdue => l10n.attentionPaymentOverdue,
+        AttentionType.refundOutstanding => l10n.attentionRefundOutstanding,
+        AttentionType.courierDelayed => l10n.attentionCourierDelayed,
+        AttentionType.deliveryFailed => l10n.attentionDeliveryFailed,
+        AttentionType.cancellationRequest => l10n.attentionCancellationRequest,
+        AttentionType.staffBlocked => l10n.attentionStaffBlocked,
+        AttentionType.other => l10n.attentionOther,
       };
 }

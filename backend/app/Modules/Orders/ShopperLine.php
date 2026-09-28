@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Orders;
 
 use App\Exceptions\ApiException;
+use App\Models\Enums\ApprovalStatus;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderShopperAssignment;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -46,6 +48,26 @@ final class ShopperLine
         }
 
         return [$order, $assignment, $line];
+    }
+
+    /**
+     * Expires the approvals of an order the Shopper holds before an action on
+     * it, in a transaction of its own (`DL-54` (8)), and takes the order lock
+     * only when one is overdue; an order the Shopper does not hold is left
+     * alone, and the action answers the scope-safe `404`.
+     */
+    public static function expireFirst(User $shopper, string $orderId): void
+    {
+        $now = now();
+        $overdue = ShopperOrders::current($shopper)->whereKey($orderId)
+            ->whereHas('approvals', static fn (Builder $approval) => $approval
+                ->where('status', ApprovalStatus::Pending->value)
+                ->where('expires_at', '<=', $now))
+            ->exists();
+
+        if ($overdue) {
+            ApprovalExpiry::expireOverdueOf($orderId, $now);
+        }
     }
 
     /**

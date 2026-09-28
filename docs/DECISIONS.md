@@ -691,3 +691,33 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - **Idempotency.** It is idempotent (`DL-39`), and its answer is the approval as it now stands.
    - **A second decision.** Deciding again with another key is `409 approval_already_resolved`, and the database's guard refuses any change to a resolved approval anyway (`DL-55` (2)).
 4. **The race with the expiry.** A test locks the approval on a second connection, as the expiry command would, marks it expired and commits. The decision in another process has passed its own expiry step, since the approval was not overdue, and waits on the approval's row lock inside the decision. It is then refused with `approval_expired`, and the line stays awaiting. The lock order is order, then approvals, then items (`docs/07` section 16). The test removes its rows with the guard trigger set aside inside the removal's own transaction, so a failed removal leaves the trigger on.
+
+## DL-60 — Expiry, the Operator's removal, the approval attention, from W3-6 (2026-09-29, agent)
+
+1. **Where expiry is written** (`DL-54` (8)).
+   - **The command.** `approvals:expire` is scheduled every minute in `routes/console.php`. It finds the orders with an overdue pending approval and expires each order's under its lock (`ApprovalExpiry::expireOverdueOf`). Running it again finds nothing.
+   - **The Shopper's line actions** (purchase, unavailable, the three questions) expire the order's overdue approvals first, in a transaction of their own. They do so only for an order the Shopper holds (`ShopperLine::expireFirst`), so an id the Shopper does not hold writes nothing and answers the scope-safe `404`.
+   - **The Customer's decision and the Operator's removal** expire first as `DL-59` (3) does.
+   - **Accept and start, the Customer's edit and direct cancellation, and the Operator's assignment and reassignment** need no step: each happens before a start, when nothing has been asked yet.
+   - **The Shopper's step writes only when something is overdue:** it looks for an overdue approval on an order the Shopper holds before it takes the lock.
+   - **Reads** — the Shopper's line, the Customer's order and approvals, and the board's approvals and counts — show an overdue approval as expired.
+2. **The Operator's removal of an expired line.**
+   - `remove_item` is the only resolution; the Operator never answers for the Customer.
+   - Under the order lock, then the approval, then the line:
+     - a question not yet expired is `409 approval_not_expired`;
+     - one the Customer or a cancellation resolved is `409 approval_already_resolved`;
+     - the same removal again is a natural repeat, answered without writing, since the database's guard refuses any change to a resolved approval (`DL-55` (2));
+     - the order must still be shopped and the line still waiting (`409 order_state_conflict`), so a cancelled order's expired questions ask nothing of anyone (`DL-55` (11)).
+   - The line is removed with `approval_expired`, and the approval keeps `expired` with `remove_item`, the Operator and the instant. One `approval_resolved` row keeps the note, and carries the order's move when nothing was left to buy (`DL-54` (7), (23)).
+   - The answer is the order as the board shows it.
+3. **The attention list is one item per open order and type.**
+   - An order may need two things at once — an unanswered question and a self-order — so each type is its own item, and two questions on one order are one item since the earliest of them.
+   - `approval_pending` covers a question past its ten minutes and not expired. `approval_expired` covers an expired question no Operator has resolved, one past its expiry that nothing has written yet included. They are counted in the summary as the list holds them.
+   - Every item now carries `courier`, and `shopper` may be `null`, as `DL-54` (13) planned.
+4. **What waits on the Customer.**
+   - The board takes `awaiting_customer=true` or `false`, the orders with or without an open question. Any other value is `422`.
+   - Each row carries `pending_approval_count`, both leaving out a question past its expiry (`DL-3` S-6).
+5. **The panel reads every attention type** (`DL-54` (21)).
+   - It knows all nine types of `docs/09` section 38, with their words, and shows a type it does not know yet in general words rather than refusing the list.
+   - An item's key names its type as the server wrote it, so one order's two items are two rows, even two of types the client does not know.
+   - An item without a Shopper shows the Courier, or only its instant.

@@ -408,6 +408,15 @@
   "summaryAttention": "Требуют внимания",
   "attentionTitle": "Требует внимания",
   "attentionEmpty": "Пока ничего нет",
+  "attentionApprovalPending": "Клиент не отвечает 10 минут — позвоните",
+  "attentionApprovalExpired": "Время ответа клиента истекло — уберите товар",
+  "attentionPaymentOverdue": "Онлайн-оплата просрочена",
+  "attentionRefundOutstanding": "Ожидается возврат денег",
+  "attentionCourierDelayed": "Курьер опаздывает",
+  "attentionDeliveryFailed": "Доставка не удалась — назначьте курьера или отмените",
+  "attentionCancellationRequest": "Клиент просит отменить заказ",
+  "attentionStaffBlocked": "Исполнитель заблокирован — назначьте другого",
+  "attentionOther": "Требует внимания",
   "attentionSince": "с {time}",
   "@attentionSince": {
     "placeholders": {

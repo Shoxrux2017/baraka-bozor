@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\OrderShopperAssignment;
+use App\Modules\Orders\ApprovalExpiry;
 use App\Modules\Orders\OrderTotals;
 use App\Modules\Orders\QuantityPolicy;
 use App\Modules\Orders\ShopperLine;
@@ -180,7 +181,7 @@ final class BoardOrderResource extends JsonResource
             'id' => $approval->id,
             'item_id' => $approval->order_item_id,
             'type' => $approval->type->value,
-            'status' => $approval->status->value,
+            'status' => ApprovalExpiry::shownStatus($approval)->value,
             'proposed_customer_unit_price_uzs' => $approval->proposed_customer_unit_price_uzs,
             'proposed_actual_market_price_uzs' => $approval->proposed_actual_market_price_uzs,
             'proposed_quantity' => $approval->proposed_quantity === null

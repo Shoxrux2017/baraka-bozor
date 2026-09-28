@@ -48,6 +48,8 @@ final class ProposeSubstitution
 {
     public function propose(User $shopper, string $orderId, string $itemId, string $replacementId, int $actualMarketPriceUzs, ?string $note): Order
     {
+        ShopperLine::expireFirst($shopper, $orderId);
+
         return DB::transaction(function () use ($shopper, $orderId, $itemId, $replacementId, $actualMarketPriceUzs, $note): Order {
             [$order, , $line] = ShopperLine::lockPending($shopper, $orderId, $itemId);
             $replacementId = strtolower($replacementId);

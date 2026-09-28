@@ -104,12 +104,38 @@ void main() {
       final AttentionItem item = OperationsApi.parseAttention(attentionJson());
       expect(item.type, AttentionType.selfOrder);
       expect(item.orderId, orderA);
-      expect(item.shopper.fullName, 'Sardor Yusupov');
-      expect(
-        () => OperationsApi.parseAttention(<String, Object?>{
+      expect(item.shopper?.fullName, 'Sardor Yusupov');
+      expect(item.courier, isNull);
+
+      // Every type of docs/09 section 38 is read, and one this client does
+      // not know yet is shown in general words, not refused (DL-54 (21)).
+      for (final AttentionType type in AttentionType.values) {
+        if (type == AttentionType.other) {
+          continue;
+        }
+        expect(
+          OperationsApi.parseAttention(<String, Object?>{
+            ...attentionJson(),
+            'type': type.code,
+          }).type,
+          type,
+        );
+      }
+      final AttentionItem later = OperationsApi.parseAttention(
+        <String, Object?>{
           ...attentionJson(),
-          'type': 'payment_overdue',
-        }),
+          'type': 'something_new',
+          'shopper': null,
+          'courier': <String, Object?>{'id': shopperId, 'full_name': 'Kamol'},
+        },
+      );
+      expect(later.type, AttentionType.other);
+      expect(later.shopper, isNull);
+      expect(later.courier?.fullName, 'Kamol');
+      expect(
+        () => OperationsApi.parseAttention(
+          <String, Object?>{...attentionJson()}..remove('courier'),
+        ),
         throwsFormatException,
       );
 

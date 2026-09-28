@@ -408,6 +408,15 @@
   "summaryAttention": "E'tibor talab",
   "attentionTitle": "E'tibor talab qiladi",
   "attentionEmpty": "Hozircha hech narsa yo'q",
+  "attentionApprovalPending": "Mijoz 10 daqiqadan beri javob bermayapti — qo'ng'iroq qiling",
+  "attentionApprovalExpired": "Mijozning javob muddati o'tdi — mahsulotni olib tashlang",
+  "attentionPaymentOverdue": "Onlayn to'lov kechikmoqda",
+  "attentionRefundOutstanding": "Pulni qaytarish kutilmoqda",
+  "attentionCourierDelayed": "Kuryer kechikmoqda",
+  "attentionDeliveryFailed": "Yetkazib bo'lmadi — kuryer tayinlang yoki bekor qiling",
+  "attentionCancellationRequest": "Mijoz bekor qilishni so'ramoqda",
+  "attentionStaffBlocked": "Ijrochi bloklangan — boshqasini tayinlang",
+  "attentionOther": "E'tibor talab qiladi",
   "attentionSince": "{time} dan beri",
   "@attentionSince": {
     "placeholders": {
