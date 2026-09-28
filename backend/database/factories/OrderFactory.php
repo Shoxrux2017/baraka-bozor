@@ -10,9 +10,13 @@ use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\CancellationReason;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\PaymentMethod;
+use App\Models\Enums\PaymentProvider;
+use App\Models\Enums\PaymentStatus;
 use App\Models\Enums\ServiceFeeMode;
 use App\Models\Order;
+use App\Models\OrderCourierAssignment;
 use App\Models\OrderShopperAssignment;
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -24,9 +28,11 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  * fee of 5 000 and a delivery fee of 15 000.
  *
  * The states set what each status implies (`orders_*_check`) and, where a
- * status implies a Shopper, create the assignment; [cancelled] goes last and
- * ends a current assignment the way a cancellation does. Items are not
- * created: a test that needs lines says which with `OrderItem::factory()`.
+ * status implies a Shopper or a Courier, create the assignment; a completed
+ * order also has the payment its delivery recorded — the cash the Courier
+ * collected, for a cash order. [cancelled] goes last and ends the current
+ * assignments the way a cancellation does. Items are not created: a test that
+ * needs lines says which with `OrderItem::factory()`.
  *
  * @extends Factory<Order>
  */
@@ -105,26 +111,64 @@ final class OrderFactory extends Factory
 
     public function deliveryAssigned(): self
     {
-        return $this->shopped(OrderStatus::DeliveryAssigned, ['ready_for_delivery_at' => now()]);
+        return $this->shopped(OrderStatus::DeliveryAssigned, ['ready_for_delivery_at' => now()])
+            ->withCourier(OrderCourierAssignment::factory());
     }
 
     public function onTheWay(): self
     {
-        return $this->shopped(OrderStatus::OnTheWay, ['ready_for_delivery_at' => now(), 'on_the_way_at' => now()]);
+        return $this->shopped(OrderStatus::OnTheWay, ['ready_for_delivery_at' => now(), 'on_the_way_at' => now()])
+            ->withCourier(OrderCourierAssignment::factory()->started());
     }
 
+    /**
+     * Back in `ready_for_delivery` after a failed delivery: the Courier's
+     * assignment ended `delivery_failed` and no Courier holds the order
+     * (`BR-DEL-003`).
+     */
+    public function deliveryFailed(): self
+    {
+        return $this->readyForDelivery()->withCourier(OrderCourierAssignment::factory()->ended(AssignmentEndReason::DeliveryFailed));
+    }
+
+    /**
+     * Delivered: the Courier's assignment ended as completed, and the payment
+     * recorded — the cash the Courier collected, or for an online order the
+     * provider's confirmed payment.
+     */
     public function completed(): self
+    {
+        return $this->completedWithoutPayment()->afterCreating(function (Order $order): void {
+            $online = $order->payment_method === PaymentMethod::Online;
+
+            Payment::factory()->create([
+                'order_id' => $order->id,
+                'method' => $order->payment_method,
+                'provider' => $online ? PaymentProvider::Payme : null,
+                'amount_uzs' => $order->final_total_uzs,
+                'status' => PaymentStatus::Paid,
+                'paid_at' => now(),
+                'recorded_by_user_id' => $online ? null : $order->courierAssignments()->sole()->courier_id,
+            ]);
+        });
+    }
+
+    /**
+     * Delivered, without its payment — for `PaymentFactory`, whose row is that
+     * payment. On its own it is a state no action commits.
+     */
+    public function completedWithoutPayment(): self
     {
         return $this->shopped(OrderStatus::Completed, [
             'ready_for_delivery_at' => now(),
             'on_the_way_at' => now(),
             'completed_at' => now(),
-        ]);
+        ])->withCourier(OrderCourierAssignment::factory()->ended(AssignmentEndReason::Completed));
     }
 
     /**
-     * Cancelled for a reason. Applied after a state that made a Shopper
-     * assignment, it ends that assignment with `order_cancelled`.
+     * Cancelled for a reason. Applied after a state that made a Shopper or a
+     * Courier assignment, it ends that assignment with `order_cancelled`.
      */
     public function cancelled(CancellationReason $reason = CancellationReason::CustomerCancelled): self
     {
@@ -133,10 +177,12 @@ final class OrderFactory extends Factory
             'cancelled_at' => now(),
             'cancellation_reason_code' => $reason,
         ])->afterCreating(function (Order $order): void {
-            $order->shopperAssignments()->whereNull('ended_at')->update([
-                'ended_at' => now(),
-                'ended_reason' => AssignmentEndReason::OrderCancelled->value,
-            ]);
+            foreach ([$order->shopperAssignments(), $order->courierAssignments()] as $assignments) {
+                $assignments->whereNull('ended_at')->update([
+                    'ended_at' => now(),
+                    'ended_reason' => AssignmentEndReason::OrderCancelled->value,
+                ]);
+            }
         });
     }
 
@@ -172,6 +218,13 @@ final class OrderFactory extends Factory
     }
 
     private function withShopper(OrderShopperAssignmentFactory $assignment): self
+    {
+        return $this->afterCreating(function (Order $order) use ($assignment): void {
+            $assignment->create(['order_id' => $order->id]);
+        });
+    }
+
+    private function withCourier(OrderCourierAssignmentFactory $assignment): self
     {
         return $this->afterCreating(function (Order $order) use ($assignment): void {
             $assignment->create(['order_id' => $order->id]);

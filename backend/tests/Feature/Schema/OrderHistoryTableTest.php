@@ -77,6 +77,18 @@ final class OrderHistoryTableTest extends TestCase
         $this->assertSame(1, DB::table(self::TABLE)->count());
     }
 
+    public function test_the_events_of_wave_3_actions_are_accepted(): void
+    {
+        foreach ([
+            'shopper_accepted', 'courier_accepted', 'item_purchased', 'item_unavailable', 'item_substituted',
+            'cancellation_requested', 'cancellation_request_decided', 'payment_recorded',
+        ] as $event) {
+            DB::table(self::TABLE)->insert($this->row(['event_type' => $event, 'to_status' => null]));
+        }
+
+        $this->assertSame(8, DB::table(self::TABLE)->count(), 'DL-54 (2): the history explains every action.');
+    }
+
     public function test_the_vocabularies_are_enforced(): void
     {
         $this->assertRejectedBy(self::TABLE, 'order_history_event_type_check', $this->row(['event_type' => 'status_updated']), '08 Section 15.');

@@ -2,7 +2,7 @@
 
 ## Document Status
 
-**Status:** current. Rewritten on 2026-09-24 to `DL-2`–`DL-4` in `docs/DECISIONS.md`. Tables marked *(migrated)* exist: `users` and `customer_otp_challenges` from Wave 0, and the seven Wave 1 tables of sections 5 to 8, 11, 12 and 25 (`DL-18`); the seven Wave 2 tables of sections 9, 10, 13 to 16 and 27 (`DL-38`). Wave 3 creates the five tables of sections 17 to 21, `payments` whole although it writes only cash rows (`DL-54` (2)). Every other table is created by the wave that first needs it, by forward migrations only.
+**Status:** current. Rewritten on 2026-09-24 to `DL-2`–`DL-4` in `docs/DECISIONS.md`. Tables marked *(migrated)* exist: `users` and `customer_otp_challenges` from Wave 0, and the seven Wave 1 tables of sections 5 to 8, 11, 12 and 25 (`DL-18`); the seven Wave 2 tables of sections 9, 10, 13 to 16 and 27 (`DL-38`); and the five Wave 3 tables of sections 17 to 21, `payments` whole although Wave 3 writes only cash rows (`DL-54` (2), `DL-55`). Every other table is created by the wave that first needs it, by forward migrations only.
 
 ## 1. Baseline
 
@@ -129,7 +129,7 @@ removed_at?
 timestamps
 ```
 
-Checks: purchased requires `purchased_quantity ≥ billable_quantity > 0`, a billable price, a line total and a fulfilled product; removed has billable quantity and line total zero, a reason and `removed_at`; pending and awaiting lines bill nothing yet; a billable quantity (starting at zero) never exceeds the ordered quantity or an approved cap, and a cap is below the ordered quantity; a line total is its billable price times its billable quantity, half-up, and a fixed line bought as itself is billed at its snapshot (`DL-38`). `actual_market_price_uzs` is required by the application for estimate items and replacements. Index `(order_id, status)`, `fulfilled_product_id`.
+Checks: purchased requires `purchased_quantity ≥ billable_quantity > 0`, a billable price, a line total and a fulfilled product; removed has billable quantity and line total zero, a reason and `removed_at`; pending and awaiting lines bill nothing yet; a billable quantity (starting at zero) never exceeds the ordered quantity or an approved cap, and a cap is below the ordered quantity; a line total is its billable price times its billable quantity, half-up, and a fixed line bought as itself is billed at its snapshot (`DL-38`). From Wave 3 (`DL-55`): a line billed from the price paid — an estimate, or any replacement — records `actual_market_price_uzs` and is billed at `half_up(price × (1 + markup_percent_snapshot / 100))`; a replacement has the original's unit and says how it was authorized, and only a replacement does, an approved one with the price approved for it; `approved_replacement_price_uzs` exists only on a line with a replacement; a fixed line never has an approved ceiling; and a purchase is billed within the price approved for what was bought. A unique index on `(id, order_id)` lets an approval's line be held to its order. Index `(order_id, status)`, `fulfilled_product_id`.
 
 ## 15. `order_history`
 
@@ -143,27 +143,27 @@ Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (us
 
 ## 17. `order_courier_assignments`
 
-`id, order_id, courier_id → users, assigned_by_user_id, is_self_order, assigned_at, accepted_at?, delivery_started_at?, delay_at?, completed_at?, ended_at?, ended_reason? (completed|reassigned|delivery_failed|order_cancelled), failed_reason_code? (no_answer|refused|wrong_address|other), failed_note?, timestamps`. Partial unique `(order_id) WHERE ended_at IS NULL`. Index `(courier_id) WHERE ended_at IS NULL`, `delay_at`.
+`id, order_id, courier_id → users, assigned_by_user_id, is_self_order, assigned_at, accepted_at?, delivery_started_at?, delay_at?, completed_at?, ended_at?, ended_reason? (completed|reassigned|delivery_failed|order_cancelled), failed_reason_code? (no_answer|refused|wrong_address|other), failed_note?, timestamps`. Partial unique `(order_id) WHERE ended_at IS NULL`. Index `(courier_id) WHERE ended_at IS NULL`, `delay_at`, `(order_id)`. A start follows acceptance and fixes `delay_at` after it; a completion is the end as `completed`; a replacement or a cancellation ends an assignment before it set off; a failure is a delivery that set off, with its reason, and `other` with a note; only a failure carries either (`DL-55`).
 
 ## 18. `customer_approvals`
 
 `id, order_id, order_item_id, type (price_over_tolerance|substitution|reduced_quantity), status (pending|approved|rejected|expired|cancelled), requested_by_user_id, proposed_customer_unit_price_uzs?, proposed_actual_market_price_uzs?, proposed_quantity?, replacement_product_id?, replacement_name_uz_snapshot?, replacement_name_ru_snapshot?, replacement_unit_code_snapshot?, request_note?, attention_at, expires_at, resolved_by_user_id?, resolved_at?, resolution? (approved|rejected|remove_item), timestamps`.
 
-An approval whose order is cancelled ends `cancelled`, with no resolution (`DL-54` (8)). A `price_over_tolerance` approval carries `replacement_product_id` and its snapshots when it is about the line's authorized replacement (`DL-54` (5)). Partial unique `(order_item_id) WHERE status='pending'`. Indexes `(order_id, status)`, `(status, attention_at)`, `(status, expires_at)`.
+An approval whose order is cancelled ends `cancelled`, with no resolution (`DL-54` (8)). A `price_over_tolerance` approval carries `replacement_product_id` and its snapshots when it is about the line's authorized replacement (`DL-54` (5)). The proposal has the shape of its type — a price question its prices, a substitution its replacement and prices, a smaller quantity only the quantity — and each status its columns: nobody resolved a pending one; the Customer resolved an approved or rejected one; an expired one has no resolution until an Operator removes the line; a cancelled one has its instant. The line belongs to the approval's order (a foreign key to `order_items (id, order_id)`), and a trigger keeps the proposal immutable (`BR-APP-001`), a resolution final, and every row (`DL-55`). Partial unique `(order_item_id) WHERE status='pending'`. Indexes `(order_id, status)`, `(status, attention_at)`, `(status, expires_at)`.
 
 ## 19. `order_item_price_corrections`
 
-Append-only: `id, order_item_id, old_actual_market_price_uzs, new_actual_market_price_uzs, old_billable_unit_price_uzs, new_billable_unit_price_uzs, corrected_by_user_id, reason, created_at`.
+Append-only, by a trigger as for `order_history`: `id, order_item_id, old_actual_market_price_uzs, new_actual_market_price_uzs, old_billable_unit_price_uzs, new_billable_unit_price_uzs, corrected_by_user_id, reason, created_at`. Positive prices, a changed market price and a reason. Index `(order_item_id, created_at)` (`DL-55`).
 
 ## 20. `order_cancellation_requests`
 
-A request still pending when its order is cancelled another way ends `closed` (`DL-54` (12)). `id, order_id, origin (customer|staff), requested_by_user_id, status (pending|approved|rejected|closed), reason, resolved_by_user_id?, resolution_note?, resolved_at?, timestamps`. Partial unique `(order_id) WHERE status='pending'`.
+A request still pending when its order is cancelled another way ends `closed` (`DL-54` (12)). `id, order_id, origin (customer|staff), requested_by_user_id, status (pending|approved|rejected|closed), reason, resolved_by_user_id?, resolution_note?, resolved_at?, timestamps`. A decision names its Operator and instant, a closed request only its instant, and a resolution note is the decider's (`DL-55`). Partial unique `(order_id) WHERE status='pending'`. Index `(order_id)`, `(status, created_at)`.
 
 ## 21. `payments`
 
 `id, order_id, method (cash|online), provider? (payme|click|paynet|xazna), amount_uzs > 0, status (unpaid|pending|paid|cancelled), attention_at?, paid_at?, cancelled_at?, recorded_by_user_id?, timestamps`.
 
-Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per order. Cash rows are created `paid` by the Courier's action with `recorded_by_user_id`. Online rows are created `unpaid` at shopping completion, are `pending` while an attempt is in flight or unknown, return to `unpaid` when that attempt fails, become `paid` on provider-confirmed success, and are `cancelled` when the Operator switches to cash or the order is cancelled unpaid.
+Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per order; index `(order_id)` for every payment of an order. A cash row names no provider and no attention instant; no person records an online row (`DL-55`). Cash rows are created `paid` by the Courier's action with `recorded_by_user_id`. Online rows are created `unpaid` at shopping completion, are `pending` while an attempt is in flight or unknown, return to `unpaid` when that attempt fails, become `paid` on provider-confirmed success, and are `cancelled` when the Operator switches to cash or the order is cancelled unpaid.
 
 ## 22. `payment_attempts`
 
@@ -195,9 +195,9 @@ Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per or
 
 ## 29. Database versus Application Enforcement
 
-Database: foreign keys, the phone-family indexes, one active cart, one live assignment per order, one pending approval per item, one pending cancellation request per order, one live payment per order, one pending and one successful attempt per payment, provider-event and idempotency uniqueness, positive amounts, enum checks, price-mode and status checks.
+Database: foreign keys, the phone-family indexes, one active cart, one live assignment per order, one pending approval per item, one pending cancellation request per order, one live payment per order, one pending and one successful attempt per payment, provider-event and idempotency uniqueness, positive amounts, enum checks, price-mode and status checks, what each status implies, the billable price of a bought line, a replacement's unit and authorization, a fixed line without an approved ceiling, a purchase within its approved price, an approval's line inside its order and its proposal immutable, and the ends of a Courier assignment (`DL-38`, `DL-55`).
 
-Application: role and ownership, unit precision, lifecycle transitions, price and ceiling semantics, approval necessity, same-unit replacement, rounding, refund sums, service area, working hours, the test-phone rule.
+Application: role and ownership, unit precision, lifecycle transitions, the ceiling a purchase meets without an approval (from the order's tolerance), approval necessity, rounding, refund sums, service area, working hours, the test-phone rule.
 
 ## 30. Deliberately Absent
 

@@ -1,6 +1,6 @@
 # Wave 3 — Fulfilment
 
-Status: **Planned** on 2026-09-28. Plan under workflow v6 (`tasks/README.md`). Scope from `docs/06-roadmap.md` sections 2 and 3; engineering decisions for the wave in `DL-54`.
+Status: **In progress** (planned 2026-09-28). Plan under workflow v6 (`tasks/README.md`). Scope from `docs/06-roadmap.md` sections 2 and 3; engineering decisions for the wave in `DL-54`.
 
 ## Goal
 
@@ -22,7 +22,7 @@ None (`docs/06` section 5). The MapKit key (`DL-36`) blocks nothing here: no sta
 
 | # | Task | Status |
 |---|---|---|
-| W3-1 | Schema: `order_courier_assignments`, `customer_approvals`, `order_cancellation_requests`, `order_item_price_corrections`, `payments`; the history events; models and factories | Planned |
+| W3-1 | Schema: `order_courier_assignments`, `customer_approvals`, `order_cancellation_requests`, `order_item_price_corrections`, `payments`; the history events; models and factories | Merged |
 | W3-2 | Shopper API: assigned orders, accept, start | Planned |
 | W3-3 | Shopper API: record a purchase, mark a line unavailable | Planned |
 | W3-4 | Shopper API: ask about a price, a replacement or a smaller quantity; the replacement search | Planned |
@@ -110,6 +110,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - the order is `shopping`, and the assignment is the caller's and started (`409 shopping_not_active`);
   - the line is `pending` (`409 item_already_resolved`).
 - The billable quantity, price and line total come from `MoneyCalculator`.
+- Buying the original copies its names and unit from the line, not from the catalog (`DL-55` (12)).
 - Writes:
   - a purchase writes `item_purchased`;
   - unavailable removes the line with `unavailable`, whatever its rule, and writes `item_unavailable`.
@@ -125,6 +126,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - an estimate line added by an edit, billed at its own markup (Wave 2 risk row);
   - the authorized replacement bought with and without `fulfilled_product_id`, and the original bought instead, which drops the authorization;
   - a replay;
+  - the original bought after an Admin changed its product's unit;
   - the last line marked unavailable cancels the order and closes a pending request.
 
 **W3-4. Ask about a price, a replacement or a smaller quantity.**
@@ -165,6 +167,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - reject removes the line with `customer_rejected`;
   - `approval_decided` is written either way;
   - an overdue approval is expired first, in a transaction of its own, then refused with `409 approval_expired`. This task writes that shared step, and W3-6 runs it before every other action;
+  - a repeated decision answers from what is stored and never writes the approval again (`DL-55` (2));
   - an already resolved approval is `409 approval_already_resolved`.
 - The Customer's order carries each line's pending approval, and the list carries `pending_approval_count`.
 - Tests:
@@ -184,7 +187,8 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 - `POST /operations/approvals/{approval}/resolve-expired`:
   - removes the line with `approval_expired` and writes `approval_resolved`;
   - an approval not yet expired is `409 approval_not_expired`;
-  - the same removal again is a natural repeat.
+  - an order no longer open is `409 order_state_conflict`, and its expired approvals leave the attention list (`DL-55` (11));
+  - the same removal again is a natural repeat, answered from what is stored without writing the approval (`DL-55` (2)).
 - Attention types `approval_pending` and `approval_expired`.
 - The board's `awaiting_customer` filter and each row's `pending_approval_count`.
 - The panel reads every attention type of `docs/09` section 38, and nullable `shopper` and `courier`, with the words for this task's types. It shows a type it has no words for yet generically, so the later tasks' types never break it (`DL-54` (21)).
@@ -247,7 +251,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - writes the cash payment, and `payment_recorded`;
   - completes the order and the assignment, in one transaction.
 - The Customer's order and the board's order show the payment.
-- Not delivered returns the order to `ready_for_delivery`, with `delivery_failed`. History rows per `DL-54` (23).
+- Not delivered returns the order to `ready_for_delivery`, with `delivery_failed`, and clears `on_the_way_at` (`DL-55` (13)). History rows per `DL-54` (23).
 - A replay of delivered, and a repeat of not-delivered, answer through the ended assignment (`DL-54` (3)).
 - Attention type `delivery_failed`, with its words in the panel.
 - Tests:
