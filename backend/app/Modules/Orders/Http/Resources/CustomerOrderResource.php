@@ -10,6 +10,7 @@ use App\Models\OrderItem;
 use App\Modules\Orders\OrderPermissions;
 use App\Modules\Orders\OrderTotals;
 use App\Modules\Orders\QuantityPolicy;
+use App\Modules\Orders\ShopperLine;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -110,6 +111,13 @@ final class CustomerOrderResource extends JsonResource
                 $item->billable_quantity,
             ),
             'removed_reason_code' => $item->removed_reason_code?->value,
+            // What the Customer pays for one unit once the line is bought — never
+            // the price paid at the market (BR-PRICE-001, DL-57 (4)).
+            'billable_unit_price_uzs' => $item->status === OrderItemStatus::Purchased ? $item->billable_unit_price_uzs : null,
+            'replacement' => ShopperLine::replacementOf($item) === null ? null : [
+                'name_uz' => $item->fulfilled_product_name_uz_snapshot,
+                'name_ru' => $item->fulfilled_product_name_ru_snapshot,
+            ],
         ];
     }
 
