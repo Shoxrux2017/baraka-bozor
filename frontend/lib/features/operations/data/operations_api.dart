@@ -238,9 +238,6 @@ class OperationsApi {
     if ((row.totalUzs == null) != (row.totalKind == TotalKind.none)) {
       throw const FormatException('a total is null exactly when it is none');
     }
-    if (row.isSelfOrder && row.shopper == null) {
-      throw const FormatException('a self-order has a Shopper');
-    }
     return row;
   }
 

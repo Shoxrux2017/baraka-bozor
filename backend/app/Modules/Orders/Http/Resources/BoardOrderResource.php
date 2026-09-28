@@ -7,6 +7,7 @@ namespace App\Modules\Orders\Http\Resources;
 use App\Models\CustomerApproval;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Order;
+use App\Models\OrderCourierAssignment;
 use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\OrderShopperAssignment;
@@ -22,12 +23,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * An order as the Operator and the Admin see it (`docs/09` section 38): the
  * Customer and the address, the delivery wish, every line with its snapshots
  * — the market price among them, since staff reconcile what the Shopper pays
- * — the totals, every Shopper assignment with its self-order mark, and the
- * whole history with who did what. The Courier's assignments, approvals,
- * the payment and refunds are empty until the waves that bring them.
+ * — the totals, every Shopper and Courier assignment with its self-order
+ * flag, the questions to the Customer, and the whole history with who did
+ * what. The payment and refunds are empty until the waves that bring them.
  *
- * Expects `items`, `history.actor`, `shopperAssignments.shopper` and
- * `shopperAssignments.assignedBy` loaded.
+ * Expects `items`, `history.actor`, `shopperAssignments.shopper`,
+ * `shopperAssignments.assignedBy`, `courierAssignments.courier`,
+ * `courierAssignments.assignedBy` and the approvals' people loaded.
  *
  * @property-read Order $resource
  */
@@ -124,7 +126,29 @@ final class BoardOrderResource extends JsonResource
                 'ended_at' => self::instant($assignment->ended_at),
                 'ended_reason' => $assignment->ended_reason?->value,
             ])->all(),
-            'courier_assignments' => [],
+            'courier_assignments' => $order->courierAssignments
+                ->sortBy([['assigned_at', 'asc'], ['id', 'asc']])
+                ->values()
+                ->map(static fn (OrderCourierAssignment $assignment): array => [
+                    'id' => $assignment->id,
+                    'courier' => [
+                        'id' => $assignment->courier->id,
+                        'full_name' => $assignment->courier->full_name,
+                        'phone' => $assignment->courier->phone,
+                    ],
+                    'assigned_by' => ['id' => $assignment->assignedBy->id, 'full_name' => $assignment->assignedBy->full_name],
+                    'is_self_order' => $assignment->is_self_order,
+                    'assigned_at' => self::instant($assignment->assigned_at),
+                    'accepted_at' => self::instant($assignment->accepted_at),
+                    'delivery_started_at' => self::instant($assignment->delivery_started_at),
+                    'delay_at' => self::instant($assignment->delay_at),
+                    'completed_at' => self::instant($assignment->completed_at),
+                    'ended_at' => self::instant($assignment->ended_at),
+                    'ended_reason' => $assignment->ended_reason?->value,
+                    'failed_reason_code' => $assignment->failed_reason_code?->value,
+                    'failed_note' => $assignment->failed_note,
+                ])
+                ->all(),
             'approvals' => $order->approvals
                 ->sortBy([['created_at', 'asc'], ['id', 'asc']])
                 ->values()

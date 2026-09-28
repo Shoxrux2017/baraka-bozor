@@ -7,9 +7,10 @@ namespace App\Modules\Orders\Http\Requests;
 use App\Http\Requests\ListRequest;
 
 /**
- * `GET /operations/shoppers` (`DL-37` (11)): the page alone.
+ * `GET /operations/shoppers` and `GET /operations/couriers` (`DL-37` (11)):
+ * the page alone.
  */
-final class ListShoppersRequest extends ListRequest
+final class ListStaffChoicesRequest extends ListRequest
 {
     /**
      * @return array<string, mixed>

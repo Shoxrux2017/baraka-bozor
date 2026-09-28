@@ -14,8 +14,8 @@ use Illuminate\Validation\Rule;
 
 /**
  * `GET /operations/orders` (`docs/09` section 38, `DL-37` (16)): the page and
- * the board's filters — a status, the current Shopper, the payment method,
- * the first and last day of placement (`YYYY-MM-DD` in `Asia/Tashkent`), an
+ * the board's filters — a status, the Shopper and the Courier a row names
+ * (`DL-54` (14)), the payment method, the first and last day of placement (`YYYY-MM-DD` in `Asia/Tashkent`), an
  * attention type, a search of at most 100 characters, and `awaiting_customer`
  * `true` or `false` (`DL-60` (4)).
  */
@@ -38,6 +38,7 @@ final class ListBoardOrdersRequest extends ListRequest
         return [
             'status' => ['sometimes', 'nullable', 'string', Rule::enum(OrderStatus::class)],
             'shopper_id' => ['sometimes', 'nullable', 'string', 'uuid'],
+            'courier_id' => ['sometimes', 'nullable', 'string', 'uuid'],
             'payment_method' => ['sometimes', 'nullable', 'string', Rule::enum(PaymentMethod::class)],
             'from' => ['sometimes', 'nullable', 'date_format:Y-m-d', 'after_or_equal:'.self::FIRST_DAY, 'before_or_equal:'.self::LAST_DAY],
             'to' => ['sometimes', 'nullable', 'date_format:Y-m-d', 'after_or_equal:'.self::FIRST_DAY, 'before_or_equal:'.self::LAST_DAY, 'after_or_equal:from'],
@@ -57,6 +58,13 @@ final class ListBoardOrdersRequest extends ListRequest
     public function shopperId(): ?string
     {
         $value = $this->text('shopper_id');
+
+        return $value === null ? null : strtolower($value);
+    }
+
+    public function courierId(): ?string
+    {
+        $value = $this->text('courier_id');
 
         return $value === null ? null : strtolower($value);
     }

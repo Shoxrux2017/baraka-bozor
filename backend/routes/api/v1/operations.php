@@ -7,7 +7,7 @@ use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Auth\Http\Middleware\RequireRole;
 use App\Modules\Orders\Http\Controllers\OperationsApprovalController;
 use App\Modules\Orders\Http\Controllers\OperationsOrderController;
-use App\Modules\Orders\Http\Controllers\OperationsShopperController;
+use App\Modules\Orders\Http\Controllers\OperationsStaffController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,11 +28,17 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Operato
         Route::get('summary', [OperationsOrderController::class, 'summary'])->name('operations.summary');
         Route::get('attention', [OperationsOrderController::class, 'attention'])->name('operations.attention');
 
-        Route::get('shoppers', [OperationsShopperController::class, 'index'])->name('operations.shoppers.index');
+        Route::get('shoppers', [OperationsStaffController::class, 'shoppers'])->name('operations.shoppers.index');
         Route::post('orders/{order}/shopper-assignment', [OperationsOrderController::class, 'assignShopper'])
             ->name('operations.orders.shopper-assignment.store');
         Route::put('orders/{order}/shopper-assignment', [OperationsOrderController::class, 'reassignShopper'])
             ->name('operations.orders.shopper-assignment.update');
+
+        Route::get('couriers', [OperationsStaffController::class, 'couriers'])->name('operations.couriers.index');
+        Route::post('orders/{order}/courier-assignment', [OperationsOrderController::class, 'assignCourier'])
+            ->name('operations.orders.courier-assignment.store');
+        Route::put('orders/{order}/courier-assignment', [OperationsOrderController::class, 'reassignCourier'])
+            ->name('operations.orders.courier-assignment.update');
 
         Route::post('approvals/{approval}/resolve-expired', [OperationsApprovalController::class, 'resolveExpired'])
             ->name('operations.approvals.resolve-expired');

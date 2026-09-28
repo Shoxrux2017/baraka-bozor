@@ -66,10 +66,11 @@ final class OperationsBoardApiTest extends TestCase
 
         $this->assertSame([$newer->id, $older->id], array_column($rows, 'id'));
         $this->assertSame(
-            ['id', 'order_number', 'created_at', 'status', 'payment_method', 'customer', 'item_count', 'pending_approval_count', 'total_uzs', 'total_kind', 'shopper', 'is_self_order'],
+            ['id', 'order_number', 'created_at', 'status', 'payment_method', 'customer', 'item_count', 'pending_approval_count', 'total_uzs', 'total_kind', 'shopper', 'courier', 'is_self_order'],
             array_keys($rows[0])
         );
         $this->assertNotNull($rows[0]['shopper']);
+        $this->assertNull($rows[0]['courier'], 'No Courier before the shopping is done.');
         $this->assertSame(1, $rows[1]['item_count']);
         $this->assertSame(55200 + 5000 + 15000, $rows[1]['total_uzs']);
         $this->assertSame($older->recipient_phone_snapshot, $rows[1]['customer']['phone']);

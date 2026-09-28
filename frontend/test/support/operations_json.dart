@@ -34,11 +34,13 @@ Map<String, Object?> rowJson({
     'phone': '+998901112233',
   },
   'item_count': 3,
+  'pending_approval_count': 0,
   'total_uzs': totalUzs,
   'total_kind': totalKind,
   'shopper': shopper == null
       ? null
       : <String, Object?>{'id': shopper, 'full_name': 'Sardor Yusupov'},
+  'courier': null,
   'is_self_order': selfOrder,
 };
 

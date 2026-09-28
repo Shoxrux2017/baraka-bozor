@@ -18,10 +18,12 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 
 /**
  * The orders on the Operator's and Admin's board (`docs/09` section 38,
- * `DL-37` (16)): every order, newest first, narrowed by status, the current
- * Shopper, the payment method, the day it was placed in `Asia/Tashkent`, an
- * attention type, and a search over the order number, the Customer's phone
- * digits and name, the name folded as `TextSearch` folds it (`DL-44` (4)).
+ * `DL-37` (16)): every order, newest first, narrowed by status, the Shopper
+ * and the Courier a row names (`DL-54` (14)), the payment method, the day it
+ * was placed in `Asia/Tashkent`, an attention type, whether it waits on the
+ * Customer, and a search over the order number, the Customer's phone digits
+ * and name, the name folded as `TextSearch` folds it (`DL-44` (4)). Each
+ * order carries its self-order mark (`SelfOrderMark`).
  */
 final class OrderBoard
 {
@@ -42,6 +44,7 @@ final class OrderBoard
     public static function orders(
         ?OrderStatus $status = null,
         ?string $shopperId = null,
+        ?string $courierId = null,
         ?PaymentMethod $paymentMethod = null,
         ?CarbonImmutable $from = null,
         ?CarbonImmutable $to = null,
@@ -49,17 +52,17 @@ final class OrderBoard
         ?string $search = null,
         ?bool $awaitingCustomer = null,
     ): Builder {
-        $orders = CustomerOrders::withPendingApprovalCount(OrderLineSums::add(Order::query()))->with('currentShopperAssignment.shopper');
+        $orders = SelfOrderMark::add(CustomerOrders::withPendingApprovalCount(OrderLineSums::add(Order::query())))
+            ->with(['namedShopperAssignment.shopper', 'namedCourierAssignment.courier']);
 
         if ($status !== null) {
             $orders->where('orders.status', $status->value);
         }
         if ($shopperId !== null) {
-            $orders->whereExists(static fn (QueryBuilder $assignment) => $assignment->selectRaw('1')
-                ->from('order_shopper_assignments')
-                ->whereColumn('order_shopper_assignments.order_id', 'orders.id')
-                ->whereNull('order_shopper_assignments.ended_at')
-                ->where('order_shopper_assignments.shopper_id', $shopperId));
+            $orders->whereHas('namedShopperAssignment', static fn (Builder $assignment) => $assignment->where('shopper_id', $shopperId));
+        }
+        if ($courierId !== null) {
+            $orders->whereHas('namedCourierAssignment', static fn (Builder $assignment) => $assignment->where('courier_id', $courierId));
         }
         if ($paymentMethod !== null) {
             $orders->where('orders.payment_method', $paymentMethod->value);
