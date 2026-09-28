@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Http\Resources;
 
+use App\Models\CustomerApproval;
+use App\Models\Enums\ApprovalType;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Modules\Orders\ApprovalExpiry;
 use App\Modules\Orders\OrderPermissions;
 use App\Modules\Orders\OrderTotals;
 use App\Modules\Orders\QuantityPolicy;
@@ -50,11 +53,11 @@ final class CustomerOrderResource extends JsonResource
             'status' => $order->status->value,
             'payment_method' => $order->payment_method->value,
             'delivery_time_note' => $order->delivery_time_note,
-            'pending_approval_count' => 0,
+            'pending_approval_count' => $order->approvals->filter(static fn (CustomerApproval $approval): bool => ApprovalExpiry::isOpen($approval))->count(),
             'can_edit' => $changeable,
             'can_cancel_directly' => $changeable,
             'can_request_cancellation' => OrderPermissions::canRequestCancellation($order),
-            'items' => $items->map(fn (OrderItem $item): array => $this->item($item))->all(),
+            'items' => $items->map(fn (OrderItem $item): array => $this->item($item, self::openQuestionOf($order, $item)))->all(),
             'totals' => [
                 'merchandise_subtotal_uzs' => $totals->merchandiseSubtotalUzs,
                 'service_fee_uzs' => $totals->serviceFeeUzs,
@@ -89,7 +92,7 @@ final class CustomerOrderResource extends JsonResource
     /**
      * @return array<string, mixed>
      */
-    private function item(OrderItem $item): array
+    private function item(OrderItem $item, ?CustomerApproval $question): array
     {
         $open = in_array($item->status, [OrderItemStatus::Pending, OrderItemStatus::AwaitingCustomer], true);
 
@@ -114,11 +117,38 @@ final class CustomerOrderResource extends JsonResource
             // What the Customer pays for one unit once the line is bought — never
             // the price paid at the market (BR-PRICE-001, DL-57 (4)).
             'billable_unit_price_uzs' => $item->status === OrderItemStatus::Purchased ? $item->billable_unit_price_uzs : null,
-            'replacement' => ShopperLine::replacementOf($item) === null ? null : [
+            // While a substitution question is open, the replacement is the one
+            // asked about, in `pending_approval`, not an earlier one (DL-58 (3)).
+            'replacement' => ShopperLine::replacementOf($item) === null || $question?->type === ApprovalType::Substitution ? null : [
                 'name_uz' => $item->fulfilled_product_name_uz_snapshot,
                 'name_ru' => $item->fulfilled_product_name_ru_snapshot,
             ],
+            'pending_approval' => $question === null ? null : [
+                'id' => $question->id,
+                'type' => $question->type->value,
+                'proposed_customer_unit_price_uzs' => $question->proposed_customer_unit_price_uzs,
+                'proposed_quantity' => $question->proposed_quantity === null
+                    ? null
+                    : QuantityPolicy::format($item->unit_code_snapshot, $question->proposed_quantity),
+                'replacement' => $question->replacement_product_id === null ? null : [
+                    'name_uz' => $question->replacement_name_uz_snapshot,
+                    'name_ru' => $question->replacement_name_ru_snapshot,
+                    'customer_unit_price_uzs' => $question->proposed_customer_unit_price_uzs,
+                ],
+                'request_note' => $question->request_note,
+                'expires_at' => $question->expires_at->toIso8601ZuluString(),
+            ],
         ];
+    }
+
+    /**
+     * The line's question still waiting for the Customer, if any.
+     */
+    private static function openQuestionOf(Order $order, OrderItem $item): ?CustomerApproval
+    {
+        return $order->approvals->first(
+            static fn (CustomerApproval $approval): bool => $approval->order_item_id === $item->id && ApprovalExpiry::isOpen($approval)
+        );
     }
 
     private static function instant(?CarbonInterface $instant): ?string

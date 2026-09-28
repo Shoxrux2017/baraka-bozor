@@ -23,6 +23,7 @@ use App\Modules\Orders\Actions\AcceptShoppingAssignment;
 use App\Modules\Orders\Actions\AssignShopper;
 use App\Modules\Orders\Actions\ChangeCart;
 use App\Modules\Orders\Actions\CreateOrder;
+use App\Modules\Orders\Actions\DecideApproval;
 use App\Modules\Orders\Actions\EditOrderItems;
 use App\Modules\Orders\Actions\StartShopping;
 use Illuminate\Contracts\Console\Kernel;
@@ -76,6 +77,14 @@ try {
         ],
         'shopper.start' => [
             'order_id' => $app->make(StartShopping::class)->start(User::query()->findOrFail($arguments[0]), $arguments[1])->id,
+        ],
+        'customer.decide' => [
+            'approval_id' => $app->make(DecideApproval::class)->decide(
+                User::query()->findOrFail($arguments[0]),
+                $arguments[1],
+                $arguments[2],
+                $arguments[3],
+            )->id,
         ],
         default => throw new InvalidArgumentException("Unknown scenario {$scenario}."),
     };

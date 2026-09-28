@@ -26,7 +26,7 @@ None (`docs/06` section 5). The MapKit key (`DL-36`) blocks nothing here: no sta
 | W3-2 | Shopper API: assigned orders, accept, start | Merged |
 | W3-3 | Shopper API: record a purchase, mark a line unavailable | Merged |
 | W3-4 | Shopper API: ask about a price, a replacement or a smaller quantity; the replacement search | Merged |
-| W3-5 | Approvals: the Customer's list, detail and decision | Planned |
+| W3-5 | Approvals: the Customer's list, detail and decision | Merged |
 | W3-6 | Approvals: expiry, the scheduled command, the Operator's removal of an expired line, their attention types and the board's filter | Planned |
 | W3-7 | Shopper API: complete shopping with the final amounts | Planned |
 | W3-8 | Operations API: the Courier picker, assignment and reassignment; the board's Courier; the self-order mark; blocked assignees | Planned |
@@ -173,7 +173,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 - Approving a price question about the original drops a replacement authorized on the line, as buying the original does (`DL-54` (4)), since the Shopper named the original. The Shopper may propose that replacement again, and `BR-PRICE-005` then judges it against the raised ceiling; record the decision in `DECISIONS.md` with the task.
 - Tests:
   - an approval at 29:59 is approved, and at 30:00 refused with the expiry kept, under a controlled clock;
-  - a decision racing the Shopper's next question;
+  - a decision racing the expiry, which the Shopper's next action cannot reach while the line awaits;
   - another Customer's approval is the scope-safe `404`;
   - a replay;
   - each proposal applied;

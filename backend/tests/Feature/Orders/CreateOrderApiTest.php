@@ -295,7 +295,7 @@ final class CreateOrderApiTest extends TestCase
         $list = $this->asCustomer()->getJson(self::ORDERS)->assertOk();
         $this->assertSame([$second, $first], array_column($list->json('data'), 'id'), 'Newest first.');
         $this->assertSame(
-            ['id', 'order_number', 'status', 'payment_method', 'item_count', 'total_uzs', 'total_kind', 'created_at'],
+            ['id', 'order_number', 'status', 'payment_method', 'item_count', 'pending_approval_count', 'total_uzs', 'total_kind', 'created_at'],
             array_keys($list->json('data.0'))
         );
         $this->assertSame(1, $list->json('data.0.item_count'));

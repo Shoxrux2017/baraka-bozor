@@ -35,7 +35,7 @@ final class CustomerOrderController extends Controller
 {
     public function index(ListCustomerOrdersRequest $request): JsonResponse
     {
-        $orders = OrderLineSums::add(CustomerOrders::own($this->customer($request)))
+        $orders = CustomerOrders::withPendingApprovalCount(OrderLineSums::add(CustomerOrders::own($this->customer($request))))
             ->orderByDesc('created_at')
             ->orderByDesc('order_number')
             ->paginate($request->perPage(), ['*'], 'page', $request->page());
@@ -49,7 +49,7 @@ final class CustomerOrderController extends Controller
     public function show(Request $request, string $order): CustomerOrderResource
     {
         return new CustomerOrderResource(ScopedLookup::firstOrNotFound(
-            CustomerOrders::own($this->customer($request))->with(['items', 'currentShopperAssignment'])->whereKey($order)
+            CustomerOrders::own($this->customer($request))->with(['items', 'currentShopperAssignment', 'approvals'])->whereKey($order)
         ));
     }
 
@@ -61,7 +61,7 @@ final class CustomerOrderController extends Controller
             RequireIdempotencyKey::of($request),
         );
 
-        return (new CustomerOrderResource($order->load(['items', 'currentShopperAssignment'])))
+        return (new CustomerOrderResource($order->load(['items', 'currentShopperAssignment', 'approvals'])))
             ->response()
             ->setStatusCode(201);
     }
@@ -89,7 +89,7 @@ final class CustomerOrderController extends Controller
 
     private function resource(Order $order): CustomerOrderResource
     {
-        return new CustomerOrderResource($order->load(['items', 'currentShopperAssignment']));
+        return new CustomerOrderResource($order->load(['items', 'currentShopperAssignment', 'approvals']));
     }
 
     private function customer(Request $request): User
