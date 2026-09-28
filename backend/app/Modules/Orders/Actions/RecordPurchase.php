@@ -156,7 +156,7 @@ final class RecordPurchase
         $named = $body['fulfilled_product_id'] ?? null;
 
         return [
-            'purchased_quantity' => preg_match('/^\d{1,4}(\.\d{1,3})?\z/', $quantity) === 1 ? Quantity::fromString($quantity)->toDecimal() : $quantity,
+            'purchased_quantity' => preg_match(QuantityPolicy::DECIMAL, $quantity) === 1 ? Quantity::fromString($quantity)->toDecimal() : $quantity,
             'actual_market_price_uzs' => $body['actual_market_price_uzs'] ?? null,
             'fulfilled_product_id' => $named === null ? null : strtolower($named),
         ];

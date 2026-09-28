@@ -162,6 +162,10 @@ final class MarkItemUnavailableApiTest extends TestCase
         $customer = collect($this->withToken($this->order->customer->createToken('c')->plainTextToken)
             ->getJson("/api/v1/customer/orders/{$this->order->id}")->assertOk()->json('data.items'))->firstWhere('id', $line->id);
         $this->assertNull($customer['replacement']);
+
+        $board = collect($this->as(User::factory()->role(Role::Operator)->create())
+            ->getJson("/api/v1/operations/orders/{$this->order->id}")->assertOk()->json('data.items'))->firstWhere('id', $line->id);
+        $this->assertNull($board['replacement']);
     }
 
     /**
