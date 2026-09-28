@@ -477,6 +477,26 @@ void main() {
       },
     );
 
+    testWidgets('a quantity changed alone is sent', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, at: AppPaths.customerOrderEdit(orderOne));
+      await tester.enterText(
+        find
+            .descendant(
+              of: byKey('edit-line-$lineTomato'),
+              matching: byKey('line-quantity'),
+            )
+            .first,
+        '1,75',
+      );
+      orders.answer = customerOrderJson();
+      await tapAndSettle(tester, byKey('edit-save'));
+
+      expect(orders.edits.single.$2.first.quantity, '1.75');
+      expect(orders.edits.single.$2, hasLength(2));
+    });
+
     testWidgets('a rule changed alone is sent', (WidgetTester tester) async {
       await open(tester, at: AppPaths.customerOrderEdit(orderOne));
       Finder inLine(String line, String key) => find

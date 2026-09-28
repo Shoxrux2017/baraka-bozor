@@ -137,6 +137,9 @@ final class CustomerOrder {
       lines.where((CustomerOrderLine line) => !line.removed).toList();
 }
 
+/// The most lines an edit may send (`docs/09` section 21).
+const int orderMaxLines = 100;
+
 /// One line of an edit: every line the order is to keep, as the Customer
 /// wants it (`docs/09` section 21).
 final class OrderEditLine {

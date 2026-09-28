@@ -1500,6 +1500,24 @@ class AppLocalizationsRu extends AppLocalizations {
   String get orderEditClosed => 'Этот заказ уже нельзя изменить';
 
   @override
+  String get orderAddProduct => 'Добавить товар';
+
+  @override
+  String get orderAddTitle => 'Добавить в заказ';
+
+  @override
+  String get orderAddedLine => 'Добавляется, по текущей цене';
+
+  @override
+  String get orderAddAlreadyIn =>
+      'Этот товар уже в заказе — его можно изменить';
+
+  @override
+  String orderAddFull(int count) {
+    return 'В заказе может быть не больше $count товаров';
+  }
+
+  @override
   String get orderCancel => 'Отменить заказ';
 
   @override

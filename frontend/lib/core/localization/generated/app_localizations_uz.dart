@@ -1490,6 +1490,24 @@ class AppLocalizationsUz extends AppLocalizations {
   String get orderEditClosed => 'Bu buyurtmani endi o\'zgartirib bo\'lmaydi';
 
   @override
+  String get orderAddProduct => 'Mahsulot qo\'shish';
+
+  @override
+  String get orderAddTitle => 'Buyurtmaga qo\'shish';
+
+  @override
+  String get orderAddedLine => 'Qo\'shilmoqda, joriy narxda';
+
+  @override
+  String get orderAddAlreadyIn =>
+      'Bu mahsulot buyurtmada bor, uni o\'zgartirishingiz mumkin';
+
+  @override
+  String orderAddFull(int count) {
+    return 'Buyurtmada ko\'pi bilan $count ta mahsulot bo\'lishi mumkin';
+  }
+
+  @override
   String get orderCancel => 'Buyurtmani bekor qilish';
 
   @override

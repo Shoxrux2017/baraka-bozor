@@ -2792,6 +2792,36 @@ abstract class AppLocalizations {
   /// **'Bu buyurtmani endi o\'zgartirib bo\'lmaydi'**
   String get orderEditClosed;
 
+  /// No description provided for @orderAddProduct.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot qo\'shish'**
+  String get orderAddProduct;
+
+  /// No description provided for @orderAddTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmaga qo\'shish'**
+  String get orderAddTitle;
+
+  /// No description provided for @orderAddedLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shilmoqda, joriy narxda'**
+  String get orderAddedLine;
+
+  /// No description provided for @orderAddAlreadyIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu mahsulot buyurtmada bor, uni o\'zgartirishingiz mumkin'**
+  String get orderAddAlreadyIn;
+
+  /// No description provided for @orderAddFull.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmada ko\'pi bilan {count} ta mahsulot bo\'lishi mumkin'**
+  String orderAddFull(int count);
+
   /// No description provided for @orderCancel.
   ///
   /// In uz, this message translates to:
