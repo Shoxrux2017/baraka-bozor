@@ -126,6 +126,7 @@ final class OperationsOrderController extends Controller
             'shopperAssignments.assignedBy',
             'courierAssignments.courier',
             'courierAssignments.assignedBy',
+            'livePayment.recordedBy',
             'approvals.item',
             'approvals.requestedBy',
             'approvals.resolvedBy',

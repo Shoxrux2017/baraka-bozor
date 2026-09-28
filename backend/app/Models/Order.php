@@ -8,6 +8,7 @@ use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\CancellationReason;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\PaymentMethod;
+use App\Models\Enums\PaymentStatus;
 use App\Models\Enums\ServiceFeeMode;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -240,5 +241,16 @@ class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * The payment not cancelled; the database allows at most one
+     * (`payments_order_live_unique`).
+     *
+     * @return HasOne<Payment, $this>
+     */
+    public function livePayment(): HasOne
+    {
+        return $this->hasOne(Payment::class)->where('status', '<>', PaymentStatus::Cancelled->value);
     }
 }

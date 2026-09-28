@@ -23,10 +23,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * was placed under — never a market price — its lines, its totals as
  * `DL-37` (10) defines them, the address it goes to, the delivery wish, what
  * the Customer may do with it now, its open questions (`DL-59` (2)), and its
- * instants. Payments and refunds arrive with their waves; until then the
- * payment is null and the list empty.
+ * instants, and the payment once made: the cash the Courier took at the door
+ * (`DL-64` (4)). Refunds arrive with Wave 5; until then the list is empty.
  *
- * Expects `items`, `currentShopperAssignment` and `approvals` loaded.
+ * Expects `items`, `currentShopperAssignment`, `approvals` and `livePayment`
+ * loaded.
  *
  * @property-read Order $resource
  */
@@ -75,7 +76,13 @@ final class CustomerOrderResource extends JsonResource
                 'delivery_note' => $order->delivery_note_snapshot,
             ],
             'cancellation_reason_code' => $order->cancellation_reason_code?->value,
-            'payment' => null,
+            // The payment made, once there is one (DL-64 (4)).
+            'payment' => $order->livePayment === null ? null : [
+                'method' => $order->livePayment->method->value,
+                'status' => $order->livePayment->status->value,
+                'amount_uzs' => $order->livePayment->amount_uzs,
+                'paid_at' => $order->livePayment->paid_at?->toIso8601ZuluString(),
+            ],
             'refunds' => [],
             'timestamps' => [
                 'created_at' => self::instant($order->created_at),

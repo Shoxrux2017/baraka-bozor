@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Orders\Operations;
 
 use App\Models\Enums\ApprovalStatus;
+use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\UserStatus;
 use App\Models\Order;
@@ -34,6 +35,9 @@ use Illuminate\Support\Facades\DB;
  * - `courier_delayed` — an order on the way past its assignment's `delay_at`,
  *   the start plus the threshold snapshotted on the order (`BR-DEL-002`,
  *   `DL-63`); since `delay_at`, naming the Courier.
+ * - `delivery_failed` — an order back in `ready_for_delivery` after a failed
+ *   delivery: the Operator assigns a Courier, which moves it on, or cancels
+ *   it (`BR-DEL-003`, `DL-64`); since the latest failure, naming its Courier.
  * - `approval_pending` — a question has waited ten minutes without an answer
  *   and has not expired: the Operator calls the Customer (`BR-APP-002`), since
  *   the earliest such `attention_at`.
@@ -58,8 +62,17 @@ final class Attention
 
     public const COURIER_DELAYED = 'courier_delayed';
 
+    public const DELIVERY_FAILED = 'delivery_failed';
+
     /** @var list<string> */
-    public const TYPES = [self::APPROVAL_PENDING, self::APPROVAL_EXPIRED, self::COURIER_DELAYED, self::SELF_ORDER, self::STAFF_BLOCKED];
+    public const TYPES = [
+        self::APPROVAL_PENDING,
+        self::APPROVAL_EXPIRED,
+        self::COURIER_DELAYED,
+        self::DELIVERY_FAILED,
+        self::SELF_ORDER,
+        self::STAFF_BLOCKED,
+    ];
 
     /**
      * Narrows orders to those with an item of the type.
@@ -77,6 +90,10 @@ final class Attention
             self::COURIER_DELAYED => self::open($orders)
                 ->where('orders.status', OrderStatus::OnTheWay->value)
                 ->whereHas('currentCourierAssignment', static fn (Builder $assignment) => $assignment->where('delay_at', '<=', now())),
+            self::DELIVERY_FAILED => self::open($orders)
+                ->where('orders.status', OrderStatus::ReadyForDelivery->value)
+                ->whereHas('courierAssignments', static fn (Builder $assignment) => $assignment
+                    ->where('ended_reason', AssignmentEndReason::DeliveryFailed->value)),
             self::APPROVAL_PENDING => self::open($orders)->whereExists(static fn (QueryBuilder $approval) => self::waitingTooLong(
                 $approval->selectRaw('1')->from('customer_approvals')->whereColumn('customer_approvals.order_id', 'orders.id'),
                 now(),
@@ -114,6 +131,7 @@ final class Attention
             ...self::selfOrderItems(),
             ...self::staffBlockedItems(),
             ...self::courierDelayedItems(),
+            ...self::deliveryFailedItems(),
             ...self::approvalItems(self::APPROVAL_PENDING, $now),
             ...self::approvalItems(self::APPROVAL_EXPIRED, $now),
         ];
@@ -214,6 +232,34 @@ final class Attention
                 'since' => $assignment->delay_at->toIso8601ZuluString(),
                 'shopper' => null,
                 'courier' => self::person($assignment->courier),
+            ];
+        })->filter()->values()->all();
+    }
+
+    /**
+     * @return list<Item>
+     */
+    private static function deliveryFailedItems(): array
+    {
+        $orders = self::narrow(Order::query(), self::DELIVERY_FAILED)
+            ->with(['courierAssignments' => static fn (Relation $assignments) => $assignments
+                ->where('ended_reason', AssignmentEndReason::DeliveryFailed->value)
+                ->with('courier')])
+            ->get();
+
+        return $orders->map(static function (Order $order): ?array {
+            $failed = self::latest($order->courierAssignments);
+            if ($failed?->ended_at === null) {
+                return null;
+            }
+
+            return [
+                'type' => self::DELIVERY_FAILED,
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'since' => $failed->ended_at->toIso8601ZuluString(),
+                'shopper' => null,
+                'courier' => self::person($failed->courier),
             ];
         })->filter()->values()->all();
     }

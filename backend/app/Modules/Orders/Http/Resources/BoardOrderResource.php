@@ -25,11 +25,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * — the market price among them, since staff reconcile what the Shopper pays
  * — the totals, every Shopper and Courier assignment with its self-order
  * flag, the questions to the Customer, and the whole history with who did
- * what. The payment and refunds are empty until the waves that bring them.
+ * what, and the payment once made. Refunds are empty until Wave 5.
  *
  * Expects `items`, `history.actor`, `shopperAssignments.shopper`,
  * `shopperAssignments.assignedBy`, `courierAssignments.courier`,
- * `courierAssignments.assignedBy` and the approvals' people loaded.
+ * `courierAssignments.assignedBy`, `livePayment.recordedBy` and the approvals'
+ * people loaded.
  *
  * @property-read Order $resource
  */
@@ -154,7 +155,18 @@ final class BoardOrderResource extends JsonResource
                 ->values()
                 ->map(static fn (CustomerApproval $approval): array => self::approval($approval))
                 ->all(),
-            'payment' => null,
+            'payment' => $order->livePayment === null ? null : [
+                'id' => $order->livePayment->id,
+                'method' => $order->livePayment->method->value,
+                'provider' => $order->livePayment->provider?->value,
+                'status' => $order->livePayment->status->value,
+                'amount_uzs' => $order->livePayment->amount_uzs,
+                'paid_at' => self::instant($order->livePayment->paid_at),
+                'recorded_by' => $order->livePayment->recordedBy === null ? null : [
+                    'id' => $order->livePayment->recordedBy->id,
+                    'full_name' => $order->livePayment->recordedBy->full_name,
+                ],
+            ],
             'refunds' => [],
             'history' => $order->history->sortBy([['created_at', 'asc'], ['id', 'asc']])->values()->map(
                 static fn (OrderHistory $entry): array => [

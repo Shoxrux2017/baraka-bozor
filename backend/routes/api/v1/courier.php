@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\RequireIdempotencyKey;
 use App\Models\Enums\Role;
 use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Auth\Http\Middleware\RequireRole;
@@ -26,4 +27,10 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Courier
         Route::get('orders/{order}', [CourierOrderController::class, 'show'])->name('courier.orders.show');
         Route::post('orders/{order}/accept', [CourierOrderController::class, 'accept'])->name('courier.orders.accept');
         Route::post('orders/{order}/start', [CourierOrderController::class, 'start'])->name('courier.orders.start');
+        // The key is checked after the session and the role (DL-39).
+        Route::post('orders/{order}/delivered', [CourierOrderController::class, 'delivered'])
+            ->middleware(RequireIdempotencyKey::class)
+            ->name('courier.orders.delivered');
+        Route::post('orders/{order}/not-delivered', [CourierOrderController::class, 'notDelivered'])
+            ->name('courier.orders.not-delivered');
     });

@@ -798,3 +798,34 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - Start before accept, or on an order not `delivery_assigned`, is `409 delivery_state_conflict`. While a cancellation request is pending, it is refused the same way with `details.reason` `cancellation_request_pending`.
    - `courier_not_assigned` and `delivery_not_ready` are not answered. An order without the caller's current assignment is the scope-safe `404` (`BR-ASSIGN-004`). An order not yet ready has no Courier assignment, so it is never in a Courier's scope. `shopper_not_assigned` is likewise unused. The assignment endpoints answer none of the three either: the checks of `DL-45` (3) and `DL-62` (1) say what they answer. `docs/09` sections 39, 54 and 56 mark them unused.
 5. **`courier_delayed`.** It covers an order `on_the_way` whose current assignment's `delay_at` has come, at that instant exactly. Its `since` is `delay_at` and it names the Courier. Delay is attention, not a state (`BR-DEL-002`). The panel's words for it came with `DL-60` (5).
+
+## DL-64 — Delivered and not delivered, from W3-10 (2026-09-29, agent)
+
+1. **Delivered** (`BR-DEL-004`, `BR-PAY-003`, `DL-54` (11)).
+   - It is keyed; the fingerprint holds the order and `cash_received_uzs`.
+   - Under the order lock, through the caller's current assignment read under it, it needs the order `on_the_way` and the delivery started, else `409 delivery_state_conflict`.
+   - A cash order without `cash_received_uzs` is `422`. One whose amount is not the final total is `409 cash_amount_mismatch` with `details.expected_uzs`. The Courier learns the amount to take again, and the refusal frees the key.
+   - One transaction writes:
+     - the payment: `cash`, `paid`, the final total, `paid_at`, and the Courier as its recorder;
+     - the order `completed` with `completed_at`;
+     - the assignment's `completed_at` and its end as `completed`;
+     - one `payment_recorded` row, `on_the_way` to `completed`, whose `details` hold the assignment, the payment, the method and the amount (`DL-54` (23)).
+   - An online order cannot be on the way before Wave 5 (`DL-54` (1)); one met here is `409 delivery_state_conflict` rather than completed unpaid.
+2. **Not delivered** (`BR-DEL-003`).
+   - It takes `reason_code` and a note of up to 300 characters, required with `other`, and needs a delivery that set off.
+   - The assignment ends `delivery_failed` with the reason and the note. The order returns to `ready_for_delivery`, clearing `on_the_way_at` (`DL-55` (13)).
+   - One `delivery_failed` row carries the move, the reason in its `details` (the history's `reason_code` holds cancellation reasons only) and the note.
+3. **Retries after a lost answer** (`DL-54` (3)).
+   - Both reach the order through the caller's own assignment the action ended — `completed` for delivered, `delivery_failed` for not delivered — only while it is the order's latest Courier assignment (`CourierOrders::endedBy`). Otherwise the answer is the scope-safe `404`.
+   - Delivered retries by its key.
+   - Not delivered, unkeyed, retries as a natural repeat: when the caller holds no current assignment, the failure they recorded answers, whatever the repeat's reason. The failure is recorded once and a second reason changes nothing.
+   - An assignment ended any other way, a cancellation's for one, answers nothing.
+4. **The payment in the orders.**
+   - The Customer's order shows `payment` as `{method, status, amount_uzs, paid_at}`.
+   - The board's order adds the payment's id, its provider and who recorded it. An Operator reconciles a Courier's cash by it.
+   - Both read `Order::livePayment`, the payment not cancelled, of which the database allows one.
+   - The board's row names the Courier who delivered (`DL-62` (4)). The summary's completed count and sales read the completed order (`DL-37` (16)).
+5. **An action's answer keeps the assignment the action read.**
+   - `CourierOrders::loadDetails` no longer reads the caller's assignment again. It keeps the one set under the order lock, or the one the action ended, so delivered answers with the assignment it completed.
+   - A reassignment committed after the action cannot change the answer. This closes the W3-9 finding recorded as not acted on.
+6. **`delivery_failed` attention** covers an order back in `ready_for_delivery` that a delivery failed on. Its `since` is the latest failure and it names that Courier. Assigning a Courier moves the order to `delivery_assigned`, which takes it off the list.
