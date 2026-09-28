@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -42,6 +43,7 @@ use Illuminate\Support\Carbon;
  * @property OrderItemStatus $status
  * @property string|null $approved_quantity_cap
  * @property int|null $approved_unit_price_ceiling_uzs
+ * @property int|null $approved_replacement_price_uzs
  * @property string|null $fulfilled_product_id
  * @property string|null $fulfilled_product_name_uz_snapshot
  * @property string|null $fulfilled_product_name_ru_snapshot
@@ -85,6 +87,7 @@ class OrderItem extends Model
             'status' => OrderItemStatus::class,
             'approved_quantity_cap' => 'decimal:3',
             'approved_unit_price_ceiling_uzs' => 'integer',
+            'approved_replacement_price_uzs' => 'integer',
             'fulfilled_unit_code_snapshot' => UnitCode::class,
             'substitution_resolution' => SubstitutionResolution::class,
             'actual_market_price_uzs' => 'integer',
@@ -117,5 +120,21 @@ class OrderItem extends Model
     public function fulfilledProduct(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'fulfilled_product_id');
+    }
+
+    /**
+     * @return HasMany<CustomerApproval, $this>
+     */
+    public function approvals(): HasMany
+    {
+        return $this->hasMany(CustomerApproval::class);
+    }
+
+    /**
+     * @return HasMany<OrderItemPriceCorrection, $this>
+     */
+    public function priceCorrections(): HasMany
+    {
+        return $this->hasMany(OrderItemPriceCorrection::class);
     }
 }

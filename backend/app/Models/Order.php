@@ -165,4 +165,50 @@ class Order extends Model
     {
         return $this->hasOne(OrderShopperAssignment::class)->whereNull('ended_at');
     }
+
+    /**
+     * @return HasMany<OrderCourierAssignment, $this>
+     */
+    public function courierAssignments(): HasMany
+    {
+        return $this->hasMany(OrderCourierAssignment::class);
+    }
+
+    /**
+     * The Courier assignment that has not ended; the database allows at most
+     * one (`order_courier_assignments_order_current_unique`).
+     *
+     * @return HasOne<OrderCourierAssignment, $this>
+     */
+    public function currentCourierAssignment(): HasOne
+    {
+        return $this->hasOne(OrderCourierAssignment::class)->whereNull('ended_at');
+    }
+
+    /**
+     * @return HasMany<CustomerApproval, $this>
+     */
+    public function approvals(): HasMany
+    {
+        return $this->hasMany(CustomerApproval::class);
+    }
+
+    /**
+     * @return HasMany<OrderCancellationRequest, $this>
+     */
+    public function cancellationRequests(): HasMany
+    {
+        return $this->hasMany(OrderCancellationRequest::class);
+    }
+
+    /**
+     * Every payment of the order, a cancelled online obligation included; the
+     * database allows one that is not cancelled (`payments_order_live_unique`).
+     *
+     * @return HasMany<Payment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
 }

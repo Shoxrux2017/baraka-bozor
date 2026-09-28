@@ -1,6 +1,6 @@
 # Wave 3 — Fulfilment
 
-Status: **Planned** on 2026-09-28. Plan under workflow v6 (`tasks/README.md`). Scope from `docs/06-roadmap.md` sections 2 and 3; engineering decisions for the wave in `DL-54`.
+Status: **In progress** (planned 2026-09-28). Plan under workflow v6 (`tasks/README.md`). Scope from `docs/06-roadmap.md` sections 2 and 3; engineering decisions for the wave in `DL-54`.
 
 ## Goal
 
@@ -22,7 +22,7 @@ None (`docs/06` section 5). The MapKit key (`DL-36`) blocks nothing here: no sta
 
 | # | Task | Status |
 |---|---|---|
-| W3-1 | Schema: `order_courier_assignments`, `customer_approvals`, `order_cancellation_requests`, `order_item_price_corrections`, `payments`; the history events; models and factories | Planned |
+| W3-1 | Schema: `order_courier_assignments`, `customer_approvals`, `order_cancellation_requests`, `order_item_price_corrections`, `payments`; the history events; models and factories | Merged |
 | W3-2 | Shopper API: assigned orders, accept, start | Planned |
 | W3-3 | Shopper API: record a purchase, mark a line unavailable | Planned |
 | W3-4 | Shopper API: ask about a price, a replacement or a smaller quantity; the replacement search | Planned |

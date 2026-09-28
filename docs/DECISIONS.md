@@ -478,3 +478,34 @@ Taken while planning `tasks/WAVE_3.md` and revised by its review; each task reco
       - an approved request writes `cancellation_request_decided`, with the move to `cancelled` and `cancellation_request_approved`;
       - the action that removes the last line writes its own event (`item_unavailable`, `approval_decided` or `approval_resolved`), with the move to `cancelled` and `no_items_purchased`.
     - A request closed and approvals cancelled on the way are listed in that row's `details`.
+
+## DL-55 — The Wave 3 schema from W3-1 (2026-09-28, agent)
+
+The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions. As `DL-38` did for Wave 2, the database holds, for any writer, what each row implies.
+
+1. **Courier assignments.**
+   - A start follows acceptance and fixes `delay_at` after it.
+   - A failure is a delivery that set off, with one of the four reasons, and `other` comes with a note. Only a failure carries a reason or a note.
+2. **Approvals.**
+   - The proposal has the shape of its type: a price question has both prices, and names its replacement when it is about one; a substitution has its replacement, with both names and the unit snapshotted, and both prices; a smaller quantity has only the quantity. Its values are positive, and attention comes before expiry.
+   - Each status holds its columns:
+     - nobody resolved a pending approval;
+     - the Customer resolved an approved or a rejected one, with the resolution of that name;
+     - an expired one has no resolution until an Operator removes the line, and then has `remove_item` with that Operator and instant;
+     - a cancelled one has its instant, and no resolution.
+3. **Cancellation requests.** A request has a reason. A decision names its Operator and instant; a closed request has only its instant; a resolution note belongs to whoever decided.
+4. **Price corrections.** Prices are positive, the market price changes, and a correction has a reason. A trigger keeps the table append-only, as `order_history`'s does (`DL-38` (4)).
+5. **Payments.**
+   - Cash exists only as `paid`, with its recorder, no provider and no attention instant (`BR-PAY-003`).
+   - No person records an online payment (`BR-PAY-004`).
+   - A paid or cancelled payment says when.
+6. **Rules the application held alone now sit on `order_items`.** A forward migration adds `approved_replacement_price_uzs`, present only on a line with a replacement (`DL-54` (5)), and four rules:
+   - A line billed from the price paid (an estimate, or any replacement) records that price. This is the application rule of `docs/08` section 14.
+   - That line is billed at `half_up(price × (1 + line markup / 100))`. With `DL-38`'s check on a fixed line bought as itself, every billable price the database stores is now fixed by its inputs (`BR-PRICE-002` to `004`).
+   - A replacement has the original's unit (`BR-ITEM-004`). `docs/08` section 29 listed this rule under the application.
+   - A replacement says how it was authorized, and only a replacement does.
+
+   One Wave 2 test row billed a replacement at 18 000 from 16 000 paid, which gives 18 400. It now pays 15 652, the price that gives 18 000.
+7. **History events.** The history's event check is replaced by a forward migration, not by editing Wave 2's, which has run where the table holds rows. Its rollback restores the Wave 2 list.
+8. **How checks are tested.** Each check is proven by a row only it refuses (`DL-38` (8)). `customer_approvals_resolution_check` is a vocabulary that every status already constrains, so it is proven by a row whose status is itself unknown.
+9. **Factories.** An order that is `delivery_assigned` or `on_the_way` has its Courier assignment. A `completed` order has its Courier's completed assignment and its payment: the Courier's cash, or the provider's payment for an online order. A cancellation ends every current assignment. The approval, request, correction and payment factories build a row at each step of the wave.

@@ -123,6 +123,7 @@ final class OrderItemsTableTest extends TestCase
             'status' => ['character varying', false, 24],
             'approved_quantity_cap' => ['numeric', true],
             'approved_unit_price_ceiling_uzs' => ['bigint', true],
+            'approved_replacement_price_uzs' => ['bigint', true],
             'fulfilled_product_id' => ['uuid', true],
             'fulfilled_product_name_uz_snapshot' => ['character varying', true, 160],
             'fulfilled_product_name_ru_snapshot' => ['character varying', true, 160],
@@ -221,10 +222,12 @@ final class OrderItemsTableTest extends TestCase
             'BR-PRICE-002: the Customer pays the shown price whatever the Shopper paid.'
         );
 
-        // A replacement is billed at its own price (BR-PRICE-004).
+        // A replacement is billed at its own price (BR-PRICE-004): 15 652 paid,
+        // half_up(15 652 × 1.15) = 18 000.
         $replacement = Product::factory()->create();
         DB::table(self::TABLE)->insert($this->purchased([
             'price_mode_snapshot' => 'fixed',
+            'actual_market_price_uzs' => 15652,
             'billable_unit_price_uzs' => 18000,
             'line_total_uzs' => 90000,
             'fulfilled_product_id' => $replacement->id,
@@ -287,6 +290,84 @@ final class OrderItemsTableTest extends TestCase
             $this->row(['fulfilled_product_id' => $this->product->id]),
             'A fulfilled product comes with its snapshot.'
         );
+    }
+
+    public function test_a_line_billed_from_the_price_paid_records_it_and_is_billed_by_its_markup(): void
+    {
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_actual_price_check',
+            $this->purchased(['actual_market_price_uzs' => null]),
+            'docs/08 section 14: an estimate line records the price paid.'
+        );
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_billable_price_check',
+            $this->purchased(['billable_unit_price_uzs' => 18401, 'line_total_uzs' => 92005]),
+            'BR-PRICE-003: half_up(16 000 × 1.15) = 18 400, not 18 401.'
+        );
+
+        // A line keeps the markup it was priced with (DL-37 (8)): 16 000 at
+        // 12.5 % is 18 000.
+        DB::table(self::TABLE)->insert($this->purchased([
+            'markup_percent_snapshot' => '12.50',
+            'billable_unit_price_uzs' => 18000,
+            'line_total_uzs' => 90000,
+        ]));
+
+        // A fixed line bought as itself needs no price paid.
+        DB::table(self::TABLE)->insert($this->purchased([
+            'price_mode_snapshot' => 'fixed',
+            'actual_market_price_uzs' => null,
+        ]));
+
+        $this->assertSame(2, DB::table(self::TABLE)->count());
+    }
+
+    public function test_a_replacement_keeps_the_unit_says_how_it_was_authorized_and_alone_carries_an_approved_price(): void
+    {
+        $replacement = Product::factory()->create();
+        $authorized = [
+            'fulfilled_product_id' => $replacement->id,
+            'fulfilled_product_name_uz_snapshot' => 'Olcha',
+            'fulfilled_product_name_ru_snapshot' => 'Вишня',
+            'fulfilled_unit_code_snapshot' => 'kg',
+            'substitution_resolution' => 'approved',
+        ];
+
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_approved_replacement_price_check',
+            $this->row(['approved_replacement_price_uzs' => 20000]),
+            'DL-54 (5): an approved replacement price belongs to a replacement.'
+        );
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_approved_replacement_price_check',
+            $this->row([...$authorized, 'approved_replacement_price_uzs' => 0]),
+            'An approved price is positive.'
+        );
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_same_unit_check',
+            $this->row([...$authorized, 'fulfilled_unit_code_snapshot' => 'piece']),
+            'BR-ITEM-004: a replacement has the original\'s unit.'
+        );
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_substitution_target_check',
+            $this->row([...$authorized, 'substitution_resolution' => null]),
+            'DL-3 S-9: a replacement says how it was authorized.'
+        );
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_items_substitution_target_check',
+            $this->purchased(['substitution_resolution' => 'automatic']),
+            'The original bought as itself is no replacement.'
+        );
+
+        DB::table(self::TABLE)->insert($this->row([...$authorized, 'approved_replacement_price_uzs' => 20000]));
+        $this->assertSame(1, DB::table(self::TABLE)->count());
     }
 
     public function test_the_vocabularies_and_the_names_are_enforced(): void
