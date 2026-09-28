@@ -43,4 +43,7 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Shopper
             ->name('shopper.orders.items.reduced-quantity-approval');
         Route::get('orders/{order}/items/{item}/replacements', [ShopperItemController::class, 'replacements'])
             ->name('shopper.orders.items.replacements');
+        Route::post('orders/{order}/complete', [ShopperOrderController::class, 'complete'])
+            ->middleware(RequireIdempotencyKey::class)
+            ->name('shopper.orders.complete');
     });

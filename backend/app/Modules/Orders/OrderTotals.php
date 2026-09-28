@@ -86,11 +86,7 @@ final readonly class OrderTotals
             );
         }
 
-        $fee = (new ServiceFeeCalculator(
-            $order->service_fee_mode_snapshot,
-            $order->service_fee_fixed_uzs_snapshot,
-            $order->service_fee_percent_snapshot,
-        ))->feeOn($subtotal);
+        $fee = self::serviceFeeOn($order, $subtotal);
 
         return new self(
             $subtotal,
@@ -99,6 +95,20 @@ final readonly class OrderTotals
             MoneyCalculator::sum($subtotal, $fee, $order->delivery_fee_uzs_snapshot),
             $estimate ? 'estimate' : 'final',
         );
+    }
+
+    /**
+     * The service fee on a merchandise subtotal by the order's snapshotted
+     * rule (`BR-MONEY-005`), for the estimate here and the final amounts
+     * (`FinalAmounts`).
+     */
+    public static function serviceFeeOn(Order $order, int $subtotal): int
+    {
+        return (new ServiceFeeCalculator(
+            $order->service_fee_mode_snapshot,
+            $order->service_fee_fixed_uzs_snapshot,
+            $order->service_fee_percent_snapshot,
+        ))->feeOn($subtotal);
     }
 
     /**

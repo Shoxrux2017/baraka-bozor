@@ -53,9 +53,11 @@ use Throwable;
  *   (`DB::afterCommit`) from inside `$perform`: a replay does not run
  *   `$perform`, so such an effect is neither lost to a rollback nor repeated.
  * - `$replay` loads the resource through the actor's current scope
- *   (`ScopedLookup::firstOrNotFound`). A replay skips every check inside
- *   `$perform`, so a record the actor may no longer see — a Shopper since
- *   reassigned — must be the scope-safe `404`, never the record.
+ *   (`ScopedLookup::firstOrNotFound`), or, for an action that ends the actor's
+ *   assignment, through the assignment it ended while that is the latest of
+ *   its kind (`DL-54` (3), `ShopperOrders::completedBy`). A replay skips every
+ *   check inside `$perform`, so a record the actor may no longer see — a
+ *   Shopper since reassigned — must be the scope-safe `404`, never the record.
  *
  * `begin()`, `complete()` and `abandon()` are the steps `run()` composes,
  * public so each can be proven on its own, against a second connection.
@@ -71,7 +73,7 @@ final class IdempotencyStore
      * @param  string  $key  the `Idempotency-Key`, already checked to be a UUID
      * @param  string  $requestHash  `RequestFingerprint::of(...)`
      * @param  Closure(): TModel  $perform  the operation; runs inside the transaction that completes the key
-     * @param  Closure(string): TModel  $replay  loads the resource a completed key names, through the actor's current scope
+     * @param  Closure(string): TModel  $replay  loads the resource a completed key names, through the actor's scope
      * @return TModel
      */
     public function run(string $actorId, string $operation, string $key, string $requestHash, Closure $perform, Closure $replay): Model

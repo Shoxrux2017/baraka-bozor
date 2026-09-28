@@ -31,7 +31,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *   (interview 7.3); never the address, the name or any amount due.
  * - The Shopper's own assignment, and whether it may be accepted or started.
  *
- * Expects `currentShopperAssignment`, `items.fulfilledProduct` and
+ * Expects the caller's own assignment as `currentShopperAssignment` — in the
+ * answer of a completion, the one it ended — with `items.fulfilledProduct` and
  * `items.approvals` loaded.
  *
  * @property-read Order $resource

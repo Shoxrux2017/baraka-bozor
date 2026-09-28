@@ -721,3 +721,28 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - It knows all nine types of `docs/09` section 38, with their words, and shows a type it does not know yet in general words rather than refusing the list.
    - An item's key names its type as the server wrote it, so one order's two items are two rows, even two of types the client does not know.
    - An item without a Shopper shows the Courier, or only its instant.
+
+## DL-61 — Completing the shopping, from W3-7 (2026-09-29, agent)
+
+1. **The final amounts** (`BR-MONEY-003` to `BR-MONEY-006`).
+   - `FinalAmounts::fill` sums the stored totals of the bought lines, each already rounded at its purchase. A removed line is `0`.
+   - The service fee is the snapshotted rule applied to that sum, through `OrderTotals::serviceFeeOn`, which the estimate uses too. The total adds the delivery fee snapshot.
+   - The database's checks hold the same sums, so an amount computed another way fails the write.
+   - W3-12's price correction fills them again after a completed order's line changes (`DL-54` (18)).
+2. **What completion checks, and in which order.**
+   - The order's overdue questions are expired first, in a transaction of their own, as the Shopper's line actions do (`DL-60` (1)). A refused completion thus leaves an unanswered line on the Operator's list.
+   - Under the order lock, through the caller's current assignment read under it (`DL-56` (6)):
+     - an order not `shopping`, or an assignment not started, is `409 shopping_not_active`, as for the line actions;
+     - a line still `pending` or `awaiting_customer`, or one with a pending question, is `409 shopping_incomplete`. `details.item_ids` names those lines, oldest first, so the app can lead the Shopper to them. The refusal frees the key (`DL-39` (2)).
+   - Lines and questions are read without their own row locks: every writer of either takes the order lock first.
+3. **Two orders completion must never settle** are `409 order_state_conflict`:
+   - an online order, which cannot exist before Wave 5 (`DL-54` (1)), is refused rather than sent out unpaid;
+   - an order with nothing bought, which the action that removed its last line would have cancelled (`DL-54` (7)), is refused rather than billed its fees alone.
+4. **The writes**, in one transaction:
+   - the final amounts;
+   - `ready_for_delivery` with `shopping_completed_at` and `ready_for_delivery_at`, at one instant;
+   - the assignment's `completed_at` and its end as `completed`;
+   - one `status_changed` row, `shopping` to `ready_for_delivery`, whose `details` hold the assignment and the three amounts (`DL-54` (23)).
+5. **The answer and its replay.**
+   - The answer is the Shopper's order of `docs/09` section 28, with the assignment completion ended as the caller's own. `customer_phone` is `null` now that shopping is over.
+   - A replay reaches the order only while its latest Shopper assignment is the caller's and ended `completed` (`ShopperOrders::completedBy`); otherwise it is the scope-safe `404` (`DL-54` (3)). A new key, a read and the list need a current assignment, so the completed order is gone from all three.
