@@ -10,6 +10,7 @@ use App\Models\Enums\ApprovalStatus;
 use App\Models\Enums\ApprovalType;
 use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\CancellationReason;
+use App\Models\Enums\CancellationRequestStatus;
 use App\Models\Enums\ItemRemovedReason;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
@@ -17,6 +18,7 @@ use App\Models\Enums\Role;
 use App\Models\Enums\SubstitutionPolicy;
 use App\Models\Enums\SubstitutionResolution;
 use App\Models\Order;
+use App\Models\OrderCancellationRequest;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
@@ -31,7 +33,9 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  *
  * The states make the other questions and every resolution, and leave the
  * line and the order as the action that resolves the approval does
- * (`DL-3` S-7, `BR-APP-006`, `BR-APP-007`, `DL-54` (8)).
+ * (`DL-3` S-7, `BR-APP-006`, `BR-APP-007`, `DL-54` (7), (8)): a removal that
+ * leaves nothing to buy cancels the order, and a cancelled approval sits on
+ * an order its approved request cancelled.
  *
  * @extends Factory<CustomerApproval>
  */
@@ -89,6 +93,33 @@ final class CustomerApprovalFactory extends Factory
             'replacement_unit_code_snapshot' => fn (array $attributes) => $this->replacement($attributes)->unit_code,
             'proposed_customer_unit_price_uzs' => 12650,
             'proposed_actual_market_price_uzs' => 11000,
+        ]);
+    }
+
+    /**
+     * A price question about the replacement already authorized on the line —
+     * an automatic one — which the question names (`DL-54` (5)).
+     */
+    public function aboutTheReplacement(): self
+    {
+        return $this->state(fn (): array => [
+            'order_item_id' => function (): string {
+                $item = OrderItem::factory()->awaitingCustomer()->for(Order::factory()->shopping())->create();
+                $replacement = Product::factory()->unit($item->unit_code_snapshot)->create();
+                $item->forceFill([
+                    'fulfilled_product_id' => $replacement->id,
+                    'fulfilled_product_name_uz_snapshot' => $replacement->name_uz,
+                    'fulfilled_product_name_ru_snapshot' => $replacement->name_ru,
+                    'fulfilled_unit_code_snapshot' => $replacement->unit_code,
+                    'substitution_resolution' => SubstitutionResolution::Automatic,
+                ])->save();
+
+                return $item->id;
+            },
+            'replacement_product_id' => fn (array $attributes): ?string => $this->item($attributes)->fulfilled_product_id,
+            'replacement_name_uz_snapshot' => fn (array $attributes): ?string => $this->item($attributes)->fulfilled_product_name_uz_snapshot,
+            'replacement_name_ru_snapshot' => fn (array $attributes): ?string => $this->item($attributes)->fulfilled_product_name_ru_snapshot,
+            'replacement_unit_code_snapshot' => fn (array $attributes) => $this->item($attributes)->fulfilled_unit_code_snapshot,
         ]);
     }
 
@@ -164,9 +195,9 @@ final class CustomerApprovalFactory extends Factory
     }
 
     /**
-     * Ended with its order, which an approved cancellation request cancelled
-     * (`DL-54` (12)): the order is cancelled, its Shopper's assignment ended
-     * and its open lines removed.
+     * Ended with its order, which the Customer's approved cancellation request
+     * cancelled (`DL-54` (12)): the request is on the order, the order is
+     * cancelled, its Shopper's assignment ended and its open lines removed.
      */
     public function cancelled(): self
     {
@@ -174,20 +205,7 @@ final class CustomerApprovalFactory extends Factory
             'status' => ApprovalStatus::Cancelled,
             'resolved_at' => now(),
         ])->afterCreating(function (CustomerApproval $approval): void {
-            $order = $approval->order;
-            $order->forceFill([
-                'status' => OrderStatus::Cancelled,
-                'cancelled_at' => now(),
-                'cancellation_reason_code' => CancellationReason::CancellationRequestApproved,
-            ])->save();
-            $order->shopperAssignments()->whereNull('ended_at')->update([
-                'ended_at' => now(),
-                'ended_reason' => AssignmentEndReason::OrderCancelled->value,
-            ]);
-            $order->items()
-                ->whereIn('status', [OrderItemStatus::Pending->value, OrderItemStatus::AwaitingCustomer->value])
-                ->get()
-                ->each(fn (OrderItem $item) => self::remove($item, ItemRemovedReason::OrderCancelled));
+            OrderCancellationRequest::factory()->approved()->create(['order_id' => $approval->order_id]);
         });
     }
 
@@ -201,6 +219,11 @@ final class CustomerApprovalFactory extends Factory
         ]);
     }
 
+    /**
+     * Removes the line; when that leaves every line of the order removed, the
+     * order is cancelled with `no_items_purchased`, its Shopper's assignment
+     * ended and a pending request closed, as `DL-54` (7) has it.
+     */
     private static function remove(OrderItem $item, ItemRemovedReason $reason): void
     {
         $item->forceFill([
@@ -210,6 +233,25 @@ final class CustomerApprovalFactory extends Factory
             'billable_quantity' => '0',
             'line_total_uzs' => 0,
         ])->save();
+
+        $order = $item->order;
+        if ($order->items()->where('status', '<>', OrderItemStatus::Removed->value)->exists()) {
+            return;
+        }
+
+        $order->forceFill([
+            'status' => OrderStatus::Cancelled,
+            'cancelled_at' => now(),
+            'cancellation_reason_code' => CancellationReason::NoItemsPurchased,
+        ])->save();
+        $order->shopperAssignments()->whereNull('ended_at')->update([
+            'ended_at' => now(),
+            'ended_reason' => AssignmentEndReason::OrderCancelled->value,
+        ]);
+        $order->cancellationRequests()->where('status', CancellationRequestStatus::Pending->value)->update([
+            'status' => CancellationRequestStatus::Closed->value,
+            'resolved_at' => now(),
+        ]);
     }
 
     /**

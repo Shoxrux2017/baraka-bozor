@@ -167,6 +167,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - reject removes the line with `customer_rejected`;
   - `approval_decided` is written either way;
   - an overdue approval is expired first, in a transaction of its own, then refused with `409 approval_expired`. This task writes that shared step, and W3-6 runs it before every other action;
+  - a repeated decision answers from what is stored and never writes the approval again (`DL-55` (2));
   - an already resolved approval is `409 approval_already_resolved`.
 - The Customer's order carries each line's pending approval, and the list carries `pending_approval_count`.
 - Tests:
@@ -187,7 +188,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - removes the line with `approval_expired` and writes `approval_resolved`;
   - an approval not yet expired is `409 approval_not_expired`;
   - an order no longer open is `409 order_state_conflict`, and its expired approvals leave the attention list (`DL-55` (11));
-  - the same removal again is a natural repeat.
+  - the same removal again is a natural repeat, answered from what is stored without writing the approval (`DL-55` (2)).
 - Attention types `approval_pending` and `approval_expired`.
 - The board's `awaiting_customer` filter and each row's `pending_approval_count`.
 - The panel reads every attention type of `docs/09` section 38, and nullable `shopper` and `courier`, with the words for this task's types. It shows a type it has no words for yet generically, so the later tasks' types never break it (`DL-54` (21)).
@@ -250,7 +251,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - writes the cash payment, and `payment_recorded`;
   - completes the order and the assignment, in one transaction.
 - The Customer's order and the board's order show the payment.
-- Not delivered returns the order to `ready_for_delivery`, with `delivery_failed`. History rows per `DL-54` (23).
+- Not delivered returns the order to `ready_for_delivery`, with `delivery_failed`, and clears `on_the_way_at` (`DL-55` (13)). History rows per `DL-54` (23).
 - A replay of delivered, and a repeat of not-delivered, answer through the ended assignment (`DL-54` (3)).
 - Attention type `delivery_failed`, with its words in the panel.
 - Tests:

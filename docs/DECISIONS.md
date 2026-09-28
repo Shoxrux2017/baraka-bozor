@@ -505,6 +505,8 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
      - the proposal never changes;
      - an update changes only the resolution, and only of a pending approval, or of an expired one an Operator resolves;
      - no approval is deleted.
+
+     So an action never writes an approval it only repeats: a natural repeat of a decision or a removal answers from what is stored (W3-5, W3-6), since even an unchanged `resolved_at` written again is refused.
 3. **Cancellation requests.**
    - A request has a reason.
    - A decision names its Operator and instant; a closed request has only its instant.
@@ -516,7 +518,7 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - Cash exists only as `paid`, with its recorder, no provider and no attention instant (`BR-PAY-003`).
    - No person records an online payment (`BR-PAY-004`).
    - A paid or cancelled payment says when.
-6. **`order_items`: seven rules the application held alone.** A forward migration adds `approved_replacement_price_uzs`, present only on a line with a replacement (`DL-54` (5)), and these rules:
+6. **`order_items`: rules the application held alone.** A forward migration adds `approved_replacement_price_uzs`, present only on a line with a replacement (`DL-54` (5)), and eight checks with these rules:
    - A line billed from the price paid (an estimate, or any replacement) records that price. Until now this was the application rule of `docs/08` section 14.
    - That line is billed at `half_up(price × (1 + line markup / 100))`. With `DL-38`'s check on a fixed line bought as itself, every billable price the database stores is now fixed by its inputs (`BR-PRICE-002` to `004`). PostgreSQL's `round()` of the exact quotient and `MoneyCalculator` agreed on about 47 million sampled pairs of price and markup, up to 10⁹ UZS.
    - A replacement has the original's unit (`BR-ITEM-004`). `docs/08` section 29 listed this rule under the application.
@@ -540,9 +542,10 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
      - A cancellation ends every current assignment.
    - **Approvals.**
      - An approved one writes its proposal onto the line, which returns to `pending`.
-     - A rejected one, and an expired one an Operator resolved, remove the line.
-     - A cancelled one sits on the order a request cancelled.
+     - A rejected one, and an expired one an Operator resolved, remove the line. When that leaves nothing to buy, the order is cancelled (`DL-54` (7)).
+     - A cancelled one sits on the order its approved request cancelled, and the request is there.
      - A substitution is asked on a line whose rule asks the Customer about every replacement.
+     - `aboutTheReplacement()` asks about a replacement already authorized on the line.
    - **Requests.** An approved one cancels its order, and a closed one finds it cancelled for want of anything to buy.
    - **Price corrections.** A correction's line carries the corrected price.
    - **Payments.** A payment sits on the order its handover completed.
@@ -559,3 +562,4 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
     - **Lengths:** notes and reasons are at most 300 characters, as `DL-38` (6) set for Wave 2; names follow the columns they copy.
 11. **An expired approval on an order cancelled later** keeps its status and has no resolution. Only a pending approval ends `cancelled` (`DL-54` (8)). Once the order has ended, no Operator is asked to remove its line: the attention list shows open orders only, and removing an expired line needs an open order (`409 order_state_conflict`, W3-6).
 12. **Buying the original.** The purchase copies the original's names and unit from the line, not from the catalog. An Admin may have changed the product's unit since the order was placed (`DL-43` (2)), and the line keeps the unit it was ordered in (W3-3).
+13. **A failed delivery clears the order's `on_the_way_at`**, and the next start sets it again. A completed order's departure is then the one that delivered it. Earlier departures stay on their Courier assignments, as `delivery_started_at`, and in the history. `ready_for_delivery_at` keeps the first readiness, when the Shopper handed the order over (`DL-54` (11)). This refines `DL-54` (11) for W3-10; `Order::factory()->deliveryFailed()` leaves it null.

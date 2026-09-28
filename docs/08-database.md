@@ -195,9 +195,9 @@ Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per or
 
 ## 29. Database versus Application Enforcement
 
-Database: foreign keys, the phone-family indexes, one active cart, one live assignment per order, one pending approval per item, one pending cancellation request per order, one live payment per order, one pending and one successful attempt per payment, provider-event and idempotency uniqueness, positive amounts, enum checks, price-mode and status checks, what each status implies, the billable price of a bought line, and a replacement's unit (`DL-38`, `DL-55`).
+Database: foreign keys, the phone-family indexes, one active cart, one live assignment per order, one pending approval per item, one pending cancellation request per order, one live payment per order, one pending and one successful attempt per payment, provider-event and idempotency uniqueness, positive amounts, enum checks, price-mode and status checks, what each status implies, the billable price of a bought line, a replacement's unit and authorization, a fixed line without an approved ceiling, a purchase within its approved price, an approval's line inside its order and its proposal immutable, and the ends of a Courier assignment (`DL-38`, `DL-55`).
 
-Application: role and ownership, unit precision, lifecycle transitions, price and ceiling semantics, approval necessity, rounding, refund sums, service area, working hours, the test-phone rule.
+Application: role and ownership, unit precision, lifecycle transitions, the ceiling a purchase meets without an approval (from the order's tolerance), approval necessity, rounding, refund sums, service area, working hours, the test-phone rule.
 
 ## 30. Deliberately Absent
 

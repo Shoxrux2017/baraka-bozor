@@ -151,6 +151,21 @@ final class Wave3ModelsAndFactoriesTest extends TestCase
 
         $rejected = CustomerApproval::factory()->rejected()->create();
         $this->assertSame(ItemRemovedReason::CustomerRejected, $rejected->item->fresh()?->removed_reason_code);
+        // Its only line gone, nothing is left to buy (DL-54 (7)).
+        $this->assertSame(CancellationReason::NoItemsPurchased, $rejected->order->fresh()?->cancellation_reason_code);
+
+        $kept = CustomerApproval::factory()->rejected()->create([
+            'order_item_id' => fn (): string => OrderItem::factory()->awaitingCustomer()->for(
+                Order::factory()->shopping()->has(OrderItem::factory(), 'items')
+            )->create()->id,
+        ]);
+        $this->assertSame(OrderStatus::Shopping, $kept->order->fresh()?->status, 'Another line is still to buy.');
+
+        $aboutTheReplacement = CustomerApproval::factory()->aboutTheReplacement()->approved()->create();
+        $line = $aboutTheReplacement->item->fresh();
+        $this->assertSame($line?->fulfilled_product_id, $aboutTheReplacement->replacement_product_id);
+        $this->assertSame(23000, $line?->approved_replacement_price_uzs);
+        $this->assertNull($line->approved_unit_price_ceiling_uzs);
 
         $removed = CustomerApproval::factory()->removedByAnOperator()->create();
         $this->assertSame(ApprovalResolution::RemoveItem, $removed->resolution);
@@ -163,6 +178,7 @@ final class Wave3ModelsAndFactoriesTest extends TestCase
         $this->assertSame(OrderStatus::Cancelled, $order?->status);
         $this->assertNull($order->currentShopperAssignment);
         $this->assertSame(ItemRemovedReason::OrderCancelled, $cancelled->item->fresh()?->removed_reason_code);
+        $this->assertSame(CancellationRequestStatus::Approved, $order->cancellationRequests()->sole()->status);
     }
 
     public function test_a_cancellation_request_is_filed_by_the_customer_and_then_decided_or_closed(): void

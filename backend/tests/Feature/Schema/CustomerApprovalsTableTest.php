@@ -329,6 +329,39 @@ final class CustomerApprovalsTableTest extends TestCase
         $this->assertSame('remove_item', DB::table(self::TABLE)->where('id', $expired['id'])->value('resolution'));
     }
 
+    public function test_a_pending_approval_expires_or_ends_with_its_order_and_an_expired_one_goes_no_further(): void
+    {
+        $lines = OrderItem::factory()->for($this->item->order)->awaitingCustomer()->count(2)->create();
+        $expiring = $this->row(['order_item_id' => $lines[0]->id]);
+        $cancelled = $this->row(['order_item_id' => $lines[1]->id]);
+        DB::table(self::TABLE)->insert([$expiring, $cancelled]);
+
+        // The command's expiry (DL-54 (8)) and a cancellation's (DL-54 (12)).
+        DB::table(self::TABLE)->where('id', $expiring['id'])->update(['status' => 'expired']);
+        DB::table(self::TABLE)->where('id', $cancelled['id'])->update(['status' => 'cancelled', 'resolved_at' => now()]);
+
+        $this->assertRefusedChange(
+            fn () => DB::table(self::TABLE)->where('id', $expiring['id'])->update(['status' => 'cancelled', 'resolved_at' => now()]),
+            'a resolved customer_approvals row never changes',
+            'DL-55 (11): an expired approval stays expired when its order is cancelled.'
+        );
+        $this->assertRefusedChange(
+            fn () => DB::table(self::TABLE)->where('id', $expiring['id'])->update(['status' => 'pending']),
+            'a resolved customer_approvals row never changes',
+            'BR-APP-004: an expired approval is never revived.'
+        );
+        $this->assertRefusedChange(
+            fn () => DB::table(self::TABLE)->where('id', $cancelled['id'])->update(['status' => 'pending', 'resolved_at' => null]),
+            'a resolved customer_approvals row never changes',
+            'A cancelled approval is final.'
+        );
+
+        $this->assertSame(['expired', 'cancelled'], [
+            DB::table(self::TABLE)->where('id', $expiring['id'])->value('status'),
+            DB::table(self::TABLE)->where('id', $cancelled['id'])->value('status'),
+        ]);
+    }
+
     public function test_the_vocabularies_the_timers_and_the_note_are_enforced(): void
     {
         $this->assertRejectedBy(self::TABLE, 'customer_approvals_note_check', $this->row(['request_note' => ' ']), 'A note says something.');
