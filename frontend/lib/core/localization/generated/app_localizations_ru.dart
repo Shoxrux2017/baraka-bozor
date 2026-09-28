@@ -1506,7 +1506,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get orderAddTitle => 'Добавить в заказ';
 
   @override
-  String get orderAddedLine => 'Добавляется, по сегодняшней цене';
+  String get orderAddedLine => 'Добавляется, по текущей цене';
 
   @override
   String get orderAddAlreadyIn =>

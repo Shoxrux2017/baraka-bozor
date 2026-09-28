@@ -56,6 +56,8 @@ class LineOptionsFields extends StatelessWidget {
     required this.note,
     required this.policy,
     required this.onPolicy,
+    this.quantityFocus,
+    this.noteFocus,
     super.key,
   });
 
@@ -65,6 +67,11 @@ class LineOptionsFields extends StatelessWidget {
   final SubstitutionPolicy policy;
   final ValueChanged<SubstitutionPolicy> onPolicy;
 
+  /// The fields' focus, for a form that takes the Customer to one to
+  /// correct.
+  final FocusNode? quantityFocus;
+  final FocusNode? noteFocus;
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -72,11 +79,12 @@ class LineOptionsFields extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        QuantityField(unit: unit, controller: quantity),
+        QuantityField(unit: unit, controller: quantity, focus: quantityFocus),
         const SizedBox(height: 12),
         TextFormField(
           key: const ValueKey<String>('line-note'),
           controller: note,
+          focusNode: noteFocus,
           minLines: 1,
           maxLines: 3,
           decoration: InputDecoration(
@@ -130,11 +138,13 @@ class QuantityField extends StatelessWidget {
   const QuantityField({
     required this.unit,
     required this.controller,
+    this.focus,
     super.key,
   });
 
   final UnitCode unit;
   final TextEditingController controller;
+  final FocusNode? focus;
 
   void _step(int delta) {
     final int current = int.tryParse(controller.text.trim()) ?? 0;
@@ -150,6 +160,7 @@ class QuantityField extends StatelessWidget {
     final Widget field = TextFormField(
       key: const ValueKey<String>('line-quantity'),
       controller: controller,
+      focusNode: focus,
       keyboardType: TextInputType.numberWithOptions(decimal: fraction),
       inputFormatters: <TextInputFormatter>[
         FilteringTextInputFormatter.allow(

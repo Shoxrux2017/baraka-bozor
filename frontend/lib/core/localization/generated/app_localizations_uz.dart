@@ -1496,7 +1496,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get orderAddTitle => 'Buyurtmaga qo\'shish';
 
   @override
-  String get orderAddedLine => 'Qo\'shilmoqda, bugungi narxda';
+  String get orderAddedLine => 'Qo\'shilmoqda, joriy narxda';
 
   @override
   String get orderAddAlreadyIn =>
@@ -1504,7 +1504,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String orderAddFull(int count) {
-    return 'Buyurtmada ko\'pi bilan $count ta mahsulot bo\'ladi';
+    return 'Buyurtmada ko\'pi bilan $count ta mahsulot bo\'lishi mumkin';
   }
 
   @override

@@ -769,9 +769,9 @@
   "orderEditClosed": "Bu buyurtmani endi o'zgartirib bo'lmaydi",
   "orderAddProduct": "Mahsulot qo'shish",
   "orderAddTitle": "Buyurtmaga qo'shish",
-  "orderAddedLine": "Qo'shilmoqda, bugungi narxda",
+  "orderAddedLine": "Qo'shilmoqda, joriy narxda",
   "orderAddAlreadyIn": "Bu mahsulot buyurtmada bor, uni o'zgartirishingiz mumkin",
-  "orderAddFull": "Buyurtmada ko'pi bilan {count} ta mahsulot bo'ladi",
+  "orderAddFull": "Buyurtmada ko'pi bilan {count} ta mahsulot bo'lishi mumkin",
   "@orderAddFull": {
     "placeholders": {
       "count": {

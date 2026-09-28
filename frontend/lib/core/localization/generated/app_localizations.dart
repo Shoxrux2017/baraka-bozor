@@ -2807,7 +2807,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderAddedLine.
   ///
   /// In uz, this message translates to:
-  /// **'Qo\'shilmoqda, bugungi narxda'**
+  /// **'Qo\'shilmoqda, joriy narxda'**
   String get orderAddedLine;
 
   /// No description provided for @orderAddAlreadyIn.
@@ -2819,7 +2819,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderAddFull.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtmada ko\'pi bilan {count} ta mahsulot bo\'ladi'**
+  /// **'Buyurtmada ko\'pi bilan {count} ta mahsulot bo\'lishi mumkin'**
   String orderAddFull(int count);
 
   /// No description provided for @orderCancel.

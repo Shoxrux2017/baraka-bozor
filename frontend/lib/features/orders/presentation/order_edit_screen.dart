@@ -25,14 +25,18 @@ import '../domain/customer_orders.dart';
 /// Customer still orders, each with its quantity, note and rule and the way
 /// to take it out, the products the Customer adds from the catalog
 /// (`DL-52`), and the delivery wish. It sends the whole list the order is to
-/// keep, and nothing when nothing changed; a line taken out is dropped from
-/// the list, and at least one must stay, at most [orderMaxLines]. An order the server
-/// no longer lets change (`can_edit`) is not edited: after a refusal the
-/// order loads again and the editor gives way to saying so.
+/// keep, and nothing when that is what the order already holds; a line taken
+/// out is dropped from the list, and at least one must stay, at most
+/// [orderMaxLines]. An order the server no longer lets change (`can_edit`)
+/// is not edited: after a refusal the order loads again and the editor gives
+/// way to saying so.
 class OrderEditScreen extends ConsumerWidget {
-  const OrderEditScreen({required this.orderId, super.key});
+  const OrderEditScreen({required this.orderId, this.adding, super.key});
 
   final String orderId;
+
+  /// A product picked before the editor was open, to add at once.
+  final CatalogProduct? adding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -65,7 +69,11 @@ class OrderEditScreen extends ConsumerWidget {
                     when !value.canEdit =>
                   _Closed(orderId: value.id),
                 AsyncValue<CustomerOrder>(:final CustomerOrder value) =>
-                  _Editor(key: ValueKey<String>(value.id), order: value),
+                  _Editor(
+                    key: ValueKey<String>(value.id),
+                    order: value,
+                    adding: adding,
+                  ),
                 _ => const Center(child: CircularProgressIndicator()),
               },
             ),
@@ -133,7 +141,8 @@ final class _LineDraft {
       note = TextEditingController(),
       policy = SubstitutionPolicy.allowSimilar;
 
-  /// The line as ordered, or `null` for a product this edit adds.
+  /// The line as the editor found it, or `null` for a product this edit
+  /// adds.
   final CustomerOrderLine? line;
 
   /// The product this edit adds, at its price now, or `null` for a line
@@ -149,11 +158,27 @@ final class _LineDraft {
   /// The server named the product as one the Customer can no longer order.
   bool unavailable = false;
 
+  /// Its card, to bring into view.
+  final GlobalKey card = GlobalKey();
+
+  /// Its fields' focus, to take the Customer to one to correct.
+  final FocusNode quantityFocus = FocusNode();
+  final FocusNode noteFocus = FocusNode();
+
   /// What its card and buttons are known by.
   String get key => line?.id ?? 'added-$productId';
 
   String name(AppLanguage language) =>
       line?.name(language) ?? product!.name(language);
+
+  /// The first of its fields holding what the server would refuse, as their
+  /// validators judge them, or `null` when both are right.
+  FocusNode? get wrongField =>
+      QuantityRules.normalize(unit, quantity.text) == null
+      ? quantityFocus
+      : trimLikeServer(note.text).runes.length > cartNoteMaxLength
+      ? noteFocus
+      : null;
 
   OrderEditLine toEdit() {
     final String text = trimLikeServer(note.text);
@@ -165,29 +190,20 @@ final class _LineDraft {
     );
   }
 
-  /// Whether the line stays as it was ordered; an added product never does.
-  bool get unchanged {
-    final CustomerOrderLine? line = this.line;
-    if (line == null || removed) {
-      return false;
-    }
-    final OrderEditLine edit = toEdit();
-    return QuantityRules.thousandths(edit.quantity) ==
-            QuantityRules.thousandths(line.quantity) &&
-        edit.customerNote == line.customerNote &&
-        edit.substitutionPolicy == line.substitutionPolicy;
-  }
-
   void dispose() {
     quantity.dispose();
     note.dispose();
+    quantityFocus.dispose();
+    noteFocus.dispose();
   }
 }
 
 class _Editor extends ConsumerStatefulWidget {
-  const _Editor({required this.order, super.key});
+  const _Editor({required this.order, this.adding, super.key});
 
+  /// The order as last loaded, which a reload replaces under the drafts.
   final CustomerOrder order;
+  final CatalogProduct? adding;
 
   @override
   ConsumerState<_Editor> createState() => _EditorState();
@@ -205,6 +221,15 @@ class _EditorState extends ConsumerState<_Editor> {
   bool _noneLeft = false;
 
   @override
+  void initState() {
+    super.initState();
+    final CatalogProduct? adding = widget.adding;
+    if (adding != null) {
+      _take(adding);
+    }
+  }
+
+  @override
   void dispose() {
     for (final _LineDraft line in _lines) {
       line.dispose();
@@ -216,8 +241,25 @@ class _EditorState extends ConsumerState<_Editor> {
   List<_LineDraft> get _kept =>
       _lines.where((_LineDraft line) => !line.removed).toList();
 
+  /// Adds [product], or keeps its line when the order already has it;
+  /// answers that line, or `null` when the product is new to the order.
+  _LineDraft? _take(CatalogProduct product) {
+    final String id = product.id.toLowerCase();
+    final _LineDraft? present = _lines
+        .where((_LineDraft line) => line.productId.toLowerCase() == id)
+        .firstOrNull;
+    _noneLeft = false;
+    if (present == null) {
+      _lines.add(_LineDraft.added(product));
+    } else {
+      present.removed = false;
+    }
+    return present;
+  }
+
   /// Picks a product from the catalog. One already in the order is not added
-  /// twice: its line is kept, and the Customer is told.
+  /// twice: its line is kept and brought into view, and the Customer is
+  /// told.
   Future<void> _add() async {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
@@ -226,21 +268,19 @@ class _EditorState extends ConsumerState<_Editor> {
     if (product == null || !mounted) {
       return;
     }
-    final String id = product.id.toLowerCase();
-    final _LineDraft? present = _lines
-        .where((_LineDraft line) => line.productId.toLowerCase() == id)
-        .firstOrNull;
-    setState(() {
-      _noneLeft = false;
-      if (present == null) {
-        _lines.add(_LineDraft.added(product));
-      } else {
-        present.removed = false;
+    _LineDraft? present;
+    setState(() => present = _take(product));
+    final _LineDraft? line = present;
+    if (line == null) {
+      return;
+    }
+    messenger.showSnackBar(SnackBar(content: Text(l10n.orderAddAlreadyIn)));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final BuildContext? card = line.card.currentContext;
+      if (card != null && card.mounted) {
+        Scrollable.ensureVisible(card);
       }
     });
-    if (present != null) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.orderAddAlreadyIn)));
-    }
   }
 
   /// Takes a line out, or keeps it again; a product this edit added is
@@ -259,36 +299,73 @@ class _EditorState extends ConsumerState<_Editor> {
     });
   }
 
+  /// Whether [lines] and [deliveryTimeNote] are what the order holds now —
+  /// the order as last loaded, not as the editor found it, since the answer
+  /// to an earlier save may have been lost after the server made it.
+  bool _changesNothing(List<OrderEditLine> lines, String? deliveryTimeNote) {
+    final CustomerOrder order = widget.order;
+    if (deliveryTimeNote != order.deliveryTimeNote) {
+      return false;
+    }
+    final Map<String, CustomerOrderLine> open = <String, CustomerOrderLine>{
+      for (final CustomerOrderLine line in order.openLines)
+        line.productId.toLowerCase(): line,
+    };
+    if (open.length != lines.length) {
+      return false;
+    }
+    for (final OrderEditLine line in lines) {
+      final CustomerOrderLine? now = open[line.productId.toLowerCase()];
+      if (now == null ||
+          QuantityRules.thousandths(line.quantity) !=
+              QuantityRules.thousandths(now.quantity) ||
+          line.customerNote != now.customerNote ||
+          line.substitutionPolicy != now.substitutionPolicy) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   Future<void> _save() async {
     final List<_LineDraft> kept = _kept;
-    setState(() {
-      _noneLeft = kept.isEmpty;
-      for (final _LineDraft line in _lines) {
-        line.unavailable = false;
-      }
-    });
-    if (kept.isEmpty ||
-        kept.length > orderMaxLines ||
-        !_form.currentState!.validate()) {
+    setState(() => _noneLeft = kept.isEmpty);
+    if (kept.isEmpty || kept.length > orderMaxLines) {
       return;
     }
+    if (!_form.currentState!.validate()) {
+      // The first field to correct may be out of sight: it takes the focus,
+      // which brings it into view.
+      kept
+          .map((_LineDraft line) => line.wrongField)
+          .nonNulls
+          .firstOrNull
+          ?.requestFocus();
+      return;
+    }
+    // The keyboard goes while the edit is sent.
+    FocusScope.of(context).unfocus();
+    final List<OrderEditLine> lines = <OrderEditLine>[
+      for (final _LineDraft line in kept) line.toEdit(),
+    ];
     final String wish = trimLikeServer(_wish.text);
     final String? deliveryTimeNote = wish.isEmpty ? null : wish;
     final GoRouter router = GoRouter.of(context);
 
-    // Nothing changed: nothing is sent (`DL-28` (9)).
-    if (kept.length == _lines.length &&
-        kept.every((_LineDraft line) => line.unchanged) &&
-        deliveryTimeNote == widget.order.deliveryTimeNote) {
+    // Nothing to change: nothing is sent (`DL-28` (9)).
+    if (_changesNothing(lines, deliveryTimeNote)) {
       _backToOrder(router, widget.order.id);
       return;
     }
-    final OrderEditController editing = ref.read(
-      orderEditProvider(widget.order.id).notifier,
-    );
-    final CustomerOrder? answer = await editing.edit(<OrderEditLine>[
-      for (final _LineDraft line in kept) line.toEdit(),
-    ], deliveryTimeNote);
+    // What the server said of an earlier attempt goes with it.
+    setState(() {
+      for (final _LineDraft line in _lines) {
+        line.unavailable = false;
+      }
+    });
+    final CustomerOrder? answer = await ref
+        .read(orderEditProvider(widget.order.id).notifier)
+        .edit(lines, deliveryTimeNote);
     if (!mounted) {
       return;
     }
@@ -328,129 +405,139 @@ class _EditorState extends ConsumerState<_Editor> {
       canPop: !saving.isBusy,
       child: Form(
         key: _form,
-        child: ListView(
+        // Every line is built, not only those in view, so the form checks
+        // them all and a line can be brought into view.
+        child: SingleChildScrollView(
           key: const ValueKey<String>('order-editor'),
           padding: const EdgeInsets.all(16),
-          children: <Widget>[
-            for (final _LineDraft draft in _lines)
-              Card(
-                key: ValueKey<String>('edit-line-${draft.key}'),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Text(
-                        draft.name(language),
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              decoration: draft.removed
-                                  ? TextDecoration.lineThrough
-                                  : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              for (final _LineDraft draft in _lines)
+                KeyedSubtree(
+                  key: draft.card,
+                  child: Card(
+                    key: ValueKey<String>('edit-line-${draft.key}'),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          Text(
+                            draft.name(language),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  decoration: draft.removed
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
+                          ),
+                          if (draft.product
+                              case final CatalogProduct product) ...<Widget>[
+                            Text(
+                              l10n.orderAddedLine,
+                              style: Theme.of(context).textTheme.labelMedium,
                             ),
+                            PriceLine(product: product),
+                          ],
+                          if (draft.unavailable)
+                            Text(
+                              l10n.cartLineUnavailable,
+                              key: ValueKey<String>(
+                                'edit-unavailable-${draft.key}',
+                              ),
+                              style: warning,
+                            ),
+                          const SizedBox(height: 8),
+                          if (!draft.removed)
+                            LineOptionsFields(
+                              unit: draft.unit,
+                              quantity: draft.quantity,
+                              note: draft.note,
+                              quantityFocus: draft.quantityFocus,
+                              noteFocus: draft.noteFocus,
+                              policy: draft.policy,
+                              onPolicy: (SubstitutionPolicy policy) =>
+                                  setState(() => draft.policy = policy),
+                            ),
+                          Align(
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: TextButton.icon(
+                              key: ValueKey<String>('edit-remove-${draft.key}'),
+                              icon: Icon(
+                                draft.removed
+                                    ? Icons.undo
+                                    : Icons.remove_shopping_cart_outlined,
+                              ),
+                              label: Text(
+                                draft.removed
+                                    ? l10n.orderEditKeepLine
+                                    : l10n.orderEditRemoveLine,
+                              ),
+                              onPressed: saving.isBusy
+                                  ? null
+                                  : () => _toggle(draft),
+                            ),
+                          ),
+                        ],
                       ),
-                      if (draft.product
-                          case final CatalogProduct product) ...<Widget>[
-                        Text(
-                          l10n.orderAddedLine,
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                        PriceLine(product: product),
-                      ],
-                      if (draft.unavailable)
-                        Text(
-                          l10n.cartLineUnavailable,
-                          key: ValueKey<String>(
-                            'edit-unavailable-${draft.key}',
-                          ),
-                          style: warning,
-                        ),
-                      const SizedBox(height: 8),
-                      if (!draft.removed)
-                        LineOptionsFields(
-                          unit: draft.unit,
-                          quantity: draft.quantity,
-                          note: draft.note,
-                          policy: draft.policy,
-                          onPolicy: (SubstitutionPolicy policy) =>
-                              setState(() => draft.policy = policy),
-                        ),
-                      Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: TextButton.icon(
-                          key: ValueKey<String>('edit-remove-${draft.key}'),
-                          icon: Icon(
-                            draft.removed
-                                ? Icons.undo
-                                : Icons.remove_shopping_cart_outlined,
-                          ),
-                          label: Text(
-                            draft.removed
-                                ? l10n.orderEditKeepLine
-                                : l10n.orderEditRemoveLine,
-                          ),
-                          onPressed: saving.isBusy
-                              ? null
-                              : () => _toggle(draft),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                key: const ValueKey<String>('edit-add-product'),
+                icon: const Icon(Icons.add),
+                label: Text(l10n.orderAddProduct),
+                onPressed: saving.isBusy || full ? null : _add,
               ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              key: const ValueKey<String>('edit-add-product'),
-              icon: const Icon(Icons.add),
-              label: Text(l10n.orderAddProduct),
-              onPressed: saving.isBusy || full ? null : _add,
-            ),
-            if (full)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  l10n.orderAddFull(orderMaxLines),
-                  key: const ValueKey<String>('edit-full'),
-                  style: warning,
+              if (full)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    l10n.orderAddFull(orderMaxLines),
+                    key: const ValueKey<String>('edit-full'),
+                    style: warning,
+                  ),
                 ),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const ValueKey<String>('edit-delivery-wish'),
+                controller: _wish,
+                minLines: 1,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: l10n.orderSectionDeliveryWish,
+                  border: const OutlineInputBorder(),
+                ),
+                validator: (String? text) =>
+                    trimLikeServer(text ?? '').runes.length > 160
+                    ? l10n.fieldTooLong(160)
+                    : null,
               ),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const ValueKey<String>('edit-delivery-wish'),
-              controller: _wish,
-              minLines: 1,
-              maxLines: 3,
-              decoration: InputDecoration(
-                labelText: l10n.orderSectionDeliveryWish,
-                border: const OutlineInputBorder(),
+              const SizedBox(height: 16),
+              if (_noneLeft)
+                Text(
+                  l10n.orderEditAtLeastOne,
+                  key: const ValueKey<String>('edit-none-left'),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              FilledButton(
+                key: const ValueKey<String>('edit-save'),
+                onPressed: saving.isBusy ? null : _save,
+                child: saving.isBusy
+                    ? SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          semanticsLabel: l10n.orderEditSaving,
+                        ),
+                      )
+                    : Text(l10n.saveButton),
               ),
-              validator: (String? text) =>
-                  trimLikeServer(text ?? '').runes.length > 160
-                  ? l10n.fieldTooLong(160)
-                  : null,
-            ),
-            const SizedBox(height: 16),
-            if (_noneLeft)
-              Text(
-                l10n.orderEditAtLeastOne,
-                key: const ValueKey<String>('edit-none-left'),
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            FilledButton(
-              key: const ValueKey<String>('edit-save'),
-              onPressed: saving.isBusy ? null : _save,
-              child: saving.isBusy
-                  ? SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        semanticsLabel: l10n.orderEditSaving,
-                      ),
-                    )
-                  : Text(l10n.saveButton),
-            ),
-            FailureMessage(saving.failure),
-          ],
+              FailureMessage(saving.failure),
+            ],
+          ),
         ),
       ),
     );

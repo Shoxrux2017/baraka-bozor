@@ -17,8 +17,9 @@ import '../../catalog/presentation/catalog_screens.dart';
 import '../../catalog/presentation/catalog_widgets.dart';
 
 /// Picks a product to add to an order (`docs/03` section 11, `DL-52`): a
-/// search over the catalog the Customer sees, or one category's products.
-/// It answers the product picked; the editor decides what that means.
+/// search over the whole catalog the Customer sees, or one category's
+/// products. It answers the product picked; the editor decides what that
+/// means.
 class OrderProductPickerScreen extends ConsumerStatefulWidget {
   const OrderProductPickerScreen({required this.orderId, super.key});
 
@@ -59,13 +60,13 @@ class _OrderProductPickerScreenState
   }
 
   /// Back to the editor with [product]; opened by its address alone, the
-  /// picker has no editor to answer and opens the order's.
+  /// picker has no editor to answer and opens the order's with it.
   void _pick(CatalogProduct product) {
     final GoRouter router = GoRouter.of(context);
     if (router.canPop()) {
       router.pop(product);
     } else {
-      router.go(AppPaths.customerOrderEdit(widget.orderId));
+      router.go(AppPaths.customerOrderEdit(widget.orderId), extra: product);
     }
   }
 
@@ -73,7 +74,9 @@ class _OrderProductPickerScreenState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
-    final CatalogCategory? category = _category;
+    // A search looks through the whole catalog, as the catalog's does; the
+    // category chosen comes back once the search is cleared.
+    final CatalogCategory? category = _query.isEmpty ? _category : null;
 
     return PopScope(
       // Back from a category's products returns to the categories.

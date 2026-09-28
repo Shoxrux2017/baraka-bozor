@@ -41,6 +41,12 @@ void main() {
           .last
           .matchedLocation;
 
+  const String productRice = '0192f0a0-0000-7000-8000-00000000c024';
+
+  Finder editorScroll() => find
+      .descendant(of: byKey('order-editor'), matching: find.byType(Scrollable))
+      .first;
+
   Map<String, Object?> milkLine() => orderLineJson(
     id: lineMilk,
     productId: productMilk,
@@ -66,6 +72,12 @@ void main() {
         ),
         // The order's tomato, its id in another case.
         catalogProduct(id: productTomato.toUpperCase()),
+        catalogProduct(
+          id: productRice,
+          categoryId: 'c-2',
+          nameUz: 'Guruch',
+          nameRu: 'Рис',
+        ),
       ],
     );
   });
@@ -261,13 +273,28 @@ void main() {
         },
       ),
     );
+    final int loads = orders.loads.length;
 
     await tapAndSettle(tester, byKey('edit-save'));
 
+    expect(orders.loads.length, greaterThan(loads), reason: 'reloaded');
     expect(byKey('edit-unavailable-added-$productMilk'), findsOneWidget);
     expect(byKey('edit-unavailable-$lineTomato'), findsNothing);
     expect(find.text(l10n(tester).errorProductUnavailable), findsOneWidget);
     expect(top(tester), AppPaths.customerOrderEdit(orderOne));
+
+    // A save the form stops sends nothing, and the marks stay.
+    final Finder tomato = find
+        .descendant(
+          of: byKey('edit-line-$lineTomato'),
+          matching: byKey('line-quantity'),
+        )
+        .first;
+    await tester.enterText(tomato, '');
+    await tapAndSettle(tester, byKey('edit-save'));
+    expect(orders.edits, hasLength(1));
+    expect(byKey('edit-unavailable-added-$productMilk'), findsOneWidget);
+    await tester.enterText(tomato, '1,5');
 
     await tapAndSettle(tester, byKey('edit-remove-added-$productMilk'));
     orders.answer = customerOrderJson(note: 'Ertalab');
@@ -277,6 +304,135 @@ void main() {
       productTomato,
       productBread,
     ]);
+    expect(top(tester), AppPaths.customerOrder(orderOne));
+  });
+
+  group('after a save whose answer was lost', () {
+    // The server made the edit; the answer never came, and the order loads
+    // again with the milk in it.
+    Future<void> lose(WidgetTester tester) async {
+      await open(tester);
+      await addMilk(tester);
+      orders
+        ..failure = const NetworkFailure()
+        ..rows = <Map<String, Object?>>[
+          customerOrderJson(
+            lines: <Object?>[
+              orderLineJson(),
+              orderLineJson(
+                id: lineBread,
+                productId: productBread,
+                unit: 'piece',
+                quantity: '2',
+              ),
+              orderLineJson(
+                id: lineMilk,
+                productId: productMilk,
+                unit: 'piece',
+                quantity: '1',
+              ),
+            ],
+          ),
+        ];
+      await tapAndSettle(tester, byKey('edit-save'));
+      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+    }
+
+    testWidgets('dropping the product again is sent', (
+      WidgetTester tester,
+    ) async {
+      await lose(tester);
+      await tapAndSettle(tester, byKey('edit-remove-added-$productMilk'));
+      orders.answer = customerOrderJson();
+      await tapAndSettle(tester, byKey('edit-save'));
+
+      expect(orders.edits, hasLength(2));
+      expect(
+        orders.edits.last.$2.map((OrderEditLine l) => l.productId),
+        <String>[productTomato, productBread],
+      );
+      expect(top(tester), AppPaths.customerOrder(orderOne));
+    });
+
+    testWidgets('keeping it is what the order holds, and nothing is sent', (
+      WidgetTester tester,
+    ) async {
+      await lose(tester);
+      await tapAndSettle(tester, byKey('edit-save'));
+
+      expect(orders.edits, hasLength(1));
+      expect(top(tester), AppPaths.customerOrder(orderOne));
+    });
+  });
+
+  testWidgets('a product already in the order is brought into view', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, size: const Size(360, 500));
+    await tester.scrollUntilVisible(
+      byKey('edit-add-product'),
+      300,
+      scrollable: editorScroll(),
+    );
+    expect(
+      tester.getRect(byKey('edit-line-$lineTomato')).top,
+      lessThan(0),
+      reason: 'out of sight when the picker opens',
+    );
+    await tapAndSettle(tester, byKey('edit-add-product'));
+    await search(tester, 'pom');
+    await tapAndSettle(tester, byKey('product-${productTomato.toUpperCase()}'));
+
+    expect(
+      tester.getRect(byKey('edit-line-$lineTomato')).top,
+      greaterThanOrEqualTo(0),
+    );
+  });
+
+  testWidgets('a line to correct out of sight stops the save and is shown', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, size: const Size(360, 500));
+    await tester.enterText(
+      find
+          .descendant(
+            of: byKey('edit-line-$lineTomato'),
+            matching: byKey('line-quantity'),
+          )
+          .first,
+      'abc',
+    );
+    await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
+    await tester.scrollUntilVisible(
+      byKey('edit-save'),
+      300,
+      scrollable: editorScroll(),
+    );
+    expect(tester.getRect(byKey('edit-line-$lineTomato')).bottom, lessThan(0));
+
+    await tester.tap(byKey('edit-save'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(orders.edits, isEmpty);
+    expect(find.text(l10n(tester).cartQuantityFraction), findsOneWidget);
+    final Finder field = find
+        .descendant(
+          of: byKey('edit-line-$lineTomato'),
+          matching: byKey('line-quantity'),
+        )
+        .first;
+    expect(tester.getRect(field).top, greaterThanOrEqualTo(0));
+    expect(tester.getRect(field).bottom, lessThanOrEqualTo(500));
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(of: field, matching: find.byType(EditableText)),
+          )
+          .focusNode
+          .hasFocus,
+      isTrue,
+    );
   });
 
   testWidgets('an order holds at most 100 lines', (WidgetTester tester) async {
@@ -376,7 +532,24 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(top(tester), AppPaths.customerOrderEdit(orderOne));
-    expect(byKey('order-editor'), findsOneWidget);
+    expect(byKey('edit-line-added-$productMilk'), findsOneWidget);
+  });
+
+  testWidgets('a search in the picker looks through the whole catalog', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tapAndSettle(tester, byKey('edit-add-product'));
+    await tapAndSettle(tester, byKey('pick-category-c-1'));
+
+    await search(tester, 'guruch');
+    expect(catalog.requests.last, startsWith('guruch|null|'));
+    expect(byKey('product-$productRice'), findsOneWidget);
+    expect(byKey('pick-category'), findsNothing);
+
+    await tapAndSettle(tester, byKey('pick-search-clear'));
+    expect(byKey('pick-category'), findsOneWidget, reason: 'the category back');
+    expect(byKey('product-$productMilk'), findsOneWidget);
   });
 
   for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {

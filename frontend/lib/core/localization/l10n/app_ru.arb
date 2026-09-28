@@ -769,7 +769,7 @@
   "orderEditClosed": "Этот заказ уже нельзя изменить",
   "orderAddProduct": "Добавить товар",
   "orderAddTitle": "Добавить в заказ",
-  "orderAddedLine": "Добавляется, по сегодняшней цене",
+  "orderAddedLine": "Добавляется, по текущей цене",
   "orderAddAlreadyIn": "Этот товар уже в заказе — его можно изменить",
   "orderAddFull": "В заказе может быть не больше {count} товаров",
   "orderCancel": "Отменить заказ",
