@@ -173,9 +173,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                               (CartLine line) => line.isAvailable,
                             )
                             ? () {
-                                // The "added" notice stays behind.
-                                ScaffoldMessenger.of(context)
-                                    .hideCurrentSnackBar();
+                                // The "added" notices stay behind, queued
+                                // ones too.
+                                ScaffoldMessenger.of(context).clearSnackBars();
                                 context.push(AppPaths.customerCheckout);
                               }
                             : null,

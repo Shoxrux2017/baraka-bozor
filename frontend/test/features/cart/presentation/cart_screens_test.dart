@@ -198,6 +198,45 @@ void main() {
       },
     );
 
+    testWidgets('a second notice replaces the first rather than queueing', (
+      WidgetTester tester,
+    ) async {
+      cart.answer = cartOf(<Map<String, Object?>>[
+        cartLineJson(productId: tomatoProduct, quantity: '1.500'),
+      ]);
+      await open(tester, at: '/customer/products/$tomatoProduct');
+      await tester.enterText(byKey('line-quantity'), '1,5');
+      // Frame by frame, so the notice's timer starts as it would.
+      Future<void> wait(Duration time) async {
+        for (int i = 0; i < time.inMilliseconds ~/ 100; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+      }
+
+      await tester.tap(byKey('add-to-cart'));
+      await wait(const Duration(seconds: 1));
+
+      cart.answer = cartOf(<Map<String, Object?>>[
+        cartLineJson(productId: tomatoProduct, quantity: '1.500'),
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '1',
+        ),
+      ]);
+      GoRouter.of(anywhere(tester)).push('/customer/products/$breadProduct');
+      await wait(const Duration(milliseconds: 500));
+      await tester.tap(byKey('add-to-cart'));
+      await wait(const Duration(seconds: 1));
+      expect(find.text(l10n(tester).cartAdded), findsOneWidget);
+
+      // Queued, the second would only show once the first had gone, at about
+      // four and a half seconds in, and stay until about nine.
+      await wait(const Duration(seconds: 4));
+      expect(find.text(l10n(tester).cartAdded), findsNothing);
+    });
+
     testWidgets(
       'the notice stays behind when the Customer goes to the checkout',
       (WidgetTester tester) async {

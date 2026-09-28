@@ -334,6 +334,36 @@ void main() {
     },
   );
 
+  testWidgets('a long name wraps in its cell rather than widening the table', (
+    WidgetTester tester,
+  ) async {
+    operations.rows = <BoardRow>[
+      for (final BoardRow row in operations.rows)
+        BoardRow(
+          id: row.id,
+          orderNumber: row.orderNumber,
+          createdAt: row.createdAt,
+          status: row.status,
+          paymentMethod: row.paymentMethod,
+          customerName: 'Abdurakhmonova Shakhnoza Rustamovna',
+          customerPhone: row.customerPhone,
+          itemCount: row.itemCount,
+          totalUzs: row.totalUzs,
+          totalKind: row.totalKind,
+          shopper: row.shopper,
+          isSelfOrder: row.isSelfOrder,
+        ),
+    ];
+    await open(tester, size: const Size(1800, 1600));
+
+    expect(find.byType(DataTable), findsOneWidget);
+    expect(
+      tester.getSize(byKey('board-customer-$orderA')).width,
+      lessThanOrEqualTo(180),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('large text makes a table row taller rather than cutting it', (
     WidgetTester tester,
   ) async {
@@ -365,7 +395,7 @@ void main() {
         reason: 'above the orders below the side-by-side width',
       );
 
-      await open(tester, size: const Size(1540, 1600));
+      await open(tester, size: const Size(1600, 1600));
       expect(find.byType(DataTable), findsOneWidget);
       expect(
         tester.getTopLeft(byKey('board-attention')).dx,

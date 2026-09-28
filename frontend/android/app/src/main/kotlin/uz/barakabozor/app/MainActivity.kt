@@ -7,9 +7,10 @@ import io.flutter.embedding.engine.FlutterEngine
 
 /**
  * A build without a MapKit key never shows a map — the Dart side offers the
- * coordinates as fields — so MapKit must never start: started, it asks
- * Yandex about the placeholder key of [MainApplication], and Yandex's
- * refusal aborts the whole process a few seconds after launch (`DL-53`).
+ * coordinates as fields — so MapKit must never start. MapKit asks Yandex
+ * about the placeholder key of [MainApplication] and is refused; a MapKit
+ * that was started then aborts the whole process a few seconds after
+ * launch, one only initialised does not (`DL-53`).
  *
  * The yandex_mapkit plugin starts MapKit when it is attached to an
  * activity. On Flutter's own path the engine is attached to the activity
@@ -23,7 +24,14 @@ class MainActivity : FlutterActivity() {
         if (!keyless) {
             return null
         }
-        return FlutterEngine(context, null, true, shouldRestoreAndSaveState()).also {
+        // The engine flags a run passes in the intent, as Flutter's own
+        // engine takes them.
+        return FlutterEngine(
+            context,
+            flutterShellArgs.toArray(),
+            true,
+            shouldRestoreAndSaveState(),
+        ).also {
             it.plugins.remove(YandexMapkitPlugin::class.java)
         }
     }
