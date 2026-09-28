@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderShopperAssignment;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 
 /**
  * What every Shopper action on a line checks first, under the order lock
@@ -45,6 +46,30 @@ final class ShopperLine
         }
 
         return [$order, $assignment, $line];
+    }
+
+    /**
+     * The product a purchase or a price question is about: the one named,
+     * which must be the line's own or its authorized replacement (`422` on
+     * `fulfilled_product_id` otherwise), or else the replacement when there is
+     * one (`DL-54` (4)).
+     */
+    public static function productNamed(OrderItem $line, ?string $named): string
+    {
+        $replacement = self::replacementOf($line);
+
+        if ($named === null) {
+            return $replacement ?? $line->product_id;
+        }
+
+        $named = strtolower($named);
+        if ($named === $line->product_id || $named === $replacement) {
+            return $named;
+        }
+
+        throw ValidationException::withMessages([
+            'fulfilled_product_id' => 'The product bought is the line\'s own or its authorized replacement.',
+        ]);
     }
 
     /**

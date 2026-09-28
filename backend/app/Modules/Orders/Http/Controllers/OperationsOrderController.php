@@ -104,6 +104,9 @@ final class OperationsOrderController extends Controller
             'history.actor',
             'shopperAssignments.shopper',
             'shopperAssignments.assignedBy',
+            'approvals.item',
+            'approvals.requestedBy',
+            'approvals.resolvedBy',
         ]));
     }
 

@@ -35,4 +35,12 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Shopper
             ->name('shopper.orders.items.purchase');
         Route::post('orders/{order}/items/{item}/unavailable', [ShopperItemController::class, 'unavailable'])
             ->name('shopper.orders.items.unavailable');
+        Route::post('orders/{order}/items/{item}/price-approval', [ShopperItemController::class, 'priceApproval'])
+            ->name('shopper.orders.items.price-approval');
+        Route::post('orders/{order}/items/{item}/substitution', [ShopperItemController::class, 'substitution'])
+            ->name('shopper.orders.items.substitution');
+        Route::post('orders/{order}/items/{item}/reduced-quantity-approval', [ShopperItemController::class, 'reducedQuantity'])
+            ->name('shopper.orders.items.reduced-quantity-approval');
+        Route::get('orders/{order}/items/{item}/replacements', [ShopperItemController::class, 'replacements'])
+            ->name('shopper.orders.items.replacements');
     });

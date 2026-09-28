@@ -80,8 +80,7 @@ final class RecordPurchase
         [$order, , $line] = ShopperLine::lockPending($shopper, $orderId, $itemId);
 
         $purchased = QuantityPolicy::parse($line->unit_code_snapshot, $body['purchased_quantity'], 'purchased_quantity');
-        $replacement = ShopperLine::replacementOf($line);
-        $bought = $this->boughtProduct($line, $replacement, $body['fulfilled_product_id'] ?? null);
+        $bought = ShopperLine::productNamed($line, $body['fulfilled_product_id'] ?? null);
         $asReplacement = $bought !== $line->product_id;
         $actual = $body['actual_market_price_uzs'] ?? null;
 
@@ -160,26 +159,6 @@ final class RecordPurchase
             'actual_market_price_uzs' => $body['actual_market_price_uzs'] ?? null,
             'fulfilled_product_id' => $named === null ? null : strtolower($named),
         ];
-    }
-
-    /**
-     * The product bought: the one named, which must be the line's own or its
-     * authorized replacement, or else the replacement when there is one.
-     */
-    private function boughtProduct(OrderItem $line, ?string $replacement, ?string $named): string
-    {
-        if ($named === null) {
-            return $replacement ?? $line->product_id;
-        }
-
-        $named = strtolower($named);
-        if ($named === $line->product_id || $named === $replacement) {
-            return $named;
-        }
-
-        throw ValidationException::withMessages([
-            'fulfilled_product_id' => 'The product bought is the line\'s own or its authorized replacement.',
-        ]);
     }
 
     /**

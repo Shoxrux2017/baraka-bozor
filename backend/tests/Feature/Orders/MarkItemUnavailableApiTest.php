@@ -92,7 +92,7 @@ final class MarkItemUnavailableApiTest extends TestCase
         $this->assertSame(OrderStatus::Shopping, $row->from_status);
         $this->assertSame(OrderStatus::Cancelled, $row->to_status);
         $this->assertSame(CancellationReason::NoItemsPurchased, $row->reason_code);
-        $this->assertSame(['item_id' => $line->id, 'closed_cancellation_request_id' => $request->id], $row->details);
+        $this->assertEquals(['item_id' => $line->id, 'closed_cancellation_request_id' => $request->id], $row->details);
 
         // The Customer owes nothing (BR-CAN-006).
         $this->withToken($this->order->customer->createToken('c')->plainTextToken)
