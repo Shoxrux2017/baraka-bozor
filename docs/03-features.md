@@ -82,7 +82,7 @@ Rules `allow_similar_substitution`, `contact_before_substitution`, `remove_if_un
 
 ## 16. Customer Approval
 
-Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pending`, `approved`, `rejected`, `expired`. Ten minutes: Operator attention. Thirty minutes: expired. Approve applies the persisted proposal and returns the item to `pending` for the Shopper to record the purchase; reject removes the item; an expired approval can only be resolved by an Operator or Admin removing the item.
+Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pending`, `approved`, `rejected`, `expired`, and `cancelled` for an approval whose order is cancelled (`DL-54` (7)). Ten minutes: Operator attention. Thirty minutes: expired. Approve applies the persisted proposal and returns the item to `pending` for the Shopper to record the purchase; reject removes the item; an expired approval can only be resolved by an Operator or Admin removing the item.
 
 ## 17. Final Amount
 

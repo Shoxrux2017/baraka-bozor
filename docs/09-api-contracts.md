@@ -163,7 +163,7 @@ An item carries `id, product_id, name_uz, name_ru, unit_code, price_mode, quanti
 
 `GET /customer/approvals?status=pending`, `GET /customer/approvals/{approval}`, `POST /customer/approvals/{approval}/decision` with `Idempotency-Key`, `{"decision":"approve"}` or `"reject"`. Only own pending approvals; `409 approval_expired`, `409 approval_already_resolved`.
 
-Approval resource: `type`, `status`, the item with both names, `proposed_customer_unit_price_uzs`, `proposed_quantity`, `replacement` (product with both names and its customer price), `request_note`, `expires_at`.
+Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54` (7)): `type`, `status`, the item with both names, `proposed_customer_unit_price_uzs`, `proposed_quantity`, `replacement` (product with both names and its customer price), `request_note`, `expires_at`.
 
 ## 24. Payment *(online, Wave 5)*
 
@@ -199,7 +199,7 @@ Approval resource: `type`, `status`, the item with both names, `proposed_custome
 {"purchased_quantity":"5.200","actual_market_price_uzs":16000,"fulfilled_product_id":"..."}
 ```
 
-`actual_market_price_uzs` is required for estimate items and replacements, optional for fixed originals. The server computes the billable unit price. Above the ceiling → `409 customer_approval_required` with `details.ceiling_customer_unit_price_uzs` and `details.proposed_customer_unit_price_uzs`. Codes: `shopping_not_active`, `item_already_resolved`, `replacement_unit_mismatch`.
+`actual_market_price_uzs` is required for estimate items and replacements, optional for fixed originals. The server computes the billable unit price. Above the ceiling → `409 customer_approval_required` with `details.approval_type` `price_over_tolerance`, `details.ceiling_customer_unit_price_uzs` and `details.proposed_customer_unit_price_uzs`; a purchased quantity below the ordered quantity or the approved cap → the same code with `details.approval_type` `reduced_quantity` and `details.required_quantity` (`DL-54` (4)). `fulfilled_product_id` may be left out, and is otherwise the line's own product or the replacement authorized on it. Codes: `shopping_not_active`, `item_already_resolved`, `replacement_unit_mismatch`.
 
 ## 31. Unavailable
 
@@ -211,7 +211,7 @@ Approval resource: `type`, `status`, the item with both names, `proposed_custome
 
 ## 33. Substitution
 
-`POST /shopper/orders/{order}/items/{item}/substitution` `{"replacement_product_id":"...","actual_market_price_uzs":11000,"note":"..."}` → either the item authorized for the replacement (`substitution_resolution: automatic`) or a `substitution` approval, according to the item's policy and ceiling.
+`POST /shopper/orders/{order}/items/{item}/substitution` `{"replacement_product_id":"...","actual_market_price_uzs":11000,"note":"..."}` → either the item authorized for the replacement (`substitution_resolution: automatic`) or a `substitution` approval, according to the item's policy and ceiling. `GET /shopper/orders/{order}/items/{item}/replacements?search=&page=&per_page=` lists the active products of the line's unit other than the original, with their market price (`DL-54` (16)).
 
 ## 34. Reduced Quantity
 
@@ -225,11 +225,11 @@ Approval resource: `type`, `status`, the item with both names, `proposed_custome
 
 ## 36. Assigned Deliveries
 
-`GET /courier/orders`, `GET /courier/orders/{order}`: order number, recipient name and phone, address, delivery note, delivery time note, payment method, `amount_to_collect_uzs` for cash, status, and `shopper_phone` only while the server runs without a handoff point (`BR-DEL-006`), otherwise absent.
+`GET /courier/orders`, `GET /courier/orders/{order}`: order number, recipient name and phone, address, delivery note, delivery time note, payment method, `amount_to_collect_uzs` for cash, status, and `shopper_phone` only while the server runs without a handoff point (`BR-DEL-006`, configuration `orders.handoff_point`, `DL-54` (10)), otherwise absent.
 
 ## 37. Accept, Start, Delivered, Not Delivered
 
-`POST /courier/orders/{order}/accept`, `POST .../start` (→ `on_the_way`), `POST .../delivered` with `Idempotency-Key`, `{"cash_received_uzs":251250}` required for cash and must equal the total (`409 cash_amount_mismatch`, `details.expected_uzs`), `POST .../not-delivered` `{"reason_code":"no_answer","note":"..."}`. Codes: `courier_not_assigned`, `delivery_not_ready`, `delivery_state_conflict`.
+`POST /courier/orders/{order}/accept`, `POST .../start` (→ `on_the_way`), `POST .../delivered` with `Idempotency-Key`, `{"cash_received_uzs":251250}` required for cash and must equal the total (`409 cash_amount_mismatch`, `details.expected_uzs`), `POST .../not-delivered` `{"reason_code":"no_answer","note":"..."}`. Start is refused with `delivery_state_conflict` while a cancellation request is pending (`DL-54` (11)). Codes: `courier_not_assigned`, `delivery_not_ready`, `delivery_state_conflict`.
 
 # Operations (Operator and Admin)
 
@@ -241,7 +241,7 @@ Approval resource: `type`, `status`, the item with both names, `proposed_custome
 
 `GET /operations/summary` → `{day, open_by_status{new, shopping_assigned, shopping, final_payment_pending, ready_for_delivery, delivery_assigned, on_the_way}, completed_today, cancelled_today, sales_today_uzs, attention_count}`: every open order by its current status whatever day it was placed, today's completed and cancelled orders by `completed_at` and `cancelled_at`, today's sales (the sum of `final_total_uzs` of orders completed today) and the attention count; the day is `Asia/Tashkent` (`DL-37` (16)).
 
-`GET /operations/attention` → items `{type, order_id, order_number, since, shopper{id, full_name}}`, the longest-waiting first, as one page of the collection envelope (`DL-44` (7)). The types are `approval_pending`, `approval_expired`, `customer_no_response`, `payment_overdue`, `refund_outstanding`, `courier_delayed`, `delivery_failed`, `cancellation_request` and `self_order`; each arrives with the wave that creates its state, `self_order` in Wave 2, and the list's `attention` filter takes the types built so far.
+`GET /operations/attention` → items `{type, order_id, order_number, since, shopper{id, full_name}|null, courier{id, full_name}|null}`, the longest-waiting first, as one page of the collection envelope (`DL-44` (7)). The types are `approval_pending` (a pending approval past its ten minutes), `approval_expired`, `payment_overdue`, `refund_outstanding`, `courier_delayed`, `delivery_failed`, `cancellation_request`, `self_order` and `staff_blocked` (an open order whose current Shopper or Courier is blocked) (`DL-54` (12)); each arrives with the wave that creates its state — `self_order` in Wave 2, `payment_overdue` and `refund_outstanding` in Wave 5, the rest in Wave 3 — and the list's `attention` filter takes the types built so far.
 
 ## 39. Assignment
 
@@ -275,7 +275,7 @@ A staff account is `{"id":"...","role":"shopper","phone":"+998901112233","full_n
 
 ## 45. Price Correction
 
-`POST /admin/orders/{order}/items/{item}/price-correction` `{"actual_market_price_uzs":15000,"reason":"..."}` for a purchased estimate item while the order is unpaid; recomputes totals and an unpaid obligation; otherwise `409 price_correction_locked`.
+`POST /admin/orders/{order}/items/{item}/price-correction` `{"actual_market_price_uzs":15000,"reason":"..."}` for a bought line billed from the price paid — an estimate original or a replacement — while the order is open and unpaid; recomputes the line and, once shopping has completed, the final amounts (from Wave 5 an unpaid obligation too); a completed or cancelled order is `409 price_correction_locked`, a price whose customer price exceeds the line's ceiling `409 price_correction_above_ceiling` (`DL-54` (17)).
 
 # Providers *(Wave 5)*
 
@@ -327,7 +327,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 56. Delivery and Admin
 
-`courier_not_assigned`, `delivery_not_ready`, `delivery_state_conflict`, `last_active_admin_required`, `self_block_not_allowed`, `self_reset_not_allowed`, `phone_already_active`, `price_correction_locked`.
+`courier_not_assigned`, `delivery_not_ready`, `delivery_state_conflict`, `last_active_admin_required`, `self_block_not_allowed`, `self_reset_not_allowed`, `phone_already_active`, `price_correction_locked`, `price_correction_above_ceiling`.
 
 ## 57. Provider Safety
 

@@ -192,7 +192,7 @@ pending    awaiting_customer    purchased    removed
 
 # 12. Approvals
 
-Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pending`, `approved`, `rejected`, `expired`.
+Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pending`, `approved`, `rejected`, `expired`, and `cancelled` for an approval whose order is cancelled (`DL-54` (7)).
 
 **BR-APP-001** — A proposal is immutable after creation except for its resolution.
 
