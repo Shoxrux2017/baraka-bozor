@@ -411,7 +411,7 @@
   "attentionApprovalPending": "Клиент не отвечает 10 минут — позвоните",
   "attentionApprovalExpired": "Время ответа клиента истекло — уберите товар",
   "attentionPaymentOverdue": "Онлайн-оплата просрочена",
-  "attentionRefundOutstanding": "Ожидает возврат денег",
+  "attentionRefundOutstanding": "Ожидается возврат денег",
   "attentionCourierDelayed": "Курьер опаздывает",
   "attentionDeliveryFailed": "Доставка не удалась — назначьте курьера или отмените",
   "attentionCancellationRequest": "Клиент просит отменить заказ",

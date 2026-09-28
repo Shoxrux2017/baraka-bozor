@@ -16,7 +16,8 @@ use Illuminate\Validation\Rule;
  * `GET /operations/orders` (`docs/09` section 38, `DL-37` (16)): the page and
  * the board's filters — a status, the current Shopper, the payment method,
  * the first and last day of placement (`YYYY-MM-DD` in `Asia/Tashkent`), an
- * attention type, and a search of at most 100 characters.
+ * attention type, a search of at most 100 characters, and `awaiting_customer`
+ * `true` or `false` (`DL-60` (4)).
  */
 final class ListBoardOrdersRequest extends ListRequest
 {

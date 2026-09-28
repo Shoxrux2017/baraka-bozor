@@ -18,10 +18,14 @@ use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -69,6 +73,29 @@ final class ApprovalExpiryApiTest extends TestCase
         $this->assertNull($first->fresh()->resolution, 'BR-APP-004: expiry is not consent.');
     }
 
+    public function test_an_order_that_fails_leaves_the_others_to_run_and_the_run_fails(): void
+    {
+        Exceptions::fake();
+        $failing = $this->question(minutesAgo: 31);
+        $other = $this->question(minutesAgo: 31);
+        DB::unprepared(<<<SQL
+            create function approvals_test_refuse() returns trigger language plpgsql as \$\$
+            begin
+                raise exception 'refused for the test';
+            end;
+            \$\$;
+            create trigger approvals_test_refuse before update on customer_approvals
+                for each row when (old.id = '{$failing->id}') execute function approvals_test_refuse();
+            SQL);
+
+        $this->artisan('approvals:expire')->expectsOutput('Expired 1 approval(s).')->assertFailed();
+
+        Exceptions::assertReported(QueryException::class);
+        $this->assertSame(ApprovalStatus::Pending, $failing->fresh()?->status);
+        $this->assertSame(ApprovalStatus::Expired, $other->fresh()?->status);
+        $this->assertSame(1, OrderHistory::query()->where('event_type', OrderHistoryEvent::ApprovalExpired)->count());
+    }
+
     public function test_a_shopper_action_expires_the_orders_overdue_questions_first_and_no_one_elses(): void
     {
         $overdue = $this->question(minutesAgo: 31);
@@ -90,6 +117,42 @@ final class ApprovalExpiryApiTest extends TestCase
         $this->assertSame(1, OrderHistory::query()->where('order_id', $order->id)->where('event_type', OrderHistoryEvent::ApprovalExpired)->count());
     }
 
+    /**
+     * @return array<string, array{0: string, 1: array<string, mixed>}>
+     */
+    public static function shopperLineActions(): array
+    {
+        return [
+            'purchase' => ['purchase', ['purchased_quantity' => '1.000', 'actual_market_price_uzs' => 10000]],
+            'unavailable' => ['unavailable', []],
+            'price question' => ['price-approval', ['actual_market_price_uzs' => 20000]],
+            'substitution' => ['substitution', ['replacement_product_id' => '0192a000-0000-7000-8000-000000000001', 'actual_market_price_uzs' => 10000]],
+            'smaller quantity' => ['reduced-quantity-approval', ['proposed_quantity' => '1.000']],
+        ];
+    }
+
+    /**
+     * Each of the five Shopper line actions expires first, and keeps the
+     * expiry when it then refuses the line still waiting on the Customer
+     * (`DL-54` (8), `DL-60` (1)).
+     *
+     * @param  array<string, mixed>  $body
+     */
+    #[DataProvider('shopperLineActions')]
+    public function test_a_shopper_line_action_refused_on_the_waiting_line_keeps_the_expiry(string $action, array $body): void
+    {
+        $overdue = $this->question(minutesAgo: 31);
+        $shopper = $overdue->order->currentShopperAssignment?->shopper;
+
+        $this->withToken($shopper?->createToken('s')->plainTextToken ?? '')
+            ->withHeader('Idempotency-Key', (string) Str::uuid())
+            ->postJson("/api/v1/shopper/orders/{$overdue->order_id}/items/{$overdue->order_item_id}/{$action}", $body)
+            ->assertStatus(409)->assertJsonPath('code', 'item_already_resolved');
+
+        $this->assertSame(ApprovalStatus::Expired, $overdue->fresh()?->status);
+        $this->assertSame(1, OrderHistory::query()->where('event_type', OrderHistoryEvent::ApprovalExpired)->count());
+    }
+
     public function test_the_operator_removes_the_line_of_an_expired_question_and_only_that(): void
     {
         $overdue = $this->question(minutesAgo: 31);
@@ -104,6 +167,7 @@ final class ApprovalExpiryApiTest extends TestCase
         $this->assertSame(ApprovalResolution::RemoveItem, $approval->resolution);
         $this->assertSame($this->operator->id, $approval->resolved_by_user_id);
         $this->assertSame(ItemRemovedReason::ApprovalExpired, $overdue->item->fresh()?->removed_reason_code);
+        $this->assertSame(1, OrderHistory::query()->where('event_type', OrderHistoryEvent::ApprovalExpired)->count(), 'Expired once, by the system.');
         $resolved = OrderHistory::query()->where('event_type', OrderHistoryEvent::ApprovalResolved)->sole();
         $this->assertSame('Не дозвонились', $resolved->note);
         $this->assertSame($this->operator->id, $resolved->actor_user_id);
@@ -112,9 +176,20 @@ final class ApprovalExpiryApiTest extends TestCase
         // The same removal again writes nothing (DL-55 (2)).
         $this->resolve($overdue, ['resolution' => 'remove_item'])->assertOk();
         $this->assertSame(1, OrderHistory::query()->where('event_type', OrderHistoryEvent::ApprovalResolved)->count());
+        $this->assertSame(1, OrderHistory::query()->where('event_type', OrderHistoryEvent::ApprovalExpired)->count());
 
-        $this->resolve($this->question(minutesAgo: 5), ['resolution' => 'remove_item'])
+        // A removal refused because its own question is still open keeps the
+        // expiry it wrote on the way of the order's overdue one.
+        $late = $this->question(minutesAgo: 31);
+        $early = CustomerApproval::factory()->create([
+            'order_item_id' => OrderItem::factory()->for($late->order)->awaitingCustomer()->create()->id,
+            'attention_at' => now()->addMinutes(5),
+            'expires_at' => now()->addMinutes(25),
+        ]);
+        $this->resolve($early, ['resolution' => 'remove_item'])
             ->assertStatus(409)->assertJsonPath('code', 'approval_not_expired');
+        $this->assertSame(ApprovalStatus::Expired, $late->fresh()?->status);
+        $this->assertSame(1, OrderHistory::query()->where('order_id', $late->order_id)->where('event_type', OrderHistoryEvent::ApprovalExpired)->count());
         $this->resolve(CustomerApproval::factory()->approved()->create(), ['resolution' => 'remove_item'])
             ->assertStatus(409)->assertJsonPath('code', 'approval_already_resolved');
 
@@ -160,6 +235,12 @@ final class ApprovalExpiryApiTest extends TestCase
             'expires_at' => now()->addMinutes(19),
         ]);
         $expired = $this->question(minutesAgo: 35);
+        $stored = CustomerApproval::factory()->expired()->create([
+            'attention_at' => now()->subMinutes(23),
+            'expires_at' => now()->subMinutes(3),
+            'created_at' => now()->subMinutes(33),
+        ]);
+        $atTen = $this->question(minutesAgo: 10);
         $this->question(minutesAgo: 5);
         $cancelled = $this->question(minutesAgo: 35);
         $cancelled->order->forceFill(['status' => OrderStatus::Cancelled, 'cancelled_at' => now(), 'cancellation_reason_code' => CancellationReason::System])->save();
@@ -168,18 +249,21 @@ final class ApprovalExpiryApiTest extends TestCase
 
         $this->assertSame([
             ['approval_expired', $expired->order_id, now()->subMinutes(5)->toIso8601ZuluString()],
+            ['approval_expired', $stored->order_id, now()->subMinutes(3)->toIso8601ZuluString()],
             ['approval_pending', $waiting->order_id, now()->subMinutes(2)->toIso8601ZuluString()],
-        ], array_map(static fn (array $item): array => [$item['type'], $item['order_id'], $item['since']], $items), 'One item per order and type, the longest waiting first.');
-        $this->assertSame($waiting->order->currentShopperAssignment?->shopper_id, $items[1]['shopper']['id']);
-        $this->assertNull($items[1]['courier']);
-        $this->assertNotSame($second->id, $waiting->id);
+            ['approval_pending', $atTen->order_id, now()->toIso8601ZuluString()],
+        ], array_map(static fn (array $item): array => [$item['type'], $item['order_id'], $item['since']], $items), 'One item per order and type, the longest waiting first; at ten minutes exactly on the list (BR-APP-002).');
+        $this->assertSame($waiting->order->currentShopperAssignment?->shopper_id, $items[2]['shopper']['id']);
+        $this->assertNull($items[2]['courier']);
+        $this->assertSame(ApprovalStatus::Pending, $second->fresh()?->status, 'The second question is open and adds no item of its own.');
 
-        $this->assertIds([$waiting->order_id], ['attention' => 'approval_pending']);
-        $this->assertIds([$expired->order_id], ['attention' => 'approval_expired']);
-        $this->assertSame(2, $this->as($this->operator)->getJson('/api/v1/operations/summary')->json('data.attention_count'));
+        $this->assertEqualsCanonicalizing([$waiting->order_id, $atTen->order_id], $this->ids(['attention' => 'approval_pending']));
+        $this->assertEqualsCanonicalizing([$expired->order_id, $stored->order_id], $this->ids(['attention' => 'approval_expired']));
+        $this->assertSame(4, $this->as($this->operator)->getJson('/api/v1/operations/summary')->json('data.attention_count'));
 
         // Removing the line takes it off the list.
         $this->resolve($expired, ['resolution' => 'remove_item'])->assertOk();
+        $this->resolve($stored, ['resolution' => 'remove_item'])->assertOk();
         $this->assertIds([], ['attention' => 'approval_expired']);
     }
 

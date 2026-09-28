@@ -154,8 +154,8 @@ final class BoardSummary {
   final int attentionCount;
 }
 
-/// The kinds of attention item the backend produces; each later wave adds
-/// its own (`DL-44` (7)).
+/// The kinds of attention item of `docs/09` section 38 (`DL-44` (7),
+/// `DL-60` (5)).
 enum AttentionType {
   approvalPending('approval_pending'),
   approvalExpired('approval_expired'),
@@ -190,6 +190,7 @@ enum AttentionType {
 final class AttentionItem {
   const AttentionItem({
     required this.type,
+    required this.code,
     required this.orderId,
     required this.orderNumber,
     required this.since,
@@ -198,6 +199,10 @@ final class AttentionItem {
   });
 
   final AttentionType type;
+
+  /// The type as the server named it, which keeps apart two items of types
+  /// this client does not know.
+  final String code;
   final String orderId;
   final int orderNumber;
   final DateTime since;

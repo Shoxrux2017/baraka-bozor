@@ -698,7 +698,8 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - **The command.** `approvals:expire` is scheduled every minute in `routes/console.php`. It finds the orders with an overdue pending approval and expires each order's under its lock (`ApprovalExpiry::expireOverdueOf`). Running it again finds nothing.
    - **The Shopper's line actions** (purchase, unavailable, the three questions) expire the order's overdue approvals first, in a transaction of their own. They do so only for an order the Shopper holds (`ShopperLine::expireFirst`), so an id the Shopper does not hold writes nothing and answers the scope-safe `404`.
    - **The Customer's decision and the Operator's removal** expire first as `DL-59` (3) does.
-   - **Accept and start** need no step: nothing has been asked before a start.
+   - **Accept and start, the Customer's edit and direct cancellation, and the Operator's assignment and reassignment** need no step: each happens before a start, when nothing has been asked yet.
+   - **The Shopper's step writes only when something is overdue:** it looks for an overdue approval on an order the Shopper holds before it takes the lock.
    - **Reads** — the Shopper's line, the Customer's order and approvals, and the board's approvals and counts — show an overdue approval as expired.
 2. **The Operator's removal of an expired line.**
    - `remove_item` is the only resolution; the Operator never answers for the Customer.
@@ -718,5 +719,5 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - Each row carries `pending_approval_count`, both leaving out a question past its expiry (`DL-3` S-6).
 5. **The panel reads every attention type** (`DL-54` (21)).
    - It knows all nine types of `docs/09` section 38, with their words, and shows a type it does not know yet in general words rather than refusing the list.
-   - An item's key names its type, so one order's two items are two rows.
+   - An item's key names its type as the server wrote it, so one order's two items are two rows, even two of types the client does not know.
    - An item without a Shopper shows the Courier, or only its instant.

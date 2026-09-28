@@ -15,7 +15,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * and the total with its kind, and the current Shopper with the self-order
  * mark (`BR-ASSIGN-005`).
  *
- * Expects the sums of `OrderLineSums::add` and `currentShopperAssignment.shopper`.
+ * Expects the sums of `OrderLineSums::add`, the `pending_approval_count` of
+ * `CustomerOrders::withPendingApprovalCount` and `currentShopperAssignment.shopper`.
  *
  * @property-read Order $resource
  */

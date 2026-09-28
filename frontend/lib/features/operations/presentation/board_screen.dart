@@ -628,7 +628,7 @@ class _AttentionList extends ConsumerWidget {
                         for (final AttentionItem item in items)
                           ListTile(
                             key: ValueKey<String>(
-                              'attention-${item.type.name}-${item.orderId}',
+                              'attention-${item.code}-${item.orderId}',
                             ),
                             contentPadding: EdgeInsets.zero,
                             leading: Icon(

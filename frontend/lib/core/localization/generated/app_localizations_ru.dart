@@ -1007,7 +1007,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get attentionPaymentOverdue => 'Онлайн-оплата просрочена';
 
   @override
-  String get attentionRefundOutstanding => 'Ожидает возврат денег';
+  String get attentionRefundOutstanding => 'Ожидается возврат денег';
 
   @override
   String get attentionCourierDelayed => 'Курьер опаздывает';

@@ -8,6 +8,7 @@ use App\Models\CustomerApproval;
 use App\Models\Enums\ApprovalStatus;
 use App\Modules\Orders\ApprovalExpiry;
 use Illuminate\Console\Command;
+use Throwable;
 
 /**
  * Writes the expiry of every approval past its thirty minutes (`BR-APP-003`,
@@ -16,8 +17,10 @@ use Illuminate\Console\Command;
  * `routes/console.php`; running it again finds nothing more to do.
  *
  * Correctness never waits for it: every read shows an overdue approval as
- * expired, and every action expires the order's own first (`docs/07`
- * section 25).
+ * expired, and the Shopper's line actions, the Customer's decision and the
+ * Operator's removal expire the order's own first (`docs/07` section 25,
+ * `DL-60` (1)). An order that fails is reported and leaves the others to
+ * run; the run then fails, and the next one tries that order again.
  */
 final class ExpireApprovalsCommand extends Command
 {
@@ -34,11 +37,22 @@ final class ExpireApprovalsCommand extends Command
             ->pluck('order_id');
 
         $expired = 0;
+        $failed = 0;
         foreach ($orders as $orderId) {
-            $expired += ApprovalExpiry::expireOverdueOf((string) $orderId);
+            try {
+                $expired += ApprovalExpiry::expireOverdueOf((string) $orderId);
+            } catch (Throwable $failure) {
+                report($failure);
+                $failed++;
+            }
         }
 
         $this->info("Expired {$expired} approval(s).");
+        if ($failed > 0) {
+            $this->error("{$failed} order(s) failed.");
+
+            return self::FAILURE;
+        }
 
         return self::SUCCESS;
     }

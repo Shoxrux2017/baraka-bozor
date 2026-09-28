@@ -274,8 +274,10 @@ class OperationsApi {
     final JsonFields json = JsonFields.of(raw, 'attention item');
     final Object? shopper = json.member('shopper');
     final Object? courier = json.member('courier');
+    final String code = json.string('type');
     return AttentionItem(
-      type: AttentionType.of(json.string('type')),
+      type: AttentionType.of(code),
+      code: code,
       orderId: json.uuid('order_id'),
       orderNumber: _orderNumber(json, 'order_number'),
       since: json.instant('since'),
