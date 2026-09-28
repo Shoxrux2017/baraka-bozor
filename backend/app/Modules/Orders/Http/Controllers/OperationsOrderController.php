@@ -8,9 +8,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Pagination\PaginatedResponse;
 use App\Models\Order;
 use App\Models\User;
+use App\Modules\Orders\Actions\AssignCourier;
 use App\Modules\Orders\Actions\AssignShopper;
+use App\Modules\Orders\Http\Requests\AssignCourierRequest;
 use App\Modules\Orders\Http\Requests\AssignShopperRequest;
 use App\Modules\Orders\Http\Requests\ListBoardOrdersRequest;
+use App\Modules\Orders\Http\Requests\ReassignCourierRequest;
 use App\Modules\Orders\Http\Requests\ReassignShopperRequest;
 use App\Modules\Orders\Http\Resources\BoardOrderResource;
 use App\Modules\Orders\Http\Resources\BoardOrderRowResource;
@@ -25,10 +28,10 @@ use Illuminate\Pagination\LengthAwarePaginator;
 /**
  * The board of the Operator and the Admin (`docs/09` section 38, `DL-12`):
  * `GET /operations/orders`, `GET /operations/orders/{order}`,
- * `GET /operations/summary`, `GET /operations/attention`, and the Shopper
- * assignment of section 39: `POST|PUT /operations/orders/{order}/shopper-assignment`,
- * answering the order as the board shows it. Every order is in scope for
- * both roles; the route admits exactly them.
+ * `GET /operations/summary`, `GET /operations/attention`, and the
+ * assignments of section 39: `POST|PUT /operations/orders/{order}/shopper-assignment`
+ * and `.../courier-assignment`, answering the order as the board shows it.
+ * Every order is in scope for both roles; the route admits exactly them.
  */
 final class OperationsOrderController extends Controller
 {
@@ -37,6 +40,7 @@ final class OperationsOrderController extends Controller
         $orders = OrderBoard::orders(
             status: $request->status(),
             shopperId: $request->shopperId(),
+            courierId: $request->courierId(),
             paymentMethod: $request->paymentMethod(),
             from: $request->from(),
             to: $request->to(),
@@ -67,6 +71,21 @@ final class OperationsOrderController extends Controller
             $this->staff($request),
             $order,
             $request->shopperId(),
+            $request->replacesAssignmentId(),
+        ));
+    }
+
+    public function assignCourier(AssignCourierRequest $request, string $order, AssignCourier $assign): BoardOrderResource
+    {
+        return self::detail($assign->assign($this->staff($request), $order, $request->courierId()));
+    }
+
+    public function reassignCourier(ReassignCourierRequest $request, string $order, AssignCourier $assign): BoardOrderResource
+    {
+        return self::detail($assign->reassign(
+            $this->staff($request),
+            $order,
+            $request->courierId(),
             $request->replacesAssignmentId(),
         ));
     }
@@ -105,6 +124,8 @@ final class OperationsOrderController extends Controller
             'history.actor',
             'shopperAssignments.shopper',
             'shopperAssignments.assignedBy',
+            'courierAssignments.courier',
+            'courierAssignments.assignedBy',
             'approvals.item',
             'approvals.requestedBy',
             'approvals.resolvedBy',

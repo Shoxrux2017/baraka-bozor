@@ -6,10 +6,14 @@ namespace App\Modules\Orders\Operations;
 
 use App\Models\Enums\ApprovalStatus;
 use App\Models\Enums\OrderStatus;
+use App\Models\Enums\UserStatus;
 use App\Models\Order;
+use App\Models\OrderCourierAssignment;
 use App\Models\OrderShopperAssignment;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -19,8 +23,13 @@ use Illuminate\Support\Facades\DB;
  * `DL-54` (13), `DL-60`): what the wave can produce, one item per open order
  * and type, the one waiting longest first.
  *
- * - `self_order` — the order's current Shopper assignment is flagged a
- *   self-order (`BR-ASSIGN-005`, interview 6.4), since its `assigned_at`.
+ * - `self_order` — the order carries the self-order mark (`SelfOrderMark`,
+ *   `BR-ASSIGN-005`, interview 6.4, `DL-54` (14)), since the earliest
+ *   assignment that marks it; the item names the Shopper and the Courier
+ *   whose assignments mark it, the latest of each.
+ * - `staff_blocked` — the order's current Shopper or Courier has been blocked,
+ *   and the Operator reassigns it where the rules allow (`DL-54` (13)); since
+ *   the earliest such block, naming the one blocked.
  * - `approval_pending` — a question has waited ten minutes without an answer
  *   and has not expired: the Operator calls the Customer (`BR-APP-002`), since
  *   the earliest such `attention_at`.
@@ -28,8 +37,10 @@ use Illuminate\Support\Facades\DB;
  *   line yet (`BR-APP-007`), a pending one past its expiry included, as every
  *   read shows it (`DL-54` (8)), since the earliest `expires_at`.
  *
- * Each other type arrives with the wave that creates its state. An item names
- * the Shopper concerned, and the Courier from W3-8.
+ * Each other type arrives with the task that creates its state. An item names
+ * the Shopper and the Courier concerned, each `null` when none is.
+ *
+ * @phpstan-type Item array{type: string, order_id: string, order_number: int, since: string, shopper: array{id: string, full_name: string|null}|null, courier: array{id: string, full_name: string|null}|null}
  */
 final class Attention
 {
@@ -39,8 +50,10 @@ final class Attention
 
     public const APPROVAL_EXPIRED = 'approval_expired';
 
+    public const STAFF_BLOCKED = 'staff_blocked';
+
     /** @var list<string> */
-    public const TYPES = [self::APPROVAL_PENDING, self::APPROVAL_EXPIRED, self::SELF_ORDER];
+    public const TYPES = [self::APPROVAL_PENDING, self::APPROVAL_EXPIRED, self::SELF_ORDER, self::STAFF_BLOCKED];
 
     /**
      * Narrows orders to those with an item of the type.
@@ -51,7 +64,10 @@ final class Attention
     public static function narrow(Builder $orders, string $type): Builder
     {
         return match ($type) {
-            self::SELF_ORDER => self::selfOrders($orders),
+            self::SELF_ORDER => SelfOrderMark::narrow(self::open($orders)),
+            self::STAFF_BLOCKED => self::open($orders)->where(static fn (Builder $blocked) => $blocked
+                ->whereHas('currentShopperAssignment.shopper', static fn (Builder $staff) => $staff->where('status', UserStatus::Blocked->value))
+                ->orWhereHas('currentCourierAssignment.courier', static fn (Builder $staff) => $staff->where('status', UserStatus::Blocked->value))),
             self::APPROVAL_PENDING => self::open($orders)->whereExists(static fn (QueryBuilder $approval) => self::waitingTooLong(
                 $approval->selectRaw('1')->from('customer_approvals')->whereColumn('customer_approvals.order_id', 'orders.id'),
                 now(),
@@ -62,22 +78,6 @@ final class Attention
             )),
             default => $orders->whereRaw('false'),
         };
-    }
-
-    /**
-     * Narrows orders to those with a current self-order assignment.
-     *
-     * @param  Builder<Order>  $orders
-     * @return Builder<Order>
-     */
-    public static function selfOrders(Builder $orders): Builder
-    {
-        return self::open($orders)
-            ->whereExists(static fn (QueryBuilder $assignment) => $assignment->selectRaw('1')
-                ->from('order_shopper_assignments')
-                ->whereColumn('order_shopper_assignments.order_id', 'orders.id')
-                ->whereNull('order_shopper_assignments.ended_at')
-                ->where('order_shopper_assignments.is_self_order', true));
     }
 
     /**
@@ -96,12 +96,17 @@ final class Attention
     /**
      * The items, the one waiting longest on top.
      *
-     * @return list<array{type: string, order_id: string, order_number: int, since: string, shopper: array{id: string, full_name: string|null}|null, courier: null}>
+     * @return list<Item>
      */
     public static function items(): array
     {
         $now = now();
-        $items = [...self::selfOrderItems(), ...self::approvalItems(self::APPROVAL_PENDING, $now), ...self::approvalItems(self::APPROVAL_EXPIRED, $now)];
+        $items = [
+            ...self::selfOrderItems(),
+            ...self::staffBlockedItems(),
+            ...self::approvalItems(self::APPROVAL_PENDING, $now),
+            ...self::approvalItems(self::APPROVAL_EXPIRED, $now),
+        ];
 
         usort($items, static fn (array $a, array $b): int => [$a['since'], $a['order_number'], $a['type']] <=> [$b['since'], $b['order_number'], $b['type']]);
 
@@ -109,32 +114,67 @@ final class Attention
     }
 
     /**
-     * @return list<array{type: string, order_id: string, order_number: int, since: string, shopper: array{id: string, full_name: string|null}|null, courier: null}>
+     * @return list<Item>
      */
     private static function selfOrderItems(): array
     {
-        $assignments = OrderShopperAssignment::query()
-            ->with(['order', 'shopper'])
-            ->whereNull('ended_at')
-            ->where('is_self_order', true)
-            ->whereHas('order', static fn (Builder $order) => $order->whereIn('status', self::openStatuses()))
+        $orders = self::narrow(Order::query(), self::SELF_ORDER)
+            ->with([
+                'shopperAssignments' => static fn (Relation $assignments) => SelfOrderMark::shoppers($assignments->getQuery())->with('shopper'),
+                'courierAssignments' => static fn (Relation $assignments) => SelfOrderMark::couriers($assignments->getQuery())->with('courier'),
+            ])
             ->get();
 
-        return $assignments->map(static fn (OrderShopperAssignment $assignment): array => [
-            'type' => self::SELF_ORDER,
-            'order_id' => $assignment->order_id,
-            'order_number' => $assignment->order->order_number,
-            'since' => $assignment->assigned_at->toIso8601ZuluString(),
-            'shopper' => self::person($assignment->shopper),
-            'courier' => null,
-        ])->values()->all();
+        return $orders->map(static function (Order $order): array {
+            $shopper = $order->shopperAssignments->sortBy([['assigned_at', 'desc'], ['id', 'desc']])->first();
+            $courier = $order->courierAssignments->sortBy([['assigned_at', 'desc'], ['id', 'desc']])->first();
+            $since = collect([
+                ...$order->shopperAssignments->map(static fn (OrderShopperAssignment $assignment): CarbonInterface => $assignment->assigned_at),
+                ...$order->courierAssignments->map(static fn (OrderCourierAssignment $assignment): CarbonInterface => $assignment->assigned_at),
+            ])->sort()->first();
+
+            return [
+                'type' => self::SELF_ORDER,
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'since' => $since?->toIso8601ZuluString() ?? '',
+                'shopper' => $shopper === null ? null : self::person($shopper->shopper),
+                'courier' => $courier === null ? null : self::person($courier->courier),
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * @return list<Item>
+     */
+    private static function staffBlockedItems(): array
+    {
+        $orders = self::narrow(Order::query(), self::STAFF_BLOCKED)
+            ->with(['currentShopperAssignment.shopper', 'currentCourierAssignment.courier'])
+            ->get();
+
+        return $orders->map(static function (Order $order): array {
+            $shopper = self::blocked($order->currentShopperAssignment?->shopper);
+            $courier = self::blocked($order->currentCourierAssignment?->courier);
+            // A block always has its instant (`users_blocked_at_check`).
+            $since = collect([$shopper?->blocked_at, $courier?->blocked_at])->filter()->sort()->first();
+
+            return [
+                'type' => self::STAFF_BLOCKED,
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'since' => $since?->toIso8601ZuluString() ?? '',
+                'shopper' => $shopper === null ? null : self::person($shopper),
+                'courier' => $courier === null ? null : self::person($courier),
+            ];
+        })->values()->all();
     }
 
     /**
      * One item per open order with a question of the kind, since its earliest
      * instant of that kind.
      *
-     * @return list<array{type: string, order_id: string, order_number: int, since: string, shopper: array{id: string, full_name: string|null}|null, courier: null}>
+     * @return list<Item>
      */
     private static function approvalItems(string $type, Carbon $now): array
     {
@@ -206,6 +246,11 @@ final class Attention
     private static function openStatuses(): array
     {
         return array_map(static fn (OrderStatus $status): string => $status->value, OrderBoard::OPEN);
+    }
+
+    private static function blocked(?User $staff): ?User
+    {
+        return $staff?->status === UserStatus::Blocked ? $staff : null;
     }
 
     /**

@@ -20,6 +20,7 @@ declare(strict_types=1);
 use App\Exceptions\ApiException;
 use App\Models\User;
 use App\Modules\Orders\Actions\AcceptShoppingAssignment;
+use App\Modules\Orders\Actions\AssignCourier;
 use App\Modules\Orders\Actions\AssignShopper;
 use App\Modules\Orders\Actions\ChangeCart;
 use App\Modules\Orders\Actions\CreateOrder;
@@ -59,6 +60,13 @@ try {
         ],
         'orders.assign-shopper' => [
             'order_id' => $app->make(AssignShopper::class)->assign(
+                User::query()->findOrFail($arguments[0]),
+                $arguments[1],
+                $arguments[2],
+            )->id,
+        ],
+        'orders.assign-courier' => [
+            'order_id' => $app->make(AssignCourier::class)->assign(
                 User::query()->findOrFail($arguments[0]),
                 $arguments[1],
                 $arguments[2],

@@ -746,3 +746,30 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
 5. **The answer and its replay.**
    - The answer is the Shopper's order of `docs/09` section 28, with the assignment completion ended as the caller's own. `customer_phone` is `null` now that shopping is over.
    - A replay reaches the order only while its latest Shopper assignment is the caller's and ended `completed` (`ShopperOrders::completedBy`); otherwise it is the scope-safe `404` (`DL-54` (3)). A new key, a read and the list need a current assignment, so the completed order is gone from all three.
+
+## DL-62 — The Courier assignment, the people a board row names, the self-order mark and blocked staff, from W3-8 (2026-09-29, agent)
+
+1. **The Courier assignment mirrors the Shopper's** (`DL-45`, `DL-54` (10)).
+   - `AssignCourier` takes the order lock, then a shared lock on the Courier's account, so a block cannot land between the check and the assignment.
+   - The checks run in the Shopper's order:
+     - an id that is not a Courier's account is `422` on `courier_id`;
+     - a blocked Courier is `409 staff_not_active`;
+     - the current Courier again is a natural repeat;
+     - `POST` needs a `ready_for_delivery` order without a current Courier: a first delivery, or one back after a failed delivery;
+     - `PUT` needs a `delivery_assigned` order whose current assignment is the named one and has not set off;
+     - anything else is `409 order_state_conflict`.
+   - A reassignment ends the current assignment with `reassigned`.
+   - One history row is written: `courier_assigned` with the move to `delivery_assigned`, or `courier_reassigned`. Its `details` carry the assignment, the Courier and `is_self_order`, plus the previous assignment and Courier on a reassignment.
+2. **One picker for both kinds of staff.**
+   - `StaffPicker::of(Role)` answers `GET /operations/shoppers` and `GET /operations/couriers` alike: active accounts of the role, with the orders in their hands now, ordered by name regardless of case.
+   - The Shopper-only picker, its resource, its request and its controller become the staff ones. The Shopper's route and answer do not change.
+3. **The attention list gains `staff_blocked`, and `self_order` follows the mark** (`DL-54` (13), (14)).
+   - `staff_blocked` covers an open order whose current Shopper or Courier is blocked. Its `since` is the earliest such block (`users.blocked_at`), and it names the one blocked.
+   - The Operator reassigns where the rules allow. A Shopper blocked after starting cannot be replaced (`BR-ASSIGN-002`), so that item stays until the order moves on or is cancelled.
+   - `self_order` covers an open marked order. Its `since` is the earliest assignment that marks it, and it names the Shopper and the Courier whose assignments mark it, the latest of each.
+4. **What a row and the detail show.**
+   - `Order::namedShopperAssignment` is the current Shopper assignment, or else the one ended `completed`. `namedCourierAssignment` is likewise the current Courier assignment, or else the one that delivered. An order is shopped and delivered once, so at most one of each matches.
+   - The row's `shopper` and `courier` and the `shopper_id` and `courier_id` filters read these two.
+   - `SelfOrderMark` holds the rule once, for the row, the filter, the count and the item. A Shopper assignment marks from its start and a Courier assignment from its acceptance, or while current.
+   - The detail's `courier_assignments` has the Shopper assignments' shape, with the Courier's own instants (`accepted_at`, `delivery_started_at`, `delay_at`) and a failed delivery's reason and note.
+5. **The panel** already reads a row or an item without a current Shopper (`DL-54` (21)). Its row fixture now carries `courier` and `pending_approval_count`, as the contract does. The Courier columns and the Courier picker in the panel are W3-13's.

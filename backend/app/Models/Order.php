@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\CancellationReason;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\PaymentMethod;
 use App\Models\Enums\ServiceFeeMode;
 use Database\Factories\OrderFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -167,6 +169,20 @@ class Order extends Model
     }
 
     /**
+     * The Shopper assignment the board names (`DL-54` (14)): the current one,
+     * or else the one that completed the shopping. At most one matches, since
+     * an order is shopped once and nothing is assigned after its completion.
+     *
+     * @return HasOne<OrderShopperAssignment, $this>
+     */
+    public function namedShopperAssignment(): HasOne
+    {
+        return $this->hasOne(OrderShopperAssignment::class)->where(static fn (Builder $assignment) => $assignment
+            ->whereNull('ended_at')
+            ->orWhere('ended_reason', AssignmentEndReason::Completed->value));
+    }
+
+    /**
      * @return HasMany<OrderCourierAssignment, $this>
      */
     public function courierAssignments(): HasMany
@@ -183,6 +199,20 @@ class Order extends Model
     public function currentCourierAssignment(): HasOne
     {
         return $this->hasOne(OrderCourierAssignment::class)->whereNull('ended_at');
+    }
+
+    /**
+     * The Courier assignment the board names (`DL-54` (14)): the current one,
+     * or else the one that delivered. At most one matches, since a delivered
+     * order is assigned no further Courier.
+     *
+     * @return HasOne<OrderCourierAssignment, $this>
+     */
+    public function namedCourierAssignment(): HasOne
+    {
+        return $this->hasOne(OrderCourierAssignment::class)->where(static fn (Builder $assignment) => $assignment
+            ->whereNull('ended_at')
+            ->orWhere('ended_reason', AssignmentEndReason::Completed->value));
     }
 
     /**
