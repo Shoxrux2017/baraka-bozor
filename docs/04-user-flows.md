@@ -126,7 +126,7 @@ An expired approval cannot be approved. An Operator or Admin resolves it only by
 
 ## 21. Approval Does Not Freeze the Rest
 
-While at least one item is `awaiting_customer` the order shows `pending_approval_count > 0`; its status stays `shopping`. The Shopper continues with other `pending` items, may not touch the awaiting item, and cannot complete shopping until every approval is resolved.
+While at least one item is `awaiting_customer` the order's status stays `shopping`, and `pending_approval_count` counts the questions still open; one past its expiry leaves the count, and its item still waits until an Operator removes it (`DL-54` (8)). The Shopper continues with other `pending` items, may not touch the awaiting item, and cannot complete shopping until every approval is resolved.
 
 ## 22. Completing Shopping
 

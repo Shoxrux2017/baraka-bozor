@@ -40,6 +40,7 @@ final class CustomerOrderSummaryResource extends JsonResource
             'status' => $order->status->value,
             'payment_method' => $order->payment_method->value,
             'item_count' => (int) $order->getAttribute('item_count'),
+            'pending_approval_count' => (int) $order->getAttribute('pending_approval_count'),
             'total_uzs' => $totals->totalUzs,
             'total_kind' => $totals->kind,
             'created_at' => $order->created_at->toIso8601ZuluString(),

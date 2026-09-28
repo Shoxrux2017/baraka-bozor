@@ -142,8 +142,18 @@ final class CustomerApprovalFactory extends Factory
         return $this->decidedByTheCustomer(ApprovalStatus::Approved, ApprovalResolution::Approved)
             ->afterCreating(function (CustomerApproval $approval): void {
                 $applied = match ($approval->type) {
+                    // About the original, the replacement authorized on the
+                    // line is dropped, as the decision drops it (DL-59 (3)).
                     ApprovalType::PriceOverTolerance => $approval->replacement_product_id === null
-                        ? ['approved_unit_price_ceiling_uzs' => $approval->proposed_customer_unit_price_uzs]
+                        ? [
+                            'approved_unit_price_ceiling_uzs' => $approval->proposed_customer_unit_price_uzs,
+                            'fulfilled_product_id' => null,
+                            'fulfilled_product_name_uz_snapshot' => null,
+                            'fulfilled_product_name_ru_snapshot' => null,
+                            'fulfilled_unit_code_snapshot' => null,
+                            'substitution_resolution' => null,
+                            'approved_replacement_price_uzs' => null,
+                        ]
                         : ['approved_replacement_price_uzs' => $approval->proposed_customer_unit_price_uzs],
                     ApprovalType::Substitution => [
                         'fulfilled_product_id' => $approval->replacement_product_id,
