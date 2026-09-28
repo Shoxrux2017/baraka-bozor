@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 use App\Exceptions\ApiException;
 use App\Models\User;
+use App\Modules\Orders\Actions\AcceptDelivery;
 use App\Modules\Orders\Actions\AcceptShoppingAssignment;
 use App\Modules\Orders\Actions\AssignCourier;
 use App\Modules\Orders\Actions\AssignShopper;
@@ -26,6 +27,7 @@ use App\Modules\Orders\Actions\ChangeCart;
 use App\Modules\Orders\Actions\CreateOrder;
 use App\Modules\Orders\Actions\DecideApproval;
 use App\Modules\Orders\Actions\EditOrderItems;
+use App\Modules\Orders\Actions\StartDelivery;
 use App\Modules\Orders\Actions\StartShopping;
 use Illuminate\Contracts\Console\Kernel;
 
@@ -85,6 +87,12 @@ try {
         ],
         'shopper.start' => [
             'order_id' => $app->make(StartShopping::class)->start(User::query()->findOrFail($arguments[0]), $arguments[1])->id,
+        ],
+        'courier.accept' => [
+            'order_id' => $app->make(AcceptDelivery::class)->accept(User::query()->findOrFail($arguments[0]), $arguments[1])->id,
+        ],
+        'courier.start' => [
+            'order_id' => $app->make(StartDelivery::class)->start(User::query()->findOrFail($arguments[0]), $arguments[1])->id,
         ],
         'customer.decide' => [
             'approval_id' => $app->make(DecideApproval::class)->decide(
