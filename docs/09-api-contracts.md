@@ -259,7 +259,7 @@ Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54
 
 ## 39. Assignment
 
-`POST /operations/orders/{order}/shopper-assignment` `{"shopper_id":"..."}` assigns an order that is `new`; `PUT` with `{"shopper_id":"...","replaces_assignment_id":"..."}` reassigns before shopping starts, replacing the named assignment — the entry of the order's `shopper_assignments` whose `ended_at` is null — only while it is the current one; any other id, unknown or another order's included, is `409 order_state_conflict`, and the client reloads the order; the current Shopper again is a natural repeat; an id that is not a Shopper is `422 validation_failed` (`DL-37` (14)); a blocked Shopper is `409 staff_not_active`, even when current. The Shopper is checked first, then the repeat, then the order's state; both answer `200` with the order as `GET /operations/orders/{order}` shows it, and the history row's `details` carry the assignment, the Shopper and `is_self_order`, and on a reassignment the previous assignment and Shopper (`DL-45`). `POST /operations/orders/{order}/courier-assignment` `{"courier_id":"..."}` assigns an order that is `ready_for_delivery`; `PUT` with `{"courier_id":"...","replaces_assignment_id":"..."}` reassigns before `on_the_way`, as for the Shopper (`DL-54` (10)). Codes: `order_state_conflict`, `staff_not_active`, `shopper_not_assigned`, `courier_not_assigned`. The pickers: `GET /operations/shoppers` answers the active Shoppers as `{id, full_name, phone, current_assignment_count}`, paginated and ordered by name, for Operator and Admin, because `/admin/staff` is Admin-only; `GET /operations/couriers` does the same for Couriers from Wave 3 (`DL-37` (11)).
+`POST /operations/orders/{order}/shopper-assignment` `{"shopper_id":"..."}` assigns an order that is `new`; `PUT` with `{"shopper_id":"...","replaces_assignment_id":"..."}` reassigns before shopping starts, replacing the named assignment — the entry of the order's `shopper_assignments` whose `ended_at` is null — only while it is the current one; any other id, unknown or another order's included, is `409 order_state_conflict`, and the client reloads the order; the current Shopper again is a natural repeat; an id that is not a Shopper is `422 validation_failed` (`DL-37` (14)); a blocked Shopper is `409 staff_not_active`, even when current. The Shopper is checked first, then the repeat, then the order's state; both answer `200` with the order as `GET /operations/orders/{order}` shows it, and the history row's `details` carry the assignment, the Shopper and `is_self_order`, and on a reassignment the previous assignment and Shopper (`DL-45`). `POST /operations/orders/{order}/courier-assignment` `{"courier_id":"..."}` assigns an order that is `ready_for_delivery`; `PUT` with `{"courier_id":"...","replaces_assignment_id":"..."}` reassigns before `on_the_way`, as for the Shopper (`DL-54` (10)). Codes: `order_state_conflict`, `staff_not_active`; `shopper_not_assigned` and `courier_not_assigned` are not answered (`DL-63` (4)). The pickers: `GET /operations/shoppers` answers the active Shoppers as `{id, full_name, phone, current_assignment_count}`, paginated and ordered by name, for Operator and Admin, because `/admin/staff` is Admin-only; `GET /operations/couriers` does the same for Couriers from Wave 3 (`DL-37` (11)).
 
 ## 40. Approvals and Cancellation Requests
 
@@ -333,7 +333,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 54. Order, Shopping, Approval
 
-`order_state_conflict`, `order_cancellation_not_allowed`, `cancellation_already_pending`, `staff_not_active`, `shopper_not_assigned`, `shopping_not_active`, `item_already_resolved`, `replacement_unit_mismatch`, `substitution_not_allowed`, `customer_approval_required`, `approval_not_needed`, `shopping_incomplete`, `approval_not_pending`, `approval_not_expired`, `approval_expired`, `approval_already_resolved`, `cancellation_request_already_decided`.
+`order_state_conflict`, `order_cancellation_not_allowed`, `cancellation_already_pending`, `staff_not_active`, `shopper_not_assigned` (not answered, `DL-63` (4)), `shopping_not_active`, `item_already_resolved`, `replacement_unit_mismatch`, `substitution_not_allowed`, `customer_approval_required`, `approval_not_needed`, `shopping_incomplete`, `approval_not_pending`, `approval_not_expired`, `approval_expired`, `approval_already_resolved`, `cancellation_request_already_decided`.
 
 ## 55. Payment and Refund
 
@@ -341,7 +341,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 56. Delivery and Admin
 
-`courier_not_assigned`, `delivery_not_ready`, `delivery_state_conflict`, `last_active_admin_required`, `self_block_not_allowed`, `self_reset_not_allowed`, `phone_already_active`, `price_correction_locked`, `price_correction_not_applicable`, `price_correction_above_ceiling`.
+`courier_not_assigned` and `delivery_not_ready` (not answered, `DL-63` (4)), `delivery_state_conflict`, `last_active_admin_required`, `self_block_not_allowed`, `self_reset_not_allowed`, `phone_already_active`, `price_correction_locked`, `price_correction_not_applicable`, `price_correction_above_ceiling`.
 
 ## 57. Provider Safety
 

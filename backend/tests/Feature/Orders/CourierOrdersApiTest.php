@@ -27,7 +27,8 @@ use Tests\TestCase;
  * `docs/04` section 27, `BR-ASSIGN-003`, `BR-DEL-002`, `BR-DEL-006`,
  * `DL-54` (3), (11), (12) and `DL-63`.
  *
- * The factory's order waits 60 minutes before a delivery counts as late.
+ * The order waits 45 minutes before a delivery counts as late, a threshold
+ * snapshotted when it was placed and unlike today's setting.
  */
 final class CourierOrdersApiTest extends TestCase
 {
@@ -43,7 +44,7 @@ final class CourierOrdersApiTest extends TestCase
 
         Carbon::setTestNow(CarbonImmutable::parse('2026-09-29T10:00:00Z'));
         $this->courier = User::factory()->role(Role::Courier)->create();
-        $this->order = Order::factory()->deliveryAssigned()->create();
+        $this->order = Order::factory()->deliveryAssigned()->create(['delivery_delay_threshold_minutes_snapshot' => 45]);
         $this->assignment()->forceFill(['courier_id' => $this->courier->id, 'assigned_at' => now()->subMinutes(5)])->save();
     }
 
@@ -79,6 +80,12 @@ final class CourierOrdersApiTest extends TestCase
 
         $this->assertSame($data[0], $this->as($this->courier)->getJson("/api/v1/courier/orders/{$this->order->id}")->assertOk()->json('data'));
 
+        // The delivery the Courier has waited on longest comes first.
+        $older = Order::factory()->deliveryAssigned()->create();
+        $older->courierAssignments()->update(['courier_id' => $this->courier->id, 'assigned_at' => now()->subMinutes(30)]);
+        $this->assertSame([$older->id, $this->order->id], array_column($this->as($this->courier)->getJson('/api/v1/courier/orders')->json('data'), 'id'));
+        $older->courierAssignments()->update(['ended_at' => now(), 'ended_reason' => AssignmentEndReason::Reassigned->value]);
+
         // An online order has nothing to collect.
         $online = Order::factory()->online()->deliveryAssigned()->create();
         $online->courierAssignments()->update(['courier_id' => $this->courier->id]);
@@ -111,6 +118,11 @@ final class CourierOrdersApiTest extends TestCase
     public function test_without_a_handoff_point_the_courier_sees_the_shoppers_phone(): void
     {
         $shopper = OrderShopperAssignment::query()->where('order_id', $this->order->id)->sole()->shopper;
+        // A Shopper replaced before the shopping started is not the one to call.
+        OrderShopperAssignment::factory()->ended(AssignmentEndReason::Reassigned)->create([
+            'order_id' => $this->order->id,
+            'assigned_at' => now()->subDay(),
+        ]);
 
         $this->assertArrayNotHasKey('shopper_phone', $this->show()->json('data'), 'With a handoff point, the Shopper is not the Courier\'s to call.');
 
@@ -136,7 +148,7 @@ final class CourierOrdersApiTest extends TestCase
 
         $this->assertSame('on_the_way', $data['status']);
         $this->assertSame(now()->toIso8601ZuluString(), $data['assignment']['delivery_started_at']);
-        $this->assertSame(now()->addMinutes(60)->toIso8601ZuluString(), $data['assignment']['delay_at'], 'The start plus the threshold snapshot (BR-DEL-002).');
+        $this->assertSame(now()->addMinutes(45)->toIso8601ZuluString(), $data['assignment']['delay_at'], 'The start plus the order\'s own threshold, not today\'s setting (BR-DEL-002).');
         $this->assertFalse($data['can_start']);
         $this->assertTrue($this->order->fresh()?->on_the_way_at?->equalTo(now()));
         $started = OrderHistory::query()->where('event_type', OrderHistoryEvent::StatusChanged)->sole();
@@ -154,6 +166,8 @@ final class CourierOrdersApiTest extends TestCase
         OrderCancellationRequest::factory()->create(['order_id' => $this->order->id]);
 
         $this->show()->assertJsonPath('data.cancellation_request_pending', true)->assertJsonPath('data.can_start', false);
+        // An action's answer says so too.
+        $this->act('accept')->assertOk()->assertJsonPath('data.cancellation_request_pending', true)->assertJsonPath('data.can_start', false);
         $this->act('start')
             ->assertStatus(409)
             ->assertJsonPath('code', 'delivery_state_conflict')
@@ -171,7 +185,7 @@ final class CourierOrdersApiTest extends TestCase
         $operator = User::factory()->role(Role::Operator)->create();
         $this->act('accept')->assertOk();
         $this->act('start')->assertOk();
-        $delayAt = now()->addMinutes(60);
+        $delayAt = now()->addMinutes(45);
 
         Carbon::setTestNow($delayAt->copy()->subSecond());
         $this->assertSame([], $this->as($operator)->getJson('/api/v1/operations/attention')->json('data'));

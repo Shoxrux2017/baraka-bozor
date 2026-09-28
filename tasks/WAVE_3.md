@@ -417,7 +417,9 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 
 ## Independent-review findings not acted on
 
-None yet.
+| Task | Finding | Why not acted on |
+|---|---|---|
+| W3-9 (P3) | No test proves that an action's answer loads the Courier's own assignment rather than any current one | The two differ only when a reassignment commits between the action and the read of its answer, which needs a race harness around the answer rather than the action. The code filters by the caller, as the Shopper's answer does (`ShopperOrderController::resource`), and the actions themselves are proven against a waiting reassignment (`CourierReplacedRaceTest`) |
 
 ## Closure
 

@@ -58,6 +58,10 @@
         <server name="LOGIN_CODE_DRIVER" value="fake"/>
         <server name="LOGIN_CODE_TEST_PHONES" value=""/>
         <server name="LOGIN_CODE_TEST_CODE" value=""/>
+        <!-- Pinned so a developer's .env without a handoff point cannot change
+             what the Courier's tests observe; they set it off where they mean to. -->
+        <env name="DELIVERY_HANDOFF_POINT" value="true" force="true"/>
+        <server name="DELIVERY_HANDOFF_POINT" value="true"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

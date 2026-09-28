@@ -58,7 +58,8 @@ final class CourierOrders
     /**
      * What the Courier's order shows beside the order itself
      * (`CourierOrderResource`): the caller's own assignment, whether a
-     * cancellation request is pending, and the Shopper who bought it.
+     * cancellation request is pending, and, without a handoff point, the
+     * Shopper who bought it.
      *
      * @param  Builder<Order>  $orders
      * @return Builder<Order>
@@ -83,10 +84,14 @@ final class CourierOrders
      */
     private static function relations(User $courier): array
     {
-        return [
+        $relations = [
             'currentCourierAssignment' => static fn (Relation $assignment) => $assignment->where('courier_id', $courier->id),
-            'namedShopperAssignment.shopper',
         ];
+        if (! config('delivery.handoff_point')) {
+            $relations[] = 'namedShopperAssignment.shopper';
+        }
+
+        return $relations;
     }
 
     /**

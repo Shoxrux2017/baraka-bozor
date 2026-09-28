@@ -788,9 +788,13 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - whether a cancellation request is pending;
    - the caller's own assignment, with `can_accept` and `can_start`.
    The lines, the prices and the Customer's account are never shown.
-3. **The handoff point** is the configuration `delivery.handoff_point`, from `DELIVERY_HANDOFF_POINT`, true by default. While it is false, the order carries `shopper_phone`, the phone of the Shopper who completed the shopping (`BR-DEL-006`, `DL-54` (11)). Otherwise the key is absent, not `null`, so a client cannot mistake a missing phone for a missing handoff point.
+3. **The handoff point** is the configuration `delivery.handoff_point`, from `DELIVERY_HANDOFF_POINT`, true by default.
+   - While it is false, the order carries `shopper_phone`, the phone of the Shopper who completed the shopping (`BR-DEL-006`, `DL-54` (11)), and only then is that Shopper loaded.
+   - Otherwise the key is absent, not `null`, so a client cannot mistake a missing phone for a missing handoff point.
+   - Only an explicit false value — false, 0, no, off — turns it off. An empty or unreadable value keeps it on, so a deployment that forgot the setting never shows the Courier a Shopper's phone.
+   - The tests pin it on, as they pin the login codes, and turn it off where they mean to.
 4. **Accept and start.**
    - Accept records the instant and writes one `courier_accepted` row. Start sets `on_the_way` with `on_the_way_at`, `delivery_started_at` and `delay_at`, and writes one `status_changed` row. Each again is a natural repeat.
    - Start before accept, or on an order not `delivery_assigned`, is `409 delivery_state_conflict`. While a cancellation request is pending, it is refused the same way with `details.reason` `cancellation_request_pending`.
-   - `courier_not_assigned` and `delivery_not_ready` are not answered. An order without the caller's current assignment is the scope-safe `404` (`BR-ASSIGN-004`). An order not yet ready has no Courier assignment, so it is never in a Courier's scope. `shopper_not_assigned` is likewise unused.
+   - `courier_not_assigned` and `delivery_not_ready` are not answered. An order without the caller's current assignment is the scope-safe `404` (`BR-ASSIGN-004`). An order not yet ready has no Courier assignment, so it is never in a Courier's scope. `shopper_not_assigned` is likewise unused. The assignment endpoints answer none of the three either: the checks of `DL-45` (3) and (1) of this entry say what they answer. `docs/09` sections 39, 54 and 56 mark them unused.
 5. **`courier_delayed`.** It covers an order `on_the_way` whose current assignment's `delay_at` has come, at that instant exactly. Its `since` is `delay_at` and it names the Courier. Delay is attention, not a state (`BR-DEL-002`). The panel's words for it came with `DL-60` (5).
