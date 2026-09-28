@@ -25,9 +25,10 @@ class BoardScreen extends ConsumerWidget {
   const BoardScreen({super.key});
 
   /// From this width the attention list stands beside the orders and the
-  /// orders beside it are still a table: the table's own width, the gap,
-  /// the list and the board's padding.
-  static const double sideBySide = _Orders.tableWidth + 16 + 320 + 48;
+  /// table beside it still shows every column, the Shopper's included: the
+  /// table's usual width, the gap, the list and the board's padding. Below
+  /// it the list goes above the orders, which keep the whole width.
+  static const double sideBySide = _Table.usualWidth + 16 + 320 + 48;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -434,6 +435,11 @@ class _Orders extends ConsumerWidget {
 class _Table extends StatelessWidget {
   const _Table({required this.rows});
 
+  /// About what the table takes with its usual rows in a desktop font — it
+  /// measured 1 125 px on the real stack in either language; longer names
+  /// scroll it sideways.
+  static const double usualWidth = 1150;
+
   final List<BoardRow> rows;
 
   @override
@@ -444,6 +450,7 @@ class _Table extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: DataTable(
         showCheckboxColumn: false,
+        columnSpacing: 24,
         // A row grows with its two-line cells, so large text is never cut.
         dataRowMinHeight: kMinInteractiveDimension,
         dataRowMaxHeight: double.infinity,

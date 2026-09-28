@@ -119,6 +119,11 @@ void main() {
         findsOneWidget,
         reason: 'the badge counts the lines the server answered',
       );
+
+      // The notice goes by itself, action or not.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n(tester).cartAdded), findsNothing);
     });
 
     testWidgets(

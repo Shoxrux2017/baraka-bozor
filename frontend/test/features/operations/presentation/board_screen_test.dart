@@ -345,7 +345,8 @@ void main() {
   testWidgets(
     'the orders stay a table whether the attention list is above or beside them',
     (WidgetTester tester) async {
-      await open(tester, size: const Size(1120, 1600));
+      // A laptop window keeps the whole width for the orders.
+      await open(tester, size: const Size(1440, 1600));
       expect(find.byType(DataTable), findsOneWidget);
       expect(
         tester.getTopLeft(byKey('board-attention')).dy,
@@ -353,7 +354,7 @@ void main() {
         reason: 'above the orders below the side-by-side width',
       );
 
-      await open(tester, size: const Size(1150, 1600));
+      await open(tester, size: const Size(1540, 1600));
       expect(find.byType(DataTable), findsOneWidget);
       expect(
         tester.getTopLeft(byKey('board-attention')).dx,

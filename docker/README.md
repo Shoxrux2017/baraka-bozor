@@ -152,7 +152,10 @@ docker compose -f docker/compose.yaml exec app php artisan db:seed --class=Walkt
 Customers sign in with a phone from `LOGIN_CODE_TEST_PHONES` and the code
 `LOGIN_CODE_TEST_CODE`. Each wave's API walkthrough is a script under
 `tasks/scripts/`, which reads the same three settings from `backend/.env`:
-`python tasks/scripts/wave1_api_walkthrough.py`.
+`python tasks/scripts/wave1_api_walkthrough.py`, `python
+tasks/scripts/wave2_api_walkthrough.py`. The Wave 2 walkthrough also orders
+from the Shopper's own phone in Customer mode, so +998 90 000 00 02 must be
+among the test phones.
 
 ## Stop
 
