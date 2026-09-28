@@ -80,11 +80,20 @@ final class CourierOrdersApiTest extends TestCase
 
         $this->assertSame($data[0], $this->as($this->courier)->getJson("/api/v1/courier/orders/{$this->order->id}")->assertOk()->json('data'));
 
-        // The delivery the Courier has waited on longest comes first.
+        // The delivery the Courier has waited on longest comes first, whatever
+        // the orders' numbers: the one assigned before this order was placed
+        // later, and the one assigned last was placed last.
         $older = Order::factory()->deliveryAssigned()->create();
         $older->courierAssignments()->update(['courier_id' => $this->courier->id, 'assigned_at' => now()->subMinutes(30)]);
-        $this->assertSame([$older->id, $this->order->id], array_column($this->as($this->courier)->getJson('/api/v1/courier/orders')->json('data'), 'id'));
-        $older->courierAssignments()->update(['ended_at' => now(), 'ended_reason' => AssignmentEndReason::Reassigned->value]);
+        $newest = Order::factory()->deliveryAssigned()->create();
+        $newest->courierAssignments()->update(['courier_id' => $this->courier->id, 'assigned_at' => now()->subMinute()]);
+        $this->assertSame(
+            [$older->id, $this->order->id, $newest->id],
+            array_column($this->as($this->courier)->getJson('/api/v1/courier/orders')->json('data'), 'id'),
+        );
+        foreach ([$older, $newest] as $other) {
+            $other->courierAssignments()->update(['ended_at' => now(), 'ended_reason' => AssignmentEndReason::Reassigned->value]);
+        }
 
         // An online order has nothing to collect.
         $online = Order::factory()->online()->deliveryAssigned()->create();
@@ -117,12 +126,20 @@ final class CourierOrdersApiTest extends TestCase
 
     public function test_without_a_handoff_point_the_courier_sees_the_shoppers_phone(): void
     {
-        $shopper = OrderShopperAssignment::query()->where('order_id', $this->order->id)->sole()->shopper;
-        // A Shopper replaced before the shopping started is not the one to call.
-        OrderShopperAssignment::factory()->ended(AssignmentEndReason::Reassigned)->create([
-            'order_id' => $this->order->id,
+        // A Shopper replaced before the shopping started is not the one to
+        // call. The replaced assignment comes first, as it does in life: it is
+        // made, and ended, before the one that completes the shopping.
+        OrderShopperAssignment::query()->where('order_id', $this->order->id)->sole()->forceFill([
             'assigned_at' => now()->subDay(),
-        ]);
+            'accepted_at' => null,
+            'started_at' => null,
+            'completed_at' => null,
+            'ended_reason' => AssignmentEndReason::Reassigned,
+        ])->save();
+        $shopper = OrderShopperAssignment::factory()->ended(AssignmentEndReason::Completed)->create([
+            'order_id' => $this->order->id,
+            'assigned_at' => now()->subHours(2),
+        ])->shopper;
 
         $this->assertArrayNotHasKey('shopper_phone', $this->show()->json('data'), 'With a handoff point, the Shopper is not the Courier\'s to call.');
 
