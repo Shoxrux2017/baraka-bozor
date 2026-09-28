@@ -13,10 +13,13 @@ use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\Role;
 use App\Models\Enums\SubstitutionPolicy;
+use App\Models\Enums\SubstitutionResolution;
 use App\Models\Order;
 use App\Models\OrderCancellationRequest;
 use App\Models\OrderHistory;
 use App\Models\OrderItem;
+use App\Models\OrderShopperAssignment;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
@@ -119,6 +122,46 @@ final class MarkItemUnavailableApiTest extends TestCase
         $this->unavailable($line)->assertOk();
         $this->unavailable($line)->assertStatus(409)->assertJsonPath('code', 'item_already_resolved');
         $this->assertSame(1, OrderHistory::query()->where('order_id', $this->order->id)->count());
+    }
+
+    public function test_only_a_pending_line_of_an_order_being_shopped_by_the_caller_is_marked(): void
+    {
+        $removed = OrderItem::factory()->for($this->order)->removed(ItemRemovedReason::CustomerRemoved)->create();
+        $this->unavailable($removed)->assertStatus(404);
+
+        $notStarted = Order::factory()->state(['status' => OrderStatus::ShoppingAssigned])->create();
+        OrderShopperAssignment::factory()->accepted()->create(['order_id' => $notStarted->id, 'shopper_id' => $this->shopper->id]);
+        $this->unavailable(OrderItem::factory()->for($notStarted)->create())
+            ->assertStatus(409)->assertJsonPath('code', 'shopping_not_active');
+
+        $line = OrderItem::factory()->for($this->order)->create();
+        $this->as(User::factory()->role(Role::Shopper)->create())
+            ->postJson("/api/v1/shopper/orders/{$line->order_id}/items/{$line->id}/unavailable")
+            ->assertStatus(404);
+
+        $this->assertSame(OrderItemStatus::Pending, $line->fresh()?->status);
+        $this->assertSame(0, OrderHistory::query()->count());
+    }
+
+    public function test_a_removed_line_shows_no_replacement(): void
+    {
+        OrderItem::factory()->for($this->order)->create();
+        $replacement = Product::factory()->create();
+        $line = OrderItem::factory()->for($this->order)->create();
+        $line->forceFill([
+            'fulfilled_product_id' => $replacement->id,
+            'fulfilled_product_name_uz_snapshot' => $replacement->name_uz,
+            'fulfilled_product_name_ru_snapshot' => $replacement->name_ru,
+            'fulfilled_unit_code_snapshot' => $line->unit_code_snapshot,
+            'substitution_resolution' => SubstitutionResolution::Automatic,
+        ])->save();
+
+        $shopper = collect($this->unavailable($line)->assertOk()->json('data.items'))->firstWhere('id', $line->id);
+        $this->assertNull($shopper['replacement'], 'DL-57 (6): nothing will be bought for a removed line.');
+
+        $customer = collect($this->withToken($this->order->customer->createToken('c')->plainTextToken)
+            ->getJson("/api/v1/customer/orders/{$this->order->id}")->assertOk()->json('data.items'))->firstWhere('id', $line->id);
+        $this->assertNull($customer['replacement']);
     }
 
     /**

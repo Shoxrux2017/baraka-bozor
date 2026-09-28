@@ -48,11 +48,15 @@ final class ShopperLine
     }
 
     /**
-     * The authorized replacement's id, or null when the line has none.
+     * The replacement authorized on the line or bought for it, or null when it
+     * has none. A removed line has none: whatever was authorized on it is moot
+     * once nothing will be bought (`DL-57` (6)).
      */
     public static function replacementOf(OrderItem $line): ?string
     {
-        return $line->fulfilled_product_id !== null && $line->fulfilled_product_id !== $line->product_id
+        return $line->status !== OrderItemStatus::Removed
+            && $line->fulfilled_product_id !== null
+            && $line->fulfilled_product_id !== $line->product_id
             ? $line->fulfilled_product_id
             : null;
     }

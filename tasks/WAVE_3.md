@@ -115,7 +115,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - a purchase writes `item_purchased`;
   - unavailable removes the line with `unavailable`, whatever its rule, and writes `item_unavailable`.
 - The Customer's order and the board's order show each line's purchase:
-  - the quantities bought and billed;
+  - the quantity billed, and on the board also the quantity bought (`DL-57` (4));
   - the billable customer price (the board also shows the price paid);
   - the replacement.
 - Tests:
@@ -279,7 +279,8 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - the Courier's start refused while pending;
   - the Operator's cancellation only after a failed delivery and with no request pending;
   - a decision on a `closed` request;
-  - a request closed by the last line removed.
+  - a request closed by the last line removed;
+  - a race: the Shopper's purchase and unavailable line waiting on an approved request's cancellation (`DL-57` review).
 
 **W3-12. Price correction.**
 
@@ -409,6 +410,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 | Carried from Wave 2, for Wave 4: CORS in production, device pruning, the push token change stream, reorder's stored answer | Open for Wave 4 |
 | Carried from Wave 2, for Wave 5: a payment attempt's outcome is not guarded by the idempotency key, and Paynet and xazna have no adapters | Open for Wave 5 |
 | Carried from Wave 2: iOS needs a Mac, which also brings the Apple Maps link (`DL-54` (16)); browser tests run in CI only | Open until a Mac exists and the local runner works |
+| Until W3-17, the merged app labels a bought line with its ordered price beside the bought total, for example 18 400 a kg next to a total billed at 19 550. W3-17 shows the price to pay and the replacement (`DL-57` (4)) | Planned in Wave 3 |
 | Wave 2 risk rows this plan takes on: the Courier assignment (W3-8), an estimate line added by an edit billed at its own markup (W3-3), the self-order mark after shopping completes (`DL-54` (14)), a Shopper blocked after an assignment (`DL-54` (13)), and the attention list's height (W3-13) | Planned in Wave 3 |
 
 ## Independent-review findings not acted on

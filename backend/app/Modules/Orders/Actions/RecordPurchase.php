@@ -66,7 +66,7 @@ final class RecordPurchase
             $shopper->id,
             self::OPERATION,
             $idempotencyKey,
-            RequestFingerprint::of(self::OPERATION, ['order' => $orderId, 'item' => $itemId], $body),
+            RequestFingerprint::of(self::OPERATION, ['order' => $orderId, 'item' => $itemId], self::asRequested($body)),
             fn (): Order => $this->purchaseNow($shopper, $orderId, $itemId, $body),
             static fn (string $id): Order => ScopedLookup::firstOrNotFound(ShopperOrders::current($shopper)->whereKey($id)),
         );
@@ -140,6 +140,26 @@ final class RecordPurchase
         ])->save();
 
         return $order;
+    }
+
+    /**
+     * The request as the fingerprint compares it (`DL-39` (7), `DL-57` (5)):
+     * one purchase whether the quantity is written `"2"` or `"2.000"`, the id
+     * in either case, and the price absent or `null`.
+     *
+     * @param  array{purchased_quantity: string, actual_market_price_uzs?: int|null, fulfilled_product_id?: string|null}  $body
+     * @return array{purchased_quantity: string, actual_market_price_uzs: int|null, fulfilled_product_id: string|null}
+     */
+    private static function asRequested(array $body): array
+    {
+        $quantity = $body['purchased_quantity'];
+        $named = $body['fulfilled_product_id'] ?? null;
+
+        return [
+            'purchased_quantity' => preg_match('/^\d{1,4}(\.\d{1,3})?\z/', $quantity) === 1 ? Quantity::fromString($quantity)->toDecimal() : $quantity,
+            'actual_market_price_uzs' => $body['actual_market_price_uzs'] ?? null,
+            'fulfilled_product_id' => $named === null ? null : strtolower($named),
+        ];
     }
 
     /**

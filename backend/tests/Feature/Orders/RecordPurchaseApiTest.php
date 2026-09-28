@@ -181,6 +181,63 @@ final class RecordPurchaseApiTest extends TestCase
             ->assertStatus(422)->assertJsonStructure(['errors' => ['fulfilled_product_id']]);
     }
 
+    public function test_a_price_approved_for_the_replacement_binds_the_replacement_and_never_the_original(): void
+    {
+        // An estimate line (bound 21 160) whose replacement the Customer
+        // approved at 25 000 (DL-54 (5)).
+        $replacement = Product::factory()->create();
+        $original = $this->replaced($this->estimateLine(), $replacement, approvedPrice: 25000);
+
+        $this->purchase($original, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 19000, 'fulfilled_product_id' => $original->product_id])
+            ->assertStatus(409)
+            ->assertJsonPath('details.ceiling_customer_unit_price_uzs', 21160)
+            ->assertJsonPath('details.proposed_customer_unit_price_uzs', 21850);
+
+        // 21 740 × 1.15 = 25 001: one UZS above what the Customer approved.
+        $this->purchase($original, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 21740, 'fulfilled_product_id' => $replacement->id])
+            ->assertStatus(409)
+            ->assertJsonPath('details.ceiling_customer_unit_price_uzs', 25000);
+        $this->purchase($original, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 21700, 'fulfilled_product_id' => $replacement->id])
+            ->assertOk();
+        $this->assertSame(24955, $original->fresh()->billable_unit_price_uzs);
+        $this->assertSame($replacement->id, $original->fresh()->fulfilled_product_id);
+    }
+
+    public function test_the_replacement_of_an_estimate_meets_the_estimates_ceiling(): void
+    {
+        $replacement = Product::factory()->create();
+
+        $above = $this->replaced($this->estimateLine(), $replacement);
+        $this->purchase($above, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 18401])
+            ->assertStatus(409)
+            ->assertJsonPath('details', [
+                'approval_type' => 'price_over_tolerance',
+                'ceiling_customer_unit_price_uzs' => 21160,
+                'proposed_customer_unit_price_uzs' => 21161,
+            ]);
+
+        $at = $this->replaced($this->estimateLine(), $replacement);
+        $this->purchase($at, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 18400])->assertOk();
+        $this->assertSame(21160, $at->fresh()->billable_unit_price_uzs);
+    }
+
+    public function test_a_retry_written_differently_is_the_same_purchase(): void
+    {
+        $line = $this->estimateLine();
+        $key = (string) Str::uuid();
+
+        $this->purchase($line, ['purchased_quantity' => '2', 'actual_market_price_uzs' => 16000, 'fulfilled_product_id' => $line->product_id], $key)->assertOk();
+        $this->purchase($line, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 16000, 'fulfilled_product_id' => strtoupper($line->product_id)], $key)
+            ->assertOk();
+
+        $fixed = $this->fixedLine();
+        $other = (string) Str::uuid();
+        $this->purchase($fixed, ['purchased_quantity' => '3'], $other)->assertOk();
+        $this->purchase($fixed, ['purchased_quantity' => '3', 'actual_market_price_uzs' => null], $other)->assertOk();
+
+        $this->assertSame(2, OrderHistory::query()->where('event_type', OrderHistoryEvent::ItemPurchased)->count());
+    }
+
     public function test_the_original_keeps_the_unit_it_was_ordered_in(): void
     {
         $line = $this->estimateLine();
