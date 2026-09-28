@@ -28,8 +28,10 @@ use LogicException;
  * `->getQuery()`.
  *
  * A scope judged on another table — `whereExists` on an assignment — is
- * evaluated on the statement's snapshot, before `FOR UPDATE` is granted, and
- * PostgreSQL does not evaluate it again after waiting on the lock. A mutation
+ * evaluated on the statement's snapshot, before `FOR UPDATE` is granted. After
+ * waiting on the lock PostgreSQL re-checks the query only when the locked row
+ * itself changed, and even then against the other table's rows as it first
+ * read them. A mutation
  * whose scope may change under that lock (a Shopper replaced while waiting)
  * reads the scoping row again once it holds the lock (`DL-56` (6),
  * `ShopperOrders::lockCurrent`); a scope on the locked row's own columns, such

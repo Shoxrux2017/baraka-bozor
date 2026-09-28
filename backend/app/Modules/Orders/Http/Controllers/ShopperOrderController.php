@@ -17,6 +17,7 @@ use App\Modules\Orders\Http\Resources\ShopperOrderResource;
 use App\Modules\Orders\Http\Resources\ShopperOrderSummaryResource;
 use App\Modules\Orders\ShopperOrders;
 use App\Support\Scope\ScopedLookup;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -31,8 +32,9 @@ final class ShopperOrderController extends Controller
 {
     public function index(ListShopperOrdersRequest $request): JsonResponse
     {
-        $orders = ShopperOrders::withLineCounts(ShopperOrders::current($this->shopper($request)))
-            ->with('currentShopperAssignment')
+        $shopper = $this->shopper($request);
+        $orders = ShopperOrders::withLineCounts(ShopperOrders::current($shopper))
+            ->with(['currentShopperAssignment' => static fn (Relation $assignment) => $assignment->where('shopper_id', $shopper->id)])
             ->orderBy(OrderShopperAssignment::query()
                 ->select('assigned_at')
                 ->whereColumn('order_shopper_assignments.order_id', 'orders.id')
@@ -48,25 +50,34 @@ final class ShopperOrderController extends Controller
 
     public function show(Request $request, string $order): ShopperOrderResource
     {
-        return $this->resource(ScopedLookup::firstOrNotFound(
-            ShopperOrders::current($this->shopper($request))->whereKey($order)
-        ));
+        $shopper = $this->shopper($request);
+
+        return $this->resource($shopper, ScopedLookup::firstOrNotFound(ShopperOrders::current($shopper)->whereKey($order)));
     }
 
     public function accept(EmptyBodyRequest $request, string $order, AcceptShoppingAssignment $accept): ShopperOrderResource
     {
-        return $this->resource($accept->accept($this->shopper($request), $order));
+        $shopper = $this->shopper($request);
+
+        return $this->resource($shopper, $accept->accept($shopper, $order));
     }
 
     public function start(EmptyBodyRequest $request, string $order, StartShopping $start): ShopperOrderResource
     {
-        return $this->resource($start->start($this->shopper($request), $order));
+        $shopper = $this->shopper($request);
+
+        return $this->resource($shopper, $start->start($shopper, $order));
     }
 
-    private function resource(Order $order): ShopperOrderResource
+    /**
+     * The order with the caller's own assignment: a reassignment committed
+     * between the action and this read leaves the relation empty rather than
+     * showing the new Shopper's.
+     */
+    private function resource(User $shopper, Order $order): ShopperOrderResource
     {
         return new ShopperOrderResource($order->load([
-            'currentShopperAssignment',
+            'currentShopperAssignment' => static fn (Relation $assignment) => $assignment->where('shopper_id', $shopper->id),
             'items.fulfilledProduct',
             'items.approvals',
         ]));
