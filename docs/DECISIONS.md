@@ -650,8 +650,8 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
      - that it has the line's unit.
    - **Judging it.** Its price is the price paid under the line's markup, judged against the automatic ceiling of `BR-PRICE-005`:
      - under `allow_similar_substitution` and within that ceiling, it is authorized at once. The line keeps `pending`, the approved price of an earlier replacement is cleared, and one `item_substituted` row names the replacement and any earlier one;
-     - otherwise the Customer is asked with a `substitution` approval. The earlier authorization stands until the Customer approves the new one.
-   - **Repeats.** The replacement already authorized, proposed again, is a natural repeat. It answers from what is stored and does not judge the price again.
+     - otherwise the Customer is asked with a `substitution` approval. The earlier authorization stays in the line's columns while the question is open, but nothing can be bought on the line until the Customer answers: approval puts the new replacement in its place, and rejection removes the line (`BR-APP-006`). The Customer's order therefore shows the pending question's replacement (W3-5, W3-17).
+   - **Repeats.** The replacement already authorized, proposed again, is judged against its own bound (`PriceBound::replacement`). Within it, the proposal is a natural repeat. Above it, the answer is the purchase's `409 customer_approval_required` with `price_over_tolerance`, so the Shopper asks about its price (`DL-54` (5)'s "judged the same").
 4. **What staff see of a question.** The board's order lists every approval, oldest first, with:
    - its type and status;
    - the price paid and the Customer's price, or the quantity;

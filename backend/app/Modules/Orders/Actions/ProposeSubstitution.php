@@ -41,7 +41,8 @@ use Illuminate\Validation\ValidationException;
  * A new replacement takes the place of an earlier one and clears the price
  * approved for it, so the Customer's yes to one replacement never authorizes
  * another. The replacement already authorized, proposed again, is a natural
- * repeat.
+ * repeat within its bound; above it the answer is the purchase's
+ * `409 customer_approval_required`, so the Shopper asks about its price.
  */
 final class ProposeSubstitution
 {
@@ -69,12 +70,24 @@ final class ProposeSubstitution
                 throw ApiException::conflict('replacement_unit_mismatch');
             }
 
+            $proposed = MoneyCalculator::increaseByPercent($actualMarketPriceUzs, Percentage::fromString($line->markup_percent_snapshot));
+
             $previous = ShopperLine::replacementOf($line);
             if ($previous === $product->id) {
+                // Already authorized: within its bound a natural repeat; above
+                // it, what a purchase would answer (DL-58 (3)).
+                $bound = PriceBound::replacement($line, $order);
+                if ($proposed > $bound) {
+                    throw ApiException::conflict('customer_approval_required', [
+                        'approval_type' => 'price_over_tolerance',
+                        'ceiling_customer_unit_price_uzs' => $bound,
+                        'proposed_customer_unit_price_uzs' => $proposed,
+                    ]);
+                }
+
                 return $order;
             }
 
-            $proposed = MoneyCalculator::increaseByPercent($actualMarketPriceUzs, Percentage::fromString($line->markup_percent_snapshot));
             $automatic = $line->substitution_policy_snapshot === SubstitutionPolicy::AllowSimilar
                 && $proposed <= PriceBound::automatic($line, $order);
 

@@ -52,6 +52,8 @@ final class CustomerQuestions
             'request_note' => $note,
             'attention_at' => $now->copy()->addMinutes(self::ATTENTION_AFTER_MINUTES),
             'expires_at' => $now->copy()->addMinutes(self::EXPIRES_AFTER_MINUTES),
+            'created_at' => $now,
+            'updated_at' => $now,
         ])->save();
 
         $line->forceFill(['status' => OrderItemStatus::AwaitingCustomer])->save();

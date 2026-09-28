@@ -169,7 +169,8 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - an overdue approval is expired first, in a transaction of its own, then refused with `409 approval_expired`. This task writes that shared step, and W3-6 runs it before every other action;
   - a repeated decision answers from what is stored and never writes the approval again (`DL-55` (2));
   - an already resolved approval is `409 approval_already_resolved`.
-- The Customer's order carries each line's pending approval, and the list carries `pending_approval_count`.
+- The Customer's order carries each line's pending approval, and the list carries `pending_approval_count`. A line with a pending substitution shows the question's replacement, not an earlier authorized one (`DL-58` (3)).
+- Approving a price question about the original drops a replacement authorized on the line, as buying the original does (`DL-54` (4)): the Shopper named the original, and the replacement's bound must not rise with the original's approved ceiling.
 - Tests:
   - an approval at 29:59 is approved, and at 30:00 refused with the expiry kept, under a controlled clock;
   - a decision racing the Shopper's next question;
@@ -183,7 +184,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 - **Expiry** (`DL-54` (8)):
   - the step of W3-5, made the first step of every action on an order, the merged ones of W3-3 and W3-4 included;
   - `approvals:expire`, scheduled every minute in `routes/console.php`;
-  - derived on every read, the Shopper's list and detail included: `open_item_count` and `pending_approval` stop counting an approval past its expiry.
+  - derived on every read — the Shopper's list and detail, the Customer's order and approvals, and the board's `approvals[].status` and counts — so an approval past its expiry is shown and counted as expired.
 - `POST /operations/approvals/{approval}/resolve-expired`:
   - removes the line with `approval_expired` and writes `approval_resolved`;
   - an approval not yet expired is `409 approval_not_expired`;
