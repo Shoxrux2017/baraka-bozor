@@ -64,7 +64,7 @@ The Operator surface is the Admin surface with catalog, staff, settings and refu
 
 ## 8. Admin
 
-Everything the Operator may do, plus: manage categories, products, images and prices; create staff, block and unblock staff, reset another staff member's password; edit business settings and provider enablement; mark manual refunds as done; correct an estimate item's recorded price before the order is paid, with an audited reason.
+Everything the Operator may do, plus: manage categories, products, images and prices; create staff, block and unblock staff, reset another staff member's password; edit business settings and provider enablement; mark manual refunds as done; correct the recorded price of a bought line billed from it — an estimate item or a replacement — before the order is paid and the Courier has set off, with an audited reason (`DL-54` (18)).
 
 Boundaries: an existing account's role is immutable; Admin cannot block itself or the last active Admin; Admin never sees a password; Admin cannot mark an online payment as paid; provider secrets are never returned by any API.
 

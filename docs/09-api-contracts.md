@@ -140,7 +140,7 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
 
 ## 20. Orders
 
-`GET /customer/orders`, `GET /customer/orders/{order}`. Own orders only; another Customer's order is the scope-safe `404`. The list is newest first and answers a summary per order — `id, order_number, status, payment_method, item_count, total_uzs, total_kind, created_at` — and the detail answers the order resource (`DL-42`):
+`GET /customer/orders`, `GET /customer/orders/{order}`. Own orders only; another Customer's order is the scope-safe `404`. The list is newest first and answers a summary per order — `id, order_number, status, payment_method, item_count, pending_approval_count, total_uzs, total_kind, created_at` (`pending_approval_count` from Wave 3, `DL-54` (8)) — and the detail answers the order resource (`DL-42`):
 
 ```json
 {"id":"...","order_number":1042,"status":"shopping","payment_method":"cash",
@@ -163,7 +163,7 @@ An item carries `id, product_id, name_uz, name_ru, unit_code, price_mode, quanti
 
 `GET /customer/approvals?status=pending`, `GET /customer/approvals/{approval}`, `POST /customer/approvals/{approval}/decision` with `Idempotency-Key`, `{"decision":"approve"}` or `"reject"`. Only own pending approvals; `409 approval_expired`, `409 approval_already_resolved`.
 
-Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54` (7)): `type`, `status`, the item with both names, `proposed_customer_unit_price_uzs`, `proposed_quantity`, `replacement` (product with both names and its customer price), `request_note`, `expires_at`.
+Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54` (8)): `type`, `status`, the item with both names, `proposed_customer_unit_price_uzs`, `proposed_quantity`, `replacement` (product with both names and its customer price), `request_note`, `expires_at`.
 
 ## 24. Payment *(online, Wave 5)*
 
@@ -199,7 +199,7 @@ Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54
 {"purchased_quantity":"5.200","actual_market_price_uzs":16000,"fulfilled_product_id":"..."}
 ```
 
-`actual_market_price_uzs` is required for estimate items and replacements, optional for fixed originals. The server computes the billable unit price. Above the ceiling → `409 customer_approval_required` with `details.approval_type` `price_over_tolerance`, `details.ceiling_customer_unit_price_uzs` and `details.proposed_customer_unit_price_uzs`; a purchased quantity below the ordered quantity or the approved cap → the same code with `details.approval_type` `reduced_quantity` and `details.required_quantity` (`DL-54` (4)). `fulfilled_product_id` may be left out, and is otherwise the line's own product or the replacement authorized on it. Codes: `shopping_not_active`, `item_already_resolved`, `replacement_unit_mismatch`.
+`actual_market_price_uzs` is required for estimate items and replacements, optional for fixed originals. The server computes the billable unit price. Above the ceiling → `409 customer_approval_required` with `details.approval_type` `price_over_tolerance`, `details.ceiling_customer_unit_price_uzs` and `details.proposed_customer_unit_price_uzs`; a purchased quantity below the ordered quantity or the approved cap → the same code with `details.approval_type` `reduced_quantity` and `details.required_quantity` (`DL-54` (4)). `fulfilled_product_id` is the line's own product or the replacement authorized on it (`422` otherwise), and left out means the authorized replacement when there is one. The Customer sees the billable customer price, never the price paid. Codes: `shopping_not_active`, `item_already_resolved`.
 
 ## 31. Unavailable
 
@@ -211,7 +211,7 @@ Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54
 
 ## 33. Substitution
 
-`POST /shopper/orders/{order}/items/{item}/substitution` `{"replacement_product_id":"...","actual_market_price_uzs":11000,"note":"..."}` → either the item authorized for the replacement (`substitution_resolution: automatic`) or a `substitution` approval, according to the item's policy and ceiling. `GET /shopper/orders/{order}/items/{item}/replacements?search=&page=&per_page=` lists the active products of the line's unit other than the original, with their market price (`DL-54` (16)).
+`POST /shopper/orders/{order}/items/{item}/substitution` `{"replacement_product_id":"...","actual_market_price_uzs":11000,"note":"..."}` → either the item authorized for the replacement (`substitution_resolution: automatic`) or a `substitution` approval, according to the item's policy and ceiling. `GET /shopper/orders/{order}/items/{item}/replacements?search=&page=&per_page=` lists the active products of the line's unit other than the original, with their market price (`DL-54` (17)). A line carries one authorized replacement at a time: a new substitution replaces it; an approved price belongs to the product it was approved for, and a substitution is judged against the automatic ceiling of `BR-PRICE-005`, never against a price approved for another replacement (`DL-54` (5)). A replacement under `remove_if_unavailable` is `409 substitution_not_allowed`; an inactive one `409 product_unavailable`; a price question at or under the ceiling `409 approval_not_needed`. `price-approval` takes an optional `fulfilled_product_id` as a purchase does.
 
 ## 34. Reduced Quantity
 
@@ -219,33 +219,33 @@ Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54
 
 ## 35. Complete Shopping
 
-`POST /shopper/orders/{order}/complete` with `Idempotency-Key`. Every item terminal, no pending approval, else `409 shopping_incomplete`. Computes totals; cash → `ready_for_delivery`; online → `final_payment_pending`; nothing purchased → `cancelled`.
+`POST /shopper/orders/{order}/complete` with `Idempotency-Key`. Every item terminal, no pending approval, else `409 shopping_incomplete`. Computes totals; cash → `ready_for_delivery`; online → `final_payment_pending` (Wave 5). An order with nothing bought never reaches it: the action that removed its last line cancelled it (`DL-54` (7)). A replay after completion answers the order through the Shopper's ended assignment (`DL-54` (3)).
 
 # Courier
 
 ## 36. Assigned Deliveries
 
-`GET /courier/orders`, `GET /courier/orders/{order}`: order number, recipient name and phone, address, delivery note, delivery time note, payment method, `amount_to_collect_uzs` for cash, status, and `shopper_phone` only while the server runs without a handoff point (`BR-DEL-006`, configuration `orders.handoff_point`, `DL-54` (10)), otherwise absent.
+`GET /courier/orders`, `GET /courier/orders/{order}`: order number, recipient name and phone, address, delivery note, delivery time note, payment method, `amount_to_collect_uzs` for cash, status, and `shopper_phone` only while the server runs without a handoff point (`BR-DEL-006`, configuration `delivery.handoff_point`, `DL-54` (11)); the order also says whether a cancellation request is pending, otherwise absent.
 
 ## 37. Accept, Start, Delivered, Not Delivered
 
-`POST /courier/orders/{order}/accept`, `POST .../start` (→ `on_the_way`), `POST .../delivered` with `Idempotency-Key`, `{"cash_received_uzs":251250}` required for cash and must equal the total (`409 cash_amount_mismatch`, `details.expected_uzs`), `POST .../not-delivered` `{"reason_code":"no_answer","note":"..."}`. Start is refused with `delivery_state_conflict` while a cancellation request is pending (`DL-54` (11)). Codes: `courier_not_assigned`, `delivery_not_ready`, `delivery_state_conflict`.
+`POST /courier/orders/{order}/accept`, `POST .../start` (→ `on_the_way`), `POST .../delivered` with `Idempotency-Key`, `{"cash_received_uzs":251250}` required for cash and must equal the total (`409 cash_amount_mismatch`, `details.expected_uzs`), `POST .../not-delivered` `{"reason_code":"no_answer","note":"..."}`. Start is refused with `delivery_state_conflict` and `details.reason` `cancellation_request_pending` while a cancellation request is pending (`DL-54` (12)). A replay of delivered, and a repeat of not-delivered, answer the order through the Courier's ended assignment (`DL-54` (3)). Codes: `courier_not_assigned`, `delivery_not_ready`, `delivery_state_conflict`.
 
 # Operations (Operator and Admin)
 
 ## 38. Board
 
-`GET /operations/orders?status=&attention=&shopper_id=&courier_id=&payment_method=&from=&to=&search=&page=&per_page=`, newest first (`created_at`, then the order number). A row: `{id, order_number, created_at, status, payment_method, customer{full_name, phone}, item_count, total_uzs, total_kind, shopper{id, full_name}|null, is_self_order}` — the Customer as the order's recipient snapshot, the totals of `DL-37` (10), the current Shopper and whether that assignment is a self-order. `status`, `payment_method` and `attention` take their values only, `shopper_id` a UUID matched against the current assignment, and `from` and `to` dates `YYYY-MM-DD` of `created_at` in `Asia/Tashkent` from 2000 to 2999, `to` not before `from`; anything else is `422 validation_failed`. `search` (at most 100 characters) matches the Customer's name folded as the catalog search folds it, the order number when the term is digits only, and the phone digits when it holds three digits or more (`DL-44` (4)); `courier_id` from Wave 3.
+`GET /operations/orders?status=&attention=&shopper_id=&courier_id=&payment_method=&from=&to=&search=&page=&per_page=`, newest first (`created_at`, then the order number). A row: `{id, order_number, created_at, status, payment_method, customer{full_name, phone}, item_count, pending_approval_count, total_uzs, total_kind, shopper{id, full_name}|null, courier{id, full_name}|null, is_self_order}` — the Customer as the order's recipient snapshot, the totals of `DL-37` (10), the current Shopper or else the one who completed the shopping, the current Courier or else the one who delivered, and the order's self-order mark: a self-order assignment that is current or whose assignee started work, however it ended (`DL-54` (14)). `awaiting_customer=true` narrows the board to orders with a pending approval (`DL-54` (8)). `status`, `payment_method` and `attention` take their values only, `shopper_id` a UUID matched against the current assignment, and `from` and `to` dates `YYYY-MM-DD` of `created_at` in `Asia/Tashkent` from 2000 to 2999, `to` not before `from`; anything else is `422 validation_failed`. `search` (at most 100 characters) matches the Customer's name folded as the catalog search folds it, the order number when the term is digits only, and the phone digits when it holds three digits or more (`DL-44` (4)); `courier_id` from Wave 3.
 
-`GET /operations/orders/{order}` → `{id, order_number, status, payment_method, delivery_time_note, customer{id, full_name, phone}, address{latitude, longitude, street, house, apartment, landmark, delivery_note}, items[{id, product_id, name_uz, name_ru, unit_code, price_mode, quantity, customer_note, substitution_policy, status, market_price_uzs, customer_unit_price_uzs, markup_percent, line_total_uzs, removed_reason_code}], totals{merchandise_subtotal_uzs, service_fee_uzs, delivery_fee_uzs, total_uzs, total_kind}, shopper_assignments[{id, shopper{id, full_name, phone}, assigned_by{id, full_name}, is_self_order, assigned_at, accepted_at, started_at, completed_at, ended_at, ended_reason}], courier_assignments, approvals, payment, refunds, history[{id, event_type, from_status, to_status, actor_type, actor{id, role, full_name}|null, reason_code, note, details, created_at}], cancellation_reason_code, timestamps{created_at, shopping_started_at, shopping_completed_at, ready_for_delivery_at, on_the_way_at, completed_at, cancelled_at}}`, lines, assignments and history oldest first. `courier_assignments`, `approvals` and `refunds` are `[]` and `payment` `null` until the waves that bring them (`DL-44` (5)).
+`GET /operations/orders/{order}` → `{id, order_number, status, payment_method, delivery_time_note, customer{id, full_name, phone}, address{latitude, longitude, street, house, apartment, landmark, delivery_note}, items[{id, product_id, name_uz, name_ru, unit_code, price_mode, quantity, customer_note, substitution_policy, status, market_price_uzs, customer_unit_price_uzs, markup_percent, line_total_uzs, removed_reason_code}], totals{merchandise_subtotal_uzs, service_fee_uzs, delivery_fee_uzs, total_uzs, total_kind}, shopper_assignments[{id, shopper{id, full_name, phone}, assigned_by{id, full_name}, is_self_order, assigned_at, accepted_at, started_at, completed_at, ended_at, ended_reason}], courier_assignments, approvals, cancellation_requests, payment, refunds, history[{id, event_type, from_status, to_status, actor_type, actor{id, role, full_name}|null, reason_code, note, details, created_at}], cancellation_reason_code, timestamps{created_at, shopping_started_at, shopping_completed_at, ready_for_delivery_at, on_the_way_at, completed_at, cancelled_at}}`, lines, assignments and history oldest first. `courier_assignments`, `approvals` and `refunds` are `[]` and `payment` `null` until the waves that bring them (`DL-44` (5)).
 
 `GET /operations/summary` → `{day, open_by_status{new, shopping_assigned, shopping, final_payment_pending, ready_for_delivery, delivery_assigned, on_the_way}, completed_today, cancelled_today, sales_today_uzs, attention_count}`: every open order by its current status whatever day it was placed, today's completed and cancelled orders by `completed_at` and `cancelled_at`, today's sales (the sum of `final_total_uzs` of orders completed today) and the attention count; the day is `Asia/Tashkent` (`DL-37` (16)).
 
-`GET /operations/attention` → items `{type, order_id, order_number, since, shopper{id, full_name}|null, courier{id, full_name}|null}`, the longest-waiting first, as one page of the collection envelope (`DL-44` (7)). The types are `approval_pending` (a pending approval past its ten minutes), `approval_expired`, `payment_overdue`, `refund_outstanding`, `courier_delayed`, `delivery_failed`, `cancellation_request`, `self_order` and `staff_blocked` (an open order whose current Shopper or Courier is blocked) (`DL-54` (12)); each arrives with the wave that creates its state — `self_order` in Wave 2, `payment_overdue` and `refund_outstanding` in Wave 5, the rest in Wave 3 — and the list's `attention` filter takes the types built so far.
+`GET /operations/attention` → items `{type, order_id, order_number, since, shopper{id, full_name}|null, courier{id, full_name}|null}`, the longest-waiting first, as one page of the collection envelope (`DL-44` (7)). The types are `approval_pending` (a pending approval past its ten minutes), `approval_expired`, `payment_overdue`, `refund_outstanding`, `courier_delayed`, `delivery_failed`, `cancellation_request`, `self_order` and `staff_blocked` (an open order whose current Shopper or Courier is blocked) (`DL-54` (13)); each arrives with the wave that creates its state — `self_order` in Wave 2, `payment_overdue` and `refund_outstanding` in Wave 5, the rest in Wave 3 — and the list's `attention` filter takes the types built so far.
 
 ## 39. Assignment
 
-`POST /operations/orders/{order}/shopper-assignment` `{"shopper_id":"..."}` assigns an order that is `new`; `PUT` with `{"shopper_id":"...","replaces_assignment_id":"..."}` reassigns before shopping starts, replacing the named assignment — the entry of the order's `shopper_assignments` whose `ended_at` is null — only while it is the current one; any other id, unknown or another order's included, is `409 order_state_conflict`, and the client reloads the order; the current Shopper again is a natural repeat; an id that is not a Shopper is `422 validation_failed` (`DL-37` (14)); a blocked Shopper is `409 staff_not_active`, even when current. The Shopper is checked first, then the repeat, then the order's state; both answer `200` with the order as `GET /operations/orders/{order}` shows it, and the history row's `details` carry the assignment, the Shopper and `is_self_order`, and on a reassignment the previous assignment and Shopper (`DL-45`). `POST|PUT /operations/orders/{order}/courier-assignment` `{"courier_id":"..."}` *(Wave 3)* (order `ready_for_delivery`; reassignment before `on_the_way`). Codes: `order_state_conflict`, `staff_not_active`, `shopper_not_assigned`, `courier_not_assigned`. The pickers: `GET /operations/shoppers` answers the active Shoppers as `{id, full_name, phone, current_assignment_count}`, paginated and ordered by name, for Operator and Admin, because `/admin/staff` is Admin-only; `GET /operations/couriers` does the same for Couriers from Wave 3 (`DL-37` (11)).
+`POST /operations/orders/{order}/shopper-assignment` `{"shopper_id":"..."}` assigns an order that is `new`; `PUT` with `{"shopper_id":"...","replaces_assignment_id":"..."}` reassigns before shopping starts, replacing the named assignment — the entry of the order's `shopper_assignments` whose `ended_at` is null — only while it is the current one; any other id, unknown or another order's included, is `409 order_state_conflict`, and the client reloads the order; the current Shopper again is a natural repeat; an id that is not a Shopper is `422 validation_failed` (`DL-37` (14)); a blocked Shopper is `409 staff_not_active`, even when current. The Shopper is checked first, then the repeat, then the order's state; both answer `200` with the order as `GET /operations/orders/{order}` shows it, and the history row's `details` carry the assignment, the Shopper and `is_self_order`, and on a reassignment the previous assignment and Shopper (`DL-45`). `POST /operations/orders/{order}/courier-assignment` `{"courier_id":"..."}` assigns an order that is `ready_for_delivery`; `PUT` with `{"courier_id":"...","replaces_assignment_id":"..."}` reassigns before `on_the_way`, as for the Shopper (`DL-54` (10)). Codes: `order_state_conflict`, `staff_not_active`, `shopper_not_assigned`, `courier_not_assigned`. The pickers: `GET /operations/shoppers` answers the active Shoppers as `{id, full_name, phone, current_assignment_count}`, paginated and ordered by name, for Operator and Admin, because `/admin/staff` is Admin-only; `GET /operations/couriers` does the same for Couriers from Wave 3 (`DL-37` (11)).
 
 ## 40. Approvals and Cancellation Requests
 
@@ -275,7 +275,7 @@ A staff account is `{"id":"...","role":"shopper","phone":"+998901112233","full_n
 
 ## 45. Price Correction
 
-`POST /admin/orders/{order}/items/{item}/price-correction` `{"actual_market_price_uzs":15000,"reason":"..."}` for a bought line billed from the price paid — an estimate original or a replacement — while the order is open and unpaid; recomputes the line and, once shopping has completed, the final amounts (from Wave 5 an unpaid obligation too); a completed or cancelled order is `409 price_correction_locked`, a price whose customer price exceeds the line's ceiling `409 price_correction_above_ceiling` (`DL-54` (17)).
+`POST /admin/orders/{order}/items/{item}/price-correction` `{"actual_market_price_uzs":15000,"reason":"..."}` for a bought line billed from the price paid — an estimate original or a replacement — while the order is unpaid and the Courier has not set off; recomputes the line and, once shopping has completed, the final amounts (from Wave 5 an unpaid obligation too); an order `on_the_way`, completed or cancelled is `409 price_correction_locked`, a line not bought or billed at its fixed snapshot `409 price_correction_not_applicable`, a price whose customer price exceeds the line's ceiling `409 price_correction_above_ceiling`; the current price again is a natural repeat (`DL-54` (18)).
 
 # Providers *(Wave 5)*
 
@@ -297,7 +297,7 @@ Create order, customer approval decision, cancel order, record purchase, complet
 
 ## 49. Natural Repeats
 
-Accept an accepted assignment, start a started one, deliver a completed one from the same assignment, block a blocked account, activate an active account, an order edit that changes nothing, assign the current Shopper again, cancel a cancelled order: current resource, no duplicate history.
+Accept an accepted assignment, start a started one, deliver a completed one from the same assignment, block a blocked account, activate an active account, an order edit that changes nothing, assign the current Shopper again, cancel a cancelled order, the same decision on a decided cancellation request, the same automatic replacement again, a price correction to the current price: current resource, no duplicate history. A replay of completion or delivered, and a repeat of not-delivered, reach the order through the caller's assignment the action ended (`DL-54` (3)).
 
 ## 50. Concurrency
 
@@ -319,7 +319,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 54. Order, Shopping, Approval
 
-`order_state_conflict`, `order_cancellation_not_allowed`, `cancellation_already_pending`, `staff_not_active`, `shopper_not_assigned`, `shopping_not_active`, `item_already_resolved`, `replacement_unit_mismatch`, `customer_approval_required`, `shopping_incomplete`, `approval_not_pending`, `approval_expired`, `approval_already_resolved`.
+`order_state_conflict`, `order_cancellation_not_allowed`, `cancellation_already_pending`, `staff_not_active`, `shopper_not_assigned`, `shopping_not_active`, `item_already_resolved`, `replacement_unit_mismatch`, `substitution_not_allowed`, `customer_approval_required`, `approval_not_needed`, `shopping_incomplete`, `approval_not_pending`, `approval_not_expired`, `approval_expired`, `approval_already_resolved`, `cancellation_request_already_decided`.
 
 ## 55. Payment and Refund
 
@@ -327,7 +327,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 56. Delivery and Admin
 
-`courier_not_assigned`, `delivery_not_ready`, `delivery_state_conflict`, `last_active_admin_required`, `self_block_not_allowed`, `self_reset_not_allowed`, `phone_already_active`, `price_correction_locked`, `price_correction_above_ceiling`.
+`courier_not_assigned`, `delivery_not_ready`, `delivery_state_conflict`, `last_active_admin_required`, `self_block_not_allowed`, `self_reset_not_allowed`, `phone_already_active`, `price_correction_locked`, `price_correction_not_applicable`, `price_correction_above_ceiling`.
 
 ## 57. Provider Safety
 

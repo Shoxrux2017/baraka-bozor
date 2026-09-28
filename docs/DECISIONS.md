@@ -318,66 +318,91 @@ The editor of `DL-51` (5) gains what `docs/03` section 11 promises: until shoppi
 
 ## DL-54 — Wave 3 engineering decisions (2026-09-28, agent)
 
-Taken while planning `tasks/WAVE_3.md`; each task records anything finer.
+Taken while planning `tasks/WAVE_3.md` and revised by its review; each task records anything finer.
 
 1. **Scope.** The wave is `docs/06`'s Wave 3, plus the Admin's price correction (`docs/09` section 45).
    - Recorded purchase prices first exist in this wave, and the cash pilot needs a way to fix a mistyped one before the Courier collects the cash. `docs/06` says so.
    - The online branches stay Wave 5's: completion into `final_payment_pending`, the unpaid attention, the switch to cash, and refunds. No online order can exist before then (`DL-37` (3)). Completion is written for cash, and Wave 5 adds the online branch beside it.
-2. **Tables.** W3-1 creates `order_courier_assignments`, `customer_approvals`, `order_cancellation_requests`, `order_item_price_corrections` and `payments` as `docs/08` describes them. `payments` is created whole, although this wave writes only the cash row that a delivery records. Wave 5 then adds `payment_attempts`, `provider_events` and `refunds` beside a table it need not reshape.
+2. **Tables and vocabularies.**
+   - W3-1 creates `order_courier_assignments`, `customer_approvals`, `order_cancellation_requests`, `order_item_price_corrections` and `payments` as `docs/08` describes them. `payments` is created whole, although this wave writes only the cash row that a delivery records. Wave 5 then adds `payment_attempts`, `provider_events` and `refunds` beside a table it need not reshape.
+   - A forward migration of the `order_history.event_type` check adds the events this wave's actions write besides status changes: `shopper_accepted`, `courier_accepted`, `item_purchased`, `item_unavailable`, `item_substituted` (an automatic replacement), `cancellation_requested`, `cancellation_request_decided` and `payment_recorded`. The history then explains every action (`docs/05` section 22), and a purchase's instant is its row's.
+   - Approvals gain the status `cancelled` ((8)), and cancellation requests the status `closed` ((12)).
 3. **The Shopper's and the Courier's scope.**
    - Their endpoints live under `/shopper` and `/courier`, in the `Orders` module (`DL-37` (1)).
    - They reach an order only through the caller's current assignment of that kind. Any other order is the scope-safe `404` (`BR-ASSIGN-004`), including one whose assignment was replaced or has ended.
    - Completion ends the Shopper's assignment, so a shopped order leaves the Shopper's list. Delivery, or a failed delivery, ends the Courier's.
+   - **A retry after a lost answer.** A replay of a keyed action (`DL-39` (1)) and a natural repeat of a failed delivery load the order through the caller's own assignment that the action ended: the Shopper's, ended `completed` by completion; the Courier's, ended `completed` by delivery or `delivery_failed` by a failed delivery. A Shopper or Courier whose answer was lost thus learns the outcome (`BR-CON-005`, `docs/09` section 49). Reads and every other action still need a current assignment.
+   - A Shopper's keyless action that cancelled the order ((7)) answers the cancelled order. A retry of it after a lost answer finds the order gone from the Shopper's list, which is what happened.
 4. **Recording a purchase.**
    - **Quantity.** The billable quantity is the purchased quantity, capped at the ordered quantity or at an approved cap (`BR-QTY-003`, `BR-QTY-004`).
-   - **A smaller quantity** is a reduction the Customer has not agreed to (`BR-QTY-005`). A purchased quantity below that cap is refused with `409 customer_approval_required`, `details.approval_type` `reduced_quantity` and the agreed quantity. The Shopper then buys more or asks the Customer (`docs/09` section 34).
+   - **A smaller quantity** is a reduction the Customer has not agreed to (`BR-QTY-005`). A purchased quantity below that cap is refused with `409 customer_approval_required`, `details.approval_type` `reduced_quantity` and `details.required_quantity`. The Shopper then buys more or asks the Customer (`docs/09` section 34).
    - **A higher price.** A billable price above the ceiling is refused the same way, with `price_over_tolerance` and the two prices of `docs/09` section 30.
-   - **The product.** The fulfilled product is the line's own product or the replacement authorized on it, and may be left out. Any other is `422` on `fulfilled_product_id`.
+   - **The product.** The fulfilled product is the line's own product or the replacement authorized on it; any other is `422` on `fulfilled_product_id`. Left out, it is the authorized replacement when the line has one, and the line's own product otherwise.
    - **Fixed lines.** A fixed original bought as itself is billed at its snapshot, and may record the price paid.
    - **Estimate lines and replacements.** An estimate original and every replacement require the price paid (`docs/08` section 14). They are billed at `half_up(price × (1 + line markup / 100))` (`BR-PRICE-003`, `BR-PRICE-004`, `DL-37` (8)).
-5. **The ceiling as a market price.** The Shopper's line carries its ceiling as a customer price. It also carries the highest whole market price whose customer price stays within that ceiling, computed by the server. The Shopper then compares the stall's price with a number of the same kind, and the client computes no money (`DL-37` (19)).
-6. **Nothing left to buy.** An action can leave every line of an order `removed`: the Shopper marks the last line unavailable, the Customer rejects the last line, or the Operator removes the last expired one. That action cancels the order in the same transaction, with `no_items_purchased`, and ends the Shopper's assignment with `order_cancelled` (`docs/04` section 20, `BR-ASSIGN-006`). Completion therefore never meets an order with nothing bought.
-7. **Approvals and time.**
+   - **What the Customer sees** is the billable customer price, never the price paid (`BR-PRICE-001`).
+5. **Replacements and approved prices.**
+   - **One replacement at a time.** A line carries at most one authorized replacement. A new substitution replaces it, judged afresh and with its own history row. The same product again, judged the same, is a natural repeat.
+   - **An approved price belongs to the product it was approved for.**
+     - A `price_over_tolerance` approval raises the ceiling of the product the line is then to be fulfilled with; the price question names that product as a purchase does ((4)).
+     - A `substitution` approval authorizes its replacement at its proposed price and no higher.
+   - **Judging a substitution.** A substitution is judged against the automatic ceiling of `BR-PRICE-005`: a fixed original's snapshot, or an estimate original's estimate plus tolerance, or a higher ceiling approved for the original. It is never judged against a price approved for another replacement, so the Customer's yes to one replacement's price never authorizes another.
+6. **The ceiling as a market price.** The Shopper's line carries its ceiling as a customer price, and as the highest whole market price whose customer price stays within it, computed by the server. The Shopper then compares the stall's price with a number of the same kind, and the client computes no money (`DL-37` (19)).
+   - With the line's markup as `K` hundredths of a percent and the ceiling as `C`, that price is `floor(((2C + 1) × 10 000 − 1) / (2 × (10 000 + K)))`: the largest whole `m` with `half_up(m × (10 000 + K) / 10 000) ≤ C`.
+   - It exists because the customer price rises with the market price. The tests pin it and the UZS after it.
+7. **Nothing left to buy.**
+   - An action can leave every line of an order `removed`: the Shopper marks the last line unavailable, the Customer rejects the last line, or the Operator removes the last expired one.
+   - That action cancels the order in the same transaction, with `no_items_purchased`. It ends the Shopper's assignment with `order_cancelled` and closes a pending cancellation request ((12)).
+   - So completion never meets an order with nothing bought; `docs/03` section 14, `docs/04` section 22, `BR-ASSIGN-006` and `docs/09` section 35 now say so (`docs/04` section 20 already did for the Operator's path).
+8. **Approvals and time.**
    - **Timers.** From the server clock, `attention_at` is the creation plus ten minutes and `expires_at` the creation plus thirty (`BR-APP-002`, `BR-APP-003`).
-   - **Expiry** is written in two places, each writing the history once:
-     - every action on an order first expires that order's overdue approvals, under the order lock;
-     - a command scheduled every minute expires the rest.
-
-     In addition, every read shows an overdue pending approval as expired before either has run, so nothing can approve it (`docs/07` sections 19 and 25).
+   - **Expiry.** Each expiry writes its `approval_expired` history row once.
+     - **Before an action.** An action on an order first expires that order's overdue approvals, in a transaction of its own under the order lock, and only then acts. A refusal that follows, the Customer's `approval_expired` among them, therefore cannot roll the expiry back.
+     - **The command.** `approvals:expire`, scheduled every minute in `routes/console.php`, expires the rest, taking each order's lock in turn.
+     - **On a read.** A read shows an overdue pending approval as expired before either has run (`docs/07` sections 19 and 25).
+     - **Where it runs.** Nothing runs the scheduler locally or in CI: the Compose stack has no scheduler until Wave 4 deploys one. The tests and the walkthrough run the command themselves.
    - **A cancelled order.** An approval whose order is cancelled ends `cancelled`, a status `docs/08` lacked. Neither the Customer nor the clock decided it, and `pending` would leave a decision open on a cancelled order.
    - **Outcomes.**
-     - Approve writes the persisted proposal onto the line (the ceiling, the replacement with its price context, or the cap) and returns the line to `pending` (`DL-3` S-7).
+     - Approve writes the persisted proposal onto the line (the ceiling, the replacement with its price, or the cap) and returns the line to `pending` (`DL-3` S-7).
      - Reject removes the line with `customer_rejected`.
      - The Operator's resolution of an expired approval removes the line with `approval_expired`.
-8. **Keys.**
+   - **Finding what waits on the Customer.** The board filters on pending approvals (`DL-3` S-6): it gains `awaiting_customer`, and each row its `pending_approval_count`. The Customer's own order list carries the count too.
+9. **Keys.**
    - An `Idempotency-Key` is required where `docs/09` section 48 lists it: the approval decision, a purchase, completion, delivered, and the cancel endpoint, whose request branch shares its key.
    - Accept, start and the Operator's decisions are natural repeats.
-   - The Shopper's other actions take no key: unavailable, a replacement, a price question and a quantity question. Each acts once on a `pending` line. A repeat meets the line resolved or awaiting (`409 item_already_resolved`), and the app answers by reloading the order.
-9. **Courier assignment** mirrors the Shopper's (`DL-45`):
-   - `POST` for a `ready_for_delivery` order without a current Courier;
-   - `PUT` before `on_the_way`, naming `replaces_assignment_id`;
-   - the checks in the same order, and the shared lock on the Courier's account;
-   - history: `courier_assigned`, which moves the order to `delivery_assigned`, and `courier_reassigned`;
-   - `GET /operations/couriers`, beside the Shoppers' picker (`DL-37` (11)).
-10. **Delivery.**
+   - The Shopper's other actions take no key: unavailable, a replacement, a price question and a quantity question.
+     - Each acts once on a `pending` line.
+     - A repeat meets the line resolved or awaiting (`409 item_already_resolved`), and the app answers by reloading the order.
+     - A repeated replacement follows (5).
+10. **Courier assignment** mirrors the Shopper's (`DL-45`):
+    - `POST` for a `ready_for_delivery` order without a current Courier;
+    - `PUT` before `on_the_way`, naming `replaces_assignment_id`;
+    - the checks in the same order, and the shared lock on the Courier's account;
+    - history: `courier_assigned`, which moves the order to `delivery_assigned`, and `courier_reassigned`;
+    - `GET /operations/couriers`, beside the Shoppers' picker (`DL-37` (11)).
+11. **Delivery.**
     - **Start** sets `on_the_way` and `on_the_way_at`, and the assignment's `delivery_started_at` and `delay_at` from the threshold snapshot (`BR-DEL-002`).
     - **Delivered** requires `cash_received_uzs` equal to the final total (`409 cash_amount_mismatch`, `details.expected_uzs`). One transaction writes:
       - the `payments` row: `cash`, `paid`, recorded by the Courier;
       - the order, `completed`;
       - the assignment, `completed`.
     - **Not delivered** takes `no_answer`, `refused`, `wrong_address`, or `other` with a required note. It ends the assignment with `delivery_failed` and returns the order to `ready_for_delivery`, keeping its first `ready_for_delivery_at`.
-    - **The handoff point.** Whether one exists is server configuration, `orders.handoff_point`, true by default (interview 1.1, option A). While it is false, the Courier's order carries the Shopper's phone (`BR-DEL-006`).
-11. **Cancellation requests.**
+    - **The handoff point.** Whether one exists is the server configuration `delivery.handoff_point` of `BR-DEL-006`, true by default (interview 1.1, option A). While it is false, the Courier's order carries the Shopper's phone.
+12. **Cancellation requests.**
     - **Filing.** From `shopping` through `delivery_assigned`, the Customer's cancel files a request with a required reason (`DL-37` (13)) and answers the order carrying it. A second request is `409 cancellation_already_pending`.
-    - **While pending.** A Courier cannot start while a request is pending (`409 delivery_state_conflict`). The request was filed before the Courier set off, and the rules give its decision to an Operator (`BR-CAN-002`, `BR-CAN-003`), not to the moment of departure.
+    - **While pending.**
+      - A Courier cannot start: `409 delivery_state_conflict` with `details.reason` `cancellation_request_pending`, and the Courier's order says a request is pending. The request was filed before the Courier set off, and the rules give its decision to an Operator (`BR-CAN-002`, `BR-CAN-003`), not to the moment of departure.
+      - The Operator's own cancellation after a failed delivery is refused with `409 cancellation_already_pending`: the Operator decides the request instead.
     - **Approve.** The order is cancelled with `cancellation_request_approved`:
       - its current assignment ends with `order_cancelled`;
       - its open lines are removed with `order_cancelled`;
       - its pending approvals close as `cancelled`;
       - lines already bought stay bought, and nothing is due (`BR-CAN-006`, `DL-37` (10)).
     - **Reject.** The order goes on, and the Operator's note is kept.
+    - **Deciding twice.** The same decision again is a natural repeat. The other decision is `409 cancellation_request_already_decided`.
+    - **Closed without a decision.** A request can still be pending when its order is cancelled by the only other path then open: the last line removed ((7)). The request then ends `closed`, in the same transaction, a status `docs/08` lacked.
     - **The Operator's own cancellation** takes `delivery_failed`, for an order back in `ready_for_delivery` after a failed delivery and without a Courier (`docs/09` section 41). `unpaid_online` is Wave 5's.
-12. **Attention.** Wave 3 brings these types:
+13. **Attention.** Wave 3 brings these types:
     - `approval_pending`: a pending approval past its ten minutes, when the Operator calls the Customer (`BR-APP-002`);
     - `approval_expired`: until an Operator removes the line;
     - `courier_delayed`: an order on the way past `delay_at`;
@@ -385,24 +410,49 @@ Taken while planning `tasks/WAVE_3.md`; each task records anything finer.
     - `cancellation_request`: while one is pending;
     - `staff_blocked`: an open order whose current Shopper or Courier has been blocked; the Operator reassigns it where the rules allow (Wave 2 risk row).
 
-    `customer_no_response` in `docs/09` named the ten-minute item a second time and is dropped. An item names the Shopper or the Courier concerned, so it gains `courier`, and `shopper` may be `null`. `payment_overdue` and `refund_outstanding` come with Wave 5.
-13. **Self-order mark.** The board's mark and the `self_order` item follow the assignments that do or did the work: the current Shopper and Courier assignments, and those that ended `completed`. A replaced, failed or cancelled assignment stops marking the order, since its assignee did not do that work. The history keeps every assignment's flag (interview 6.4, Wave 2 risk row).
-14. **Staying current without push.** Push is Wave 4's (`DL-37` (15)).
-    - The screens that wait on another person refresh themselves while they are shown: the Shopper's list and order, and the Courier's list, every ten seconds; the Customer's open order every fifteen ("every few seconds", `docs/04` section 12).
+    `customer_no_response` in `docs/03` and `docs/09` named the ten-minute item a second time and is dropped. An item names the Shopper or the Courier concerned, so it gains `courier`, and `shopper` may be `null`. `payment_overdue` and `refund_outstanding` come with Wave 5.
+14. **Self-order mark.**
+    - **The rule.** An order is marked, on the board and by the `self_order` item while it is open, when a self-order assignment is current or its assignee started work: a Shopper who started shopping, or a Courier who accepted the delivery. That holds however the assignment ended.
+    - **Before work.** An assignment replaced before its assignee started stops marking the order.
+    - **Why.** The mark is the Owner's audit flag (interview 6.4), and a self-order Courier who failed a delivery, or a self-order Shopper whose shopping was cancelled, is what it exists to show.
+    - **The row.** A board row names the current Shopper, or else the one who completed the shopping, and likewise the current Courier or else the one who delivered.
+    - This supersedes the part of `DL-37` (16) that tied the mark to the current Shopper assignment.
+15. **Staying current without push.** Push is Wave 4's (`DL-37` (15)).
+    - The screens that wait on another person refresh themselves while they are shown:
+      - the Shopper's list and order, and the Courier's list and delivery, every ten seconds ("every few seconds", `docs/04` section 12, which names the Shopper's);
+      - the Customer's open order, every fifteen seconds. This interval is this wave's choice, since the documents name none.
     - A refresh that fails stops refreshing and says so, with a retry the person presses (`DL-28` (12)). A refresh is not a retry of a failed load.
-15. **Calls and the delivery point.**
+16. **Calls and the delivery point.**
     - The app places calls: the Shopper to the Customer while shopping (interview 7.3), the Courier to the recipient, and the Courier to the Shopper when there is no handoff point.
     - It opens the delivery point in the phone's map app.
-    - Both use `tel:` and `geo:` links through `url_launcher`, which W3-13 adds for this.
+    - Both use `tel:` and `geo:` links through `url_launcher`, which W3-15 adds, with the Android manifest's `<queries>` entries that Android 11 needs to see the apps that open them. iOS, where `geo:` opens nothing, takes an Apple Maps link when a Mac allows iOS work.
     - No staff screen embeds a map (`DL-36` (2)); a link to the phone's own map app is not the MapKit SDK.
-16. **Replacement search.** `GET /shopper/orders/{order}/items/{item}/replacements?search=` lists the active products of the line's unit in active categories, other than the original, with their market price. It searches as the catalog searches (`DL-20`). A separate endpoint is needed because the Customer's catalog answers Customer sessions only (`DL-17`), and the Shopper judges a replacement by what the stall charges.
-17. **Price correction.**
-    - **Who and what.** Admin only (`docs/02` section 8), for a bought line billed from the price paid: an estimate original or any replacement.
-    - **When.** While the order is open and unpaid. A cash order is unpaid until the Courier's delivered action, so `completed` and `cancelled` orders are `409 price_correction_locked`.
-    - **Limit.** The corrected billable price may not exceed the line's ceiling, since a price above it needs the Customer's decision (`AGENTS.md` section 6): `409 price_correction_above_ceiling`.
+17. **Replacement search.** `GET /shopper/orders/{order}/items/{item}/replacements?search=` lists the active products of the line's unit in active categories, other than the original, with their market price. It searches as the catalog searches (`DL-20`). A separate endpoint is needed because the Customer's catalog answers Customer sessions only (`DL-17`), and the Shopper judges a replacement by what the stall charges.
+18. **Price correction.**
+    - **Who and what.** Admin only (`docs/02` section 8), for a bought line billed from the price paid: an estimate original or any replacement. A replacement's price is typed like an estimate's, so it can be mistyped the same way.
+    - **When.** While the order is unpaid and the Courier has not set off.
+      - A cash order is unpaid until the Courier's delivered action.
+      - Once the Courier is on the way, a change would reach the door unseen by the Courier, who carries the amount.
+      - So `on_the_way`, `completed` and `cancelled` orders are `409 price_correction_locked`.
+    - **Refusals.**
+      - A line not bought, or one billed at its fixed snapshot, is `409 price_correction_not_applicable`.
+      - A corrected price above the line's ceiling is `409 price_correction_above_ceiling`, since a price above it needs the Customer's decision (`AGENTS.md` section 6).
+      - The current price again is a natural repeat.
     - **Writes.** One transaction writes:
       - the correction row;
       - the line's new price and total;
       - the final amounts, when shopping has completed;
       - a `price_corrected` history row with the reason.
-18. **The client** shows the money the server computed and never sums it (`DL-37` (19)). The typo guard is the client's (`DL-3` S-35), against the market price snapshot the Shopper's line carries.
+    - `docs/02` section 8 and `BR-PRICE-006` now say so.
+19. **Codes this wave names** besides `docs/09`'s:
+    - `substitution_not_allowed`: a replacement under `remove_if_unavailable`;
+    - `approval_not_needed`: a price question at or under the ceiling;
+    - `approval_not_expired`: the Operator's removal of an approval still pending;
+    - `cancellation_request_already_decided`;
+    - `price_correction_not_applicable`;
+    - `price_correction_above_ceiling`.
+
+    An inactive replacement is `409 product_unavailable`, naming it.
+20. **The client** shows the money the server computed and never sums it (`DL-37` (19)). The typo guard is the client's (`DL-3` S-35), against the market price of the product being bought: the line's snapshot for the original, and the replacement's current market price for a replacement.
+21. **The merged client keeps working.** A backend task may change an answer a merged screen reads: a new attention type, a nullable Shopper, a self-order row without a current Shopper. That task changes the screen's reading in the same pull request, with the words it needs, so `main`'s panel and app never fail against `main`'s server. The screen tasks then build the new behaviour.
+22. **Split by layer.** As in Waves 1 and 2, the wave is split by layer rather than by vertical slice (`tasks/README.md` section 2). Four surfaces act on the same order through the same actions: the panel and the app's three areas. Each screen task therefore tests against a merged contract rather than one still moving, and (21) keeps `main` whole in between.

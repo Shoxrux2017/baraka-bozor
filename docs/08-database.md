@@ -134,7 +134,7 @@ Checks: purchased requires `purchased_quantity ≥ billable_quantity > 0`, a bil
 
 Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (user|system|payment_provider), actor_user_id?, reason_code?, note?, details jsonb?, created_at`. `details` holds structured facts an event needs to stay explainable: an edit's before and after, an assignment's id and `is_self_order` (`DL-37` (9), (14)). A `user` row names its actor and no other does; `details` is a JSON object. A trigger refuses every update and delete (`DL-38`).
 
-`event_type` in `status_changed, edited, payment_method_switched, price_corrected, shopper_assigned, shopper_reassigned, courier_assigned, courier_reassigned, delivery_failed, approval_requested, approval_decided, approval_expired, approval_resolved`. `reason_code` for cancellations in `customer_cancelled, cancellation_request_approved, unpaid_online, no_items_purchased, delivery_failed, system`. Index `(order_id, created_at)`.
+`event_type` in `status_changed, edited, payment_method_switched, price_corrected, shopper_assigned, shopper_reassigned, courier_assigned, courier_reassigned, delivery_failed, approval_requested, approval_decided, approval_expired, approval_resolved`, and from Wave 3 `shopper_accepted, courier_accepted, item_purchased, item_unavailable, item_substituted, cancellation_requested, cancellation_request_decided, payment_recorded` (`DL-54` (2)). `reason_code` for cancellations in `customer_cancelled, cancellation_request_approved, unpaid_online, no_items_purchased, delivery_failed, system`. Index `(order_id, created_at)`.
 
 ## 16. `order_shopper_assignments`
 
@@ -148,7 +148,7 @@ Append-only: `id, order_id, event_type, from_status?, to_status?, actor_type (us
 
 `id, order_id, order_item_id, type (price_over_tolerance|substitution|reduced_quantity), status (pending|approved|rejected|expired|cancelled), requested_by_user_id, proposed_customer_unit_price_uzs?, proposed_actual_market_price_uzs?, proposed_quantity?, replacement_product_id?, replacement_name_uz_snapshot?, replacement_name_ru_snapshot?, replacement_unit_code_snapshot?, request_note?, attention_at, expires_at, resolved_by_user_id?, resolved_at?, resolution? (approved|rejected|remove_item), timestamps`.
 
-An approval whose order is cancelled ends `cancelled`, with no resolution (`DL-54` (7)). Partial unique `(order_item_id) WHERE status='pending'`. Indexes `(order_id, status)`, `(status, attention_at)`, `(status, expires_at)`.
+An approval whose order is cancelled ends `cancelled`, with no resolution (`DL-54` (8)). Partial unique `(order_item_id) WHERE status='pending'`. Indexes `(order_id, status)`, `(status, attention_at)`, `(status, expires_at)`.
 
 ## 19. `order_item_price_corrections`
 
@@ -156,7 +156,7 @@ Append-only: `id, order_item_id, old_actual_market_price_uzs, new_actual_market_
 
 ## 20. `order_cancellation_requests`
 
-`id, order_id, origin (customer|staff), requested_by_user_id, status (pending|approved|rejected), reason, resolved_by_user_id?, resolution_note?, resolved_at?, timestamps`. Partial unique `(order_id) WHERE status='pending'`.
+A request still pending when its order is cancelled another way ends `closed` (`DL-54` (12)). `id, order_id, origin (customer|staff), requested_by_user_id, status (pending|approved|rejected|closed), reason, resolved_by_user_id?, resolution_note?, resolved_at?, timestamps`. Partial unique `(order_id) WHERE status='pending'`.
 
 ## 21. `payments`
 
