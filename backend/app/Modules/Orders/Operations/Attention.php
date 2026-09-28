@@ -13,6 +13,7 @@ use App\Models\OrderShopperAssignment;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
@@ -125,23 +126,28 @@ final class Attention
             ])
             ->get();
 
-        return $orders->map(static function (Order $order): array {
-            $shopper = $order->shopperAssignments->sortBy([['assigned_at', 'desc'], ['id', 'desc']])->first();
-            $courier = $order->courierAssignments->sortBy([['assigned_at', 'desc'], ['id', 'desc']])->first();
+        return $orders->map(static function (Order $order): ?array {
             $since = collect([
                 ...$order->shopperAssignments->map(static fn (OrderShopperAssignment $assignment): CarbonInterface => $assignment->assigned_at),
                 ...$order->courierAssignments->map(static fn (OrderCourierAssignment $assignment): CarbonInterface => $assignment->assigned_at),
             ])->sort()->first();
+            // The assignments are read in a statement of their own: one
+            // replaced in between may leave nothing marking the order now.
+            if ($since === null) {
+                return null;
+            }
+            $shopper = self::latest($order->shopperAssignments);
+            $courier = self::latest($order->courierAssignments);
 
             return [
                 'type' => self::SELF_ORDER,
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
-                'since' => $since?->toIso8601ZuluString() ?? '',
+                'since' => $since->toIso8601ZuluString(),
                 'shopper' => $shopper === null ? null : self::person($shopper->shopper),
                 'courier' => $courier === null ? null : self::person($courier->courier),
             ];
-        })->values()->all();
+        })->filter()->values()->all();
     }
 
     /**
@@ -153,21 +159,26 @@ final class Attention
             ->with(['currentShopperAssignment.shopper', 'currentCourierAssignment.courier'])
             ->get();
 
-        return $orders->map(static function (Order $order): array {
+        return $orders->map(static function (Order $order): ?array {
             $shopper = self::blocked($order->currentShopperAssignment?->shopper);
             $courier = self::blocked($order->currentCourierAssignment?->courier);
-            // A block always has its instant (`users_blocked_at_check`).
+            // A block always has its instant (`users_blocked_at_check`). The
+            // people are read in a statement of their own: one unblocked or
+            // replaced in between leaves no one blocked on the order now.
             $since = collect([$shopper?->blocked_at, $courier?->blocked_at])->filter()->sort()->first();
+            if ($since === null) {
+                return null;
+            }
 
             return [
                 'type' => self::STAFF_BLOCKED,
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
-                'since' => $since?->toIso8601ZuluString() ?? '',
+                'since' => $since->toIso8601ZuluString(),
                 'shopper' => $shopper === null ? null : self::person($shopper),
                 'courier' => $courier === null ? null : self::person($courier),
             ];
-        })->values()->all();
+        })->filter()->values()->all();
     }
 
     /**
@@ -246,6 +257,19 @@ final class Attention
     private static function openStatuses(): array
     {
         return array_map(static fn (OrderStatus $status): string => $status->value, OrderBoard::OPEN);
+    }
+
+    /**
+     * The latest of an order's assignments of one kind.
+     *
+     * @template TAssignment of OrderShopperAssignment|OrderCourierAssignment
+     *
+     * @param  Collection<int, TAssignment>  $assignments
+     * @return TAssignment|null
+     */
+    private static function latest(Collection $assignments): OrderShopperAssignment|OrderCourierAssignment|null
+    {
+        return $assignments->sortBy([['assigned_at', 'desc'], ['id', 'desc']])->first();
     }
 
     private static function blocked(?User $staff): ?User

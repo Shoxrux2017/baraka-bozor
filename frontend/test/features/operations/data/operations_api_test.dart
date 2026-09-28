@@ -41,13 +41,26 @@ void main() {
       );
       expect(none.totalUzs, isNull);
       expect(none.shopper, isNull);
+
+      // A self-order Shopper whose shopping was cancelled still marks the
+      // order the row no longer names them on (DL-54 (14), DL-62 (5)).
+      final BoardRow marked = OperationsApi.parseRow(
+        rowJson(
+          status: 'cancelled',
+          totalUzs: null,
+          totalKind: 'none',
+          shopper: null,
+          selfOrder: true,
+        ),
+      );
+      expect(marked.isSelfOrder, isTrue);
+      expect(marked.shopper, isNull);
     });
 
     test('a row off the contract is refused', () {
       for (final Map<String, Object?> broken in <Map<String, Object?>>[
         rowJson(totalUzs: null),
         rowJson(totalKind: 'none'),
-        rowJson(shopper: null, selfOrder: true),
         rowJson(status: 'approval_required'),
         rowJson(paymentMethod: 'card'),
         <String, Object?>{...rowJson(), 'id': 'o-1'},

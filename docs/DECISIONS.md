@@ -765,11 +765,14 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - The Shopper-only picker, its resource, its request and its controller become the staff ones. The Shopper's route and answer do not change.
 3. **The attention list gains `staff_blocked`, and `self_order` follows the mark** (`DL-54` (13), (14)).
    - `staff_blocked` covers an open order whose current Shopper or Courier is blocked. Its `since` is the earliest such block (`users.blocked_at`), and it names the one blocked.
-   - The Operator reassigns where the rules allow. A Shopper blocked after starting cannot be replaced (`BR-ASSIGN-002`), so that item stays until the order moves on or is cancelled.
+   - The Operator reassigns where the rules allow. A Shopper blocked after starting, and a Courier blocked on the way, cannot be replaced (`BR-ASSIGN-002`), so those items stay. A started shopping ends by the Customer's cancellation request; a delivery on the way has no way out but the Admin unblocking the Courier. The wave's risk list holds that case as the documents settle it.
    - `self_order` covers an open marked order. Its `since` is the earliest assignment that marks it, and it names the Shopper and the Courier whose assignments mark it, the latest of each.
 4. **What a row and the detail show.**
    - `Order::namedShopperAssignment` is the current Shopper assignment, or else the one ended `completed`. `namedCourierAssignment` is likewise the current Courier assignment, or else the one that delivered. An order is shopped and delivered once, so at most one of each matches.
    - The row's `shopper` and `courier` and the `shopper_id` and `courier_id` filters read these two.
    - `SelfOrderMark` holds the rule once, for the row, the filter, the count and the item. A Shopper assignment marks from its start and a Courier assignment from its acceptance, or while current.
    - The detail's `courier_assignments` has the Shopper assignments' shape, with the Courier's own instants (`accepted_at`, `delivery_started_at`, `delay_at`) and a failed delivery's reason and note.
-5. **The panel** already reads a row or an item without a current Shopper (`DL-54` (21)). Its row fixture now carries `courier` and `pending_approval_count`, as the contract does. The Courier columns and the Courier picker in the panel are W3-13's.
+5. **The panel reads a marked row that names no Shopper** (`DL-54` (21)). A self-order Shopper whose shopping was cancelled still marks the order, and the row names no Shopper then. The panel used to refuse such a row, and with it the whole page. That rule of `DL-47` (3), "a self-order row has a Shopper", is superseded: the row is read, and its Shopper cell shows no one beside the mark.
+   - Its row fixture now carries `courier` and `pending_approval_count`, as the contract does.
+   - The Courier columns and the Courier picker in the panel are W3-13's.
+6. **An attention item read after its order stopped qualifying is left out.** The list narrows the orders in one statement and reads the people in another. A reassignment or an unblock committed in between leaves nothing to name and no instant, and the order no longer needs that attention.

@@ -71,6 +71,29 @@ final class BoardPeopleApiTest extends TestCase
         $this->assertSame($shopper->id, $item['shopper']['id']);
     }
 
+    public function test_an_order_several_assignments_mark_is_one_item_since_the_first_naming_the_latest(): void
+    {
+        $order = Order::factory()->deliveryAssigned()->create(['customer_id' => $this->customer->id]);
+        $shopper = OrderShopperAssignment::query()->where('order_id', $order->id)->sole();
+        $shopper->forceFill(['is_self_order' => true, 'assigned_at' => now()->subHour()])->save();
+        $first = OrderCourierAssignment::query()->where('order_id', $order->id)->sole();
+        $first->forceFill([
+            'is_self_order' => true,
+            'assigned_at' => now()->subMinutes(30),
+            'accepted_at' => now()->subMinutes(29),
+            'ended_at' => now()->subMinutes(20),
+            'ended_reason' => AssignmentEndReason::Reassigned,
+        ])->save();
+        $latest = OrderCourierAssignment::factory()->create(['order_id' => $order->id, 'is_self_order' => true, 'assigned_at' => now()->subMinutes(10)]);
+
+        $items = $this->attention();
+
+        $this->assertCount(1, $items);
+        $this->assertSame(['self_order', now()->subHour()->toIso8601ZuluString()], [$items[0]['type'], $items[0]['since']]);
+        $this->assertSame($shopper->shopper_id, $items[0]['shopper']['id']);
+        $this->assertSame($latest->courier_id, $items[0]['courier']['id'], 'The latest of the Couriers marking it.');
+    }
+
     public function test_a_self_order_assignment_replaced_before_work_stops_marking_the_order(): void
     {
         $order = Order::factory()->shoppingAssigned()->create(['customer_id' => $this->customer->id]);
@@ -149,6 +172,11 @@ final class BoardPeopleApiTest extends TestCase
         $courier = OrderCourierAssignment::query()->where('order_id', $delivering->id)->sole()->courier;
         $closed = Order::factory()->completed()->create();
         $closedCourier = OrderCourierAssignment::query()->where('order_id', $closed->id)->sole()->courier;
+        // Open, but its blocked Shopper finished the shopping: nothing waits
+        // on them any more.
+        $shopped = Order::factory()->readyForDelivery()->create();
+        OrderShopperAssignment::query()->where('order_id', $shopped->id)->sole()->shopper
+            ->forceFill(['status' => 'blocked', 'blocked_at' => now()->subMinutes(40)])->save();
 
         $shopper->forceFill(['status' => 'blocked', 'blocked_at' => now()->subMinutes(20)])->save();
         $courier->forceFill(['status' => 'blocked', 'blocked_at' => now()->subMinutes(5)])->save();
