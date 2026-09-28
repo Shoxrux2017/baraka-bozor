@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Http\Resources;
 
+use App\Models\CustomerApproval;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Order;
 use App\Models\OrderHistory;
@@ -123,7 +124,11 @@ final class BoardOrderResource extends JsonResource
                 'ended_reason' => $assignment->ended_reason?->value,
             ])->all(),
             'courier_assignments' => [],
-            'approvals' => [],
+            'approvals' => $order->approvals
+                ->sortBy([['created_at', 'asc'], ['id', 'asc']])
+                ->values()
+                ->map(static fn (CustomerApproval $approval): array => self::approval($approval))
+                ->all(),
             'payment' => null,
             'refunds' => [],
             'history' => $order->history->sortBy([['created_at', 'asc'], ['id', 'asc']])->values()->map(
@@ -160,5 +165,42 @@ final class BoardOrderResource extends JsonResource
     private static function instant(?CarbonInterface $instant): ?string
     {
         return $instant?->toIso8601ZuluString();
+    }
+
+    /**
+     * An approval as staff see it (`DL-58` (4)): the question, its proposal —
+     * the price paid and the Customer's price, a quantity, a replacement — its
+     * timers, who asked and who resolved it.
+     *
+     * @return array<string, mixed>
+     */
+    private static function approval(CustomerApproval $approval): array
+    {
+        return [
+            'id' => $approval->id,
+            'item_id' => $approval->order_item_id,
+            'type' => $approval->type->value,
+            'status' => $approval->status->value,
+            'proposed_customer_unit_price_uzs' => $approval->proposed_customer_unit_price_uzs,
+            'proposed_actual_market_price_uzs' => $approval->proposed_actual_market_price_uzs,
+            'proposed_quantity' => $approval->proposed_quantity === null
+                ? null
+                : QuantityPolicy::format($approval->item->unit_code_snapshot, $approval->proposed_quantity),
+            'replacement' => $approval->replacement_product_id === null ? null : [
+                'product_id' => $approval->replacement_product_id,
+                'name_uz' => $approval->replacement_name_uz_snapshot,
+                'name_ru' => $approval->replacement_name_ru_snapshot,
+            ],
+            'request_note' => $approval->request_note,
+            'requested_by' => ['id' => $approval->requestedBy->id, 'full_name' => $approval->requestedBy->full_name],
+            'attention_at' => $approval->attention_at->toIso8601ZuluString(),
+            'expires_at' => $approval->expires_at->toIso8601ZuluString(),
+            'resolution' => $approval->resolution?->value,
+            'resolved_by' => $approval->resolvedBy === null
+                ? null
+                : ['id' => $approval->resolvedBy->id, 'full_name' => $approval->resolvedBy->full_name],
+            'resolved_at' => $approval->resolved_at?->toIso8601ZuluString(),
+            'created_at' => $approval->created_at->toIso8601ZuluString(),
+        ];
     }
 }

@@ -635,3 +635,32 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - **The merged clients** ignore members they do not know, so neither needed a change (`DL-54` (21)).
 5. **One purchase, however it is written.** The fingerprint (`DL-39` (7)) compares the purchase as it was meant. A quantity written `"2"` or `"2.000"` is one quantity, an id in either case is one id, and an absent price is a `null` price. A retry written differently by the app is therefore a replay, not `idempotency_key_reused`. Naming the product and leaving it out stay two requests, since only the line says what left out means.
 6. **A removed line shows no replacement.** Whatever was authorized on a removed line is moot once nothing will be bought, so every reader sees `replacement` as `null` for it (`ShopperLine::replacementOf`). The line's columns keep the authorization, as the history of what happened.
+
+## DL-58 — The Shopper's questions and the replacement search, from W3-4 (2026-09-28, agent)
+
+1. **One way to ask.** `CustomerQuestions::ask()` persists the proposal as asked (`BR-APP-001`). It sets `attention_at` ten minutes and `expires_at` thirty minutes after the server's now, turns the line `awaiting_customer`, and writes one `approval_requested` row naming the approval, the line and the type. Every question goes through the gate of `DL-57` (1), so a line already awaiting is `409 item_already_resolved` (`BR-APP-011`).
+2. **The price question** concerns the product the line is to be bought with, chosen as a purchase chooses it (`ShopperLine::productNamed`).
+   - It is asked only above that product's bound.
+   - At or under the bound, and always for a fixed original, which is billed at its snapshot and whose ceiling no approval raises (`DL-55` (6)), it is `409 approval_not_needed`. The bound is in `details` when there is one, so the app can say why.
+3. **A replacement.**
+   - **What is checked, in order:**
+     - the line's rule (`remove_if_unavailable` takes none);
+     - that it is not the original;
+     - that it is visible as the Customer's catalog shows products (`CustomerCatalogListing::visibleProducts`);
+     - that it has the line's unit.
+   - **Judging it.** Its price is the price paid under the line's markup, judged against the automatic ceiling of `BR-PRICE-005`:
+     - under `allow_similar_substitution` and within that ceiling, it is authorized at once. The line keeps `pending`, the approved price of an earlier replacement is cleared, and one `item_substituted` row names the replacement and any earlier one;
+     - otherwise the Customer is asked with a `substitution` approval. The earlier authorization stays in the line's columns while the question is open, but nothing can be bought on the line until the Customer answers: approval puts the new replacement in its place, and rejection removes the line (`BR-APP-006`). The Customer's order therefore shows the pending question's replacement (W3-5, W3-17).
+   - **Repeats.** The replacement already authorized, proposed again, is judged against its own bound (`PriceBound::replacement`), before its visibility: it was checked when it was authorized, and a purchase of it still succeeds if the catalog hid it since. Within it, the proposal is a natural repeat. Above it, the answer is the purchase's `409 customer_approval_required` with `price_over_tolerance`, so the Shopper asks about its price (`DL-54` (5)'s "judged the same").
+4. **What staff see of a question.** The board's order lists every approval, oldest first, with:
+   - its type and status;
+   - the price paid and the Customer's price, or the quantity;
+   - the replacement;
+   - the Shopper's note;
+   - who asked it, its two timers, and its resolution.
+
+   The panel does not read the list yet (W3-14), so nothing merged depends on it.
+5. **The replacement search.**
+   - It reaches a line of an order the Shopper holds now, a line the Shopper sees.
+   - It lists the visible products of the line's unit other than the original, searched and ordered as the catalog is.
+   - Each row carries the market price, since the Shopper compares products with the stall, and the image.
