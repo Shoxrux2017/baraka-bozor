@@ -233,7 +233,7 @@ Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54
 
 ## 35. Complete Shopping
 
-`POST /shopper/orders/{order}/complete` with `Idempotency-Key`. Every item terminal, no pending approval, else `409 shopping_incomplete`. Computes totals; cash → `ready_for_delivery`; online → `final_payment_pending` (Wave 5). An order with nothing bought never reaches it: the action that removed its last line cancelled it (`DL-54` (7)). A replay after completion answers the order through the Shopper's ended assignment (`DL-54` (3)).
+`POST /shopper/orders/{order}/complete` with `Idempotency-Key`, no body. The overdue questions are expired first (`DL-60` (1)). An order not being shopped by the caller is `409 shopping_not_active`. Every item terminal, no pending approval, else `409 shopping_incomplete` with `details.item_ids`, the lines still open. Computes totals; cash → `ready_for_delivery`; online → `final_payment_pending` (Wave 5). The Shopper's assignment ends `completed`, so the order leaves the Shopper's list, and the answer is the order of section 28 with that assignment, `customer_phone` `null`. An order with nothing bought never reaches it: the action that removed its last line cancelled it (`DL-54` (7)); one met here, like an online order before Wave 5, is `409 order_state_conflict` (`DL-61` (3)). A replay after completion answers the order through the Shopper's ended assignment while it is the order's latest (`DL-54` (3)).
 
 # Courier
 

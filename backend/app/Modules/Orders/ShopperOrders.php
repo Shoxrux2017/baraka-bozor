@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Orders;
 
 use App\Exceptions\ApiException;
+use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\ItemRemovedReason;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Order;
@@ -61,6 +62,29 @@ final class ShopperOrders
         }
 
         return [$order->setRelation('currentShopperAssignment', $assignment), $assignment];
+    }
+
+    /**
+     * The order a Shopper completed, for a replay of the completion
+     * (`DL-54` (3)): reached through the Shopper's own assignment that
+     * completion ended, and only while it is the order's latest Shopper
+     * assignment; otherwise the scope-safe `404`. The answer shows that
+     * assignment as the caller's own.
+     */
+    public static function completedBy(User $shopper, string $orderId): Order
+    {
+        /** @var OrderShopperAssignment|null $latest */
+        $latest = OrderShopperAssignment::query()
+            ->where('order_id', $orderId)
+            ->orderByDesc('assigned_at')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($latest === null || $latest->shopper_id !== $shopper->id || $latest->ended_reason !== AssignmentEndReason::Completed) {
+            throw ApiException::notFound();
+        }
+
+        return $latest->order->setRelation('currentShopperAssignment', $latest);
     }
 
     /**

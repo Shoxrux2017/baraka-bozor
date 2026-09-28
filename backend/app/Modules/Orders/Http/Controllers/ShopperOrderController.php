@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Orders\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\RequireIdempotencyKey;
 use App\Http\Pagination\PaginatedResponse;
 use App\Http\Requests\EmptyBodyRequest;
 use App\Models\Order;
 use App\Models\OrderShopperAssignment;
 use App\Models\User;
 use App\Modules\Orders\Actions\AcceptShoppingAssignment;
+use App\Modules\Orders\Actions\CompleteShopping;
 use App\Modules\Orders\Actions\StartShopping;
 use App\Modules\Orders\Http\Requests\ListShopperOrdersRequest;
 use App\Modules\Orders\Http\Resources\ShopperOrderResource;
@@ -23,10 +25,11 @@ use Illuminate\Http\Request;
 
 /**
  * `GET /shopper/orders`, `GET /shopper/orders/{order}`, and
- * `POST /shopper/orders/{order}/accept` and `.../start` (`docs/09` sections
- * 28 and 29). The Shopper's current assignments only (`DL-54` (3)); the list
- * is the oldest assignment first, the order the Shopper has waited on
- * longest; accept and start answer `200` with the order.
+ * `POST /shopper/orders/{order}/accept`, `.../start` and `.../complete`
+ * (`docs/09` sections 28, 29 and 35). The Shopper's current assignments only
+ * (`DL-54` (3)), but for a replay of a completion; the list is the oldest
+ * assignment first, the order the Shopper has waited on longest; each action
+ * answers `200` with the order.
  */
 final class ShopperOrderController extends Controller
 {
@@ -67,6 +70,18 @@ final class ShopperOrderController extends Controller
         $shopper = $this->shopper($request);
 
         return $this->resource($shopper, $start->start($shopper, $order));
+    }
+
+    /**
+     * Answers the completed order with the assignment completion ended as the
+     * caller's own.
+     */
+    public function complete(EmptyBodyRequest $request, string $order, CompleteShopping $complete): ShopperOrderResource
+    {
+        $shopper = $this->shopper($request);
+        $completed = $complete->complete($shopper, $order, RequireIdempotencyKey::of($request));
+
+        return new ShopperOrderResource($completed->load(['items.fulfilledProduct', 'items.approvals']));
     }
 
     /**
