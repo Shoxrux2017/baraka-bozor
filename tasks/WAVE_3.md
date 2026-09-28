@@ -23,7 +23,7 @@ None (`docs/06` section 5). The MapKit key (`DL-36`) blocks nothing here: no sta
 | # | Task | Status |
 |---|---|---|
 | W3-1 | Schema: `order_courier_assignments`, `customer_approvals`, `order_cancellation_requests`, `order_item_price_corrections`, `payments`; the history events; models and factories | Merged |
-| W3-2 | Shopper API: assigned orders, accept, start | Planned |
+| W3-2 | Shopper API: assigned orders, accept, start | Merged |
 | W3-3 | Shopper API: record a purchase, mark a line unavailable | Planned |
 | W3-4 | Shopper API: ask about a price, a replacement or a smaller quantity; the replacement search | Planned |
 | W3-5 | Approvals: the Customer's list, detail and decision | Planned |
@@ -183,7 +183,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 - **Expiry** (`DL-54` (8)):
   - the step of W3-5, made the first step of every action on an order, the merged ones of W3-3 and W3-4 included;
   - `approvals:expire`, scheduled every minute in `routes/console.php`;
-  - derived on every read.
+  - derived on every read, the Shopper's list and detail included: `open_item_count` and `pending_approval` stop counting an approval past its expiry.
 - `POST /operations/approvals/{approval}/resolve-expired`:
   - removes the line with `approval_expired` and writes `approval_resolved`;
   - an approval not yet expired is `409 approval_not_expired`;

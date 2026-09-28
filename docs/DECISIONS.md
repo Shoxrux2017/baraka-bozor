@@ -563,3 +563,45 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
 11. **An expired approval on an order cancelled later** keeps its status and has no resolution. Only a pending approval ends `cancelled` (`DL-54` (8)). Once the order has ended, no Operator is asked to remove its line: the attention list shows open orders only, and removing an expired line needs an open order (`409 order_state_conflict`, W3-6).
 12. **Buying the original.** The purchase copies the original's names and unit from the line, not from the catalog. An Admin may have changed the product's unit since the order was placed (`DL-43` (2)), and the line keeps the unit it was ordered in (W3-3).
 13. **A failed delivery clears the order's `on_the_way_at`**, and the next start sets it again. A completed order's departure is then the one that delivered it. Earlier departures stay on their Courier assignments, as `delivery_started_at`, and in the history. `ready_for_delivery_at` keeps the first readiness, when the Shopper handed the order over (`DL-54` (11)). This refines `DL-54` (11) for W3-10; `Order::factory()->deliveryFailed()` leaves it null.
+
+## DL-56 — The Shopper's orders, accept and start, from W3-2 (2026-09-28, agent)
+
+1. **What a Shopper sees.**
+   - **The list.** The Shopper's current assignments, the longest-waiting first (by `assigned_at`, then the order number), paginated. Each row carries:
+     - the order's number, status and delivery wish;
+     - how many lines the Shopper sees, and how many are still open;
+     - where the Shopper's own assignment stands.
+   - **The lines the Shopper sees.** Every line but those the Customer removed before shopping: those were never the Shopper's to buy.
+   - **The detail** adds:
+     - the Customer's phone, while the order is `shopping` (interview 7.3). This is the recipient's phone, the one the Courier gets too;
+     - whether the assignment may be accepted or started;
+     - the lines, each with:
+       - what to buy and how much, and an approved cap;
+       - the note and the rule;
+       - the market and customer price snapshots;
+       - the bound of the original and of an authorized replacement, each as a customer price and as a market price (`DL-54` (5), (6));
+       - the replacement with its current market price, which the Shopper compares with the stall;
+       - the purchase once made;
+       - a pending question with its expiry.
+   - **Never shown:**
+     - the address;
+     - the Customer's name, which `docs/02` section 11 does not give the Shopper and a call does not need;
+     - any amount the order owes.
+2. **The bound.**
+   - `PriceBound` computes the bound of the product bought. It is the one place the purchase, the questions and the correction of later tasks read it.
+   - `MoneyCalculator::largestBaseWithin` turns a bound into its market price. It is tested for every ceiling from 1 to 3 000 UZS under five markups, 0 % to 999.99 %: the price it gives stays within the ceiling, and one UZS more does not.
+3. **Accept and start.**
+   - **Accept** records the instant on the assignment and writes `shopper_accepted`, with the assignment in its `details`. The order does not move.
+   - **Start** moves the order from `shopping_assigned` to `shopping`, records the start on the assignment, and writes one `status_changed` row (`DL-54` (23)).
+   - **Repeats.** Both are natural repeats.
+   - **Refusals.** A start before acceptance, or on an order no longer `shopping_assigned`, is `409 order_state_conflict`. The documents name no code for it, and the app offers the start only after the acceptance.
+   - **No body.** Both take no body (`DL-31`).
+4. **A start closes the Customer's editing.** The Customer's edit and direct cancellation take the same order lock and read the start (`BR-ORDER-004`, `BR-CAN-001`). A test proves it for W2-6's edit: the edit runs in another process, waits on a start another connection holds, and is refused with `order_editing_locked`.
+5. **Routes.** They live in `routes/api/v1/shopper.php`, admit the Shopper alone, and reach an order through `ShopperOrders::current()`, a `whereExists` on the Shopper's current assignment (`ScopedLookup`'s rule for lockable scopes).
+6. **A scope on another table is read again under the lock.**
+   - **The problem.** `whereExists` on the Shopper's current assignment is judged on the statement's snapshot, before `FOR UPDATE` is granted. After waiting on the lock, PostgreSQL re-checks the query only when the locked row itself changed, and even then against the assignment rows as it first read them.
+   - **How it showed.** A Shopper replaced while their accept waited on the Operator's reassignment still found the order. The action then read the order's current assignment, which by then was the new Shopper's, and accepted it for them, writing the history under the wrong Shopper.
+   - **The fix.** `ShopperOrders::lockCurrent()` takes the lock and then reads the caller's own current assignment afresh. Anything else is the scope-safe `404`. Every Shopper action from here on goes through it. The response loads only the caller's own assignment, so a reassignment committed between the action and the answer cannot show the new Shopper's.
+   - **The test.** A race test plays the reassignment on a second connection while the accept, and then the start, waits in another process. It fails without the fix.
+   - **The rule.** `ScopedLookup` now states it: a scope that reads another table and can change under the lock is read again once the lock is held. A scope on the locked row's own columns, such as the Customer's `customer_id`, needs nothing more.
+7. **The panel reads every Wave 3 history event** (`DL-54` (21)). The panel's parser refused a history event it did not know. The first `shopper_accepted` row would therefore have stopped the Operator opening that order, just when a reassignment is still allowed. So the panel now knows all eight events of `DL-55` (7), with their words, and the later backend tasks do not break it.

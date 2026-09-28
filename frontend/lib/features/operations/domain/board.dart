@@ -387,7 +387,8 @@ final class ShopperAssignment {
   final AssignmentEndReason? endedReason;
 }
 
-/// What happened to an order (`docs/08` section 15).
+/// What happened to an order (`docs/08` section 15), with the events of
+/// Wave 3's actions (`DL-54` (2)).
 enum OrderHistoryEvent {
   statusChanged('status_changed'),
   edited('edited'),
@@ -401,7 +402,15 @@ enum OrderHistoryEvent {
   approvalRequested('approval_requested'),
   approvalDecided('approval_decided'),
   approvalExpired('approval_expired'),
-  approvalResolved('approval_resolved');
+  approvalResolved('approval_resolved'),
+  shopperAccepted('shopper_accepted'),
+  courierAccepted('courier_accepted'),
+  itemPurchased('item_purchased'),
+  itemUnavailable('item_unavailable'),
+  itemSubstituted('item_substituted'),
+  cancellationRequested('cancellation_requested'),
+  cancellationRequestDecided('cancellation_request_decided'),
+  paymentRecorded('payment_recorded');
 
   const OrderHistoryEvent(this.code);
 

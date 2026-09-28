@@ -2252,6 +2252,54 @@ abstract class AppLocalizations {
   /// **'Tasdiq yopildi'**
   String get historyEventApprovalResolved;
 
+  /// No description provided for @historyEventShopperAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi buyurtmani qabul qildi'**
+  String get historyEventShopperAccepted;
+
+  /// No description provided for @historyEventCourierAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer buyurtmani qabul qildi'**
+  String get historyEventCourierAccepted;
+
+  /// No description provided for @historyEventItemPurchased.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot sotib olindi'**
+  String get historyEventItemPurchased;
+
+  /// No description provided for @historyEventItemUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot topilmadi'**
+  String get historyEventItemUnavailable;
+
+  /// No description provided for @historyEventItemSubstituted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot almashtirildi'**
+  String get historyEventItemSubstituted;
+
+  /// No description provided for @historyEventCancellationRequested.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz bekor qilishni so\'radi'**
+  String get historyEventCancellationRequested;
+
+  /// No description provided for @historyEventCancellationRequestDecided.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish so\'rovi ko\'rib chiqildi'**
+  String get historyEventCancellationRequestDecided;
+
+  /// No description provided for @historyEventPaymentRecorded.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov qabul qilindi'**
+  String get historyEventPaymentRecorded;
+
   /// No description provided for @historyDeliveryWishChanged.
   ///
   /// In uz, this message translates to:

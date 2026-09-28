@@ -19,9 +19,12 @@ declare(strict_types=1);
 
 use App\Exceptions\ApiException;
 use App\Models\User;
+use App\Modules\Orders\Actions\AcceptShoppingAssignment;
 use App\Modules\Orders\Actions\AssignShopper;
 use App\Modules\Orders\Actions\ChangeCart;
 use App\Modules\Orders\Actions\CreateOrder;
+use App\Modules\Orders\Actions\EditOrderItems;
+use App\Modules\Orders\Actions\StartShopping;
 use Illuminate\Contracts\Console\Kernel;
 
 require __DIR__.'/../../../vendor/autoload.php';
@@ -59,6 +62,20 @@ try {
                 $arguments[1],
                 $arguments[2],
             )->id,
+        ],
+        'orders.edit' => [
+            'order_id' => $app->make(EditOrderItems::class)->edit(
+                User::query()->findOrFail($arguments[0]),
+                $arguments[1],
+                [['product_id' => $arguments[2], 'quantity' => $arguments[3]]],
+                null,
+            )->id,
+        ],
+        'shopper.accept' => [
+            'order_id' => $app->make(AcceptShoppingAssignment::class)->accept(User::query()->findOrFail($arguments[0]), $arguments[1])->id,
+        ],
+        'shopper.start' => [
+            'order_id' => $app->make(StartShopping::class)->start(User::query()->findOrFail($arguments[0]), $arguments[1])->id,
         ],
         default => throw new InvalidArgumentException("Unknown scenario {$scenario}."),
     };

@@ -40,6 +40,26 @@ final class MoneyCalculator
     }
 
     /**
+     * The largest whole amount that `increaseByPercent` keeps at or under the
+     * ceiling — the highest market price a Shopper may pay without asking,
+     * given the customer price the line may not exceed (`DL-54` (6)).
+     *
+     * `half_up(m × (10000 + bp) / 10000) ≤ C` exactly when
+     * `2 × m × (10000 + bp) ≤ (2C + 1) × 10000 − 1`, since the rounded value
+     * stays at or under C while the exact one stays under C + ½; the increase
+     * never falls as the amount grows, so the largest such m is the floor of
+     * that bound. The products stay inside a 64-bit integer for ceilings up to
+     * about 4.6 × 10¹⁴ UZS, far above the largest a line can have (a customer
+     * price of about 1.1 × 10¹⁰ under a tolerance of up to 999.99 %).
+     */
+    public static function largestBaseWithin(int $ceilingUzs, Percentage $percent): int
+    {
+        self::assertNotNegative($ceilingUzs);
+
+        return intdiv((2 * $ceilingUzs + 1) * self::BASIS - 1, 2 * (self::BASIS + $percent->basisPoints));
+    }
+
+    /**
      * `half_up(amount × percent / 100)` — a percentage service fee on the
      * merchandise subtotal (`BR-MONEY-005`).
      */

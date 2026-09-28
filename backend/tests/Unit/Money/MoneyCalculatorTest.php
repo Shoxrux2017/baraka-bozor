@@ -55,4 +55,31 @@ final class MoneyCalculatorTest extends TestCase
 
         MoneyCalculator::increaseByPercent(-1, Percentage::fromString('10'));
     }
+
+    public function test_the_largest_base_within_a_ceiling_is_the_last_one_that_stays_under_it(): void
+    {
+        // The estimate 18 400 plus 15 % tolerance is 21 160 to the Customer;
+        // under a 15 % markup the stall may charge up to 18 400 (21 160), not
+        // 18 401 (21 161.15 → 21 161).
+        $this->assertSame(18_400, MoneyCalculator::largestBaseWithin(21_160, Percentage::fromString('15')));
+        $this->assertSame(0, MoneyCalculator::largestBaseWithin(0, Percentage::fromString('15')));
+
+        foreach (['0', '12.5', '15', '33.33', '999.99'] as $markup) {
+            $percent = Percentage::fromString($markup);
+            for ($ceiling = 1; $ceiling <= 3_000; $ceiling++) {
+                $largest = MoneyCalculator::largestBaseWithin($ceiling, $percent);
+                $this->assertLessThanOrEqual($ceiling, MoneyCalculator::increaseByPercent($largest, $percent), "{$ceiling} at {$markup} %");
+                $this->assertGreaterThan($ceiling, MoneyCalculator::increaseByPercent($largest + 1, $percent), "{$ceiling} at {$markup} %: one more fits");
+            }
+        }
+
+        $this->assertSame(10_000_000_000, MoneyCalculator::largestBaseWithin(10_000_000_000, Percentage::fromString('0')));
+    }
+
+    public function test_the_largest_base_within_refuses_a_negative_ceiling(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        MoneyCalculator::largestBaseWithin(-1, Percentage::fromString('15'));
+    }
 }
