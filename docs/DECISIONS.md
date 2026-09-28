@@ -341,7 +341,7 @@ Taken while planning `tasks/WAVE_3.md` and revised by its review; each task reco
    - **Quantity.** The billable quantity is the purchased quantity, capped at the ordered quantity or at an approved cap (`BR-QTY-003`, `BR-QTY-004`).
    - **A smaller quantity** is a reduction the Customer has not agreed to (`BR-QTY-005`). A purchased quantity below that cap is refused with `409 customer_approval_required`, `details.approval_type` `reduced_quantity` and `details.required_quantity`. The Shopper then buys more or asks the Customer (`docs/09` section 34).
    - **A higher price.** A billable price above the ceiling is refused the same way, with `price_over_tolerance` and the two prices of `docs/09` section 30.
-   - **The product.** The fulfilled product is the line's own product or the replacement authorized on it; any other is `422` on `fulfilled_product_id`. Left out, it is the authorized replacement when the line has one, and the line's own product otherwise.
+   - **The product.** The fulfilled product is the line's own product or the replacement authorized on it; any other is `422` on `fulfilled_product_id`. Left out, it is the authorized replacement when the line has one, and the line's own product otherwise. Buying the original while a replacement is authorized drops that authorization, its snapshots and its approved price.
    - **Fixed lines.** A fixed original bought as itself is billed at its snapshot, and may record the price paid.
    - **Estimate lines and replacements.** An estimate original and every replacement require the price paid (`docs/08` section 14). They are billed at `half_up(price × (1 + line markup / 100))` (`BR-PRICE-003`, `BR-PRICE-004`, `DL-37` (8)).
    - **What the Customer sees** is the billable customer price, never the price paid (`BR-PRICE-001`).
@@ -352,9 +352,11 @@ Taken while planning `tasks/WAVE_3.md` and revised by its review; each task reco
      - One about the authorized replacement names that replacement, and sets `approved_replacement_price_uzs`.
      - A `substitution` approval authorizes its replacement at its proposed price and no higher, also in `approved_replacement_price_uzs`.
      - A new substitution clears `approved_replacement_price_uzs` and keeps the original's ceiling.
-     - A purchase of the original is held to the original's ceiling. A purchase of the replacement is held to its approved price, or else to the automatic ceiling.
+   - **The bound of the product bought.** This is the one bound a price is held to wherever this wave speaks of a ceiling: a purchase ((4)), a price question, and a price correction ((18)).
+     - For the original, it is the original's ceiling: an estimate's approved ceiling, or else its estimate plus tolerance. A fixed original bought as itself has no bound to meet, since it is billed at its snapshot (`BR-PRICE-002`). A price question about it is therefore `409 approval_not_needed`, and no approval ever raises a fixed original's ceiling (`BR-PRICE-005`).
+     - For the authorized replacement, it is `approved_replacement_price_uzs`, or else the automatic ceiling.
    - **Judging a substitution.** A substitution is judged against the automatic ceiling of `BR-PRICE-005`: a fixed original's snapshot, or an estimate original's estimate plus tolerance, or a higher ceiling approved for the original. It is never judged against a price approved for another replacement, so the Customer's yes to one replacement's price never authorizes another.
-6. **The ceiling as a market price.** The Shopper's line carries its ceiling as a customer price, and as the highest whole market price whose customer price stays within it, computed by the server. The Shopper then compares the stall's price with a number of the same kind, and the client computes no money (`DL-37` (19)).
+6. **The bound as a market price.** The Shopper's line carries the bound of each product it may be bought with ((5)): the original's, and the authorized replacement's when there is one. Each is carried as a customer price, and as the highest whole market price whose customer price stays within it, computed by the server. The Shopper then compares the stall's price with a number of the same kind, and the client computes no money (`DL-37` (19)).
    - With the line's markup as `K` hundredths of a percent and the ceiling as `C`, that price is `floor(((2C + 1) × 10 000 − 1) / (2 × (10 000 + K)))`: the largest whole `m` with `half_up(m × (10 000 + K) / 10 000) ≤ C`.
    - It exists because the customer price rises with the market price. The tests pin it and the UZS after it.
 7. **Nothing left to buy.**
@@ -445,7 +447,7 @@ Taken while planning `tasks/WAVE_3.md` and revised by its review; each task reco
       - So `on_the_way`, `completed` and `cancelled` orders are `409 price_correction_locked`.
     - **Refusals.**
       - A line not bought, or one billed at its fixed snapshot, is `409 price_correction_not_applicable`.
-      - A corrected price above the line's ceiling is `409 price_correction_above_ceiling`, since a price above it needs the Customer's decision (`AGENTS.md` section 6).
+      - A corrected price above the bound of the product bought ((5)) is `409 price_correction_above_ceiling`, since a price above it needs the Customer's decision (`AGENTS.md` section 6).
       - The current price again is a natural repeat.
     - **Writes.** One transaction writes:
       - the correction row;

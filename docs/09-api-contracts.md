@@ -199,7 +199,7 @@ Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54
 {"purchased_quantity":"5.200","actual_market_price_uzs":16000,"fulfilled_product_id":"..."}
 ```
 
-`actual_market_price_uzs` is required for estimate items and replacements, optional for fixed originals. The server computes the billable unit price. Above the ceiling → `409 customer_approval_required` with `details.approval_type` `price_over_tolerance`, `details.ceiling_customer_unit_price_uzs` and `details.proposed_customer_unit_price_uzs`; a purchased quantity below the ordered quantity or the approved cap → the same code with `details.approval_type` `reduced_quantity` and `details.required_quantity` (`DL-54` (4)). `fulfilled_product_id` is the line's own product or the replacement authorized on it (`422` otherwise), and left out means the authorized replacement when there is one. The Customer sees the billable customer price, never the price paid. Codes: `shopping_not_active`, `item_already_resolved`.
+`actual_market_price_uzs` is required for estimate items and replacements, optional for fixed originals. The server computes the billable unit price. Above the bound of the product bought (`DL-54` (5)) → `409 customer_approval_required` with `details.approval_type` `price_over_tolerance`, `details.ceiling_customer_unit_price_uzs` (that bound) and `details.proposed_customer_unit_price_uzs`; a purchased quantity below the ordered quantity or the approved cap → the same code with `details.approval_type` `reduced_quantity` and `details.required_quantity` (`DL-54` (4)). `fulfilled_product_id` is the line's own product or the replacement authorized on it (`422` otherwise), and left out means the authorized replacement when there is one. The Customer sees the billable customer price, never the price paid. Codes: `shopping_not_active`, `item_already_resolved`.
 
 ## 31. Unavailable
 
@@ -207,7 +207,7 @@ Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54
 
 ## 32. Price Approval
 
-`POST /shopper/orders/{order}/items/{item}/price-approval` `{"actual_market_price_uzs":22000,"fulfilled_product_id":"...","note":"..."}` → a `price_over_tolerance` approval carrying the computed proposed customer price. `fulfilled_product_id` is optional and means what it means for a purchase (section 30); the approval names the replacement when it is about one (`DL-54` (5)). Only when the price exceeds that product's current ceiling; otherwise `409 approval_not_needed`.
+`POST /shopper/orders/{order}/items/{item}/price-approval` `{"actual_market_price_uzs":22000,"fulfilled_product_id":"...","note":"..."}` → a `price_over_tolerance` approval carrying the computed proposed customer price. `fulfilled_product_id` is optional and means what it means for a purchase (section 30); the approval names the replacement when it is about one (`DL-54` (5)). Only when the price exceeds the bound of that product; otherwise, and always for a fixed original, `409 approval_not_needed`.
 
 ## 33. Substitution
 
@@ -275,7 +275,7 @@ A staff account is `{"id":"...","role":"shopper","phone":"+998901112233","full_n
 
 ## 45. Price Correction
 
-`POST /admin/orders/{order}/items/{item}/price-correction` `{"actual_market_price_uzs":15000,"reason":"..."}` for a bought line billed from the price paid — an estimate original or a replacement — while the order is unpaid and the Courier has not set off; recomputes the line and, once shopping has completed, the final amounts (from Wave 5 an unpaid obligation too); an order `on_the_way`, completed or cancelled is `409 price_correction_locked`, a line not bought or billed at its fixed snapshot `409 price_correction_not_applicable`, a price whose customer price exceeds the line's ceiling `409 price_correction_above_ceiling`; the current price again is a natural repeat (`DL-54` (18)).
+`POST /admin/orders/{order}/items/{item}/price-correction` `{"actual_market_price_uzs":15000,"reason":"..."}` for a bought line billed from the price paid — an estimate original or a replacement — while the order is unpaid and the Courier has not set off; recomputes the line and, once shopping has completed, the final amounts (from Wave 5 an unpaid obligation too); an order `on_the_way`, completed or cancelled is `409 price_correction_locked`, a line not bought or billed at its fixed snapshot `409 price_correction_not_applicable`, a price whose customer price exceeds the bound of the product bought `409 price_correction_above_ceiling`; the current price again is a natural repeat (`DL-54` (18)).
 
 # Providers *(Wave 5)*
 

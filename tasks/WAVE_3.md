@@ -87,7 +87,8 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 
 - `GET /shopper/orders` (current assignments, oldest first) and `GET /shopper/orders/{order}` (`docs/09` section 28).
 - The detail carries:
-  - the lines, with their notes, rules, market and customer price snapshots, and ceiling as both a customer and a market price (`DL-54` (6));
+  - the lines, with their notes, rules, and market and customer price snapshots;
+  - the bound of each product a line may be bought with, as both a customer and a market price (`DL-54` (6));
   - the authorized replacement with its current market price, the cap, and a pending approval with its expiry;
   - the order number and the delivery wish;
   - `customer_phone`, only while the order is `shopping`. The address never.
@@ -122,7 +123,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - a purchase below the ordered quantity, and below a cap;
   - excess not billed (`docs/04` section 15);
   - an estimate line added by an edit, billed at its own markup (Wave 2 risk row);
-  - the authorized replacement bought with and without `fulfilled_product_id`;
+  - the authorized replacement bought with and without `fulfilled_product_id`, and the original bought instead, which drops the authorization;
   - a replay;
   - the last line marked unavailable cancels the order and closes a pending request.
 
@@ -151,7 +152,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - each branch of the substitution, per rule and ceiling;
   - a replacement's approved price is not carried to another replacement, and the original's approved ceiling survives a new one;
   - the same automatic replacement again, and a different one;
-  - a fixed original's automatic ceiling;
+  - a fixed original's automatic ceiling, and a price question about a fixed original refused;
   - a second question on an awaiting line;
   - the proposal's values;
   - the timers, under a controlled clock.
@@ -296,7 +297,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - the board's Courier column, and the Courier and `awaiting_customer` filters;
   - the words for every attention type of the wave;
   - the attention list, given its own height and folding past a few items (Wave 2 risk row).
-- The staff screen's block confirmation names the person's current orders, since a started one cannot then move (risk list).
+- The staff screen's block confirmation gives a Shopper's or Courier's count of current orders, from the pickers' `current_assignment_count` (`DL-45` (1)), since a started one cannot then move (risk list).
 - Tests: request bodies and verbs, refusal texts, the attention words, the narrow window.
 
 **W3-14. Panel: the order page.**

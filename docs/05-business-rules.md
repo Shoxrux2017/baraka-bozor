@@ -84,7 +84,7 @@
 
 **BR-PRICE-005 — Automatic replacement ceiling.** Fixed original: its customer-price snapshot. Estimate original: its estimate plus tolerance, or an approved higher ceiling.
 
-**BR-PRICE-006 — Price correction.** Admin may correct the recorded market price of a bought line billed from it — an estimate item or a replacement — with a reason, while the order is unpaid and the Courier has not set off; the line and the final amounts (from Wave 5 an unpaid online obligation too) are recomputed, and the corrected price stays within the line's ceiling. A paid order, and one on the way, locks corrections (`DL-54` (18)).
+**BR-PRICE-006 — Price correction.** Admin may correct the recorded market price of a bought line billed from it — an estimate item or a replacement — with a reason, while the order is unpaid and the Courier has not set off; the line and the final amounts (from Wave 5 an unpaid online obligation too) are recomputed, and the corrected price stays within the bound of the product bought (`DL-54` (5)). A paid order, and one on the way, locks corrections (`DL-54` (18)).
 
 # 6. Money and Rounding
 
