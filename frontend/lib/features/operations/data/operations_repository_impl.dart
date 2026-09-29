@@ -53,4 +53,37 @@ class OperationsRepositoryImpl implements OperationsRepository {
   ) => guardApiCall(
     () => _api.reassignCourier(orderId, courierId, replacesAssignmentId),
   );
+
+  @override
+  Future<BoardOrder> resolveExpiredApproval(
+    String orderId,
+    String approvalId,
+    String? note,
+  ) => guardApiCall(
+    () => _api.resolveExpiredApproval(orderId, approvalId, note),
+  );
+
+  @override
+  Future<BoardOrder> decideCancellationRequest(
+    String orderId,
+    String requestId,
+    CancellationDecision decision,
+    String? note,
+  ) => guardApiCall(
+    () => _api.decideCancellationRequest(orderId, requestId, decision, note),
+  );
+
+  @override
+  Future<BoardOrder> cancelAfterFailedDelivery(String orderId, String? note) =>
+      guardApiCall(() => _api.cancelAfterFailedDelivery(orderId, note));
+
+  @override
+  Future<BoardOrder> correctPrice(
+    String orderId,
+    String itemId,
+    int actualMarketPriceUzs,
+    String reason,
+  ) => guardApiCall(
+    () => _api.correctPrice(orderId, itemId, actualMarketPriceUzs, reason),
+  );
 }

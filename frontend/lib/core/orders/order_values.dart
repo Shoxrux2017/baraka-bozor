@@ -189,3 +189,127 @@ enum CancellationReason {
     return null;
   }
 }
+
+/// What a question to the Customer is about (`docs/08` section 15).
+enum ApprovalType {
+  priceOverTolerance('price_over_tolerance'),
+  substitution('substitution'),
+  reducedQuantity('reduced_quantity');
+
+  const ApprovalType(this.code);
+
+  final String code;
+
+  static ApprovalType? tryParse(String code) {
+    for (final ApprovalType value in values) {
+      if (value.code == code) {
+        return value;
+      }
+    }
+    return null;
+  }
+}
+
+/// Where a question to the Customer stands, as the server shows it at the
+/// moment of reading: one past its expiry is `expired` (`DL-59`).
+enum ApprovalStatus {
+  pending('pending'),
+  approved('approved'),
+  rejected('rejected'),
+  expired('expired'),
+  cancelled('cancelled');
+
+  const ApprovalStatus(this.code);
+
+  final String code;
+
+  static ApprovalStatus? tryParse(String code) {
+    for (final ApprovalStatus value in values) {
+      if (value.code == code) {
+        return value;
+      }
+    }
+    return null;
+  }
+}
+
+/// How a question was resolved: the Customer's answer, or the line removed
+/// by staff after it expired (`BR-APP-007`).
+enum ApprovalResolution {
+  approved('approved'),
+  rejected('rejected'),
+  removeItem('remove_item');
+
+  const ApprovalResolution(this.code);
+
+  final String code;
+
+  static ApprovalResolution? tryParse(String code) {
+    for (final ApprovalResolution value in values) {
+      if (value.code == code) {
+        return value;
+      }
+    }
+    return null;
+  }
+}
+
+/// How a line's replacement was authorized: by its policy and ceiling, or
+/// by the Customer (`BR-SUB-002`).
+enum SubstitutionResolution {
+  automatic('automatic'),
+  approved('approved');
+
+  const SubstitutionResolution(this.code);
+
+  final String code;
+
+  static SubstitutionResolution? tryParse(String code) {
+    for (final SubstitutionResolution value in values) {
+      if (value.code == code) {
+        return value;
+      }
+    }
+    return null;
+  }
+}
+
+/// Who filed a cancellation request (`docs/08` section 18).
+enum CancellationRequestOrigin {
+  customer('customer'),
+  staff('staff');
+
+  const CancellationRequestOrigin(this.code);
+
+  final String code;
+
+  static CancellationRequestOrigin? tryParse(String code) {
+    for (final CancellationRequestOrigin value in values) {
+      if (value.code == code) {
+        return value;
+      }
+    }
+    return null;
+  }
+}
+
+/// Where an order's payment stands (`docs/08` section 19).
+enum PaymentStatus {
+  unpaid('unpaid'),
+  pending('pending'),
+  paid('paid'),
+  cancelled('cancelled');
+
+  const PaymentStatus(this.code);
+
+  final String code;
+
+  static PaymentStatus? tryParse(String code) {
+    for (final PaymentStatus value in values) {
+      if (value.code == code) {
+        return value;
+      }
+    }
+    return null;
+  }
+}

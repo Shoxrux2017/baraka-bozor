@@ -59,6 +59,13 @@ String _refusalText(AppLocalizations l10n, String code, int status) {
     'order_cancellation_not_allowed' => l10n.errorOrderCancellationNotAllowed,
     'idempotency_in_progress' => l10n.errorInProgress,
     'staff_not_active' => l10n.errorStaffNotActive,
+    'approval_not_expired' => l10n.errorApprovalNotExpired,
+    'approval_already_resolved' => l10n.errorApprovalAlreadyResolved,
+    'cancellation_request_already_decided' => l10n.errorRequestAlreadyDecided,
+    'cancellation_already_pending' => l10n.errorCancellationAlreadyPending,
+    'price_correction_locked' => l10n.errorPriceCorrectionLocked,
+    'price_correction_not_applicable' => l10n.errorPriceCorrectionNotApplicable,
+    'price_correction_above_ceiling' => l10n.errorPriceAboveCeilingPlain,
     'provider_unavailable' ||
     'payment_provider_unavailable' => l10n.errorProviderUnavailable,
     'service_unavailable' => l10n.errorServiceUnavailable,

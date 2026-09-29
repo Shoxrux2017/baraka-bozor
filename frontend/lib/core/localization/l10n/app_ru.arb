@@ -887,5 +887,268 @@
     }
   },
   "staffBlockOrdersLoading": "Загружаем, сколько заказов у сотрудника…",
-  "staffBlockOrdersUnknown": "Не удалось узнать, сколько заказов у сотрудника. Начатая сборка или доставка в пути не перейдёт к другому."
+  "staffBlockOrdersUnknown": "Не удалось узнать, сколько заказов у сотрудника. Начатая сборка или доставка в пути не перейдёт к другому.",
+  "orderSectionApprovals": "Вопросы клиенту",
+  "orderSectionCancellationRequests": "Запросы на отмену",
+  "orderSectionPayment": "Оплата",
+  "itemBought": "Куплено: {quantity}",
+  "@itemBought": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "itemBilled": "К оплате: {quantity}",
+  "@itemBilled": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "itemPricePaid": "Цена покупки: {price}",
+  "@itemPricePaid": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "itemBilledPrice": "Цена к оплате: {price}",
+  "@itemBilledPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "itemReplacedWith": "Замена: {name}",
+  "@itemReplacedWith": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "replacementAutomatic": "автоматически",
+  "replacementApproved": "с согласия клиента",
+  "approvalsNone": "Вопросов клиенту не было",
+  "approvalTypePrice": "Цена выше допустимой",
+  "approvalTypeSubstitution": "Замена",
+  "approvalTypeReducedQuantity": "Меньшее количество",
+  "approvalStatusPending": "Ждёт ответа",
+  "approvalStatusApproved": "Клиент согласился",
+  "approvalStatusRejected": "Клиент отказался",
+  "approvalStatusExpired": "Срок истёк",
+  "approvalStatusCancelled": "Закрыт",
+  "approvalProposedPrice": "Предложено: {price}, цена покупки {paid}",
+  "@approvalProposedPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "paid": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalProposedQuantity": "Предложено: {quantity}",
+  "@approvalProposedQuantity": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalReplacement": "Замена: {name}",
+  "@approvalReplacement": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalAskedBy": "Спросил(а) {name}, {time}",
+  "@approvalAskedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalTimers": "Внимание с {attention} · Срок до {expires}",
+  "@approvalTimers": {
+    "placeholders": {
+      "attention": {
+        "type": "String"
+      },
+      "expires": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalResolvedBy": "Решение: {name}, {time}",
+  "@approvalResolvedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalClosedAt": "Закрыт: {time}",
+  "@approvalClosedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalLineRemoved": "Товар убран из заказа",
+  "removeExpiredLine": "Убрать товар",
+  "removeExpiredTitle": "Убрать «{name}»?",
+  "@removeExpiredTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "removeExpiredExplained": "Клиент не ответил вовремя. Товар будет убран из заказа; если покупать больше нечего, заказ отменится.",
+  "cancellationRequestsNone": "Запросов на отмену не было",
+  "requestStatusPending": "Ждёт решения",
+  "requestStatusApproved": "Одобрен",
+  "requestStatusRejected": "Отклонён",
+  "requestStatusClosed": "Закрыт",
+  "requestOriginCustomer": "От клиента",
+  "requestOriginStaff": "От сотрудника",
+  "requestReason": "Причина: {reason}",
+  "@requestReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "requestFiledBy": "{name}, {time}",
+  "@requestFiledBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "requestDecidedBy": "Решение: {name}, {time}",
+  "@requestDecidedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "requestClosedAt": "Закрыт: {time}",
+  "@requestClosedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "approveRequest": "Одобрить отмену",
+  "rejectRequest": "Отклонить",
+  "approveRequestTitle": "Отменить заказ?",
+  "approveRequestExplained": "Заказ будет отменён: текущее назначение завершится, открытые товары уберутся, купленное останется купленным, к оплате ничего не будет.",
+  "rejectRequestTitle": "Отклонить запрос?",
+  "rejectRequestExplained": "Заказ продолжится.",
+  "cancelFailedDelivery": "Отменить заказ",
+  "cancelFailedDeliveryTitle": "Отменить заказ?",
+  "cancelFailedDeliveryExplained": "Заказ будет отменён с причиной «доставка не удалась».",
+  "actionNote": "Комментарий (необязательно)",
+  "paymentNone": "Оплата ещё не записана",
+  "paymentStatusUnpaid": "Не оплачено",
+  "paymentStatusPending": "Ожидает",
+  "paymentStatusPaid": "Оплачено",
+  "paymentStatusCancelled": "Отменено",
+  "paymentAmount": "Сумма: {amount}",
+  "@paymentAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentPaidAt": "Время оплаты: {time}",
+  "@paymentPaidAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentRecordedBy": "Принял(а): {name}",
+  "@paymentRecordedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "correctPrice": "Исправить цену",
+  "correctPriceTitle": "Исправление цены: {name}",
+  "@correctPriceTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "correctPriceNew": "Новая цена покупки, сум",
+  "correctPriceReason": "Причина",
+  "errorPriceAboveCeiling": "Цена для клиента выйдет за предел. Введите цену покупки, при которой клиент платит не больше {ceiling}.",
+  "@errorPriceAboveCeiling": {
+    "placeholders": {
+      "ceiling": {
+        "type": "String"
+      }
+    }
+  },
+  "errorPriceAboveCeilingPlain": "Цена для клиента выйдет за предел.",
+  "historyPriceCorrectedDetails": "{name}: цена покупки {oldPaid} → {newPaid}, для клиента {oldBilled} → {newBilled}",
+  "@historyPriceCorrectedDetails": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "oldPaid": {
+        "type": "String"
+      },
+      "newPaid": {
+        "type": "String"
+      },
+      "oldBilled": {
+        "type": "String"
+      },
+      "newBilled": {
+        "type": "String"
+      }
+    }
+  },
+  "errorApprovalNotExpired": "Срок вопроса ещё не истёк.",
+  "errorApprovalAlreadyResolved": "Вопрос уже решён.",
+  "errorRequestAlreadyDecided": "По запросу уже принято решение.",
+  "errorCancellationAlreadyPending": "Есть запрос на отмену — сначала примите по нему решение.",
+  "errorPriceCorrectionLocked": "Цену уже нельзя исправить: заказ в пути, завершён, отменён или оплачивается онлайн.",
+  "errorPriceCorrectionNotApplicable": "Цену этой позиции исправить нельзя."
 }

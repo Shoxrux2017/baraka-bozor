@@ -1731,4 +1731,279 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get staffBlockOrdersUnknown =>
       'Не удалось узнать, сколько заказов у сотрудника. Начатая сборка или доставка в пути не перейдёт к другому.';
+
+  @override
+  String get orderSectionApprovals => 'Вопросы клиенту';
+
+  @override
+  String get orderSectionCancellationRequests => 'Запросы на отмену';
+
+  @override
+  String get orderSectionPayment => 'Оплата';
+
+  @override
+  String itemBought(String quantity) {
+    return 'Куплено: $quantity';
+  }
+
+  @override
+  String itemBilled(String quantity) {
+    return 'К оплате: $quantity';
+  }
+
+  @override
+  String itemPricePaid(String price) {
+    return 'Цена покупки: $price';
+  }
+
+  @override
+  String itemBilledPrice(String price) {
+    return 'Цена к оплате: $price';
+  }
+
+  @override
+  String itemReplacedWith(String name) {
+    return 'Замена: $name';
+  }
+
+  @override
+  String get replacementAutomatic => 'автоматически';
+
+  @override
+  String get replacementApproved => 'с согласия клиента';
+
+  @override
+  String get approvalsNone => 'Вопросов клиенту не было';
+
+  @override
+  String get approvalTypePrice => 'Цена выше допустимой';
+
+  @override
+  String get approvalTypeSubstitution => 'Замена';
+
+  @override
+  String get approvalTypeReducedQuantity => 'Меньшее количество';
+
+  @override
+  String get approvalStatusPending => 'Ждёт ответа';
+
+  @override
+  String get approvalStatusApproved => 'Клиент согласился';
+
+  @override
+  String get approvalStatusRejected => 'Клиент отказался';
+
+  @override
+  String get approvalStatusExpired => 'Срок истёк';
+
+  @override
+  String get approvalStatusCancelled => 'Закрыт';
+
+  @override
+  String approvalProposedPrice(String price, String paid) {
+    return 'Предложено: $price, цена покупки $paid';
+  }
+
+  @override
+  String approvalProposedQuantity(String quantity) {
+    return 'Предложено: $quantity';
+  }
+
+  @override
+  String approvalReplacement(String name) {
+    return 'Замена: $name';
+  }
+
+  @override
+  String approvalAskedBy(String name, String time) {
+    return 'Спросил(а) $name, $time';
+  }
+
+  @override
+  String approvalTimers(String attention, String expires) {
+    return 'Внимание с $attention · Срок до $expires';
+  }
+
+  @override
+  String approvalResolvedBy(String name, String time) {
+    return 'Решение: $name, $time';
+  }
+
+  @override
+  String approvalClosedAt(String time) {
+    return 'Закрыт: $time';
+  }
+
+  @override
+  String get approvalLineRemoved => 'Товар убран из заказа';
+
+  @override
+  String get removeExpiredLine => 'Убрать товар';
+
+  @override
+  String removeExpiredTitle(String name) {
+    return 'Убрать «$name»?';
+  }
+
+  @override
+  String get removeExpiredExplained =>
+      'Клиент не ответил вовремя. Товар будет убран из заказа; если покупать больше нечего, заказ отменится.';
+
+  @override
+  String get cancellationRequestsNone => 'Запросов на отмену не было';
+
+  @override
+  String get requestStatusPending => 'Ждёт решения';
+
+  @override
+  String get requestStatusApproved => 'Одобрен';
+
+  @override
+  String get requestStatusRejected => 'Отклонён';
+
+  @override
+  String get requestStatusClosed => 'Закрыт';
+
+  @override
+  String get requestOriginCustomer => 'От клиента';
+
+  @override
+  String get requestOriginStaff => 'От сотрудника';
+
+  @override
+  String requestReason(String reason) {
+    return 'Причина: $reason';
+  }
+
+  @override
+  String requestFiledBy(String name, String time) {
+    return '$name, $time';
+  }
+
+  @override
+  String requestDecidedBy(String name, String time) {
+    return 'Решение: $name, $time';
+  }
+
+  @override
+  String requestClosedAt(String time) {
+    return 'Закрыт: $time';
+  }
+
+  @override
+  String get approveRequest => 'Одобрить отмену';
+
+  @override
+  String get rejectRequest => 'Отклонить';
+
+  @override
+  String get approveRequestTitle => 'Отменить заказ?';
+
+  @override
+  String get approveRequestExplained =>
+      'Заказ будет отменён: текущее назначение завершится, открытые товары уберутся, купленное останется купленным, к оплате ничего не будет.';
+
+  @override
+  String get rejectRequestTitle => 'Отклонить запрос?';
+
+  @override
+  String get rejectRequestExplained => 'Заказ продолжится.';
+
+  @override
+  String get cancelFailedDelivery => 'Отменить заказ';
+
+  @override
+  String get cancelFailedDeliveryTitle => 'Отменить заказ?';
+
+  @override
+  String get cancelFailedDeliveryExplained =>
+      'Заказ будет отменён с причиной «доставка не удалась».';
+
+  @override
+  String get actionNote => 'Комментарий (необязательно)';
+
+  @override
+  String get paymentNone => 'Оплата ещё не записана';
+
+  @override
+  String get paymentStatusUnpaid => 'Не оплачено';
+
+  @override
+  String get paymentStatusPending => 'Ожидает';
+
+  @override
+  String get paymentStatusPaid => 'Оплачено';
+
+  @override
+  String get paymentStatusCancelled => 'Отменено';
+
+  @override
+  String paymentAmount(String amount) {
+    return 'Сумма: $amount';
+  }
+
+  @override
+  String paymentPaidAt(String time) {
+    return 'Время оплаты: $time';
+  }
+
+  @override
+  String paymentRecordedBy(String name) {
+    return 'Принял(а): $name';
+  }
+
+  @override
+  String get correctPrice => 'Исправить цену';
+
+  @override
+  String correctPriceTitle(String name) {
+    return 'Исправление цены: $name';
+  }
+
+  @override
+  String get correctPriceNew => 'Новая цена покупки, сум';
+
+  @override
+  String get correctPriceReason => 'Причина';
+
+  @override
+  String errorPriceAboveCeiling(String ceiling) {
+    return 'Цена для клиента выйдет за предел. Введите цену покупки, при которой клиент платит не больше $ceiling.';
+  }
+
+  @override
+  String get errorPriceAboveCeilingPlain =>
+      'Цена для клиента выйдет за предел.';
+
+  @override
+  String historyPriceCorrectedDetails(
+    String name,
+    String oldPaid,
+    String newPaid,
+    String oldBilled,
+    String newBilled,
+  ) {
+    return '$name: цена покупки $oldPaid → $newPaid, для клиента $oldBilled → $newBilled';
+  }
+
+  @override
+  String get errorApprovalNotExpired => 'Срок вопроса ещё не истёк.';
+
+  @override
+  String get errorApprovalAlreadyResolved => 'Вопрос уже решён.';
+
+  @override
+  String get errorRequestAlreadyDecided => 'По запросу уже принято решение.';
+
+  @override
+  String get errorCancellationAlreadyPending =>
+      'Есть запрос на отмену — сначала примите по нему решение.';
+
+  @override
+  String get errorPriceCorrectionLocked =>
+      'Цену уже нельзя исправить: заказ в пути, завершён, отменён или оплачивается онлайн.';
+
+  @override
+  String get errorPriceCorrectionNotApplicable =>
+      'Цену этой позиции исправить нельзя.';
 }

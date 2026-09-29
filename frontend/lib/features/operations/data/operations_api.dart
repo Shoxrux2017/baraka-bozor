@@ -10,8 +10,8 @@ import '../../../core/storage/token_store.dart';
 import '../../auth/domain/app_user.dart';
 import '../domain/board.dart';
 
-/// The data source for `docs/09-api-contracts.md` sections 38 and 39, on
-/// the staff session, with its strict parsing. An answer is held to the
+/// The data source for `docs/09-api-contracts.md` sections 38 to 41 and
+/// 45, on the staff session, with its strict parsing. An answer is held to the
 /// request it answers (`DL-27` (6)): a page of other orders than the filters
 /// asked for, or another order than the one asked for, is malformed.
 class OperationsApi {
@@ -109,6 +109,116 @@ class OperationsApi {
       options: _staff,
     );
     return _courierAssigned(response, orderId, courierId);
+  }
+
+  /// `POST /operations/approvals/{approval}/resolve-expired` (`docs/09`
+  /// section 40): removes the line of the expired question [approvalId].
+  Future<BoardOrder> resolveExpiredApproval(
+    String orderId,
+    String approvalId,
+    String? note,
+  ) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '/operations/approvals/${Uri.encodeComponent(approvalId)}/resolve-expired',
+      data: <String, String>{
+        'resolution': ApprovalResolution.removeItem.code,
+        'note': ?note,
+      },
+      options: _staff,
+    );
+    final BoardOrder order = _answerFor(response, orderId);
+    if (!order.approvals.any(
+      (BoardApproval approval) =>
+          approval.id == approvalId.toLowerCase() &&
+          approval.resolution == ApprovalResolution.removeItem,
+    )) {
+      throw const FormatException('the answer does not show the removal');
+    }
+    return order;
+  }
+
+  /// `POST /operations/cancellation-requests/{request}/decision` (`docs/09`
+  /// section 40).
+  Future<BoardOrder> decideCancellationRequest(
+    String orderId,
+    String requestId,
+    CancellationDecision decision,
+    String? note,
+  ) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '/operations/cancellation-requests/${Uri.encodeComponent(requestId)}/decision',
+      data: <String, String>{'decision': decision.code, 'note': ?note},
+      options: _staff,
+    );
+    final BoardOrder order = _answerFor(response, orderId);
+    final CancellationRequestStatus decided = switch (decision) {
+      CancellationDecision.approve => CancellationRequestStatus.approved,
+      CancellationDecision.reject => CancellationRequestStatus.rejected,
+    };
+    if (!order.cancellationRequests.any(
+      (BoardCancellationRequest request) =>
+          request.id == requestId.toLowerCase() && request.status == decided,
+    )) {
+      throw const FormatException('the answer does not show the decision');
+    }
+    return order;
+  }
+
+  /// `POST /operations/orders/{order}/cancel` for an order back after a
+  /// failed delivery (`docs/09` section 41).
+  Future<BoardOrder> cancelAfterFailedDelivery(
+    String orderId,
+    String? note,
+  ) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '/operations/orders/${Uri.encodeComponent(orderId)}/cancel',
+      data: <String, String>{
+        'reason_code': CancellationReason.deliveryFailed.code,
+        'note': ?note,
+      },
+      options: _staff,
+    );
+    final BoardOrder order = _answerFor(response, orderId);
+    if (order.status != OrderStatus.cancelled) {
+      throw const FormatException(
+        'the answer does not show the order cancelled',
+      );
+    }
+    return order;
+  }
+
+  /// `POST /admin/orders/{order}/items/{item}/price-correction` (`docs/09`
+  /// section 45), the Admin's only.
+  Future<BoardOrder> correctPrice(
+    String orderId,
+    String itemId,
+    int actualMarketPriceUzs,
+    String reason,
+  ) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '/admin/orders/${Uri.encodeComponent(orderId)}/items/'
+      '${Uri.encodeComponent(itemId)}/price-correction',
+      data: <String, Object>{
+        'actual_market_price_uzs': actualMarketPriceUzs,
+        'reason': reason,
+      },
+      options: _staff,
+    );
+    final BoardOrder order = _answerFor(response, orderId);
+    if (order.item(itemId.toLowerCase())?.actualMarketPriceUzs !=
+        actualMarketPriceUzs) {
+      throw const FormatException('the answer does not show the new price');
+    }
+    return order;
+  }
+
+  /// The order an action on [orderId] answers, which must be that order.
+  static BoardOrder _answerFor(Response<dynamic> response, String orderId) {
+    final BoardOrder order = parseOrder(ApiEnvelope.unwrap(response.data));
+    if (order.id != orderId.toLowerCase()) {
+      throw const FormatException('another order than the one acted on');
+    }
+    return order;
   }
 
   static String _courierPath(String orderId) =>
@@ -226,6 +336,18 @@ class OperationsApi {
       throw FormatException('$key is not in its form: $value');
     }
     return value;
+  }
+
+  static String? _nullableMatching(JsonFields json, String key, RegExp shape) =>
+      json.member(key) == null ? null : _matching(json, key, shape);
+
+  static NamedProduct _product(Object? raw, String what) {
+    final JsonFields json = JsonFields.of(raw, what);
+    return NamedProduct(
+      id: json.uuid('product_id'),
+      nameUz: json.string('name_uz'),
+      nameRu: json.string('name_ru'),
+    );
   }
 
   static int _amount(JsonFields json, String key) {
@@ -387,6 +509,29 @@ class OperationsApi {
         1) {
       throw const FormatException('more than one current Courier');
     }
+    final List<BoardItem> items = _list(json, 'items', _item);
+    final List<BoardApproval> approvals = _list(json, 'approvals', _approval);
+    if (!approvals.every(
+      (BoardApproval approval) =>
+          items.any((BoardItem item) => item.id == approval.itemId),
+    )) {
+      throw const FormatException('a question about a line the order lacks');
+    }
+    final List<BoardCancellationRequest> requests = _list(
+      json,
+      'cancellation_requests',
+      _request,
+    );
+    if (requests
+            .where(
+              (BoardCancellationRequest request) =>
+                  request.status == CancellationRequestStatus.pending,
+            )
+            .length >
+        1) {
+      throw const FormatException('more than one pending request');
+    }
+    final Object? payment = json.member('payment');
 
     return BoardOrder(
       id: json.uuid('id'),
@@ -408,10 +553,13 @@ class OperationsApi {
         landmark: address.nullableString('landmark'),
         deliveryNote: address.nullableString('delivery_note'),
       ),
-      items: _list(json, 'items', _item),
+      items: items,
       totals: _totals(json.member('totals')),
       shopperAssignments: assignments,
       courierAssignments: deliveries,
+      approvals: approvals,
+      cancellationRequests: requests,
+      payment: payment == null ? null : _payment(payment),
       history: _list(json, 'history', _history),
       cancellationReason: reason == null
           ? null
@@ -428,6 +576,10 @@ class OperationsApi {
   static BoardItem _item(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'item');
     final String? removed = json.nullableString('removed_reason_code');
+    final Object? replacement = json.member('replacement');
+    final JsonFields? swap = replacement == null
+        ? null
+        : JsonFields.of(replacement, 'replacement');
     final BoardItem item = BoardItem(
       id: json.uuid('id'),
       productId: json.uuid('product_id'),
@@ -449,12 +601,181 @@ class OperationsApi {
       removedReason: removed == null
           ? null
           : json.choice('removed_reason_code', ItemRemovedReason.tryParse),
+      purchasedQuantity: _nullableMatching(
+        json,
+        'purchased_quantity',
+        _quantity,
+      ),
+      billableQuantity: _nullableMatching(json, 'billable_quantity', _quantity),
+      actualMarketPriceUzs: _nullableAmount(json, 'actual_market_price_uzs'),
+      billableUnitPriceUzs: _nullableAmount(json, 'billable_unit_price_uzs'),
+      replacement: replacement == null
+          ? null
+          : _product(replacement, 'replacement'),
+      // The table holds a replacement to how it was authorized.
+      replacementResolution: swap?.choice(
+        'substitution_resolution',
+        SubstitutionResolution.tryParse,
+      ),
     );
     if ((item.status == OrderItemStatus.removed) !=
         (item.removedReason != null)) {
       throw const FormatException('a removed line has its reason');
     }
+    final bool open =
+        item.status == OrderItemStatus.pending ||
+        item.status == OrderItemStatus.awaitingCustomer;
+    if (open &&
+        (item.billableQuantity != null || item.billableUnitPriceUzs != null)) {
+      throw const FormatException('an open line is billed nothing yet');
+    }
+    if (item.status == OrderItemStatus.purchased &&
+        (item.purchasedQuantity == null ||
+            item.billableQuantity == null ||
+            item.billableUnitPriceUzs == null)) {
+      throw const FormatException('a bought line has its purchase');
+    }
+    if (item.status == OrderItemStatus.removed && item.replacement != null) {
+      throw const FormatException('a removed line has no replacement');
+    }
     return item;
+  }
+
+  static BoardApproval _approval(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'approval');
+    final Object? replacement = json.member('replacement');
+    final Object? resolvedBy = json.member('resolved_by');
+    final String? resolution = json.nullableString('resolution');
+    final BoardApproval approval = BoardApproval(
+      id: json.uuid('id'),
+      itemId: json.uuid('item_id'),
+      type: json.choice('type', ApprovalType.tryParse),
+      status: json.choice('status', ApprovalStatus.tryParse),
+      proposedCustomerUnitPriceUzs: _nullableAmount(
+        json,
+        'proposed_customer_unit_price_uzs',
+      ),
+      proposedActualMarketPriceUzs: _nullableAmount(
+        json,
+        'proposed_actual_market_price_uzs',
+      ),
+      proposedQuantity: _nullableMatching(json, 'proposed_quantity', _quantity),
+      replacement: replacement == null
+          ? null
+          : _product(replacement, 'replacement'),
+      requestNote: json.nullableString('request_note'),
+      requestedBy: _person(json.member('requested_by'), 'requested_by'),
+      attentionAt: json.instant('attention_at'),
+      expiresAt: json.instant('expires_at'),
+      resolution: resolution == null
+          ? null
+          : json.choice('resolution', ApprovalResolution.tryParse),
+      resolvedBy: resolvedBy == null
+          ? null
+          : _person(resolvedBy, 'resolved_by'),
+      resolvedAt: json.nullableInstant('resolved_at'),
+      createdAt: json.instant('created_at'),
+    );
+    // The proposal each type carries, and how each state is resolved, as
+    // the table holds them (`docs/08` section 15).
+    final bool prices =
+        approval.proposedCustomerUnitPriceUzs != null &&
+        approval.proposedActualMarketPriceUzs != null;
+    final bool proposal = switch (approval.type) {
+      ApprovalType.priceOverTolerance =>
+        prices && approval.proposedQuantity == null,
+      ApprovalType.substitution =>
+        prices &&
+            approval.replacement != null &&
+            approval.proposedQuantity == null,
+      ApprovalType.reducedQuantity =>
+        approval.proposedQuantity != null &&
+            approval.proposedCustomerUnitPriceUzs == null &&
+            approval.proposedActualMarketPriceUzs == null &&
+            approval.replacement == null,
+    };
+    final bool resolved = approval.resolvedAt != null;
+    final bool resolver = approval.resolvedBy != null;
+    final bool state = switch (approval.status) {
+      ApprovalStatus.pending =>
+        approval.resolution == null && !resolved && !resolver,
+      ApprovalStatus.approved =>
+        approval.resolution == ApprovalResolution.approved &&
+            resolved &&
+            resolver,
+      ApprovalStatus.rejected =>
+        approval.resolution == ApprovalResolution.rejected &&
+            resolved &&
+            resolver,
+      ApprovalStatus.expired =>
+        approval.resolution == null
+            ? !resolved && !resolver
+            : approval.resolution == ApprovalResolution.removeItem &&
+                  resolved &&
+                  resolver,
+      ApprovalStatus.cancelled => approval.resolution == null && resolved,
+    };
+    if (!proposal ||
+        !state ||
+        !approval.attentionAt.isBefore(approval.expiresAt)) {
+      throw const FormatException('a question off the contract');
+    }
+    return approval;
+  }
+
+  static BoardCancellationRequest _request(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'cancellation request');
+    final Object? resolvedBy = json.member('resolved_by');
+    final BoardCancellationRequest request = BoardCancellationRequest(
+      id: json.uuid('id'),
+      origin: json.choice('origin', CancellationRequestOrigin.tryParse),
+      status: json.choice('status', CancellationRequestStatus.tryParse),
+      reason: json.string('reason'),
+      requestedBy: _person(json.member('requested_by'), 'requested_by'),
+      createdAt: json.instant('created_at'),
+      resolvedBy: resolvedBy == null
+          ? null
+          : _person(resolvedBy, 'resolved_by'),
+      resolvedAt: json.nullableInstant('resolved_at'),
+      resolutionNote: json.nullableString('resolution_note'),
+    );
+    // Decided by someone, or closed by nothing left to cancel, at an
+    // instant (`docs/08` section 18).
+    final bool decided =
+        request.status == CancellationRequestStatus.approved ||
+        request.status == CancellationRequestStatus.rejected;
+    if ((request.status == CancellationRequestStatus.pending) !=
+            (request.resolvedAt == null) ||
+        decided != (request.resolvedBy != null)) {
+      throw const FormatException('a request off the contract');
+    }
+    return request;
+  }
+
+  static BoardPayment _payment(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'payment');
+    final Object? recordedBy = json.member('recorded_by');
+    final BoardPayment payment = BoardPayment(
+      id: json.uuid('id'),
+      method: json.choice('method', PaymentMethod.tryParse),
+      status: json.choice('status', PaymentStatus.tryParse),
+      amountUzs: _amount(json, 'amount_uzs'),
+      paidAt: json.nullableInstant('paid_at'),
+      recordedBy: recordedBy == null
+          ? null
+          : _person(recordedBy, 'recorded_by'),
+    );
+    // Paid exactly when it has its instant; cash is paid, and recorded by
+    // the Courier who took it; online is recorded by nobody (`docs/08`
+    // section 19).
+    final bool paid = payment.status == PaymentStatus.paid;
+    final bool recorded = payment.recordedBy != null;
+    if (paid != (payment.paidAt != null) ||
+        (payment.method == PaymentMethod.cash && !(paid && recorded)) ||
+        (payment.method == PaymentMethod.online && recorded)) {
+      throw const FormatException('a payment off the contract');
+    }
+    return payment;
   }
 
   static BoardTotals _totals(Object? raw) {
@@ -626,6 +947,16 @@ class OperationsApi {
           previousStaffId: reassigned
               ? json.uuid('previous_${staff}_id')
               : null,
+        );
+      case OrderHistoryEvent.priceCorrected:
+        final JsonFields json = JsonFields.of(raw, 'price correction details');
+        return PriceCorrectionDetails(
+          itemId: json.uuid('item_id'),
+          oldActualMarketPriceUzs: _amount(json, 'old_actual_market_price_uzs'),
+          newActualMarketPriceUzs: _amount(json, 'new_actual_market_price_uzs'),
+          oldBillableUnitPriceUzs: _amount(json, 'old_billable_unit_price_uzs'),
+          newBillableUnitPriceUzs: _amount(json, 'new_billable_unit_price_uzs'),
+          lineTotalUzs: _amount(json, 'line_total_uzs'),
         );
       case OrderHistoryEvent.edited:
         final Object? map = raw;

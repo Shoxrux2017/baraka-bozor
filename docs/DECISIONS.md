@@ -899,3 +899,44 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
 5. **The block confirmation** says how many orders a Shopper or a Courier holds now, from the operations pickers' own count (`DL-45` (1)). A started shopping or a delivery on the way cannot move to someone else (`DL-62` (3)).
    - The Admin's staff screen reads the operations feature's pickers for it, read-only; the Admin works in both areas of the panel.
    - Nothing is added when the count is zero, or for a role that holds no orders. While the count loads, the confirmation says so, and when it could not be learned — the list failed, or does not hold the member — it says that; a missing count is never shown as none.
+
+## DL-68 — The panel's order page for Wave 3, from W3-14 (2026-09-29, agent)
+
+1. **What the page reads.** The panel now reads the Wave 3 parts of `GET /operations/orders/{order}` (`docs/09` section 38), as strictly as the rest:
+   - each line's purchase: the quantity bought and billed, the price paid and the price billed per unit, and its replacement with how it was authorized;
+   - the questions to the Customer, the cancellation requests and the payment;
+   - the details of a `price_corrected` history row.
+   The parser holds each part to the table's own checks (`docs/08` sections 14, 15, 18 and 19):
+   - an open line is billed nothing, a bought line has its purchase, and a removed line has no replacement;
+   - a question carries the proposal of its type, is about one of the order's lines, and is resolved — its resolution, its instant and who resolved it — as its state says;
+   - a request is resolved exactly when it is no longer pending, by someone exactly when it was decided, and at most one is pending;
+   - a payment is paid exactly when it has its instant; cash is paid and names the Courier who took it; online names nobody.
+   - a replacement says how it was authorized, as the table requires (`order_items_substitution_target_check`).
+   `refunds` is not read until Wave 5, nor is the payment's provider.
+2. **Shared values.** The question's type, state and resolution, the replacement's authorization, the request's origin and the payment's state are core values with their words (`core/orders`, `OrderLabels`), since the app's Shopper and Customer screens read the same (W3-15 to W3-17).
+3. **The page's new sections:**
+   - under each line, what it bought, the price paid and billed, and its replacement;
+   - the questions to the Customer, newest first, with the proposal, who asked and when, when each joins the attention list and when it expires, and how it ended. The times are Tashkent instants as the server gave them. A countdown would go stale on a page that does not tick, and the state is the server's at the moment of reading (`DL-59`), which the refresh button reloads.
+   - the payment: method, state, amount, when, and the Courier who took it; or that none is recorded yet;
+   - the cancellation requests, newest first, with their reason, who filed and decided them, and the decision's note;
+   - in the history, a price correction names the line and both prices before and after.
+4. **The actions**, each offered only where the rules allow; the server decides:
+   - **Remove the line of an expired question:** on a question shown `expired` with no resolution, while the order is `shopping` (`BR-APP-007`, `DL-60` (2)).
+   - **Decide a request:** approve or reject a `pending` request (`DL-65` (2)).
+   - **Cancel after a failed delivery:** while the order is `ready_for_delivery`, its latest Courier assignment ended `delivery_failed`, and no request is pending; the reason is `delivery_failed` (`DL-65` (3)).
+   - **Correct a price**, the Admin's only: on a bought line billed from the price paid — an estimate original, or any replacement — of a cash order the Courier has not set off with, not completed nor cancelled (`DL-66`). The Operator is not offered it, and the server refuses it to them.
+5. **One controller per order, and a dialog per action** (`DL-28`):
+   - `OrderActionController` runs the four actions one at a time, as an `AccountMutation`.
+   - After an action, and after a refusal that may mean the order changed (404, 409, a lost connection), the order is loaded again, and so are the board, the summary and the attention list wherever they are still shown. The order's page does not show them; the board loads afresh when the Operator goes back to it.
+   - Each action is confirmed in a dialog that says what it will do and takes an optional note of up to 300 characters, trimmed as the server trims it. The dialog cannot be left while the action runs, says a refusal in its own words, and closes once the server has acted.
+   - The price correction's dialog asks for the new price paid, with the catalog's price rule, and a reason of up to 300 characters, both required. A price above the bound is refused with the bound in the dialog, so the Admin can correct the figure.
+   - While the order loads again, its action buttons wait, as the assignment buttons do.
+6. **Answers held to the request.** Each action's answer must be the order acted on, and show the action done: the question resolved `remove_item`, the request decided as asked, the order cancelled, or the line at the new price. A natural repeat shows the same. Anything else is a malformed answer.
+7. **Words for the refusals:**
+   - `approval_not_expired`, `approval_already_resolved`;
+   - `cancellation_request_already_decided`, `cancellation_already_pending`;
+   - `price_correction_locked`, `price_correction_not_applicable`, `price_correction_above_ceiling`.
+8. **Where the pieces live:**
+   - The sections and dialogs are in `order_actions.dart`, beside the page, which stays the page's layout.
+   - The correction's price field uses the Admin catalog's price rule (`CatalogFormRules.marketPrice`), read from the operations feature. The Admin staff screen already reads the operations pickers the other way (`DL-67` (5)).
+   - The signed-in staff role is `staffRoleProvider`, beside `staffAccountProvider`; it only decides what the page offers.

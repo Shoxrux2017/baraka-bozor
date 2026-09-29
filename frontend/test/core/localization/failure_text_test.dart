@@ -42,6 +42,20 @@ void main() {
           'order_state_conflict': (AppLocalizations l) =>
               l.errorOrderStateConflict,
           'staff_not_active': (AppLocalizations l) => l.errorStaffNotActive,
+          'approval_not_expired': (AppLocalizations l) =>
+              l.errorApprovalNotExpired,
+          'approval_already_resolved': (AppLocalizations l) =>
+              l.errorApprovalAlreadyResolved,
+          'cancellation_request_already_decided': (AppLocalizations l) =>
+              l.errorRequestAlreadyDecided,
+          'cancellation_already_pending': (AppLocalizations l) =>
+              l.errorCancellationAlreadyPending,
+          'price_correction_locked': (AppLocalizations l) =>
+              l.errorPriceCorrectionLocked,
+          'price_correction_not_applicable': (AppLocalizations l) =>
+              l.errorPriceCorrectionNotApplicable,
+          'price_correction_above_ceiling': (AppLocalizations l) =>
+              l.errorPriceAboveCeilingPlain,
           'cart_item_already_exists': (AppLocalizations l) =>
               l.errorCartItemAlreadyExists,
           'cart_full': (AppLocalizations l) => l.errorCartFull,

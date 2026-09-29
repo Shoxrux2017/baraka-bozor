@@ -86,6 +86,20 @@ class FakeOperationsRepository implements OperationsRepository {
   /// When set, an assignment fails with it.
   ApiFailure? assignmentFailure;
 
+  /// Every action on an order asked for, as
+  /// `remove-expired:<order>:<approval>:<note>`,
+  /// `decide:<order>:<request>:<decision>:<note>`,
+  /// `cancel-failed:<order>:<note>` or
+  /// `correct:<order>:<item>:<price>:<reason>`.
+  final List<String> actions = <String>[];
+
+  /// The order each action answers, which also becomes the order's detail
+  /// from then on.
+  final Map<String, BoardOrder> afterAction = <String, BoardOrder>{};
+
+  /// When set, an action fails with it.
+  ApiFailure? actionFailure;
+
   Future<void> _held() async {
     final Completer<void>? hold = this.hold;
     if (hold != null) {
@@ -195,6 +209,44 @@ class FakeOperationsRepository implements OperationsRepository {
     orderId,
     'reassign-courier:$orderId:$courierId:$replacesAssignmentId',
   );
+
+  @override
+  Future<BoardOrder> resolveExpiredApproval(
+    String orderId,
+    String approvalId,
+    String? note,
+  ) => _act(orderId, 'remove-expired:$orderId:$approvalId:$note');
+
+  @override
+  Future<BoardOrder> decideCancellationRequest(
+    String orderId,
+    String requestId,
+    CancellationDecision decision,
+    String? note,
+  ) => _act(orderId, 'decide:$orderId:$requestId:${decision.code}:$note');
+
+  @override
+  Future<BoardOrder> cancelAfterFailedDelivery(String orderId, String? note) =>
+      _act(orderId, 'cancel-failed:$orderId:$note');
+
+  @override
+  Future<BoardOrder> correctPrice(
+    String orderId,
+    String itemId,
+    int actualMarketPriceUzs,
+    String reason,
+  ) => _act(orderId, 'correct:$orderId:$itemId:$actualMarketPriceUzs:$reason');
+
+  Future<BoardOrder> _act(String orderId, String action) async {
+    actions.add(action);
+    await _held();
+    if (actionFailure != null) {
+      throw actionFailure!;
+    }
+    final BoardOrder order = afterAction[orderId]!;
+    details[orderId] = order;
+    return order;
+  }
 
   Future<BoardOrder> _assign(String orderId, String change) async {
     changes.add(change);

@@ -257,6 +257,9 @@ final class BoardOrder {
     required this.totals,
     required this.shopperAssignments,
     required this.courierAssignments,
+    required this.approvals,
+    required this.cancellationRequests,
+    required this.payment,
     required this.history,
     required this.cancellationReason,
     required this.createdAt,
@@ -280,6 +283,15 @@ final class BoardOrder {
   /// Oldest first; at most one has not ended.
   final List<CourierAssignment> courierAssignments;
 
+  /// The questions to the Customer, oldest first, each about one of [items].
+  final List<BoardApproval> approvals;
+
+  /// Oldest first; at most one is pending.
+  final List<BoardCancellationRequest> cancellationRequests;
+
+  /// `null` until a payment is made.
+  final BoardPayment? payment;
+
   /// Oldest first.
   final List<HistoryEntry> history;
   final CancellationReason? cancellationReason;
@@ -296,6 +308,45 @@ final class BoardOrder {
     }
     return null;
   }
+
+  /// The line [itemId] names, if it is one of the order's.
+  BoardItem? item(String itemId) {
+    for (final BoardItem item in items) {
+      if (item.id == itemId) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  /// The cancellation request waiting for a decision, if any.
+  BoardCancellationRequest? get pendingCancellationRequest {
+    for (final BoardCancellationRequest request in cancellationRequests) {
+      if (request.status == CancellationRequestStatus.pending) {
+        return request;
+      }
+    }
+    return null;
+  }
+
+  /// Whether staff may cancel the order: it is back at the market after its
+  /// latest delivery failed, and no request asks for the same (`docs/09`
+  /// section 41, `DL-65` (3)).
+  bool get cancellableAfterFailedDelivery =>
+      status == OrderStatus.readyForDelivery &&
+      courierAssignments.isNotEmpty &&
+      courierAssignments.last.endedReason ==
+          AssignmentEndReason.deliveryFailed &&
+      pendingCancellationRequest == null;
+
+  /// Whether the Admin may correct a line's price: a cash order the Courier
+  /// has not set off with, not completed nor cancelled (`docs/09` section
+  /// 45); online orders wait for Wave 5.
+  bool get pricesCorrectable =>
+      paymentMethod == PaymentMethod.cash &&
+      status != OrderStatus.onTheWay &&
+      status != OrderStatus.completed &&
+      status != OrderStatus.cancelled;
 
   /// The Courier assignment that has not ended, if any.
   CourierAssignment? get currentCourierAssignment {
@@ -360,6 +411,12 @@ final class BoardItem {
     required this.markupPercent,
     required this.lineTotalUzs,
     required this.removedReason,
+    required this.purchasedQuantity,
+    required this.billableQuantity,
+    required this.actualMarketPriceUzs,
+    required this.billableUnitPriceUzs,
+    required this.replacement,
+    required this.replacementResolution,
   });
 
   final String id;
@@ -383,6 +440,160 @@ final class BoardItem {
 
   /// Set exactly when [status] is [OrderItemStatus.removed].
   final ItemRemovedReason? removedReason;
+
+  /// The quantity bought, set once the line is bought; a decimal string.
+  final String? purchasedQuantity;
+
+  /// The quantity billed, `null` while the line is open; a decimal string.
+  final String? billableQuantity;
+
+  /// The price the Shopper paid per unit, which staff judge the Shopper by
+  /// and the Customer never sees (`BR-PRICE-001`, `DL-44` (5)).
+  final int? actualMarketPriceUzs;
+
+  /// The price per unit the Customer is billed, set once the line is bought.
+  final int? billableUnitPriceUzs;
+
+  /// The product bought, or to be bought, instead of the line's own
+  /// (`DL-57` (6)); `null` for a removed line.
+  final NamedProduct? replacement;
+
+  /// How [replacement] was authorized; set exactly with it.
+  final SubstitutionResolution? replacementResolution;
+
+  /// Whether the line is billed from the price paid — an estimate original,
+  /// or any replacement — which only the Admin may correct (`DL-54` (18)).
+  bool get billedFromPricePaid =>
+      status == OrderItemStatus.purchased &&
+      (priceMode == PriceMode.estimate || replacement != null);
+}
+
+/// A product named as the order keeps it.
+final class NamedProduct {
+  const NamedProduct({
+    required this.id,
+    required this.nameUz,
+    required this.nameRu,
+  });
+
+  final String id;
+  final String nameUz;
+  final String nameRu;
+}
+
+/// A question put to the Customer about one line (`docs/09` section 38,
+/// `DL-58` (4)), with its proposal and its timers.
+final class BoardApproval {
+  const BoardApproval({
+    required this.id,
+    required this.itemId,
+    required this.type,
+    required this.status,
+    required this.proposedCustomerUnitPriceUzs,
+    required this.proposedActualMarketPriceUzs,
+    required this.proposedQuantity,
+    required this.replacement,
+    required this.requestNote,
+    required this.requestedBy,
+    required this.attentionAt,
+    required this.expiresAt,
+    required this.resolution,
+    required this.resolvedBy,
+    required this.resolvedAt,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String itemId;
+  final ApprovalType type;
+  final ApprovalStatus status;
+
+  /// The price per unit the Customer would pay, for a price or a
+  /// substitution question.
+  final int? proposedCustomerUnitPriceUzs;
+
+  /// The price the Shopper would pay per unit, for the same questions.
+  final int? proposedActualMarketPriceUzs;
+
+  /// The smaller quantity proposed, for a quantity question; a decimal
+  /// string.
+  final String? proposedQuantity;
+
+  /// The replacement proposed, for a substitution question.
+  final NamedProduct? replacement;
+  final String? requestNote;
+  final PersonRef requestedBy;
+
+  /// When the question joins the attention list, and when it expires.
+  final DateTime attentionAt;
+  final DateTime expiresAt;
+  final ApprovalResolution? resolution;
+  final PersonRef? resolvedBy;
+  final DateTime? resolvedAt;
+  final DateTime createdAt;
+
+  /// Whether staff may remove the line the question is about: it expired
+  /// and nothing resolved it yet (`BR-APP-007`, `DL-60` (2)).
+  bool get awaitsRemoval =>
+      status == ApprovalStatus.expired && resolution == null;
+}
+
+/// A request to cancel the order (`docs/09` section 40, `DL-65` (4)).
+final class BoardCancellationRequest {
+  const BoardCancellationRequest({
+    required this.id,
+    required this.origin,
+    required this.status,
+    required this.reason,
+    required this.requestedBy,
+    required this.createdAt,
+    required this.resolvedBy,
+    required this.resolvedAt,
+    required this.resolutionNote,
+  });
+
+  final String id;
+  final CancellationRequestOrigin origin;
+  final CancellationRequestStatus status;
+  final String reason;
+  final PersonRef requestedBy;
+  final DateTime createdAt;
+  final PersonRef? resolvedBy;
+  final DateTime? resolvedAt;
+  final String? resolutionNote;
+}
+
+/// A decision on a pending cancellation request.
+enum CancellationDecision {
+  approve('approve'),
+  reject('reject');
+
+  const CancellationDecision(this.code);
+
+  final String code;
+}
+
+/// The order's payment, once one is made (`DL-64` (4)).
+final class BoardPayment {
+  const BoardPayment({
+    required this.id,
+    required this.method,
+    required this.status,
+    required this.amountUzs,
+    required this.paidAt,
+    required this.recordedBy,
+  });
+
+  final String id;
+  final PaymentMethod method;
+  final PaymentStatus status;
+  final int amountUzs;
+
+  /// Set when [status] is [PaymentStatus.paid].
+  final DateTime? paidAt;
+
+  /// The Courier who took a cash payment.
+  final PersonRef? recordedBy;
 }
 
 /// The order's totals (`DL-37` (10)); every amount is `null` exactly when
@@ -641,6 +852,26 @@ final class AssignmentDetails extends HistoryDetails {
   final bool isSelfOrder;
   final String? previousAssignmentId;
   final String? previousStaffId;
+}
+
+/// A price the Admin corrected (`DL-66`): the line, the price paid and the
+/// price billed per unit before and after, and the line's new total.
+final class PriceCorrectionDetails extends HistoryDetails {
+  const PriceCorrectionDetails({
+    required this.itemId,
+    required this.oldActualMarketPriceUzs,
+    required this.newActualMarketPriceUzs,
+    required this.oldBillableUnitPriceUzs,
+    required this.newBillableUnitPriceUzs,
+    required this.lineTotalUzs,
+  });
+
+  final String itemId;
+  final int oldActualMarketPriceUzs;
+  final int newActualMarketPriceUzs;
+  final int oldBillableUnitPriceUzs;
+  final int newBillableUnitPriceUzs;
+  final int lineTotalUzs;
 }
 
 /// An edit of the lines and the delivery wish.

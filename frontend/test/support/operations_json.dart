@@ -15,6 +15,10 @@ const String historyId = '0192f0a0-0000-7000-8000-0000000000b1';
 const String courierId = '0192f0a0-0000-7000-8000-0000000000c7';
 const String otherCourierId = '0192f0a0-0000-7000-8000-0000000000c8';
 const String courierAssignmentId = '0192f0a0-0000-7000-8000-0000000000a7';
+const String approvalId = '0192f0a0-0000-7000-8000-0000000000a9';
+const String requestId = '0192f0a0-0000-7000-8000-0000000000aa';
+const String paymentId = '0192f0a0-0000-7000-8000-0000000000ab';
+const String replacementId = '0192f0a0-0000-7000-8000-0000000000f3';
 
 Map<String, Object?> rowJson({
   String id = orderA,
@@ -147,16 +151,23 @@ Map<String, Object?> courierAssignmentJson({
   'failed_note': failedNote,
 };
 
+/// A line as the board's order shows it. A bought line is billed from the
+/// price paid: 3 kg at 16 000, billed at 18 400, unless [purchase] says
+/// otherwise.
 Map<String, Object?> itemJson({
+  String id = itemId,
   String status = 'pending',
   String? removedReason,
+  String priceMode = 'estimate',
+  Map<String, Object?>? purchase,
+  bool replaced = false,
 }) => <String, Object?>{
-  'id': itemId,
+  'id': id,
   'product_id': productId,
   'name_uz': 'Pomidor',
   'name_ru': 'Помидоры',
   'unit_code': 'kg',
-  'price_mode': 'estimate',
+  'price_mode': priceMode,
   'quantity': '3.000',
   'customer_note': 'Qizilini oling',
   'substitution_policy': 'allow_similar_substitution',
@@ -166,6 +177,99 @@ Map<String, Object?> itemJson({
   'markup_percent': '15.00',
   'line_total_uzs': removedReason == null ? 55200 : 0,
   'removed_reason_code': removedReason,
+  'purchased_quantity': status == 'purchased' ? '3.000' : null,
+  'billable_quantity': switch (status) {
+    'purchased' => '3.000',
+    'removed' => '0.000',
+    _ => null,
+  },
+  'actual_market_price_uzs': status == 'purchased' ? 16000 : null,
+  'billable_unit_price_uzs': status == 'purchased' ? 18400 : null,
+  'replacement': replaced
+      ? <String, Object?>{
+          'product_id': replacementId,
+          'name_uz': 'Olcha pomidor',
+          'name_ru': 'Помидоры черри',
+          'substitution_resolution': 'automatic',
+        }
+      : null,
+  ...?purchase,
+};
+
+/// A question to the Customer about the line of [itemJson]; a price
+/// question unless [type] says otherwise, pending unless [status] does.
+Map<String, Object?> approvalJson({
+  String id = approvalId,
+  String type = 'price_over_tolerance',
+  String status = 'pending',
+  String? resolution,
+  bool resolved = false,
+}) => <String, Object?>{
+  'id': id,
+  'item_id': itemId,
+  'type': type,
+  'status': status,
+  'proposed_customer_unit_price_uzs': type == 'reduced_quantity' ? null : 25300,
+  'proposed_actual_market_price_uzs': type == 'reduced_quantity' ? null : 22000,
+  'proposed_quantity': type == 'reduced_quantity' ? '2.000' : null,
+  'replacement': type == 'substitution'
+      ? <String, Object?>{
+          'product_id': replacementId,
+          'name_uz': 'Olcha pomidor',
+          'name_ru': 'Помидоры черри',
+        }
+      : null,
+  'request_note': 'Narx oshgan',
+  'requested_by': <String, Object?>{
+    'id': shopperId,
+    'full_name': 'Sardor Yusupov',
+  },
+  'attention_at': '2026-09-27T07:40:00Z',
+  'expires_at': '2026-09-27T08:00:00Z',
+  'resolution': resolution,
+  'resolved_by': resolved
+      ? <String, Object?>{'id': operatorId, 'full_name': 'Olim'}
+      : null,
+  'resolved_at': resolved || status == 'cancelled'
+      ? '2026-09-27T08:05:00Z'
+      : null,
+  'created_at': '2026-09-27T07:30:00Z',
+};
+
+/// The Customer's request to cancel, pending unless [status] says otherwise.
+Map<String, Object?> cancellationRequestJson({
+  String id = requestId,
+  String status = 'pending',
+  String? note,
+}) => <String, Object?>{
+  'id': id,
+  'origin': 'customer',
+  'status': status,
+  'reason': 'Rejalar o\'zgardi',
+  'requested_by': <String, Object?>{
+    'id': customerId,
+    'full_name': 'Aziza Karimova',
+  },
+  'created_at': '2026-09-27T07:45:00Z',
+  'resolved_by': status == 'approved' || status == 'rejected'
+      ? <String, Object?>{'id': operatorId, 'full_name': 'Olim'}
+      : null,
+  'resolved_at': status == 'pending' ? null : '2026-09-27T07:50:00Z',
+  'resolution_note': note,
+};
+
+/// The cash the Courier took for the order.
+Map<String, Object?> paymentJson() => <String, Object?>{
+  'id': paymentId,
+  'method': 'cash',
+  'provider': null,
+  'status': 'paid',
+  'amount_uzs': 75200,
+  'paid_at': '2026-09-27T11:00:00Z',
+  'recorded_by': <String, Object?>{
+    'id': courierId,
+    'full_name': 'Kamol Karimov',
+  },
 };
 
 Map<String, Object?> assignmentJson({
@@ -226,13 +330,17 @@ Map<String, Object?> orderJson({
   Map<String, Object?>? totals,
   List<Object?>? assignments,
   List<Object?>? courierAssignments,
+  List<Object?>? approvals,
+  List<Object?>? cancellationRequests,
+  Map<String, Object?>? payment,
+  String paymentMethod = 'cash',
   List<Object?>? history,
   String? cancellationReason,
 }) => <String, Object?>{
   'id': id,
   'order_number': 1001,
   'status': status,
-  'payment_method': 'cash',
+  'payment_method': paymentMethod,
   'delivery_time_note': 'Kechqurun',
   'customer': <String, Object?>{
     'id': customerId,
@@ -260,8 +368,9 @@ Map<String, Object?> orderJson({
       },
   'shopper_assignments': assignments ?? <Object?>[assignmentJson()],
   'courier_assignments': courierAssignments ?? <Object?>[],
-  'approvals': <Object?>[],
-  'payment': null,
+  'approvals': approvals ?? <Object?>[],
+  'cancellation_requests': cancellationRequests ?? <Object?>[],
+  'payment': payment,
   'refunds': <Object?>[],
   'history': history ?? <Object?>[historyJson()],
   'cancellation_reason_code': cancellationReason,
