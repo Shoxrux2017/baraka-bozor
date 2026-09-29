@@ -281,7 +281,7 @@ final class ShopperOrdersApiTest extends TestCase
         $customerSession->withHeader('Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/v1/customer/orders/{$order->id}/cancel")
             ->assertStatus(422)->assertJsonValidationErrors(['reason']);
-        $this->assertSame('shopping', $order->fresh()?->status->value);
+        $this->assertSame('shopping', $order->fresh()->status->value);
     }
 
     public function test_accept_and_start_take_no_body(): void
