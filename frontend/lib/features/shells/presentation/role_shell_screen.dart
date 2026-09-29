@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/language_menu.dart';
-import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
-import '../../auth/application/code_login_controller.dart';
 import '../../auth/domain/app_user.dart';
+import 'staff_area_menu.dart';
 
 /// The entry of one staff role's area: its name, the language switch, the
 /// way out, and — for a Shopper or Courier — the way into Customer mode
@@ -95,18 +93,7 @@ class RoleShellScreen extends ConsumerWidget {
         const SizedBox(height: 24),
         OutlinedButton(
           key: const ValueKey<String>('switch-to-customer-button'),
-          onPressed: () {
-            if (session.customerUser != null) {
-              ref
-                  .read(sessionControllerProvider.notifier)
-                  .switchMode(SessionMode.customer);
-            } else {
-              ref
-                  .read(codeLoginControllerProvider.notifier)
-                  .requestCodeForStaffAccount();
-              context.go(AppPaths.customerMode);
-            }
-          },
+          onPressed: () => enterCustomerMode(context, ref, session),
           child: Text(l10n.switchToCustomer),
         ),
       ];

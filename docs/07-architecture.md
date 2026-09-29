@@ -22,6 +22,7 @@ PHPUnit, Laravel Pint, Larastan (PHPStan level 5)
 ```text
 Flutter / Dart, Riverpod, GoRouter, Dio, flutter_secure_storage, Material 3
 package:web for the panel's image file dialog (DL-28)
+url_launcher for calls and the phone's map app from staff screens (DL-54 (16), DL-69)
 Yandex MapKit for the address picker
 ```
 

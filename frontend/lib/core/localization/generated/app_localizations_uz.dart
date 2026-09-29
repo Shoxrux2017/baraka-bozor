@@ -1981,4 +1981,65 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get errorPriceCorrectionNotApplicable =>
       'Bu mahsulot narxini tuzatib bo\'lmaydi.';
+
+  @override
+  String get staffMenu => 'Menyu';
+
+  @override
+  String get shopperOrdersEmpty =>
+      'Hozircha sizga buyurtma tayinlanmagan. Tayinlansa, shu yerda paydo bo\'ladi.';
+
+  @override
+  String shopperOpenLines(int open, int total) {
+    return 'Qolgan mahsulotlar: $open / $total';
+  }
+
+  @override
+  String get shopperNotAccepted => 'Yangi buyurtma — qabul qiling';
+
+  @override
+  String shopperAssignedAt(String time) {
+    return 'Tayinlandi: $time';
+  }
+
+  @override
+  String shopperAcceptedAt(String time) {
+    return 'Qabul qilindi: $time';
+  }
+
+  @override
+  String shopperStartedAt(String time) {
+    return 'Yig\'ish boshlandi: $time';
+  }
+
+  @override
+  String get shopperAccept => 'Qabul qilish';
+
+  @override
+  String get shopperStart => 'Yig\'ishni boshlash';
+
+  @override
+  String callCustomer(String phone) {
+    return 'Mijozga qo\'ng\'iroq: $phone';
+  }
+
+  @override
+  String callFailed(String phone) {
+    return 'Qo\'ng\'iroq ilovasi ochilmadi. Raqamni qo\'lda tering: $phone';
+  }
+
+  @override
+  String shopperLineCap(String quantity) {
+    return 'Mijoz rozi bo\'lgan miqdor: $quantity';
+  }
+
+  @override
+  String shopperPriceLimit(String price) {
+    return 'So\'ramasdan ko\'pi bilan: $price';
+  }
+
+  @override
+  String shopperQuestion(String type, String time) {
+    return 'Mijoz javobi kutilmoqda ($type), $time gacha';
+  }
 }

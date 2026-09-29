@@ -36,7 +36,7 @@ None (`docs/06` section 5). The MapKit key (`DL-36`) blocks nothing here: no sta
 | W3-12 | Admin API: price correction | Merged |
 | W3-13 | Panel: the board — Courier assignment, attention types and filters, the attention list's height, the block confirmation | Merged |
 | W3-14 | Panel: the order page — purchases, approvals, cancellation requests, the Courier, the cash payment, price correction | Merged |
-| W3-15 | App: the Shopper's area — assigned orders, accept, start, refresh, call the Customer | Planned |
+| W3-15 | App: the Shopper's area — assigned orders, accept, start, refresh, call the Customer | Merged |
 | W3-16 | App: the Shopper at the market — buy, unavailable, replace, ask the Customer, complete | Planned |
 | W3-17 | App: the Customer's order while it is shopped and delivered — approvals, the cancellation request | Planned |
 | W3-18 | App: the Courier's area — deliveries, accept, set off, delivered with cash, not delivered | Planned |
@@ -407,7 +407,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 | For Wave 5: the `unpaid_online` cancellation must close or refuse a pending cancellation request, as the last line removed does (`DL-54` (12)) | Open for Wave 5 |
 | The scheduler runs nowhere until Wave 4 deploys one; until then expiry is written by actions and derived by reads (`DL-54` (8)) | Open for Wave 4 |
 | Carried from Wave 2: a build whose MapKit key Yandex refuses aborts at launch (`DL-53` (1)). Before the map returns, MapKit must start only when the map is opened | Open, before the map returns |
-| Carried from Wave 2: in Customer mode a Shopper's or Courier's app bar holds six actions, and the title shortens on a phone. The areas of W3-15 and W3-18 must not repeat it | Open for Wave 4 (P3) |
+| Carried from Wave 2: in Customer mode a Shopper's or Courier's app bar holds six actions, and the title shortens on a phone. The areas of W3-15 and W3-18 must not repeat it; the Shopper's area keeps two, the language and one menu (`DL-69` (5)), and W3-18 does the same | Open for Wave 4 (P3) |
 | Carried from Wave 2: the MapKit key and the free tier's fitness (`DL-36`) | Open, Owner |
 | Carried from Wave 2, for Wave 4: CORS in production, device pruning, the push token change stream, reorder's stored answer | Open for Wave 4 |
 | Carried from Wave 2, for Wave 5: a payment attempt's outcome is not guarded by the idempotency key, and Paynet and xazna have no adapters | Open for Wave 5 |

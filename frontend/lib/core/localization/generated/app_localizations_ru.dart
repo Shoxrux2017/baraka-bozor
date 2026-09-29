@@ -2006,4 +2006,65 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get errorPriceCorrectionNotApplicable =>
       'Цену этой позиции исправить нельзя.';
+
+  @override
+  String get staffMenu => 'Меню';
+
+  @override
+  String get shopperOrdersEmpty =>
+      'Пока вам не назначено заказов. Назначенный заказ появится здесь.';
+
+  @override
+  String shopperOpenLines(int open, int total) {
+    return 'Осталось позиций: $open из $total';
+  }
+
+  @override
+  String get shopperNotAccepted => 'Новый заказ — примите его';
+
+  @override
+  String shopperAssignedAt(String time) {
+    return 'Назначен: $time';
+  }
+
+  @override
+  String shopperAcceptedAt(String time) {
+    return 'Принят: $time';
+  }
+
+  @override
+  String shopperStartedAt(String time) {
+    return 'Сборка начата: $time';
+  }
+
+  @override
+  String get shopperAccept => 'Принять';
+
+  @override
+  String get shopperStart => 'Начать сборку';
+
+  @override
+  String callCustomer(String phone) {
+    return 'Позвонить клиенту: $phone';
+  }
+
+  @override
+  String callFailed(String phone) {
+    return 'Не удалось открыть звонилку. Наберите номер вручную: $phone';
+  }
+
+  @override
+  String shopperLineCap(String quantity) {
+    return 'Согласовано с клиентом: $quantity';
+  }
+
+  @override
+  String shopperPriceLimit(String price) {
+    return 'Без вопроса клиенту не дороже: $price';
+  }
+
+  @override
+  String shopperQuestion(String type, String time) {
+    return 'Ждём ответа клиента ($type) до $time';
+  }
 }
