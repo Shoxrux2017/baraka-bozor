@@ -464,7 +464,7 @@ Closed on 2026-09-29 at `main` = merge of PR #85 (`3a3b76a`) plus the closure pu
 7. **Completion.** Shopping completes. The Customer sees the final amount, 78 200 of goods and 98 200 in all, with the rejected and the unavailable lines removed for their reasons.
 8. **The second order.** Once shopping starts, a cancel without a reason is refused, naming the reason. With a reason it becomes a request, which the attention list shows. The Operator approves it, the order is cancelled, and the Customer sees the request approved. The summary strip counts exactly one more cancellation.
 9. **The first Courier fails.** The Courier picker lists both new Couriers. The first sees the delivery with 98 200 to collect, sets off with a delay deadline, and cannot deliver. The order goes back to the Operator, the answer names no recipient, and the attention list shows the failure until a second Courier is assigned.
-10. **The second Courier delivers.** 97 200 in cash is refused with the amount to collect, 98 200. The exact cash completes the order, and delivered again answers the completed order with no second payment.
+10. **The second Courier delivers.** 97 200 in cash is refused with the amount to collect, 98 200. The exact cash completes the order, and delivered again answers the completed order.
 11. **The record.** The Customer sees the order paid in cash. The board keeps both Couriers: the failure with its reason, then the delivery, with the payment recorded by the second. The summary strip counts exactly one more completion and 98 200 more in sales.
 12. **The expiry.**
     - After ten minutes, the third order's question is an attention item.
@@ -536,10 +536,10 @@ Found and left: the moment of stale list after an outcome (risk row above).
    - Buy the fixed product as it is.
    - On the first weighed product, enter a price above the "at most, without asking" amount: the dialog offers to ask the Customer. Ask.
    - On the second, choose "Replace", find the replacement by its name and give a price within the limit: the replacement is authorized at once. Buy it.
-   - On the third, buy only 2 kg: the dialog says what is owed and offers to ask the Customer about the smaller quantity. Ask.
+   - On the third, buy only 2 kg: the dialog says how much the Customer needs and offers to ask them about the smaller quantity. Ask.
 5. **App, the Customer.**
    - "My orders" says an answer is needed.
-   - The order shows both questions in your own prices, with a deadline.
+   - The order shows the price question in your own prices, and the quantity question with the smaller amount, each with a deadline.
    - Agree to the price.
    - Refuse the smaller quantity: that line is removed.
 6. **App, the Shopper.** Buy at the agreed price. Complete the shopping: the closing screen shows the order number to write on the package.
@@ -549,7 +549,7 @@ Found and left: the moment of stale list after an outcome (risk row above).
    - The delivery shows the recipient, address, wish and the cash to collect. Call the recipient, and open the map.
    - Accept, then set off.
    - First mark it "Not delivered" with a reason. The order returns to the board as needing attention.
-   - Assign the same Courier again on the panel, and set off again.
+   - Assign the same Courier again on the panel; the Courier accepts and sets off again.
    - Now "Delivered" with a wrong amount names the right one. The exact amount completes the order.
 10. **App, the Customer, and the panel.** The Customer sees the order delivered and paid in cash. The panel shows both deliveries, the failure with its reason, and the payment with who took it.
 11. **A second order, of two lines.**
