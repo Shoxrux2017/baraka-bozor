@@ -1923,9 +1923,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get actionNote => 'Комментарий (необязательно)';
 
   @override
-  String get actionConfirm => 'Подтвердить';
-
-  @override
   String get paymentNone => 'Оплата ещё не записана';
 
   @override

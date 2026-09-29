@@ -697,16 +697,24 @@ class OperationsApi {
             approval.replacement == null,
     };
     final bool resolved = approval.resolvedAt != null;
+    final bool resolver = approval.resolvedBy != null;
     final bool state = switch (approval.status) {
-      ApprovalStatus.pending => approval.resolution == null && !resolved,
+      ApprovalStatus.pending =>
+        approval.resolution == null && !resolved && !resolver,
       ApprovalStatus.approved =>
-        approval.resolution == ApprovalResolution.approved && resolved,
+        approval.resolution == ApprovalResolution.approved &&
+            resolved &&
+            resolver,
       ApprovalStatus.rejected =>
-        approval.resolution == ApprovalResolution.rejected && resolved,
+        approval.resolution == ApprovalResolution.rejected &&
+            resolved &&
+            resolver,
       ApprovalStatus.expired =>
         approval.resolution == null
-            ? !resolved
-            : approval.resolution == ApprovalResolution.removeItem && resolved,
+            ? !resolved && !resolver
+            : approval.resolution == ApprovalResolution.removeItem &&
+                  resolved &&
+                  resolver,
       ApprovalStatus.cancelled => approval.resolution == null && resolved,
     };
     if (!proposal ||
@@ -759,8 +767,15 @@ class OperationsApi {
           ? null
           : _person(recordedBy, 'recorded_by'),
     );
-    if (payment.status == PaymentStatus.paid && payment.paidAt == null) {
-      throw const FormatException('a paid payment has its instant');
+    // Paid exactly when it has its instant; cash is paid, and recorded by
+    // the Courier who took it; online is recorded by nobody (`docs/08`
+    // section 19).
+    final bool paid = payment.status == PaymentStatus.paid;
+    final bool recorded = payment.recordedBy != null;
+    if (paid != (payment.paidAt != null) ||
+        (payment.method == PaymentMethod.cash && !(paid && recorded)) ||
+        (payment.method == PaymentMethod.online && recorded)) {
+      throw const FormatException('a payment off the contract');
     }
     return payment;
   }

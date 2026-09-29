@@ -907,10 +907,11 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - the questions to the Customer, the cancellation requests and the payment;
    - the details of a `price_corrected` history row.
    The parser holds each part to the table's own checks (`docs/08` sections 14, 15, 18 and 19):
-   - an open line is billed nothing, and a bought line has its purchase;
-   - a question carries the proposal of its type, is about one of the order's lines, and is resolved as its state says;
-   - a request is resolved exactly when it is no longer pending, by someone exactly when it was decided;
-   - at most one request is pending, and a paid payment has its instant.
+   - an open line is billed nothing, a bought line has its purchase, and a removed line has no replacement;
+   - a question carries the proposal of its type, is about one of the order's lines, and is resolved — its resolution, its instant and who resolved it — as its state says;
+   - a request is resolved exactly when it is no longer pending, by someone exactly when it was decided, and at most one is pending;
+   - a payment is paid exactly when it has its instant; cash is paid and names the Courier who took it; online names nobody.
+   How a replacement was authorized is read when the answer gives it, since the table does not require it.
    `refunds` is not read until Wave 5, nor is the payment's provider.
 2. **Shared values.** The question's type, state and resolution, the replacement's authorization, the request's origin and the payment's state are core values with their words (`core/orders`, `OrderLabels`), since the app's Shopper and Customer screens read the same (W3-15 to W3-17).
 3. **The page's new sections:**
@@ -926,7 +927,7 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - **Correct a price**, the Admin's only: on a bought line billed from the price paid — an estimate original, or any replacement — of a cash order the Courier has not set off with, not completed nor cancelled (`DL-66`). The Operator is not offered it, and the server refuses it to them.
 5. **One controller per order, and a dialog per action** (`DL-28`):
    - `OrderActionController` runs the four actions one at a time, as an `AccountMutation`.
-   - After an action, and after a refusal that may mean the order changed (404, 409, a lost connection), the order, the board, the summary and the attention list are loaded again.
+   - After an action, and after a refusal that may mean the order changed (404, 409, a lost connection), the order is loaded again, and so are the board, the summary and the attention list wherever they are still shown. The order's page does not show them; the board loads afresh when the Operator goes back to it.
    - Each action is confirmed in a dialog that says what it will do and takes an optional note of up to 300 characters, trimmed as the server trims it. The dialog cannot be left while the action runs, says a refusal in its own words, and closes once the server has acted.
    - The price correction's dialog asks for the new price paid, with the catalog's price rule, and a reason of up to 300 characters, both required. A price above the bound is refused with the bound in the dialog, so the Admin can correct the figure.
    - While the order loads again, its action buttons wait, as the assignment buttons do.

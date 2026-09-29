@@ -155,13 +155,14 @@ Map<String, Object?> courierAssignmentJson({
 /// price paid: 3 kg at 16 000, billed at 18 400, unless [purchase] says
 /// otherwise.
 Map<String, Object?> itemJson({
+  String id = itemId,
   String status = 'pending',
   String? removedReason,
   String priceMode = 'estimate',
   Map<String, Object?>? purchase,
   bool replaced = false,
 }) => <String, Object?>{
-  'id': itemId,
+  'id': id,
   'product_id': productId,
   'name_uz': 'Pomidor',
   'name_ru': 'Помидоры',

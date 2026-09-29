@@ -11,6 +11,15 @@ import 'session_state.dart';
 /// account loaded (`docs/07-architecture.md` section 28). An operation that
 /// awaits compares it before and after, and drops a completion that belongs
 /// to an account no longer signed in.
+final Provider<String?> staffAccountProvider = Provider<String?>((Ref ref) {
+  return ref.watch(
+    sessionControllerProvider.select((AsyncValue<SessionState> session) {
+      final SessionState? state = session.value;
+      return state is SignedIn ? state.staffUser?.id : null;
+    }),
+  );
+});
+
 /// The role of the signed-in staff account, `null` while there is none; the
 /// server decides what each role may do, and a screen only offers it.
 final Provider<UserRole?> staffRoleProvider = Provider<UserRole?>((Ref ref) {
@@ -18,15 +27,6 @@ final Provider<UserRole?> staffRoleProvider = Provider<UserRole?>((Ref ref) {
     sessionControllerProvider.select((AsyncValue<SessionState> session) {
       final SessionState? state = session.value;
       return state is SignedIn ? state.staffUser?.role : null;
-    }),
-  );
-});
-
-final Provider<String?> staffAccountProvider = Provider<String?>((Ref ref) {
-  return ref.watch(
-    sessionControllerProvider.select((AsyncValue<SessionState> session) {
-      final SessionState? state = session.value;
-      return state is SignedIn ? state.staffUser?.id : null;
     }),
   );
 });

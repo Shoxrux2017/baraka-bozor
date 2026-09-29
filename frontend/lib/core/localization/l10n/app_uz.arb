@@ -1083,7 +1083,6 @@
   "cancelFailedDeliveryTitle": "Buyurtmani bekor qilasizmi?",
   "cancelFailedDeliveryExplained": "Buyurtma «yetkazib bo'lmadi» sababi bilan bekor qilinadi.",
   "actionNote": "Izoh (ixtiyoriy)",
-  "actionConfirm": "Tasdiqlash",
   "paymentNone": "To'lov hali qayd etilmagan",
   "paymentStatusUnpaid": "To'lanmagan",
   "paymentStatusPending": "Kutilmoqda",

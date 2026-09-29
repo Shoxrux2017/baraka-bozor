@@ -567,6 +567,19 @@ void main() {
           'resolved_at': '2026-09-27T08:05:00Z',
         }),
         withApproval(<String, Object?>{'status': 'cancelled'}),
+        withApproval(<String, Object?>{
+          'resolved_by': <String, Object?>{'id': operatorId, 'full_name': 'O'},
+        }),
+        withApproval(<String, Object?>{
+          'status': 'approved',
+          'resolution': 'approved',
+          'resolved_at': '2026-09-27T08:05:00Z',
+        }),
+        withApproval(<String, Object?>{
+          'status': 'expired',
+          'resolution': 'remove_item',
+          'resolved_at': '2026-09-27T08:05:00Z',
+        }),
         withApproval(<String, Object?>{'type': 'ask_again'}),
         withApproval(<String, Object?>{'attention_at': '2026-09-27T08:00:00Z'}),
         without(orderJson(), 'approvals'),
@@ -611,6 +624,29 @@ void main() {
         ),
         orderJson(
           payment: <String, Object?>{...paymentJson(), 'status': 'refunded'},
+        ),
+        orderJson(
+          payment: <String, Object?>{...paymentJson(), 'recorded_by': null},
+        ),
+        orderJson(
+          payment: <String, Object?>{
+            ...paymentJson(),
+            'status': 'pending',
+            'paid_at': null,
+          },
+        ),
+        orderJson(
+          paymentMethod: 'online',
+          payment: <String, Object?>{...paymentJson(), 'method': 'online'},
+        ),
+        orderJson(
+          paymentMethod: 'online',
+          payment: <String, Object?>{
+            ...paymentJson(),
+            'method': 'online',
+            'status': 'pending',
+            'recorded_by': null,
+          },
         ),
         without(orderJson(), 'payment'),
         orderJson(

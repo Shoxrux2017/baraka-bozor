@@ -1076,7 +1076,6 @@
   "cancelFailedDeliveryTitle": "Отменить заказ?",
   "cancelFailedDeliveryExplained": "Заказ будет отменён с причиной «доставка не удалась».",
   "actionNote": "Комментарий (необязательно)",
-  "actionConfirm": "Подтвердить",
   "paymentNone": "Оплата ещё не записана",
   "paymentStatusUnpaid": "Не оплачено",
   "paymentStatusPending": "Ожидает",

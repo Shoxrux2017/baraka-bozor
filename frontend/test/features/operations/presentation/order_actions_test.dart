@@ -6,9 +6,11 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/operations/application/board_controllers.dart';
 import 'package:baraka_bozor/features/operations/data/operations_api.dart';
 import 'package:baraka_bozor/features/operations/domain/board.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -472,37 +474,121 @@ void main() {
 
       expect(find.text(l10n(tester).fieldTooLong(300)), findsOneWidget);
       expect(operations.actions, isEmpty);
+
+      // Exactly the limit is sent.
+      operations.afterAction[orderA] = order(
+        requests: <Object?>[cancellationRequestJson(status: 'rejected')],
+      );
+      await tester.enterText(byKey('action-note'), 'a' * 300);
+      await tapAndSettle(tester, byKey('action-confirm'));
+      expect(operations.actions, <String>[
+        'decide:$orderA:$requestId:reject:${'a' * 300}',
+      ]);
     });
 
-    testWidgets('while the order loads again, its buttons wait', (
-      WidgetTester tester,
-    ) async {
-      operations.details[orderA] = order(
-        requests: <Object?>[cancellationRequestJson()],
-      );
-      await openOrder(tester);
+    testWidgets(
+      'an action loads again the order and whatever shows the board',
+      (WidgetTester tester) async {
+        operations.details[orderA] = order(
+          requests: <Object?>[cancellationRequestJson()],
+        );
+        operations.afterAction[orderA] = order(
+          requests: <Object?>[cancellationRequestJson(status: 'rejected')],
+        );
+        await openOrder(tester);
+        // The board is not on the order's page; something that still shows
+        // it, as a wider layout might, keeps it alive here.
+        final ProviderContainer container = ProviderScope.containerOf(
+          anywhere(tester),
+        );
+        final List<ProviderSubscription<Object?>> shown =
+            <ProviderSubscription<Object?>>[
+              container.listen(boardPageProvider, (_, _) {}),
+              container.listen(boardSummaryProvider, (_, _) {}),
+              container.listen(attentionProvider, (_, _) {}),
+            ];
+        addTearDown(() {
+          for (final ProviderSubscription<Object?> subscription in shown) {
+            subscription.close();
+          }
+        });
+        await tester.pumpAndSettle();
+        operations.loads.clear();
+
+        await tapAndSettle(tester, byKey('reject-request-$requestId'));
+        await tapAndSettle(tester, byKey('action-confirm'));
+
+        expect(
+          operations.loads,
+          containsAll(<String>[
+            'order:$orderA',
+            'orders',
+            'summary',
+            'attention',
+          ]),
+        );
+      },
+    );
+  });
+
+  testWidgets('while the order loads again, every action button waits', (
+    WidgetTester tester,
+  ) async {
+    const String boughtLine = '0192f0a0-0000-7000-8000-0000000000f4';
+    auth.identities[SessionSlot.staff] = user(role: UserRole.admin);
+    operations.details[orderA] = order(
+      items: <Object?>[
+        itemJson(status: 'awaiting_customer'),
+        itemJson(id: boughtLine, status: 'purchased'),
+      ],
+      approvals: <Object?>[approvalJson(status: 'expired')],
+      requests: <Object?>[cancellationRequestJson()],
+    );
+    await openOrder(tester);
+
+    VoidCallback? pressed(String key) =>
+        tester.widget<ButtonStyleButton>(byKey(key)).onPressed;
+    Future<void> checkWhileReloading(List<String> buttons) async {
+      for (final String button in buttons) {
+        expect(pressed(button), isNotNull, reason: button);
+      }
       final Completer<void> reload = Completer<void>();
       operations.holdOrder = reload;
-
       await tester.tap(byKey('order-refresh'));
       await tester.pump();
-      expect(
-        tester
-            .widget<FilledButton>(byKey('approve-request-$requestId'))
-            .onPressed,
-        isNull,
-      );
-
+      for (final String button in buttons) {
+        expect(pressed(button), isNull, reason: button);
+      }
       operations.holdOrder = null;
       reload.complete();
       await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<FilledButton>(byKey('approve-request-$requestId'))
-            .onPressed,
-        isNotNull,
-      );
-    });
+      for (final String button in buttons) {
+        expect(pressed(button), isNotNull, reason: button);
+      }
+    }
+
+    await checkWhileReloading(<String>[
+      'remove-expired-$approvalId',
+      'approve-request-$requestId',
+      'reject-request-$requestId',
+      'correct-price-$boughtLine',
+    ]);
+
+    operations.details[orderA] = order(
+      status: 'ready_for_delivery',
+      items: <Object?>[bought()],
+      couriers: <Object?>[
+        courierAssignmentJson(
+          acceptedAt: '2026-09-27T09:05:00Z',
+          startedAt: '2026-09-27T09:30:00Z',
+          endedAt: '2026-09-27T10:00:00Z',
+          endedReason: 'delivery_failed',
+          failedReason: 'refused',
+        ),
+      ],
+    );
+    await tapAndSettle(tester, byKey('order-refresh'));
+    await checkWhileReloading(<String>['cancel-failed-delivery']);
   });
 
   group('cancelling after a failed delivery', () {
@@ -611,6 +697,51 @@ void main() {
         text(tester, 'order-item-paid-$itemId'),
         words.itemPricePaid(money(17000)),
       );
+    });
+
+    testWidgets('the correction cannot be left while it runs, and sends once', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        status: 'ready_for_delivery',
+        items: <Object?>[bought()],
+      );
+      operations.afterAction[orderA] = order(
+        status: 'ready_for_delivery',
+        items: <Object?>[
+          itemJson(
+            status: 'purchased',
+            purchase: <String, Object?>{'actual_market_price_uzs': 17000},
+          ),
+        ],
+      );
+      await openOrder(tester);
+      await tapAndSettle(tester, byKey('correct-price-$itemId'));
+      await tester.enterText(byKey('correction-price'), '17000');
+      await tester.enterText(byKey('correction-reason'), 'Chek');
+      final Completer<void> hold = Completer<void>();
+      operations.hold = hold;
+
+      await tester.tap(byKey('correction-save'));
+      await tester.pump();
+
+      expect(
+        tester.widget<FilledButton>(byKey('correction-save')).onPressed,
+        isNull,
+      );
+      expect(
+        tester.widget<TextButton>(byKey('action-cancel')).onPressed,
+        isNull,
+      );
+      await tester.tapAt(const Offset(4, 4));
+      await tester.pump();
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      operations.hold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(operations.actions, hasLength(1));
+      expect(find.byType(AlertDialog), findsNothing);
     });
 
     testWidgets('a price above the bound is refused with the bound, in the '

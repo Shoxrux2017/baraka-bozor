@@ -3470,12 +3470,6 @@ abstract class AppLocalizations {
   /// **'Izoh (ixtiyoriy)'**
   String get actionNote;
 
-  /// No description provided for @actionConfirm.
-  ///
-  /// In uz, this message translates to:
-  /// **'Tasdiqlash'**
-  String get actionConfirm;
-
   /// No description provided for @paymentNone.
   ///
   /// In uz, this message translates to:

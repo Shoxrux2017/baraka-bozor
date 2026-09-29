@@ -373,7 +373,7 @@ class PaymentDetails extends StatelessWidget {
 /// A confirmation of one action on an order, with an optional note the
 /// server keeps (`docs/09` sections 40 and 41). It stays open while the
 /// action runs, says a refusal in its own words, and closes once the server
-/// has done it (`DL-28` (13), `DL-68`).
+/// has done it (`DL-28` (10), `DL-68`).
 class OrderActionDialog extends ConsumerStatefulWidget {
   const OrderActionDialog({
     required this.orderId,

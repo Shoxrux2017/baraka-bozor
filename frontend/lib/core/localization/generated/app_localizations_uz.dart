@@ -1898,9 +1898,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get actionNote => 'Izoh (ixtiyoriy)';
 
   @override
-  String get actionConfirm => 'Tasdiqlash';
-
-  @override
   String get paymentNone => 'To\'lov hali qayd etilmagan';
 
   @override
