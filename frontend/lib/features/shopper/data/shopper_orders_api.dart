@@ -215,10 +215,12 @@ class ShopperOrdersApi {
       ),
     );
     final ShopperOrder order = _theOrder(response, orderId);
-    // Past shopping, and no longer the Shopper's. A replay answers the
-    // order as it is now, which may be further on — a Courier assigned,
-    // delivered, even cancelled (`docs/09` section 48).
-    if (_notYetShopped.contains(order.status) || order.assignment != null) {
+    // Past shopping, with the assignment that shopped it, as the completion
+    // ended it (`docs/09` section 35). A replay answers the order as it is
+    // now, which may be further on — a Courier assigned, delivered, even
+    // cancelled (section 48).
+    if (_notYetShopped.contains(order.status) ||
+        order.assignment?.startedAt == null) {
       throw const FormatException('the order does not show the completion');
     }
     return order;

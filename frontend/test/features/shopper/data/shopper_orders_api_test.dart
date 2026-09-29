@@ -514,7 +514,7 @@ void main() {
       );
       orderAnswer = <String, Object?>{
         ...shopperOrderJson(status: 'ready_for_delivery'),
-        'assignment': null,
+        'assignment': shopperAssignmentJson(accepted: true, started: true),
         'can_accept': false,
         'can_start': false,
       };
@@ -659,7 +659,7 @@ void main() {
 
       orderAnswer = <String, Object?>{
         ...shopperOrderJson(status: 'delivery_assigned'),
-        'assignment': null,
+        'assignment': shopperAssignmentJson(accepted: true, started: true),
         'can_accept': false,
         'can_start': false,
       };
@@ -669,15 +669,28 @@ void main() {
       );
       expect(replayed.status, OrderStatus.deliveryAssigned);
 
-      // Still the Shopper's: not completed.
-      orderAnswer = <String, Object?>{
-        ...shopperOrderJson(status: 'ready_for_delivery', accepted: true),
-        'can_start': false,
-      };
-      await expectLater(
-        repository.complete(shopperOrderA, 'key'),
-        throwsA(isA<MalformedResponseFailure>()),
-      );
+      // An order still being shopped, or one without the assignment that
+      // shopped it, is no completion.
+      for (final Map<String, Object?> answer in <Map<String, Object?>>[
+        shopperOrderJson(status: 'shopping'),
+        <String, Object?>{
+          ...shopperOrderJson(status: 'ready_for_delivery'),
+          'assignment': null,
+          'can_accept': false,
+          'can_start': false,
+        },
+        <String, Object?>{
+          ...shopperOrderJson(status: 'ready_for_delivery', accepted: true),
+          'can_start': false,
+        },
+      ]) {
+        orderAnswer = answer;
+        await expectLater(
+          repository.complete(shopperOrderA, 'key'),
+          throwsA(isA<MalformedResponseFailure>()),
+          reason: '$answer',
+        );
+      }
     });
 
     test('the replacement search asks for its page, and its term only when '

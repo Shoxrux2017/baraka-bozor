@@ -1015,7 +1015,7 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - Proposing again the replacement already authorized, above its bound, is `customer_approval_required` (`docs/09` section 33); the dialog then says to buy it, where the price is asked of the Customer.
 8. **The completion** (`docs/09` section 35):
    - It is confirmed first. While it runs the order's refresh waits, since it could otherwise find the order gone before the answer.
-   - Once done, the order is the Shopper's no more, so only the list loads again. A closing screen, `/shopper/done/{number}`, replaces the order's page: it tells the Shopper to write the order number on the package and take it to the handoff point. It takes only an order number, and back leads to the list.
+   - Once done, the order is the Shopper's no more, so only the list loads again. A closing screen, `/shopper/done/{number}`, replaces the order's page: it tells the Shopper to write the order number on the package and take it to the handoff point. It takes only an order number, and back leads to the list. A Shopper who left the order while the completion ran is told it is done instead of being taken back.
    - After a completion without a sure answer, only the list loads again, and the order's page keeps what it shows. When the order can no longer be read — the network down, or the completion gone through — the page offers to send the completion again under its key; the server's replay answers the completed order.
    - A refusal because lines are still open names them.
 9. **Answers held to the action** (`DL-27` (6)). Each answer must show the action done:
@@ -1023,5 +1023,5 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - not found: the line removed;
    - a price or quantity question: that question open on the line;
    - a replacement: the replacement authorized, or a substitution question open;
-   - a completion: the order past shopping and no longer the Shopper's. A replay answers the order as it is now, which may be further on — a Courier assigned, delivered, even cancelled.
+   - a completion: the order past shopping, carrying the assignment that shopped it, as the completion ended it (`docs/09` section 35). A replay answers the order as it is now, which may be further on — a Courier assigned, delivered, even cancelled.
 10. **Words** for `shopping_not_active`, `item_already_resolved`, `customer_approval_required`, `approval_not_needed`, `substitution_not_allowed` and `shopping_incomplete`.

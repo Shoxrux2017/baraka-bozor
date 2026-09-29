@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/network/paged.dart';
+import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/platform/phone_calls.dart';
 import 'package:baraka_bozor/features/shopper/data/shopper_orders_api.dart';
 import 'package:baraka_bozor/features/shopper/domain/shopper_orders.dart';
@@ -342,9 +343,12 @@ class FakeShopperOrdersRepository implements ShopperOrdersRepository {
       throw actionFailure!;
     }
     final ShopperOrder order = afterAction[id]!;
-    // An order the answer shows no longer the Shopper's is theirs to read
-    // no more: loading it again finds nothing, as the server's does.
-    if (order.assignment == null) {
+    // An order the answer shows done shopping, or no longer the Shopper's,
+    // is theirs to read no more: loading it again finds nothing, as the
+    // server's does.
+    if (order.assignment == null ||
+        (order.status != OrderStatus.shoppingAssigned &&
+            order.status != OrderStatus.shopping)) {
       details.remove(id);
     } else {
       details[id] = order;

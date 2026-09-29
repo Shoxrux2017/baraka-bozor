@@ -365,6 +365,7 @@ Future<void> _sendCompletion(
 }) async {
   final AppLocalizations l10n = AppLocalizations.of(context);
   final GoRouter router = GoRouter.of(context);
+  final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
   final ShopperCompleteController completing = ref.read(
     shopperCompleteProvider(orderId).notifier,
   );
@@ -394,8 +395,17 @@ Future<void> _sendCompletion(
     }
   }
   final ShopperOrder? done = await completing.complete();
-  if (done != null) {
+  if (done == null) {
+    return;
+  }
+  // A Shopper who left the order meanwhile is not pulled back to it; they
+  // are told it is done (`frontend/AGENTS.md` section 6).
+  if (router.state.uri.path == AppPaths.shopperOrder(orderId)) {
     router.go(AppPaths.shopperDone(done.orderNumber));
+  } else {
+    messenger.showSnackBar(
+      SnackBar(content: Text(l10n.doneTitle('${done.orderNumber}'))),
+    );
   }
 }
 

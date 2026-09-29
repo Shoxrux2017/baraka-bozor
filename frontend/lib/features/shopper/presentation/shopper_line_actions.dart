@@ -368,7 +368,11 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
         return;
       }
     }
-    if (!(_form.currentState?.validate() ?? false)) {
+    final bool valid = _form.currentState?.validate() ?? false;
+    // The field says what is missing; a purchase after it needs no price
+    // the product does not.
+    setState(() => _askNeedsPrice = false);
+    if (!valid) {
       return;
     }
     final PurchaseEntry entry = _entry();

@@ -412,7 +412,15 @@ void main() {
     await tapAndSettle(tester, byKey('unavailable-$shopperLineTomato'));
     expect(find.text(l10n(tester).unavailableExplained), findsOneWidget);
     await tester.enterText(byKey('unavailable-note'), 'Qolmagan');
+    final int loads = shopper.loads
+        .where((String load) => load == 'order:$shopperOrderA')
+        .length;
     await tapAndSettle(tester, byKey('unavailable-confirm'));
+    expect(
+      shopper.loads.where((String load) => load == 'order:$shopperOrderA'),
+      hasLength(loads),
+      reason: 'an order no longer the Shopper\'s is not asked for again',
+    );
 
     expect(shopper.actions, <String>[
       'unavailable:$shopperLineTomato:Qolmagan',
@@ -533,6 +541,19 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text(l10n(tester).fieldRequired), findsOneWidget);
     expect(shopper.actions.where((String a) => a.startsWith('ask-')), isEmpty);
+
+    // Bought as itself after all, the loaf needs no price.
+    shopper
+      ..actionFailure = null
+      ..afterAction[shopperOrderA] = shopping(<Object?>[
+        tomato(),
+        bread(status: 'purchased'),
+      ]);
+    await tapAndSettle(tester, byKey('purchase-save'));
+    expect(
+      shopper.actions.last,
+      'purchase:$shopperLineBread:2:null:$shopperProductBread',
+    );
   });
 
   testWidgets('a replacement is searched, chosen, and offered with the price '
@@ -621,7 +642,7 @@ void main() {
               bread(status: 'purchased'),
             ],
           ),
-          'assignment': null,
+          'assignment': shopperAssignmentJson(accepted: true, started: true),
           'can_accept': false,
           'can_start': false,
         },
@@ -631,6 +652,45 @@ void main() {
     expect(shopper.keys, hasLength(2));
     expect(shopper.keys.first, shopper.keys.last);
     expect(byKey('shopper-done-title'), findsOneWidget);
+  });
+
+  testWidgets('a Shopper who left the order while its completion ran is told '
+      'it is done, not taken back to it', (WidgetTester tester) async {
+    shopper
+      ..details[shopperOrderA] = shopping(<Object?>[
+        tomato(status: 'purchased'),
+        bread(status: 'purchased'),
+      ])
+      ..afterAction[shopperOrderA] = ShopperOrdersApi.parseOrder(
+        <String, Object?>{
+          ...shopperOrderJson(
+            status: 'ready_for_delivery',
+            items: <Object?>[
+              tomato(status: 'purchased'),
+              bread(status: 'purchased'),
+            ],
+          ),
+          'assignment': shopperAssignmentJson(accepted: true, started: true),
+          'can_accept': false,
+          'can_start': false,
+        },
+      );
+    await openOrder(tester);
+    final Completer<void> hold = Completer<void>();
+    shopper.hold = hold;
+
+    await tapAndSettle(tester, byKey('shopper-complete'));
+    await tester.tap(byKey('complete-confirm'));
+    await tester.pump();
+    await tester.tap(find.byType(BackButton));
+    await tester.pump();
+    shopper.hold = null;
+    hold.complete();
+    await tester.pumpAndSettle();
+
+    expect(byKey('shopper-done-title'), findsNothing);
+    expect(find.text(l10n(tester).doneTitle('1001')), findsOneWidget);
+    expect(find.text(l10n(tester).shellShopper), findsOneWidget);
   });
 
   testWidgets('the refresh waits while a completion runs', (
@@ -650,7 +710,7 @@ void main() {
               bread(status: 'purchased'),
             ],
           ),
-          'assignment': null,
+          'assignment': shopperAssignmentJson(accepted: true, started: true),
           'can_accept': false,
           'can_start': false,
         },
@@ -748,7 +808,7 @@ void main() {
               bread(status: 'purchased'),
             ],
           ),
-          'assignment': null,
+          'assignment': shopperAssignmentJson(accepted: true, started: true),
           'can_accept': false,
           'can_start': false,
         },

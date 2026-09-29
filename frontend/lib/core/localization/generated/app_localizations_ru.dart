@@ -2097,7 +2097,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Товар с фиксированной ценой: цену можно не вводить';
 
   @override
-  String get purchaseSave => 'Купил';
+  String get purchaseSave => 'Записать покупку';
 
   @override
   String get purchaseAgain => 'Отправить снова';
