@@ -911,7 +911,7 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - a question carries the proposal of its type, is about one of the order's lines, and is resolved — its resolution, its instant and who resolved it — as its state says;
    - a request is resolved exactly when it is no longer pending, by someone exactly when it was decided, and at most one is pending;
    - a payment is paid exactly when it has its instant; cash is paid and names the Courier who took it; online names nobody.
-   How a replacement was authorized is read when the answer gives it, since the table does not require it.
+   - a replacement says how it was authorized, as the table requires (`order_items_substitution_target_check`).
    `refunds` is not read until Wave 5, nor is the payment's provider.
 2. **Shared values.** The question's type, state and resolution, the replacement's authorization, the request's origin and the payment's state are core values with their words (`core/orders`, `OrderLabels`), since the app's Shopper and Customer screens read the same (W3-15 to W3-17).
 3. **The page's new sections:**

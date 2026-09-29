@@ -458,7 +458,7 @@ final class BoardItem {
   /// (`DL-57` (6)); `null` for a removed line.
   final NamedProduct? replacement;
 
-  /// How [replacement] was authorized, when the answer says.
+  /// How [replacement] was authorized; set exactly with it.
   final SubstitutionResolution? replacementResolution;
 
   /// Whether the line is billed from the price paid — an estimate original,

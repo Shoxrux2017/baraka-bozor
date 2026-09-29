@@ -580,7 +580,6 @@ class OperationsApi {
     final JsonFields? swap = replacement == null
         ? null
         : JsonFields.of(replacement, 'replacement');
-    final String? resolution = swap?.nullableString('substitution_resolution');
     final BoardItem item = BoardItem(
       id: json.uuid('id'),
       productId: json.uuid('product_id'),
@@ -613,12 +612,11 @@ class OperationsApi {
       replacement: replacement == null
           ? null
           : _product(replacement, 'replacement'),
-      replacementResolution: resolution == null
-          ? null
-          : swap!.choice(
-              'substitution_resolution',
-              SubstitutionResolution.tryParse,
-            ),
+      // The table holds a replacement to how it was authorized.
+      replacementResolution: swap?.choice(
+        'substitution_resolution',
+        SubstitutionResolution.tryParse,
+      ),
     );
     if ((item.status == OrderItemStatus.removed) !=
         (item.removedReason != null)) {

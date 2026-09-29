@@ -520,6 +520,21 @@ void main() {
             ),
           ],
         ),
+        orderJson(
+          items: <Object?>[
+            itemJson(
+              replaced: true,
+              purchase: <String, Object?>{
+                'replacement': <String, Object?>{
+                  'product_id': replacementId,
+                  'name_uz': 'Olcha pomidor',
+                  'name_ru': 'Помидоры черри',
+                  'substitution_resolution': null,
+                },
+              },
+            ),
+          ],
+        ),
         orderJson(items: <Object?>[without(itemJson(), 'purchased_quantity')]),
         // Questions.
         withApproval(<String, Object?>{'item_id': productId}),
@@ -579,6 +594,15 @@ void main() {
           'status': 'expired',
           'resolution': 'remove_item',
           'resolved_at': '2026-09-27T08:05:00Z',
+        }),
+        withApproval(<String, Object?>{
+          'status': 'rejected',
+          'resolution': 'rejected',
+          'resolved_at': '2026-09-27T08:05:00Z',
+        }),
+        withApproval(<String, Object?>{
+          'status': 'expired',
+          'resolved_by': <String, Object?>{'id': operatorId, 'full_name': 'O'},
         }),
         withApproval(<String, Object?>{'type': 'ask_again'}),
         withApproval(<String, Object?>{'attention_at': '2026-09-27T08:00:00Z'}),
