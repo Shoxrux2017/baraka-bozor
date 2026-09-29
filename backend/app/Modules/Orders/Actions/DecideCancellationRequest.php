@@ -29,16 +29,16 @@ use Illuminate\Support\Facades\DB;
  * section 40, `docs/04` section 25, `BR-CAN-002`, `BR-CAN-005`, `BR-CAN-006`,
  * `DL-54` (12), (23), `DL-65`).
  *
- * The order's overdue questions are expired first (`DL-54` (8)). Then, under
- * the order lock, the request is read again:
+ * Under the order lock the request is read again:
  *
  * - the same decision on a decided request is a natural repeat; the other
  *   decision, or any on a `closed` one, is
  *   `409 cancellation_request_already_decided`;
- * - **approve** cancels the order with `cancellation_request_approved`: its
- *   current Shopper or Courier assignment ends `order_cancelled`, its open
- *   lines are removed with `order_cancelled`, its pending questions close
- *   `cancelled`, lines already bought stay bought, and nothing is due;
+ * - **approve** cancels the order with `cancellation_request_approved`: the
+ *   questions overdue at that instant expire first (`DL-54` (8)), those still
+ *   pending close `cancelled`, its open lines are removed with
+ *   `order_cancelled`, its current Shopper or Courier assignment ends
+ *   `order_cancelled`, lines already bought stay bought, and nothing is due;
  * - **reject** lets the order go on;
  * - either keeps the Operator's note, and one `cancellation_request_decided`
  *   row records it, with the move to `cancelled` on an approval and the
@@ -56,7 +56,6 @@ final class DecideCancellationRequest
     {
         /** @var OrderCancellationRequest $found */
         $found = ScopedLookup::firstOrNotFound(OrderCancellationRequest::query()->whereKey($requestId));
-        ApprovalExpiry::expireOverdueOf($found->order_id);
 
         return DB::transaction(function () use ($staff, $found, $decision, $note): Order {
             $order = ScopedLookup::lockOrNotFound(Order::query()->whereKey($found->order_id));
@@ -88,6 +87,10 @@ final class DecideCancellationRequest
                     throw ApiException::conflict('order_state_conflict');
                 }
                 $from = $order->status;
+                // At the cancellation's own instant, under its lock: a question
+                // that fell due while the decision waited expires, rather than
+                // closing as cancelled (DL-65 (2)).
+                ApprovalExpiry::expireOverdueOf($order->id, $now);
                 $details['cancelled_approval_ids'] = self::cancel($order, $now);
             }
             $request->save();

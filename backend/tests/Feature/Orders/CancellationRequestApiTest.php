@@ -63,6 +63,7 @@ final class CancellationRequestApiTest extends TestCase
     public function test_the_customer_files_a_request_while_the_order_is_being_fulfilled(): void
     {
         $order = $this->order(Order::factory()->shopping());
+        Carbon::setTestNow(now()->addMinutes(40));
         $key = (string) Str::uuid();
 
         $data = $this->file($order, ['reason' => 'Планы изменились'], $key)->assertOk()->json('data');
@@ -140,7 +141,9 @@ final class CancellationRequestApiTest extends TestCase
         $this->assertSame('cancellation_request_approved', $data['cancellation_reason_code']);
         $this->assertSame('none', $data['totals']['total_kind'], 'Nothing is due (BR-CAN-006).');
         $this->assertSame(OrderItemStatus::Purchased, $bought->fresh()?->status, 'What was bought stays bought.');
-        $this->assertSame([OrderItemStatus::Removed, ItemRemovedReason::OrderCancelled], [$open->fresh()?->status, $open->fresh()->removed_reason_code]);
+        foreach ([$open, $question->item, $overdue->item] as $line) {
+            $this->assertSame([OrderItemStatus::Removed, ItemRemovedReason::OrderCancelled], [$line->fresh()?->status, $line->fresh()->removed_reason_code]);
+        }
         $this->assertSame(ApprovalStatus::Cancelled, $question->fresh()?->status);
         $this->assertSame(ApprovalStatus::Expired, $overdue->fresh()?->status, 'Expired first, as every action does (DL-54 (8)).');
         $shopper = OrderShopperAssignment::query()->where('order_id', $order->id)->sole();
@@ -185,6 +188,7 @@ final class CancellationRequestApiTest extends TestCase
         $courier = OrderCourierAssignment::query()->where('order_id', $assigned->id)->sole();
         $courier->forceFill(['accepted_at' => now()])->save();
         $request = $this->filed($assigned);
+        $this->assertSame(['id' => $courier->courier_id, 'full_name' => $courier->courier->full_name], $this->as($this->operator)->getJson('/api/v1/operations/attention')->json('data.0.courier'));
 
         // While the request waits, the Courier does not set off (DL-54 (12)).
         $this->withToken($courier->courier->createToken('c')->plainTextToken)
@@ -221,6 +225,9 @@ final class CancellationRequestApiTest extends TestCase
         // The Customer may ask again, and an approval then stands likewise.
         $this->customerOrder($order)->assertJsonPath('data.can_request_cancellation', true)->assertJsonPath('data.cancellation_request.status', 'rejected');
         $again = $this->filed($order);
+        $this->customerOrder($order)->assertJsonPath('data.cancellation_request.id', $again->id)
+            ->assertJsonPath('data.cancellation_request.status', 'pending')
+            ->assertJsonPath('data.can_request_cancellation', false);
         $this->decide($again, ['decision' => 'approve'])->assertOk();
         $this->decide($again, ['decision' => 'approve'])->assertOk();
         $this->decide($again, ['decision' => 'reject'])->assertStatus(409)->assertJsonPath('code', 'cancellation_request_already_decided');
@@ -289,10 +296,13 @@ final class CancellationRequestApiTest extends TestCase
         $this->staffCancel($failed, ['reason_code' => 'delivery_failed'])->assertOk();
         $this->assertSame(1, OrderHistory::query()->where('order_id', $failed->id)->where('event_type', OrderHistoryEvent::StatusChanged)->count());
 
-        // Only after a failed delivery.
+        // Only after a failed delivery, the state asked before the request.
         foreach ([Order::factory()->readyForDelivery(), Order::factory()->shopping(), Order::factory()->onTheWay(), Order::factory()->deliveryAssigned()] as $factory) {
             $this->staffCancel($this->order($factory), ['reason_code' => 'delivery_failed'])->assertStatus(409)->assertJsonPath('code', 'order_state_conflict');
         }
+        $asked = $this->order(Order::factory()->shopping());
+        $this->filed($asked);
+        $this->staffCancel($asked, ['reason_code' => 'delivery_failed'])->assertStatus(409)->assertJsonPath('code', 'order_state_conflict');
         $other = $this->order(Order::factory()->deliveryFailed());
         $this->staffCancel($other, ['reason_code' => 'unpaid_online'])->assertStatus(422)->assertJsonValidationErrors(['reason_code']);
         $this->staffCancel($other, [])->assertStatus(422);

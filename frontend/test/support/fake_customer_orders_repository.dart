@@ -47,6 +47,7 @@ Map<String, Object?> customerOrderJson({
   List<Object?>? lines,
   String? note = 'Kechqurun',
   String? cancellationReason,
+  String? cancellationRequest,
 }) {
   final bool cancelled = status == 'cancelled';
   return <String, Object?>{
@@ -59,6 +60,15 @@ Map<String, Object?> customerOrderJson({
     'can_edit': changeable,
     'can_cancel_directly': changeable,
     'can_request_cancellation': false,
+    'cancellation_request': cancellationRequest == null
+        ? null
+        : <String, Object?>{
+            'id': '0192f0a0-0000-7000-8000-00000000cc01',
+            'status': cancellationRequest,
+            'reason': 'Kerak emas',
+            'created_at': '2026-09-28T08:00:00Z',
+            'resolved_at': null,
+          },
     'items':
         lines ??
         <Object?>[

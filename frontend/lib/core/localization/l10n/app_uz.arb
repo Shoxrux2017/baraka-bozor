@@ -802,6 +802,8 @@
   "orderCancelRepeating": "Avvalgi so'rov javobsiz qoldi: u shu sabab bilan qayta yuboriladi",
   "orderCancelKeep": "Yo'q, qoldirish",
   "orderCancelling": "Bekor qilinmoqda",
+  "orderCancellationRequested": "Bekor qilish so'raldi: operator hal qiladi",
+  "orderCancellationNeedsReason": "Xarid boshlangan: bekor qilish sababini yozing, operator hal qiladi",
   "orderOpen": "Buyurtmani ochish",
   "orderLineRemoved": "Olib tashlandi: {reason}",
   "@orderLineRemoved": {

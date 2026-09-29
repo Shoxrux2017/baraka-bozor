@@ -1594,6 +1594,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get orderCancelling => 'Отменяем';
 
   @override
+  String get orderCancellationRequested => 'Отмена запрошена: решит оператор';
+
+  @override
+  String get orderCancellationNeedsReason =>
+      'Покупка уже началась: напишите причину отмены, и решит оператор';
+
+  @override
   String get orderOpen => 'Открыть заказ';
 
   @override

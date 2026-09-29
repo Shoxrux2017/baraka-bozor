@@ -26,6 +26,7 @@ use App\Modules\Orders\Actions\AssignShopper;
 use App\Modules\Orders\Actions\ChangeCart;
 use App\Modules\Orders\Actions\CreateOrder;
 use App\Modules\Orders\Actions\DecideApproval;
+use App\Modules\Orders\Actions\DecideCancellationRequest;
 use App\Modules\Orders\Actions\EditOrderItems;
 use App\Modules\Orders\Actions\MarkItemUnavailable;
 use App\Modules\Orders\Actions\RecordPurchase;
@@ -107,6 +108,14 @@ try {
         ],
         'shopper.unavailable' => [
             'order_id' => $app->make(MarkItemUnavailable::class)->markUnavailable(
+                User::query()->findOrFail($arguments[0]),
+                $arguments[1],
+                $arguments[2],
+                null,
+            )->id,
+        ],
+        'operations.decide-cancellation' => [
+            'order_id' => $app->make(DecideCancellationRequest::class)->decide(
                 User::query()->findOrFail($arguments[0]),
                 $arguments[1],
                 $arguments[2],

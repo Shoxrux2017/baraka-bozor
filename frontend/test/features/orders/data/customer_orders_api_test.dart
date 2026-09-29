@@ -64,6 +64,12 @@ void main() {
           'cancellation_reason_code': null,
         },
         <String, Object?>{...customerOrderJson(), 'can_edit': 'yes'},
+        <String, Object?>{
+          ...customerOrderJson(cancellationRequest: 'pending'),
+          'cancellation_request': <String, Object?>{'status': 'maybe'},
+        },
+        <String, Object?>{...customerOrderJson()}
+          ..remove('cancellation_request'),
         customerOrderJson(lines: <Object?>[orderLineJson(quantity: '1.5')]),
       ]) {
         expect(
@@ -168,6 +174,35 @@ void main() {
             SessionSlot.customer,
           );
         }
+      },
+    );
+
+    test(
+      'a cancel from shopping on answers the order carrying its request',
+      () async {
+        answer = customerOrderJson(
+          status: 'shopping',
+          changeable: false,
+          cancellationRequest: 'pending',
+        );
+        final CustomerOrder asked = await repository.cancel(
+          orderOne,
+          'Kerak emas',
+          'key',
+        );
+        expect(asked.status, OrderStatus.shopping);
+        expect(asked.cancellationRequest, CancellationRequestStatus.pending);
+
+        // A request already decided is not what this cancel did.
+        answer = customerOrderJson(
+          status: 'shopping',
+          changeable: false,
+          cancellationRequest: 'rejected',
+        );
+        await expectLater(
+          repository.cancel(orderOne, 'Kerak emas', 'key'),
+          throwsA(isA<MalformedResponseFailure>()),
+        );
       },
     );
 

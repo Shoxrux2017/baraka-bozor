@@ -11,6 +11,7 @@ import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
+import '../../../core/network/api_failure.dart';
 import '../../../core/network/paged.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
@@ -239,6 +240,11 @@ class _Order extends StatelessWidget {
         Text(l10n.orderPlacedAt(TashkentTime.format(order.createdAt))),
         Text(OrderLabels.paymentMethod(l10n, order.paymentMethod)),
         if (reason != null) Text(OrderLabels.cancellationReason(l10n, reason)),
+        if (order.cancellationRequest == CancellationRequestStatus.pending)
+          Text(
+            l10n.orderCancellationRequested,
+            key: const ValueKey<String>('order-cancellation-requested'),
+          ),
         const SizedBox(height: 16),
         for (final CustomerOrderLine line in order.lines)
           // The Customer's own removals are gone from what they order.
@@ -286,10 +292,27 @@ class _Order extends StatelessWidget {
             label: Text(l10n.orderCancel),
             onPressed: cancelling.isBusy ? null : onCancel,
           ),
-        FailureMessage(cancelling.failure),
+        if (_needsReason(cancelling.failure))
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              l10n.orderCancellationNeedsReason,
+              key: const ValueKey<String>('order-cancel-needs-reason'),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          )
+        else
+          FailureMessage(cancelling.failure),
       ],
     );
   }
+
+  /// Shopping began since the order was shown: the cancel now asks an
+  /// Operator, and a request needs its reason (`DL-65` (1)).
+  static bool _needsReason(ApiFailure? failure) =>
+      failure is ApiRefusal &&
+      failure.status == 422 &&
+      failure.error.errors.containsKey('reason');
 }
 
 class _Line extends StatelessWidget {

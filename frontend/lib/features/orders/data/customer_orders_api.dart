@@ -84,8 +84,11 @@ class CustomerOrdersApi {
       ),
     );
     final CustomerOrder order = _theOrder(response, id);
-    if (order.status != OrderStatus.cancelled) {
-      throw const FormatException('the order is not cancelled');
+    // From shopping on, the cancel files a request an Operator decides
+    // (`DL-65` (1)): the order goes on, carrying it.
+    if (order.status != OrderStatus.cancelled &&
+        order.cancellationRequest != CancellationRequestStatus.pending) {
+      throw const FormatException('the order is neither cancelled nor asked');
     }
     return order;
   }
@@ -161,6 +164,7 @@ class CustomerOrdersApi {
       throw const FormatException('items is not a list');
     }
     final String? reason = json.nullableString('cancellation_reason_code');
+    final Object? request = json.member('cancellation_request');
 
     final CustomerOrder order = CustomerOrder(
       id: json.uuid('id'),
@@ -192,6 +196,12 @@ class CustomerOrdersApi {
               'cancellation_reason_code',
               CancellationReason.tryParse,
             ),
+      cancellationRequest: request == null
+          ? null
+          : JsonFields.of(
+              request,
+              'cancellation_request',
+            ).choice('status', CancellationRequestStatus.tryParse),
       createdAt: timestamps.instant('created_at'),
     );
     final bool none = order.totalKind == TotalKind.none;

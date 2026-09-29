@@ -145,6 +145,28 @@ enum ItemRemovedReason {
   }
 }
 
+/// Where the Customer's cancellation request stands (`docs/09` section 20,
+/// `DL-65` (5)).
+enum CancellationRequestStatus {
+  pending('pending'),
+  approved('approved'),
+  rejected('rejected'),
+  closed('closed');
+
+  const CancellationRequestStatus(this.code);
+
+  final String code;
+
+  static CancellationRequestStatus? tryParse(String code) {
+    for (final CancellationRequestStatus status in values) {
+      if (status.code == code) {
+        return status;
+      }
+    }
+    return null;
+  }
+}
+
 /// Why an order was cancelled (`DL-3` S-9).
 enum CancellationReason {
   customerCancelled('customer_cancelled'),

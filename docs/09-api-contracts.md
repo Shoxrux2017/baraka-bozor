@@ -144,7 +144,7 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
 
 ```json
 {"id":"...","order_number":1042,"status":"shopping","payment_method":"cash",
- "pending_approval_count":1,"can_edit":false,"can_cancel_directly":false,"can_request_cancellation":true,
+ "pending_approval_count":1,"can_edit":false,"can_cancel_directly":false,"can_request_cancellation":true,"cancellation_request":null,
  "items":[...],"totals":{"merchandise_subtotal_uzs":225000,"service_fee_uzs":11250,"delivery_fee_uzs":15000,"total_uzs":251250,"total_kind":"estimate"},
  "address":{...},"delivery_time_note":"...","payment":null,"refunds":[],"timestamps":{...}}
 ```

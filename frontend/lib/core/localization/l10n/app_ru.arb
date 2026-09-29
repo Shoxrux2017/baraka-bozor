@@ -795,6 +795,8 @@
   "orderCancelRepeating": "Прошлый запрос остался без ответа: он повторится с той же причиной",
   "orderCancelKeep": "Нет, оставить",
   "orderCancelling": "Отменяем",
+  "orderCancellationRequested": "Отмена запрошена: решит оператор",
+  "orderCancellationNeedsReason": "Покупка уже началась: напишите причину отмены, и решит оператор",
   "orderOpen": "Открыть заказ",
   "orderLineRemoved": "Убрано: {reason}",
   "@orderLineRemoved": {
