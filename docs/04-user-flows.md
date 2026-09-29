@@ -160,11 +160,13 @@ An Operator or Admin selects an active Courier for a `ready_for_delivery` order.
 
 ## 27. Courier Accepts and Starts
 
-The Courier accepts, collects the order at the handoff point (or, while no handoff point exists, calls the Shopper whose phone the assignment shows), and starts. The backend records `on_the_way_at` and the delay deadline from the threshold snapshot, sets `on_the_way`, and notifies the Customer with `courier_started`.
+The Courier accepts, collects the order at the handoff point (or, while no handoff point exists, calls the Shopper whose phone the assignment shows), and starts. The Courier's delivery page calls the recipient, opens the point in the phone's map app, and keeps itself current every ten seconds (`DL-54` (15), (16), `DL-72`). The backend records `on_the_way_at` and the delay deadline from the threshold snapshot, sets `on_the_way`, and notifies the Customer with `courier_started`.
 
 ## 28. Delivered
 
 After handover the Courier marks delivered. For a cash order the Courier enters the cash received, which must equal the final total; the backend records the cash payment as paid by that Courier. The order becomes `completed`, `completed_at` is stored, and the Customer receives `order_delivered`. A repeat by the same assignment is a no-op.
+
+In the app the Courier types the cash they counted into an empty field; a mismatch shows the amount to collect (`DL-72`).
 
 ## 29. Not Delivered
 

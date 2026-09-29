@@ -575,6 +575,7 @@ void main() {
         role: UserRole.courier,
       );
       await open(tester);
+      await tapAndSettle(tester, byKey('staff-menu'));
       await tapAndSettle(tester, byKey('switch-to-customer-button'));
 
       await tapAndSettle(tester, byKey('open-cart'));

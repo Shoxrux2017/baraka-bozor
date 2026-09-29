@@ -2339,4 +2339,162 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get decisionSending => 'Отправляем ответ';
+
+  @override
+  String get courierOrdersEmpty =>
+      'Пока вам не назначено доставок. Назначенная доставка появится здесь.';
+
+  @override
+  String get courierPageEmpty =>
+      'На этой странице доставок не осталось. Перейдите на предыдущую.';
+
+  @override
+  String get courierNotAccepted => 'Новая доставка — примите её';
+
+  @override
+  String get courierAccept => 'Принять';
+
+  @override
+  String get courierStart => 'Выехать';
+
+  @override
+  String get courierDelivered => 'Доставлено';
+
+  @override
+  String get courierNotDelivered => 'Не доставлено';
+
+  @override
+  String get courierRequestPending =>
+      'Клиент просит отменить заказ. Не выезжайте, пока оператор не решит.';
+
+  @override
+  String courierRecipient(String name) {
+    return 'Получатель: $name';
+  }
+
+  @override
+  String callRecipient(String phone) {
+    return 'Позвонить получателю: $phone';
+  }
+
+  @override
+  String callShopper(String phone) {
+    return 'Позвонить сборщику: $phone';
+  }
+
+  @override
+  String get courierPickupFromShopper =>
+      'Пункта передачи нет — заберите заказ у сборщика.';
+
+  @override
+  String courierAddress(String address) {
+    return 'Адрес: $address';
+  }
+
+  @override
+  String courierLandmark(String landmark) {
+    return 'Ориентир: $landmark';
+  }
+
+  @override
+  String courierDeliveryNote(String note) {
+    return 'Комментарий для курьера: $note';
+  }
+
+  @override
+  String get courierOpenMap => 'Открыть на карте';
+
+  @override
+  String courierMapFailed(String address) {
+    return 'Не удалось открыть приложение карт. Адрес: $address';
+  }
+
+  @override
+  String courierCollect(String amount) {
+    return 'Получить наличными: $amount';
+  }
+
+  @override
+  String get courierPaidOnline => 'Оплата онлайн — деньги не брать';
+
+  @override
+  String courierAssignedAt(String time) {
+    return 'Назначена: $time';
+  }
+
+  @override
+  String courierAcceptedAt(String time) {
+    return 'Принята: $time';
+  }
+
+  @override
+  String courierStartedAt(String time) {
+    return 'Выехали: $time';
+  }
+
+  @override
+  String courierDueBy(String time) {
+    return 'Доставьте до $time';
+  }
+
+  @override
+  String get courierDeliveredTitle => 'Заказ передан получателю?';
+
+  @override
+  String courierCashPrompt(String amount) {
+    return 'Получите $amount наличными и введите полученную сумму.';
+  }
+
+  @override
+  String get courierCashField => 'Получено наличными, сум';
+
+  @override
+  String get courierCashInvalid => 'Введите сумму в сумах, цифрами';
+
+  @override
+  String courierCashMismatch(String amount) {
+    return 'Сумма не совпадает: нужно получить $amount.';
+  }
+
+  @override
+  String get courierHandoverRepeating =>
+      'Прошлая отметка осталась без ответа — отправим ту же сумму снова.';
+
+  @override
+  String get courierHandoverUnconfirmed =>
+      'Отметка «Доставлено» отправлена, но ответа нет. Отправьте её снова — второй оплаты не будет.';
+
+  @override
+  String courierDeliveredDone(String number) {
+    return 'Заказ $number доставлен';
+  }
+
+  @override
+  String get courierNotDeliveredTitle => 'Почему не удалось доставить?';
+
+  @override
+  String get courierNotDeliveredNote => 'Комментарий';
+
+  @override
+  String get courierNotDeliveredExplained =>
+      'Заказ вернётся к оператору, он решит, что с ним делать дальше.';
+
+  @override
+  String courierNotDeliveredDone(String number) {
+    return 'Заказ $number возвращён оператору';
+  }
+
+  @override
+  String get courierOrderGone => 'Эта доставка больше не ваша.';
+
+  @override
+  String get courierBack => 'К моим доставкам';
+
+  @override
+  String get errorDeliveryStateConflict =>
+      'Доставка уже изменилась, мы обновили заказ.';
+
+  @override
+  String get errorCashAmountMismatch =>
+      'Сумма не совпадает с суммой к получению.';
 }

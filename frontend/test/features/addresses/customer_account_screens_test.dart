@@ -435,6 +435,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('staff-menu'));
     await tapAndSettle(tester, byKey('switch-to-customer-button'));
 
     final Finder mode = byKey('active-mode');

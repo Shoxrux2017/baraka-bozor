@@ -5,7 +5,9 @@ import 'package:baraka_bozor/features/addresses/application/addresses_controller
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
 import 'package:baraka_bozor/features/checkout/application/checkout_controllers.dart';
 import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
+import 'package:baraka_bozor/core/platform/map_links.dart';
 import 'package:baraka_bozor/core/platform/phone_calls.dart';
+import 'package:baraka_bozor/features/courier/application/courier_orders_controllers.dart';
 import 'package:baraka_bozor/features/operations/application/board_controllers.dart';
 import 'package:baraka_bozor/features/shopper/application/shopper_orders_controllers.dart';
 import 'package:baraka_bozor/main.dart';
@@ -17,6 +19,7 @@ import 'fake_auth_repository.dart';
 import 'fake_cart_repository.dart';
 import 'fake_catalog_repository.dart';
 import 'fake_checkout_repository.dart';
+import 'fake_courier_orders_repository.dart';
 import 'fake_customer_orders_repository.dart';
 import 'fake_customer_repositories.dart';
 import 'fake_operations_repository.dart';
@@ -36,7 +39,9 @@ Widget appUnderTest({
   FakeAddressesRepository? addresses,
   FakeCustomerOrdersRepository? orders,
   FakeShopperOrdersRepository? shopper,
+  FakeCourierOrdersRepository? courier,
   FakePhoneCalls? phoneCalls,
+  FakeMapLinks? maps,
   Surface surface = Surface.mobile,
   Locale device = const Locale('uz'),
   List<Override> overrides = const <Override>[],
@@ -70,7 +75,11 @@ Widget appUnderTest({
       shopperOrdersRepositoryProvider.overrideWithValue(
         shopper ?? FakeShopperOrdersRepository(),
       ),
+      courierOrdersRepositoryProvider.overrideWithValue(
+        courier ?? FakeCourierOrdersRepository(),
+      ),
       phoneCallsProvider.overrideWithValue(phoneCalls ?? FakePhoneCalls()),
+      mapLinksProvider.overrideWithValue(maps ?? FakeMapLinks()),
       ...overrides,
     ],
     child: const BarakaBozorApp(),

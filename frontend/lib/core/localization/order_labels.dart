@@ -80,6 +80,16 @@ abstract final class OrderLabels {
     ItemRemovedReason.orderCancelled => removedReason(l10n, reason),
   };
 
+  static String deliveryFailure(
+    AppLocalizations l10n,
+    DeliveryFailureReason reason,
+  ) => switch (reason) {
+    DeliveryFailureReason.noAnswer => l10n.deliveryFailureNoAnswer,
+    DeliveryFailureReason.refused => l10n.deliveryFailureRefused,
+    DeliveryFailureReason.wrongAddress => l10n.deliveryFailureWrongAddress,
+    DeliveryFailureReason.other => l10n.deliveryFailureOther,
+  };
+
   static String approvalType(AppLocalizations l10n, ApprovalType type) =>
       switch (type) {
         ApprovalType.priceOverTolerance => l10n.approvalTypePrice,

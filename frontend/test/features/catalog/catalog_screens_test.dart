@@ -377,6 +377,8 @@ void main() {
         await open(tester, device: device);
         final Finder mode = byKey('active-mode');
         expect(mode, findsOneWidget, reason: 'in the staff shell');
+        await tester.tap(byKey('staff-menu'));
+        await tester.pumpAndSettle();
         await tester.tap(byKey('switch-to-customer-button'));
         await tester.pumpAndSettle();
         expect(mode, findsOneWidget, reason: 'on the Customer home');

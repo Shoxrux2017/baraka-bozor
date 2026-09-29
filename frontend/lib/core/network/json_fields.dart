@@ -23,6 +23,10 @@ extension type const JsonFields(Map<String, dynamic> _json) {
     return _json[key];
   }
 
+  /// Whether [key] is present, for the few members the contract gives only
+  /// in some states rather than as `null`.
+  bool has(String key) => _json.containsKey(key);
+
   String string(String key) {
     final Object? value = member(key);
     if (value is String && value.isNotEmpty) {

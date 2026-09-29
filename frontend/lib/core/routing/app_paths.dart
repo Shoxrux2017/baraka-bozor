@@ -62,6 +62,12 @@ abstract final class AppPaths {
 
   static String shopperDone(int orderNumber) => '$shopper/done/$orderNumber';
 
+  // Inside the Courier's area: the list opens a delivery.
+  static const String courierOrderPattern = '$courier/orders/:order';
+
+  static String courierOrder(String id) =>
+      '$courier/orders/${Uri.encodeComponent(id)}';
+
   // Inside the Admin area, where the panel's shared navigation links
   // (`features/shells/presentation/panel_shell.dart`).
   static const String adminCategories = '$admin/categories';

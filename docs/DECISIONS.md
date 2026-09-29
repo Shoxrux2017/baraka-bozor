@@ -1083,3 +1083,59 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - **payments:** paid exactly when they have their instant, and cash only ever paid.
 9. **Words** for `approval_expired`.
 10. **One instant per order read.** The Customer's order resource reads the clock once. The count of open questions and the questions its lines show then agree even when a question expires during the read, since the app holds one to the other in (8). Before this, each read the clock itself, and a question expiring between the two readings made the order unreadable for one refresh.
+
+## DL-72 — The Courier's area, from W3-18 (2026-09-29, agent)
+
+1. **The area.** The app feature `courier` serves `/courier`, the list, and `/courier/orders/{order}`, a delivery opened over it. It replaces the placeholder.
+   - Its app bar holds the language and one menu with Customer mode and the way out, as the Shopper's does (`DL-69` (5)).
+   - The placeholder now serves only the Manager, who has no Customer mode, so its Customer-mode button goes.
+2. **The list**, longest-waiting first, shows each delivery's:
+   - number and status;
+   - recipient and address;
+   - time wish;
+   - what to collect;
+   - whether a cancellation request waits;
+   - whether it is accepted.
+   It refreshes every ten seconds while shown (`DL-54` (15)).
+3. **A delivery** shows:
+   - the recipient;
+   - the address with its landmark;
+   - the note for the Courier, and the time wish;
+   - the amount to collect, or that an online order takes none;
+   - when it was assigned, accepted and set off, and the time after which it is late (`delay_at`).
+   A waiting cancellation request says the Courier may not set off, and the start is not offered (`DL-54` (12)). A start refused for one reloads the order, which then says so; the refusal says nothing of its own, so no stale "do not set off" stands beside a start an Operator's rejection offers again. The delivery refreshes every ten seconds while shown; an outcome is sent from a dialog, which covers the page, so the refresh waits for it.
+4. **Calls and the map** (`DL-54` (16)):
+   - **The recipient** is called through the dialer.
+   - **The Shopper** is called too while the server sends their phone, that is, without a handoff point (`BR-DEL-006`); until the Courier sets off, a line says to collect the order from them.
+   - **The point** opens in the phone's map app through a `geo:` link that carries the point as its query, so the app pins it. `MapLinks` sits in `core/platform` beside `PhoneCalls`.
+   - A phone that opens nothing says so, with the number or the address.
+5. **Delivered** (`docs/09` section 37).
+   - **The cash.** For a cash order the Courier types the cash received. The field starts empty, so the entry is their own count rather than a tap on the expected amount (`docs/04` section 28). It takes digits, with spaces allowed between them, above zero.
+   - **A mismatch.** The server holds the cash to the final total. `cash_amount_mismatch` shows what is to be collected, from `details.expected_uzs`. The mismatch is the Courier's own count: a price correction is locked once they set off (`docs/09` section 45), so the amount the dialog shows is current. Like any conflict, it reloads the order.
+   - **The key.**
+     - A handover whose answer failed to say what it did keeps its key and the cash sent, as state of the delivery (`unansweredHandoverProvider`) that its screen holds.
+     - The page then says so and offers only the handover. The dialog shows the amount sent, locked.
+     - If the delivery can no longer be read because the handover went through, the page offers the handover again, and the server's replay answers the completed order.
+   - **While it runs,** the dialog stays open and cannot be dismissed.
+6. **Not delivered.**
+   - The Courier picks a reason from the four. A note of up to 300 characters is required with "other", trimmed as the server trims it.
+   - It is unkeyed, a natural repeat (`DL-64` (3)). On a failure the dialog stays open and sends again as it is. An answer that did not say what it did reloads the delivery at once: if the failure went through, the delivery is gone, and the page no longer offers a handover.
+   - Each outcome dialog shows only the failure of its own attempt, never one the other dialog or a closed one left.
+7. **After an outcome** the assignment has ended, and the delivery is no longer the Courier's.
+   - Only the list reloads. A snackbar says what happened, and the Courier goes back to the list, unless they left the delivery meanwhile.
+   - The answers carry no recipient, address or notes (`DL-64` (7)). The app reads only the outcome and the order number from them.
+8. **Answers held to the contract** (`DL-27` (6)):
+   - **held or ended:**
+     - held, the recipient and the address are both present, in a state a Courier holds an order in, `delivery_assigned` or `on_the_way`;
+     - ended, the recipient, address, notes and wish are `null`, and there is no Shopper's phone;
+   - **payment:** cash exactly with an amount to collect, above zero;
+   - **values:** the phones in their form, and the point on the globe;
+   - **the assignment:** the start after the acceptance, the delay exactly with the start, and `can_accept` and `can_start` as the resource computes them;
+   - **per request:**
+     - the list, a read, an acceptance and a start answer a held delivery;
+     - delivered answers the order completed and ended;
+     - not delivered answers it ended, and back with an Operator or cancelled by one since.
+9. **Shared.**
+   - `DeliveryFailureReason` moves to `core/orders`, with its words in `OrderLabels.deliveryFailure`, which the panel also uses.
+   - `JsonFields.has` tells a member that is absent from one present as `null`, for `shopper_phone`.
+   - New words for `delivery_state_conflict` and `cash_amount_mismatch`.

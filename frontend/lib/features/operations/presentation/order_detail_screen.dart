@@ -527,7 +527,7 @@ class _CourierAssignmentTile extends StatelessWidget {
           if (failed != null)
             Text(
               <String>[
-                _failure(l10n, failed),
+                OrderLabels.deliveryFailure(l10n, failed),
                 if (assignment.failedNote != null) assignment.failedNote!,
               ].join(': '),
               key: ValueKey<String>('courier-failure-${assignment.id}'),
@@ -543,14 +543,6 @@ class _CourierAssignmentTile extends StatelessWidget {
         AssignmentEndReason.reassigned => l10n.courierEndReassigned,
         AssignmentEndReason.deliveryFailed => l10n.courierEndDeliveryFailed,
         AssignmentEndReason.orderCancelled => l10n.assignmentEndOrderCancelled,
-      };
-
-  static String _failure(AppLocalizations l10n, DeliveryFailureReason reason) =>
-      switch (reason) {
-        DeliveryFailureReason.noAnswer => l10n.deliveryFailureNoAnswer,
-        DeliveryFailureReason.refused => l10n.deliveryFailureRefused,
-        DeliveryFailureReason.wrongAddress => l10n.deliveryFailureWrongAddress,
-        DeliveryFailureReason.other => l10n.deliveryFailureOther,
       };
 }
 
