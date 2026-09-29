@@ -53,8 +53,11 @@ final class PriceCorrectionApiTest extends TestCase
     {
         $line = $this->estimateLine();
         $this->buy($line, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 17000]);
+        $operator = User::factory()->role(Role::Operator)->create();
+        $this->as($operator)->getJson("/api/v1/operations/orders/{$this->order->id}")->assertJsonPath('data.totals.total_uzs', 39100 + 5000 + 15000);
 
         $data = $this->correct($line, ['actual_market_price_uzs' => 16500, 'reason' => 'Опечатка в цене'])->assertOk()->json('data');
+        $this->assertSame([37950 + 5000 + 15000, 'estimate'], [$data['totals']['total_uzs'], $data['totals']['total_kind']], 'Before completion the totals follow the line.');
 
         $bought = $line->fresh();
         $this->assertSame([16500, 18975, 37950], [$bought?->actual_market_price_uzs, $bought->billable_unit_price_uzs, $bought->line_total_uzs], 'half_up(16 500 × 1.15) = 18 975, twice.');
@@ -142,6 +145,59 @@ final class PriceCorrectionApiTest extends TestCase
         $this->assertSame(1, OrderItemPriceCorrection::query()->count());
     }
 
+    public function test_each_bound_and_quantity_is_the_purchases_own(): void
+    {
+        // An approved ceiling raises the original's bound: 25 000.
+        $ceiling = $this->estimateLine(['approved_unit_price_ceiling_uzs' => 25000]);
+        $this->buy($ceiling, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 16000]);
+        $this->correct($ceiling, ['actual_market_price_uzs' => 21739, 'reason' => 'Чек'])->assertOk();
+        $this->correct($ceiling, ['actual_market_price_uzs' => 21740, 'reason' => 'Чек'])
+            ->assertStatus(409)->assertJsonPath('details.ceiling_customer_unit_price_uzs', 25000);
+
+        // A replacement approved at a price is held to it, below or above the automatic 21 160.
+        $below = $this->replaced($this->estimateLine(), approvedPrice: 20000);
+        $this->buy($below, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 16000]);
+        $this->correct($below, ['actual_market_price_uzs' => 17392, 'reason' => 'Чек'])
+            ->assertStatus(409)->assertJsonPath('code', 'price_correction_above_ceiling')->assertJsonPath('details.ceiling_customer_unit_price_uzs', 20000);
+        $above = $this->replaced($this->estimateLine(), approvedPrice: 30000);
+        $this->buy($above, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 16000]);
+        $this->correct($above, ['actual_market_price_uzs' => 26000, 'reason' => 'Чек'])->assertOk();
+        $this->assertSame(29900, $above->fresh()?->billable_unit_price_uzs);
+
+        // The excess is not billed: 2.5 bought, 2 × half_up(16 500 × 1.15).
+        $excess = $this->estimateLine();
+        $this->buy($excess, ['purchased_quantity' => '2.500', 'actual_market_price_uzs' => 16000]);
+        $this->correct($excess, ['actual_market_price_uzs' => 16500, 'reason' => 'Чек'])->assertOk();
+        $this->assertSame(37950, $excess->fresh()?->line_total_uzs);
+
+        // A line added under 10 % keeps its own markup: half_up(16 500 × 1.10).
+        $own = $this->estimateLine(['markup_percent_snapshot' => '10.00', 'customer_unit_price_uzs_snapshot' => 17600]);
+        $this->buy($own, ['purchased_quantity' => '2.000', 'actual_market_price_uzs' => 16000]);
+        $this->correct($own, ['actual_market_price_uzs' => 16500, 'reason' => 'Чек'])->assertOk();
+        $this->assertSame(18150, $own->fresh()?->billable_unit_price_uzs);
+    }
+
+    public function test_a_correction_is_open_until_the_courier_sets_off_and_a_retry_learns_it(): void
+    {
+        $assigned = Order::factory()->deliveryAssigned()->create();
+        $line = OrderItem::factory()->for($assigned)->purchased()->create();
+        // Its one bought line, 2 × half_up(15 000 × 1.15), then the fee and the delivery.
+        $this->correct($line, ['actual_market_price_uzs' => 15000, 'reason' => 'Чек'])->assertOk()
+            ->assertJsonPath('data.totals.total_uzs', 34500 + 5000 + 15000);
+
+        // The Courier sets off; the retry of that correction is still a repeat.
+        $assigned->forceFill(['status' => 'on_the_way', 'on_the_way_at' => now()])->save();
+        $this->correct($line, ['actual_market_price_uzs' => 15000, 'reason' => 'Чек'])->assertOk();
+        $this->correct($line, ['actual_market_price_uzs' => 14000, 'reason' => 'Чек'])
+            ->assertStatus(409)->assertJsonPath('code', 'price_correction_locked');
+        $this->assertSame(1, OrderItemPriceCorrection::query()->count());
+
+        // No online order is re-priced before Wave 5 (DL-54 (1)).
+        $online = Order::factory()->online()->readyForDelivery()->create();
+        $this->correct(OrderItem::factory()->for($online)->purchased()->create(), ['actual_market_price_uzs' => 15000, 'reason' => 'Чек'])
+            ->assertStatus(409)->assertJsonPath('code', 'price_correction_locked');
+    }
+
     public function test_only_the_admin_corrects_a_line_of_the_order_named(): void
     {
         $line = $this->estimateLine();
@@ -190,15 +246,16 @@ final class PriceCorrectionApiTest extends TestCase
             ->create(['ordered_quantity' => '3']);
     }
 
-    private function replaced(OrderItem $line): OrderItem
+    private function replaced(OrderItem $line, ?int $approvedPrice = null): OrderItem
     {
-        $replacement = Product::factory()->unit(UnitCode::Piece)->create();
+        $replacement = Product::factory()->unit($line->unit_code_snapshot)->create();
         $line->forceFill([
             'fulfilled_product_id' => $replacement->id,
             'fulfilled_product_name_uz_snapshot' => $replacement->name_uz,
             'fulfilled_product_name_ru_snapshot' => $replacement->name_ru,
             'fulfilled_unit_code_snapshot' => $line->unit_code_snapshot,
-            'substitution_resolution' => SubstitutionResolution::Automatic,
+            'substitution_resolution' => $approvedPrice === null ? SubstitutionResolution::Automatic : SubstitutionResolution::Approved,
+            'approved_replacement_price_uzs' => $approvedPrice,
         ])->save();
 
         return $line;

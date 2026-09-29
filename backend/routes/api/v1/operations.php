@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\Route;
 | Operations — docs/09-api-contracts.md Sections 38 to 41 and 45
 |--------------------------------------------------------------------------
 |
-| The board of the Operator and the Admin. Every route here admits both
-| roles and no other; admin-only routes live under /admin (DL-12).
+| The board of the Operator and the Admin. The first group admits both roles
+| and no other; the second, under /admin, the Admin alone (DL-12).
 |
 */
 

@@ -867,11 +867,11 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
 
 1. **Who and where.** `POST /admin/orders/{order}/items/{item}/price-correction` sits beside the board's routes under its own Admin-only group: no Operator corrects a price (`docs/02` section 8). The line must be the named order's, or the answer is the scope-safe `404`.
 2. **The checks, in order.** Under the order lock, then the line's (`docs/07` section 16):
-   - an order `on_the_way`, `completed` or `cancelled` is `409 price_correction_locked`;
+   - the current price again, on a line billed from the price paid, is a natural repeat whatever has happened since (`docs/09` section 49). A retry after a lost answer learns the correction was applied, even once the Courier has set off;
+   - an order `on_the_way`, `completed` or `cancelled` is `409 price_correction_locked`. So is an online order until Wave 5 brings its unpaid obligation and its paid state (`DL-54` (1)): one met here is not re-priced against a payment, as completion refuses to settle one (`DL-61` (3));
    - a line not bought, or a fixed original bought as itself, is `409 price_correction_not_applicable`;
-   - the current price again is a natural repeat;
    - a customer price above the bound of the product bought (`PriceBound`, the purchase's own bound) is `409 price_correction_above_ceiling`, with the ceiling and the proposal in `details` as a purchase names them.
-   The order's state is asked before the line's, so a line on an order the Courier has taken is locked whatever it is.
+   Past the repeat, the order's state is asked before the line's, so a line on an order the Courier has taken is locked whatever it is.
 3. **The writes**, in one transaction:
    - the correction row, with the old and new market and billable prices;
    - the line's new market price, its billable price by the line's own markup (`BR-PRICE-004`) and its total;
