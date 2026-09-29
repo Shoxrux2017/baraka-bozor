@@ -11,7 +11,7 @@ import '../../../core/orders/quantity_rules.dart';
 import '../../../core/storage/token_store.dart';
 import '../domain/customer_orders.dart';
 
-/// The data source for `docs/09-api-contracts.md` sections 20 to 22, on
+/// The data source for `docs/09-api-contracts.md` sections 20 to 23, on
 /// the Customer session, with its strict parsing. An answer is held to the
 /// request it answers (`DL-27` (6)).
 class CustomerOrdersApi {
@@ -94,6 +94,36 @@ class CustomerOrdersApi {
     return order;
   }
 
+  Future<CustomerApproval> decide(
+    String orderId,
+    String approvalId,
+    ApprovalDecision decision,
+    String idempotencyKey,
+  ) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '/customer/approvals/${Uri.encodeComponent(approvalId)}/decision',
+      data: <String, String>{'decision': decision.code},
+      options: _customer.copyWith(
+        headers: <String, Object?>{'Idempotency-Key': idempotencyKey},
+      ),
+    );
+    final CustomerApproval approval = parseApproval(
+      ApiEnvelope.unwrap(response.data),
+    );
+    // The question asked about, on the order shown, answered as asked; a
+    // replay under the same key answers it so too (`docs/09` section 48).
+    final ApprovalStatus decided = switch (decision) {
+      ApprovalDecision.approve => ApprovalStatus.approved,
+      ApprovalDecision.reject => ApprovalStatus.rejected,
+    };
+    if (approval.id != approvalId.toLowerCase() ||
+        approval.orderId != orderId.toLowerCase() ||
+        approval.status != decided) {
+      throw const FormatException('the answer does not show the decision');
+    }
+    return approval;
+  }
+
   static String _path(String id) =>
       '/customer/orders/${Uri.encodeComponent(id)}';
 
@@ -141,6 +171,7 @@ class CustomerOrdersApi {
       status: json.choice('status', OrderStatus.tryParse),
       paymentMethod: json.choice('payment_method', PaymentMethod.tryParse),
       itemCount: _amount(json, 'item_count'),
+      pendingApprovalCount: _amount(json, 'pending_approval_count'),
       totalUzs: _nullableAmount(json, 'total_uzs'),
       totalKind: json.choice('total_kind', TotalKind.tryParse),
       createdAt: json.instant('created_at'),
@@ -166,6 +197,7 @@ class CustomerOrdersApi {
     }
     final String? reason = json.nullableString('cancellation_reason_code');
     final Object? request = json.member('cancellation_request');
+    final Object? payment = json.member('payment');
 
     final CustomerOrder order = CustomerOrder(
       id: json.uuid('id'),
@@ -175,6 +207,8 @@ class CustomerOrdersApi {
       deliveryTimeNote: json.nullableString('delivery_time_note'),
       canEdit: json.boolean('can_edit'),
       canCancelDirectly: json.boolean('can_cancel_directly'),
+      canRequestCancellation: json.boolean('can_request_cancellation'),
+      pendingApprovalCount: _amount(json, 'pending_approval_count'),
       lines: rawLines.map(_line).toList(growable: false),
       merchandiseSubtotalUzs: _nullableAmount(
         totals,
@@ -197,12 +231,8 @@ class CustomerOrdersApi {
               'cancellation_reason_code',
               CancellationReason.tryParse,
             ),
-      cancellationRequest: request == null
-          ? null
-          : JsonFields.of(
-              request,
-              'cancellation_request',
-            ).choice('status', CancellationRequestStatus.tryParse),
+      cancellationRequest: request == null ? null : _request(request),
+      payment: payment == null ? null : _payment(payment),
       createdAt: timestamps.instant('created_at'),
     );
     final bool none = order.totalKind == TotalKind.none;
@@ -220,7 +250,121 @@ class CustomerOrdersApi {
         (order.cancellationReason != null)) {
       throw const FormatException('a cancelled order has its reason');
     }
+    // One open question at most per line, and the count is theirs.
+    if (order.pendingApprovalCount !=
+        order.lines
+            .where((CustomerOrderLine line) => line.question != null)
+            .length) {
+      throw const FormatException('the open questions are counted as shown');
+    }
     return order;
+  }
+
+  static CustomerCancellationRequest _request(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'cancellation request');
+    final CustomerCancellationRequest request = CustomerCancellationRequest(
+      id: json.uuid('id'),
+      status: json.choice('status', CancellationRequestStatus.tryParse),
+      reason: json.string('reason'),
+      createdAt: json.instant('created_at'),
+      resolvedAt: json.nullableInstant('resolved_at'),
+    );
+    if ((request.status == CancellationRequestStatus.pending) !=
+        (request.resolvedAt == null)) {
+      throw const FormatException('a request is resolved once not pending');
+    }
+    return request;
+  }
+
+  static CustomerPayment _payment(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'payment');
+    final CustomerPayment payment = CustomerPayment(
+      method: json.choice('method', PaymentMethod.tryParse),
+      status: json.choice('status', PaymentStatus.tryParse),
+      amountUzs: _amount(json, 'amount_uzs'),
+      paidAt: json.nullableInstant('paid_at'),
+    );
+    // Paid exactly when it has its instant; cash is only ever paid, taken
+    // at the door (`docs/08` section 19).
+    if ((payment.status == PaymentStatus.paid) != (payment.paidAt != null) ||
+        (payment.method == PaymentMethod.cash &&
+            payment.status != PaymentStatus.paid)) {
+      throw const FormatException('a payment off the contract');
+    }
+    return payment;
+  }
+
+  /// A question as the decision answers it (`docs/09` section 23).
+  static CustomerApproval parseApproval(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'approval');
+    return CustomerApproval(
+      id: json.uuid('id'),
+      orderId: json.uuid('order_id'),
+      type: json.choice('type', ApprovalType.tryParse),
+      status: json.choice('status', ApprovalStatus.tryParse),
+    );
+  }
+
+  static final RegExp _billed = RegExp(r'^\d{1,4}(\.\d{3})?$');
+
+  static ProductNames? _names(Object? raw, String what) {
+    if (raw == null) {
+      return null;
+    }
+    final JsonFields json = JsonFields.of(raw, what);
+    return ProductNames(
+      nameUz: json.string('name_uz'),
+      nameRu: json.string('name_ru'),
+    );
+  }
+
+  static CustomerQuestion _question(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'pending approval');
+    final String? proposed = json.nullableString('proposed_quantity');
+    if (proposed != null &&
+        (!_quantity.hasMatch(proposed) ||
+            QuantityRules.thousandths(proposed) == 0)) {
+      throw FormatException('proposed_quantity is not in its form: $proposed');
+    }
+    final Object? replacement = json.member('replacement');
+    final CustomerQuestion question = CustomerQuestion(
+      id: json.uuid('id'),
+      type: json.choice('type', ApprovalType.tryParse),
+      proposedCustomerUnitPriceUzs: _nullableAmount(
+        json,
+        'proposed_customer_unit_price_uzs',
+      ),
+      proposedQuantity: proposed,
+      replacement: _names(replacement, 'replacement'),
+      requestNote: json.nullableString('request_note'),
+      expiresAt: json.instant('expires_at'),
+    );
+    // The proposal each type carries, as the table holds it (`docs/08`
+    // section 15); a replacement carries the proposed price as its own, so
+    // a quantity question, which proposes no price, has none.
+    if (replacement != null &&
+        JsonFields.of(
+              replacement,
+              'replacement',
+            ).integer('customer_unit_price_uzs') !=
+            question.proposedCustomerUnitPriceUzs) {
+      throw const FormatException('a replacement at another price');
+    }
+    final bool price = question.proposedCustomerUnitPriceUzs != null;
+    final bool proposal = switch (question.type) {
+      ApprovalType.priceOverTolerance =>
+        price && question.proposedQuantity == null,
+      ApprovalType.substitution =>
+        price &&
+            question.replacement != null &&
+            question.proposedQuantity == null,
+      ApprovalType.reducedQuantity =>
+        question.proposedQuantity != null && !price,
+    };
+    if (!proposal) {
+      throw const FormatException('a question off the contract');
+    }
+    return question;
   }
 
   static CustomerOrderLine _line(Object? raw) {
@@ -231,6 +375,11 @@ class CustomerOrdersApi {
       throw FormatException('quantity is not in its form: $quantity');
     }
     final String? removed = json.nullableString('removed_reason_code');
+    final String? billed = json.nullableString('billable_quantity');
+    if (billed != null && !_billed.hasMatch(billed)) {
+      throw FormatException('billable_quantity is not in its form: $billed');
+    }
+    final Object? question = json.member('pending_approval');
     final CustomerOrderLine line = CustomerOrderLine(
       id: json.uuid('id'),
       productId: json.uuid('product_id'),
@@ -250,9 +399,26 @@ class CustomerOrdersApi {
       removedReason: removed == null
           ? null
           : json.choice('removed_reason_code', ItemRemovedReason.tryParse),
+      billableQuantity: billed,
+      billableUnitPriceUzs: _nullableAmount(json, 'billable_unit_price_uzs'),
+      replacement: _names(json.member('replacement'), 'replacement'),
+      question: question == null ? null : _question(question),
     );
-    if (line.removed != (line.removedReason != null)) {
-      throw const FormatException('a removed line has its reason');
+    final bool open =
+        line.status == OrderItemStatus.pending ||
+        line.status == OrderItemStatus.awaitingCustomer;
+    final bool bought = line.status == OrderItemStatus.purchased;
+    // As the resource writes a line (`docs/09` section 20): billed nothing
+    // while open, billed at its price once bought, nothing replaced once
+    // removed, and a question only on a line waiting for the Customer.
+    if (line.removed != (line.removedReason != null) ||
+        open != (line.billableQuantity == null) ||
+        bought != (line.billableUnitPriceUzs != null) ||
+        (bought && QuantityRules.thousandths(line.billableQuantity!) == 0) ||
+        (line.removed && line.replacement != null) ||
+        (line.question != null &&
+            line.status != OrderItemStatus.awaitingCustomer)) {
+      throw const FormatException('a line off the contract');
     }
     return line;
   }
@@ -276,6 +442,16 @@ class CustomerOrdersRepositoryImpl implements CustomerOrdersRepository {
     List<OrderEditLine> lines,
     String? deliveryTimeNote,
   ) => guardApiCall(() => _api.edit(id, lines, deliveryTimeNote));
+
+  @override
+  Future<CustomerApproval> decide(
+    String orderId,
+    String approvalId,
+    ApprovalDecision decision,
+    String idempotencyKey,
+  ) => guardApiCall(
+    () => _api.decide(orderId, approvalId, decision, idempotencyKey),
+  );
 
   @override
   Future<CustomerOrder> cancel(

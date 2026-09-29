@@ -24,3 +24,13 @@ bool leavesOutcomeUnknown(ApiFailure? failure) =>
     (failure is! ApiRefusal ||
         failure.status >= 500 ||
         failure.code == 'idempotency_in_progress');
+
+/// A keyed request sent without a sure answer: its `Idempotency-Key` and
+/// what was sent, which a retry sends again as it was (`docs/09` section
+/// 48).
+final class UnansweredRequest<T> {
+  const UnansweredRequest(this.key, this.sent);
+
+  final String key;
+  final T sent;
+}

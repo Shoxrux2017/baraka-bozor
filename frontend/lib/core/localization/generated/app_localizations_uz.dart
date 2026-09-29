@@ -2208,4 +2208,106 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get substituteUseBuy =>
       'Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo\'lsa, u yerda mijozdan so\'rash taklif qilinadi.';
+
+  @override
+  String get ordersNeedAnswer => 'Javobingiz kerak';
+
+  @override
+  String orderLineBought(String quantity, String price, String total) {
+    return 'Olindi: $quantity × $price = $total';
+  }
+
+  @override
+  String questionPrice(String name, String price, String was) {
+    return '$name: narxi endi $price (avval $was). Shu narxga rozimisiz?';
+  }
+
+  @override
+  String questionReplacementPrice(String name, String price) {
+    return 'O\'rniga olinadigan «$name»: narxi $price. Shu narxga rozimisiz?';
+  }
+
+  @override
+  String questionSubstitution(String name, String replacement, String price) {
+    return '$name: topilmadi. O\'rniga — $replacement, $price. Rozimisiz?';
+  }
+
+  @override
+  String questionQuantity(String name, String proposed, String ordered) {
+    return '$name: faqat $proposed bor, siz $ordered buyurtma qilgansiz. Shunchasiga rozimisiz?';
+  }
+
+  @override
+  String questionNote(String note) {
+    return 'Yig\'uvchi izohi: $note';
+  }
+
+  @override
+  String questionExpires(String time) {
+    return 'Javob berish muddati: ${time}gacha';
+  }
+
+  @override
+  String get questionApprove => 'Rozi bo\'lish';
+
+  @override
+  String get questionReject => 'Rad etish';
+
+  @override
+  String get questionExpired =>
+      'Javob berish vaqti o\'tdi — bu mahsulot buyurtmadan olib tashlanadi.';
+
+  @override
+  String decisionUnanswered(String decision) {
+    return '«$decision» javobingiz yuborildi, lekin tasdiq kelmadi. Qayta yuborsangiz, xuddi shu javob ketadi.';
+  }
+
+  @override
+  String get sendAgain => 'Qayta yuborish';
+
+  @override
+  String orderPaid(String amount, String time) {
+    return 'To\'landi: $amount, $time';
+  }
+
+  @override
+  String requestYours(String reason) {
+    return 'Bekor qilish so\'rovingiz: $reason';
+  }
+
+  @override
+  String get requestStateApproved => 'Tasdiqlandi — buyurtma bekor qilindi';
+
+  @override
+  String get requestStateRejected => 'Rad etildi — buyurtma bajarilmoqda';
+
+  @override
+  String get requestStateClosed => 'Yopildi — buyurtma boshqacha yakunlandi';
+
+  @override
+  String get orderRequestCancel => 'Bekor qilishni so\'rash';
+
+  @override
+  String get orderRequestCancelTitle =>
+      'Buyurtmani bekor qilishni so\'raysizmi?';
+
+  @override
+  String get orderRequestCancelReason => 'Sabab';
+
+  @override
+  String get orderRequestCancelExplained =>
+      'Yig\'ish boshlangan — operator hal qiladi.';
+
+  @override
+  String get errorApprovalExpired => 'Savolga javob berish vaqti o\'tgan.';
+
+  @override
+  String get questionRejectRemoves =>
+      'Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.';
+
+  @override
+  String get removedYouRejected => 'siz rad etdingiz';
+
+  @override
+  String get removedYouRemoved => 'siz olib tashladingiz';
 }

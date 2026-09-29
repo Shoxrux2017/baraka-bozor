@@ -124,6 +124,8 @@ created
 
 An expired approval cannot be approved. An Operator or Admin resolves it only by removing the item. If no item remains to be purchased, the order is cancelled.
 
+The Customer answers each question on their order's page. It shows the proposal in their own prices and the time it can be answered until, and it refreshes every fifteen seconds while the order is open (`DL-54` (15)). "My orders" marks the orders with a question waiting. A question past its expiry is said so, and no answer is offered (`DL-71`).
+
 ## 21. Approval Does Not Freeze the Rest
 
 While at least one item is `awaiting_customer` the order's status stays `shopping`, and `pending_approval_count` counts the questions still open; one past its expiry leaves the count, and its item still waits until an Operator removes it (`DL-54` (8)). The Shopper continues with other `pending` items, may not touch the awaiting item, and cannot complete shopping until every approval is resolved.
@@ -149,6 +151,8 @@ Thirty minutes after `final_payment_pending` began with no payment, the order be
 ## 25. Cancellation Request During Fulfilment
 
 From `shopping` up to and including `delivery_assigned`, the Customer files a cancellation request with a reason; at most one pending request per order. An Operator or Admin approves or rejects it. Approve: the order becomes `cancelled`, the current assignment ends, the assignee is notified, and if an online payment was paid a manual refund obligation for the paid amount is created. Reject: the order continues. From `on_the_way` the request is refused with `order_cancellation_not_allowed`.
+
+The order's page shows the request with the Customer's reason and where it stands: waiting, approved, rejected, or closed when the order ended otherwise first (`DL-71`).
 
 ## 26. Assigning a Courier
 

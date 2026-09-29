@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/network/paged.dart';
+import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/features/orders/data/customer_orders_api.dart';
 import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 
@@ -12,6 +13,7 @@ const String lineMilk = '0192f0a0-0000-7000-8000-00000000c013';
 const String productTomato = '0192f0a0-0000-7000-8000-00000000c021';
 const String productBread = '0192f0a0-0000-7000-8000-00000000c022';
 const String productMilk = '0192f0a0-0000-7000-8000-00000000c023';
+const String approvalOne = '0192f0a0-0000-7000-8000-00000000c031';
 
 /// An order line as `docs/09` section 20 answers it.
 Map<String, Object?> orderLineJson({
@@ -22,6 +24,7 @@ Map<String, Object?> orderLineJson({
   String status = 'pending',
   String? removedReason,
   String? note,
+  Map<String, Object?>? patch,
 }) => <String, Object?>{
   'id': id,
   'product_id': productId,
@@ -34,10 +37,50 @@ Map<String, Object?> orderLineJson({
   'substitution_policy': 'allow_similar_substitution',
   'status': status,
   'customer_unit_price_uzs': unit == 'kg' ? 18400 : 4000,
-  'line_total_uzs': status == 'removed' ? 0 : (unit == 'kg' ? 27600 : 8000),
-  'billable_quantity': status == 'removed' ? '0' : null,
+  'line_total_uzs': switch (status) {
+    'removed' => 0,
+    // 1.500 kg at 18 975, rounded half up.
+    'purchased' => unit == 'kg' ? 28463 : 8000,
+    _ => unit == 'kg' ? 27600 : 8000,
+  },
+  'billable_quantity': switch (status) {
+    'removed' => '0',
+    'purchased' => quantity,
+    _ => null,
+  },
   'removed_reason_code': removedReason,
+  'billable_unit_price_uzs': status == 'purchased'
+      ? (unit == 'kg' ? 18975 : 4000)
+      : null,
+  'replacement': null,
+  'pending_approval': null,
+  ...?patch,
 };
+
+/// The tomato line waiting on a question of [type]: a higher price, a
+/// replacement, or a smaller quantity.
+Map<String, Object?> questionLineJson(String type) => orderLineJson(
+  status: 'awaiting_customer',
+  patch: <String, Object?>{
+    'pending_approval': <String, Object?>{
+      'id': approvalOne,
+      'type': type,
+      'proposed_customer_unit_price_uzs': type == 'reduced_quantity'
+          ? null
+          : 21850,
+      'proposed_quantity': type == 'reduced_quantity' ? '1.000' : null,
+      'replacement': type == 'substitution'
+          ? <String, Object?>{
+              'name_uz': 'Olcha pomidor',
+              'name_ru': 'Помидоры черри',
+              'customer_unit_price_uzs': 21850,
+            }
+          : null,
+      'request_note': 'Qizili qolmadi',
+      'expires_at': '2026-09-28T08:00:00Z',
+    },
+  },
+);
 
 /// The Customer's order as `docs/09` section 20 answers it.
 Map<String, Object?> customerOrderJson({
@@ -48,18 +91,36 @@ Map<String, Object?> customerOrderJson({
   String? note = 'Kechqurun',
   String? cancellationReason,
   String? cancellationRequest,
+  bool canRequestCancellation = false,
+  Map<String, Object?>? payment,
 }) {
   final bool cancelled = status == 'cancelled';
+  final List<Object?> items =
+      lines ??
+      <Object?>[
+        orderLineJson(),
+        orderLineJson(
+          id: lineBread,
+          productId: productBread,
+          unit: 'piece',
+          quantity: '2',
+        ),
+      ];
   return <String, Object?>{
     'id': id,
     'order_number': 1001,
     'status': status,
     'payment_method': 'cash',
     'delivery_time_note': note,
-    'pending_approval_count': 0,
+    'pending_approval_count': items
+        .where(
+          (Object? line) =>
+              (line! as Map<String, Object?>)['pending_approval'] != null,
+        )
+        .length,
     'can_edit': changeable,
     'can_cancel_directly': changeable,
-    'can_request_cancellation': false,
+    'can_request_cancellation': canRequestCancellation,
     'cancellation_request': cancellationRequest == null
         ? null
         : <String, Object?>{
@@ -67,19 +128,11 @@ Map<String, Object?> customerOrderJson({
             'status': cancellationRequest,
             'reason': 'Kerak emas',
             'created_at': '2026-09-28T08:00:00Z',
-            'resolved_at': null,
+            'resolved_at': cancellationRequest == 'pending'
+                ? null
+                : '2026-09-28T08:30:00Z',
           },
-    'items':
-        lines ??
-        <Object?>[
-          orderLineJson(),
-          orderLineJson(
-            id: lineBread,
-            productId: productBread,
-            unit: 'piece',
-            quantity: '2',
-          ),
-        ],
+    'items': items,
     'totals': cancelled
         ? <String, Object?>{
             'merchandise_subtotal_uzs': null,
@@ -107,7 +160,7 @@ Map<String, Object?> customerOrderJson({
     'cancellation_reason_code': cancelled
         ? (cancellationReason ?? 'customer_cancelled')
         : null,
-    'payment': null,
+    'payment': payment,
     'refunds': <Object?>[],
     'timestamps': <String, Object?>{
       'created_at': '2026-09-28T07:00:00Z',
@@ -125,12 +178,14 @@ Map<String, Object?> orderSummaryJson({
   String id = orderOne,
   int number = 1001,
   String status = 'new',
+  int waiting = 0,
 }) => <String, Object?>{
   'id': id,
   'order_number': number,
   'status': status,
   'payment_method': 'cash',
   'item_count': 2,
+  'pending_approval_count': waiting,
   'total_uzs': status == 'cancelled' ? null : 55600,
   'total_kind': status == 'cancelled' ? 'none' : 'estimate',
   'created_at': '2026-09-28T07:00:00Z',
@@ -185,6 +240,7 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
             orderSummaryJson(
               id: row['id']! as String,
               status: row['status']! as String,
+              waiting: row['pending_approval_count']! as int,
             ),
           ),
       ],
@@ -230,5 +286,46 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   ) {
     cancels.add((id, reason, idempotencyKey));
     return _answer(id);
+  }
+
+  /// Every decision sent: the question, the decision and its key.
+  final List<(String, ApprovalDecision, String)> decisions =
+      <(String, ApprovalDecision, String)>[];
+
+  /// When set, every decision fails with it, until the test clears it.
+  ApiFailure? decisionFailure;
+
+  /// The order a decision leaves, which becomes the order's row: also when
+  /// it is refused, as an expiry stands although the decision is refused.
+  Map<String, Object?>? afterDecision;
+
+  @override
+  Future<CustomerApproval> decide(
+    String orderId,
+    String approvalId,
+    ApprovalDecision decision,
+    String idempotencyKey,
+  ) async {
+    decisions.add((approvalId, decision, idempotencyKey));
+    await hold?.future;
+    final Map<String, Object?>? next = afterDecision;
+    if (next != null) {
+      rows = <Map<String, Object?>>[
+        for (final Map<String, Object?> row in rows)
+          if (row['id'] == orderId) next else row,
+      ];
+    }
+    final ApiFailure? failure = decisionFailure;
+    if (failure != null) {
+      throw failure;
+    }
+    return CustomerApproval(
+      id: approvalId,
+      orderId: orderId,
+      type: ApprovalType.priceOverTolerance,
+      status: decision == ApprovalDecision.approve
+          ? ApprovalStatus.approved
+          : ApprovalStatus.rejected,
+    );
   }
 }

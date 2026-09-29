@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:baraka_bozor/core/network/api_failure.dart';
+import 'package:baraka_bozor/core/network/idempotency_key.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
+import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -125,6 +127,53 @@ void main() {
       orders.answer = customerOrderJson(status: 'cancelled', changeable: false);
       await cancelling.cancel(null);
       expect(orders.cancels[1].$3, orders.cancels[0].$3);
+    },
+  );
+
+  test(
+    'a decision without a sure answer goes again as it was, until one comes',
+    () async {
+      final FakeCustomerOrdersRepository orders =
+          FakeCustomerOrdersRepository();
+      final ProviderContainer container = _container(orders);
+      addTearDown(container.dispose);
+      const OrderLineRef line = (orderId: orderOne, lineId: lineTomato);
+      container
+        ..listen(approvalDecisionProvider(line), (_, _) {})
+        ..listen(unansweredDecisionsProvider(orderOne), (_, _) {});
+      final ApprovalDecisionController deciding = container.read(
+        approvalDecisionProvider(line).notifier,
+      );
+
+      Future<void> attempt(ApiFailure? failure, ApprovalDecision decision) {
+        orders.decisionFailure = failure;
+        return deciding.decide(approvalOne, decision);
+      }
+
+      await attempt(const NetworkFailure(), ApprovalDecision.reject);
+      final UnansweredRequest<ApprovalDecision> kept = container.read(
+        unansweredDecisionsProvider(orderOne),
+      )[approvalOne]!;
+      expect(kept.sent, ApprovalDecision.reject);
+      expect(kept.key, orders.decisions.single.$3);
+
+      // Whatever is asked for, the unanswered decision is what goes.
+      await attempt(
+        const ApiRefusal(ApiError(status: 503, code: 'server_error')),
+        ApprovalDecision.approve,
+      );
+      await attempt(null, ApprovalDecision.approve);
+      expect(
+        orders.decisions.map(
+          ((String, ApprovalDecision, String) d) => (d.$2, d.$3),
+        ),
+        everyElement((ApprovalDecision.reject, kept.key)),
+      );
+      expect(container.read(unansweredDecisionsProvider(orderOne)), isEmpty);
+
+      await attempt(null, ApprovalDecision.approve);
+      expect(orders.decisions.last.$2, ApprovalDecision.approve);
+      expect(orders.decisions.last.$3, isNot(kept.key));
     },
   );
 
