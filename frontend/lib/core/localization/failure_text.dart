@@ -66,6 +66,12 @@ String _refusalText(AppLocalizations l10n, String code, int status) {
     'price_correction_locked' => l10n.errorPriceCorrectionLocked,
     'price_correction_not_applicable' => l10n.errorPriceCorrectionNotApplicable,
     'price_correction_above_ceiling' => l10n.errorPriceAboveCeilingPlain,
+    'shopping_not_active' => l10n.errorShoppingNotActive,
+    'item_already_resolved' => l10n.errorItemAlreadyResolved,
+    'customer_approval_required' => l10n.errorCustomerApprovalRequired,
+    'approval_not_needed' => l10n.errorApprovalNotNeeded,
+    'substitution_not_allowed' => l10n.errorSubstitutionNotAllowed,
+    'shopping_incomplete' => l10n.errorShoppingIncomplete,
     'provider_unavailable' ||
     'payment_provider_unavailable' => l10n.errorProviderUnavailable,
     'service_unavailable' => l10n.errorServiceUnavailable,

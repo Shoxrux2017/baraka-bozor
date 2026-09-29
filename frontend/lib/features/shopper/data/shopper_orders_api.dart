@@ -11,9 +11,10 @@ import '../../../core/orders/quantity_rules.dart';
 import '../../../core/storage/token_store.dart';
 import '../domain/shopper_orders.dart';
 
-/// The data source for `docs/09-api-contracts.md` sections 28 and 29, on
+/// The data source for `docs/09-api-contracts.md` sections 28 to 35, on
 /// the staff session, with its strict parsing. An answer is held to the
-/// request it answers (`DL-27` (6)).
+/// request it answers (`DL-27` (6)): the order acted on, showing the action
+/// done.
 class ShopperOrdersApi {
   ShopperOrdersApi(this._dio);
 
@@ -67,8 +68,185 @@ class ShopperOrdersApi {
     return order;
   }
 
+  Future<ShopperOrder> purchase(
+    String orderId,
+    String itemId,
+    PurchaseEntry entry,
+    String idempotencyKey,
+  ) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '${_linePath(orderId, itemId)}/purchase',
+      data: <String, Object?>{
+        'purchased_quantity': entry.quantity,
+        'actual_market_price_uzs': ?entry.actualMarketPriceUzs,
+        'fulfilled_product_id': ?entry.productId,
+      },
+      options: _staff.copyWith(
+        headers: <String, Object?>{'Idempotency-Key': idempotencyKey},
+      ),
+    );
+    return _showing(
+      response,
+      orderId,
+      itemId,
+      (ShopperLine line) => line.status == OrderItemStatus.purchased,
+    );
+  }
+
+  Future<ShopperOrder> markUnavailable(
+    String orderId,
+    String itemId,
+    String? note,
+  ) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '${_linePath(orderId, itemId)}/unavailable',
+      data: <String, Object?>{'note': ?note},
+      options: _staff,
+    );
+    return _showing(
+      response,
+      orderId,
+      itemId,
+      (ShopperLine line) => line.status == OrderItemStatus.removed,
+    );
+  }
+
+  Future<ShopperOrder> askAboutPrice(
+    String orderId,
+    String itemId,
+    int actualMarketPriceUzs,
+    String? productId,
+    String? note,
+  ) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '${_linePath(orderId, itemId)}/price-approval',
+      data: <String, Object?>{
+        'actual_market_price_uzs': actualMarketPriceUzs,
+        'fulfilled_product_id': ?productId,
+        'note': ?note,
+      },
+      options: _staff,
+    );
+    return _showing(
+      response,
+      orderId,
+      itemId,
+      (ShopperLine line) =>
+          line.openQuestion?.type == ApprovalType.priceOverTolerance,
+    );
+  }
+
+  Future<ShopperOrder> substitute(
+    String orderId,
+    String itemId,
+    String replacementId,
+    int actualMarketPriceUzs,
+    String? note,
+  ) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '${_linePath(orderId, itemId)}/substitution',
+      data: <String, Object?>{
+        'replacement_product_id': replacementId,
+        'actual_market_price_uzs': actualMarketPriceUzs,
+        'note': ?note,
+      },
+      options: _staff,
+    );
+    // Authorized at once, or asked of the Customer (`docs/09` section 33).
+    return _showing(
+      response,
+      orderId,
+      itemId,
+      (ShopperLine line) =>
+          line.replacement?.productId == replacementId.toLowerCase() ||
+          line.openQuestion?.type == ApprovalType.substitution,
+    );
+  }
+
+  Future<ShopperOrder> askAboutQuantity(
+    String orderId,
+    String itemId,
+    String quantity,
+    String? note,
+  ) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '${_linePath(orderId, itemId)}/reduced-quantity-approval',
+      data: <String, Object?>{'proposed_quantity': quantity, 'note': ?note},
+      options: _staff,
+    );
+    return _showing(
+      response,
+      orderId,
+      itemId,
+      (ShopperLine line) =>
+          line.openQuestion?.type == ApprovalType.reducedQuantity,
+    );
+  }
+
+  Future<Paged<ReplacementChoice>> replacements(
+    String orderId,
+    String itemId,
+    String search,
+    int page,
+  ) async {
+    final Response<dynamic> response = await _dio.get<dynamic>(
+      '${_linePath(orderId, itemId)}/replacements',
+      queryParameters: <String, Object>{
+        'page': page,
+        if (search.isNotEmpty) 'search': search,
+      },
+      options: _staff,
+    );
+    final Paged<ReplacementChoice> choices = Paged.parse(
+      response.data,
+      parseChoice,
+    );
+    if (choices.page != page) {
+      throw const FormatException('another page than the one asked for');
+    }
+    return choices;
+  }
+
+  Future<ShopperOrder> complete(String orderId, String idempotencyKey) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '${_path(orderId)}/complete',
+      options: _staff.copyWith(
+        headers: <String, Object?>{'Idempotency-Key': idempotencyKey},
+      ),
+    );
+    final ShopperOrder order = _theOrder(response, orderId);
+    // Past shopping, with the assignment that shopped it, as the completion
+    // ended it (`docs/09` section 35). A replay answers the order as it is
+    // now, which may be further on — a Courier assigned, delivered, even
+    // cancelled (section 48).
+    if (_notYetShopped.contains(order.status) ||
+        order.assignment?.startedAt == null) {
+      throw const FormatException('the order does not show the completion');
+    }
+    return order;
+  }
+
   static String _path(String id) =>
       '/shopper/orders/${Uri.encodeComponent(id)}';
+
+  static String _linePath(String orderId, String itemId) =>
+      '${_path(orderId)}/items/${Uri.encodeComponent(itemId)}';
+
+  /// The order an action on line [itemId] answers: the order acted on, with
+  /// that line as [done] says the action leaves it.
+  static ShopperOrder _showing(
+    Response<dynamic> response,
+    String orderId,
+    String itemId,
+    bool Function(ShopperLine line) done,
+  ) {
+    final ShopperOrder order = _theOrder(response, orderId);
+    final String id = itemId.toLowerCase();
+    if (!order.items.any((ShopperLine line) => line.id == id && done(line))) {
+      throw const FormatException('the order does not show the action');
+    }
+    return order;
+  }
 
   /// The order an answer holds, which must be the one asked about; the API
   /// answers ids in lower case, whatever case the address had.
@@ -83,6 +261,13 @@ class ShopperOrdersApi {
   static final RegExp _fractional = RegExp(r'^\d{1,4}\.\d{3}$');
   static final RegExp _whole = RegExp(r'^\d{1,4}$');
   static final RegExp _phone = RegExp(r'^\+998\d{9}$');
+
+  /// The states an order is in until its shopping is done.
+  static const Set<OrderStatus> _notYetShopped = <OrderStatus>{
+    OrderStatus.newOrder,
+    OrderStatus.shoppingAssigned,
+    OrderStatus.shopping,
+  };
 
   /// The states an order is in while a Shopper holds it (`DL-54` (3)).
   static const Set<OrderStatus> _held = <OrderStatus>{
@@ -291,6 +476,19 @@ class ShopperOrdersApi {
     );
   }
 
+  /// One product of the replacement search.
+  static ReplacementChoice parseChoice(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'replacement choice');
+    return ReplacementChoice(
+      id: json.uuid('id'),
+      nameUz: json.string('name_uz'),
+      nameRu: json.string('name_ru'),
+      unit: json.choice('unit_code', UnitCode.tryParse),
+      priceMode: json.choice('price_mode', PriceMode.tryParse),
+      marketPriceUzs: _price(json, 'market_price_uzs'),
+    );
+  }
+
   static OpenQuestion _question(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'pending approval');
     return OpenQuestion(
@@ -318,4 +516,76 @@ class ShopperOrdersRepositoryImpl implements ShopperOrdersRepository {
 
   @override
   Future<ShopperOrder> start(String id) => guardApiCall(() => _api.start(id));
+
+  @override
+  Future<ShopperOrder> purchase(
+    String orderId,
+    String itemId,
+    PurchaseEntry entry,
+    String idempotencyKey,
+  ) =>
+      guardApiCall(() => _api.purchase(orderId, itemId, entry, idempotencyKey));
+
+  @override
+  Future<ShopperOrder> markUnavailable(
+    String orderId,
+    String itemId,
+    String? note,
+  ) => guardApiCall(() => _api.markUnavailable(orderId, itemId, note));
+
+  @override
+  Future<ShopperOrder> askAboutPrice(
+    String orderId,
+    String itemId,
+    int actualMarketPriceUzs,
+    String? productId,
+    String? note,
+  ) => guardApiCall(
+    () => _api.askAboutPrice(
+      orderId,
+      itemId,
+      actualMarketPriceUzs,
+      productId,
+      note,
+    ),
+  );
+
+  @override
+  Future<ShopperOrder> substitute(
+    String orderId,
+    String itemId,
+    String replacementId,
+    int actualMarketPriceUzs,
+    String? note,
+  ) => guardApiCall(
+    () => _api.substitute(
+      orderId,
+      itemId,
+      replacementId,
+      actualMarketPriceUzs,
+      note,
+    ),
+  );
+
+  @override
+  Future<ShopperOrder> askAboutQuantity(
+    String orderId,
+    String itemId,
+    String quantity,
+    String? note,
+  ) => guardApiCall(
+    () => _api.askAboutQuantity(orderId, itemId, quantity, note),
+  );
+
+  @override
+  Future<Paged<ReplacementChoice>> replacements(
+    String orderId,
+    String itemId,
+    String search,
+    int page,
+  ) => guardApiCall(() => _api.replacements(orderId, itemId, search, page));
+
+  @override
+  Future<ShopperOrder> complete(String orderId, String idempotencyKey) =>
+      guardApiCall(() => _api.complete(orderId, idempotencyKey));
 }

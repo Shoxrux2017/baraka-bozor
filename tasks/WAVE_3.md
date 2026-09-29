@@ -37,7 +37,7 @@ None (`docs/06` section 5). The MapKit key (`DL-36`) blocks nothing here: no sta
 | W3-13 | Panel: the board — Courier assignment, attention types and filters, the attention list's height, the block confirmation | Merged |
 | W3-14 | Panel: the order page — purchases, approvals, cancellation requests, the Courier, the cash payment, price correction | Merged |
 | W3-15 | App: the Shopper's area — assigned orders, accept, start, refresh, call the Customer | Merged |
-| W3-16 | App: the Shopper at the market — buy, unavailable, replace, ask the Customer, complete | Planned |
+| W3-16 | App: the Shopper at the market — buy, unavailable, replace, ask the Customer, complete | Merged |
 | W3-17 | App: the Customer's order while it is shopped and delivered — approvals, the cancellation request | Planned |
 | W3-18 | App: the Courier's area — deliveries, accept, set off, delivered with cash, not delivered | Planned |
 | W3-19 | Wave closure: full suites, builds, real-stack walkthrough of the wave's scenario, Owner checklist and report | Planned |

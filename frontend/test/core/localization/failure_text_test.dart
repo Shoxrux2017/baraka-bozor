@@ -56,6 +56,18 @@ void main() {
               l.errorPriceCorrectionNotApplicable,
           'price_correction_above_ceiling': (AppLocalizations l) =>
               l.errorPriceAboveCeilingPlain,
+          'shopping_not_active': (AppLocalizations l) =>
+              l.errorShoppingNotActive,
+          'item_already_resolved': (AppLocalizations l) =>
+              l.errorItemAlreadyResolved,
+          'customer_approval_required': (AppLocalizations l) =>
+              l.errorCustomerApprovalRequired,
+          'approval_not_needed': (AppLocalizations l) =>
+              l.errorApprovalNotNeeded,
+          'substitution_not_allowed': (AppLocalizations l) =>
+              l.errorSubstitutionNotAllowed,
+          'shopping_incomplete': (AppLocalizations l) =>
+              l.errorShoppingIncomplete,
           'cart_item_already_exists': (AppLocalizations l) =>
               l.errorCartItemAlreadyExists,
           'cart_full': (AppLocalizations l) => l.errorCartFull,

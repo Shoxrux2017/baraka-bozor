@@ -70,6 +70,8 @@ void main() {
         AppPaths.customerOrderAddPattern,
         AppPaths.shopper,
         AppPaths.shopperOrderPattern,
+        AppPaths.shopperReplacePattern,
+        AppPaths.shopperDonePattern,
       ]);
     });
 

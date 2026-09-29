@@ -3691,6 +3691,270 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Bu sahifada buyurtma qolmadi. Oldingi sahifaga o\'ting.'**
   String get shopperPageEmpty;
+
+  /// No description provided for @lineBuy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib olish'**
+  String get lineBuy;
+
+  /// No description provided for @lineReplace.
+  ///
+  /// In uz, this message translates to:
+  /// **'Almashtirish'**
+  String get lineReplace;
+
+  /// No description provided for @lineUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Topilmadi'**
+  String get lineUnavailable;
+
+  /// No description provided for @purchaseTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib olish: {name}'**
+  String purchaseTitle(String name);
+
+  /// No description provided for @purchaseQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib olingan miqdor'**
+  String get purchaseQuantity;
+
+  /// No description provided for @purchasePrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Birlik narxi (to\'langan)'**
+  String get purchasePrice;
+
+  /// No description provided for @purchasePriceOptional.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narxi belgilangan mahsulot: narx ixtiyoriy'**
+  String get purchasePriceOptional;
+
+  /// No description provided for @purchaseSave.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib oldim'**
+  String get purchaseSave;
+
+  /// No description provided for @purchaseAgain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qayta yuborish'**
+  String get purchaseAgain;
+
+  /// No description provided for @purchaseUnconfirmed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi xaridga javob kelmadi — xuddi shu xarid qayta yuboriladi.'**
+  String get purchaseUnconfirmed;
+
+  /// No description provided for @purchaseAboveBound.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu narx mijozdan so\'ramasdan to\'lash mumkin bo\'lganidan yuqori. Mijozdan so\'raysizmi?'**
+  String get purchaseAboveBound;
+
+  /// No description provided for @purchaseBelowQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga {quantity} kerak. Shuncha sotib oling yoki mijozdan kamroq miqdorga roziligini so\'rang.'**
+  String purchaseBelowQuantity(String quantity);
+
+  /// No description provided for @askNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga izoh (ixtiyoriy)'**
+  String get askNote;
+
+  /// No description provided for @askPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozdan narx haqida so\'rash'**
+  String get askPrice;
+
+  /// No description provided for @askQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozdan miqdor haqida so\'rash'**
+  String get askQuantity;
+
+  /// No description provided for @typoTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narxni tekshiring'**
+  String get typoTitle;
+
+  /// No description provided for @typoExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz {price} kiritdingiz, bozor narxi esa {market}. To\'g\'rimi?'**
+  String typoExplained(String price, String market);
+
+  /// No description provided for @typoConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ha, to\'g\'ri'**
+  String get typoConfirm;
+
+  /// No description provided for @typoCancel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tuzataman'**
+  String get typoCancel;
+
+  /// No description provided for @unavailableTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» topilmadimi?'**
+  String unavailableTitle(String name);
+
+  /// No description provided for @unavailableExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.'**
+  String get unavailableExplained;
+
+  /// No description provided for @unavailableConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ha, topilmadi'**
+  String get unavailableConfirm;
+
+  /// No description provided for @replaceTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» o\'rniga'**
+  String replaceTitle(String name);
+
+  /// No description provided for @replaceSearchHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot nomi'**
+  String get replaceSearchHint;
+
+  /// No description provided for @replaceNone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mos mahsulot topilmadi'**
+  String get replaceNone;
+
+  /// No description provided for @substituteTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'rniga olish: {name}'**
+  String substituteTitle(String name);
+
+  /// No description provided for @substituteSave.
+  ///
+  /// In uz, this message translates to:
+  /// **'Taklif qilish'**
+  String get substituteSave;
+
+  /// No description provided for @completeShopping.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ishni yakunlash'**
+  String get completeShopping;
+
+  /// No description provided for @completeTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish yakunlansinmi?'**
+  String get completeTitle;
+
+  /// No description provided for @completeExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yakunlangach, buyurtma ro\'yxatingizdan chiqadi va uni yetkazishga tayyorlanadi.'**
+  String get completeExplained;
+
+  /// No description provided for @completeUnconfirmed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi yakunlashga javob kelmadi — qayta yuboriladi.'**
+  String get completeUnconfirmed;
+
+  /// No description provided for @completeIncomplete.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hali hal qilinmagan: {names}'**
+  String completeIncomplete(String names);
+
+  /// No description provided for @doneTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma №{number} yig\'ildi'**
+  String doneTitle(String number);
+
+  /// No description provided for @doneLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Paketga {number} raqamini yozing va uni topshirish joyiga olib boring.'**
+  String doneLabel(String number);
+
+  /// No description provided for @doneBack.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalarimga'**
+  String get doneBack;
+
+  /// No description provided for @errorShoppingNotActive.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu buyurtmani hozir yig\'ib bo\'lmaydi.'**
+  String get errorShoppingNotActive;
+
+  /// No description provided for @errorItemAlreadyResolved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu mahsulot allaqachon hal qilingan.'**
+  String get errorItemAlreadyResolved;
+
+  /// No description provided for @errorCustomerApprovalRequired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buning uchun mijozning roziligi kerak.'**
+  String get errorCustomerApprovalRequired;
+
+  /// No description provided for @errorApprovalNotNeeded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu narx uchun mijozdan so\'rash shart emas — sotib olavering.'**
+  String get errorApprovalNotNeeded;
+
+  /// No description provided for @errorSubstitutionNotAllowed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz bu mahsulotni almashtirishga rozi emas.'**
+  String get errorSubstitutionNotAllowed;
+
+  /// No description provided for @errorShoppingIncomplete.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hali hal qilinmagan mahsulotlar bor.'**
+  String get errorShoppingIncomplete;
+
+  /// No description provided for @shopperOrderGone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu buyurtma endi sizda emas.'**
+  String get shopperOrderGone;
+
+  /// No description provided for @shopperOrderCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma bekor qilindi: sotib olinadigan narsa qolmadi.'**
+  String get shopperOrderCancelled;
+
+  /// No description provided for @substituteUseBuy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo\'lsa, u yerda mijozdan so\'rash taklif qilinadi.'**
+  String get substituteUseBuy;
 }
 
 class _AppLocalizationsDelegate
