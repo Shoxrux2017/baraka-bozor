@@ -3601,6 +3601,96 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Bu mahsulot narxini tuzatib bo\'lmaydi.'**
   String get errorPriceCorrectionNotApplicable;
+
+  /// No description provided for @staffMenu.
+  ///
+  /// In uz, this message translates to:
+  /// **'Menyu'**
+  String get staffMenu;
+
+  /// No description provided for @shopperOrdersEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha sizga buyurtma tayinlanmagan. Tayinlansa, shu yerda paydo bo\'ladi.'**
+  String get shopperOrdersEmpty;
+
+  /// No description provided for @shopperOpenLines.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qolgan mahsulotlar: {open} / {total}'**
+  String shopperOpenLines(int open, int total);
+
+  /// No description provided for @shopperNotAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi buyurtma — qabul qiling'**
+  String get shopperNotAccepted;
+
+  /// No description provided for @shopperAssignedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayinlandi: {time}'**
+  String shopperAssignedAt(String time);
+
+  /// No description provided for @shopperAcceptedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qilindi: {time}'**
+  String shopperAcceptedAt(String time);
+
+  /// No description provided for @shopperStartedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish boshlandi: {time}'**
+  String shopperStartedAt(String time);
+
+  /// No description provided for @shopperAccept.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qilish'**
+  String get shopperAccept;
+
+  /// No description provided for @shopperStart.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ishni boshlash'**
+  String get shopperStart;
+
+  /// No description provided for @callCustomer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga qo\'ng\'iroq: {phone}'**
+  String callCustomer(String phone);
+
+  /// No description provided for @callFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'ng\'iroq ilovasi ochilmadi. Raqamni qo\'lda tering: {phone}'**
+  String callFailed(String phone);
+
+  /// No description provided for @shopperLineCap.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz rozi bo\'lgan miqdor: {quantity}'**
+  String shopperLineCap(String quantity);
+
+  /// No description provided for @shopperPriceLimit.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'ramasdan ko\'pi bilan: {price}'**
+  String shopperPriceLimit(String price);
+
+  /// No description provided for @shopperQuestion.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz javobi kutilmoqda ({type}), {time} gacha'**
+  String shopperQuestion(String type, String time);
+
+  /// No description provided for @shopperPageEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu sahifada buyurtma qolmadi. Oldingi sahifaga o\'ting.'**
+  String get shopperPageEmpty;
 }
 
 class _AppLocalizationsDelegate

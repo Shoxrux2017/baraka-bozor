@@ -1157,5 +1157,89 @@
   "errorRequestAlreadyDecided": "So'rov bo'yicha qaror allaqachon qabul qilingan.",
   "errorCancellationAlreadyPending": "Bekor qilish so'rovi kutilmoqda — avval u bo'yicha qaror qabul qiling.",
   "errorPriceCorrectionLocked": "Narxni endi tuzatib bo'lmaydi: buyurtma yo'lda, yakunlangan, bekor qilingan yoki onlayn to'lanadi.",
-  "errorPriceCorrectionNotApplicable": "Bu mahsulot narxini tuzatib bo'lmaydi."
+  "errorPriceCorrectionNotApplicable": "Bu mahsulot narxini tuzatib bo'lmaydi.",
+  "staffMenu": "Menyu",
+  "shopperOrdersEmpty": "Hozircha sizga buyurtma tayinlanmagan. Tayinlansa, shu yerda paydo bo'ladi.",
+  "shopperOpenLines": "Qolgan mahsulotlar: {open} / {total}",
+  "@shopperOpenLines": {
+    "placeholders": {
+      "open": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperNotAccepted": "Yangi buyurtma — qabul qiling",
+  "shopperAssignedAt": "Tayinlandi: {time}",
+  "@shopperAssignedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperAcceptedAt": "Qabul qilindi: {time}",
+  "@shopperAcceptedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperStartedAt": "Yig'ish boshlandi: {time}",
+  "@shopperStartedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperAccept": "Qabul qilish",
+  "shopperStart": "Yig'ishni boshlash",
+  "callCustomer": "Mijozga qo'ng'iroq: {phone}",
+  "@callCustomer": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "callFailed": "Qo'ng'iroq ilovasi ochilmadi. Raqamni qo'lda tering: {phone}",
+  "@callFailed": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperLineCap": "Mijoz rozi bo'lgan miqdor: {quantity}",
+  "@shopperLineCap": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperPriceLimit": "So'ramasdan ko'pi bilan: {price}",
+  "@shopperPriceLimit": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperQuestion": "Mijoz javobi kutilmoqda ({type}), {time} gacha",
+  "@shopperQuestion": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperPageEmpty": "Bu sahifada buyurtma qolmadi. Oldingi sahifaga o'ting."
 }

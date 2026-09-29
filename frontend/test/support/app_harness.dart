@@ -5,7 +5,9 @@ import 'package:baraka_bozor/features/addresses/application/addresses_controller
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
 import 'package:baraka_bozor/features/checkout/application/checkout_controllers.dart';
 import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
+import 'package:baraka_bozor/core/platform/phone_calls.dart';
 import 'package:baraka_bozor/features/operations/application/board_controllers.dart';
+import 'package:baraka_bozor/features/shopper/application/shopper_orders_controllers.dart';
 import 'package:baraka_bozor/main.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +20,7 @@ import 'fake_checkout_repository.dart';
 import 'fake_customer_orders_repository.dart';
 import 'fake_customer_repositories.dart';
 import 'fake_operations_repository.dart';
+import 'fake_shopper_orders_repository.dart';
 import 'in_memory_stores.dart';
 
 /// The app without the platform plugins: in-memory stores, fake repositories
@@ -32,6 +35,8 @@ Widget appUnderTest({
   FakeCheckoutRepository? checkout,
   FakeAddressesRepository? addresses,
   FakeCustomerOrdersRepository? orders,
+  FakeShopperOrdersRepository? shopper,
+  FakePhoneCalls? phoneCalls,
   Surface surface = Surface.mobile,
   Locale device = const Locale('uz'),
   List<Override> overrides = const <Override>[],
@@ -62,6 +67,10 @@ Widget appUnderTest({
       customerOrdersRepositoryProvider.overrideWithValue(
         orders ?? FakeCustomerOrdersRepository(),
       ),
+      shopperOrdersRepositoryProvider.overrideWithValue(
+        shopper ?? FakeShopperOrdersRepository(),
+      ),
+      phoneCallsProvider.overrideWithValue(phoneCalls ?? FakePhoneCalls()),
       ...overrides,
     ],
     child: const BarakaBozorApp(),

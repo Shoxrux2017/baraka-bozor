@@ -45,6 +45,12 @@ abstract final class AppPaths {
   static String customerAddress(String id) =>
       '$customerAddresses/${Uri.encodeComponent(id)}';
 
+  // Inside the Shopper's area: the list opens an order.
+  static const String shopperOrderPattern = '$shopper/orders/:order';
+
+  static String shopperOrder(String id) =>
+      '$shopper/orders/${Uri.encodeComponent(id)}';
+
   // Inside the Admin area, where the panel's shared navigation links
   // (`features/shells/presentation/panel_shell.dart`).
   static const String adminCategories = '$admin/categories';

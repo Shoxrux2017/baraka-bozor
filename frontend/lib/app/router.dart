@@ -13,6 +13,7 @@ import '../features/operations/presentation/operations_routes.dart';
 import '../features/orders/presentation/orders_routes.dart';
 import '../features/profile/presentation/profile_routes.dart';
 import '../features/shells/presentation/shells_routes.dart';
+import '../features/shopper/presentation/shopper_routes.dart';
 
 /// The Flutter half of decision `D-8`: every feature route fragment the client
 /// serves, in registration order.
@@ -35,6 +36,7 @@ final List<FeatureRoutes> featureRouteFragments = <FeatureRoutes>[
   cartRoutes,
   checkoutRoutes,
   ordersRoutes,
+  shopperRoutes,
 ];
 
 /// The application's route table. [redirect] is the session guard the root

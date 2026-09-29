@@ -21,6 +21,8 @@ void main() {
     const ValueKey<String>('switch-to-staff-button'),
   );
   final Finder modeChip = find.byKey(const ValueKey<String>('active-mode'));
+  // The Shopper's area keeps its mode switch and its way out in one menu.
+  final Finder staffMenu = find.byKey(const ValueKey<String>('staff-menu'));
   final Finder logoutButton = find.byKey(
     const ValueKey<String>('logout-button'),
   );
@@ -103,6 +105,8 @@ void main() {
     repository.identities[SessionSlot.staff] = user(role: UserRole.shopper);
     await openApp(tester);
 
+    await tester.tap(staffMenu);
+    await tester.pumpAndSettle();
     await tester.tap(switchToCustomer);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey<String>('cancel-button')));
@@ -124,6 +128,8 @@ void main() {
     await openApp(tester);
 
     expect(find.text(l10n(tester).shellShopper), findsOneWidget);
+    await tester.tap(staffMenu);
+    await tester.pumpAndSettle();
     await tester.tap(switchToCustomer);
     await tester.pumpAndSettle();
     expect(customerHome, findsOneWidget);
