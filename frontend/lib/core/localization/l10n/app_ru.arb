@@ -1472,5 +1472,156 @@
   "removedYouRejected": "вы отказались",
   "removedYouRemoved": "вы убрали",
   "questionDropsReplacement": "Если согласитесь, купят заказанный товар, а не замену.",
-  "decisionSending": "Отправляем ответ"
+  "decisionSending": "Отправляем ответ",
+  "courierOrdersEmpty": "Пока вам не назначено доставок. Назначенная доставка появится здесь.",
+  "courierPageEmpty": "На этой странице доставок не осталось. Перейдите на предыдущую.",
+  "courierNotAccepted": "Новая доставка — примите её",
+  "courierAccept": "Принять",
+  "courierStart": "Выехать",
+  "courierDelivered": "Доставлено",
+  "courierNotDelivered": "Не доставлено",
+  "courierRequestPending": "Клиент просит отменить заказ. Не выезжайте, пока оператор не решит.",
+  "courierRecipient": "Получатель: {name}",
+  "@courierRecipient": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "callRecipient": "Позвонить получателю: {phone}",
+  "@callRecipient": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "callShopper": "Позвонить сборщику: {phone}",
+  "@callShopper": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "courierPickupFromShopper": "Пункта передачи нет — заберите заказ у сборщика.",
+  "courierAddress": "Адрес: {address}",
+  "@courierAddress": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "courierLandmark": "Ориентир: {landmark}",
+  "@courierLandmark": {
+    "placeholders": {
+      "landmark": {
+        "type": "String"
+      }
+    }
+  },
+  "courierDeliveryNote": "Комментарий для курьера: {note}",
+  "@courierDeliveryNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "courierOpenMap": "Открыть на карте",
+  "courierMapFailed": "Не удалось открыть приложение карт. Адрес: {address}",
+  "@courierMapFailed": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "courierCollect": "Получить наличными: {amount}",
+  "@courierCollect": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "courierPaidOnline": "Оплата онлайн — деньги не брать",
+  "courierAssignedAt": "Назначена: {time}",
+  "@courierAssignedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "courierAcceptedAt": "Принята: {time}",
+  "@courierAcceptedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "courierStartedAt": "Выехали: {time}",
+  "@courierStartedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "courierDueBy": "Доставьте до {time}",
+  "@courierDueBy": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "courierDeliveredTitle": "Заказ передан получателю?",
+  "courierCashPrompt": "Получите {amount} наличными и введите полученную сумму.",
+  "@courierCashPrompt": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "courierCashField": "Получено наличными, сум",
+  "courierCashInvalid": "Введите сумму в сумах, цифрами",
+  "courierCashMismatch": "Сумма не совпадает: нужно получить {amount}.",
+  "@courierCashMismatch": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "courierHandoverRepeating": "Прошлая отметка осталась без ответа — отправим ту же сумму снова.",
+  "courierHandoverUnconfirmed": "Отметка «Доставлено» отправлена, но ответа нет. Отправьте её снова — второй оплаты не будет.",
+  "courierDeliveredDone": "Заказ {number} доставлен",
+  "@courierDeliveredDone": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "courierNotDeliveredTitle": "Почему не удалось доставить?",
+  "courierNotDeliveredNote": "Комментарий",
+  "courierNotDeliveredExplained": "Заказ вернётся к оператору, он решит, как доставить его дальше.",
+  "courierNotDeliveredDone": "Заказ {number} возвращён оператору",
+  "@courierNotDeliveredDone": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "courierOrderGone": "Эта доставка больше не ваша.",
+  "courierBack": "К моим доставкам",
+  "errorDeliveryStateConflict": "Доставка уже изменилась, мы обновили заказ.",
+  "errorCashAmountMismatch": "Сумма не совпадает с суммой к получению."
 }

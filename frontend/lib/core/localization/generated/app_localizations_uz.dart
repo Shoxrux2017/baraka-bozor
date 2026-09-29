@@ -2317,4 +2317,163 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get decisionSending => 'Javob yuborilmoqda';
+
+  @override
+  String get courierOrdersEmpty =>
+      'Hozircha sizga yetkazish tayinlanmagan. Tayinlangan yetkazish shu yerda paydo bo\'ladi.';
+
+  @override
+  String get courierPageEmpty =>
+      'Bu sahifada yetkazishlar qolmadi. Oldingi sahifaga o\'ting.';
+
+  @override
+  String get courierNotAccepted => 'Yangi yetkazish — qabul qiling';
+
+  @override
+  String get courierAccept => 'Qabul qilish';
+
+  @override
+  String get courierStart => 'Yo\'lga chiqish';
+
+  @override
+  String get courierDelivered => 'Yetkazildi';
+
+  @override
+  String get courierNotDelivered => 'Yetkazilmadi';
+
+  @override
+  String get courierRequestPending =>
+      'Mijoz buyurtmani bekor qilishni so\'ramoqda. Operator hal qilmaguncha yo\'lga chiqmang.';
+
+  @override
+  String courierRecipient(String name) {
+    return 'Qabul qiluvchi: $name';
+  }
+
+  @override
+  String callRecipient(String phone) {
+    return 'Qabul qiluvchiga qo\'ng\'iroq: $phone';
+  }
+
+  @override
+  String callShopper(String phone) {
+    return 'Yig\'uvchiga qo\'ng\'iroq: $phone';
+  }
+
+  @override
+  String get courierPickupFromShopper =>
+      'Topshirish punkti yo\'q — buyurtmani yig\'uvchidan oling.';
+
+  @override
+  String courierAddress(String address) {
+    return 'Manzil: $address';
+  }
+
+  @override
+  String courierLandmark(String landmark) {
+    return 'Mo\'ljal: $landmark';
+  }
+
+  @override
+  String courierDeliveryNote(String note) {
+    return 'Kuryer uchun izoh: $note';
+  }
+
+  @override
+  String get courierOpenMap => 'Xaritada ochish';
+
+  @override
+  String courierMapFailed(String address) {
+    return 'Xarita ilovasi ochilmadi. Manzil: $address';
+  }
+
+  @override
+  String courierCollect(String amount) {
+    return 'Naqd olish kerak: $amount';
+  }
+
+  @override
+  String get courierPaidOnline => 'Onlayn to\'lanadi — pul olinmaydi';
+
+  @override
+  String courierAssignedAt(String time) {
+    return 'Tayinlangan: $time';
+  }
+
+  @override
+  String courierAcceptedAt(String time) {
+    return 'Qabul qilingan: $time';
+  }
+
+  @override
+  String courierStartedAt(String time) {
+    return 'Yo\'lga chiqilgan: $time';
+  }
+
+  @override
+  String courierDueBy(String time) {
+    return '$time gacha yetkazing';
+  }
+
+  @override
+  String get courierDeliveredTitle =>
+      'Buyurtma qabul qiluvchiga topshirildimi?';
+
+  @override
+  String courierCashPrompt(String amount) {
+    return '$amount naqd oling va olingan summani kiriting.';
+  }
+
+  @override
+  String get courierCashField => 'Naqd olindi, so\'m';
+
+  @override
+  String get courierCashInvalid => 'Summani so\'mda, raqamlar bilan kiriting';
+
+  @override
+  String courierCashMismatch(String amount) {
+    return 'Summa mos emas: $amount olinishi kerak.';
+  }
+
+  @override
+  String get courierHandoverRepeating =>
+      'Oldingi belgi javobsiz qoldi — xuddi shu summa qayta yuboriladi.';
+
+  @override
+  String get courierHandoverUnconfirmed =>
+      '«Yetkazildi» belgisi yuborildi, lekin javob kelmadi. Qayta yuboring — ikkinchi to\'lov yozilmaydi.';
+
+  @override
+  String courierDeliveredDone(String number) {
+    return '$number-buyurtma yetkazildi';
+  }
+
+  @override
+  String get courierNotDeliveredTitle => 'Nega yetkazib bo\'lmadi?';
+
+  @override
+  String get courierNotDeliveredNote => 'Izoh';
+
+  @override
+  String get courierNotDeliveredExplained =>
+      'Buyurtma operatorga qaytadi, u keyingi yetkazishni hal qiladi.';
+
+  @override
+  String courierNotDeliveredDone(String number) {
+    return '$number-buyurtma operatorga qaytarildi';
+  }
+
+  @override
+  String get courierOrderGone => 'Bu yetkazish endi sizda emas.';
+
+  @override
+  String get courierBack => 'Yetkazishlarimga';
+
+  @override
+  String get errorDeliveryStateConflict =>
+      'Yetkazish allaqachon o\'zgargan, buyurtma yangilandi.';
+
+  @override
+  String get errorCashAmountMismatch =>
+      'Summa olinishi kerak bo\'lgan summaga mos emas.';
 }

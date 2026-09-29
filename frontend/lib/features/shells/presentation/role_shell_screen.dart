@@ -7,13 +7,12 @@ import '../../../core/localization/language_menu.dart';
 import '../../../core/session/session_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../auth/domain/app_user.dart';
-import 'staff_area_menu.dart';
 
-/// The entry of one staff role's area: its name, the language switch, the
-/// way out, and — for a Shopper or Courier — the way into Customer mode
-/// (`docs/02-user-roles.md` section 10). The active mode is always visible
-/// while two sessions exist. The area itself arrives with the feature that
-/// owns it; until then the body says so.
+/// The entry of one staff role's area: its name, the language switch and
+/// the way out. The area itself arrives with the feature that owns it; until
+/// then the body says so. The Shopper's and the Courier's areas, which offer
+/// Customer mode (`docs/02-user-roles.md` section 10), have features of
+/// their own.
 class RoleShellScreen extends ConsumerWidget {
   const RoleShellScreen({required this.role, super.key});
 
@@ -68,8 +67,6 @@ class RoleShellScreen extends ConsumerWidget {
                           l10n.shellPlaceholder,
                           textAlign: TextAlign.center,
                         ),
-                        if (session != null)
-                          ..._modeSwitch(context, ref, l10n, session),
                       ],
                     ),
                   ),
@@ -80,25 +77,5 @@ class RoleShellScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  List<Widget> _modeSwitch(
-    BuildContext context,
-    WidgetRef ref,
-    AppLocalizations l10n,
-    SignedIn session,
-  ) {
-    if (role.isStaff && session.canOfferCustomerMode) {
-      return <Widget>[
-        const SizedBox(height: 24),
-        OutlinedButton(
-          key: const ValueKey<String>('switch-to-customer-button'),
-          onPressed: () => enterCustomerMode(context, ref, session),
-          child: Text(l10n.switchToCustomer),
-        ),
-      ];
-    }
-
-    return const <Widget>[];
   }
 }

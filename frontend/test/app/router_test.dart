@@ -44,7 +44,6 @@ void main() {
         AppPaths.customerMode,
         AppPaths.unreachable,
         AppPaths.wrongSurface,
-        AppPaths.courier,
         AppPaths.manager,
         AppPaths.admin,
         AdminPaths.categories,
@@ -72,6 +71,8 @@ void main() {
         AppPaths.shopperOrderPattern,
         AppPaths.shopperReplacePattern,
         AppPaths.shopperDonePattern,
+        AppPaths.courier,
+        AppPaths.courierOrderPattern,
       ]);
     });
 
@@ -90,6 +91,7 @@ void main() {
           'checkout',
           'orders',
           'shopper',
+          'courier',
         ],
       );
     });

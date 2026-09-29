@@ -4123,6 +4123,240 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Javob yuborilmoqda'**
   String get decisionSending;
+
+  /// No description provided for @courierOrdersEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha sizga yetkazish tayinlanmagan. Tayinlangan yetkazish shu yerda paydo bo\'ladi.'**
+  String get courierOrdersEmpty;
+
+  /// No description provided for @courierPageEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu sahifada yetkazishlar qolmadi. Oldingi sahifaga o\'ting.'**
+  String get courierPageEmpty;
+
+  /// No description provided for @courierNotAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi yetkazish — qabul qiling'**
+  String get courierNotAccepted;
+
+  /// No description provided for @courierAccept.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qilish'**
+  String get courierAccept;
+
+  /// No description provided for @courierStart.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'lga chiqish'**
+  String get courierStart;
+
+  /// No description provided for @courierDelivered.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazildi'**
+  String get courierDelivered;
+
+  /// No description provided for @courierNotDelivered.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazilmadi'**
+  String get courierNotDelivered;
+
+  /// No description provided for @courierRequestPending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz buyurtmani bekor qilishni so\'ramoqda. Operator hal qilmaguncha yo\'lga chiqmang.'**
+  String get courierRequestPending;
+
+  /// No description provided for @courierRecipient.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qiluvchi: {name}'**
+  String courierRecipient(String name);
+
+  /// No description provided for @callRecipient.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qiluvchiga qo\'ng\'iroq: {phone}'**
+  String callRecipient(String phone);
+
+  /// No description provided for @callShopper.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchiga qo\'ng\'iroq: {phone}'**
+  String callShopper(String phone);
+
+  /// No description provided for @courierPickupFromShopper.
+  ///
+  /// In uz, this message translates to:
+  /// **'Topshirish punkti yo\'q — buyurtmani yig\'uvchidan oling.'**
+  String get courierPickupFromShopper;
+
+  /// No description provided for @courierAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil: {address}'**
+  String courierAddress(String address);
+
+  /// No description provided for @courierLandmark.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mo\'ljal: {landmark}'**
+  String courierLandmark(String landmark);
+
+  /// No description provided for @courierDeliveryNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer uchun izoh: {note}'**
+  String courierDeliveryNote(String note);
+
+  /// No description provided for @courierOpenMap.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaritada ochish'**
+  String get courierOpenMap;
+
+  /// No description provided for @courierMapFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xarita ilovasi ochilmadi. Manzil: {address}'**
+  String courierMapFailed(String address);
+
+  /// No description provided for @courierCollect.
+  ///
+  /// In uz, this message translates to:
+  /// **'Naqd olish kerak: {amount}'**
+  String courierCollect(String amount);
+
+  /// No description provided for @courierPaidOnline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Onlayn to\'lanadi — pul olinmaydi'**
+  String get courierPaidOnline;
+
+  /// No description provided for @courierAssignedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayinlangan: {time}'**
+  String courierAssignedAt(String time);
+
+  /// No description provided for @courierAcceptedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qilingan: {time}'**
+  String courierAcceptedAt(String time);
+
+  /// No description provided for @courierStartedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'lga chiqilgan: {time}'**
+  String courierStartedAt(String time);
+
+  /// No description provided for @courierDueBy.
+  ///
+  /// In uz, this message translates to:
+  /// **'{time} gacha yetkazing'**
+  String courierDueBy(String time);
+
+  /// No description provided for @courierDeliveredTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma qabul qiluvchiga topshirildimi?'**
+  String get courierDeliveredTitle;
+
+  /// No description provided for @courierCashPrompt.
+  ///
+  /// In uz, this message translates to:
+  /// **'{amount} naqd oling va olingan summani kiriting.'**
+  String courierCashPrompt(String amount);
+
+  /// No description provided for @courierCashField.
+  ///
+  /// In uz, this message translates to:
+  /// **'Naqd olindi, so\'m'**
+  String get courierCashField;
+
+  /// No description provided for @courierCashInvalid.
+  ///
+  /// In uz, this message translates to:
+  /// **'Summani so\'mda, raqamlar bilan kiriting'**
+  String get courierCashInvalid;
+
+  /// No description provided for @courierCashMismatch.
+  ///
+  /// In uz, this message translates to:
+  /// **'Summa mos emas: {amount} olinishi kerak.'**
+  String courierCashMismatch(String amount);
+
+  /// No description provided for @courierHandoverRepeating.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oldingi belgi javobsiz qoldi — xuddi shu summa qayta yuboriladi.'**
+  String get courierHandoverRepeating;
+
+  /// No description provided for @courierHandoverUnconfirmed.
+  ///
+  /// In uz, this message translates to:
+  /// **'«Yetkazildi» belgisi yuborildi, lekin javob kelmadi. Qayta yuboring — ikkinchi to\'lov yozilmaydi.'**
+  String get courierHandoverUnconfirmed;
+
+  /// No description provided for @courierDeliveredDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'{number}-buyurtma yetkazildi'**
+  String courierDeliveredDone(String number);
+
+  /// No description provided for @courierNotDeliveredTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nega yetkazib bo\'lmadi?'**
+  String get courierNotDeliveredTitle;
+
+  /// No description provided for @courierNotDeliveredNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Izoh'**
+  String get courierNotDeliveredNote;
+
+  /// No description provided for @courierNotDeliveredExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma operatorga qaytadi, u keyingi yetkazishni hal qiladi.'**
+  String get courierNotDeliveredExplained;
+
+  /// No description provided for @courierNotDeliveredDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'{number}-buyurtma operatorga qaytarildi'**
+  String courierNotDeliveredDone(String number);
+
+  /// No description provided for @courierOrderGone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu yetkazish endi sizda emas.'**
+  String get courierOrderGone;
+
+  /// No description provided for @courierBack.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazishlarimga'**
+  String get courierBack;
+
+  /// No description provided for @errorDeliveryStateConflict.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish allaqachon o\'zgargan, buyurtma yangilandi.'**
+  String get errorDeliveryStateConflict;
+
+  /// No description provided for @errorCashAmountMismatch.
+  ///
+  /// In uz, this message translates to:
+  /// **'Summa olinishi kerak bo\'lgan summaga mos emas.'**
+  String get errorCashAmountMismatch;
 }
 
 class _AppLocalizationsDelegate

@@ -1479,5 +1479,156 @@
   "removedYouRejected": "siz rad etdingiz",
   "removedYouRemoved": "siz olib tashladingiz",
   "questionDropsReplacement": "Rozi bo'lsangiz, o'rniga boshqasi emas, buyurtma qilingan mahsulotning o'zi olinadi.",
-  "decisionSending": "Javob yuborilmoqda"
+  "decisionSending": "Javob yuborilmoqda",
+  "courierOrdersEmpty": "Hozircha sizga yetkazish tayinlanmagan. Tayinlangan yetkazish shu yerda paydo bo'ladi.",
+  "courierPageEmpty": "Bu sahifada yetkazishlar qolmadi. Oldingi sahifaga o'ting.",
+  "courierNotAccepted": "Yangi yetkazish — qabul qiling",
+  "courierAccept": "Qabul qilish",
+  "courierStart": "Yo'lga chiqish",
+  "courierDelivered": "Yetkazildi",
+  "courierNotDelivered": "Yetkazilmadi",
+  "courierRequestPending": "Mijoz buyurtmani bekor qilishni so'ramoqda. Operator hal qilmaguncha yo'lga chiqmang.",
+  "courierRecipient": "Qabul qiluvchi: {name}",
+  "@courierRecipient": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "callRecipient": "Qabul qiluvchiga qo'ng'iroq: {phone}",
+  "@callRecipient": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "callShopper": "Yig'uvchiga qo'ng'iroq: {phone}",
+  "@callShopper": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "courierPickupFromShopper": "Topshirish punkti yo'q — buyurtmani yig'uvchidan oling.",
+  "courierAddress": "Manzil: {address}",
+  "@courierAddress": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "courierLandmark": "Mo'ljal: {landmark}",
+  "@courierLandmark": {
+    "placeholders": {
+      "landmark": {
+        "type": "String"
+      }
+    }
+  },
+  "courierDeliveryNote": "Kuryer uchun izoh: {note}",
+  "@courierDeliveryNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "courierOpenMap": "Xaritada ochish",
+  "courierMapFailed": "Xarita ilovasi ochilmadi. Manzil: {address}",
+  "@courierMapFailed": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "courierCollect": "Naqd olish kerak: {amount}",
+  "@courierCollect": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "courierPaidOnline": "Onlayn to'lanadi — pul olinmaydi",
+  "courierAssignedAt": "Tayinlangan: {time}",
+  "@courierAssignedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "courierAcceptedAt": "Qabul qilingan: {time}",
+  "@courierAcceptedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "courierStartedAt": "Yo'lga chiqilgan: {time}",
+  "@courierStartedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "courierDueBy": "{time} gacha yetkazing",
+  "@courierDueBy": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "courierDeliveredTitle": "Buyurtma qabul qiluvchiga topshirildimi?",
+  "courierCashPrompt": "{amount} naqd oling va olingan summani kiriting.",
+  "@courierCashPrompt": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "courierCashField": "Naqd olindi, so'm",
+  "courierCashInvalid": "Summani so'mda, raqamlar bilan kiriting",
+  "courierCashMismatch": "Summa mos emas: {amount} olinishi kerak.",
+  "@courierCashMismatch": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "courierHandoverRepeating": "Oldingi belgi javobsiz qoldi — xuddi shu summa qayta yuboriladi.",
+  "courierHandoverUnconfirmed": "«Yetkazildi» belgisi yuborildi, lekin javob kelmadi. Qayta yuboring — ikkinchi to'lov yozilmaydi.",
+  "courierDeliveredDone": "{number}-buyurtma yetkazildi",
+  "@courierDeliveredDone": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "courierNotDeliveredTitle": "Nega yetkazib bo'lmadi?",
+  "courierNotDeliveredNote": "Izoh",
+  "courierNotDeliveredExplained": "Buyurtma operatorga qaytadi, u keyingi yetkazishni hal qiladi.",
+  "courierNotDeliveredDone": "{number}-buyurtma operatorga qaytarildi",
+  "@courierNotDeliveredDone": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "courierOrderGone": "Bu yetkazish endi sizda emas.",
+  "courierBack": "Yetkazishlarimga",
+  "errorDeliveryStateConflict": "Yetkazish allaqachon o'zgargan, buyurtma yangilandi.",
+  "errorCashAmountMismatch": "Summa olinishi kerak bo'lgan summaga mos emas."
 }

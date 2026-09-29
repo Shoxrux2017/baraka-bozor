@@ -73,6 +73,8 @@ String _refusalText(AppLocalizations l10n, String code, int status) {
     'substitution_not_allowed' => l10n.errorSubstitutionNotAllowed,
     'shopping_incomplete' => l10n.errorShoppingIncomplete,
     'approval_expired' => l10n.errorApprovalExpired,
+    'delivery_state_conflict' => l10n.errorDeliveryStateConflict,
+    'cash_amount_mismatch' => l10n.errorCashAmountMismatch,
     'provider_unavailable' ||
     'payment_provider_unavailable' => l10n.errorProviderUnavailable,
     'service_unavailable' => l10n.errorServiceUnavailable,

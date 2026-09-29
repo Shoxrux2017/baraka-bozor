@@ -14,14 +14,16 @@ final FeatureRoutes shellsRoutes = FeatureRoutes(
   routes: <RouteBase>[
     // The Admin area (`features/admin`), the Operator's board
     // (`features/operations`), the Customer area, whose home is the catalog
-    // (`features/catalog`), and the Shopper's (`features/shopper`) have
-    // features of their own that serve their entries as well; the other
-    // areas keep this placeholder until their features arrive.
+    // (`features/catalog`), the Shopper's (`features/shopper`) and the
+    // Courier's (`features/courier`) have features of their own that serve
+    // their entries as well; the other areas keep this placeholder until
+    // their features arrive.
     for (final UserRole role in UserRole.values)
       if (role != UserRole.admin &&
           role != UserRole.operator &&
           role != UserRole.customer &&
-          role != UserRole.shopper)
+          role != UserRole.shopper &&
+          role != UserRole.courier)
         GoRoute(
           path: AppPaths.homeOf(role),
           name: 'shell-${role.code}',

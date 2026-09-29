@@ -21,7 +21,8 @@ void main() {
     const ValueKey<String>('switch-to-staff-button'),
   );
   final Finder modeChip = find.byKey(const ValueKey<String>('active-mode'));
-  // The Shopper's area keeps its mode switch and its way out in one menu.
+  // The Shopper's and the Courier's areas keep their mode switch and their
+  // way out in one menu.
   final Finder staffMenu = find.byKey(const ValueKey<String>('staff-menu'));
   final Finder logoutButton = find.byKey(
     const ValueKey<String>('logout-button'),
@@ -65,6 +66,8 @@ void main() {
       expect(find.text(l10n(tester).shellCourier), findsOneWidget);
       expect(modeChip, findsNothing, reason: 'one session, nothing to show');
 
+      await tester.tap(staffMenu);
+      await tester.pumpAndSettle();
       await tester.tap(switchToCustomer);
       await tester.pumpAndSettle();
 
@@ -90,6 +93,8 @@ void main() {
 
       // With both sessions the switch needs no code.
       repository.calls.clear();
+      await tester.tap(staffMenu);
+      await tester.pumpAndSettle();
       await tester.tap(switchToCustomer);
       await tester.pumpAndSettle();
 

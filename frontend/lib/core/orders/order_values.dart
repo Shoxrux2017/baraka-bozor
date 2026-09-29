@@ -313,3 +313,24 @@ enum PaymentStatus {
     return null;
   }
 }
+
+/// Why the Courier could not deliver (`BR-DEL-003`).
+enum DeliveryFailureReason {
+  noAnswer('no_answer'),
+  refused('refused'),
+  wrongAddress('wrong_address'),
+  other('other');
+
+  const DeliveryFailureReason(this.code);
+
+  final String code;
+
+  static DeliveryFailureReason? tryParse(String code) {
+    for (final DeliveryFailureReason reason in values) {
+      if (reason.code == code) {
+        return reason;
+      }
+    }
+    return null;
+  }
+}
