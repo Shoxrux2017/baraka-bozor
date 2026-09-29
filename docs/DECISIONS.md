@@ -862,3 +862,20 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - The Operator's note is not included: it is written for staff, and an approved or rejected status already tells the Customer the outcome.
    - `Order::latestCancellationRequest` is an ordered `hasOne` rather than `latestOfMany`, whose tie-break takes the maximum of the key, which PostgreSQL has no aggregate for on a UUID.
 6. **The race `DL-57`'s review named.** A Shopper's purchase or unavailable line that waited on the order lock an approval held finds the order no longer the Shopper's, the scope-safe `404`, through `ShopperOrders::lockCurrent`'s read under the lock (`DL-56` (6)). A race test proves both.
+
+## DL-66 — The price correction, from W3-12 (2026-09-29, agent)
+
+1. **Who and where.** `POST /admin/orders/{order}/items/{item}/price-correction` sits beside the board's routes under its own Admin-only group: no Operator corrects a price (`docs/02` section 8). The line must be the named order's, or the answer is the scope-safe `404`.
+2. **The checks, in order.** Under the order lock, then the line's (`docs/07` section 16):
+   - an order `on_the_way`, `completed` or `cancelled` is `409 price_correction_locked`;
+   - a line not bought, or a fixed original bought as itself, is `409 price_correction_not_applicable`;
+   - the current price again is a natural repeat;
+   - a customer price above the bound of the product bought (`PriceBound`, the purchase's own bound) is `409 price_correction_above_ceiling`, with the ceiling and the proposal in `details` as a purchase names them.
+   The order's state is asked before the line's, so a line on an order the Courier has taken is locked whatever it is.
+3. **The writes**, in one transaction:
+   - the correction row, with the old and new market and billable prices;
+   - the line's new market price, its billable price by the line's own markup (`BR-PRICE-004`) and its total;
+   - the final amounts once shopping has completed (`FinalAmounts`, as completion fills them);
+   - one `price_corrected` row whose note is the reason and whose `details` hold the line, the correction, both prices and the new totals.
+   The database's checks hold the billable price and the totals to their inputs.
+4. **The answer** is the order as the board shows it, since the Admin corrects from the order's page (W3-14).

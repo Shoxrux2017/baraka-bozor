@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\Enums\Role;
 use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Auth\Http\Middleware\RequireRole;
+use App\Modules\Orders\Http\Controllers\AdminOrderController;
 use App\Modules\Orders\Http\Controllers\OperationsApprovalController;
 use App\Modules\Orders\Http\Controllers\OperationsCancellationRequestController;
 use App\Modules\Orders\Http\Controllers\OperationsOrderController;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Operations — docs/09-api-contracts.md Sections 38 to 41
+| Operations — docs/09-api-contracts.md Sections 38 to 41 and 45
 |--------------------------------------------------------------------------
 |
 | The board of the Operator and the Admin. Every route here admits both
@@ -52,4 +53,13 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Operato
             ->name('operations.cancellation-requests.decision');
         Route::post('orders/{order}/cancel', [OperationsOrderController::class, 'cancel'])
             ->name('operations.orders.cancel');
+    });
+
+// The Admin's correction of a price paid, which no Operator makes (docs/02
+// section 8, docs/09 section 45).
+Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Admin)])
+    ->prefix('admin')
+    ->group(function (): void {
+        Route::post('orders/{order}/items/{item}/price-correction', [AdminOrderController::class, 'correctPrice'])
+            ->name('admin.orders.items.price-correction');
     });
