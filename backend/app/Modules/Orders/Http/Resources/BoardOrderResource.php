@@ -7,6 +7,7 @@ namespace App\Modules\Orders\Http\Resources;
 use App\Models\CustomerApproval;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Order;
+use App\Models\OrderCancellationRequest;
 use App\Models\OrderCourierAssignment;
 use App\Models\OrderHistory;
 use App\Models\OrderItem;
@@ -29,8 +30,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * Expects `items`, `history.actor`, `shopperAssignments.shopper`,
  * `shopperAssignments.assignedBy`, `courierAssignments.courier`,
- * `courierAssignments.assignedBy`, `livePayment.recordedBy` and the approvals'
- * people loaded.
+ * `courierAssignments.assignedBy`, `livePayment.recordedBy`, the cancellation
+ * requests' people and the approvals' people loaded.
  *
  * @property-read Order $resource
  */
@@ -154,6 +155,11 @@ final class BoardOrderResource extends JsonResource
                 ->sortBy([['created_at', 'asc'], ['id', 'asc']])
                 ->values()
                 ->map(static fn (CustomerApproval $approval): array => self::approval($approval))
+                ->all(),
+            'cancellation_requests' => $order->cancellationRequests
+                ->sortBy([['created_at', 'asc'], ['id', 'asc']])
+                ->values()
+                ->map(static fn (OrderCancellationRequest $request): array => CancellationRequestResource::fields($request))
                 ->all(),
             'payment' => $order->livePayment === null ? null : [
                 'id' => $order->livePayment->id,

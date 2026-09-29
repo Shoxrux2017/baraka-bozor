@@ -7,12 +7,15 @@ namespace App\Modules\Orders\Actions;
 use App\Exceptions\ApiException;
 use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\CancellationReason;
+use App\Models\Enums\CancellationRequestOrigin;
+use App\Models\Enums\CancellationRequestStatus;
 use App\Models\Enums\HistoryActorType;
 use App\Models\Enums\ItemRemovedReason;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Order;
+use App\Models\OrderCancellationRequest;
 use App\Models\OrderHistory;
 use App\Models\User;
 use App\Modules\Orders\CustomerOrders;
@@ -20,22 +23,29 @@ use App\Modules\Orders\OrderPermissions;
 use App\Support\Idempotency\IdempotencyStore;
 use App\Support\Idempotency\RequestFingerprint;
 use App\Support\Scope\ScopedLookup;
+use Illuminate\Validation\ValidationException;
 
 /**
  * `POST /customer/orders/{order}/cancel` (`docs/09` section 22, `docs/04`
- * section 10, `BR-CAN-001`, `BR-CAN-005`, `DL-37` (13)).
+ * sections 10 and 25, `BR-CAN-001`, `BR-CAN-002`, `BR-CAN-005`, `DL-37` (13),
+ * `DL-54` (12), `DL-65`).
  *
  * While the order is `new` or `shopping_assigned` and the Shopper has not
  * started, the Customer cancels at once and owes nothing: the order becomes
  * `cancelled` with `customer_cancelled` and the optional reason, its open
  * lines `removed` with `order_cancelled`, the current Shopper assignment ends
  * with `order_cancelled`, and one history row records it. A cancelled order
- * is a natural repeat. From `shopping` on the Customer files a request
- * instead, which arrives with Wave 3; until then those states answer
- * `409 order_cancellation_not_allowed`.
+ * is a natural repeat.
  *
- * Idempotent (`DL-39`): a retry with the same key answers the order through
- * the Customer's own orders. No push is sent in this wave (`DL-37` (15)).
+ * From `shopping` through `delivery_assigned` the Customer files a request
+ * instead, which an Operator decides: the reason is required (`422`), one
+ * already pending is `409 cancellation_already_pending`, and one
+ * `cancellation_requested` row records it. The order answers carrying it. From
+ * `on_the_way` on, `409 order_cancellation_not_allowed` (`BR-CAN-003`).
+ *
+ * Idempotent (`DL-39`), both branches sharing the key: a retry with the same
+ * key answers the order through the Customer's own orders. No push is sent
+ * in this wave (`DL-37` (15)).
  */
 final class CancelOrder
 {
@@ -65,7 +75,7 @@ final class CancelOrder
         }
 
         if (! OrderPermissions::canChange($order)) {
-            throw ApiException::conflict('order_cancellation_not_allowed');
+            return $this->request($customer, $order, $reason);
         }
 
         $from = $order->status;
@@ -102,6 +112,42 @@ final class CancelOrder
             'actor_user_id' => $customer->id,
             'reason_code' => CancellationReason::CustomerCancelled,
             'note' => $reason,
+        ])->save();
+
+        return $order;
+    }
+
+    private function request(User $customer, Order $order, ?string $reason): Order
+    {
+        if (! in_array($order->status, OrderPermissions::REQUEST_WINDOW, true)) {
+            throw ApiException::conflict('order_cancellation_not_allowed');
+        }
+
+        if ($reason === null) {
+            throw ValidationException::withMessages(['reason' => 'A cancellation request needs its reason.']);
+        }
+
+        if ($order->cancellationRequests()->where('status', CancellationRequestStatus::Pending->value)->exists()) {
+            throw ApiException::conflict('cancellation_already_pending');
+        }
+
+        $request = new OrderCancellationRequest;
+        $request->forceFill([
+            'order_id' => $order->id,
+            'origin' => CancellationRequestOrigin::Customer,
+            'requested_by_user_id' => $customer->id,
+            'status' => CancellationRequestStatus::Pending,
+            'reason' => $reason,
+        ])->save();
+
+        $history = new OrderHistory;
+        $history->forceFill([
+            'order_id' => $order->id,
+            'event_type' => OrderHistoryEvent::CancellationRequested,
+            'actor_type' => HistoryActorType::User,
+            'actor_user_id' => $customer->id,
+            'note' => $reason,
+            'details' => ['request_id' => $request->id],
         ])->save();
 
         return $order;

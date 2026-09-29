@@ -2960,6 +2960,18 @@ abstract class AppLocalizations {
   /// **'Bekor qilinmoqda'**
   String get orderCancelling;
 
+  /// No description provided for @orderCancellationRequested.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish so\'raldi: operator hal qiladi'**
+  String get orderCancellationRequested;
+
+  /// No description provided for @orderCancellationNeedsReason.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xarid boshlangan: bekor qilish sababini yozing, operator hal qiladi'**
+  String get orderCancellationNeedsReason;
+
   /// No description provided for @orderOpen.
   ///
   /// In uz, this message translates to:

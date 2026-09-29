@@ -108,6 +108,7 @@ final class CustomerOrder {
     required this.totalKind,
     required this.address,
     required this.cancellationReason,
+    required this.cancellationRequest,
     required this.createdAt,
   });
 
@@ -130,6 +131,10 @@ final class CustomerOrder {
   final TotalKind totalKind;
   final OrderAddress address;
   final CancellationReason? cancellationReason;
+
+  /// Where the order's latest cancellation request stands, or `null` when it
+  /// has none; the screens for requests are W3-17's.
+  final CancellationRequestStatus? cancellationRequest;
   final DateTime createdAt;
 
   /// The lines the Customer still orders.

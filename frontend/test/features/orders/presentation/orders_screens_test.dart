@@ -297,6 +297,58 @@ void main() {
     );
   });
 
+  group('a cancellation request', () {
+    testWidgets(
+      'once shopping began, a cancel files a request the order then shows',
+      (WidgetTester tester) async {
+        await open(tester, at: AppPaths.customerOrder(orderOne));
+
+        orders.answer = customerOrderJson(
+          status: 'shopping',
+          changeable: false,
+          cancellationRequest: 'pending',
+        );
+        await tapAndSettle(tester, byKey('order-cancel'));
+        await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
+        await tapAndSettle(tester, byKey('cancel-confirm'));
+
+        expect(orders.cancels.single.$2, 'Kerak emas');
+        expect(byKey('order-cancellation-requested'), findsOneWidget);
+        expect(
+          find.text(l10n(tester).orderCancellationRequested),
+          findsOneWidget,
+        );
+        expect(find.text(l10n(tester).customerStatusShopping), findsOneWidget);
+        expect(byKey('failure-message'), findsNothing);
+      },
+    );
+
+    testWidgets('without a reason, the Customer is told to give one', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, at: AppPaths.customerOrder(orderOne));
+
+      orders.failure = const ApiRefusal(
+        ApiError(
+          status: 422,
+          code: 'validation_failed',
+          errors: <String, List<String>>{
+            'reason': <String>['A cancellation request needs its reason.'],
+          },
+        ),
+      );
+      await tapAndSettle(tester, byKey('order-cancel'));
+      await tapAndSettle(tester, byKey('cancel-confirm'));
+
+      expect(byKey('order-cancel-needs-reason'), findsOneWidget);
+      expect(
+        find.text(l10n(tester).orderCancellationNeedsReason),
+        findsOneWidget,
+      );
+      expect(find.text(l10n(tester).errorValidationFailed), findsNothing);
+    });
+  });
+
   group('editing', () {
     testWidgets(
       'sends every line the order keeps and the wish, and nothing when nothing changed',

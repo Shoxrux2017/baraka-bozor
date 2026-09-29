@@ -225,6 +225,19 @@ class Order extends Model
     }
 
     /**
+     * The order's latest cancellation request, the one its Customer sees. An
+     * ordered relation rather than `latestOfMany`, whose tie-break takes the
+     * maximum of the key, which PostgreSQL has no aggregate for on a UUID; an
+     * eager load keeps the first row per order, the latest.
+     *
+     * @return HasOne<OrderCancellationRequest, $this>
+     */
+    public function latestCancellationRequest(): HasOne
+    {
+        return $this->hasOne(OrderCancellationRequest::class)->orderByDesc('created_at')->orderByDesc('id');
+    }
+
+    /**
      * @return HasMany<OrderCancellationRequest, $this>
      */
     public function cancellationRequests(): HasMany

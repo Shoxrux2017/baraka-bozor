@@ -26,8 +26,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * instants, and the payment once made: the cash the Courier took at the door
  * (`DL-64` (4)). Refunds arrive with Wave 5; until then the list is empty.
  *
- * Expects `items`, `currentShopperAssignment`, `approvals` and `livePayment`
- * loaded.
+ * Expects `items`, `currentShopperAssignment`, `approvals`, `livePayment` and
+ * `latestCancellationRequest` loaded.
  *
  * @property-read Order $resource
  */
@@ -58,6 +58,15 @@ final class CustomerOrderResource extends JsonResource
             'can_edit' => $changeable,
             'can_cancel_directly' => $changeable,
             'can_request_cancellation' => OrderPermissions::canRequestCancellation($order),
+            // The latest request and where it stands; the Operator's note is
+            // theirs (DL-65 (5)).
+            'cancellation_request' => $order->latestCancellationRequest === null ? null : [
+                'id' => $order->latestCancellationRequest->id,
+                'status' => $order->latestCancellationRequest->status->value,
+                'reason' => $order->latestCancellationRequest->reason,
+                'created_at' => self::instant($order->latestCancellationRequest->created_at),
+                'resolved_at' => self::instant($order->latestCancellationRequest->resolved_at),
+            ],
             'items' => $items->map(fn (OrderItem $item): array => $this->item($item, $order))->all(),
             'totals' => [
                 'merchandise_subtotal_uzs' => $totals->merchandiseSubtotalUzs,

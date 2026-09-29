@@ -1584,6 +1584,14 @@ class AppLocalizationsUz extends AppLocalizations {
   String get orderCancelling => 'Bekor qilinmoqda';
 
   @override
+  String get orderCancellationRequested =>
+      'Bekor qilish so\'raldi: operator hal qiladi';
+
+  @override
+  String get orderCancellationNeedsReason =>
+      'Xarid boshlangan: bekor qilish sababini yozing, operator hal qiladi';
+
+  @override
   String get orderOpen => 'Buyurtmani ochish';
 
   @override

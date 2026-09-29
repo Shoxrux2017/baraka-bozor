@@ -10,11 +10,13 @@ use App\Models\Order;
 use App\Models\User;
 use App\Modules\Orders\Actions\AssignCourier;
 use App\Modules\Orders\Actions\AssignShopper;
+use App\Modules\Orders\Actions\CancelFailedDelivery;
 use App\Modules\Orders\Http\Requests\AssignCourierRequest;
 use App\Modules\Orders\Http\Requests\AssignShopperRequest;
 use App\Modules\Orders\Http\Requests\ListBoardOrdersRequest;
 use App\Modules\Orders\Http\Requests\ReassignCourierRequest;
 use App\Modules\Orders\Http\Requests\ReassignShopperRequest;
+use App\Modules\Orders\Http\Requests\StaffCancelOrderRequest;
 use App\Modules\Orders\Http\Resources\BoardOrderResource;
 use App\Modules\Orders\Http\Resources\BoardOrderRowResource;
 use App\Modules\Orders\Operations\Attention;
@@ -30,7 +32,9 @@ use Illuminate\Pagination\LengthAwarePaginator;
  * `GET /operations/orders`, `GET /operations/orders/{order}`,
  * `GET /operations/summary`, `GET /operations/attention`, and the
  * assignments of section 39: `POST|PUT /operations/orders/{order}/shopper-assignment`
- * and `.../courier-assignment`, answering the order as the board shows it.
+ * and `.../courier-assignment`, and the cancellation of section 41,
+ * `POST /operations/orders/{order}/cancel`, answering the order as the board
+ * shows it.
  * Every order is in scope for both roles; the route admits exactly them.
  */
 final class OperationsOrderController extends Controller
@@ -90,6 +94,11 @@ final class OperationsOrderController extends Controller
         ));
     }
 
+    public function cancel(StaffCancelOrderRequest $request, string $order, CancelFailedDelivery $cancel): BoardOrderResource
+    {
+        return self::detail($cancel->cancel($this->staff($request), $order, $request->note()));
+    }
+
     public function summary(): JsonResponse
     {
         $summary = BoardSummary::at(now());
@@ -127,6 +136,8 @@ final class OperationsOrderController extends Controller
             'courierAssignments.courier',
             'courierAssignments.assignedBy',
             'livePayment.recordedBy',
+            'cancellationRequests.requestedBy',
+            'cancellationRequests.resolvedBy',
             'approvals.item',
             'approvals.requestedBy',
             'approvals.resolvedBy',
