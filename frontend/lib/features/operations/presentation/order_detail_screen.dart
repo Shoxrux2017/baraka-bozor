@@ -20,12 +20,15 @@ import '../../auth/domain/app_user.dart';
 import '../application/board_controllers.dart';
 import '../domain/board.dart';
 import 'board_widgets.dart';
+import 'order_actions.dart';
 
 /// One order as the Operator and the Admin see it (`docs/09` section 38):
 /// the Customer and the address, the delivery wish, every line with the
-/// prices it was placed at — the market price and markup among them — the
-/// totals and their kind, every Shopper and Courier assignment with its
-/// self-order mark, and the whole history.
+/// prices it was placed at — the market price and markup among them — and
+/// its purchase with the price paid, the questions to the Customer, the
+/// totals and their kind, the payment, the cancellation requests, every
+/// Shopper and Courier assignment with its self-order mark, and the whole
+/// history; with the actions the rules allow on it (`DL-68`).
 class OrderDetailScreen extends ConsumerWidget {
   const OrderDetailScreen({required this.orderId, super.key});
 
@@ -151,12 +154,34 @@ class _Order extends StatelessWidget {
           title: l10n.orderSectionItems,
           children: <Widget>[
             for (final BoardItem item in order.items)
-              _Item(item: item, language: language),
+              _Item(order: order, item: item, language: language),
+          ],
+        ),
+        _Section(
+          title: l10n.orderSectionApprovals,
+          children: <Widget>[
+            if (order.approvals.isEmpty) Text(l10n.approvalsNone),
+            for (final BoardApproval approval in order.approvals.reversed)
+              ApprovalTile(order: order, approval: approval),
           ],
         ),
         _Section(
           title: l10n.orderSectionTotals,
           children: <Widget>[_Totals(totals: order.totals, language: language)],
+        ),
+        _Section(
+          title: l10n.orderSectionPayment,
+          children: <Widget>[PaymentDetails(order: order)],
+        ),
+        _Section(
+          title: l10n.orderSectionCancellationRequests,
+          children: <Widget>[
+            if (order.cancellationRequests.isEmpty)
+              Text(l10n.cancellationRequestsNone),
+            for (final BoardCancellationRequest request
+                in order.cancellationRequests.reversed)
+              CancellationRequestTile(order: order, request: request),
+          ],
         ),
         _Section(
           title: l10n.orderSectionShoppers,
@@ -172,6 +197,7 @@ class _Order extends StatelessWidget {
           title: l10n.orderSectionCouriers,
           children: <Widget>[
             _CourierActions(order: order),
+            FailedDeliveryCancel(order: order),
             if (order.courierAssignments.isEmpty)
               Text(l10n.courierAssignmentsNone),
             for (final CourierAssignment assignment
@@ -224,8 +250,13 @@ class _Section extends StatelessWidget {
 }
 
 class _Item extends StatelessWidget {
-  const _Item({required this.item, required this.language});
+  const _Item({
+    required this.order,
+    required this.item,
+    required this.language,
+  });
 
+  final BoardOrder order;
   final BoardItem item;
   final AppLanguage language;
 
@@ -234,6 +265,13 @@ class _Item extends StatelessWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final bool removed = item.status == OrderItemStatus.removed;
     final String name = language == AppLanguage.ru ? item.nameRu : item.nameUz;
+    final String unit = CatalogLabels.unit(l10n, item.unit);
+    final NamedProduct? replacement = item.replacement;
+    final SubstitutionResolution? resolution = item.replacementResolution;
+    final String? bought = item.purchasedQuantity;
+    final String? billed = item.billableQuantity;
+    final int? paid = item.actualMarketPriceUzs;
+    final int? billedPrice = item.billableUnitPriceUzs;
 
     return ListTile(
       key: ValueKey<String>('order-item-${item.id}'),
@@ -273,6 +311,34 @@ class _Item extends StatelessWidget {
           Text(OrderLabels.substitution(l10n, item.substitutionPolicy)),
           if (item.customerNote != null)
             Text(l10n.itemNote(item.customerNote!)),
+          if (replacement != null)
+            Text(
+              <String>[
+                l10n.itemReplacedWith(
+                  language == AppLanguage.ru
+                      ? replacement.nameRu
+                      : replacement.nameUz,
+                ),
+                if (resolution != null)
+                  OrderLabels.substitutionResolution(l10n, resolution),
+              ].join(', '),
+              key: ValueKey<String>('order-item-replacement-${item.id}'),
+            ),
+          if (bought != null && item.status == OrderItemStatus.purchased)
+            Text(
+              l10n.itemBought('$bought $unit'),
+              key: ValueKey<String>('order-item-bought-${item.id}'),
+            ),
+          if (billed != null && item.status == OrderItemStatus.purchased)
+            Text(l10n.itemBilled('$billed $unit')),
+          if (paid != null)
+            Text(
+              l10n.itemPricePaid(MoneyFormat.uzs(paid, language)),
+              key: ValueKey<String>('order-item-paid-${item.id}'),
+            ),
+          if (billedPrice != null)
+            Text(l10n.itemBilledPrice(MoneyFormat.uzs(billedPrice, language))),
+          PriceCorrectionButton(order: order, item: item),
         ],
       ),
     );
@@ -499,7 +565,7 @@ class _History extends StatelessWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final OrderStatus? from = entry.fromStatus;
     final OrderStatus? to = entry.toStatus;
-    final String? details = _details(l10n);
+    final String? details = _details(l10n, interfaceLanguage(context));
 
     return ListTile(
       key: ValueKey<String>('history-${entry.id}'),
@@ -547,7 +613,7 @@ class _History extends StatelessWidget {
   /// The facts the entry carries, in words: the Shopper or the Courier an
   /// assignment went to — and from, on a reassignment — and what an edit
   /// changed.
-  String? _details(AppLocalizations l10n) {
+  String? _details(AppLocalizations l10n, AppLanguage language) {
     final HistoryDetails? details = entry.details;
     switch (details) {
       case AssignmentDetails():
@@ -568,6 +634,25 @@ class _History extends StatelessWidget {
         return courier
             ? l10n.historyCourierReassignedTo(previous, name)
             : l10n.historyReassignedTo(previous, name);
+      case PriceCorrectionDetails():
+        final BoardItem? item = order.item(details.itemId);
+        if (item == null) {
+          return null;
+        }
+        final NamedProduct? replacement = item.replacement;
+        String money(int amount) => MoneyFormat.uzs(amount, language);
+        return l10n.historyPriceCorrectedDetails(
+          switch ((replacement, language)) {
+            (null, AppLanguage.ru) => item.nameRu,
+            (null, _) => item.nameUz,
+            (final NamedProduct product, AppLanguage.ru) => product.nameRu,
+            (final NamedProduct product, _) => product.nameUz,
+          },
+          money(details.oldActualMarketPriceUzs),
+          money(details.newActualMarketPriceUzs),
+          money(details.oldBillableUnitPriceUzs),
+          money(details.newBillableUnitPriceUzs),
+        );
       case EditDetails():
         final List<String> parts = <String>[
           if (details.added > 0) l10n.historyEditAdded(details.added),

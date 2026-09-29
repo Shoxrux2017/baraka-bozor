@@ -3163,6 +3163,450 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Xodimdagi buyurtmalar sonini bilib bo\'lmadi. Boshlangan yig\'ish yoki yo\'ldagi yetkazish boshqa xodimga o\'tmaydi.'**
   String get staffBlockOrdersUnknown;
+
+  /// No description provided for @orderSectionApprovals.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga savollar'**
+  String get orderSectionApprovals;
+
+  /// No description provided for @orderSectionCancellationRequests.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish so\'rovlari'**
+  String get orderSectionCancellationRequests;
+
+  /// No description provided for @orderSectionPayment.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov'**
+  String get orderSectionPayment;
+
+  /// No description provided for @itemBought.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib olindi: {quantity}'**
+  String itemBought(String quantity);
+
+  /// No description provided for @itemBilled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hisobga: {quantity}'**
+  String itemBilled(String quantity);
+
+  /// No description provided for @itemPricePaid.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib olish narxi: {price}'**
+  String itemPricePaid(String price);
+
+  /// No description provided for @itemBilledPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga narx: {price}'**
+  String itemBilledPrice(String price);
+
+  /// No description provided for @itemReplacedWith.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'rniga: {name}'**
+  String itemReplacedWith(String name);
+
+  /// No description provided for @replacementAutomatic.
+  ///
+  /// In uz, this message translates to:
+  /// **'avtomatik'**
+  String get replacementAutomatic;
+
+  /// No description provided for @replacementApproved.
+  ///
+  /// In uz, this message translates to:
+  /// **'mijoz rozi bo\'ldi'**
+  String get replacementApproved;
+
+  /// No description provided for @approvalsNone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga savol berilmagan'**
+  String get approvalsNone;
+
+  /// No description provided for @approvalTypePrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narx chegaradan yuqori'**
+  String get approvalTypePrice;
+
+  /// No description provided for @approvalTypeSubstitution.
+  ///
+  /// In uz, this message translates to:
+  /// **'Almashtirish'**
+  String get approvalTypeSubstitution;
+
+  /// No description provided for @approvalTypeReducedQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kamroq miqdor'**
+  String get approvalTypeReducedQuantity;
+
+  /// No description provided for @approvalStatusPending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob kutilmoqda'**
+  String get approvalStatusPending;
+
+  /// No description provided for @approvalStatusApproved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz rozi bo\'ldi'**
+  String get approvalStatusApproved;
+
+  /// No description provided for @approvalStatusRejected.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz rad etdi'**
+  String get approvalStatusRejected;
+
+  /// No description provided for @approvalStatusExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Muddati o\'tdi'**
+  String get approvalStatusExpired;
+
+  /// No description provided for @approvalStatusCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yopildi'**
+  String get approvalStatusCancelled;
+
+  /// No description provided for @approvalProposedPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Taklif: {price}, sotib olish narxi {paid}'**
+  String approvalProposedPrice(String price, String paid);
+
+  /// No description provided for @approvalProposedQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Taklif: {quantity}'**
+  String approvalProposedQuantity(String quantity);
+
+  /// No description provided for @approvalReplacement.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'rniga: {name}'**
+  String approvalReplacement(String name);
+
+  /// No description provided for @approvalAskedBy.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name} so\'radi, {time}'**
+  String approvalAskedBy(String name, String time);
+
+  /// No description provided for @approvalTimers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Diqqat: {attention} · Muddat: {expires}'**
+  String approvalTimers(String attention, String expires);
+
+  /// No description provided for @approvalResolvedBy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hal qildi: {name}, {time}'**
+  String approvalResolvedBy(String name, String time);
+
+  /// No description provided for @approvalClosedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yopildi: {time}'**
+  String approvalClosedAt(String time);
+
+  /// No description provided for @approvalLineRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot buyurtmadan olib tashlandi'**
+  String get approvalLineRemoved;
+
+  /// No description provided for @removeExpiredLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotni olib tashlash'**
+  String get removeExpiredLine;
+
+  /// No description provided for @removeExpiredTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}»ni olib tashlaysizmi?'**
+  String removeExpiredTitle(String name);
+
+  /// No description provided for @removeExpiredExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz o\'z vaqtida javob bermadi. Mahsulot buyurtmadan olib tashlanadi; sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.'**
+  String get removeExpiredExplained;
+
+  /// No description provided for @cancellationRequestsNone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish so\'rovi bo\'lmagan'**
+  String get cancellationRequestsNone;
+
+  /// No description provided for @requestStatusPending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaror kutilmoqda'**
+  String get requestStatusPending;
+
+  /// No description provided for @requestStatusApproved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tasdiqlandi'**
+  String get requestStatusApproved;
+
+  /// No description provided for @requestStatusRejected.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rad etildi'**
+  String get requestStatusRejected;
+
+  /// No description provided for @requestStatusClosed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yopildi'**
+  String get requestStatusClosed;
+
+  /// No description provided for @requestOriginCustomer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozdan'**
+  String get requestOriginCustomer;
+
+  /// No description provided for @requestOriginStaff.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xodimdan'**
+  String get requestOriginStaff;
+
+  /// No description provided for @requestReason.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sabab: {reason}'**
+  String requestReason(String reason);
+
+  /// No description provided for @requestFiledBy.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, {time}'**
+  String requestFiledBy(String name, String time);
+
+  /// No description provided for @requestDecidedBy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaror: {name}, {time}'**
+  String requestDecidedBy(String name, String time);
+
+  /// No description provided for @requestClosedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yopildi: {time}'**
+  String requestClosedAt(String time);
+
+  /// No description provided for @approveRequest.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilishni tasdiqlash'**
+  String get approveRequest;
+
+  /// No description provided for @rejectRequest.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rad etish'**
+  String get rejectRequest;
+
+  /// No description provided for @approveRequestTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani bekor qilasizmi?'**
+  String get approveRequestTitle;
+
+  /// No description provided for @approveRequestExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma bekor qilinadi: joriy tayinlov tugaydi, ochiq mahsulotlar olib tashlanadi, sotib olingan narsa qoladi va hech narsa to\'lanmaydi.'**
+  String get approveRequestExplained;
+
+  /// No description provided for @rejectRequestTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'rovni rad etasizmi?'**
+  String get rejectRequestTitle;
+
+  /// No description provided for @rejectRequestExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma davom etadi.'**
+  String get rejectRequestExplained;
+
+  /// No description provided for @cancelFailedDelivery.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani bekor qilish'**
+  String get cancelFailedDelivery;
+
+  /// No description provided for @cancelFailedDeliveryTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani bekor qilasizmi?'**
+  String get cancelFailedDeliveryTitle;
+
+  /// No description provided for @cancelFailedDeliveryExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma «yetkazib bo\'lmadi» sababi bilan bekor qilinadi.'**
+  String get cancelFailedDeliveryExplained;
+
+  /// No description provided for @actionNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Izoh (ixtiyoriy)'**
+  String get actionNote;
+
+  /// No description provided for @actionConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tasdiqlash'**
+  String get actionConfirm;
+
+  /// No description provided for @paymentNone.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lov hali qayd etilmagan'**
+  String get paymentNone;
+
+  /// No description provided for @paymentStatusUnpaid.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'lanmagan'**
+  String get paymentStatusUnpaid;
+
+  /// No description provided for @paymentStatusPending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kutilmoqda'**
+  String get paymentStatusPending;
+
+  /// No description provided for @paymentStatusPaid.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'langan'**
+  String get paymentStatusPaid;
+
+  /// No description provided for @paymentStatusCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilingan'**
+  String get paymentStatusCancelled;
+
+  /// No description provided for @paymentAmount.
+  ///
+  /// In uz, this message translates to:
+  /// **'Summa: {amount}'**
+  String paymentAmount(String amount);
+
+  /// No description provided for @paymentPaidAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'langan vaqti: {time}'**
+  String paymentPaidAt(String time);
+
+  /// No description provided for @paymentRecordedBy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qildi: {name}'**
+  String paymentRecordedBy(String name);
+
+  /// No description provided for @correctPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narxni tuzatish'**
+  String get correctPrice;
+
+  /// No description provided for @correctPriceTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narxni tuzatish: {name}'**
+  String correctPriceTitle(String name);
+
+  /// No description provided for @correctPriceNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi sotib olish narxi, so\'m'**
+  String get correctPriceNew;
+
+  /// No description provided for @correctPriceReason.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sabab'**
+  String get correctPriceReason;
+
+  /// No description provided for @errorPriceAboveCeiling.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga narx chegaradan oshadi. Sotib olish narxi mijozga ko\'pi bilan {ceiling} bo\'ladigan qilib kiriting.'**
+  String errorPriceAboveCeiling(String ceiling);
+
+  /// No description provided for @errorPriceAboveCeilingPlain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga narx chegaradan oshadi.'**
+  String get errorPriceAboveCeilingPlain;
+
+  /// No description provided for @historyPriceCorrectedDetails.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: sotib olish narxi {oldPaid} → {newPaid}, mijozga {oldBilled} → {newBilled}'**
+  String historyPriceCorrectedDetails(
+    String name,
+    String oldPaid,
+    String newPaid,
+    String oldBilled,
+    String newBilled,
+  );
+
+  /// No description provided for @errorApprovalNotExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savolning muddati hali o\'tmagan.'**
+  String get errorApprovalNotExpired;
+
+  /// No description provided for @errorApprovalAlreadyResolved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savol allaqachon hal qilingan.'**
+  String get errorApprovalAlreadyResolved;
+
+  /// No description provided for @errorRequestAlreadyDecided.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'rov bo\'yicha qaror allaqachon qabul qilingan.'**
+  String get errorRequestAlreadyDecided;
+
+  /// No description provided for @errorCancellationAlreadyPending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish so\'rovi kutilmoqda — avval u bo\'yicha qaror qabul qiling.'**
+  String get errorCancellationAlreadyPending;
+
+  /// No description provided for @errorPriceCorrectionLocked.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narxni endi tuzatib bo\'lmaydi: buyurtma yo\'lda, yakunlangan, bekor qilingan yoki onlayn to\'lanadi.'**
+  String get errorPriceCorrectionLocked;
+
+  /// No description provided for @errorPriceCorrectionNotApplicable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu mahsulot narxini tuzatib bo\'lmaydi.'**
+  String get errorPriceCorrectionNotApplicable;
 }
 
 class _AppLocalizationsDelegate

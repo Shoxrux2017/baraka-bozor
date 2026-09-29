@@ -1706,4 +1706,282 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get staffBlockOrdersUnknown =>
       'Xodimdagi buyurtmalar sonini bilib bo\'lmadi. Boshlangan yig\'ish yoki yo\'ldagi yetkazish boshqa xodimga o\'tmaydi.';
+
+  @override
+  String get orderSectionApprovals => 'Mijozga savollar';
+
+  @override
+  String get orderSectionCancellationRequests => 'Bekor qilish so\'rovlari';
+
+  @override
+  String get orderSectionPayment => 'To\'lov';
+
+  @override
+  String itemBought(String quantity) {
+    return 'Sotib olindi: $quantity';
+  }
+
+  @override
+  String itemBilled(String quantity) {
+    return 'Hisobga: $quantity';
+  }
+
+  @override
+  String itemPricePaid(String price) {
+    return 'Sotib olish narxi: $price';
+  }
+
+  @override
+  String itemBilledPrice(String price) {
+    return 'Mijozga narx: $price';
+  }
+
+  @override
+  String itemReplacedWith(String name) {
+    return 'O\'rniga: $name';
+  }
+
+  @override
+  String get replacementAutomatic => 'avtomatik';
+
+  @override
+  String get replacementApproved => 'mijoz rozi bo\'ldi';
+
+  @override
+  String get approvalsNone => 'Mijozga savol berilmagan';
+
+  @override
+  String get approvalTypePrice => 'Narx chegaradan yuqori';
+
+  @override
+  String get approvalTypeSubstitution => 'Almashtirish';
+
+  @override
+  String get approvalTypeReducedQuantity => 'Kamroq miqdor';
+
+  @override
+  String get approvalStatusPending => 'Javob kutilmoqda';
+
+  @override
+  String get approvalStatusApproved => 'Mijoz rozi bo\'ldi';
+
+  @override
+  String get approvalStatusRejected => 'Mijoz rad etdi';
+
+  @override
+  String get approvalStatusExpired => 'Muddati o\'tdi';
+
+  @override
+  String get approvalStatusCancelled => 'Yopildi';
+
+  @override
+  String approvalProposedPrice(String price, String paid) {
+    return 'Taklif: $price, sotib olish narxi $paid';
+  }
+
+  @override
+  String approvalProposedQuantity(String quantity) {
+    return 'Taklif: $quantity';
+  }
+
+  @override
+  String approvalReplacement(String name) {
+    return 'O\'rniga: $name';
+  }
+
+  @override
+  String approvalAskedBy(String name, String time) {
+    return '$name so\'radi, $time';
+  }
+
+  @override
+  String approvalTimers(String attention, String expires) {
+    return 'Diqqat: $attention · Muddat: $expires';
+  }
+
+  @override
+  String approvalResolvedBy(String name, String time) {
+    return 'Hal qildi: $name, $time';
+  }
+
+  @override
+  String approvalClosedAt(String time) {
+    return 'Yopildi: $time';
+  }
+
+  @override
+  String get approvalLineRemoved => 'Mahsulot buyurtmadan olib tashlandi';
+
+  @override
+  String get removeExpiredLine => 'Mahsulotni olib tashlash';
+
+  @override
+  String removeExpiredTitle(String name) {
+    return '«$name»ni olib tashlaysizmi?';
+  }
+
+  @override
+  String get removeExpiredExplained =>
+      'Mijoz o\'z vaqtida javob bermadi. Mahsulot buyurtmadan olib tashlanadi; sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.';
+
+  @override
+  String get cancellationRequestsNone => 'Bekor qilish so\'rovi bo\'lmagan';
+
+  @override
+  String get requestStatusPending => 'Qaror kutilmoqda';
+
+  @override
+  String get requestStatusApproved => 'Tasdiqlandi';
+
+  @override
+  String get requestStatusRejected => 'Rad etildi';
+
+  @override
+  String get requestStatusClosed => 'Yopildi';
+
+  @override
+  String get requestOriginCustomer => 'Mijozdan';
+
+  @override
+  String get requestOriginStaff => 'Xodimdan';
+
+  @override
+  String requestReason(String reason) {
+    return 'Sabab: $reason';
+  }
+
+  @override
+  String requestFiledBy(String name, String time) {
+    return '$name, $time';
+  }
+
+  @override
+  String requestDecidedBy(String name, String time) {
+    return 'Qaror: $name, $time';
+  }
+
+  @override
+  String requestClosedAt(String time) {
+    return 'Yopildi: $time';
+  }
+
+  @override
+  String get approveRequest => 'Bekor qilishni tasdiqlash';
+
+  @override
+  String get rejectRequest => 'Rad etish';
+
+  @override
+  String get approveRequestTitle => 'Buyurtmani bekor qilasizmi?';
+
+  @override
+  String get approveRequestExplained =>
+      'Buyurtma bekor qilinadi: joriy tayinlov tugaydi, ochiq mahsulotlar olib tashlanadi, sotib olingan narsa qoladi va hech narsa to\'lanmaydi.';
+
+  @override
+  String get rejectRequestTitle => 'So\'rovni rad etasizmi?';
+
+  @override
+  String get rejectRequestExplained => 'Buyurtma davom etadi.';
+
+  @override
+  String get cancelFailedDelivery => 'Buyurtmani bekor qilish';
+
+  @override
+  String get cancelFailedDeliveryTitle => 'Buyurtmani bekor qilasizmi?';
+
+  @override
+  String get cancelFailedDeliveryExplained =>
+      'Buyurtma «yetkazib bo\'lmadi» sababi bilan bekor qilinadi.';
+
+  @override
+  String get actionNote => 'Izoh (ixtiyoriy)';
+
+  @override
+  String get actionConfirm => 'Tasdiqlash';
+
+  @override
+  String get paymentNone => 'To\'lov hali qayd etilmagan';
+
+  @override
+  String get paymentStatusUnpaid => 'To\'lanmagan';
+
+  @override
+  String get paymentStatusPending => 'Kutilmoqda';
+
+  @override
+  String get paymentStatusPaid => 'To\'langan';
+
+  @override
+  String get paymentStatusCancelled => 'Bekor qilingan';
+
+  @override
+  String paymentAmount(String amount) {
+    return 'Summa: $amount';
+  }
+
+  @override
+  String paymentPaidAt(String time) {
+    return 'To\'langan vaqti: $time';
+  }
+
+  @override
+  String paymentRecordedBy(String name) {
+    return 'Qabul qildi: $name';
+  }
+
+  @override
+  String get correctPrice => 'Narxni tuzatish';
+
+  @override
+  String correctPriceTitle(String name) {
+    return 'Narxni tuzatish: $name';
+  }
+
+  @override
+  String get correctPriceNew => 'Yangi sotib olish narxi, so\'m';
+
+  @override
+  String get correctPriceReason => 'Sabab';
+
+  @override
+  String errorPriceAboveCeiling(String ceiling) {
+    return 'Mijozga narx chegaradan oshadi. Sotib olish narxi mijozga ko\'pi bilan $ceiling bo\'ladigan qilib kiriting.';
+  }
+
+  @override
+  String get errorPriceAboveCeilingPlain => 'Mijozga narx chegaradan oshadi.';
+
+  @override
+  String historyPriceCorrectedDetails(
+    String name,
+    String oldPaid,
+    String newPaid,
+    String oldBilled,
+    String newBilled,
+  ) {
+    return '$name: sotib olish narxi $oldPaid → $newPaid, mijozga $oldBilled → $newBilled';
+  }
+
+  @override
+  String get errorApprovalNotExpired => 'Savolning muddati hali o\'tmagan.';
+
+  @override
+  String get errorApprovalAlreadyResolved => 'Savol allaqachon hal qilingan.';
+
+  @override
+  String get errorRequestAlreadyDecided =>
+      'So\'rov bo\'yicha qaror allaqachon qabul qilingan.';
+
+  @override
+  String get errorCancellationAlreadyPending =>
+      'Bekor qilish so\'rovi kutilmoqda — avval u bo\'yicha qaror qabul qiling.';
+
+  @override
+  String get errorPriceCorrectionLocked =>
+      'Narxni endi tuzatib bo\'lmaydi: buyurtma yo\'lda, yakunlangan, bekor qilingan yoki onlayn to\'lanadi.';
+
+  @override
+  String get errorPriceCorrectionNotApplicable =>
+      'Bu mahsulot narxini tuzatib bo\'lmaydi.';
 }

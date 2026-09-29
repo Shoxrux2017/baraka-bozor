@@ -214,6 +214,68 @@ courierAssignmentProvider = NotifierProvider.autoDispose
       CourierAssignmentController.new,
     );
 
+/// The Operator's and the Admin's actions on one order from its page
+/// (`docs/09` sections 40, 41 and 45, `DL-68`): removing the line of an
+/// expired question, deciding a cancellation request, cancelling after a
+/// failed delivery, and the Admin's price correction. One at a time; after
+/// one, and after a refusal an order changed meanwhile may explain, the
+/// order, the board, the summary and the attention list are loaded again
+/// (`DL-28` (11)).
+class OrderActionController extends AccountMutation {
+  OrderActionController(this.orderId);
+
+  final String orderId;
+
+  @override
+  Provider<String?> get account => staffAccountProvider;
+
+  OperationsRepository get _operations =>
+      ref.read(operationsRepositoryProvider);
+
+  Future<BoardOrder?> removeExpiredLine(String approvalId, String? note) =>
+      _act(() => _operations.resolveExpiredApproval(orderId, approvalId, note));
+
+  Future<BoardOrder?> decide(
+    String requestId,
+    CancellationDecision decision,
+    String? note,
+  ) => _act(
+    () => _operations.decideCancellationRequest(
+      orderId,
+      requestId,
+      decision,
+      note,
+    ),
+  );
+
+  Future<BoardOrder?> cancelAfterFailedDelivery(String? note) =>
+      _act(() => _operations.cancelAfterFailedDelivery(orderId, note));
+
+  Future<BoardOrder?> correctPrice(
+    String itemId,
+    int actualMarketPriceUzs,
+    String reason,
+  ) => _act(
+    () =>
+        _operations.correctPrice(orderId, itemId, actualMarketPriceUzs, reason),
+  );
+
+  Future<BoardOrder?> _act(Future<BoardOrder> Function() change) => perform(
+    change,
+    reload: (BoardOrder? _) => ref
+      ..invalidate(boardOrderProvider(orderId))
+      ..invalidate(boardPageProvider)
+      ..invalidate(boardSummaryProvider)
+      ..invalidate(attentionProvider),
+  );
+}
+
+final NotifierProviderFamily<OrderActionController, MutationState, String>
+orderActionProvider = NotifierProvider.autoDispose
+    .family<OrderActionController, MutationState, String>(
+      OrderActionController.new,
+    );
+
 /// Loads the board again — its page, the summary and the attention list —
 /// as they are on the server now.
 void refreshBoard(WidgetRef ref) {

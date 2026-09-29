@@ -894,5 +894,269 @@
     }
   },
   "staffBlockOrdersLoading": "Xodimdagi buyurtmalar soni yuklanmoqda…",
-  "staffBlockOrdersUnknown": "Xodimdagi buyurtmalar sonini bilib bo'lmadi. Boshlangan yig'ish yoki yo'ldagi yetkazish boshqa xodimga o'tmaydi."
+  "staffBlockOrdersUnknown": "Xodimdagi buyurtmalar sonini bilib bo'lmadi. Boshlangan yig'ish yoki yo'ldagi yetkazish boshqa xodimga o'tmaydi.",
+  "orderSectionApprovals": "Mijozga savollar",
+  "orderSectionCancellationRequests": "Bekor qilish so'rovlari",
+  "orderSectionPayment": "To'lov",
+  "itemBought": "Sotib olindi: {quantity}",
+  "@itemBought": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "itemBilled": "Hisobga: {quantity}",
+  "@itemBilled": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "itemPricePaid": "Sotib olish narxi: {price}",
+  "@itemPricePaid": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "itemBilledPrice": "Mijozga narx: {price}",
+  "@itemBilledPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "itemReplacedWith": "O'rniga: {name}",
+  "@itemReplacedWith": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "replacementAutomatic": "avtomatik",
+  "replacementApproved": "mijoz rozi bo'ldi",
+  "approvalsNone": "Mijozga savol berilmagan",
+  "approvalTypePrice": "Narx chegaradan yuqori",
+  "approvalTypeSubstitution": "Almashtirish",
+  "approvalTypeReducedQuantity": "Kamroq miqdor",
+  "approvalStatusPending": "Javob kutilmoqda",
+  "approvalStatusApproved": "Mijoz rozi bo'ldi",
+  "approvalStatusRejected": "Mijoz rad etdi",
+  "approvalStatusExpired": "Muddati o'tdi",
+  "approvalStatusCancelled": "Yopildi",
+  "approvalProposedPrice": "Taklif: {price}, sotib olish narxi {paid}",
+  "@approvalProposedPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "paid": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalProposedQuantity": "Taklif: {quantity}",
+  "@approvalProposedQuantity": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalReplacement": "O'rniga: {name}",
+  "@approvalReplacement": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalAskedBy": "{name} so'radi, {time}",
+  "@approvalAskedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalTimers": "Diqqat: {attention} · Muddat: {expires}",
+  "@approvalTimers": {
+    "placeholders": {
+      "attention": {
+        "type": "String"
+      },
+      "expires": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalResolvedBy": "Hal qildi: {name}, {time}",
+  "@approvalResolvedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalClosedAt": "Yopildi: {time}",
+  "@approvalClosedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalLineRemoved": "Mahsulot buyurtmadan olib tashlandi",
+  "removeExpiredLine": "Mahsulotni olib tashlash",
+  "removeExpiredTitle": "«{name}»ni olib tashlaysizmi?",
+  "@removeExpiredTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "removeExpiredExplained": "Mijoz o'z vaqtida javob bermadi. Mahsulot buyurtmadan olib tashlanadi; sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.",
+  "cancellationRequestsNone": "Bekor qilish so'rovi bo'lmagan",
+  "requestStatusPending": "Qaror kutilmoqda",
+  "requestStatusApproved": "Tasdiqlandi",
+  "requestStatusRejected": "Rad etildi",
+  "requestStatusClosed": "Yopildi",
+  "requestOriginCustomer": "Mijozdan",
+  "requestOriginStaff": "Xodimdan",
+  "requestReason": "Sabab: {reason}",
+  "@requestReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "requestFiledBy": "{name}, {time}",
+  "@requestFiledBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "requestDecidedBy": "Qaror: {name}, {time}",
+  "@requestDecidedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "requestClosedAt": "Yopildi: {time}",
+  "@requestClosedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "approveRequest": "Bekor qilishni tasdiqlash",
+  "rejectRequest": "Rad etish",
+  "approveRequestTitle": "Buyurtmani bekor qilasizmi?",
+  "approveRequestExplained": "Buyurtma bekor qilinadi: joriy tayinlov tugaydi, ochiq mahsulotlar olib tashlanadi, sotib olingan narsa qoladi va hech narsa to'lanmaydi.",
+  "rejectRequestTitle": "So'rovni rad etasizmi?",
+  "rejectRequestExplained": "Buyurtma davom etadi.",
+  "cancelFailedDelivery": "Buyurtmani bekor qilish",
+  "cancelFailedDeliveryTitle": "Buyurtmani bekor qilasizmi?",
+  "cancelFailedDeliveryExplained": "Buyurtma «yetkazib bo'lmadi» sababi bilan bekor qilinadi.",
+  "actionNote": "Izoh (ixtiyoriy)",
+  "actionConfirm": "Tasdiqlash",
+  "paymentNone": "To'lov hali qayd etilmagan",
+  "paymentStatusUnpaid": "To'lanmagan",
+  "paymentStatusPending": "Kutilmoqda",
+  "paymentStatusPaid": "To'langan",
+  "paymentStatusCancelled": "Bekor qilingan",
+  "paymentAmount": "Summa: {amount}",
+  "@paymentAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentPaidAt": "To'langan vaqti: {time}",
+  "@paymentPaidAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentRecordedBy": "Qabul qildi: {name}",
+  "@paymentRecordedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "correctPrice": "Narxni tuzatish",
+  "correctPriceTitle": "Narxni tuzatish: {name}",
+  "@correctPriceTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "correctPriceNew": "Yangi sotib olish narxi, so'm",
+  "correctPriceReason": "Sabab",
+  "errorPriceAboveCeiling": "Mijozga narx chegaradan oshadi. Sotib olish narxi mijozga ko'pi bilan {ceiling} bo'ladigan qilib kiriting.",
+  "@errorPriceAboveCeiling": {
+    "placeholders": {
+      "ceiling": {
+        "type": "String"
+      }
+    }
+  },
+  "errorPriceAboveCeilingPlain": "Mijozga narx chegaradan oshadi.",
+  "historyPriceCorrectedDetails": "{name}: sotib olish narxi {oldPaid} → {newPaid}, mijozga {oldBilled} → {newBilled}",
+  "@historyPriceCorrectedDetails": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "oldPaid": {
+        "type": "String"
+      },
+      "newPaid": {
+        "type": "String"
+      },
+      "oldBilled": {
+        "type": "String"
+      },
+      "newBilled": {
+        "type": "String"
+      }
+    }
+  },
+  "errorApprovalNotExpired": "Savolning muddati hali o'tmagan.",
+  "errorApprovalAlreadyResolved": "Savol allaqachon hal qilingan.",
+  "errorRequestAlreadyDecided": "So'rov bo'yicha qaror allaqachon qabul qilingan.",
+  "errorCancellationAlreadyPending": "Bekor qilish so'rovi kutilmoqda — avval u bo'yicha qaror qabul qiling.",
+  "errorPriceCorrectionLocked": "Narxni endi tuzatib bo'lmaydi: buyurtma yo'lda, yakunlangan, bekor qilingan yoki onlayn to'lanadi.",
+  "errorPriceCorrectionNotApplicable": "Bu mahsulot narxini tuzatib bo'lmaydi."
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../features/auth/domain/app_user.dart';
 import 'session_state.dart';
 
 /// The id of the signed-in staff account, or `null` when there is none.
@@ -10,6 +11,17 @@ import 'session_state.dart';
 /// account loaded (`docs/07-architecture.md` section 28). An operation that
 /// awaits compares it before and after, and drops a completion that belongs
 /// to an account no longer signed in.
+/// The role of the signed-in staff account, `null` while there is none; the
+/// server decides what each role may do, and a screen only offers it.
+final Provider<UserRole?> staffRoleProvider = Provider<UserRole?>((Ref ref) {
+  return ref.watch(
+    sessionControllerProvider.select((AsyncValue<SessionState> session) {
+      final SessionState? state = session.value;
+      return state is SignedIn ? state.staffUser?.role : null;
+    }),
+  );
+});
+
 final Provider<String?> staffAccountProvider = Provider<String?>((Ref ref) {
   return ref.watch(
     sessionControllerProvider.select((AsyncValue<SessionState> session) {

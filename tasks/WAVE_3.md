@@ -35,7 +35,7 @@ None (`docs/06` section 5). The MapKit key (`DL-36`) blocks nothing here: no sta
 | W3-11 | Cancellation requests and their decision; the Operator's cancellation after a failed delivery | Merged |
 | W3-12 | Admin API: price correction | Merged |
 | W3-13 | Panel: the board — Courier assignment, attention types and filters, the attention list's height, the block confirmation | Merged |
-| W3-14 | Panel: the order page — purchases, approvals, cancellation requests, the Courier, the cash payment, price correction | Planned |
+| W3-14 | Panel: the order page — purchases, approvals, cancellation requests, the Courier, the cash payment, price correction | Merged |
 | W3-15 | App: the Shopper's area — assigned orders, accept, start, refresh, call the Customer | Planned |
 | W3-16 | App: the Shopper at the market — buy, unavailable, replace, ask the Customer, complete | Planned |
 | W3-17 | App: the Customer's order while it is shopped and delivered — approvals, the cancellation request | Planned |

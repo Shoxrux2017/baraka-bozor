@@ -2,7 +2,7 @@ import '../../../core/network/paged.dart';
 import 'board.dart';
 
 /// The board of the Operator and the Admin (`docs/09-api-contracts.md`
-/// sections 38 and 39), on the staff session. Every method throws an
+/// sections 38 to 41 and 45), on the staff session. Every method throws an
 /// `ApiFailure`.
 abstract interface class OperationsRepository {
   Future<Paged<BoardRow>> orders(BoardQuery query);
@@ -39,5 +39,34 @@ abstract interface class OperationsRepository {
     String orderId,
     String courierId,
     String replacesAssignmentId,
+  );
+
+  /// Removes the line of the expired question [approvalId] of [orderId]
+  /// (`BR-APP-007`).
+  Future<BoardOrder> resolveExpiredApproval(
+    String orderId,
+    String approvalId,
+    String? note,
+  );
+
+  /// Approves or rejects the pending cancellation request [requestId] of
+  /// [orderId].
+  Future<BoardOrder> decideCancellationRequest(
+    String orderId,
+    String requestId,
+    CancellationDecision decision,
+    String? note,
+  );
+
+  /// Cancels [orderId] after its delivery failed.
+  Future<BoardOrder> cancelAfterFailedDelivery(String orderId, String? note);
+
+  /// Corrects the price paid per unit of the bought line [itemId]; the
+  /// Admin's only (`DL-66`).
+  Future<BoardOrder> correctPrice(
+    String orderId,
+    String itemId,
+    int actualMarketPriceUzs,
+    String reason,
   );
 }

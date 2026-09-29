@@ -14,7 +14,7 @@ import '../../../support/fake_http_client_adapter.dart';
 import '../../../support/operations_json.dart';
 
 /// The board's data source against `docs/09-api-contracts.md` sections 38
-/// and 39.
+/// to 41 and 45.
 void main() {
   Map<String, Object?> without(Map<String, Object?> json, String key) =>
       Map<String, Object?>.of(json)..remove(key);
@@ -336,6 +336,298 @@ void main() {
             ),
       );
       expect(order.history.last.details, isNull);
+    });
+
+    test('a line\'s purchase, the questions, the requests and the payment', () {
+      final BoardOrder order = OperationsApi.parseOrder(
+        orderJson(
+          status: 'shopping',
+          items: <Object?>[
+            itemJson(
+              status: 'purchased',
+              replaced: true,
+              purchase: <String, Object?>{
+                'purchased_quantity': '3.200',
+                'actual_market_price_uzs': 17000,
+                'billable_unit_price_uzs': 19550,
+              },
+            ),
+          ],
+          approvals: <Object?>[
+            approvalJson(
+              status: 'approved',
+              resolution: 'approved',
+              resolved: true,
+            ),
+            approvalJson(
+              id: '0192f0a0-0000-7000-8000-0000000000b4',
+              type: 'reduced_quantity',
+              status: 'expired',
+            ),
+            approvalJson(
+              id: '0192f0a0-0000-7000-8000-0000000000b5',
+              type: 'substitution',
+              status: 'expired',
+              resolution: 'remove_item',
+              resolved: true,
+            ),
+            approvalJson(
+              id: '0192f0a0-0000-7000-8000-0000000000b6',
+              status: 'cancelled',
+            ),
+          ],
+          cancellationRequests: <Object?>[
+            cancellationRequestJson(
+              id: '0192f0a0-0000-7000-8000-0000000000b7',
+              status: 'rejected',
+              note: 'Buyurtma yig\'ilmoqda',
+            ),
+            cancellationRequestJson(),
+          ],
+          payment: paymentJson(),
+          history: <Object?>[
+            historyJson(
+              event: 'price_corrected',
+              details: <String, Object?>{
+                'item_id': itemId,
+                'correction_id': '0192f0a0-0000-7000-8000-0000000000b8',
+                'old_actual_market_price_uzs': 16000,
+                'new_actual_market_price_uzs': 17000,
+                'old_billable_unit_price_uzs': 18400,
+                'new_billable_unit_price_uzs': 19550,
+                'line_total_uzs': 62560,
+              },
+            ),
+          ],
+        ),
+      );
+
+      final BoardItem line = order.items.single;
+      expect(line.purchasedQuantity, '3.200');
+      expect(line.billableQuantity, '3.000');
+      expect(line.actualMarketPriceUzs, 17000);
+      expect(line.billableUnitPriceUzs, 19550);
+      expect(line.replacement?.id, replacementId);
+      expect(line.replacementResolution, SubstitutionResolution.automatic);
+      expect(line.billedFromPricePaid, isTrue);
+
+      expect(order.approvals.map((BoardApproval a) => a.status), <Object>[
+        ApprovalStatus.approved,
+        ApprovalStatus.expired,
+        ApprovalStatus.expired,
+        ApprovalStatus.cancelled,
+      ]);
+      final BoardApproval price = order.approvals.first;
+      expect(price.proposedCustomerUnitPriceUzs, 25300);
+      expect(price.proposedActualMarketPriceUzs, 22000);
+      expect(price.requestedBy.id, shopperId);
+      expect(price.expiresAt, DateTime.utc(2026, 9, 27, 8));
+      expect(order.approvals[1].proposedQuantity, '2.000');
+      expect(order.approvals.map((BoardApproval a) => a.awaitsRemoval), <bool>[
+        false,
+        true,
+        false,
+        false,
+      ]);
+      expect(order.approvals[2].replacement?.nameRu, 'Помидоры черри');
+
+      expect(order.cancellationRequests.first.resolvedBy?.id, operatorId);
+      expect(order.cancellationRequests.first.resolutionNote, isNotNull);
+      expect(order.pendingCancellationRequest?.id, requestId);
+      expect(order.pendingCancellationRequest?.reason, isNotEmpty);
+
+      expect(order.payment?.status, PaymentStatus.paid);
+      expect(order.payment?.amountUzs, 75200);
+      expect(order.payment?.recordedBy?.id, courierId);
+
+      expect(
+        order.history.single.details,
+        isA<PriceCorrectionDetails>()
+            .having((PriceCorrectionDetails d) => d.itemId, 'item', itemId)
+            .having(
+              (PriceCorrectionDetails d) => d.newActualMarketPriceUzs,
+              'new',
+              17000,
+            )
+            .having(
+              (PriceCorrectionDetails d) => d.oldBillableUnitPriceUzs,
+              'old billed',
+              18400,
+            ),
+      );
+    });
+
+    test('a purchase, a question, a request or a payment off the contract '
+        'is refused', () {
+      Map<String, Object?> withApproval(Map<String, Object?> patch) =>
+          orderJson(
+            status: 'shopping',
+            approvals: <Object?>[
+              <String, Object?>{...approvalJson(), ...patch},
+            ],
+          );
+      for (final Map<String, Object?> broken in <Map<String, Object?>>[
+        // Lines.
+        orderJson(
+          items: <Object?>[
+            itemJson(purchase: <String, Object?>{'billable_quantity': '1.000'}),
+          ],
+        ),
+        orderJson(
+          items: <Object?>[
+            itemJson(
+              purchase: <String, Object?>{'billable_unit_price_uzs': 18400},
+            ),
+          ],
+        ),
+        orderJson(
+          items: <Object?>[
+            itemJson(
+              status: 'purchased',
+              purchase: <String, Object?>{'purchased_quantity': null},
+            ),
+          ],
+        ),
+        orderJson(
+          items: <Object?>[
+            itemJson(
+              status: 'purchased',
+              purchase: <String, Object?>{'billable_unit_price_uzs': null},
+            ),
+          ],
+        ),
+        orderJson(
+          items: <Object?>[
+            itemJson(
+              status: 'removed',
+              removedReason: 'unavailable',
+              replaced: true,
+            ),
+          ],
+        ),
+        orderJson(
+          items: <Object?>[
+            itemJson(
+              replaced: true,
+              purchase: <String, Object?>{
+                'replacement': <String, Object?>{
+                  'product_id': replacementId,
+                  'name_uz': 'Olcha pomidor',
+                  'name_ru': 'Помидоры черри',
+                  'substitution_resolution': 'guessed',
+                },
+              },
+            ),
+          ],
+        ),
+        orderJson(items: <Object?>[without(itemJson(), 'purchased_quantity')]),
+        // Questions.
+        withApproval(<String, Object?>{'item_id': productId}),
+        withApproval(<String, Object?>{
+          'proposed_actual_market_price_uzs': null,
+        }),
+        withApproval(<String, Object?>{'proposed_quantity': '1.000'}),
+        <String, Object?>{
+          ...orderJson(
+            approvals: <Object?>[
+              <String, Object?>{
+                ...approvalJson(type: 'substitution'),
+                'replacement': null,
+              },
+            ],
+          ),
+        },
+        <String, Object?>{
+          ...orderJson(
+            approvals: <Object?>[
+              <String, Object?>{
+                ...approvalJson(type: 'reduced_quantity'),
+                'proposed_customer_unit_price_uzs': 100,
+              },
+            ],
+          ),
+        },
+        withApproval(<String, Object?>{'resolution': 'approved'}),
+        withApproval(<String, Object?>{
+          'status': 'approved',
+          'resolution': 'approved',
+        }),
+        withApproval(<String, Object?>{
+          'status': 'rejected',
+          'resolution': 'approved',
+          'resolved_at': '2026-09-27T08:05:00Z',
+        }),
+        withApproval(<String, Object?>{
+          'status': 'expired',
+          'resolution': 'approved',
+          'resolved_at': '2026-09-27T08:05:00Z',
+        }),
+        withApproval(<String, Object?>{
+          'status': 'expired',
+          'resolved_at': '2026-09-27T08:05:00Z',
+        }),
+        withApproval(<String, Object?>{'status': 'cancelled'}),
+        withApproval(<String, Object?>{'type': 'ask_again'}),
+        withApproval(<String, Object?>{'attention_at': '2026-09-27T08:00:00Z'}),
+        without(orderJson(), 'approvals'),
+        // Requests.
+        orderJson(
+          cancellationRequests: <Object?>[
+            <String, Object?>{
+              ...cancellationRequestJson(),
+              'resolved_at': '2026-09-27T07:50:00Z',
+            },
+          ],
+        ),
+        orderJson(
+          cancellationRequests: <Object?>[
+            <String, Object?>{
+              ...cancellationRequestJson(status: 'approved'),
+              'resolved_by': null,
+            },
+          ],
+        ),
+        orderJson(
+          cancellationRequests: <Object?>[
+            <String, Object?>{
+              ...cancellationRequestJson(status: 'closed'),
+              'resolved_by': <String, Object?>{
+                'id': operatorId,
+                'full_name': 'Olim',
+              },
+            },
+          ],
+        ),
+        orderJson(
+          cancellationRequests: <Object?>[
+            cancellationRequestJson(),
+            cancellationRequestJson(id: '0192f0a0-0000-7000-8000-0000000000b7'),
+          ],
+        ),
+        without(orderJson(), 'cancellation_requests'),
+        // The payment and a correction's details.
+        orderJson(
+          payment: <String, Object?>{...paymentJson(), 'paid_at': null},
+        ),
+        orderJson(
+          payment: <String, Object?>{...paymentJson(), 'status': 'refunded'},
+        ),
+        without(orderJson(), 'payment'),
+        orderJson(
+          history: <Object?>[
+            historyJson(
+              event: 'price_corrected',
+              details: <String, Object?>{'item_id': itemId},
+            ),
+          ],
+        ),
+      ]) {
+        expect(
+          () => OperationsApi.parseOrder(broken),
+          throwsFormatException,
+          reason: '$broken',
+        );
+      }
     });
 
     test('an order off the contract is refused', () {
@@ -758,6 +1050,103 @@ void main() {
         expect(() => OperationsApi.parseRow(broken), throwsFormatException);
       }
     });
+
+    test(
+      'each action on an order sends its body and is held to its effect',
+      () async {
+        orderAnswer = orderJson(
+          status: 'cancelled',
+          approvals: <Object?>[
+            approvalJson(
+              status: 'expired',
+              resolution: 'remove_item',
+              resolved: true,
+            ),
+          ],
+          cancellationRequests: <Object?>[
+            cancellationRequestJson(status: 'approved'),
+          ],
+        );
+        await repository.resolveExpiredApproval(orderA, approvalId, null);
+        await repository.resolveExpiredApproval(
+          orderA,
+          approvalId,
+          'Javob yo\'q',
+        );
+        await repository.decideCancellationRequest(
+          orderA,
+          requestId,
+          CancellationDecision.approve,
+          'Mijoz qo\'ng\'iroq qildi',
+        );
+        await repository.cancelAfterFailedDelivery(orderA, null);
+        orderAnswer = orderJson(
+          status: 'delivery_assigned',
+          items: <Object?>[
+            itemJson(
+              status: 'purchased',
+              purchase: <String, Object?>{'actual_market_price_uzs': 15000},
+            ),
+          ],
+        );
+        await repository.correctPrice(orderA, itemId, 15000, 'Chek bo\'yicha');
+
+        expect(
+          adapter.requests.map(
+            (RequestOptions o) => '${o.method} ${o.path} ${o.data}',
+          ),
+          <String>[
+            'POST /operations/approvals/$approvalId/resolve-expired '
+                '{resolution: remove_item}',
+            'POST /operations/approvals/$approvalId/resolve-expired '
+                '{resolution: remove_item, note: Javob yo\'q}',
+            'POST /operations/cancellation-requests/$requestId/decision '
+                '{decision: approve, note: Mijoz qo\'ng\'iroq qildi}',
+            'POST /operations/orders/$orderA/cancel '
+                '{reason_code: delivery_failed}',
+            'POST /admin/orders/$orderA/items/$itemId/price-correction '
+                '{actual_market_price_uzs: 15000, reason: Chek bo\'yicha}',
+          ],
+        );
+
+        // An answer that does not show what was asked for is malformed.
+        orderAnswer = orderJson(
+          status: 'shopping',
+          approvals: <Object?>[approvalJson(status: 'expired')],
+          cancellationRequests: <Object?>[cancellationRequestJson()],
+        );
+        for (final Future<BoardOrder> Function() action
+            in <Future<BoardOrder> Function()>[
+              () => repository.resolveExpiredApproval(orderA, approvalId, null),
+              () => repository.decideCancellationRequest(
+                orderA,
+                requestId,
+                CancellationDecision.reject,
+                null,
+              ),
+              () => repository.cancelAfterFailedDelivery(orderA, null),
+              () => repository.correctPrice(orderA, itemId, 15000, 'Chek'),
+            ]) {
+          await expectLater(action(), throwsA(isA<MalformedResponseFailure>()));
+        }
+
+        // So is one about another order, whatever it shows.
+        orderAnswer = orderJson(
+          status: 'shopping',
+          approvals: <Object?>[
+            approvalJson(
+              status: 'expired',
+              resolution: 'remove_item',
+              resolved: true,
+            ),
+          ],
+        );
+        await expectLater(
+          repository.resolveExpiredApproval(orderB, approvalId, null),
+          throwsA(isA<MalformedResponseFailure>()),
+        );
+      },
+    );
 
     test('a page parses', () async {
       final Paged<BoardRow> page = await repository.orders(const BoardQuery());

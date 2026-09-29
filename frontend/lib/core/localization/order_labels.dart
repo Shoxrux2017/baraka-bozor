@@ -67,6 +67,56 @@ abstract final class OrderLabels {
     ItemRemovedReason.orderCancelled => l10n.removedOrderCancelled,
   };
 
+  static String approvalType(AppLocalizations l10n, ApprovalType type) =>
+      switch (type) {
+        ApprovalType.priceOverTolerance => l10n.approvalTypePrice,
+        ApprovalType.substitution => l10n.approvalTypeSubstitution,
+        ApprovalType.reducedQuantity => l10n.approvalTypeReducedQuantity,
+      };
+
+  static String approvalStatus(AppLocalizations l10n, ApprovalStatus status) =>
+      switch (status) {
+        ApprovalStatus.pending => l10n.approvalStatusPending,
+        ApprovalStatus.approved => l10n.approvalStatusApproved,
+        ApprovalStatus.rejected => l10n.approvalStatusRejected,
+        ApprovalStatus.expired => l10n.approvalStatusExpired,
+        ApprovalStatus.cancelled => l10n.approvalStatusCancelled,
+      };
+
+  static String substitutionResolution(
+    AppLocalizations l10n,
+    SubstitutionResolution resolution,
+  ) => switch (resolution) {
+    SubstitutionResolution.automatic => l10n.replacementAutomatic,
+    SubstitutionResolution.approved => l10n.replacementApproved,
+  };
+
+  static String requestStatus(
+    AppLocalizations l10n,
+    CancellationRequestStatus status,
+  ) => switch (status) {
+    CancellationRequestStatus.pending => l10n.requestStatusPending,
+    CancellationRequestStatus.approved => l10n.requestStatusApproved,
+    CancellationRequestStatus.rejected => l10n.requestStatusRejected,
+    CancellationRequestStatus.closed => l10n.requestStatusClosed,
+  };
+
+  static String requestOrigin(
+    AppLocalizations l10n,
+    CancellationRequestOrigin origin,
+  ) => switch (origin) {
+    CancellationRequestOrigin.customer => l10n.requestOriginCustomer,
+    CancellationRequestOrigin.staff => l10n.requestOriginStaff,
+  };
+
+  static String paymentStatus(AppLocalizations l10n, PaymentStatus status) =>
+      switch (status) {
+        PaymentStatus.unpaid => l10n.paymentStatusUnpaid,
+        PaymentStatus.pending => l10n.paymentStatusPending,
+        PaymentStatus.paid => l10n.paymentStatusPaid,
+        PaymentStatus.cancelled => l10n.paymentStatusCancelled,
+      };
+
   static String cancellationReason(
     AppLocalizations l10n,
     CancellationReason reason,
