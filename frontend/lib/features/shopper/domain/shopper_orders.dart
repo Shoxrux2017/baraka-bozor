@@ -207,7 +207,55 @@ final class ShopperOrder {
   final List<ShopperLine> items;
 }
 
-/// The Shopper's orders on the staff session (`docs/09` sections 28 and 29).
+/// A product the Shopper may offer instead of a line's own: active, in an
+/// active category, of the line's unit, with its market price now
+/// (`docs/09` section 33, `DL-54` (17)).
+final class ReplacementChoice {
+  const ReplacementChoice({
+    required this.id,
+    required this.nameUz,
+    required this.nameRu,
+    required this.unit,
+    required this.priceMode,
+    required this.marketPriceUzs,
+  });
+
+  final String id;
+  final String nameUz;
+  final String nameRu;
+  final UnitCode unit;
+  final PriceMode priceMode;
+  final int marketPriceUzs;
+}
+
+/// A purchase as the Shopper records it (`docs/09` section 30): the quantity
+/// bought, the price paid per unit — required for an estimate original and
+/// for a replacement — and the product bought, left out for the authorized
+/// replacement or, without one, the line's own.
+final class PurchaseEntry {
+  const PurchaseEntry({
+    required this.quantity,
+    required this.actualMarketPriceUzs,
+    required this.productId,
+  });
+
+  /// A decimal string of the line's unit, as the API takes it.
+  final String quantity;
+  final int? actualMarketPriceUzs;
+  final String? productId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PurchaseEntry &&
+      other.quantity == quantity &&
+      other.actualMarketPriceUzs == actualMarketPriceUzs &&
+      other.productId == productId;
+
+  @override
+  int get hashCode => Object.hash(quantity, actualMarketPriceUzs, productId);
+}
+
+/// The Shopper's orders on the staff session (`docs/09` sections 28 to 35).
 /// Every method throws an `ApiFailure`.
 abstract interface class ShopperOrdersRepository {
   /// The current orders, the longest-waiting assignment first.
@@ -221,4 +269,60 @@ abstract interface class ShopperOrdersRepository {
   /// Starts shopping, after which the Customer can no longer edit or cancel
   /// the order directly; again is a natural repeat.
   Future<ShopperOrder> start(String id);
+
+  /// Records the purchase of line [itemId] under [idempotencyKey], which a
+  /// retry of the same purchase sends again (`docs/09` section 48).
+  Future<ShopperOrder> purchase(
+    String orderId,
+    String itemId,
+    PurchaseEntry entry,
+    String idempotencyKey,
+  );
+
+  /// Removes line [itemId] as not to be found; the order is cancelled when
+  /// nothing is left to buy (`DL-54` (7)).
+  Future<ShopperOrder> markUnavailable(
+    String orderId,
+    String itemId,
+    String? note,
+  );
+
+  /// Asks the Customer about a price above the bound of the product bought.
+  Future<ShopperOrder> askAboutPrice(
+    String orderId,
+    String itemId,
+    int actualMarketPriceUzs,
+    String? productId,
+    String? note,
+  );
+
+  /// Offers [replacementId] instead of line [itemId]'s own product: it is
+  /// authorized at once or asked of the Customer, by the line's policy.
+  Future<ShopperOrder> substitute(
+    String orderId,
+    String itemId,
+    String replacementId,
+    int actualMarketPriceUzs,
+    String? note,
+  );
+
+  /// Asks the Customer to accept a smaller quantity.
+  Future<ShopperOrder> askAboutQuantity(
+    String orderId,
+    String itemId,
+    String quantity,
+    String? note,
+  );
+
+  /// The products line [itemId] may be replaced with, matching [search].
+  Future<Paged<ReplacementChoice>> replacements(
+    String orderId,
+    String itemId,
+    String search,
+    int page,
+  );
+
+  /// Completes the shopping under [idempotencyKey], which a retry sends
+  /// again; the order then leaves the Shopper's list.
+  Future<ShopperOrder> complete(String orderId, String idempotencyKey);
 }

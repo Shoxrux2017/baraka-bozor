@@ -91,6 +91,49 @@ Map<String, Object?> shopperLineJson({
   ...?patch,
 };
 
+/// A product of the replacement search: cherry tomatoes at 15 500.
+Map<String, Object?> shopperChoiceJson({
+  String id = shopperProductCherry,
+  int price = 15500,
+}) => <String, Object?>{
+  'id': id,
+  'name_uz': 'Olcha pomidor',
+  'name_ru': 'Помидоры черри',
+  'unit_code': 'kg',
+  'price_mode': 'estimate',
+  'market_price_uzs': price,
+  'image_url': null,
+};
+
+/// The authorized replacement of the tomato line: cherry tomatoes at
+/// 15 500, bound at 18 400 on the market.
+Map<String, Object?> shopperReplacementJson({
+  String resolution = 'automatic',
+}) => <String, Object?>{
+  'product_id': shopperProductCherry,
+  'name_uz': 'Olcha pomidor',
+  'name_ru': 'Помидоры черри',
+  'market_price_uzs': 15500,
+  'substitution_resolution': resolution,
+  'bound': <String, Object?>{
+    'customer_unit_price_uzs': 21160,
+    'market_price_uzs': 18400,
+  },
+};
+
+/// The tomato line waiting for the Customer's answer to a question of
+/// [type].
+Map<String, Object?> shopperAskedLineJson(String type) => shopperLineJson(
+  status: 'awaiting_customer',
+  patch: <String, Object?>{
+    'pending_approval': <String, Object?>{
+      'id': shopperQuestion,
+      'type': type,
+      'expires_at': '2026-09-27T08:00:00Z',
+    },
+  },
+);
+
 /// The order as `docs/09` section 28 answers it: assigned and not accepted
 /// unless [accepted], or [status] `shopping` with the Customer's phone.
 Map<String, Object?> shopperOrderJson({
@@ -202,6 +245,88 @@ class FakeShopperOrdersRepository implements ShopperOrdersRepository {
       throw const ApiRefusal(ApiError(status: 404, code: 'resource_not_found'));
     }
     return order;
+  }
+
+  /// The replacement choices the search answers, whatever it asks.
+  List<ReplacementChoice> choices = <ReplacementChoice>[];
+
+  /// The keys each purchase and completion was sent with, in order.
+  final List<String> keys = <String>[];
+
+  @override
+  Future<ShopperOrder> purchase(
+    String orderId,
+    String itemId,
+    PurchaseEntry entry,
+    String idempotencyKey,
+  ) {
+    keys.add(idempotencyKey);
+    return _act(
+      orderId,
+      'purchase:$itemId:${entry.quantity}:${entry.actualMarketPriceUzs}:'
+      '${entry.productId}',
+    );
+  }
+
+  @override
+  Future<ShopperOrder> markUnavailable(
+    String orderId,
+    String itemId,
+    String? note,
+  ) => _act(orderId, 'unavailable:$itemId:$note');
+
+  @override
+  Future<ShopperOrder> askAboutPrice(
+    String orderId,
+    String itemId,
+    int actualMarketPriceUzs,
+    String? productId,
+    String? note,
+  ) =>
+      _act(orderId, 'ask-price:$itemId:$actualMarketPriceUzs:$productId:$note');
+
+  @override
+  Future<ShopperOrder> substitute(
+    String orderId,
+    String itemId,
+    String replacementId,
+    int actualMarketPriceUzs,
+    String? note,
+  ) => _act(
+    orderId,
+    'substitute:$itemId:$replacementId:$actualMarketPriceUzs:$note',
+  );
+
+  @override
+  Future<ShopperOrder> askAboutQuantity(
+    String orderId,
+    String itemId,
+    String quantity,
+    String? note,
+  ) => _act(orderId, 'ask-quantity:$itemId:$quantity:$note');
+
+  @override
+  Future<Paged<ReplacementChoice>> replacements(
+    String orderId,
+    String itemId,
+    String search,
+    int page,
+  ) async {
+    loads.add('replacements:$itemId:$search:$page');
+    await _held();
+    return Paged<ReplacementChoice>(
+      items: choices,
+      page: page,
+      perPage: 20,
+      total: choices.length,
+      lastPage: 1,
+    );
+  }
+
+  @override
+  Future<ShopperOrder> complete(String orderId, String idempotencyKey) {
+    keys.add(idempotencyKey);
+    return _act(orderId, 'complete:$orderId');
   }
 
   @override

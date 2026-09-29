@@ -434,6 +434,262 @@ void main() {
       }
     });
 
+    test('each action at the market sends its body, the purchase and the '
+        'completion their key', () async {
+      orderAnswer = shopperOrderJson(
+        status: 'shopping',
+        items: <Object?>[
+          shopperLineJson(status: 'purchased'),
+          shopperLineJson(bread: true),
+        ],
+      );
+      await repository.purchase(
+        shopperOrderA,
+        shopperLineTomato,
+        const PurchaseEntry(
+          quantity: '2',
+          actualMarketPriceUzs: 16500,
+          productId: null,
+        ),
+        'key-1',
+      );
+      await repository.purchase(
+        shopperOrderA,
+        shopperLineTomato,
+        const PurchaseEntry(
+          quantity: '2.000',
+          actualMarketPriceUzs: null,
+          productId: shopperProductTomato,
+        ),
+        'key-2',
+      );
+      orderAnswer = shopperOrderJson(
+        status: 'shopping',
+        items: <Object?>[
+          shopperLineJson(status: 'removed'),
+          shopperLineJson(bread: true),
+        ],
+      );
+      await repository.markUnavailable(shopperOrderA, shopperLineTomato, null);
+      await repository.markUnavailable(
+        shopperOrderA,
+        shopperLineTomato,
+        'Qolmagan',
+      );
+      orderAnswer = shopperOrderJson(
+        status: 'shopping',
+        items: <Object?>[shopperAskedLineJson('price_over_tolerance')],
+      );
+      await repository.askAboutPrice(
+        shopperOrderA,
+        shopperLineTomato,
+        22000,
+        shopperProductCherry,
+        'Narx oshgan',
+      );
+      orderAnswer = shopperOrderJson(
+        status: 'shopping',
+        items: <Object?>[
+          shopperLineJson(
+            patch: <String, Object?>{'replacement': shopperReplacementJson()},
+          ),
+        ],
+      );
+      await repository.substitute(
+        shopperOrderA,
+        shopperLineTomato,
+        shopperProductCherry,
+        15500,
+        null,
+      );
+      orderAnswer = shopperOrderJson(
+        status: 'shopping',
+        items: <Object?>[shopperAskedLineJson('reduced_quantity')],
+      );
+      await repository.askAboutQuantity(
+        shopperOrderA,
+        shopperLineTomato,
+        '1.5',
+        null,
+      );
+      orderAnswer = <String, Object?>{
+        ...shopperOrderJson(status: 'ready_for_delivery'),
+        'assignment': null,
+        'can_accept': false,
+        'can_start': false,
+      };
+      await repository.complete(shopperOrderA, 'key-3');
+
+      const String line =
+          '/shopper/orders/$shopperOrderA/items/$shopperLineTomato';
+      expect(
+        adapter.requests.map(
+          (RequestOptions o) => '${o.method} ${o.path} ${o.data}',
+        ),
+        <String>[
+          'POST $line/purchase {purchased_quantity: 2, actual_market_price_uzs: 16500}',
+          'POST $line/purchase '
+              '{purchased_quantity: 2.000, fulfilled_product_id: $shopperProductTomato}',
+          'POST $line/unavailable {}',
+          'POST $line/unavailable {note: Qolmagan}',
+          'POST $line/price-approval {actual_market_price_uzs: 22000, '
+              'fulfilled_product_id: $shopperProductCherry, note: Narx oshgan}',
+          'POST $line/substitution {replacement_product_id: $shopperProductCherry, '
+              'actual_market_price_uzs: 15500}',
+          'POST $line/reduced-quantity-approval {proposed_quantity: 1.5}',
+          'POST /shopper/orders/$shopperOrderA/complete null',
+        ],
+      );
+      final List<Object?> keys = <Object?>[
+        for (final RequestOptions o in adapter.requests)
+          o.headers['Idempotency-Key'],
+      ];
+      expect(keys, <Object?>[
+        'key-1',
+        'key-2',
+        null,
+        null,
+        null,
+        null,
+        null,
+        'key-3',
+      ]);
+    });
+
+    test(
+      'an action\'s answer that does not show it done is malformed',
+      () async {
+        // The order as it was: the tomatoes still to buy, nothing asked.
+        orderAnswer = shopperOrderJson(status: 'shopping');
+        for (final Future<ShopperOrder> Function() action
+            in <Future<ShopperOrder> Function()>[
+              () => repository.purchase(
+                shopperOrderA,
+                shopperLineTomato,
+                const PurchaseEntry(
+                  quantity: '2',
+                  actualMarketPriceUzs: 16500,
+                  productId: null,
+                ),
+                'key',
+              ),
+              () => repository.markUnavailable(
+                shopperOrderA,
+                shopperLineTomato,
+                null,
+              ),
+              () => repository.askAboutPrice(
+                shopperOrderA,
+                shopperLineTomato,
+                22000,
+                null,
+                null,
+              ),
+              () => repository.substitute(
+                shopperOrderA,
+                shopperLineTomato,
+                shopperProductCherry,
+                15500,
+                null,
+              ),
+              () => repository.askAboutQuantity(
+                shopperOrderA,
+                shopperLineTomato,
+                '1.5',
+                null,
+              ),
+              () => repository.complete(shopperOrderA, 'key'),
+            ]) {
+          await expectLater(action(), throwsA(isA<MalformedResponseFailure>()));
+        }
+
+        // A question of another kind than the one asked.
+        orderAnswer = shopperOrderJson(
+          status: 'shopping',
+          items: <Object?>[shopperAskedLineJson('reduced_quantity')],
+        );
+        await expectLater(
+          repository.askAboutPrice(
+            shopperOrderA,
+            shopperLineTomato,
+            22000,
+            null,
+            null,
+          ),
+          throwsA(isA<MalformedResponseFailure>()),
+        );
+        // Another line done than the one acted on.
+        orderAnswer = shopperOrderJson(
+          status: 'shopping',
+          items: <Object?>[
+            shopperLineJson(),
+            shopperLineJson(bread: true, status: 'purchased'),
+          ],
+        );
+        await expectLater(
+          repository.purchase(
+            shopperOrderA,
+            shopperLineTomato,
+            const PurchaseEntry(
+              quantity: '2',
+              actualMarketPriceUzs: 1,
+              productId: null,
+            ),
+            'key',
+          ),
+          throwsA(isA<MalformedResponseFailure>()),
+        );
+      },
+    );
+
+    test('the replacement search asks for its page, and its term only when '
+        'there is one', () async {
+      pageAnswer = null;
+      final FakeHttpClientAdapter search = FakeHttpClientAdapter(
+        (RequestOptions options) => jsonReply(
+          200,
+          pageJson(<Object?>[
+            shopperChoiceJson(),
+          ], page: options.queryParameters['page']! as int),
+        ),
+      );
+      final ShopperOrdersRepositoryImpl choices = ShopperOrdersRepositoryImpl(
+        ShopperOrdersApi(dioWith(search)),
+      );
+
+      final Paged<ReplacementChoice> first = await choices.replacements(
+        shopperOrderA,
+        shopperLineTomato,
+        '',
+        1,
+      );
+      await choices.replacements(shopperOrderA, shopperLineTomato, 'olcha', 2);
+
+      expect(first.items.single.marketPriceUzs, 15500);
+      expect(
+        search.requests.map((RequestOptions o) => o.queryParameters),
+        <Map<String, Object?>>[
+          <String, Object?>{'page': 1},
+          <String, Object?>{'page': 2, 'search': 'olcha'},
+        ],
+      );
+      expect(
+        search.requests.first.path,
+        '/shopper/orders/$shopperOrderA/items/$shopperLineTomato/replacements',
+      );
+      for (final Map<String, Object?> broken in <Map<String, Object?>>[
+        shopperChoiceJson(price: 0),
+        <String, Object?>{...shopperChoiceJson(), 'unit_code': 'tonne'},
+        without(shopperChoiceJson(), 'market_price_uzs'),
+      ]) {
+        expect(
+          () => ShopperOrdersApi.parseChoice(broken),
+          throwsFormatException,
+          reason: '$broken',
+        );
+      }
+    });
+
     test('a page parses', () async {
       final Paged<ShopperOrderRow> page = await repository.orders(1);
       expect(page.items.single.id, shopperOrderA);

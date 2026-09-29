@@ -51,6 +51,17 @@ abstract final class AppPaths {
   static String shopperOrder(String id) =>
       '$shopper/orders/${Uri.encodeComponent(id)}';
 
+  // An order's line opens its replacement search; a completed order its
+  // closing screen.
+  static const String shopperReplacePattern =
+      '$shopperOrderPattern/items/:item/replace';
+  static const String shopperDonePattern = '$shopper/done/:number';
+
+  static String shopperReplace(String orderId, String itemId) =>
+      '${shopperOrder(orderId)}/items/${Uri.encodeComponent(itemId)}/replace';
+
+  static String shopperDone(int orderNumber) => '$shopper/done/$orderNumber';
+
   // Inside the Admin area, where the panel's shared navigation links
   // (`features/shells/presentation/panel_shell.dart`).
   static const String adminCategories = '$admin/categories';

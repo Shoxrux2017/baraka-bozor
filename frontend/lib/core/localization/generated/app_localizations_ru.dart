@@ -2071,4 +2071,154 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get shopperPageEmpty =>
       'На этой странице заказов не осталось. Перейдите на предыдущую.';
+
+  @override
+  String get lineBuy => 'Купить';
+
+  @override
+  String get lineReplace => 'Заменить';
+
+  @override
+  String get lineUnavailable => 'Нет в наличии';
+
+  @override
+  String purchaseTitle(String name) {
+    return 'Покупка: $name';
+  }
+
+  @override
+  String get purchaseQuantity => 'Куплено';
+
+  @override
+  String get purchasePrice => 'Цена за единицу (оплачено)';
+
+  @override
+  String get purchasePriceOptional =>
+      'Товар с фиксированной ценой: цену можно не вводить';
+
+  @override
+  String get purchaseSave => 'Куплено';
+
+  @override
+  String get purchaseAgain => 'Отправить снова';
+
+  @override
+  String get purchaseUnconfirmed =>
+      'На последнюю покупку нет ответа — та же покупка будет отправлена снова.';
+
+  @override
+  String get purchaseAboveBound =>
+      'Эта цена выше той, что можно платить без вопроса клиенту. Спросить клиента?';
+
+  @override
+  String purchaseBelowQuantity(String quantity) {
+    return 'Клиенту нужно $quantity. Купите столько или спросите клиента, согласен ли он на меньшее.';
+  }
+
+  @override
+  String get askNote => 'Комментарий для клиента (необязательно)';
+
+  @override
+  String get askPrice => 'Спросить клиента о цене';
+
+  @override
+  String get askQuantity => 'Спросить клиента о количестве';
+
+  @override
+  String get typoTitle => 'Проверьте цену';
+
+  @override
+  String typoExplained(String price, String market) {
+    return 'Вы ввели $price, а рыночная цена $market. Всё верно?';
+  }
+
+  @override
+  String get typoConfirm => 'Да, верно';
+
+  @override
+  String get typoCancel => 'Исправлю';
+
+  @override
+  String unavailableTitle(String name) {
+    return '«$name» нет в наличии?';
+  }
+
+  @override
+  String get unavailableExplained =>
+      'Товар будет убран из заказа. Если покупать больше нечего, заказ отменится.';
+
+  @override
+  String get unavailableConfirm => 'Да, нет в наличии';
+
+  @override
+  String replaceTitle(String name) {
+    return 'Замена для «$name»';
+  }
+
+  @override
+  String get replaceSearchHint => 'Название товара';
+
+  @override
+  String get replaceNone => 'Подходящих товаров нет';
+
+  @override
+  String substituteTitle(String name) {
+    return 'Взять вместо: $name';
+  }
+
+  @override
+  String get substituteSave => 'Предложить';
+
+  @override
+  String get completeShopping => 'Завершить сборку';
+
+  @override
+  String get completeTitle => 'Завершить сборку?';
+
+  @override
+  String get completeExplained =>
+      'После завершения заказ уйдёт из вашего списка и будет готов к доставке.';
+
+  @override
+  String get completeUnconfirmed =>
+      'На последнее завершение нет ответа — отправим снова.';
+
+  @override
+  String completeIncomplete(String names) {
+    return 'Ещё не решены: $names';
+  }
+
+  @override
+  String doneTitle(String number) {
+    return 'Заказ №$number собран';
+  }
+
+  @override
+  String doneLabel(String number) {
+    return 'Напишите на пакете номер $number и отнесите его в пункт передачи.';
+  }
+
+  @override
+  String get doneBack => 'К моим заказам';
+
+  @override
+  String get errorShoppingNotActive => 'Этот заказ сейчас нельзя собирать.';
+
+  @override
+  String get errorItemAlreadyResolved => 'По этой позиции уже всё решено.';
+
+  @override
+  String get errorCustomerApprovalRequired =>
+      'Для этого нужно согласие клиента.';
+
+  @override
+  String get errorApprovalNotNeeded =>
+      'Для этой цены спрашивать клиента не нужно — покупайте.';
+
+  @override
+  String get errorSubstitutionNotAllowed =>
+      'Клиент не разрешил заменять этот товар.';
+
+  @override
+  String get errorShoppingIncomplete => 'Есть ещё нерешённые позиции.';
 }

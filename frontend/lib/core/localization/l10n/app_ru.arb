@@ -1234,5 +1234,112 @@
       }
     }
   },
-  "shopperPageEmpty": "На этой странице заказов не осталось. Перейдите на предыдущую."
+  "shopperPageEmpty": "На этой странице заказов не осталось. Перейдите на предыдущую.",
+  "lineBuy": "Купить",
+  "lineReplace": "Заменить",
+  "lineUnavailable": "Нет в наличии",
+  "purchaseTitle": "Покупка: {name}",
+  "@purchaseTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseQuantity": "Куплено",
+  "purchasePrice": "Цена за единицу (оплачено)",
+  "purchasePriceOptional": "Товар с фиксированной ценой: цену можно не вводить",
+  "purchaseSave": "Куплено",
+  "purchaseAgain": "Отправить снова",
+  "purchaseUnconfirmed": "На последнюю покупку нет ответа — та же покупка будет отправлена снова.",
+  "purchaseAboveBound": "Эта цена выше той, что можно платить без вопроса клиенту. Спросить клиента?",
+  "purchaseBelowQuantity": "Клиенту нужно {quantity}. Купите столько или спросите клиента, согласен ли он на меньшее.",
+  "@purchaseBelowQuantity": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "askNote": "Комментарий для клиента (необязательно)",
+  "askPrice": "Спросить клиента о цене",
+  "askQuantity": "Спросить клиента о количестве",
+  "typoTitle": "Проверьте цену",
+  "typoExplained": "Вы ввели {price}, а рыночная цена {market}. Всё верно?",
+  "@typoExplained": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "market": {
+        "type": "String"
+      }
+    }
+  },
+  "typoConfirm": "Да, верно",
+  "typoCancel": "Исправлю",
+  "unavailableTitle": "«{name}» нет в наличии?",
+  "@unavailableTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "unavailableExplained": "Товар будет убран из заказа. Если покупать больше нечего, заказ отменится.",
+  "unavailableConfirm": "Да, нет в наличии",
+  "replaceTitle": "Замена для «{name}»",
+  "@replaceTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "replaceSearchHint": "Название товара",
+  "replaceNone": "Подходящих товаров нет",
+  "substituteTitle": "Взять вместо: {name}",
+  "@substituteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "substituteSave": "Предложить",
+  "completeShopping": "Завершить сборку",
+  "completeTitle": "Завершить сборку?",
+  "completeExplained": "После завершения заказ уйдёт из вашего списка и будет готов к доставке.",
+  "completeUnconfirmed": "На последнее завершение нет ответа — отправим снова.",
+  "completeIncomplete": "Ещё не решены: {names}",
+  "@completeIncomplete": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "doneTitle": "Заказ №{number} собран",
+  "@doneTitle": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "doneLabel": "Напишите на пакете номер {number} и отнесите его в пункт передачи.",
+  "@doneLabel": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "doneBack": "К моим заказам",
+  "errorShoppingNotActive": "Этот заказ сейчас нельзя собирать.",
+  "errorItemAlreadyResolved": "По этой позиции уже всё решено.",
+  "errorCustomerApprovalRequired": "Для этого нужно согласие клиента.",
+  "errorApprovalNotNeeded": "Для этой цены спрашивать клиента не нужно — покупайте.",
+  "errorSubstitutionNotAllowed": "Клиент не разрешил заменять этот товар.",
+  "errorShoppingIncomplete": "Есть ещё нерешённые позиции."
 }

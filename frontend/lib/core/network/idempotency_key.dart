@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'api_failure.dart';
+
 /// A fresh `Idempotency-Key` (`docs/09` section 48): a random UUID of
 /// version 4, from the platform's secure generator.
 String newIdempotencyKey([Random? random]) {
@@ -13,3 +15,12 @@ String newIdempotencyKey([Random? random]) {
   return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
       '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
 }
+
+/// Whether [failure] leaves it unknown what a keyed request did — no answer,
+/// a server error, or the same key still running — so its retry must send
+/// the same request under the same key (`docs/09` section 48).
+bool leavesOutcomeUnknown(ApiFailure? failure) =>
+    failure != null &&
+    (failure is! ApiRefusal ||
+        failure.status >= 500 ||
+        failure.code == 'idempotency_in_progress');

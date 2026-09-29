@@ -2046,4 +2046,155 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get shopperPageEmpty =>
       'Bu sahifada buyurtma qolmadi. Oldingi sahifaga o\'ting.';
+
+  @override
+  String get lineBuy => 'Sotib olish';
+
+  @override
+  String get lineReplace => 'Almashtirish';
+
+  @override
+  String get lineUnavailable => 'Topilmadi';
+
+  @override
+  String purchaseTitle(String name) {
+    return 'Sotib olish: $name';
+  }
+
+  @override
+  String get purchaseQuantity => 'Sotib olingan miqdor';
+
+  @override
+  String get purchasePrice => 'Birlik narxi (to\'langan)';
+
+  @override
+  String get purchasePriceOptional =>
+      'Narxi belgilangan mahsulot: narx ixtiyoriy';
+
+  @override
+  String get purchaseSave => 'Sotib oldim';
+
+  @override
+  String get purchaseAgain => 'Qayta yuborish';
+
+  @override
+  String get purchaseUnconfirmed =>
+      'Oxirgi xaridga javob kelmadi — xuddi shu xarid qayta yuboriladi.';
+
+  @override
+  String get purchaseAboveBound =>
+      'Bu narx mijozdan so\'ramasdan to\'lash mumkin bo\'lganidan yuqori. Mijozdan so\'raysizmi?';
+
+  @override
+  String purchaseBelowQuantity(String quantity) {
+    return 'Mijozga $quantity kerak. Shuncha sotib oling yoki mijozdan kamroq miqdorga roziligini so\'rang.';
+  }
+
+  @override
+  String get askNote => 'Mijozga izoh (ixtiyoriy)';
+
+  @override
+  String get askPrice => 'Mijozdan narx haqida so\'rash';
+
+  @override
+  String get askQuantity => 'Mijozdan miqdor haqida so\'rash';
+
+  @override
+  String get typoTitle => 'Narxni tekshiring';
+
+  @override
+  String typoExplained(String price, String market) {
+    return 'Siz $price kiritdingiz, bozor narxi esa $market. To\'g\'rimi?';
+  }
+
+  @override
+  String get typoConfirm => 'Ha, to\'g\'ri';
+
+  @override
+  String get typoCancel => 'Tuzataman';
+
+  @override
+  String unavailableTitle(String name) {
+    return '«$name» topilmadimi?';
+  }
+
+  @override
+  String get unavailableExplained =>
+      'Mahsulot buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.';
+
+  @override
+  String get unavailableConfirm => 'Ha, topilmadi';
+
+  @override
+  String replaceTitle(String name) {
+    return '«$name» o\'rniga';
+  }
+
+  @override
+  String get replaceSearchHint => 'Mahsulot nomi';
+
+  @override
+  String get replaceNone => 'Mos mahsulot topilmadi';
+
+  @override
+  String substituteTitle(String name) {
+    return 'O\'rniga olish: $name';
+  }
+
+  @override
+  String get substituteSave => 'Taklif qilish';
+
+  @override
+  String get completeShopping => 'Yig\'ishni yakunlash';
+
+  @override
+  String get completeTitle => 'Yig\'ish yakunlansinmi?';
+
+  @override
+  String get completeExplained =>
+      'Yakunlangach, buyurtma ro\'yxatingizdan chiqadi va uni yetkazishga tayyorlanadi.';
+
+  @override
+  String get completeUnconfirmed =>
+      'Oxirgi yakunlashga javob kelmadi — qayta yuboriladi.';
+
+  @override
+  String completeIncomplete(String names) {
+    return 'Hali hal qilinmagan: $names';
+  }
+
+  @override
+  String doneTitle(String number) {
+    return 'Buyurtma №$number yig\'ildi';
+  }
+
+  @override
+  String doneLabel(String number) {
+    return 'Paketga $number raqamini yozing va uni topshirish joyiga olib boring.';
+  }
+
+  @override
+  String get doneBack => 'Buyurtmalarimga';
+
+  @override
+  String get errorShoppingNotActive =>
+      'Bu buyurtmani hozir yig\'ib bo\'lmaydi.';
+
+  @override
+  String get errorItemAlreadyResolved => 'Bu mahsulot allaqachon hal qilingan.';
+
+  @override
+  String get errorCustomerApprovalRequired =>
+      'Buning uchun mijozning roziligi kerak.';
+
+  @override
+  String get errorApprovalNotNeeded =>
+      'Bu narx uchun mijozdan so\'rash shart emas — sotib olavering.';
+
+  @override
+  String get errorSubstitutionNotAllowed =>
+      'Mijoz bu mahsulotni almashtirishga rozi emas.';
+
+  @override
+  String get errorShoppingIncomplete => 'Hali hal qilinmagan mahsulotlar bor.';
 }

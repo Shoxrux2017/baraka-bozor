@@ -979,3 +979,45 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - the list and the order use it.
    Riverpod 3 also pauses the providers of a covered screen, so the list does not load while an order is open over it.
 8. **Dependency:** `url_launcher` 6.3.2, the Flutter team's package, for the calls here and the Courier's calls and map link in W3-18. The test harness replaces the Shopper's repository and the dialer with fakes.
+
+## DL-70 — The Shopper at the market, from W3-16 (2026-09-29, agent)
+
+1. **Where the actions are.** While an order is being shopped, each open line of its page offers:
+   - **buy**;
+   - **replace**, except under `remove_if_unavailable`, where the server refuses any replacement;
+   - **not found**.
+   A line waiting for the Customer shows its question and offers nothing; an order not yet started offers nothing. The page ends with **complete shopping**.
+2. **The purchase** (`docs/09` section 30):
+   - The dialog asks for the quantity bought, in the line's unit, starting from what the Customer is owed: an approved smaller quantity, or else the ordered one.
+   - It asks for the price paid per unit: required for an estimate original and for a replacement, optional for a fixed original bought as itself.
+   - It shows the market price and how far the price may go without asking.
+   - When a replacement is authorized, the Shopper says which was bought. The replacement is the default and left out of the body. The original is named, which drops the replacement (`DL-54` (4)).
+3. **The typo guard** (`DL-3` S-35, `docs/04` section 12, `DL-54` (20)):
+   - A price paid more than three times the market price of the product bought, or less than a third of it, is confirmed before it is sent. Exactly three times, or exactly a third, is not doubted.
+   - The market price is the line's snapshot for the original, and the replacement's price now for a replacement.
+   - It guards the purchase and the replacement's price alike; the server's bounds apply whatever the Shopper confirms.
+4. **Asking the Customer** is offered only when the server's purchase answer says the Customer must agree (`409 customer_approval_required`), in the same dialog:
+   - a price above the bound → ask about that price, for the product being bought (`docs/09` section 32);
+   - less than the Customer is owed → the dialog says how much is owed, and offers to ask the Customer to accept the quantity bought (section 34).
+   Each takes an optional note. A question the server finds unneeded is refused with `approval_not_needed`, whose words tell the Shopper to buy.
+5. **Keys** (`docs/09` section 48):
+   - The purchase and the completion are keyed. The key, and what was sent, are kept until an answer says for sure what happened; no answer, a server error, and `idempotency_in_progress` keep them. A retry sends the same request under the same key.
+   - The purchase dialog then shows the purchase as sent, locked, and the line's card says it is unconfirmed. A completion without a sure answer is sent again without asking again.
+   - The key lives in the line's controller, which the card watches, so it lasts while the order is shown. A purchase sent again with a new key after leaving the order meets `item_already_resolved`, never a second purchase.
+   - `leavesOutcomeUnknown` in `core/network` names the failures that keep a key.
+6. **Not found** is confirmed, with an optional note for the history. When it was the last line to buy, the order is cancelled (`DL-54` (7)), and the page shows it so, with nothing left to do.
+7. **The replacement** (`docs/09` section 33, `DL-54` (17)):
+   - A search screen over the order lists the products of the line's unit with their market price, page by page. It searches when the Shopper presses search on the keyboard, not at each keystroke, since a stall's network is unsure.
+   - A choice asks for the price paid, guarded as in (3), and an optional note for the Customer.
+   - The line's policy decides whether the replacement is authorized at once or asked of the Customer. The screen then returns to the order.
+8. **The completion** (`docs/09` section 35):
+   - It is confirmed first.
+   - Once done, the order is the Shopper's no more, so only the list loads again. A closing screen, `/shopper/done/{number}`, replaces the order's page: it tells the Shopper to write the order number on the package and take it to the handoff point.
+   - A refusal because lines are still open names them.
+9. **Answers held to the action** (`DL-27` (6)). Each answer must show the action done:
+   - a purchase: the line bought;
+   - not found: the line removed;
+   - a price or quantity question: that question open on the line;
+   - a replacement: the replacement authorized, or a substitution question open;
+   - a completion: the order ready for delivery, or its online payment's turn.
+10. **Words** for `shopping_not_active`, `item_already_resolved`, `customer_approval_required`, `approval_not_needed`, `substitution_not_allowed` and `shopping_incomplete`.

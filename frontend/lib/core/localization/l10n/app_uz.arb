@@ -1241,5 +1241,112 @@
       }
     }
   },
-  "shopperPageEmpty": "Bu sahifada buyurtma qolmadi. Oldingi sahifaga o'ting."
+  "shopperPageEmpty": "Bu sahifada buyurtma qolmadi. Oldingi sahifaga o'ting.",
+  "lineBuy": "Sotib olish",
+  "lineReplace": "Almashtirish",
+  "lineUnavailable": "Topilmadi",
+  "purchaseTitle": "Sotib olish: {name}",
+  "@purchaseTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseQuantity": "Sotib olingan miqdor",
+  "purchasePrice": "Birlik narxi (to'langan)",
+  "purchasePriceOptional": "Narxi belgilangan mahsulot: narx ixtiyoriy",
+  "purchaseSave": "Sotib oldim",
+  "purchaseAgain": "Qayta yuborish",
+  "purchaseUnconfirmed": "Oxirgi xaridga javob kelmadi — xuddi shu xarid qayta yuboriladi.",
+  "purchaseAboveBound": "Bu narx mijozdan so'ramasdan to'lash mumkin bo'lganidan yuqori. Mijozdan so'raysizmi?",
+  "purchaseBelowQuantity": "Mijozga {quantity} kerak. Shuncha sotib oling yoki mijozdan kamroq miqdorga roziligini so'rang.",
+  "@purchaseBelowQuantity": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "askNote": "Mijozga izoh (ixtiyoriy)",
+  "askPrice": "Mijozdan narx haqida so'rash",
+  "askQuantity": "Mijozdan miqdor haqida so'rash",
+  "typoTitle": "Narxni tekshiring",
+  "typoExplained": "Siz {price} kiritdingiz, bozor narxi esa {market}. To'g'rimi?",
+  "@typoExplained": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "market": {
+        "type": "String"
+      }
+    }
+  },
+  "typoConfirm": "Ha, to'g'ri",
+  "typoCancel": "Tuzataman",
+  "unavailableTitle": "«{name}» topilmadimi?",
+  "@unavailableTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "unavailableExplained": "Mahsulot buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.",
+  "unavailableConfirm": "Ha, topilmadi",
+  "replaceTitle": "«{name}» o'rniga",
+  "@replaceTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "replaceSearchHint": "Mahsulot nomi",
+  "replaceNone": "Mos mahsulot topilmadi",
+  "substituteTitle": "O'rniga olish: {name}",
+  "@substituteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "substituteSave": "Taklif qilish",
+  "completeShopping": "Yig'ishni yakunlash",
+  "completeTitle": "Yig'ish yakunlansinmi?",
+  "completeExplained": "Yakunlangach, buyurtma ro'yxatingizdan chiqadi va uni yetkazishga tayyorlanadi.",
+  "completeUnconfirmed": "Oxirgi yakunlashga javob kelmadi — qayta yuboriladi.",
+  "completeIncomplete": "Hali hal qilinmagan: {names}",
+  "@completeIncomplete": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "doneTitle": "Buyurtma №{number} yig'ildi",
+  "@doneTitle": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "doneLabel": "Paketga {number} raqamini yozing va uni topshirish joyiga olib boring.",
+  "@doneLabel": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "doneBack": "Buyurtmalarimga",
+  "errorShoppingNotActive": "Bu buyurtmani hozir yig'ib bo'lmaydi.",
+  "errorItemAlreadyResolved": "Bu mahsulot allaqachon hal qilingan.",
+  "errorCustomerApprovalRequired": "Buning uchun mijozning roziligi kerak.",
+  "errorApprovalNotNeeded": "Bu narx uchun mijozdan so'rash shart emas — sotib olavering.",
+  "errorSubstitutionNotAllowed": "Mijoz bu mahsulotni almashtirishga rozi emas.",
+  "errorShoppingIncomplete": "Hali hal qilinmagan mahsulotlar bor."
 }
