@@ -5,15 +5,20 @@ declare(strict_types=1);
 namespace App\Modules\Orders\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\RequireIdempotencyKey;
 use App\Http\Pagination\PaginatedResponse;
 use App\Http\Requests\EmptyBodyRequest;
 use App\Models\Order;
 use App\Models\OrderCourierAssignment;
 use App\Models\User;
 use App\Modules\Orders\Actions\AcceptDelivery;
+use App\Modules\Orders\Actions\DeliverOrder;
+use App\Modules\Orders\Actions\FailDelivery;
 use App\Modules\Orders\Actions\StartDelivery;
 use App\Modules\Orders\CourierOrders;
+use App\Modules\Orders\Http\Requests\DeliveredRequest;
 use App\Modules\Orders\Http\Requests\ListCourierOrdersRequest;
+use App\Modules\Orders\Http\Requests\NotDeliveredRequest;
 use App\Modules\Orders\Http\Resources\CourierOrderResource;
 use App\Support\Scope\ScopedLookup;
 use Illuminate\Http\JsonResponse;
@@ -21,10 +26,11 @@ use Illuminate\Http\Request;
 
 /**
  * `GET /courier/orders`, `GET /courier/orders/{order}`, and
- * `POST /courier/orders/{order}/accept` and `.../start` (`docs/09` sections
- * 36 and 37). The Courier's current assignments only (`DL-54` (3)); the list
- * is the oldest assignment first, the delivery the Courier has waited on
- * longest; each action answers `200` with the order.
+ * `POST /courier/orders/{order}/accept`, `.../start`, `.../delivered` and
+ * `.../not-delivered` (`docs/09` sections 36 and 37). The Courier's current
+ * assignments only (`DL-54` (3)), but for a replay of delivered and a repeat
+ * of not-delivered; the list is the oldest assignment first, the delivery the
+ * Courier has waited on longest; each action answers `200` with the order.
  */
 final class CourierOrderController extends Controller
 {
@@ -66,6 +72,20 @@ final class CourierOrderController extends Controller
         $courier = $this->courier($request);
 
         return $this->resource($courier, $start->start($courier, $order));
+    }
+
+    public function delivered(DeliveredRequest $request, string $order, DeliverOrder $deliver): CourierOrderResource
+    {
+        $courier = $this->courier($request);
+
+        return $this->resource($courier, $deliver->deliver($courier, $order, $request->cashReceivedUzs(), RequireIdempotencyKey::of($request)));
+    }
+
+    public function notDelivered(NotDeliveredRequest $request, string $order, FailDelivery $fail): CourierOrderResource
+    {
+        $courier = $this->courier($request);
+
+        return $this->resource($courier, $fail->fail($courier, $order, $request->reason(), $request->note()));
     }
 
     private function resource(User $courier, Order $order): CourierOrderResource

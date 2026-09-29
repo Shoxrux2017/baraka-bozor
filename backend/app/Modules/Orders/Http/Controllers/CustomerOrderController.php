@@ -49,7 +49,7 @@ final class CustomerOrderController extends Controller
     public function show(Request $request, string $order): CustomerOrderResource
     {
         return new CustomerOrderResource(ScopedLookup::firstOrNotFound(
-            CustomerOrders::own($this->customer($request))->with(['items', 'currentShopperAssignment', 'approvals'])->whereKey($order)
+            CustomerOrders::own($this->customer($request))->with(['items', 'currentShopperAssignment', 'approvals', 'livePayment'])->whereKey($order)
         ));
     }
 
@@ -61,7 +61,7 @@ final class CustomerOrderController extends Controller
             RequireIdempotencyKey::of($request),
         );
 
-        return (new CustomerOrderResource($order->load(['items', 'currentShopperAssignment', 'approvals'])))
+        return (new CustomerOrderResource($order->load(['items', 'currentShopperAssignment', 'approvals', 'livePayment'])))
             ->response()
             ->setStatusCode(201);
     }
@@ -89,7 +89,7 @@ final class CustomerOrderController extends Controller
 
     private function resource(Order $order): CustomerOrderResource
     {
-        return new CustomerOrderResource($order->load(['items', 'currentShopperAssignment', 'approvals']));
+        return new CustomerOrderResource($order->load(['items', 'currentShopperAssignment', 'approvals', 'livePayment']));
     }
 
     private function customer(Request $request): User

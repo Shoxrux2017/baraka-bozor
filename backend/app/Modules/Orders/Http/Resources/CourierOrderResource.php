@@ -22,6 +22,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * only while the business runs without a handoff point
  * (`delivery.handoff_point`, `BR-DEL-006`), and absent otherwise.
  *
+ * Once the Courier's assignment has ended — every answer of delivered and
+ * not-delivered, the first one included — the order tells the outcome but no
+ * longer who receives it, where or when: `recipient`, `address`,
+ * `delivery_note` and `delivery_time_note` are `null` and `shopper_phone` is
+ * absent, since the delivery is no longer the Courier's (`DL-64` (7)).
+ *
  * Expects what `CourierOrders::withDetails()` loads.
  *
  * @property-read Order $resource
@@ -41,16 +47,17 @@ final class CourierOrderResource extends JsonResource
         $order = $this->resource;
         $assignment = $order->currentCourierAssignment;
         $pending = (bool) $order->getAttribute('cancellation_request_pending');
+        $holds = $assignment !== null && $assignment->ended_at === null;
 
         $data = [
             'id' => $order->id,
             'order_number' => $order->order_number,
             'status' => $order->status->value,
-            'recipient' => [
+            'recipient' => ! $holds ? null : [
                 'full_name' => $order->recipient_name_snapshot,
                 'phone' => $order->recipient_phone_snapshot,
             ],
-            'address' => [
+            'address' => ! $holds ? null : [
                 'latitude' => $order->latitude_snapshot,
                 'longitude' => $order->longitude_snapshot,
                 'street' => $order->street_snapshot,
@@ -58,8 +65,8 @@ final class CourierOrderResource extends JsonResource
                 'apartment' => $order->apartment_snapshot,
                 'landmark' => $order->landmark_snapshot,
             ],
-            'delivery_note' => $order->delivery_note_snapshot,
-            'delivery_time_note' => $order->delivery_time_note,
+            'delivery_note' => $holds ? $order->delivery_note_snapshot : null,
+            'delivery_time_note' => $holds ? $order->delivery_time_note : null,
             'payment_method' => $order->payment_method->value,
             'amount_to_collect_uzs' => $order->payment_method === PaymentMethod::Cash ? $order->final_total_uzs : null,
             'cancellation_request_pending' => $pending,
@@ -69,7 +76,7 @@ final class CourierOrderResource extends JsonResource
                 && $order->status === OrderStatus::DeliveryAssigned && ! $pending,
         ];
 
-        if (! config('delivery.handoff_point')) {
+        if ($holds && ! config('delivery.handoff_point')) {
             $data['shopper_phone'] = $order->namedShopperAssignment?->shopper->phone;
         }
 

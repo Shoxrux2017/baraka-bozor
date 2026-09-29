@@ -130,9 +130,12 @@ final class BoardPeopleApiTest extends TestCase
         $detail = $this->as($this->operator)->getJson("/api/v1/operations/orders/{$order->id}")->json('data.courier_assignments.0');
         $this->assertSame([$courier->id, true, 'delivery_failed'], [$detail['id'], $detail['is_self_order'], $detail['ended_reason']]);
 
-        $item = $this->attention()[0];
-        $this->assertSame('self_order', $item['type']);
-        $this->assertSame($courier->courier_id, $item['courier']['id']);
+        // The order needs the Operator twice over: a failed delivery, and a
+        // self-order, each one item naming the Courier (DL-64 (6)).
+        $items = collect($this->attention())->keyBy('type');
+        $this->assertEqualsCanonicalizing(['delivery_failed', 'self_order'], $items->keys()->all());
+        $this->assertSame($courier->courier_id, $items['self_order']['courier']['id']);
+        $this->assertSame($courier->courier_id, $items['delivery_failed']['courier']['id']);
     }
 
     public function test_a_cancelled_self_order_keeps_its_mark_but_leaves_the_attention_list(): void

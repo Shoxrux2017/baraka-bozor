@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Orders;
 
 use App\Exceptions\ApiException;
+use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\CancellationRequestStatus;
 use App\Models\Order;
 use App\Models\OrderCourierAssignment;
@@ -19,7 +20,8 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
  * Courier holds a current assignment on. Any other order — one whose
  * assignment was replaced or has ended included — stays outside the scope and
  * answers the scope-safe `404` (`ScopedLookup`), as `ShopperOrders` does for
- * the Shopper.
+ * the Shopper. The one way past that is `endedBy`: a retry of delivered or
+ * not-delivered learns the outcome of the Courier's own last assignment.
  */
 final class CourierOrders
 {
@@ -56,6 +58,29 @@ final class CourierOrders
     }
 
     /**
+     * The order a Courier's delivered or not-delivered ended their assignment
+     * on, for a replay of the one and a repeat of the other (`DL-54` (3)):
+     * reached only while that assignment is the order's latest Courier
+     * assignment and ended as the action ends it; otherwise the scope-safe
+     * `404`. The answer shows that assignment as the caller's own.
+     */
+    public static function endedBy(User $courier, string $orderId, AssignmentEndReason $reason): Order
+    {
+        /** @var OrderCourierAssignment|null $latest */
+        $latest = OrderCourierAssignment::query()
+            ->where('order_id', $orderId)
+            ->orderByDesc('assigned_at')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($latest === null || $latest->courier_id !== $courier->id || $latest->ended_reason !== $reason) {
+            throw ApiException::notFound();
+        }
+
+        return $latest->order->setRelation('currentCourierAssignment', $latest);
+    }
+
+    /**
      * What the Courier's order shows beside the order itself
      * (`CourierOrderResource`): the caller's own assignment, whether a
      * cancellation request is pending, and, without a handoff point, the
@@ -70,13 +95,13 @@ final class CourierOrders
     }
 
     /**
-     * The same, for an order an action answers: a reassignment committed
-     * between the action and this read leaves the assignment empty rather
-     * than showing the new Courier's.
+     * The same, for an order an action answers. The assignment the action read
+     * under the order lock, or ended, is kept as it was, so the answer shows
+     * the caller's own and never a Courier who replaced them since.
      */
     public static function loadDetails(Order $order, User $courier): Order
     {
-        return $order->load(self::relations($courier))->loadExists(self::pendingRequest());
+        return $order->loadMissing(self::relations($courier))->loadExists(self::pendingRequest());
     }
 
     /**
