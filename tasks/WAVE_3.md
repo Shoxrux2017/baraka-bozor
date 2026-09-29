@@ -40,7 +40,7 @@ None (`docs/06` section 5). The MapKit key (`DL-36`) blocks nothing here: no sta
 | W3-16 | App: the Shopper at the market — buy, unavailable, replace, ask the Customer, complete | Merged |
 | W3-17 | App: the Customer's order while it is shopped and delivered — approvals, the cancellation request | Merged |
 | W3-18 | App: the Courier's area — deliveries, accept, set off, delivered with cash, not delivered | Merged |
-| W3-19 | Wave closure: full suites, builds, real-stack walkthrough of the wave's scenario, Owner checklist and report | Planned |
+| W3-19 | Wave closure: full suites, builds, real-stack walkthrough of the wave's scenario, Owner checklist and report | Merged |
 
 The order of work:
 
@@ -413,8 +413,9 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 | Carried from Wave 2, for Wave 5: a payment attempt's outcome is not guarded by the idempotency key, and Paynet and xazna have no adapters | Open for Wave 5 |
 | Carried from Wave 2: iOS needs a Mac, which also brings the Apple Maps link (`DL-54` (16)); browser tests run in CI only | Open until a Mac exists and the local runner works |
 | Until W3-17, the merged app labels a bought line with its ordered price beside the bought total, for example 18 400 a kg next to a total billed at 19 550. W3-17 shows the price to pay and the replacement (`DL-57` (4)) | Closed by W3-17 (`DL-71` (1)) |
-| Wave 2 risk rows this plan takes on: the Courier assignment (W3-8), an estimate line added by an edit billed at its own markup (W3-3), the self-order mark after shopping completes (`DL-54` (14)), a Shopper blocked after an assignment (`DL-54` (13)), and the attention list's height (W3-13) | Planned in Wave 3 |
+| Wave 2 risk rows this plan takes on: the Courier assignment (W3-8), an estimate line added by an edit billed at its own markup (W3-3), the self-order mark after shopping completes (`DL-54` (14)), a Shopper blocked after an assignment (`DL-54` (13)), and the attention list's height (W3-13) | Closed by W3-3, W3-8 and W3-13 |
 | From W3-7 until W3-8, completing a self-order's shopping drops its mark from the board and the attention list, and the row names no Shopper: both still read only the current assignment. W3-8 comes next and restores them as `DL-54` (14) sets them; no walkthrough runs between the two | Closed by W3-8 |
+| Found by the closure walk: a list left under a page reloads when the page is closed, and meanwhile shows what it last had. After delivered, the Courier's list showed the delivered order as new for about a second on the emulator. Tapping it then says it is no longer the Courier's. Any list under a page an action runs on can show the same moment | Open for Wave 4 (P3) |
 
 ## Independent-review findings not acted on
 
@@ -425,4 +426,115 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 
 ## Closure
 
-Not yet.
+Closed on 2026-09-29 at `main` = merge of PR #85 (`3a3b76a`) plus the closure pull request, which carries:
+- the walkthrough script `tasks/scripts/wave3_api_walkthrough.py`;
+- the panel's quantities (`DL-73` (2));
+- this record.
+
+**Verified by the agent:**
+
+| Check | Result |
+|---|---|
+| Backend suite in the Compose container, `php artisan test` | 807 passed, 52 459 assertions |
+| Backend Pint and PHPStan | 469 files pass; no errors |
+| Backend and frontend CI on `main`'s last merged head (`3a3b76a`) | pass |
+| Frontend suite, `flutter test`, with the closure's fix | 757 passed |
+| Frontend analyze, format and `gen-l10n` | no issues; 0 of 278 files changed; nothing regenerated |
+| Browser tests (`*_browser_test.dart`) | CI only; they pass there |
+| `flutter build web --release` | built |
+| `flutter build apk --release`, `BB_API_BASE_URL=http://10.0.2.2:8000/api/v1`, no MapKit key | built, 128.8 MB |
+| Real stack, the API walkthrough `tasks/scripts/wave3_api_walkthrough.py` (served on 8001, `DL-73` (3)) | 69 of 69 steps pass, in the order below |
+| Real stack, the web panel (`build/web` on loopback, headless Chrome driven over the DevTools protocol, 1 440 px) | passes; details below |
+| Real stack, the Android app on the emulator (`barakabozor` AVD, a release build for 8001) | passes; details below |
+
+**The API walkthrough, step by step:**
+1. **Setup.** The Admin sets the settings and a catalog of nine products. They create two Couriers, and each passes the first-login gate.
+2. **Orders.** The Customer places three cash orders; the first is estimated at 105 100. The Operator assigns the Shopper to all three.
+3. **The third order's question.** The Shopper starts it, buys one line and asks the Customer to accept a smaller quantity on the other. The Customer's phone shows only while shopping.
+4. **The first order at the market:**
+   - the fixed line is bought as itself;
+   - the estimate is bought within the tolerance: 17 000 at the market bills 19 550, and a retry under its key answers once;
+   - a price above the bound is refused with `customer_approval_required` (13 800 against 13 225) and put to the Customer;
+   - one replacement is authorized at once and bought;
+   - another, under "contact before", is put to the Customer;
+   - a line is not found;
+   - completion is refused while questions wait, naming the two lines.
+5. **The Customer answers.** "My orders" counts the two waiting questions. The Customer reads them in their own prices, approves the price (a replay under the same key answers the same) and rejects the replacement. A second answer is refused as already resolved.
+6. **Buying and correcting.** The Shopper buys at the approved price. The Admin corrects the price paid on the tomatoes, so the line bills 18 975.
+7. **Completion.** Shopping completes. The Customer sees the final amount, 78 200 of goods and 98 200 in all, with the rejected and the unavailable lines removed for their reasons.
+8. **The second order.** Once shopping starts, a cancel without a reason is refused. With a reason it becomes a request, which the attention list shows. The Operator approves it, the order is cancelled, and the Customer sees the request approved.
+9. **The first Courier fails.** The Courier picker lists both new Couriers. The first sees the delivery with 98 200 to collect, sets off with a delay deadline, and cannot deliver. The order goes back to the Operator, the answer names no recipient, and the attention list shows the failure until a second Courier is assigned.
+10. **The second Courier delivers.** 97 200 in cash is refused with the amount to collect, 98 200. The exact cash completes the order, and delivered again answers the completed order with no second payment.
+11. **The record.** The Customer sees the order paid in cash. The board keeps both Couriers: the failure with its reason, then the delivery, with the payment recorded by the second. The summary strip counts the delivery and its sales.
+12. **The expiry.**
+    - After ten minutes, the third order's question is an attention item.
+    - After thirty, it is expired before anything writes it. The Customer can no longer answer it, `approvals:expire` runs, and the Customer's expired questions list it.
+    - The Operator removes its line, and the item leaves the attention list.
+    - The third order completes on what was bought.
+
+**The web panel.** The Operator signs in and lands on the board:
+- the summary strip counts the day's delivery, cancellation and sales;
+- the attention list;
+- the orders, each with its status, total, questions waiting, Shopper and Courier.
+
+The delivered order's page shows:
+- each line's purchase, price paid and price billed, the replacement and the reasons for removed lines;
+- both questions with their proposals, deadlines and the Customer's answers;
+- the final amounts;
+- the cash payment and who took it;
+- both Couriers, the failure with its reason;
+- the history, with the price correction written as "17 000 → 16 500, for the customer 19 550 → 18 975".
+
+Found and fixed: quantities read "2.000 кг", which in Russian reads as two thousand (`DL-73` (2)).
+
+**The Android app.**
+- **The Customer.** Signs in with a test phone and code. "My orders" marks the three orders waiting for an answer. An order shows two questions in Uzbek: the new price against the price at order time, and the replacement with its price, the Shopper's note, the deadline and what refusing does. Approving takes the question away. Rejecting strikes the line through with "siz rad etdingiz", and the totals follow.
+- **The Shopper.** Signs in as staff. The list shows the orders with the new ones marked, and an app bar of the language and one menu. The approved line allows 12 000 at the market; the Shopper buys it at that. Completion is confirmed, and the closing screen says to write the number on the package.
+- **The Courier.** A Courier the Admin created passes the first-login gate on the phone. They see the delivery with the recipient, address, landmark, note, wish and 99 350 to collect. "Open on the map" opens Google Maps with a pin on the point. They accept and set off, and the page gives the time to deliver by. Delivered with 99 000 says "Summa mos emas: 99 350 so'm olinishi kerak" and keeps the dialog. The exact cash completes the order and returns to the list with a notice.
+- **Crashes.** None in logcat. MapKit, initialised but not started, is refused by Yandex every few seconds, as `DL-53` (1) records.
+
+Found and left: the moment of stale list after an outcome (risk row above).
+
+**Not verified by the agent, on the Owner's checklist or waiting for a gate:**
+- the Yandex map, which needs a key Yandex accepts (`DL-36`);
+- iOS, which needs a Mac;
+- a real phone and its dialer;
+- the panel in a headed browser with a person's keyboard and mouse;
+- push, which arrives with Wave 4, as does the scheduler that writes expiries without an action (`DL-54` (8)).
+
+**Owner's manual check.**
+
+*Setup.* Serve the stack and seed the staff accounts as `docker/README.md` "Walk a wave on the real stack" says. The staff password, the test phones and their code are in the local `backend/.env`.
+- The emulator: install `frontend/build/app/outputs/flutter-apk/app-release.apk`, built for `http://10.0.2.2:8000/api/v1` without a MapKit key. It needs nothing else on the machine's port 8000.
+- The panel: `flutter run -d chrome --dart-define=BB_API_BASE_URL=http://127.0.0.1:8000/api/v1`.
+- Until Wave 4 deploys a scheduler, an expiry is written by the next action on the order or by `docker compose -f docker/compose.yaml exec app php artisan approvals:expire`.
+
+*The checklist:*
+1. **Panel, the Admin (+998 90 000 00 05).** The settings keep the price tolerance (15 %) and the delivery delay (60 minutes). The catalog has a product sold by weight at an estimate price, and one sold by the piece at a fixed price.
+2. **App, the Customer (a test phone and the code).** Order both products with cash. On the weighed one, choose "contact me before a replacement".
+3. **Panel, the Operator (+998 90 000 00 04).** Assign the order to the Shopper (+998 90 000 00 02).
+4. **App, the Shopper ("Sign in as staff").**
+   - Accept and start.
+   - Buy the fixed product as it is.
+   - On the weighed one, enter a price above the "at most, without asking" amount: the dialog offers to ask the Customer. Ask.
+5. **App, the Customer.** "My orders" says an answer is needed. The order shows the question in your own prices, with a deadline. Agree, or refuse: refusing removes the line.
+6. **App, the Shopper.** Buy at the agreed price. Complete the shopping: the closing screen shows the order number to write on the package.
+7. **Panel, the Admin.** On the order's page, correct the price paid on a bought line. The line and the total change, and the history shows the old and the new price.
+8. **Panel, the Operator.** Assign a Courier: the seeded one on +998 90 000 00 03 meets the first-login gate at their first sign-in. Choose a new password of at least ten characters and keep it.
+9. **App, the Courier.**
+   - The delivery shows the recipient, address, wish and the cash to collect. Call the recipient, and open the map.
+   - Accept, then set off.
+   - "Delivered" with a wrong amount names the right one. The exact amount completes the order.
+10. **App, the Customer, and the panel.** The Customer sees the order delivered and paid in cash. The panel shows the payment and who took it.
+11. **A second order.** After the Shopper starts it, the Customer asks to cancel with a reason. The attention list shows the request; the Operator approves it; the Customer sees it approved.
+12. **Not delivered.** Instead of delivering, the Courier marks the order not delivered with a reason. It returns to the board as needing attention, and another Courier can be assigned.
+13. **Optional, a question left unanswered.** After ten minutes the attention list shows it. After thirty it has expired: the Customer reads that the time ran out, and the Operator removes the line.
+
+**What remains open:**
+- the risk rows above marked Open;
+- for the Owner:
+  - the MapKit key that Yandex still refuses, and whether the free tier suits (`DL-36`);
+  - whether the handoff point exists at launch;
+  - after the pilot, whether short weights need a tolerance.
+
+Wave 4 starts next: push, deployment and the scheduler.

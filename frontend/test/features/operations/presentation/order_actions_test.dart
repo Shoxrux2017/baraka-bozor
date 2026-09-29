@@ -124,7 +124,10 @@ void main() {
       await openOrder(tester);
       final AppLocalizations words = l10n(tester);
 
-      expect(text(tester, 'order-item-bought-$itemId'), contains('3.000'));
+      expect(
+        text(tester, 'order-item-bought-$itemId'),
+        contains('3 '),
+      ); // `3.000` as read
       expect(
         text(tester, 'order-item-paid-$itemId'),
         words.itemPricePaid(money(16000)),
@@ -171,7 +174,8 @@ void main() {
         );
         expect(
           text(tester, 'approval-proposal-$secondApproval'),
-          startsWith(words.approvalProposedQuantity('2.000')),
+          // A quantity as a person reads it: `2.000` is `2`.
+          startsWith(words.approvalProposedQuantity('2 ')),
         );
         expect(
           text(tester, 'approval-timers-$approvalId'),

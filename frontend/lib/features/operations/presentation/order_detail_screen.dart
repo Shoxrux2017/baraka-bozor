@@ -12,6 +12,7 @@ import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/localization/role_labels.dart';
 import '../../../core/orders/order_values.dart';
+import '../../../core/orders/quantity_rules.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/failure_message.dart';
@@ -277,7 +278,7 @@ class _Item extends StatelessWidget {
       key: ValueKey<String>('order-item-${item.id}'),
       contentPadding: EdgeInsets.zero,
       title: Text(
-        '$name · ${item.quantity} ${CatalogLabels.unit(l10n, item.unit)}',
+        '$name · ${QuantityRules.display(item.quantity)} ${CatalogLabels.unit(l10n, item.unit)}',
         style: removed
             ? const TextStyle(decoration: TextDecoration.lineThrough)
             : null,
@@ -326,11 +327,11 @@ class _Item extends StatelessWidget {
             ),
           if (bought != null && item.status == OrderItemStatus.purchased)
             Text(
-              l10n.itemBought('$bought $unit'),
+              l10n.itemBought('${QuantityRules.display(bought)} $unit'),
               key: ValueKey<String>('order-item-bought-${item.id}'),
             ),
           if (billed != null && item.status == OrderItemStatus.purchased)
-            Text(l10n.itemBilled('$billed $unit')),
+            Text(l10n.itemBilled('${QuantityRules.display(billed)} $unit')),
           if (paid != null)
             Text(
               l10n.itemPricePaid(MoneyFormat.uzs(paid, language)),

@@ -1139,3 +1139,9 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - `DeliveryFailureReason` moves to `core/orders`, with its words in `OrderLabels.deliveryFailure`, which the panel also uses.
    - `JsonFields.has` tells a member that is absent from one present as `null`, for `shopper_phone`.
    - New words for `delivery_state_conflict` and `cash_amount_mismatch`.
+
+## DL-73 — Wave 3 closure (2026-09-29, agent)
+
+1. **The expired question is a real expiry.** The W3-19 plan made the expired approval by moving its instants back 31 minutes through `psql`. W3-1's guard trigger keeps an approval's proposal and instants immutable (`DL-55`), so that is impossible without disabling the trigger, which a walkthrough must not do. The walkthrough `tasks/scripts/wave3_api_walkthrough.py` therefore asks the question first and runs the rest of the scenario while it waits. It checks the question as an attention item after ten minutes and as expired after thirty. It then runs `approvals:expire` through `docker compose exec`, since the stack has no scheduler yet (`DL-54` (8)). A run takes about thirty-five minutes. This supersedes the W3-19 plan's setup.
+2. **The panel shows a quantity as a person reads it.** The order page printed quantities as the API writes them, so "2.000 кг" read as two thousand kilograms in Russian. The line, the bought and billed quantities, and a question's proposed quantity now go through `QuantityRules.display` ("2", "1,5"), as the app's screens already did.
+3. **Where the walk ran.** On the development machine, 127.0.0.1:8000 belongs to another project's container. The closure served the API on 8001 and built the walk's web and Android builds for it. The documented setup, `docker/README.md` and the release APK on 8000, is unchanged.

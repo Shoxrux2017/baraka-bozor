@@ -11,6 +11,7 @@ import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/orders/order_values.dart';
+import '../../../core/orders/quantity_rules.dart';
 import '../../../core/session/staff_account.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/failure_message.dart';
@@ -87,7 +88,7 @@ class ApprovalTile extends ConsumerWidget {
           if (quantity != null)
             Text(
               l10n.approvalProposedQuantity(
-                '$quantity ${CatalogLabels.unit(l10n, item.unit)}',
+                '${QuantityRules.display(quantity)} ${CatalogLabels.unit(l10n, item.unit)}',
               ),
               key: ValueKey<String>('approval-proposal-${approval.id}'),
             ),
