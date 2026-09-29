@@ -120,6 +120,9 @@ final class PriceCorrectionApiTest extends TestCase
         $this->buy($fixed, ['purchased_quantity' => '3', 'actual_market_price_uzs' => 3900]);
         $this->correct($fixed, ['actual_market_price_uzs' => 3800, 'reason' => 'Чек'])
             ->assertStatus(409)->assertJsonPath('code', 'price_correction_not_applicable');
+        // Nor is its own recorded price a repeat: no price paid is billed there.
+        $this->correct($fixed, ['actual_market_price_uzs' => 3900, 'reason' => 'Чек'])
+            ->assertStatus(409)->assertJsonPath('code', 'price_correction_not_applicable');
         $this->correct($this->estimateLine(), ['actual_market_price_uzs' => 16000, 'reason' => 'Чек'])
             ->assertStatus(409)->assertJsonPath('code', 'price_correction_not_applicable');
 
@@ -186,7 +189,10 @@ final class PriceCorrectionApiTest extends TestCase
             ->assertJsonPath('data.totals.total_uzs', 34500 + 5000 + 15000);
 
         // The Courier sets off; the retry of that correction is still a repeat.
-        $assigned->forceFill(['status' => 'on_the_way', 'on_the_way_at' => now()])->save();
+        $courier = $assigned->courierAssignments()->sole()->courier;
+        $session = $this->withToken($courier->createToken('c')->plainTextToken);
+        $session->postJson("/api/v1/courier/orders/{$assigned->id}/accept")->assertOk();
+        $session->postJson("/api/v1/courier/orders/{$assigned->id}/start")->assertOk()->assertJsonPath('data.status', 'on_the_way');
         $this->correct($line, ['actual_market_price_uzs' => 15000, 'reason' => 'Чек'])->assertOk();
         $this->correct($line, ['actual_market_price_uzs' => 14000, 'reason' => 'Чек'])
             ->assertStatus(409)->assertJsonPath('code', 'price_correction_locked');
