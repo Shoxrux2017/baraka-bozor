@@ -312,7 +312,7 @@ void main() {
         await tapAndSettle(tester, byKey('courier-start'));
         // The order loaded again says why, once.
         expect(byKey('courier-request-pending'), findsOneWidget);
-        expect(byKey('courier-start-held'), findsNothing);
+        expect(find.text(l10n(tester).courierRequestPending), findsOneWidget);
         expect(
           find.text(l10n(tester).errorDeliveryStateConflict),
           findsNothing,
