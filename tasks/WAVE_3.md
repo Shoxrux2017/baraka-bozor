@@ -38,7 +38,7 @@ None (`docs/06` section 5). The MapKit key (`DL-36`) blocks nothing here: no sta
 | W3-14 | Panel: the order page — purchases, approvals, cancellation requests, the Courier, the cash payment, price correction | Merged |
 | W3-15 | App: the Shopper's area — assigned orders, accept, start, refresh, call the Customer | Merged |
 | W3-16 | App: the Shopper at the market — buy, unavailable, replace, ask the Customer, complete | Merged |
-| W3-17 | App: the Customer's order while it is shopped and delivered — approvals, the cancellation request | Planned |
+| W3-17 | App: the Customer's order while it is shopped and delivered — approvals, the cancellation request | Merged |
 | W3-18 | App: the Courier's area — deliveries, accept, set off, delivered with cash, not delivered | Planned |
 | W3-19 | Wave closure: full suites, builds, real-stack walkthrough of the wave's scenario, Owner checklist and report | Planned |
 
@@ -412,7 +412,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 | Carried from Wave 2, for Wave 4: CORS in production, device pruning, the push token change stream, reorder's stored answer | Open for Wave 4 |
 | Carried from Wave 2, for Wave 5: a payment attempt's outcome is not guarded by the idempotency key, and Paynet and xazna have no adapters | Open for Wave 5 |
 | Carried from Wave 2: iOS needs a Mac, which also brings the Apple Maps link (`DL-54` (16)); browser tests run in CI only | Open until a Mac exists and the local runner works |
-| Until W3-17, the merged app labels a bought line with its ordered price beside the bought total, for example 18 400 a kg next to a total billed at 19 550. W3-17 shows the price to pay and the replacement (`DL-57` (4)) | Planned in Wave 3 |
+| Until W3-17, the merged app labels a bought line with its ordered price beside the bought total, for example 18 400 a kg next to a total billed at 19 550. W3-17 shows the price to pay and the replacement (`DL-57` (4)) | Closed by W3-17 (`DL-71` (1)) |
 | Wave 2 risk rows this plan takes on: the Courier assignment (W3-8), an estimate line added by an edit billed at its own markup (W3-3), the self-order mark after shopping completes (`DL-54` (14)), a Shopper blocked after an assignment (`DL-54` (13)), and the attention list's height (W3-13) | Planned in Wave 3 |
 | From W3-7 until W3-8, completing a self-order's shopping drops its mark from the board and the attention list, and the row names no Shopper: both still read only the current assignment. W3-8 comes next and restores them as `DL-54` (14) sets them; no walkthrough runs between the two | Closed by W3-8 |
 

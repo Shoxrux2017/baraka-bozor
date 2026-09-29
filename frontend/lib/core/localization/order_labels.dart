@@ -67,6 +67,19 @@ abstract final class OrderLabels {
     ItemRemovedReason.orderCancelled => l10n.removedOrderCancelled,
   };
 
+  /// Why a line left the order, as the Customer reads it about their own.
+  static String customerRemovedReason(
+    AppLocalizations l10n,
+    ItemRemovedReason reason,
+  ) => switch (reason) {
+    ItemRemovedReason.customerRejected => l10n.removedYouRejected,
+    ItemRemovedReason.customerRemoved => l10n.removedYouRemoved,
+    ItemRemovedReason.unavailable ||
+    ItemRemovedReason.approvalExpired ||
+    ItemRemovedReason.operatorRemoved ||
+    ItemRemovedReason.orderCancelled => removedReason(l10n, reason),
+  };
+
   static String approvalType(AppLocalizations l10n, ApprovalType type) =>
       switch (type) {
         ApprovalType.priceOverTolerance => l10n.approvalTypePrice,

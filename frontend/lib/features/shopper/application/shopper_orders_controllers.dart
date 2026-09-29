@@ -97,16 +97,6 @@ shopperOrderActionProvider = NotifierProvider.autoDispose
 /// An order's line, as the actions at the market name it.
 typedef ShopperLineRef = ({String orderId, String itemId});
 
-/// A keyed request sent without a sure answer: its `Idempotency-Key` and
-/// what was sent, which a retry sends again as it was (`docs/09` section
-/// 48).
-final class UnansweredRequest<T> {
-  const UnansweredRequest(this.key, this.sent);
-
-  final String key;
-  final T sent;
-}
-
 /// One order's keyed requests still without a sure answer: each line's
 /// purchase and the completion (`DL-70` (5)). A request enters only once an
 /// answer failed to say what it did — no answer, a server error, the same

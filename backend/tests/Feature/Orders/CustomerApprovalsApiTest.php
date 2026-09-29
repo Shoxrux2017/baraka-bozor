@@ -22,6 +22,7 @@ use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
+use App\Modules\Orders\Http\Resources\CustomerOrderResource;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -295,6 +296,26 @@ final class CustomerApprovalsApiTest extends TestCase
         $this->assertSame(0, OrderHistory::query()->where('event_type', OrderHistoryEvent::ApprovalExpired)->count(), 'An expiry already written is not written again.');
 
         $this->assertSame(1, DB::table('idempotency_keys')->count(), 'Only the successful decision keeps its key.');
+    }
+
+    public function test_the_count_and_the_lines_read_a_question_at_one_instant(): void
+    {
+        Carbon::setTestNow(CarbonImmutable::parse('2026-09-28T10:00:00Z'));
+        $question = $this->question(['attention_at' => now()->subMinutes(20), 'expires_at' => now()->addSecond()]);
+        $order = $this->order->fresh()->load(['items', 'currentShopperAssignment', 'approvals', 'livePayment', 'latestCancellationRequest']);
+
+        // A clock a second later at every reading: the question expires
+        // between the first reading and any other.
+        $readings = 0;
+        Carbon::setTestNow(static function () use (&$readings): CarbonImmutable {
+            return CarbonImmutable::parse('2026-09-28T10:00:00Z')->addSeconds($readings++);
+        });
+        $data = (new CustomerOrderResource($order))->toArray(request());
+        Carbon::setTestNow();
+
+        $line = collect($data['items'])->firstWhere('id', $question->order_item_id);
+        $this->assertSame(1, $data['pending_approval_count']);
+        $this->assertSame($question->id, $line['pending_approval']['id']);
     }
 
     public function test_a_line_waiting_on_an_expired_substitution_shows_no_earlier_replacement(): void

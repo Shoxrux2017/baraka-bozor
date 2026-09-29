@@ -80,8 +80,8 @@ final class ApprovalExpiry
     /**
      * Whether the approval still waits for the Customer.
      */
-    public static function isOpen(CustomerApproval $approval): bool
+    public static function isOpen(CustomerApproval $approval, ?CarbonInterface $at = null): bool
     {
-        return self::shownStatus($approval) === ApprovalStatus::Pending;
+        return self::shownStatus($approval, $at) === ApprovalStatus::Pending;
     }
 }

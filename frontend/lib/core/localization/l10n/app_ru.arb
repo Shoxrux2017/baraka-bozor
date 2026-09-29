@@ -795,7 +795,7 @@
   "orderCancelKeep": "Нет, оставить",
   "orderCancelling": "Отменяем",
   "orderCancellationRequested": "Отмена запрошена: решит оператор",
-  "orderCancellationNeedsReason": "Покупка уже началась: напишите причину отмены, и решит оператор",
+  "orderCancellationNeedsReason": "Заказ уже в работе: напишите причину отмены, и решит оператор",
   "orderOpen": "Открыть заказ",
   "orderLineRemoved": "Убрано: {reason}",
   "@orderLineRemoved": {
@@ -1344,5 +1344,133 @@
   "errorShoppingIncomplete": "Есть ещё нерешённые позиции.",
   "shopperOrderGone": "Этот заказ больше не ваш.",
   "shopperOrderCancelled": "Заказ отменён: покупать больше нечего.",
-  "substituteUseBuy": "Эта замена уже разрешена. Введите цену через «Купить» — там при необходимости можно спросить клиента."
+  "substituteUseBuy": "Эта замена уже разрешена. Введите цену через «Купить» — там при необходимости можно спросить клиента.",
+  "ordersNeedAnswer": "Нужен ваш ответ",
+  "orderLineBought": "Куплено: {quantity} × {price} = {total}",
+  "@orderLineBought": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "questionPrice": "{name}: цена теперь {price} (при заказе была {was}). Согласны на эту цену?",
+  "@questionPrice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "was": {
+        "type": "String"
+      }
+    }
+  },
+  "questionReplacementPrice": "Замена «{name}»: цена {price}. Согласны на эту цену?",
+  "@questionReplacementPrice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "questionSubstitution": "{name}: нет в наличии. Замена — {replacement}, {price}. Согласны?",
+  "@questionSubstitution": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "replacement": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "questionQuantity": "{name}: есть только {proposed}, вы заказали {ordered}. Согласны на меньшее?",
+  "@questionQuantity": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "proposed": {
+        "type": "String"
+      },
+      "ordered": {
+        "type": "String"
+      }
+    }
+  },
+  "questionNote": "Комментарий сборщика: {note}",
+  "@questionNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "questionExpires": "Ответьте до {time}",
+  "@questionExpires": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "questionApprove": "Согласиться",
+  "questionReject": "Отказаться",
+  "questionExpired": "Время ответа истекло — этот товар уберут из заказа.",
+  "decisionUnanswered": "Ваш ответ «{decision}» отправлен, но подтверждения нет. Если отправить снова, уйдёт тот же ответ.",
+  "@decisionUnanswered": {
+    "placeholders": {
+      "decision": {
+        "type": "String"
+      }
+    }
+  },
+  "sendAgain": "Отправить снова",
+  "orderPaid": "Оплачено: {amount}, {time}",
+  "@orderPaid": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "requestYours": "Ваш запрос на отмену: {reason}",
+  "@requestYours": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "requestStateApproved": "Одобрен — заказ отменён",
+  "requestStateRejected": "Отклонён оператором",
+  "requestStateClosed": "Закрыт — заказ завершился иначе",
+  "orderRequestCancel": "Попросить отменить",
+  "orderRequestCancelTitle": "Попросить отменить заказ?",
+  "orderRequestCancelReason": "Причина",
+  "orderRequestCancelExplained": "Заказ уже в работе — решит оператор.",
+  "errorApprovalExpired": "Время ответа на вопрос истекло.",
+  "questionRejectRemoves": "Если откажетесь, этот товар уберут из заказа.",
+  "removedYouRejected": "вы отказались",
+  "removedYouRemoved": "вы убрали",
+  "questionDropsReplacement": "Если согласитесь, купят заказанный товар, а не замену.",
+  "decisionSending": "Отправляем ответ"
 }

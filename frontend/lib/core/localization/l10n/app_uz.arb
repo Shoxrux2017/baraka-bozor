@@ -802,7 +802,7 @@
   "orderCancelKeep": "Yo'q, qoldirish",
   "orderCancelling": "Bekor qilinmoqda",
   "orderCancellationRequested": "Bekor qilish so'raldi: operator hal qiladi",
-  "orderCancellationNeedsReason": "Xarid boshlangan: bekor qilish sababini yozing, operator hal qiladi",
+  "orderCancellationNeedsReason": "Buyurtma allaqachon bajarilmoqda: bekor qilish sababini yozing, operator hal qiladi",
   "orderOpen": "Buyurtmani ochish",
   "orderLineRemoved": "Olib tashlandi: {reason}",
   "@orderLineRemoved": {
@@ -1351,5 +1351,133 @@
   "errorShoppingIncomplete": "Hali hal qilinmagan mahsulotlar bor.",
   "shopperOrderGone": "Bu buyurtma endi sizda emas.",
   "shopperOrderCancelled": "Buyurtma bekor qilindi: sotib olinadigan narsa qolmadi.",
-  "substituteUseBuy": "Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo'lsa, u yerda mijozdan so'rash taklif qilinadi."
+  "substituteUseBuy": "Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo'lsa, u yerda mijozdan so'rash taklif qilinadi.",
+  "ordersNeedAnswer": "Javobingiz kerak",
+  "orderLineBought": "Olindi: {quantity} × {price} = {total}",
+  "@orderLineBought": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "questionPrice": "{name}: narxi endi {price} (buyurtma paytida {was} edi). Shu narxga rozimisiz?",
+  "@questionPrice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "was": {
+        "type": "String"
+      }
+    }
+  },
+  "questionReplacementPrice": "O'rniga olinadigan «{name}»: narxi {price}. Shu narxga rozimisiz?",
+  "@questionReplacementPrice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "questionSubstitution": "{name}: topilmadi. O'rniga — {replacement}, {price}. Rozimisiz?",
+  "@questionSubstitution": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "replacement": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "questionQuantity": "{name}: faqat {proposed} bor, siz {ordered} buyurtma qilgansiz. Shunchasiga rozimisiz?",
+  "@questionQuantity": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "proposed": {
+        "type": "String"
+      },
+      "ordered": {
+        "type": "String"
+      }
+    }
+  },
+  "questionNote": "Yig'uvchi izohi: {note}",
+  "@questionNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "questionExpires": "Javob berish muddati: {time}gacha",
+  "@questionExpires": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "questionApprove": "Rozi bo'lish",
+  "questionReject": "Rad etish",
+  "questionExpired": "Javob berish vaqti o'tdi — bu mahsulot buyurtmadan olib tashlanadi.",
+  "decisionUnanswered": "«{decision}» javobingiz yuborildi, lekin tasdiq kelmadi. Qayta yuborsangiz, xuddi shu javob ketadi.",
+  "@decisionUnanswered": {
+    "placeholders": {
+      "decision": {
+        "type": "String"
+      }
+    }
+  },
+  "sendAgain": "Qayta yuborish",
+  "orderPaid": "To'landi: {amount}, {time}",
+  "@orderPaid": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "requestYours": "Bekor qilish so'rovingiz: {reason}",
+  "@requestYours": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "requestStateApproved": "Tasdiqlandi — buyurtma bekor qilindi",
+  "requestStateRejected": "Operator rad etdi",
+  "requestStateClosed": "Yopildi — buyurtma boshqacha yakunlandi",
+  "orderRequestCancel": "Bekor qilishni so'rash",
+  "orderRequestCancelTitle": "Buyurtmani bekor qilishni so'raysizmi?",
+  "orderRequestCancelReason": "Sabab",
+  "orderRequestCancelExplained": "Buyurtma allaqachon bajarilmoqda — operator hal qiladi.",
+  "errorApprovalExpired": "Savolga javob berish vaqti o'tgan.",
+  "questionRejectRemoves": "Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.",
+  "removedYouRejected": "siz rad etdingiz",
+  "removedYouRemoved": "siz olib tashladingiz",
+  "questionDropsReplacement": "Rozi bo'lsangiz, o'rniga boshqasi emas, buyurtma qilingan mahsulotning o'zi olinadi.",
+  "decisionSending": "Javob yuborilmoqda"
 }

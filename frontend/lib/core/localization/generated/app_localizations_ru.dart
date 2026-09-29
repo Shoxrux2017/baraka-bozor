@@ -1595,7 +1595,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get orderCancellationNeedsReason =>
-      'Покупка уже началась: напишите причину отмены, и решит оператор';
+      'Заказ уже в работе: напишите причину отмены, и решит оператор';
 
   @override
   String get orderOpen => 'Открыть заказ';
@@ -2231,4 +2231,112 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get substituteUseBuy =>
       'Эта замена уже разрешена. Введите цену через «Купить» — там при необходимости можно спросить клиента.';
+
+  @override
+  String get ordersNeedAnswer => 'Нужен ваш ответ';
+
+  @override
+  String orderLineBought(String quantity, String price, String total) {
+    return 'Куплено: $quantity × $price = $total';
+  }
+
+  @override
+  String questionPrice(String name, String price, String was) {
+    return '$name: цена теперь $price (при заказе была $was). Согласны на эту цену?';
+  }
+
+  @override
+  String questionReplacementPrice(String name, String price) {
+    return 'Замена «$name»: цена $price. Согласны на эту цену?';
+  }
+
+  @override
+  String questionSubstitution(String name, String replacement, String price) {
+    return '$name: нет в наличии. Замена — $replacement, $price. Согласны?';
+  }
+
+  @override
+  String questionQuantity(String name, String proposed, String ordered) {
+    return '$name: есть только $proposed, вы заказали $ordered. Согласны на меньшее?';
+  }
+
+  @override
+  String questionNote(String note) {
+    return 'Комментарий сборщика: $note';
+  }
+
+  @override
+  String questionExpires(String time) {
+    return 'Ответьте до $time';
+  }
+
+  @override
+  String get questionApprove => 'Согласиться';
+
+  @override
+  String get questionReject => 'Отказаться';
+
+  @override
+  String get questionExpired =>
+      'Время ответа истекло — этот товар уберут из заказа.';
+
+  @override
+  String decisionUnanswered(String decision) {
+    return 'Ваш ответ «$decision» отправлен, но подтверждения нет. Если отправить снова, уйдёт тот же ответ.';
+  }
+
+  @override
+  String get sendAgain => 'Отправить снова';
+
+  @override
+  String orderPaid(String amount, String time) {
+    return 'Оплачено: $amount, $time';
+  }
+
+  @override
+  String requestYours(String reason) {
+    return 'Ваш запрос на отмену: $reason';
+  }
+
+  @override
+  String get requestStateApproved => 'Одобрен — заказ отменён';
+
+  @override
+  String get requestStateRejected => 'Отклонён оператором';
+
+  @override
+  String get requestStateClosed => 'Закрыт — заказ завершился иначе';
+
+  @override
+  String get orderRequestCancel => 'Попросить отменить';
+
+  @override
+  String get orderRequestCancelTitle => 'Попросить отменить заказ?';
+
+  @override
+  String get orderRequestCancelReason => 'Причина';
+
+  @override
+  String get orderRequestCancelExplained =>
+      'Заказ уже в работе — решит оператор.';
+
+  @override
+  String get errorApprovalExpired => 'Время ответа на вопрос истекло.';
+
+  @override
+  String get questionRejectRemoves =>
+      'Если откажетесь, этот товар уберут из заказа.';
+
+  @override
+  String get removedYouRejected => 'вы отказались';
+
+  @override
+  String get removedYouRemoved => 'вы убрали';
+
+  @override
+  String get questionDropsReplacement =>
+      'Если согласитесь, купят заказанный товар, а не замену.';
+
+  @override
+  String get decisionSending => 'Отправляем ответ';
 }

@@ -2963,7 +2963,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderCancellationNeedsReason.
   ///
   /// In uz, this message translates to:
-  /// **'Xarid boshlangan: bekor qilish sababini yozing, operator hal qiladi'**
+  /// **'Buyurtma allaqachon bajarilmoqda: bekor qilish sababini yozing, operator hal qiladi'**
   String get orderCancellationNeedsReason;
 
   /// No description provided for @orderOpen.
@@ -3955,6 +3955,174 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo\'lsa, u yerda mijozdan so\'rash taklif qilinadi.'**
   String get substituteUseBuy;
+
+  /// No description provided for @ordersNeedAnswer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javobingiz kerak'**
+  String get ordersNeedAnswer;
+
+  /// No description provided for @orderLineBought.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olindi: {quantity} × {price} = {total}'**
+  String orderLineBought(String quantity, String price, String total);
+
+  /// No description provided for @questionPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: narxi endi {price} (buyurtma paytida {was} edi). Shu narxga rozimisiz?'**
+  String questionPrice(String name, String price, String was);
+
+  /// No description provided for @questionReplacementPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'rniga olinadigan «{name}»: narxi {price}. Shu narxga rozimisiz?'**
+  String questionReplacementPrice(String name, String price);
+
+  /// No description provided for @questionSubstitution.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: topilmadi. O\'rniga — {replacement}, {price}. Rozimisiz?'**
+  String questionSubstitution(String name, String replacement, String price);
+
+  /// No description provided for @questionQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: faqat {proposed} bor, siz {ordered} buyurtma qilgansiz. Shunchasiga rozimisiz?'**
+  String questionQuantity(String name, String proposed, String ordered);
+
+  /// No description provided for @questionNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi izohi: {note}'**
+  String questionNote(String note);
+
+  /// No description provided for @questionExpires.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob berish muddati: {time}gacha'**
+  String questionExpires(String time);
+
+  /// No description provided for @questionApprove.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rozi bo\'lish'**
+  String get questionApprove;
+
+  /// No description provided for @questionReject.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rad etish'**
+  String get questionReject;
+
+  /// No description provided for @questionExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob berish vaqti o\'tdi — bu mahsulot buyurtmadan olib tashlanadi.'**
+  String get questionExpired;
+
+  /// No description provided for @decisionUnanswered.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{decision}» javobingiz yuborildi, lekin tasdiq kelmadi. Qayta yuborsangiz, xuddi shu javob ketadi.'**
+  String decisionUnanswered(String decision);
+
+  /// No description provided for @sendAgain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qayta yuborish'**
+  String get sendAgain;
+
+  /// No description provided for @orderPaid.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'landi: {amount}, {time}'**
+  String orderPaid(String amount, String time);
+
+  /// No description provided for @requestYours.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilish so\'rovingiz: {reason}'**
+  String requestYours(String reason);
+
+  /// No description provided for @requestStateApproved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tasdiqlandi — buyurtma bekor qilindi'**
+  String get requestStateApproved;
+
+  /// No description provided for @requestStateRejected.
+  ///
+  /// In uz, this message translates to:
+  /// **'Operator rad etdi'**
+  String get requestStateRejected;
+
+  /// No description provided for @requestStateClosed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yopildi — buyurtma boshqacha yakunlandi'**
+  String get requestStateClosed;
+
+  /// No description provided for @orderRequestCancel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bekor qilishni so\'rash'**
+  String get orderRequestCancel;
+
+  /// No description provided for @orderRequestCancelTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani bekor qilishni so\'raysizmi?'**
+  String get orderRequestCancelTitle;
+
+  /// No description provided for @orderRequestCancelReason.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sabab'**
+  String get orderRequestCancelReason;
+
+  /// No description provided for @orderRequestCancelExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma allaqachon bajarilmoqda — operator hal qiladi.'**
+  String get orderRequestCancelExplained;
+
+  /// No description provided for @errorApprovalExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savolga javob berish vaqti o\'tgan.'**
+  String get errorApprovalExpired;
+
+  /// No description provided for @questionRejectRemoves.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.'**
+  String get questionRejectRemoves;
+
+  /// No description provided for @removedYouRejected.
+  ///
+  /// In uz, this message translates to:
+  /// **'siz rad etdingiz'**
+  String get removedYouRejected;
+
+  /// No description provided for @removedYouRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'siz olib tashladingiz'**
+  String get removedYouRemoved;
+
+  /// No description provided for @questionDropsReplacement.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rozi bo\'lsangiz, o\'rniga boshqasi emas, buyurtma qilingan mahsulotning o\'zi olinadi.'**
+  String get questionDropsReplacement;
+
+  /// No description provided for @decisionSending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob yuborilmoqda'**
+  String get decisionSending;
 }
 
 class _AppLocalizationsDelegate
