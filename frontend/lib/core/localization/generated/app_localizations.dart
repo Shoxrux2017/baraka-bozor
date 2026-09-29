@@ -4325,7 +4325,7 @@ abstract class AppLocalizations {
   /// No description provided for @courierNotDeliveredExplained.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma operatorga qaytadi, u keyingi yetkazishni hal qiladi.'**
+  /// **'Buyurtma operatorga qaytadi, u keyin nima qilishni hal qiladi.'**
   String get courierNotDeliveredExplained;
 
   /// No description provided for @courierNotDeliveredDone.

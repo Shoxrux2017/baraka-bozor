@@ -408,8 +408,13 @@ class _Contacts extends ConsumerWidget {
         ),
         if (shopper != null) ...<Widget>[
           const SizedBox(height: 12),
-          Text(l10n.courierPickupFromShopper),
-          const SizedBox(height: 8),
+          if (order.status == OrderStatus.deliveryAssigned) ...<Widget>[
+            Text(
+              l10n.courierPickupFromShopper,
+              key: const ValueKey<String>('courier-pickup-from-shopper'),
+            ),
+            const SizedBox(height: 8),
+          ],
           OutlinedButton.icon(
             key: const ValueKey<String>('call-shopper'),
             icon: const Icon(Icons.call_outlined),
@@ -440,6 +445,14 @@ class _Actions extends ConsumerWidget {
     // Only the running action holds the buttons: a tap on the order as it
     // was repeats harmlessly, and the periodic refresh never holds them.
     final bool busy = state.isBusy;
+    final ApiFailure? failure = state.failure;
+    // A start refused because a cancellation request now waits says why
+    // from the refusal itself (`docs/09` section 37), unless the order
+    // loaded again already says so.
+    final bool heldByRequest =
+        failure is ApiRefusal &&
+        failure.code == 'delivery_state_conflict' &&
+        failure.error.details['reason'] == 'cancellation_request_pending';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -470,7 +483,17 @@ class _Actions extends ConsumerWidget {
               ),
           ],
         ),
-        FailureMessage(state.failure),
+        if (!heldByRequest)
+          FailureMessage(failure)
+        else if (!order.cancellationRequestPending)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              l10n.courierRequestPending,
+              key: const ValueKey<String>('courier-start-held'),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
       ],
     );
   }

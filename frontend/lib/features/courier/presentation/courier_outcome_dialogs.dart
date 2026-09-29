@@ -95,12 +95,18 @@ class _DeliveredDialogState extends ConsumerState<DeliveredDialog> {
     super.dispose();
   }
 
+  /// Whether this dialog sent the handover: a failure the outcome's state
+  /// holds from before — the other outcome's, or a closed dialog's — is not
+  /// this one's to say.
+  bool _sent = false;
+
   bool get _takesCash => widget.order.paymentMethod == PaymentMethod.cash;
 
   Future<void> _send() async {
     if (!_form.currentState!.validate()) {
       return;
     }
+    setState(() => _sent = true);
     final CourierOrder? done = await ref
         .read(courierOutcomeProvider(widget.order.id).notifier)
         .delivered(_takesCash ? cashFrom(_cash.text) : null);
@@ -155,7 +161,7 @@ class _DeliveredDialogState extends ConsumerState<DeliveredDialog> {
                       : null,
                 ),
               ],
-              CashMismatchOr(failure: state.failure),
+              CashMismatchOr(failure: _sent ? state.failure : null),
             ],
           ),
         ),
@@ -204,6 +210,9 @@ class _NotDeliveredDialogState extends ConsumerState<NotDeliveredDialog> {
   DeliveryFailureReason? _reason;
   bool _reasonMissing = false;
 
+  /// Whether this dialog sent the failure; see [_DeliveredDialogState._sent].
+  bool _sent = false;
+
   @override
   void dispose() {
     _note.dispose();
@@ -225,6 +234,7 @@ class _NotDeliveredDialogState extends ConsumerState<NotDeliveredDialog> {
       return;
     }
     final String note = trimLikeServer(_note.text);
+    setState(() => _sent = true);
     final CourierOrder? done = await ref
         .read(courierOutcomeProvider(widget.order.id).notifier)
         .notDelivered(reason, note.isEmpty ? null : note);
@@ -295,7 +305,7 @@ class _NotDeliveredDialogState extends ConsumerState<NotDeliveredDialog> {
                 ),
                 validator: (String? text) => _checkNote(l10n, text),
               ),
-              FailureMessage(state.failure),
+              FailureMessage(_sent ? state.failure : null),
             ],
           ),
         ),

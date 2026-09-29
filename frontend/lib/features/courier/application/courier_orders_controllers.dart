@@ -178,16 +178,25 @@ class CourierOutcomeController extends AccountMutation {
       reload: _reload,
     );
     if (ref.mounted) {
-      _afterRefusal(leavesOutcomeUnknown(state.failure));
+      final bool unknown = leavesOutcomeUnknown(state.failure);
+      // Unlike a handover, a failure sent again changes nothing, so an
+      // answer that did not say what it did loads the order again at once:
+      // gone, it was recorded, and the page no longer offers a handover.
+      if (unknown) {
+        ref.invalidate(courierOrderProvider(orderId));
+      }
+      _afterRefusal(unknown);
     }
     return order;
   }
 
   void _reload(CourierOrder? _) => ref.invalidate(courierOrdersProvider);
 
-  /// A conflict or the order gone: the order has moved on meanwhile — its
-  /// total corrected, or its request decided — and loads again. A refused
-  /// field stays with the form that holds it.
+  /// A conflict or the order gone: the order has moved on meanwhile —
+  /// handed to another Courier, cancelled, or its outcome recorded from
+  /// another device — and loads again. A cash mismatch is the Courier's own
+  /// count, since a price correction is locked once they set off (`docs/09`
+  /// section 45). A refused field stays with the form that holds it.
   void _afterRefusal(bool unknown) {
     final ApiFailure? failure = state.failure;
     if (!unknown &&

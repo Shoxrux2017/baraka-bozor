@@ -1103,15 +1103,15 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - the note for the Courier, and the time wish;
    - the amount to collect, or that an online order takes none;
    - when it was assigned, accepted and set off, and the time after which it is late (`delay_at`).
-   A waiting cancellation request says the Courier may not set off, and the start is not offered (`DL-54` (12)). A start refused for one reloads the order, which then says so. The delivery refreshes every ten seconds while shown; an outcome is sent from a dialog, which covers the page, so the refresh waits for it.
+   A waiting cancellation request says the Courier may not set off, and the start is not offered (`DL-54` (12)). A start refused for one says so from the refusal's `details.reason`, and reloads the order, which then says so in its place. The delivery refreshes every ten seconds while shown; an outcome is sent from a dialog, which covers the page, so the refresh waits for it.
 4. **Calls and the map** (`DL-54` (16)):
    - **The recipient** is called through the dialer.
-   - **The Shopper** is called too while the server sends their phone, that is, without a handoff point (`BR-DEL-006`), with a line saying to collect the order from them.
+   - **The Shopper** is called too while the server sends their phone, that is, without a handoff point (`BR-DEL-006`); until the Courier sets off, a line says to collect the order from them.
    - **The point** opens in the phone's map app through a `geo:` link that carries the point as its query, so the app pins it. `MapLinks` sits in `core/platform` beside `PhoneCalls`.
    - A phone that opens nothing says so, with the number or the address.
 5. **Delivered** (`docs/09` section 37).
    - **The cash.** For a cash order the Courier types the cash received. The field starts empty, so the entry is their own count rather than a tap on the expected amount (`docs/04` section 28). It takes digits, with spaces allowed between them, above zero.
-   - **A mismatch.** The server holds the cash to the final total. `cash_amount_mismatch` shows what is to be collected, from `details.expected_uzs`, and the order reloads, since a price correction may have changed its total.
+   - **A mismatch.** The server holds the cash to the final total. `cash_amount_mismatch` shows what is to be collected, from `details.expected_uzs`. The mismatch is the Courier's own count: a price correction is locked once they set off (`docs/09` section 45), so the amount the dialog shows is current. Like any conflict, it reloads the order.
    - **The key.**
      - A handover whose answer failed to say what it did keeps its key and the cash sent, as state of the delivery (`unansweredHandoverProvider`) that its screen holds.
      - The page then says so and offers only the handover. The dialog shows the amount sent, locked.
@@ -1119,7 +1119,8 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - **While it runs,** the dialog stays open and cannot be dismissed.
 6. **Not delivered.**
    - The Courier picks a reason from the four. A note of up to 300 characters is required with "other", trimmed as the server trims it.
-   - It is unkeyed, a natural repeat (`DL-64` (3)). On a failure the dialog stays open and sends again as it is.
+   - It is unkeyed, a natural repeat (`DL-64` (3)). On a failure the dialog stays open and sends again as it is. An answer that did not say what it did reloads the delivery at once: if the failure went through, the delivery is gone, and the page no longer offers a handover.
+   - Each outcome dialog shows only the failure of its own attempt, never one the other dialog or a closed one left.
 7. **After an outcome** the assignment has ended, and the delivery is no longer the Courier's.
    - Only the list reloads. A snackbar says what happened, and the Courier goes back to the list, unless they left the delivery meanwhile.
    - The answers carry no recipient, address or notes (`DL-64` (7)). The app reads only the outcome and the order number from them.

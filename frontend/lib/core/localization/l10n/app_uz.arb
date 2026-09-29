@@ -1618,7 +1618,7 @@
   },
   "courierNotDeliveredTitle": "Nega yetkazib bo'lmadi?",
   "courierNotDeliveredNote": "Izoh",
-  "courierNotDeliveredExplained": "Buyurtma operatorga qaytadi, u keyingi yetkazishni hal qiladi.",
+  "courierNotDeliveredExplained": "Buyurtma operatorga qaytadi, u keyin nima qilishni hal qiladi.",
   "courierNotDeliveredDone": "{number}-buyurtma operatorga qaytarildi",
   "@courierNotDeliveredDone": {
     "placeholders": {

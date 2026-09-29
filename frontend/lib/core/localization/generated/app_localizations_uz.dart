@@ -2456,7 +2456,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get courierNotDeliveredExplained =>
-      'Buyurtma operatorga qaytadi, u keyingi yetkazishni hal qiladi.';
+      'Buyurtma operatorga qaytadi, u keyin nima qilishni hal qiladi.';
 
   @override
   String courierNotDeliveredDone(String number) {

@@ -2477,7 +2477,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get courierNotDeliveredExplained =>
-      'Заказ вернётся к оператору, он решит, как доставить его дальше.';
+      'Заказ вернётся к оператору, он решит, что с ним делать дальше.';
 
   @override
   String courierNotDeliveredDone(String number) {

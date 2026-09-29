@@ -228,7 +228,8 @@ void main() {
       );
       expect(find.text(words.courierCollect(money(55600))), findsOneWidget);
       expect(find.text(words.courierDueBy('28.09.2026 15:10')), findsOneWidget);
-      expect(find.text(words.courierPickupFromShopper), findsOneWidget);
+      // Set off already: the Shopper stays reachable, the pickup is done.
+      expect(byKey('courier-pickup-from-shopper'), findsNothing);
 
       await tapAndSettle(tester, byKey('call-recipient'));
       await tapAndSettle(tester, byKey('call-shopper'));
@@ -309,12 +310,59 @@ void main() {
             pending: true,
           );
         await tapAndSettle(tester, byKey('courier-start'));
+        // The order loaded again says why, once.
+        expect(byKey('courier-request-pending'), findsOneWidget);
+        expect(byKey('courier-start-held'), findsNothing);
+        expect(
+          find.text(l10n(tester).errorDeliveryStateConflict),
+          findsNothing,
+        );
+        expect(byKey('courier-start'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a start refused for a waiting request says why from the refusal itself',
+      (WidgetTester tester) async {
+        courier.details[courierOrderA] = courierOrder(accepted: true);
+        await open(tester, at: AppPaths.courierOrder(courierOrderA));
+        // The order read again does not show the request yet.
+        courier.actionFailure = const ApiRefusal(
+          ApiError(
+            status: 409,
+            code: 'delivery_state_conflict',
+            details: <String, Object?>{
+              'reason': 'cancellation_request_pending',
+            },
+          ),
+        );
+        await tapAndSettle(tester, byKey('courier-start'));
+        expect(byKey('courier-start-held'), findsOneWidget);
+        expect(find.text(l10n(tester).courierRequestPending), findsOneWidget);
+
+        // Any other conflict reads as one.
+        courier.actionFailure = const ApiRefusal(
+          ApiError(status: 409, code: 'delivery_state_conflict'),
+        );
+        await tapAndSettle(tester, byKey('courier-start'));
+        expect(byKey('courier-start-held'), findsNothing);
         expect(
           find.text(l10n(tester).errorDeliveryStateConflict),
           findsOneWidget,
         );
-        expect(byKey('courier-request-pending'), findsOneWidget);
-        expect(byKey('courier-start'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'before setting off, without a handoff point, the pickup is from the Shopper',
+      (WidgetTester tester) async {
+        courier.details[courierOrderA] = courierOrder(
+          accepted: true,
+          shopperPhone: '+998907654321',
+        );
+        await open(tester, at: AppPaths.courierOrder(courierOrderA));
+        expect(byKey('courier-pickup-from-shopper'), findsOneWidget);
+        expect(byKey('call-shopper'), findsOneWidget);
       },
     );
 
@@ -641,7 +689,96 @@ void main() {
       expect(courier.actions, hasLength(2));
       expect(location(tester), AppPaths.courier);
     });
+
+    testWidgets(
+      'a failure whose answer was lost and went through leaves no handover offered',
+      (WidgetTester tester) async {
+        await open(tester, at: AppPaths.courierOrder(courierOrderA));
+        courier
+          ..actionFailure = const NetworkFailure()
+          ..details.remove(courierOrderA);
+        await tapAndSettle(tester, byKey('courier-not-delivered'));
+        await tapAndSettle(tester, byKey('failure-no_answer'));
+        await tapAndSettle(tester, byKey('courier-not-delivered-confirm'));
+        await tapAndSettle(tester, byKey('courier-not-delivered-cancel'));
+
+        // Loaded again at once, not at the next refresh.
+        expect(byKey('courier-order-gone'), findsOneWidget);
+        expect(byKey('courier-delivered'), findsNothing);
+      },
+    );
   });
+
+  testWidgets('each outcome dialog says only what its own attempt answered', (
+    WidgetTester tester,
+  ) async {
+    courier.details[courierOrderA] = courierOrder(status: 'on_the_way');
+    await open(tester, at: AppPaths.courierOrder(courierOrderA));
+    final AppLocalizations words = l10n(tester);
+    courier.actionFailure = const ApiRefusal(
+      ApiError(
+        status: 409,
+        code: 'cash_amount_mismatch',
+        details: <String, Object?>{'expected_uzs': 57000},
+      ),
+    );
+    await tapAndSettle(tester, byKey('courier-delivered'));
+    await tester.enterText(byKey('courier-cash'), '5000');
+    await tapAndSettle(tester, byKey('courier-delivered-confirm'));
+    expect(byKey('courier-cash-mismatch'), findsOneWidget);
+    await tapAndSettle(tester, byKey('courier-delivered-cancel'));
+
+    await tapAndSettle(tester, byKey('courier-not-delivered'));
+    expect(byKey('failure-message'), findsNothing);
+    expect(find.text(words.errorCashAmountMismatch), findsNothing);
+    await tapAndSettle(tester, byKey('courier-not-delivered-cancel'));
+
+    await tapAndSettle(tester, byKey('courier-delivered'));
+    expect(byKey('courier-cash-mismatch'), findsNothing);
+    expect(byKey('failure-message'), findsNothing);
+  });
+
+  testWidgets(
+    'a Courier who left while a handover went again is told, not taken back',
+    (WidgetTester tester) async {
+      courier.details[courierOrderA] = courierOrder(status: 'on_the_way');
+      courier.afterAction[courierOrderA] = courierOrder(
+        status: 'completed',
+        ended: true,
+      );
+      await open(tester, at: AppPaths.courierOrder(courierOrderA));
+      courier
+        ..actionFailure = const NetworkFailure()
+        ..details.remove(courierOrderA);
+      await tapAndSettle(tester, byKey('courier-delivered'));
+      await tester.enterText(byKey('courier-cash'), '55600');
+      await tapAndSettle(tester, byKey('courier-delivered-confirm'));
+      await tapAndSettle(tester, byKey('courier-delivered-cancel'));
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pumpAndSettle();
+      expect(byKey('courier-delivered-again'), findsOneWidget);
+
+      courier.actionFailure = null;
+      final Completer<void> hold = Completer<void>();
+      courier.hold = hold;
+      await tester.tap(byKey('courier-delivered-again'));
+      await tester.pump();
+      GoRouter.of(tester.element(find.byType(Scaffold).first))
+          .push(AppPaths.courierOrder(courierOrderB));
+      // Delivery B's load waits on the same hold: pump, do not settle.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      courier.hold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+
+      expect(location(tester), AppPaths.courierOrder(courierOrderB));
+      expect(
+        find.text(l10n(tester).courierDeliveredDone('1001')),
+        findsOneWidget,
+      );
+    },
+  );
 
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets(
@@ -673,6 +810,49 @@ void main() {
 
         await tapAndSettle(tester, byKey('courier-not-delivered'));
         await tapAndSettle(tester, byKey('courier-not-delivered-confirm'));
+        expect(tester.takeException(), isNull);
+        await tapAndSettle(tester, byKey('courier-not-delivered-cancel'));
+
+        // The cash mismatch, then a handover without a sure answer.
+        courier.actionFailure = const ApiRefusal(
+          ApiError(
+            status: 409,
+            code: 'cash_amount_mismatch',
+            details: <String, Object?>{'expected_uzs': 1234567},
+          ),
+        );
+        await tapAndSettle(tester, byKey('courier-delivered'));
+        await tester.enterText(byKey('courier-cash'), '5000');
+        await tapAndSettle(tester, byKey('courier-delivered-confirm'));
+        expect(byKey('courier-cash-mismatch'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        courier.actionFailure = const NetworkFailure();
+        await tapAndSettle(tester, byKey('courier-delivered-confirm'));
+        await tapAndSettle(tester, byKey('courier-delivered-cancel'));
+        expect(byKey('courier-handover-unconfirmed'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        // A delivery a request holds, and one no longer the Courier's.
+        await tester.pumpWidget(const SizedBox.shrink());
+        courier
+          ..actionFailure = null
+          ..details[courierOrderA] = courierOrder(
+            accepted: true,
+            pending: true,
+          );
+        await open(
+          tester,
+          at: AppPaths.courierOrder(courierOrderA),
+          size: const Size(360, 800),
+          textScale: 2,
+          device: device,
+        );
+        expect(byKey('courier-request-pending'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        courier.details.remove(courierOrderA);
+        await tester.pump(const Duration(seconds: 10));
+        await tester.pumpAndSettle();
+        expect(byKey('courier-order-gone'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

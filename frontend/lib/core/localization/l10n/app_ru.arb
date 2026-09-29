@@ -1611,7 +1611,7 @@
   },
   "courierNotDeliveredTitle": "Почему не удалось доставить?",
   "courierNotDeliveredNote": "Комментарий",
-  "courierNotDeliveredExplained": "Заказ вернётся к оператору, он решит, как доставить его дальше.",
+  "courierNotDeliveredExplained": "Заказ вернётся к оператору, он решит, что с ним делать дальше.",
   "courierNotDeliveredDone": "Заказ {number} возвращён оператору",
   "@courierNotDeliveredDone": {
     "placeholders": {
