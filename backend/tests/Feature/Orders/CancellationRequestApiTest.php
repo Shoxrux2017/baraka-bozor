@@ -24,8 +24,10 @@ use App\Models\OrderShopperAssignment;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
@@ -176,6 +178,33 @@ final class CancellationRequestApiTest extends TestCase
         // The Shopper no longer reaches the order.
         $this->withToken($shopper->shopper->createToken('s')->plainTextToken)
             ->postJson("/api/v1/shopper/orders/{$order->id}/items/{$open->id}/unavailable")->assertStatus(404);
+    }
+
+    public function test_a_question_that_falls_due_while_the_approval_waits_on_the_lock_expires(): void
+    {
+        $order = $this->order(Order::factory()->shopping());
+        $question = CustomerApproval::factory()->create([
+            'order_item_id' => OrderItem::factory()->for($order)->awaitingCustomer()->create()->id,
+            'attention_at' => now()->subMinutes(15),
+            'expires_at' => now()->addMinutes(5),
+        ]);
+        $request = $this->filed($order);
+
+        // The order lock is granted ten minutes on, past the question's expiry.
+        $waited = false;
+        DB::listen(static function (QueryExecuted $query) use (&$waited): void {
+            if (! $waited && str_contains($query->sql, 'for update') && str_contains($query->sql, '"orders"')) {
+                $waited = true;
+                Carbon::setTestNow(now()->addMinutes(10));
+            }
+        });
+
+        $this->decide($request, ['decision' => 'approve'])->assertOk()->assertJsonPath('data.status', 'cancelled');
+
+        $this->assertTrue($waited);
+        $this->assertSame(ApprovalStatus::Expired, $question->fresh()?->status, 'Due before the cancellation, it expired.');
+        $this->assertSame(1, OrderHistory::query()->where('event_type', OrderHistoryEvent::ApprovalExpired)->count());
+        $this->assertEquals([], OrderHistory::query()->where('event_type', OrderHistoryEvent::CancellationRequestDecided)->sole()->details['cancelled_approval_ids']);
     }
 
     public function test_approving_after_shopping_ends_the_courier_assignment_and_keeps_the_completed_one(): void

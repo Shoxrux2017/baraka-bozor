@@ -841,7 +841,7 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
 2. **Deciding.**
    - The request is read again under the order lock, which every writer of a request takes: filing, deciding, and the last line's removal that closes it (`DL-54` (7)).
    - The same decision again is a natural repeat. The other decision, or any decision on a `closed` request, is `409 cancellation_request_already_decided`.
-   - An approval expires the questions overdue at its own instant first, under the order lock, so a question that fell due while the decision waited on the lock expires rather than closing as cancelled (`DL-54` (8)). In the order of `docs/07` section 16, it then:
+   - An approval expires the questions overdue at its own instant first, under the order lock, so a question that fell due while the decision waited on the lock expires rather than closing as cancelled (`DL-54` (8)). The expiry shares the approval's transaction rather than one of its own, which is safe: nothing after it can refuse. A rejection writes no expiry; reads derive it and the command writes it. In the order of `docs/07` section 16, the approval then:
      - closes the still pending questions `cancelled`;
      - removes the open lines with `order_cancelled`;
      - ends the current Shopper or Courier assignment `order_cancelled`;

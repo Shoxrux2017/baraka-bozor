@@ -193,12 +193,25 @@ void main() {
         expect(asked.status, OrderStatus.shopping);
         expect(asked.cancellationRequest, CancellationRequestStatus.pending);
 
-        // A request already decided is not what this cancel did.
+        // A replay answers the order as it is now: its request may have
+        // been decided since.
         answer = customerOrderJson(
           status: 'shopping',
           changeable: false,
           cancellationRequest: 'rejected',
         );
+        final CustomerOrder replayed = await repository.cancel(
+          orderOne,
+          'Kerak emas',
+          'key',
+        );
+        expect(
+          replayed.cancellationRequest,
+          CancellationRequestStatus.rejected,
+        );
+
+        // Neither cancelled nor asked is not what a cancel answers.
+        answer = customerOrderJson(status: 'shopping', changeable: false);
         await expectLater(
           repository.cancel(orderOne, 'Kerak emas', 'key'),
           throwsA(isA<MalformedResponseFailure>()),

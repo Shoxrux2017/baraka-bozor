@@ -85,9 +85,10 @@ class CustomerOrdersApi {
     );
     final CustomerOrder order = _theOrder(response, id);
     // From shopping on, the cancel files a request an Operator decides
-    // (`DL-65` (1)): the order goes on, carrying it.
+    // (`DL-65` (1)): the order goes on, carrying it. A replay answers the
+    // order as it is now, whose request may be decided since.
     if (order.status != OrderStatus.cancelled &&
-        order.cancellationRequest != CancellationRequestStatus.pending) {
+        order.cancellationRequest == null) {
       throw const FormatException('the order is neither cancelled nor asked');
     }
     return order;
