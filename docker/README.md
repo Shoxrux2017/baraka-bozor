@@ -153,9 +153,16 @@ Customers sign in with a phone from `LOGIN_CODE_TEST_PHONES` and the code
 `LOGIN_CODE_TEST_CODE`. Each wave's API walkthrough is a script under
 `tasks/scripts/`, which reads the same three settings from `backend/.env`:
 `python tasks/scripts/wave1_api_walkthrough.py`, `python
-tasks/scripts/wave2_api_walkthrough.py`. The Wave 2 walkthrough also orders
+tasks/scripts/wave2_api_walkthrough.py`, `python
+tasks/scripts/wave3_api_walkthrough.py`. The Wave 2 walkthrough also orders
 from the Shopper's own phone in Customer mode, so +998 90 000 00 02 must be
-among the test phones.
+among the test phones. The Wave 3 walkthrough takes about thirty-five
+minutes: a question to the Customer must really expire, which it waits for,
+and it runs `approvals:expire` through `docker compose exec`, checking in the
+order's history that the command wrote the expiry (`DL-73` (1)). It
+creates its own two Couriers, so the seeded Courier keeps its first-login
+gate. Each script takes the API's address as its argument when it is not
+`http://127.0.0.1:8000/api/v1`.
 
 ## Stop
 
