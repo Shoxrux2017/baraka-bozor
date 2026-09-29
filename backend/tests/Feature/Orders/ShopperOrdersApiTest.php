@@ -276,9 +276,12 @@ final class ShopperOrdersApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.can_edit', false)
             ->assertJsonPath('data.can_cancel_directly', false);
+        // Cancelling now asks an Operator, and a request needs its reason
+        // (DL-54 (12), DL-65 (1)): the order is not cancelled at once.
         $customerSession->withHeader('Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/v1/customer/orders/{$order->id}/cancel")
-            ->assertStatus(409);
+            ->assertStatus(422)->assertJsonValidationErrors(['reason']);
+        $this->assertSame('shopping', $order->fresh()?->status->value);
     }
 
     public function test_accept_and_start_take_no_body(): void

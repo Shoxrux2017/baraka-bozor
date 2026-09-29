@@ -88,7 +88,7 @@ final class CreateOrderApiTest extends TestCase
 
         $this->assertSame([
             'id', 'order_number', 'status', 'payment_method', 'delivery_time_note', 'pending_approval_count', 'can_edit',
-            'can_cancel_directly', 'can_request_cancellation', 'items', 'totals', 'address', 'cancellation_reason_code',
+            'can_cancel_directly', 'can_request_cancellation', 'cancellation_request', 'items', 'totals', 'address', 'cancellation_reason_code',
             'payment', 'refunds', 'timestamps',
         ], array_keys($data));
         $this->assertGreaterThanOrEqual(1001, $data['order_number']);
@@ -98,6 +98,7 @@ final class CreateOrderApiTest extends TestCase
         $this->assertTrue($data['can_edit']);
         $this->assertTrue($data['can_cancel_directly']);
         $this->assertFalse($data['can_request_cancellation']);
+        $this->assertNull($data['cancellation_request']);
         $this->assertSame(0, $data['pending_approval_count']);
         $this->assertNull($data['payment']);
         $this->assertSame([], $data['refunds']);

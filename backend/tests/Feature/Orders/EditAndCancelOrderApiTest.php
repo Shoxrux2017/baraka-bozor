@@ -310,8 +310,17 @@ final class EditAndCancelOrderApiTest extends TestCase
         $started->currentShopperAssignment?->forceFill(['accepted_at' => now(), 'started_at' => now()])->save();
         $this->cancel($started)->assertStatus(409)->assertJsonPath('code', 'order_cancellation_not_allowed');
 
-        foreach ([Order::factory()->shopping(), Order::factory()->readyForDelivery(), Order::factory()->completed()] as $factory) {
-            $this->cancel($factory->create(['customer_id' => $this->customer->id]))
+        // From shopping through delivery_assigned the Customer files a request
+        // instead, which needs its reason (DL-54 (12), DL-65).
+        foreach ([Order::factory()->shopping(), Order::factory()->readyForDelivery()] as $factory) {
+            $order = $factory->create(['customer_id' => $this->customer->id]);
+            $this->cancel($order)->assertStatus(422)->assertJsonValidationErrors(['reason']);
+            $this->assertNotSame(OrderStatus::Cancelled, $order->fresh()?->status);
+        }
+
+        // From on the way on, nothing (BR-CAN-003).
+        foreach ([Order::factory()->onTheWay(), Order::factory()->completed()] as $factory) {
+            $this->cancel($factory->create(['customer_id' => $this->customer->id]), ['reason' => 'Передумал'])
                 ->assertStatus(409)->assertJsonPath('code', 'order_cancellation_not_allowed');
         }
     }

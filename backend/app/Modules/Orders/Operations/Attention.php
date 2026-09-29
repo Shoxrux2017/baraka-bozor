@@ -6,6 +6,7 @@ namespace App\Modules\Orders\Operations;
 
 use App\Models\Enums\ApprovalStatus;
 use App\Models\Enums\AssignmentEndReason;
+use App\Models\Enums\CancellationRequestStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\UserStatus;
 use App\Models\Order;
@@ -38,6 +39,9 @@ use Illuminate\Support\Facades\DB;
  * - `delivery_failed` — an order back in `ready_for_delivery` after a failed
  *   delivery: the Operator assigns a Courier, which moves it on, or cancels
  *   it (`BR-DEL-003`, `DL-64`); since the latest failure, naming its Courier.
+ * - `cancellation_request` — the Customer's cancellation request waits on a
+ *   decision (`BR-CAN-002`, `DL-65`); since it was filed, naming the current
+ *   Shopper and Courier, whose work it may stop.
  * - `approval_pending` — a question has waited ten minutes without an answer
  *   and has not expired: the Operator calls the Customer (`BR-APP-002`), since
  *   the earliest such `attention_at`.
@@ -64,10 +68,13 @@ final class Attention
 
     public const DELIVERY_FAILED = 'delivery_failed';
 
+    public const CANCELLATION_REQUEST = 'cancellation_request';
+
     /** @var list<string> */
     public const TYPES = [
         self::APPROVAL_PENDING,
         self::APPROVAL_EXPIRED,
+        self::CANCELLATION_REQUEST,
         self::COURIER_DELAYED,
         self::DELIVERY_FAILED,
         self::SELF_ORDER,
@@ -94,6 +101,8 @@ final class Attention
                 ->where('orders.status', OrderStatus::ReadyForDelivery->value)
                 ->whereHas('courierAssignments', static fn (Builder $assignment) => $assignment
                     ->where('ended_reason', AssignmentEndReason::DeliveryFailed->value)),
+            self::CANCELLATION_REQUEST => self::open($orders)->whereHas('cancellationRequests', static fn (Builder $request) => $request
+                ->where('status', CancellationRequestStatus::Pending->value)),
             self::APPROVAL_PENDING => self::open($orders)->whereExists(static fn (QueryBuilder $approval) => self::waitingTooLong(
                 $approval->selectRaw('1')->from('customer_approvals')->whereColumn('customer_approvals.order_id', 'orders.id'),
                 now(),
@@ -132,6 +141,7 @@ final class Attention
             ...self::staffBlockedItems(),
             ...self::courierDelayedItems(),
             ...self::deliveryFailedItems(),
+            ...self::cancellationRequestItems(),
             ...self::approvalItems(self::APPROVAL_PENDING, $now),
             ...self::approvalItems(self::APPROVAL_EXPIRED, $now),
         ];
@@ -260,6 +270,40 @@ final class Attention
                 'since' => $failed->ended_at->toIso8601ZuluString(),
                 'shopper' => null,
                 'courier' => self::person($failed->courier),
+            ];
+        })->filter()->values()->all();
+    }
+
+    /**
+     * @return list<Item>
+     */
+    private static function cancellationRequestItems(): array
+    {
+        $orders = self::narrow(Order::query(), self::CANCELLATION_REQUEST)
+            ->with([
+                'cancellationRequests' => static fn (Relation $request) => $request->where('status', CancellationRequestStatus::Pending->value),
+                'currentShopperAssignment.shopper',
+                'currentCourierAssignment.courier',
+            ])
+            ->get();
+
+        return $orders->map(static function (Order $order): ?array {
+            $request = $order->cancellationRequests->first();
+            // Read in a statement of its own: a request decided in between
+            // needs nothing any more.
+            if ($request === null) {
+                return null;
+            }
+            $shopper = $order->currentShopperAssignment?->shopper;
+            $courier = $order->currentCourierAssignment?->courier;
+
+            return [
+                'type' => self::CANCELLATION_REQUEST,
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'since' => $request->created_at->toIso8601ZuluString(),
+                'shopper' => $shopper === null ? null : self::person($shopper),
+                'courier' => $courier === null ? null : self::person($courier),
             ];
         })->filter()->values()->all();
     }

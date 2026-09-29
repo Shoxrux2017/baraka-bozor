@@ -830,3 +830,35 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - A reassignment committed after the action cannot change the answer. This closes the W3-9 finding recorded as not acted on.
 6. **`delivery_failed` attention** covers an order back in `ready_for_delivery` that a delivery failed on. Its `since` is the latest failure and it names that Courier. Assigning a Courier moves the order to `delivery_assigned`, which takes it off the list.
 7. **A retry learns the outcome, not the recipient** (`AGENTS.md` section 5). The Courier's answer through an ended assignment — every answer of delivered and not-delivered, the first one included — carries the order's status and the Courier's assignment, but `recipient`, `address`, `delivery_note` and `delivery_time_note` are `null` and `shopper_phone` is absent. Without this, a failed Courier could read the recipient's name, phone and address for as long as no later Courier is assigned — indefinitely, once W3-11's Operator cancels a failed order — by repeating not-delivered, and a Courier who delivered likewise by repeating delivered with new keys. A retry after a lost answer needs only the outcome.
+
+## DL-65 — Cancellation requests and the Operator's cancellation, from W3-11 (2026-09-29, agent)
+
+1. **Filing** (`BR-CAN-002`, `DL-54` (12)).
+   - The Customer's cancel files a request from `shopping` through `delivery_assigned` (`OrderPermissions::REQUEST_WINDOW`). It needs the reason (`422`); one already pending is `409 cancellation_already_pending`.
+   - One `cancellation_requested` row keeps the reason as its note and the request in its `details`.
+   - The direct branch and the request branch share the idempotency key and its fingerprint (`DL-54` (9)).
+   - A rejected or closed request does not stop a new one.
+2. **Deciding.**
+   - The request is read again under the order lock, which every writer of a request takes: filing, deciding, and the last line's removal that closes it (`DL-54` (7)).
+   - The same decision again is a natural repeat. The other decision, or any decision on a `closed` request, is `409 cancellation_request_already_decided`.
+   - An approval expires the order's overdue questions first, in a transaction of its own (`DL-54` (8)). Under the lock, in the order of `docs/07` section 16, it then:
+     - closes the still pending questions `cancelled`;
+     - removes the open lines with `order_cancelled`;
+     - ends the current Shopper or Courier assignment `order_cancelled`;
+     - cancels the order with `cancellation_request_approved`.
+   - What was bought stays bought and nothing is due (`BR-CAN-006`). The order's final amounts stay stored as history.
+   - One `cancellation_request_decided` row keeps the note, carries the move on an approval with the questions it closed, and names the request and the decision.
+   - The decision answers the order as the board shows it, since that is what the Operator looks at next.
+3. **The Operator's cancellation** (`BR-CAN-004`).
+   - `POST /operations/orders/{order}/cancel` takes `delivery_failed` alone in this wave. `unpaid_online` is refused as `422` until Wave 5 brings its state.
+   - It needs an order back in `ready_for_delivery` that a delivery failed on, else `409 order_state_conflict`. It then needs no pending request, else `409 cancellation_already_pending`: the state is checked first, as the documents order them.
+   - It writes one `status_changed` row with the reason and the note (`DL-54` (23)). A cancelled order cancelled again is a natural repeat.
+4. **What staff see.**
+   - `GET /operations/cancellation-requests` lists requests newest first, optionally narrowed by status, each with its order, origin, reason, filer, decider and note.
+   - The board's order lists its requests oldest first, without the order.
+   - The attention list gains `cancellation_request` while one is pending: since it was filed, naming the current Shopper and Courier, whose work the request may stop.
+5. **What the Customer sees.**
+   - The order carries its latest request as `{id, status, reason, created_at, resolved_at}`, and `can_request_cancellation` while none is pending in the window.
+   - The Operator's note is not included: it is written for staff, and an approved or rejected status already tells the Customer the outcome.
+   - `Order::latestCancellationRequest` is an ordered `hasOne` rather than `latestOfMany`, whose tie-break takes the maximum of the key, which PostgreSQL has no aggregate for on a UUID.
+6. **The race `DL-57`'s review named.** A Shopper's purchase or unavailable line that waited on the order lock an approval held finds the order no longer the Shopper's, the scope-safe `404`, through `ShopperOrders::lockCurrent`'s read under the lock (`DL-56` (6)). A race test proves both.

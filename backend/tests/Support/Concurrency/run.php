@@ -27,6 +27,8 @@ use App\Modules\Orders\Actions\ChangeCart;
 use App\Modules\Orders\Actions\CreateOrder;
 use App\Modules\Orders\Actions\DecideApproval;
 use App\Modules\Orders\Actions\EditOrderItems;
+use App\Modules\Orders\Actions\MarkItemUnavailable;
+use App\Modules\Orders\Actions\RecordPurchase;
 use App\Modules\Orders\Actions\StartDelivery;
 use App\Modules\Orders\Actions\StartShopping;
 use Illuminate\Contracts\Console\Kernel;
@@ -93,6 +95,23 @@ try {
         ],
         'courier.start' => [
             'order_id' => $app->make(StartDelivery::class)->start(User::query()->findOrFail($arguments[0]), $arguments[1])->id,
+        ],
+        'shopper.purchase' => [
+            'order_id' => $app->make(RecordPurchase::class)->purchase(
+                User::query()->findOrFail($arguments[0]),
+                $arguments[1],
+                $arguments[2],
+                ['purchased_quantity' => $arguments[3], 'actual_market_price_uzs' => (int) $arguments[4]],
+                $arguments[5],
+            )->id,
+        ],
+        'shopper.unavailable' => [
+            'order_id' => $app->make(MarkItemUnavailable::class)->markUnavailable(
+                User::query()->findOrFail($arguments[0]),
+                $arguments[1],
+                $arguments[2],
+                null,
+            )->id,
         ],
         'customer.decide' => [
             'approval_id' => $app->make(DecideApproval::class)->decide(

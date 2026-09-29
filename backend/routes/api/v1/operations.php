@@ -6,6 +6,7 @@ use App\Models\Enums\Role;
 use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Auth\Http\Middleware\RequireRole;
 use App\Modules\Orders\Http\Controllers\OperationsApprovalController;
+use App\Modules\Orders\Http\Controllers\OperationsCancellationRequestController;
 use App\Modules\Orders\Http\Controllers\OperationsOrderController;
 use App\Modules\Orders\Http\Controllers\OperationsStaffController;
 use Illuminate\Support\Facades\Route;
@@ -42,4 +43,13 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Operato
 
         Route::post('approvals/{approval}/resolve-expired', [OperationsApprovalController::class, 'resolveExpired'])
             ->name('operations.approvals.resolve-expired');
+
+        Route::get('cancellation-requests', [OperationsCancellationRequestController::class, 'index'])
+            ->name('operations.cancellation-requests.index');
+        Route::get('cancellation-requests/{request}', [OperationsCancellationRequestController::class, 'show'])
+            ->name('operations.cancellation-requests.show');
+        Route::post('cancellation-requests/{request}/decision', [OperationsCancellationRequestController::class, 'decide'])
+            ->name('operations.cancellation-requests.decision');
+        Route::post('orders/{order}/cancel', [OperationsOrderController::class, 'cancel'])
+            ->name('operations.orders.cancel');
     });
