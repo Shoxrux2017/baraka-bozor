@@ -97,24 +97,86 @@ shopperOrderActionProvider = NotifierProvider.autoDispose
 /// An order's line, as the actions at the market name it.
 typedef ShopperLineRef = ({String orderId, String itemId});
 
+/// A keyed request sent without a sure answer: its `Idempotency-Key` and
+/// what was sent, which a retry sends again as it was (`docs/09` section
+/// 48).
+final class UnansweredRequest<T> {
+  const UnansweredRequest(this.key, this.sent);
+
+  final String key;
+  final T sent;
+}
+
+/// One order's keyed requests still without a sure answer: each line's
+/// purchase and the completion (`DL-70` (5)). A request enters only once an
+/// answer failed to say what it did — no answer, a server error, the same
+/// key still running — and leaves at the first sure answer. The order's
+/// screen watches this, so it lasts while the order is shown, whatever its
+/// lines' cards and its loads do; another account starts over.
+final class UnansweredRequests {
+  const UnansweredRequests({
+    this.purchases = const <String, UnansweredRequest<PurchaseEntry>>{},
+    this.completion,
+  });
+
+  /// By line id.
+  final Map<String, UnansweredRequest<PurchaseEntry>> purchases;
+  final UnansweredRequest<void>? completion;
+}
+
+class UnansweredRequestsController extends Notifier<UnansweredRequests> {
+  UnansweredRequestsController(this.orderId);
+
+  final String orderId;
+
+  @override
+  UnansweredRequests build() {
+    ref.watch(staffAccountProvider);
+    return const UnansweredRequests();
+  }
+
+  void purchase(String itemId, UnansweredRequest<PurchaseEntry>? request) {
+    final Map<String, UnansweredRequest<PurchaseEntry>> purchases =
+        <String, UnansweredRequest<PurchaseEntry>>{...state.purchases};
+    if (request == null) {
+      purchases.remove(itemId);
+    } else {
+      purchases[itemId] = request;
+    }
+    state = UnansweredRequests(
+      purchases: purchases,
+      completion: state.completion,
+    );
+  }
+
+  void completion(UnansweredRequest<void>? request) => state =
+      UnansweredRequests(purchases: state.purchases, completion: request);
+}
+
+final NotifierProviderFamily<
+  UnansweredRequestsController,
+  UnansweredRequests,
+  String
+>
+unansweredRequestsProvider = NotifierProvider.autoDispose
+    .family<UnansweredRequestsController, UnansweredRequests, String>(
+      UnansweredRequestsController.new,
+    );
+
 /// A line's actions at the market (`docs/09` sections 30 to 34), one at a
 /// time: the purchase, the line not to be found, a replacement, and the
 /// questions to the Customer. After each — and after a refusal an order
 /// changed meanwhile may explain — the order and the list load again
-/// (`DL-28` (11)).
+/// (`DL-28` (11)); an answer whose order left the Shopper — the last line
+/// not found cancels it — is not loaded again, since the Shopper may no
+/// longer read it (`DL-70` (6)).
 ///
-/// The purchase is keyed: the key and what was sent are kept until an
-/// answer says for sure whether the purchase was recorded, so a retry sends
-/// the same purchase again under the same key (`docs/09` section 48,
-/// `DL-70`). The line's card watches this, so they last while the order is
-/// shown.
+/// The purchase is keyed: without a sure answer its key and what was sent
+/// wait in [unansweredRequestsProvider], and a retry sends them again.
 class ShopperLineController extends AccountMutation {
   ShopperLineController(this.line);
 
   final ShopperLineRef line;
-
-  String? _key;
-  PurchaseEntry? _sent;
 
   @override
   Provider<String?> get account => staffAccountProvider;
@@ -122,29 +184,31 @@ class ShopperLineController extends AccountMutation {
   ShopperOrdersRepository get _orders =>
       ref.read(shopperOrdersRepositoryProvider);
 
-  /// The purchase sent without a sure answer, which a retry sends again.
-  PurchaseEntry? get unconfirmed => _key == null ? null : _sent;
-
-  /// Records [entry]; while an earlier purchase is unconfirmed, sends that
-  /// one again instead.
+  /// Records [entry]; while an earlier purchase of the line has no sure
+  /// answer, sends that one again instead, under its key.
   Future<ShopperOrder?> purchase(PurchaseEntry entry) async {
-    // A tap while a purchase runs is not another attempt, and leaves the key.
+    // A tap while a purchase runs is not another attempt.
     if (state.isBusy) {
       return null;
     }
-    if (_key == null) {
-      _key = newIdempotencyKey();
-      _sent = entry;
-    }
-    final String key = _key!;
-    final PurchaseEntry sent = _sent!;
+    final UnansweredRequest<PurchaseEntry>? unanswered = ref
+        .read(unansweredRequestsProvider(line.orderId))
+        .purchases[line.itemId];
+    final String key = unanswered?.key ?? newIdempotencyKey();
+    final PurchaseEntry sent = unanswered?.sent ?? entry;
     final ShopperOrder? order = await perform(
       () => _orders.purchase(line.orderId, line.itemId, sent, key),
       reload: _reload,
     );
-    if (!leavesOutcomeUnknown(ref.mounted ? state.failure : null)) {
-      _key = null;
-      _sent = null;
+    if (ref.mounted) {
+      ref
+          .read(unansweredRequestsProvider(line.orderId).notifier)
+          .purchase(
+            line.itemId,
+            leavesOutcomeUnknown(state.failure)
+                ? UnansweredRequest<PurchaseEntry>(key, sent)
+                : null,
+          );
     }
     return order;
   }
@@ -191,9 +255,12 @@ class ShopperLineController extends AccountMutation {
         reload: _reload,
       );
 
-  void _reload(Object? _) => ref
-    ..invalidate(shopperOrderProvider(line.orderId))
-    ..invalidate(shopperOrdersProvider);
+  void _reload(ShopperOrder? answered) {
+    if (answered == null || answered.assignment != null) {
+      ref.invalidate(shopperOrderProvider(line.orderId));
+    }
+    ref.invalidate(shopperOrdersProvider);
+  }
 }
 
 final NotifierProviderFamily<
@@ -207,37 +274,40 @@ shopperLineActionProvider = NotifierProvider.autoDispose
     );
 
 /// The completion of an order's shopping (`docs/09` section 35), keyed as
-/// the purchase is. A completed order leaves the Shopper, so only the list
-/// loads again after it; a refusal loads the order again too.
+/// the purchase is. The order's screen watches it, and stops its refresh
+/// while it runs.
+///
+/// Only the list loads again after it: a completed order is the Shopper's
+/// no more, and after a completion without a sure answer the order may not
+/// be either, so its page keeps what it shows and offers to send the
+/// completion again. A sure refusal loads the order again too.
 class ShopperCompleteController extends AccountMutation {
   ShopperCompleteController(this.orderId);
 
   final String orderId;
-  String? _key;
 
   @override
   Provider<String?> get account => staffAccountProvider;
-
-  /// Whether a completion was sent without a sure answer; a retry sends it
-  /// again under the same key.
-  bool get unconfirmed => _key != null;
 
   Future<ShopperOrder?> complete() async {
     if (state.isBusy) {
       return null;
     }
-    final String key = _key ??= newIdempotencyKey();
+    final String key =
+        ref.read(unansweredRequestsProvider(orderId)).completion?.key ??
+        newIdempotencyKey();
     final ShopperOrder? order = await perform(
       () => ref.read(shopperOrdersRepositoryProvider).complete(orderId, key),
-      reload: (ShopperOrder? completed) {
-        if (completed == null) {
-          ref.invalidate(shopperOrderProvider(orderId));
-        }
-        ref.invalidate(shopperOrdersProvider);
-      },
+      reload: (ShopperOrder? _) => ref.invalidate(shopperOrdersProvider),
     );
-    if (!leavesOutcomeUnknown(ref.mounted ? state.failure : null)) {
-      _key = null;
+    if (ref.mounted) {
+      final bool unknown = leavesOutcomeUnknown(state.failure);
+      ref
+          .read(unansweredRequestsProvider(orderId).notifier)
+          .completion(unknown ? UnansweredRequest<void>(key, null) : null);
+      if (state.failure != null && !unknown) {
+        ref.invalidate(shopperOrderProvider(orderId));
+      }
     }
     return order;
   }

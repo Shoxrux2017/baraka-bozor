@@ -342,7 +342,13 @@ class FakeShopperOrdersRepository implements ShopperOrdersRepository {
       throw actionFailure!;
     }
     final ShopperOrder order = afterAction[id]!;
-    details[id] = order;
+    // An order the answer shows no longer the Shopper's is theirs to read
+    // no more: loading it again finds nothing, as the server's does.
+    if (order.assignment == null) {
+      details.remove(id);
+    } else {
+      details[id] = order;
+    }
     return order;
   }
 }

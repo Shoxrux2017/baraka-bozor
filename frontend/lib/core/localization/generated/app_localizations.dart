@@ -3937,6 +3937,24 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Hali hal qilinmagan mahsulotlar bor.'**
   String get errorShoppingIncomplete;
+
+  /// No description provided for @shopperOrderGone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu buyurtma endi sizda emas.'**
+  String get shopperOrderGone;
+
+  /// No description provided for @shopperOrderCancelled.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma bekor qilindi: sotib olinadigan narsa qolmadi.'**
+  String get shopperOrderCancelled;
+
+  /// No description provided for @substituteUseBuy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo\'lsa, u yerda mijozdan so\'rash taklif qilinadi.'**
+  String get substituteUseBuy;
 }
 
 class _AppLocalizationsDelegate

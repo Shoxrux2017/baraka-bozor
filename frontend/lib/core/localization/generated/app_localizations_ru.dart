@@ -2087,7 +2087,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get purchaseQuantity => 'Куплено';
+  String get purchaseQuantity => 'Сколько куплено';
 
   @override
   String get purchasePrice => 'Цена за единицу (оплачено)';
@@ -2097,7 +2097,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Товар с фиксированной ценой: цену можно не вводить';
 
   @override
-  String get purchaseSave => 'Куплено';
+  String get purchaseSave => 'Купил';
 
   @override
   String get purchaseAgain => 'Отправить снова';
@@ -2221,4 +2221,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get errorShoppingIncomplete => 'Есть ещё нерешённые позиции.';
+
+  @override
+  String get shopperOrderGone => 'Этот заказ больше не ваш.';
+
+  @override
+  String get shopperOrderCancelled => 'Заказ отменён: покупать больше нечего.';
+
+  @override
+  String get substituteUseBuy =>
+      'Эта замена уже разрешена. Введите цену через «Купить» — там при необходимости можно спросить клиента.';
 }

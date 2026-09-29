@@ -40,9 +40,19 @@ final FeatureRoutes shopperRoutes = FeatureRoutes(
     GoRoute(
       path: AppPaths.shopperDonePattern,
       name: 'shopper-done',
-      builder: (BuildContext context, GoRouterState state) => ShopperDoneScreen(
-        orderNumber: int.tryParse(state.pathParameters['number']!) ?? 0,
-      ),
+      // Only an order number: anything else is no closing screen.
+      redirect: (BuildContext context, GoRouterState state) =>
+          _orderNumber(state) == null ? AppPaths.shopper : null,
+      builder: (BuildContext context, GoRouterState state) =>
+          ShopperDoneScreen(orderNumber: _orderNumber(state)!),
     ),
   ],
 );
+
+int? _orderNumber(GoRouterState state) {
+  final String number = state.pathParameters['number'] ?? '';
+  final int? parsed = RegExp(r'^[1-9]\d{0,9}$').hasMatch(number)
+      ? int.tryParse(number)
+      : null;
+  return parsed;
+}

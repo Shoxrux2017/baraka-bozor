@@ -230,8 +230,8 @@ final class ReplacementChoice {
 
 /// A purchase as the Shopper records it (`docs/09` section 30): the quantity
 /// bought, the price paid per unit — required for an estimate original and
-/// for a replacement — and the product bought, left out for the authorized
-/// replacement or, without one, the line's own.
+/// for a replacement — and the product bought, named as the Shopper saw it
+/// (`DL-70` (2)).
 final class PurchaseEntry {
   const PurchaseEntry({
     required this.quantity,
@@ -243,16 +243,6 @@ final class PurchaseEntry {
   final String quantity;
   final int? actualMarketPriceUzs;
   final String? productId;
-
-  @override
-  bool operator ==(Object other) =>
-      other is PurchaseEntry &&
-      other.quantity == quantity &&
-      other.actualMarketPriceUzs == actualMarketPriceUzs &&
-      other.productId == productId;
-
-  @override
-  int get hashCode => Object.hash(quantity, actualMarketPriceUzs, productId);
 }
 
 /// The Shopper's orders on the staff session (`docs/09` sections 28 to 35).

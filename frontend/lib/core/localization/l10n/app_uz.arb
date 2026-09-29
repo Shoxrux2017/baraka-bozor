@@ -1348,5 +1348,8 @@
   "errorCustomerApprovalRequired": "Buning uchun mijozning roziligi kerak.",
   "errorApprovalNotNeeded": "Bu narx uchun mijozdan so'rash shart emas — sotib olavering.",
   "errorSubstitutionNotAllowed": "Mijoz bu mahsulotni almashtirishga rozi emas.",
-  "errorShoppingIncomplete": "Hali hal qilinmagan mahsulotlar bor."
+  "errorShoppingIncomplete": "Hali hal qilinmagan mahsulotlar bor.",
+  "shopperOrderGone": "Bu buyurtma endi sizda emas.",
+  "shopperOrderCancelled": "Buyurtma bekor qilindi: sotib olinadigan narsa qolmadi.",
+  "substituteUseBuy": "Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo'lsa, u yerda mijozdan so'rash taklif qilinadi."
 }

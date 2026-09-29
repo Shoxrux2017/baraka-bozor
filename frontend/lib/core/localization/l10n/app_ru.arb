@@ -1246,10 +1246,10 @@
       }
     }
   },
-  "purchaseQuantity": "Куплено",
+  "purchaseQuantity": "Сколько куплено",
   "purchasePrice": "Цена за единицу (оплачено)",
   "purchasePriceOptional": "Товар с фиксированной ценой: цену можно не вводить",
-  "purchaseSave": "Куплено",
+  "purchaseSave": "Купил",
   "purchaseAgain": "Отправить снова",
   "purchaseUnconfirmed": "На последнюю покупку нет ответа — та же покупка будет отправлена снова.",
   "purchaseAboveBound": "Эта цена выше той, что можно платить без вопроса клиенту. Спросить клиента?",
@@ -1341,5 +1341,8 @@
   "errorCustomerApprovalRequired": "Для этого нужно согласие клиента.",
   "errorApprovalNotNeeded": "Для этой цены спрашивать клиента не нужно — покупайте.",
   "errorSubstitutionNotAllowed": "Клиент не разрешил заменять этот товар.",
-  "errorShoppingIncomplete": "Есть ещё нерешённые позиции."
+  "errorShoppingIncomplete": "Есть ещё нерешённые позиции.",
+  "shopperOrderGone": "Этот заказ больше не ваш.",
+  "shopperOrderCancelled": "Заказ отменён: покупать больше нечего.",
+  "substituteUseBuy": "Эта замена уже разрешена. Введите цену через «Купить» — там при необходимости можно спросить клиента."
 }

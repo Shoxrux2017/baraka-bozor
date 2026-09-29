@@ -2197,4 +2197,15 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get errorShoppingIncomplete => 'Hali hal qilinmagan mahsulotlar bor.';
+
+  @override
+  String get shopperOrderGone => 'Bu buyurtma endi sizda emas.';
+
+  @override
+  String get shopperOrderCancelled =>
+      'Buyurtma bekor qilindi: sotib olinadigan narsa qolmadi.';
+
+  @override
+  String get substituteUseBuy =>
+      'Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo\'lsa, u yerda mijozdan so\'rash taklif qilinadi.';
 }

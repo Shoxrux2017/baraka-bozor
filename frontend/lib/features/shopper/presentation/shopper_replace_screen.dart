@@ -7,6 +7,8 @@ import '../../../core/formatting/money_format.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
+import '../../../core/network/api_failure.dart';
+import '../../../core/routing/app_paths.dart';
 import '../../../core/network/paged.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
@@ -179,7 +181,12 @@ class _ShopperReplaceScreenState extends ConsumerState<ShopperReplaceScreen> {
       ),
     );
     if (offered == true && context.mounted) {
-      context.pop();
+      // Opened over the order, back to it; entered alone, on to it.
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go(AppPaths.shopperOrder(widget.orderId));
+      }
     }
   }
 }
@@ -230,11 +237,21 @@ class _SubstituteDialogState extends ConsumerState<_SubstituteDialog> {
     if (!mounted) {
       return;
     }
+    final NavigatorState dialog = Navigator.of(context);
+    final GoRouter router = GoRouter.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final ShopperOrder? done = await ref
         .read(shopperLineActionProvider(_lineRef).notifier)
         .substitute(widget.choice.id, price, optionalNote(_note.text));
     if (mounted && done != null) {
-      Navigator.of(context).pop(true);
+      closeOnAnswer(
+        dialog: dialog,
+        router: router,
+        messenger: messenger,
+        l10n: l10n,
+        answer: done,
+      );
     }
   }
 
@@ -288,7 +305,23 @@ class _SubstituteDialogState extends ConsumerState<_SubstituteDialog> {
                   ),
                   validator: (String? text) => noteTooLong(l10n, text ?? ''),
                 ),
-                FailureMessage(change.failure),
+                // The replacement already authorized, above its bound: the
+                // purchase is where its price is asked of the Customer.
+                if (change.failure case ApiRefusal(
+                  code: 'customer_approval_required',
+                ))
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      l10n.substituteUseBuy,
+                      key: const ValueKey<String>('substitute-use-buy'),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  )
+                else
+                  FailureMessage(change.failure),
               ],
             ),
           ),

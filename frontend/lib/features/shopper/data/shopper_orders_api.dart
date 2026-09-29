@@ -215,9 +215,10 @@ class ShopperOrdersApi {
       ),
     );
     final ShopperOrder order = _theOrder(response, orderId);
-    // Done shopping: ready for delivery, or the online payment's turn.
-    if (order.status != OrderStatus.readyForDelivery &&
-        order.status != OrderStatus.finalPaymentPending) {
+    // Past shopping, and no longer the Shopper's. A replay answers the
+    // order as it is now, which may be further on — a Courier assigned,
+    // delivered, even cancelled (`docs/09` section 48).
+    if (_notYetShopped.contains(order.status) || order.assignment != null) {
       throw const FormatException('the order does not show the completion');
     }
     return order;
@@ -258,6 +259,13 @@ class ShopperOrdersApi {
   static final RegExp _fractional = RegExp(r'^\d{1,4}\.\d{3}$');
   static final RegExp _whole = RegExp(r'^\d{1,4}$');
   static final RegExp _phone = RegExp(r'^\+998\d{9}$');
+
+  /// The states an order is in until its shopping is done.
+  static const Set<OrderStatus> _notYetShopped = <OrderStatus>{
+    OrderStatus.newOrder,
+    OrderStatus.shoppingAssigned,
+    OrderStatus.shopping,
+  };
 
   /// The states an order is in while a Shopper holds it (`DL-54` (3)).
   static const Set<OrderStatus> _held = <OrderStatus>{

@@ -642,6 +642,44 @@ void main() {
       },
     );
 
+    test('a substitution asked of the Customer, and a completion replayed '
+        'after a Courier was assigned, are answers of their own', () async {
+      orderAnswer = shopperOrderJson(
+        status: 'shopping',
+        items: <Object?>[shopperAskedLineJson('substitution')],
+      );
+      final ShopperOrder asked = await repository.substitute(
+        shopperOrderA,
+        shopperLineTomato,
+        shopperProductCherry,
+        15500,
+        null,
+      );
+      expect(asked.items.single.openQuestion?.type, ApprovalType.substitution);
+
+      orderAnswer = <String, Object?>{
+        ...shopperOrderJson(status: 'delivery_assigned'),
+        'assignment': null,
+        'can_accept': false,
+        'can_start': false,
+      };
+      final ShopperOrder replayed = await repository.complete(
+        shopperOrderA,
+        'key',
+      );
+      expect(replayed.status, OrderStatus.deliveryAssigned);
+
+      // Still the Shopper's: not completed.
+      orderAnswer = <String, Object?>{
+        ...shopperOrderJson(status: 'ready_for_delivery', accepted: true),
+        'can_start': false,
+      };
+      await expectLater(
+        repository.complete(shopperOrderA, 'key'),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+    });
+
     test('the replacement search asks for its page, and its term only when '
         'there is one', () async {
       pageAnswer = null;

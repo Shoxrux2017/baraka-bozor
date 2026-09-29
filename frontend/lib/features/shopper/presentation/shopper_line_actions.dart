@@ -43,9 +43,10 @@ class ShopperLineActions extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ShopperLineRef lineRef = (orderId: order.id, itemId: line.id);
     final MutationState state = ref.watch(shopperLineActionProvider(lineRef));
-    final bool unconfirmed =
-        ref.read(shopperLineActionProvider(lineRef).notifier).unconfirmed !=
-        null;
+    final bool unconfirmed = ref.watch(
+      unansweredRequestsProvider(order.id)
+          .select((UnansweredRequests r) => r.purchases.containsKey(line.id)),
+    );
     final bool busy = state.isBusy;
 
     return Padding(
@@ -98,6 +99,32 @@ class ShopperLineActions extends ConsumerWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Closes an action's dialog on [answer]. An answer whose order left the
+/// Shopper — cancelled with nothing left to buy, or passed to another
+/// Shopper meanwhile — takes them back to their list and says why, since
+/// they can no longer read the order (`DL-70` (6)).
+void closeOnAnswer({
+  required NavigatorState dialog,
+  required GoRouter router,
+  required ScaffoldMessengerState messenger,
+  required AppLocalizations l10n,
+  required ShopperOrder answer,
+}) {
+  dialog.pop(true);
+  if (answer.assignment == null) {
+    router.go(AppPaths.shopper);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          answer.status == OrderStatus.cancelled
+              ? l10n.shopperOrderCancelled
+              : l10n.shopperOrderGone,
+        ),
       ),
     );
   }
@@ -227,17 +254,41 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
   /// Whether the authorized replacement, rather than the original, is bought.
   bool _replacement = true;
 
+  /// Whether asking about the price found no price to ask about.
+  bool _askNeedsPrice = false;
+
   ShopperLineRef get _lineRef =>
       (orderId: widget.order.id, itemId: widget.line.id);
 
   ShopperLineController get _controller =>
       ref.read(shopperLineActionProvider(_lineRef).notifier);
 
+  /// The line's purchase sent without a sure answer, if any.
+  UnansweredRequest<PurchaseEntry>? get _unanswered => ref
+      .read(unansweredRequestsProvider(widget.order.id))
+      .purchases[widget.line.id];
+
+  /// Closes the dialog on [answer], with what the dialog needs read before
+  /// the request (`closeOnAnswer`).
+  void Function(ShopperOrder answer) _closer() {
+    final NavigatorState dialog = Navigator.of(context);
+    final GoRouter router = GoRouter.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return (ShopperOrder answer) => closeOnAnswer(
+      dialog: dialog,
+      router: router,
+      messenger: messenger,
+      l10n: l10n,
+      answer: answer,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     final ShopperLine line = widget.line;
-    final PurchaseEntry? sent = _controller.unconfirmed;
+    final PurchaseEntry? sent = _unanswered?.sent;
     _quantity = TextEditingController(
       text: QuantityRules.display(
         sent?.quantity ?? line.approvedQuantityCap ?? line.quantity,
@@ -272,16 +323,16 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     return PurchaseEntry(
       quantity: QuantityRules.normalize(widget.line.unit, _quantity.text)!,
       actualMarketPriceUzs: price.isEmpty ? null : parsePrice(price),
-      // Left out, the server takes the authorized replacement when there is
-      // one; the original is named when the Shopper bought it instead.
-      productId: widget.line.replacement != null && !_replacement
-          ? widget.line.productId
-          : null,
+      // The product the dialog shows, named whatever the server holds
+      // meanwhile (`DL-70` (2)).
+      productId: _buysReplacement
+          ? widget.line.replacement!.productId
+          : widget.line.productId,
     );
   }
 
   Future<void> _buy() async {
-    final PurchaseEntry? sent = _controller.unconfirmed;
+    final PurchaseEntry? sent = _unanswered?.sent;
     final PurchaseEntry entry;
     if (sent != null) {
       entry = sent;
@@ -300,24 +351,39 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     if (!mounted) {
       return;
     }
+    final void Function(ShopperOrder answer) close = _closer();
     final ShopperOrder? done = await _controller.purchase(entry);
     if (mounted && done != null) {
-      Navigator.of(context).pop();
+      close(done);
     }
   }
 
   Future<void> _askAboutPrice() async {
+    // A question about a price needs one, even for a line bought as itself;
+    // the field asks for it once rebuilt so.
+    if (!_askNeedsPrice) {
+      setState(() => _askNeedsPrice = true);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) {
+        return;
+      }
+    }
     if (!(_form.currentState?.validate() ?? false)) {
       return;
     }
     final PurchaseEntry entry = _entry();
+    final int? price = entry.actualMarketPriceUzs;
+    if (price == null) {
+      return;
+    }
+    final void Function(ShopperOrder answer) close = _closer();
     final ShopperOrder? done = await _controller.askAboutPrice(
-      entry.actualMarketPriceUzs!,
+      price,
       entry.productId,
       optionalNote(_note.text),
     );
     if (mounted && done != null) {
-      Navigator.of(context).pop();
+      close(done);
     }
   }
 
@@ -325,12 +391,13 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     if (!(_form.currentState?.validate() ?? false)) {
       return;
     }
+    final void Function(ShopperOrder answer) close = _closer();
     final ShopperOrder? done = await _controller.askAboutQuantity(
       _entry().quantity,
       optionalNote(_note.text),
     );
     if (mounted && done != null) {
-      Navigator.of(context).pop();
+      close(done);
     }
   }
 
@@ -341,7 +408,12 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
     final ShopperLine line = widget.line;
     final ShopperReplacement? replacement = line.replacement;
     final MutationState change = ref.watch(shopperLineActionProvider(_lineRef));
-    final bool locked = change.isBusy || _controller.unconfirmed != null;
+    final bool unanswered =
+        ref
+            .watch(unansweredRequestsProvider(widget.order.id))
+            .purchases[line.id] !=
+        null;
+    final bool locked = change.isBusy || unanswered;
     String name(String uz, String ru) => language == AppLanguage.ru ? ru : uz;
     final String bought = _buysReplacement
         ? name(replacement!.nameUz, replacement.nameRu)
@@ -438,11 +510,11 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
                   fieldKey: 'purchase-price',
                   controller: _price,
                   label: l10n.purchasePrice,
-                  required: priceRequired,
+                  required: priceRequired || _askNeedsPrice,
                   enabled: !locked,
                   helper: priceRequired ? null : l10n.purchasePriceOptional,
                 ),
-                if (_controller.unconfirmed != null)
+                if (unanswered)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),
                     child: Text(
@@ -515,11 +587,7 @@ class _PurchaseDialogState extends ConsumerState<PurchaseDialog> {
           FilledButton(
             key: const ValueKey<String>('purchase-save'),
             onPressed: change.isBusy ? null : _buy,
-            child: Text(
-              _controller.unconfirmed != null
-                  ? l10n.purchaseAgain
-                  : l10n.purchaseSave,
-            ),
+            child: Text(unanswered ? l10n.purchaseAgain : l10n.purchaseSave),
           ),
         ],
       ),
@@ -557,11 +625,21 @@ class _UnavailableDialogState extends ConsumerState<UnavailableDialog> {
     if (!(_form.currentState?.validate() ?? false)) {
       return;
     }
+    final NavigatorState dialog = Navigator.of(context);
+    final GoRouter router = GoRouter.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final ShopperOrder? done = await ref
         .read(shopperLineActionProvider(_lineRef).notifier)
         .markUnavailable(optionalNote(_note.text));
     if (mounted && done != null) {
-      Navigator.of(context).pop();
+      closeOnAnswer(
+        dialog: dialog,
+        router: router,
+        messenger: messenger,
+        l10n: l10n,
+        answer: done,
+      );
     }
   }
 

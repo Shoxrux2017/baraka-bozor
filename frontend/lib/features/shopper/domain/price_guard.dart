@@ -1,4 +1,4 @@
-/// The typo guard of `DL-3` S-35 (`docs/04` section 12, `DL-54` (20)): a
+/// The typo guard of `DL-3` S-35 (`docs/04` section 14, `DL-54` (20)): a
 /// price paid more than three times the market price of the product bought,
 /// or less than a third of it, is more likely a slip of the finger than the
 /// stall's price, so the Shopper confirms it before it is sent. The server's

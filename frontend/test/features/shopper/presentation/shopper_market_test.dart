@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
@@ -9,6 +11,7 @@ import 'package:baraka_bozor/features/shopper/domain/price_guard.dart';
 import 'package:baraka_bozor/features/shopper/domain/shopper_orders.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../support/app_harness.dart';
 import '../../../support/fake_auth_repository.dart';
@@ -172,7 +175,7 @@ void main() {
     await tapAndSettle(tester, byKey('purchase-save'));
 
     expect(shopper.actions, <String>[
-      'purchase:$shopperLineTomato:1.8:16500:null',
+      'purchase:$shopperLineTomato:1.8:16500:$shopperProductTomato',
     ]);
     expect(find.byType(AlertDialog), findsNothing);
     expect(byKey('shopper-line-bought-$shopperLineTomato'), findsOneWidget);
@@ -199,7 +202,7 @@ void main() {
     await tapAndSettle(tester, byKey('purchase-save'));
     await tapAndSettle(tester, byKey('typo-confirm'));
     expect(shopper.actions, <String>[
-      'purchase:$shopperLineTomato:2:60000:null',
+      'purchase:$shopperLineTomato:2:60000:$shopperProductTomato',
     ]);
   });
 
@@ -214,7 +217,9 @@ void main() {
 
     await buy(tester, shopperLineBread);
 
-    expect(shopper.actions, <String>['purchase:$shopperLineBread:2:null:null']);
+    expect(shopper.actions, <String>[
+      'purchase:$shopperLineBread:2:null:$shopperProductBread',
+    ]);
   });
 
   testWidgets('with a replacement authorized, the replacement is bought, and '
@@ -227,19 +232,27 @@ void main() {
     ]);
     await openOrder(tester);
 
+    // Refused surely, so each attempt below is sent anew.
+    shopper.actionFailure = const ApiRefusal(
+      ApiError(status: 409, code: 'item_already_resolved'),
+    );
+
     // 47 000 is above three times the replacement's 15 500.
     await buy(tester, shopperLineTomato, price: '47000');
     expect(byKey('typo-confirm'), findsOneWidget);
     await tapAndSettle(tester, byKey('typo-cancel'));
 
-    // The original's 16 000 makes the same price no slip, and names it.
+    // The replacement is named when bought.
+    await tester.enterText(byKey('purchase-price'), '15000');
+    await tapAndSettle(tester, byKey('purchase-save'));
+
+    // The original's 16 000 makes 47 000 no slip, and it is named.
     await tapAndSettle(tester, byKey('buy-original'));
-    shopper.actionFailure = const ApiRefusal(
-      ApiError(status: 409, code: 'item_already_resolved'),
-    );
+    await tester.enterText(byKey('purchase-price'), '47000');
     await tapAndSettle(tester, byKey('purchase-save'));
     expect(byKey('typo-confirm'), findsNothing);
     expect(shopper.actions, <String>[
+      'purchase:$shopperLineTomato:2:15000:$shopperProductCherry',
       'purchase:$shopperLineTomato:2:47000:$shopperProductTomato',
     ]);
     expect(find.text(l10n(tester).errorItemAlreadyResolved), findsOneWidget);
@@ -278,8 +291,8 @@ void main() {
     await tapAndSettle(tester, byKey('ask-price'));
 
     expect(shopper.actions, <String>[
-      'purchase:$shopperLineTomato:2:22000:null',
-      'ask-price:$shopperLineTomato:22000:null:Narx oshgan',
+      'purchase:$shopperLineTomato:2:22000:$shopperProductTomato',
+      'ask-price:$shopperLineTomato:22000:$shopperProductTomato:Narx oshgan',
     ]);
     expect(find.byType(AlertDialog), findsNothing);
     expect(byKey('shopper-line-question-$shopperLineTomato'), findsOneWidget);
@@ -357,7 +370,7 @@ void main() {
     expect(shopper.keys, hasLength(2));
     expect(shopper.keys.first, shopper.keys.last);
     expect(shopper.actions.toSet(), <String>{
-      'purchase:$shopperLineTomato:2:16500:null',
+      'purchase:$shopperLineTomato:2:16500:$shopperProductTomato',
     });
     expect(find.text(l10n(tester).errorShoppingNotActive), findsOneWidget);
 
@@ -372,7 +385,10 @@ void main() {
     await tapAndSettle(tester, byKey('purchase-save'));
     expect(shopper.keys, hasLength(3));
     expect(shopper.keys.last, isNot(shopper.keys.first));
-    expect(shopper.actions.last, 'purchase:$shopperLineTomato:2:17000:null');
+    expect(
+      shopper.actions.last,
+      'purchase:$shopperLineTomato:2:17000:$shopperProductTomato',
+    );
   });
 
   testWidgets('a line not found is confirmed, with a note; the last one '
@@ -401,9 +417,122 @@ void main() {
     expect(shopper.actions, <String>[
       'unavailable:$shopperLineTomato:Qolmagan',
     ]);
-    expect(find.text(l10n(tester).orderStatusCancelled), findsOneWidget);
-    expect(byKey('buy-$shopperLineBread'), findsNothing);
-    expect(byKey('shopper-complete'), findsNothing);
+    // The order is the Shopper's no more: back on the list, told why.
+    expect(byKey('shopper-order'), findsNothing);
+    expect(find.text(l10n(tester).shopperOrderCancelled), findsOneWidget);
+    expect(find.text(l10n(tester).shellShopper), findsOneWidget);
+  });
+
+  testWidgets('an order that can no longer be read says so, and leads back', (
+    WidgetTester tester,
+  ) async {
+    await openOrder(tester);
+    shopper.details.remove(shopperOrderA);
+
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+
+    expect(byKey('shopper-order-gone'), findsOneWidget);
+    expect(byKey('retry-load'), findsNothing);
+    await tapAndSettle(tester, byKey('shopper-order-gone-back'));
+    expect(byKey('shopper-order-$shopperOrderA'), findsOneWidget);
+  });
+
+  testWidgets('a first attempt in flight is not said to be without an answer', (
+    WidgetTester tester,
+  ) async {
+    shopper.details[shopperOrderA] = shopping(<Object?>[
+      tomato(),
+      bread(status: 'purchased'),
+    ]);
+    await openOrder(tester);
+    final Completer<void> hold = Completer<void>();
+    shopper.hold = hold;
+
+    await tapAndSettle(tester, byKey('buy-$shopperLineTomato'));
+    await tester.enterText(byKey('purchase-price'), '16500');
+    await tester.tap(byKey('purchase-save'));
+    await tester.pump();
+    expect(byKey('purchase-dialog-unconfirmed'), findsNothing);
+    expect(find.text(l10n(tester).purchaseSave), findsOneWidget);
+    expect(find.text(l10n(tester).purchaseAgain), findsNothing);
+
+    shopper
+      ..hold = null
+      ..actionFailure = const NetworkFailure();
+    hold.complete();
+    await tester.pumpAndSettle();
+    expect(byKey('purchase-dialog-unconfirmed'), findsOneWidget);
+    expect(find.text(l10n(tester).purchaseAgain), findsOneWidget);
+  });
+
+  testWidgets('a purchase without a sure answer keeps its key through a failed '
+      'load of the order', (WidgetTester tester) async {
+    await openOrder(tester);
+    shopper.actionFailure = const NetworkFailure();
+    await buy(tester, shopperLineTomato, price: '16500');
+    await tapAndSettle(tester, byKey('purchase-cancel'));
+
+    shopper.orderFailure = const NetworkFailure();
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    expect(byKey('retry-load'), findsOneWidget);
+    shopper.orderFailure = null;
+    await tapAndSettle(tester, byKey('retry-load'));
+
+    expect(byKey('purchase-unconfirmed-$shopperLineTomato'), findsOneWidget);
+    shopper
+      ..actionFailure = null
+      ..afterAction[shopperOrderA] = shopping(<Object?>[
+        tomato(status: 'purchased'),
+        bread(),
+      ]);
+    await tapAndSettle(tester, byKey('buy-$shopperLineTomato'));
+    await tapAndSettle(tester, byKey('purchase-save'));
+    expect(shopper.keys, hasLength(2));
+    expect(shopper.keys.first, shopper.keys.last);
+  });
+
+  testWidgets('asking about a price needs one, whatever the product chosen '
+      'since', (WidgetTester tester) async {
+    shopper.details[shopperOrderA] = shopping(<Object?>[
+      tomato(),
+      bread(
+        patch: <String, Object?>{
+          'replacement': <String, Object?>{
+            ...shopperReplacementJson(),
+            'bound': <String, Object?>{
+              'customer_unit_price_uzs': 4600,
+              'market_price_uzs': 4000,
+            },
+          },
+        },
+      ),
+    ]);
+    await openOrder(tester);
+    shopper.actionFailure = const ApiRefusal(
+      ApiError(
+        status: 409,
+        code: 'customer_approval_required',
+        details: <String, Object?>{'approval_type': 'price_over_tolerance'},
+      ),
+    );
+    await tester.dragUntilVisible(
+      byKey('buy-$shopperLineBread'),
+      byKey('shopper-order'),
+      const Offset(0, -200),
+    );
+    await buy(tester, shopperLineBread, price: '6000');
+    expect(byKey('ask-price'), findsOneWidget);
+
+    // The loaf itself takes no price; the question still needs one.
+    await tapAndSettle(tester, byKey('buy-original'));
+    await tester.enterText(byKey('purchase-price'), '');
+    await tapAndSettle(tester, byKey('ask-price'));
+
+    expect(tester.takeException(), isNull);
+    expect(find.text(l10n(tester).fieldRequired), findsOneWidget);
+    expect(shopper.actions.where((String a) => a.startsWith('ask-')), isEmpty);
   });
 
   testWidgets('a replacement is searched, chosen, and offered with the price '
@@ -447,6 +576,160 @@ void main() {
       byKey('shopper-line-replacement-$shopperLineTomato'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a completion whose answer was lost, and whose order then cannot '
+      'be read, is sent again under its key and reaches the closing screen', (
+    WidgetTester tester,
+  ) async {
+    shopper.details[shopperOrderA] = shopping(<Object?>[
+      tomato(status: 'purchased'),
+      bread(status: 'purchased'),
+    ]);
+    await openOrder(tester);
+    // No network: the completion goes unanswered, and loading the order
+    // again would fail too.
+    shopper
+      ..actionFailure = const NetworkFailure()
+      ..orderFailure = const NetworkFailure();
+
+    await tapAndSettle(tester, byKey('shopper-complete'));
+    await tapAndSettle(tester, byKey('complete-confirm'));
+    expect(byKey('complete-unconfirmed'), findsOneWidget);
+    expect(byKey('shopper-complete'), findsOneWidget, reason: 'still shown');
+
+    // It went through: the order is the Shopper's no more.
+    shopper.details.remove(shopperOrderA);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    expect(byKey('complete-again'), findsOneWidget);
+    expect(byKey('retry-load'), findsOneWidget);
+
+    shopper.orderFailure = null;
+    await tapAndSettle(tester, byKey('retry-load'));
+    expect(byKey('complete-again'), findsOneWidget);
+    expect(byKey('shopper-order-gone'), findsNothing);
+
+    shopper
+      ..actionFailure = null
+      ..afterAction[shopperOrderA] = ShopperOrdersApi.parseOrder(
+        <String, Object?>{
+          ...shopperOrderJson(
+            status: 'delivery_assigned',
+            items: <Object?>[
+              tomato(status: 'purchased'),
+              bread(status: 'purchased'),
+            ],
+          ),
+          'assignment': null,
+          'can_accept': false,
+          'can_start': false,
+        },
+      );
+    await tapAndSettle(tester, byKey('complete-again'));
+
+    expect(shopper.keys, hasLength(2));
+    expect(shopper.keys.first, shopper.keys.last);
+    expect(byKey('shopper-done-title'), findsOneWidget);
+  });
+
+  testWidgets('the refresh waits while a completion runs', (
+    WidgetTester tester,
+  ) async {
+    shopper
+      ..details[shopperOrderA] = shopping(<Object?>[
+        tomato(status: 'purchased'),
+        bread(status: 'purchased'),
+      ])
+      ..afterAction[shopperOrderA] = ShopperOrdersApi.parseOrder(
+        <String, Object?>{
+          ...shopperOrderJson(
+            status: 'ready_for_delivery',
+            items: <Object?>[
+              tomato(status: 'purchased'),
+              bread(status: 'purchased'),
+            ],
+          ),
+          'assignment': null,
+          'can_accept': false,
+          'can_start': false,
+        },
+      );
+    await openOrder(tester);
+    final int loads = shopper.loads
+        .where((String load) => load == 'order:$shopperOrderA')
+        .length;
+    final Completer<void> hold = Completer<void>();
+    shopper.hold = hold;
+
+    await tapAndSettle(tester, byKey('shopper-complete'));
+    await tester.tap(byKey('complete-confirm'));
+    await tester.pump();
+    expect(byKey('complete-unconfirmed'), findsNothing);
+    await tester.pump(const Duration(seconds: 30));
+    expect(
+      shopper.loads.where((String load) => load == 'order:$shopperOrderA'),
+      hasLength(loads),
+    );
+
+    shopper.hold = null;
+    hold.complete();
+    await tester.pumpAndSettle();
+    expect(byKey('shopper-done-title'), findsOneWidget);
+  });
+
+  testWidgets('the closing screen takes only an order number, and back leads '
+      'to the list', (WidgetTester tester) async {
+    await openOrder(tester);
+    final GoRouter router = GoRouter.of(
+      tester.element(find.byType(Scaffold).first),
+    );
+
+    router.go('/shopper/done/abc');
+    await tester.pumpAndSettle();
+    expect(byKey('shopper-done-title'), findsNothing);
+    expect(byKey('shopper-order-$shopperOrderA'), findsOneWidget);
+
+    router.go('/shopper/done/1001');
+    await tester.pumpAndSettle();
+    expect(byKey('shopper-done-title'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(byKey('shopper-order-$shopperOrderA'), findsOneWidget);
+  });
+
+  testWidgets('a replacement offered from its search entered alone leads to '
+      'the order; one already authorized points to buy', (
+    WidgetTester tester,
+  ) async {
+    shopper
+      ..choices = <ReplacementChoice>[
+        ShopperOrdersApi.parseChoice(shopperChoiceJson()),
+      ]
+      ..actionFailure = const ApiRefusal(
+        ApiError(status: 409, code: 'customer_approval_required'),
+      );
+    await openOrder(tester);
+    GoRouter.of(tester.element(find.byType(Scaffold).first))
+        .go('/shopper/orders/$shopperOrderA/items/$shopperLineTomato/replace');
+    await tester.pumpAndSettle();
+
+    await tapAndSettle(tester, byKey('replacement-$shopperProductCherry'));
+    await tester.enterText(byKey('substitute-price'), '19000');
+    await tapAndSettle(tester, byKey('substitute-save'));
+    expect(byKey('substitute-use-buy'), findsOneWidget);
+
+    shopper
+      ..actionFailure = null
+      ..afterAction[shopperOrderA] = shopping(<Object?>[
+        tomato(
+          patch: <String, Object?>{'replacement': shopperReplacementJson()},
+        ),
+        bread(),
+      ]);
+    await tester.enterText(byKey('substitute-price'), '15000');
+    await tapAndSettle(tester, byKey('substitute-save'));
+    expect(byKey('shopper-order'), findsOneWidget);
   });
 
   testWidgets('completing is confirmed first, then says what to do with the '
@@ -562,6 +845,12 @@ void main() {
       await tapAndSettle(tester, byKey('replacement-$shopperProductCherry'));
       expect(tester.takeException(), isNull);
       await tapAndSettle(tester, byKey('substitute-cancel'));
+
+      GoRouter.of(tester.element(find.byType(Scaffold).first))
+          .go('/shopper/done/1001');
+      await tester.pumpAndSettle();
+      expect(byKey('shopper-done-label'), findsOneWidget);
+      expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     }
   });
