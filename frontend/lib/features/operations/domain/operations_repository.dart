@@ -14,7 +14,7 @@ abstract interface class OperationsRepository {
   Future<List<AttentionItem>> attention();
 
   /// The active Shoppers, at most one page of 100 (`DL-45` (1)).
-  Future<List<ShopperChoice>> shoppers();
+  Future<List<StaffChoice>> shoppers();
 
   /// Assigns [shopperId] to the `new` order [orderId].
   Future<BoardOrder> assignShopper(String orderId, String shopperId);
@@ -24,6 +24,20 @@ abstract interface class OperationsRepository {
   Future<BoardOrder> reassignShopper(
     String orderId,
     String shopperId,
+    String replacesAssignmentId,
+  );
+
+  /// The active Couriers, at most one page of 100 (`DL-62` (2)).
+  Future<List<StaffChoice>> couriers();
+
+  /// Assigns [courierId] to the `ready_for_delivery` order [orderId].
+  Future<BoardOrder> assignCourier(String orderId, String courierId);
+
+  /// Replaces the Courier assignment [replacesAssignmentId] with [courierId]
+  /// (`DL-54` (10)).
+  Future<BoardOrder> reassignCourier(
+    String orderId,
+    String courierId,
     String replacesAssignmentId,
   );
 }

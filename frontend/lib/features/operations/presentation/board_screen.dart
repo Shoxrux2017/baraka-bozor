@@ -191,14 +191,20 @@ class _FiltersState extends ConsumerState<_Filters> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final BoardQuery query = ref.watch(boardQueryProvider);
     final BoardQueryController queries = ref.read(boardQueryProvider.notifier);
-    final List<ShopperChoice> shoppers =
-        ref.watch(shopperOptionsProvider).value ?? const <ShopperChoice>[];
+    final List<StaffChoice> shoppers =
+        ref.watch(shopperOptionsProvider).value ?? const <StaffChoice>[];
     final String? shopperId = query.shopperId;
     // A Shopper the options do not hold — blocked since, or not loaded
     // yet — is still the filter, and the control says one is chosen.
     final bool shopperUnlisted =
         shopperId != null &&
-        !shoppers.any((ShopperChoice shopper) => shopper.id == shopperId);
+        !shoppers.any((StaffChoice shopper) => shopper.id == shopperId);
+    final List<StaffChoice> couriers =
+        ref.watch(courierOptionsProvider).value ?? const <StaffChoice>[];
+    final String? courierId = query.courierId;
+    final bool courierUnlisted =
+        courierId != null &&
+        !couriers.any((StaffChoice courier) => courier.id == courierId);
 
     return Wrap(
       spacing: 16,
@@ -290,7 +296,7 @@ class _FiltersState extends ConsumerState<_Filters> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              for (final ShopperChoice shopper in shoppers)
+              for (final StaffChoice shopper in shoppers)
                 DropdownMenuItem<String?>(
                   value: shopper.id,
                   child: Text(
@@ -300,6 +306,40 @@ class _FiltersState extends ConsumerState<_Filters> {
                 ),
             ],
             onChanged: queries.filterByShopper,
+          ),
+        ),
+        _Labelled(
+          label: l10n.boardFilterCourier,
+          width: 260,
+          child: DropdownButton<String?>(
+            key: const ValueKey<String>('board-courier-filter'),
+            isExpanded: true,
+            value: courierId,
+            items: <DropdownMenuItem<String?>>[
+              DropdownMenuItem<String?>(
+                child: Text(
+                  l10n.boardAllCouriers,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (courierUnlisted)
+                DropdownMenuItem<String?>(
+                  value: courierId,
+                  child: Text(
+                    l10n.boardFilteredCourier,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              for (final StaffChoice courier in couriers)
+                DropdownMenuItem<String?>(
+                  value: courier.id,
+                  child: Text(
+                    courier.fullName ?? formatPhone(courier.phone),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
+            onChanged: queries.filterByCourier,
           ),
         ),
         Row(
@@ -329,6 +369,12 @@ class _FiltersState extends ConsumerState<_Filters> {
           label: Text(l10n.boardSelfOrdersOnly),
           selected: query.selfOrdersOnly,
           onSelected: queries.selfOrdersOnly,
+        ),
+        FilterChip(
+          key: const ValueKey<String>('board-awaiting-customer'),
+          label: Text(l10n.boardAwaitingCustomerOnly),
+          selected: query.awaitingCustomerOnly,
+          onSelected: queries.awaitingCustomerOnly,
         ),
         if (query.isFiltered)
           TextButton(
@@ -437,12 +483,13 @@ class _Table extends StatefulWidget {
   const _Table({required this.rows});
 
   /// About the most the table takes in a desktop font: it measured 1 125 px
-  /// on the real stack in either language, and the Customer's and the
-  /// Shopper's cells, the ones names widen, wrap at [nameWidth] and
-  /// [shopperWidth] (`DL-53` (2)).
+  /// on the real stack in either language, and the Customer's cell and the
+  /// people's — the Shopper above the Courier, so the Courier adds no column
+  /// — the ones names widen, wrap at [nameWidth] and [peopleWidth]
+  /// (`DL-53` (2), `DL-67` (3)).
   static const double usualWidth = 1200;
   static const double nameWidth = 180;
-  static const double shopperWidth = 170;
+  static const double peopleWidth = 170;
 
   final List<BoardRow> rows;
 
@@ -484,7 +531,7 @@ class _TableState extends State<_Table> {
             DataColumn(label: Text(l10n.boardColumnStatus)),
             DataColumn(label: Text(l10n.boardColumnPayment)),
             DataColumn(label: Text(l10n.boardColumnTotal)),
-            DataColumn(label: Text(l10n.boardColumnShopper)),
+            DataColumn(label: Text(l10n.boardColumnPeople)),
           ],
           rows: <DataRow>[
             for (final BoardRow row in widget.rows)
@@ -510,7 +557,7 @@ class _TableState extends State<_Table> {
                       ),
                     ),
                   ),
-                  DataCell(OrderStatusChip(row.status)),
+                  DataCell(_StatusCell(row: row)),
                   DataCell(
                     Text(OrderLabels.paymentMethod(l10n, row.paymentMethod)),
                   ),
@@ -523,9 +570,9 @@ class _TableState extends State<_Table> {
                   DataCell(
                     ConstrainedBox(
                       constraints: const BoxConstraints(
-                        maxWidth: _Table.shopperWidth,
+                        maxWidth: _Table.peopleWidth,
                       ),
-                      child: _ShopperCell(row: row),
+                      child: _PeopleCell(row: row),
                     ),
                   ),
                 ],
@@ -537,8 +584,36 @@ class _TableState extends State<_Table> {
   }
 }
 
-class _ShopperCell extends StatelessWidget {
-  const _ShopperCell({required this.row});
+/// The status, and the Customer's open questions when there are any.
+class _StatusCell extends StatelessWidget {
+  const _StatusCell({required this.row});
+
+  final BoardRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: <Widget>[
+        OrderStatusChip(row.status),
+        if (row.pendingApprovalCount > 0)
+          Text(
+            l10n.boardPendingQuestions(row.pendingApprovalCount),
+            key: ValueKey<String>('board-questions-${row.id}'),
+          ),
+      ],
+    );
+  }
+}
+
+/// The Shopper and, once there is one, the Courier the row names, with the
+/// self-order mark (`DL-62` (4)).
+class _PeopleCell extends StatelessWidget {
+  const _PeopleCell({required this.row});
 
   final BoardRow row;
 
@@ -546,12 +621,24 @@ class _ShopperCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final PersonRef? shopper = row.shopper;
+    final PersonRef? courier = row.courier;
 
     return Wrap(
       spacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
-        Text(shopper == null ? l10n.boardNoShopper : nameOf(l10n, shopper)),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(shopper == null ? l10n.boardNoShopper : nameOf(l10n, shopper)),
+            if (courier != null)
+              Text(
+                l10n.boardCourierNamed(nameOf(l10n, courier)),
+                key: ValueKey<String>('board-courier-${row.id}'),
+              ),
+          ],
+        ),
         if (row.isSelfOrder) const SelfOrderMark(),
       ],
     );
@@ -589,7 +676,9 @@ class _Card extends StatelessWidget {
             Text(OrderLabels.paymentMethod(l10n, row.paymentMethod)),
             Text(totalText(context, l10n, row.totalUzs, row.totalKind)),
             Text(l10n.boardItemCount(row.itemCount)),
-            _ShopperCell(row: row),
+            if (row.pendingApprovalCount > 0)
+              Text(l10n.boardPendingQuestions(row.pendingApprovalCount)),
+            _PeopleCell(row: row),
           ],
         ),
         onTap: () => context.go(OperationsPaths.order(row.id)),
@@ -598,12 +687,23 @@ class _Card extends StatelessWidget {
   }
 }
 
-/// What an Operator should look at, the longest-waiting first.
-class _AttentionList extends ConsumerWidget {
+/// What an Operator should look at, the longest-waiting first. It shows its
+/// first [folded] items and folds the rest behind a button, so a long list
+/// never pushes the orders out of sight (`DL-67` (4)).
+class _AttentionList extends ConsumerStatefulWidget {
   const _AttentionList();
 
+  static const int folded = 5;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AttentionList> createState() => _AttentionListState();
+}
+
+class _AttentionListState extends ConsumerState<_AttentionList> {
+  bool _unfolded = false;
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<List<AttentionItem>> items = ref.watch(attentionProvider);
 
@@ -624,8 +724,13 @@ class _AttentionList extends ConsumerWidget {
               data: (List<AttentionItem> items) => items.isEmpty
                   ? Text(l10n.attentionEmpty)
                   : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        for (final AttentionItem item in items)
+                        for (final AttentionItem item
+                            in _unfolded ||
+                                    items.length <= _AttentionList.folded
+                                ? items
+                                : items.take(_AttentionList.folded))
                           ListTile(
                             key: ValueKey<String>(
                               'attention-${item.code}-${item.orderId}',
@@ -653,6 +758,17 @@ class _AttentionList extends ConsumerWidget {
                             ),
                             onTap: () =>
                                 context.go(OperationsPaths.order(item.orderId)),
+                          ),
+                        if (items.length > _AttentionList.folded)
+                          TextButton(
+                            key: const ValueKey<String>('attention-fold'),
+                            onPressed: () =>
+                                setState(() => _unfolded = !_unfolded),
+                            child: Text(
+                              _unfolded
+                                  ? l10n.attentionShowFewer
+                                  : l10n.attentionShowAll(items.length),
+                            ),
                           ),
                       ],
                     ),

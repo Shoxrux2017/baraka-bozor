@@ -64,13 +64,69 @@ class OperationsApi {
     return Paged.parse(response.data, parseAttention).items;
   }
 
-  Future<List<ShopperChoice>> shoppers() async {
+  Future<List<StaffChoice>> shoppers() async {
     final Response<dynamic> response = await _dio.get<dynamic>(
       '/operations/shoppers',
       queryParameters: const <String, Object>{'per_page': 100},
       options: _staff,
     );
-    return Paged.parse(response.data, parseShopper).items;
+    return Paged.parse(response.data, parseStaff).items;
+  }
+
+  Future<List<StaffChoice>> couriers() async {
+    final Response<dynamic> response = await _dio.get<dynamic>(
+      '/operations/couriers',
+      queryParameters: const <String, Object>{'per_page': 100},
+      options: _staff,
+    );
+    return Paged.parse(response.data, parseStaff).items;
+  }
+
+  /// `POST /operations/orders/{order}/courier-assignment` (`docs/09`
+  /// section 39).
+  Future<BoardOrder> assignCourier(String orderId, String courierId) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      _courierPath(orderId),
+      data: <String, String>{'courier_id': courierId},
+      options: _staff,
+    );
+    return _courierAssigned(response, orderId, courierId);
+  }
+
+  /// `PUT /operations/orders/{order}/courier-assignment`, naming the
+  /// assignment it replaces (`DL-54` (10)).
+  Future<BoardOrder> reassignCourier(
+    String orderId,
+    String courierId,
+    String replacesAssignmentId,
+  ) async {
+    final Response<dynamic> response = await _dio.put<dynamic>(
+      _courierPath(orderId),
+      data: <String, String>{
+        'courier_id': courierId,
+        'replaces_assignment_id': replacesAssignmentId,
+      },
+      options: _staff,
+    );
+    return _courierAssigned(response, orderId, courierId);
+  }
+
+  static String _courierPath(String orderId) =>
+      '/operations/orders/${Uri.encodeComponent(orderId)}/courier-assignment';
+
+  /// The order after a Courier assignment: the order asked about, with the
+  /// Courier asked for as its current one.
+  static BoardOrder _courierAssigned(
+    Response<dynamic> response,
+    String orderId,
+    String courierId,
+  ) {
+    final BoardOrder order = parseOrder(ApiEnvelope.unwrap(response.data));
+    if (order.id != orderId.toLowerCase() ||
+        order.currentCourierAssignment?.courier.id != courierId.toLowerCase()) {
+      throw const FormatException('the answer does not show the assignment');
+    }
+    return order;
   }
 
   /// `POST /operations/orders/{order}/shopper-assignment` (`docs/09`
@@ -125,11 +181,13 @@ class OperationsApi {
     'page': query.page,
     if (query.status != null) 'status': query.status!.code,
     if (query.shopperId != null) 'shopper_id': query.shopperId!,
+    if (query.courierId != null) 'courier_id': query.courierId!,
     if (query.paymentMethod != null)
       'payment_method': query.paymentMethod!.code,
     if (query.from != null) 'from': dayOf(query.from!),
     if (query.to != null) 'to': dayOf(query.to!),
     if (query.selfOrdersOnly) 'attention': AttentionType.selfOrder.code,
+    if (query.awaitingCustomerOnly) 'awaiting_customer': 'true',
     if (query.search.trim().isNotEmpty) 'search': query.search.trim(),
   };
 
@@ -140,9 +198,10 @@ class OperationsApi {
       '${day.day.toString().padLeft(2, '0')}';
 
   /// Whether [row] can be an answer to [query]'s filters. The dates and the
-  /// search are the server's to judge, and so are the Shopper and the
-  /// self-order filters: a row's Shopper is read after its page, so a
-  /// reassignment in between is not a malformed answer (`DL-47` (3)).
+  /// search are the server's to judge, and so are the Shopper, the Courier,
+  /// the self-order and the waiting filters: a row's people and questions
+  /// are read after its page, so a change in between is not a malformed
+  /// answer (`DL-47` (3)).
   static bool _answers(BoardQuery query, BoardRow row) =>
       (query.status == null || row.status == query.status) &&
       (query.paymentMethod == null || row.paymentMethod == query.paymentMethod);
@@ -221,6 +280,7 @@ class OperationsApi {
       'customer',
     );
     final Object? shopper = json.member('shopper');
+    final Object? courier = json.member('courier');
     final BoardRow row = BoardRow(
       id: json.uuid('id'),
       orderNumber: _orderNumber(json, 'order_number'),
@@ -230,9 +290,11 @@ class OperationsApi {
       customerName: customer.string('full_name'),
       customerPhone: _phoneOf(customer, 'phone'),
       itemCount: _amount(json, 'item_count'),
+      pendingApprovalCount: _amount(json, 'pending_approval_count'),
       totalUzs: _nullableAmount(json, 'total_uzs'),
       totalKind: json.choice('total_kind', TotalKind.tryParse),
       shopper: shopper == null ? null : _person(shopper, 'shopper'),
+      courier: courier == null ? null : _person(courier, 'courier'),
       isSelfOrder: json.boolean('is_self_order'),
     );
     if ((row.totalUzs == null) != (row.totalKind == TotalKind.none)) {
@@ -283,10 +345,10 @@ class OperationsApi {
     );
   }
 
-  /// A Shopper of the picker.
-  static ShopperChoice parseShopper(Object? raw) {
-    final JsonFields json = JsonFields.of(raw, 'shopper');
-    return ShopperChoice(
+  /// A Shopper or a Courier of a picker.
+  static StaffChoice parseStaff(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'staff choice');
+    return StaffChoice(
       id: json.uuid('id'),
       fullName: json.nullableString('full_name'),
       phone: _phoneOf(json, 'phone'),
@@ -316,6 +378,15 @@ class OperationsApi {
         1) {
       throw const FormatException('more than one current assignment');
     }
+    final List<CourierAssignment> deliveries = _list(
+      json,
+      'courier_assignments',
+      _courierAssignment,
+    );
+    if (deliveries.where((CourierAssignment a) => a.endedAt == null).length >
+        1) {
+      throw const FormatException('more than one current Courier');
+    }
 
     return BoardOrder(
       id: json.uuid('id'),
@@ -340,6 +411,7 @@ class OperationsApi {
       items: _list(json, 'items', _item),
       totals: _totals(json.member('totals')),
       shopperAssignments: assignments,
+      courierAssignments: deliveries,
       history: _list(json, 'history', _history),
       cancellationReason: reason == null
           ? null
@@ -432,6 +504,44 @@ class OperationsApi {
     );
     if ((assignment.endedAt == null) != (assignment.endedReason == null)) {
       throw const FormatException('an end has its reason');
+    }
+    return assignment;
+  }
+
+  static CourierAssignment _courierAssignment(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'courier assignment');
+    final JsonFields courier = JsonFields.of(json.member('courier'), 'courier');
+    final String? endedReason = json.nullableString('ended_reason');
+    final String? failedReason = json.nullableString('failed_reason_code');
+    final CourierAssignment assignment = CourierAssignment(
+      id: json.uuid('id'),
+      courier: PersonRef(
+        id: courier.uuid('id'),
+        fullName: courier.nullableString('full_name'),
+      ),
+      courierPhone: _phoneOf(courier, 'phone'),
+      assignedBy: _person(json.member('assigned_by'), 'assigned_by'),
+      isSelfOrder: json.boolean('is_self_order'),
+      assignedAt: json.instant('assigned_at'),
+      acceptedAt: json.nullableInstant('accepted_at'),
+      deliveryStartedAt: json.nullableInstant('delivery_started_at'),
+      delayAt: json.nullableInstant('delay_at'),
+      completedAt: json.nullableInstant('completed_at'),
+      endedAt: json.nullableInstant('ended_at'),
+      endedReason: endedReason == null
+          ? null
+          : json.choice('ended_reason', AssignmentEndReason.tryParse),
+      failedReason: failedReason == null
+          ? null
+          : json.choice('failed_reason_code', DeliveryFailureReason.tryParse),
+      failedNote: json.nullableString('failed_note'),
+    );
+    if ((assignment.endedAt == null) != (assignment.endedReason == null)) {
+      throw const FormatException('an end has its reason');
+    }
+    if ((assignment.endedReason == AssignmentEndReason.deliveryFailed) !=
+        (assignment.failedReason != null)) {
+      throw const FormatException('a failed delivery has its reason');
     }
     return assignment;
   }

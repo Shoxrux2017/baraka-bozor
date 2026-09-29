@@ -879,3 +879,21 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - one `price_corrected` row whose note is the reason and whose `details` hold the line, the correction, both prices and the new totals.
    The database's checks hold the billable price and the totals to their inputs.
 4. **The answer** is the order as the board shows it, since the Admin corrects from the order's page (W3-14).
+
+## DL-67 — The panel's board for Wave 3, from W3-13 (2026-09-29, agent)
+
+1. **The Courier on the order page**, with the Shopper's rules (`DL-48`, `DL-54` (10)):
+   - assign while the order is `ready_for_delivery` without a Courier;
+   - reassign while it is `delivery_assigned` and the current Courier has not set off, naming the assignment replaced;
+   - the current Courier is shown in the picker but not offered;
+   - after a change or a refusal, the order, the board, the summary, the attention list and the Couriers' counts are loaded again (`DL-28` (11)).
+   - The Courier assignments are listed newest first, each with its instants, and a failed delivery with its reason and note. A Courier's ends have their own words (delivered, passed to another Courier, not delivered), as the section's empty sentence does.
+2. **One picker for both roles.** The picker's model is `StaffChoice`, renamed from `ShopperChoice`, and the dialog takes the provider it lists. The board's Courier filter works as the Shopper's: a Courier the options no longer hold stays the filter.
+3. **The board keeps its width** (`DL-53` (2)):
+   - the people cell holds the Shopper and, under it, the Courier the row names (`DL-62` (4)), rather than a new column;
+   - the status cell adds the Customer's open questions when there are any;
+   - `awaiting_customer` is a chip that asks for `true`: the orders waiting on the Customer are what an Operator looks for, and the others are the rest of the board.
+4. **The attention list** shows its first five items and folds the rest behind a button, which says how many there are, so a long list never pushes the orders out of sight. This closes the Wave 2 risk row on its height.
+5. **The block confirmation** says how many orders a Shopper or a Courier holds now, from the operations pickers' own count (`DL-45` (1)). A started shopping or a delivery on the way cannot move to someone else (`DL-62` (3)).
+   - The Admin's staff screen reads the operations feature's pickers for it, read-only; the Admin works in both areas of the panel.
+   - Nothing is added when the count is zero or not yet loaded, or for a role that holds no orders.

@@ -3,18 +3,21 @@ import '../../../core/orders/order_values.dart';
 import '../../auth/domain/app_user.dart';
 
 /// What the board lists (`docs/09` section 38, `DL-37` (16)): the page and
-/// the filters — a status, the current Shopper, the payment method, the
-/// first and last day of placement in `Asia/Tashkent`, the self-order
-/// attention filter, and a search over the number, the phone and the name.
+/// the filters — a status, the Shopper and the Courier a row names, the
+/// payment method, the first and last day of placement in `Asia/Tashkent`,
+/// the self-order attention filter, the orders waiting on the Customer, and
+/// a search over the number, the phone and the name.
 final class BoardQuery {
   const BoardQuery({
     this.page = 1,
     this.status,
     this.shopperId,
+    this.courierId,
     this.paymentMethod,
     this.from,
     this.to,
     this.selfOrdersOnly = false,
+    this.awaitingCustomerOnly = false,
     this.search = '',
   });
 
@@ -24,6 +27,7 @@ final class BoardQuery {
   final int page;
   final OrderStatus? status;
   final String? shopperId;
+  final String? courierId;
   final PaymentMethod? paymentMethod;
 
   /// Days, as the calendar date of their year, month and day; the time of
@@ -31,6 +35,10 @@ final class BoardQuery {
   final DateTime? from;
   final DateTime? to;
   final bool selfOrdersOnly;
+
+  /// Only the orders with a question the Customer has not answered yet
+  /// (`DL-60` (4)).
+  final bool awaitingCustomerOnly;
   final String search;
 
   /// The same filters on another page, or other filters from the first.
@@ -38,29 +46,35 @@ final class BoardQuery {
     int? page,
     OrderStatus? Function()? status,
     String? Function()? shopperId,
+    String? Function()? courierId,
     PaymentMethod? Function()? paymentMethod,
     DateTime? Function()? from,
     DateTime? Function()? to,
     bool? selfOrdersOnly,
+    bool? awaitingCustomerOnly,
     String? search,
   }) => BoardQuery(
     page: page ?? 1,
     status: status != null ? status() : this.status,
     shopperId: shopperId != null ? shopperId() : this.shopperId,
+    courierId: courierId != null ? courierId() : this.courierId,
     paymentMethod: paymentMethod != null ? paymentMethod() : this.paymentMethod,
     from: from != null ? from() : this.from,
     to: to != null ? to() : this.to,
     selfOrdersOnly: selfOrdersOnly ?? this.selfOrdersOnly,
+    awaitingCustomerOnly: awaitingCustomerOnly ?? this.awaitingCustomerOnly,
     search: search ?? this.search,
   );
 
   bool get isFiltered =>
       status != null ||
       shopperId != null ||
+      courierId != null ||
       paymentMethod != null ||
       from != null ||
       to != null ||
       selfOrdersOnly ||
+      awaitingCustomerOnly ||
       search.isNotEmpty;
 
   @override
@@ -69,10 +83,12 @@ final class BoardQuery {
       other.page == page &&
       other.status == status &&
       other.shopperId == shopperId &&
+      other.courierId == courierId &&
       other.paymentMethod == paymentMethod &&
       other.from == from &&
       other.to == to &&
       other.selfOrdersOnly == selfOrdersOnly &&
+      other.awaitingCustomerOnly == awaitingCustomerOnly &&
       other.search == search;
 
   @override
@@ -80,10 +96,12 @@ final class BoardQuery {
     page,
     status,
     shopperId,
+    courierId,
     paymentMethod,
     from,
     to,
     selfOrdersOnly,
+    awaitingCustomerOnly,
     search,
   );
 }
@@ -108,9 +126,11 @@ final class BoardRow {
     required this.customerName,
     required this.customerPhone,
     required this.itemCount,
+    required this.pendingApprovalCount,
     required this.totalUzs,
     required this.totalKind,
     required this.shopper,
+    required this.courier,
     required this.isSelfOrder,
   });
 
@@ -123,12 +143,22 @@ final class BoardRow {
   final String customerPhone;
   final int itemCount;
 
+  /// The Customer's questions still open (`DL-60` (4)).
+  final int pendingApprovalCount;
+
   /// `null` exactly when [totalKind] is [TotalKind.none].
   final int? totalUzs;
   final TotalKind totalKind;
 
-  /// The current Shopper, or `null` while none is assigned.
+  /// The current Shopper, or else the one who completed the shopping
+  /// (`DL-62` (4)).
   final PersonRef? shopper;
+
+  /// The current Courier, or else the one who delivered.
+  final PersonRef? courier;
+
+  /// The Owner's audit flag: a self-order assignment current, or whose
+  /// assignee started work (`DL-54` (14)).
   final bool isSelfOrder;
 }
 
@@ -226,6 +256,7 @@ final class BoardOrder {
     required this.items,
     required this.totals,
     required this.shopperAssignments,
+    required this.courierAssignments,
     required this.history,
     required this.cancellationReason,
     required this.createdAt,
@@ -246,6 +277,9 @@ final class BoardOrder {
   /// Oldest first; at most one has not ended.
   final List<ShopperAssignment> shopperAssignments;
 
+  /// Oldest first; at most one has not ended.
+  final List<CourierAssignment> courierAssignments;
+
   /// Oldest first.
   final List<HistoryEntry> history;
   final CancellationReason? cancellationReason;
@@ -253,9 +287,19 @@ final class BoardOrder {
   final DateTime? completedAt;
   final DateTime? cancelledAt;
 
-  /// The assignment that has not ended, if any.
+  /// The Shopper assignment that has not ended, if any.
   ShopperAssignment? get currentAssignment {
     for (final ShopperAssignment assignment in shopperAssignments) {
+      if (assignment.endedAt == null) {
+        return assignment;
+      }
+    }
+    return null;
+  }
+
+  /// The Courier assignment that has not ended, if any.
+  CourierAssignment? get currentCourierAssignment {
+    for (final CourierAssignment assignment in courierAssignments) {
       if (assignment.endedAt == null) {
         return assignment;
       }
@@ -359,10 +403,12 @@ final class BoardTotals {
   final TotalKind kind;
 }
 
-/// Why a Shopper's assignment ended (`docs/08` section 16).
+/// Why a Shopper's or a Courier's assignment ended (`docs/08` section 16);
+/// only a Courier's ends `delivery_failed`.
 enum AssignmentEndReason {
   completed('completed'),
   reassigned('reassigned'),
+  deliveryFailed('delivery_failed'),
   orderCancelled('order_cancelled');
 
   const AssignmentEndReason(this.code);
@@ -408,6 +454,66 @@ final class ShopperAssignment {
   /// Set exactly with [endedReason].
   final DateTime? endedAt;
   final AssignmentEndReason? endedReason;
+}
+
+/// Why the Courier could not deliver (`BR-DEL-003`).
+enum DeliveryFailureReason {
+  noAnswer('no_answer'),
+  refused('refused'),
+  wrongAddress('wrong_address'),
+  other('other');
+
+  const DeliveryFailureReason(this.code);
+
+  final String code;
+
+  static DeliveryFailureReason? tryParse(String code) {
+    for (final DeliveryFailureReason reason in values) {
+      if (reason.code == code) {
+        return reason;
+      }
+    }
+    return null;
+  }
+}
+
+/// One Courier's assignment to the order (`DL-62` (4)).
+final class CourierAssignment {
+  const CourierAssignment({
+    required this.id,
+    required this.courier,
+    required this.courierPhone,
+    required this.assignedBy,
+    required this.isSelfOrder,
+    required this.assignedAt,
+    required this.acceptedAt,
+    required this.deliveryStartedAt,
+    required this.delayAt,
+    required this.completedAt,
+    required this.endedAt,
+    required this.endedReason,
+    required this.failedReason,
+    required this.failedNote,
+  });
+
+  final String id;
+  final PersonRef courier;
+  final String courierPhone;
+  final PersonRef assignedBy;
+  final bool isSelfOrder;
+  final DateTime assignedAt;
+  final DateTime? acceptedAt;
+  final DateTime? deliveryStartedAt;
+  final DateTime? delayAt;
+  final DateTime? completedAt;
+
+  /// Set exactly with [endedReason].
+  final DateTime? endedAt;
+  final AssignmentEndReason? endedReason;
+
+  /// Set exactly when the assignment ended [AssignmentEndReason.deliveryFailed].
+  final DeliveryFailureReason? failedReason;
+  final String? failedNote;
 }
 
 /// What happened to an order (`docs/08` section 15), with the events of
@@ -549,9 +655,9 @@ final class EditDetails extends HistoryDetails {
   final bool deliveryTimeNoteChanged;
 }
 
-/// A Shopper the Operator may assign (`docs/09` section 39).
-final class ShopperChoice {
-  const ShopperChoice({
+/// A Shopper or a Courier the Operator may assign (`docs/09` section 39).
+final class StaffChoice {
+  const StaffChoice({
     required this.id,
     required this.fullName,
     required this.phone,

@@ -18,7 +18,8 @@ class FakeOperationsRepository implements OperationsRepository {
     Map<String, BoardOrder>? details,
     BoardSummary? summary,
     List<AttentionItem>? attention,
-    List<ShopperChoice>? shopperList,
+    List<StaffChoice>? shopperList,
+    List<StaffChoice>? courierList,
   }) : rows =
            rows ??
            <BoardRow>[
@@ -43,13 +44,17 @@ class FakeOperationsRepository implements OperationsRepository {
            <AttentionItem>[OperationsApi.parseAttention(attentionJson())],
        shopperList =
            shopperList ??
-           <ShopperChoice>[OperationsApi.parseShopper(shopperJson())];
+           <StaffChoice>[OperationsApi.parseStaff(shopperJson())],
+       courierList =
+           courierList ??
+           <StaffChoice>[OperationsApi.parseStaff(courierChoiceJson())];
 
   List<BoardRow> rows;
   Map<String, BoardOrder> details;
   BoardSummary summaryAnswer;
   List<AttentionItem> attentionAnswer;
-  List<ShopperChoice> shopperList;
+  List<StaffChoice> shopperList;
+  List<StaffChoice> courierList;
 
   final List<BoardQuery> queries = <BoardQuery>[];
   final List<String> loads = <String>[];
@@ -66,8 +71,12 @@ class FakeOperationsRepository implements OperationsRepository {
   /// When set, the Shopper list fails with it.
   ApiFailure? shoppersFailure;
 
+  /// When set, the Courier list fails with it.
+  ApiFailure? couriersFailure;
+
   /// Every assignment asked for: `assign:<order>:<shopper>` or
-  /// `reassign:<order>:<shopper>:<replaced assignment>`.
+  /// `reassign:<order>:<shopper>:<replaced assignment>`, and for a Courier
+  /// `assign-courier:…` and `reassign-courier:…` alike.
   final List<String> changes = <String>[];
 
   /// The order each assignment answers with, which also becomes the order's
@@ -99,7 +108,9 @@ class FakeOperationsRepository implements OperationsRepository {
               (query.paymentMethod == null ||
                   row.paymentMethod == query.paymentMethod) &&
               (query.shopperId == null || row.shopper?.id == query.shopperId) &&
-              (!query.selfOrdersOnly || row.isSelfOrder),
+              (query.courierId == null || row.courier?.id == query.courierId) &&
+              (!query.selfOrdersOnly || row.isSelfOrder) &&
+              (!query.awaitingCustomerOnly || row.pendingApprovalCount > 0),
         )
         .toList();
     return Paged<BoardRow>(
@@ -141,7 +152,7 @@ class FakeOperationsRepository implements OperationsRepository {
   }
 
   @override
-  Future<List<ShopperChoice>> shoppers() async {
+  Future<List<StaffChoice>> shoppers() async {
     loads.add('shoppers');
     await _held();
     if (shoppersFailure != null) {
@@ -160,6 +171,30 @@ class FakeOperationsRepository implements OperationsRepository {
     String shopperId,
     String replacesAssignmentId,
   ) => _assign(orderId, 'reassign:$orderId:$shopperId:$replacesAssignmentId');
+
+  @override
+  Future<List<StaffChoice>> couriers() async {
+    loads.add('couriers');
+    await _held();
+    if (couriersFailure != null) {
+      throw couriersFailure!;
+    }
+    return courierList;
+  }
+
+  @override
+  Future<BoardOrder> assignCourier(String orderId, String courierId) =>
+      _assign(orderId, 'assign-courier:$orderId:$courierId');
+
+  @override
+  Future<BoardOrder> reassignCourier(
+    String orderId,
+    String courierId,
+    String replacesAssignmentId,
+  ) => _assign(
+    orderId,
+    'reassign-courier:$orderId:$courierId:$replacesAssignmentId',
+  );
 
   Future<BoardOrder> _assign(String orderId, String change) async {
     changes.add(change);

@@ -68,9 +68,9 @@ void main() {
     auth = FakeAuthRepository()
       ..identities[SessionSlot.staff] = user(role: UserRole.operator);
     operations = FakeOperationsRepository(
-      shopperList: <ShopperChoice>[
-        OperationsApi.parseShopper(shopperJson()),
-        OperationsApi.parseShopper(
+      shopperList: <StaffChoice>[
+        OperationsApi.parseStaff(shopperJson()),
+        OperationsApi.parseStaff(
           shopperJson(id: otherShopperId, fullName: 'Dilnoza Karimova'),
         ),
       ],
@@ -354,7 +354,7 @@ void main() {
   testWidgets(
     'the picker says when there is nobody to choose, and when the list failed',
     (WidgetTester tester) async {
-      operations.shopperList = <ShopperChoice>[];
+      operations.shopperList = <StaffChoice>[];
       await openOrder(tester, orderB);
 
       await tapAndSettle(tester, byKey('assign-shopper'));
@@ -372,9 +372,7 @@ void main() {
 
       operations
         ..shoppersFailure = null
-        ..shopperList = <ShopperChoice>[
-          OperationsApi.parseShopper(shopperJson()),
-        ];
+        ..shopperList = <StaffChoice>[OperationsApi.parseStaff(shopperJson())];
       await tapAndSettle(tester, byKey('retry-load'));
       expect(byKey('pick-shopper-$shopperId'), findsOneWidget);
       expect(operations.changes, isEmpty);

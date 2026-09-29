@@ -41,6 +41,9 @@ class BoardQueryController extends Notifier<BoardQuery> {
   void filterByShopper(String? shopperId) =>
       state = state.copyWith(shopperId: () => shopperId);
 
+  void filterByCourier(String? courierId) =>
+      state = state.copyWith(courierId: () => courierId);
+
   void filterByPaymentMethod(PaymentMethod? method) =>
       state = state.copyWith(paymentMethod: () => method);
 
@@ -50,6 +53,9 @@ class BoardQueryController extends Notifier<BoardQuery> {
 
   void selfOrdersOnly(bool only) =>
       state = state.copyWith(selfOrdersOnly: only);
+
+  void awaitingCustomerOnly(bool only) =>
+      state = state.copyWith(awaitingCustomerOnly: only);
 
   void search(String text) => state = state.copyWith(search: text.trim());
 
@@ -91,12 +97,22 @@ final FutureProvider<List<AttentionItem>> attentionProvider =
     });
 
 /// The active Shoppers, for the board's Shopper filter.
-final FutureProvider<List<ShopperChoice>> shopperOptionsProvider =
-    FutureProvider.autoDispose<List<ShopperChoice>>((Ref ref) {
+final FutureProvider<List<StaffChoice>> shopperOptionsProvider =
+    FutureProvider.autoDispose<List<StaffChoice>>((Ref ref) {
       if (ref.watch(staffAccountProvider) == null) {
-        return Completer<List<ShopperChoice>>().future;
+        return Completer<List<StaffChoice>>().future;
       }
       return ref.watch(operationsRepositoryProvider).shoppers();
+    });
+
+/// The active Couriers, for the board's Courier filter and the Courier
+/// picker.
+final FutureProvider<List<StaffChoice>> courierOptionsProvider =
+    FutureProvider.autoDispose<List<StaffChoice>>((Ref ref) {
+      if (ref.watch(staffAccountProvider) == null) {
+        return Completer<List<StaffChoice>>().future;
+      }
+      return ref.watch(operationsRepositoryProvider).couriers();
     });
 
 /// One order as the board shows it.
@@ -150,6 +166,48 @@ final NotifierProviderFamily<ShopperAssignmentController, MutationState, String>
 shopperAssignmentProvider = NotifierProvider.autoDispose
     .family<ShopperAssignmentController, MutationState, String>(
       ShopperAssignmentController.new,
+    );
+
+/// The Courier assignment of one order, from its page, as the Shopper's is
+/// (`docs/09` section 39, `DL-54` (10)).
+class CourierAssignmentController extends AccountMutation {
+  CourierAssignmentController(this.orderId);
+
+  final String orderId;
+
+  @override
+  Provider<String?> get account => staffAccountProvider;
+
+  OperationsRepository get _operations =>
+      ref.read(operationsRepositoryProvider);
+
+  Future<BoardOrder?> assign(String courierId) => perform(
+    () => _operations.assignCourier(orderId, courierId),
+    reload: (BoardOrder? _) => _reload(),
+  );
+
+  Future<BoardOrder?> reassign(String courierId, String replacesAssignmentId) =>
+      perform(
+        () => _operations.reassignCourier(
+          orderId,
+          courierId,
+          replacesAssignmentId,
+        ),
+        reload: (BoardOrder? _) => _reload(),
+      );
+
+  void _reload() => ref
+    ..invalidate(boardOrderProvider(orderId))
+    ..invalidate(boardPageProvider)
+    ..invalidate(boardSummaryProvider)
+    ..invalidate(attentionProvider)
+    ..invalidate(courierOptionsProvider);
+}
+
+final NotifierProviderFamily<CourierAssignmentController, MutationState, String>
+courierAssignmentProvider = NotifierProvider.autoDispose
+    .family<CourierAssignmentController, MutationState, String>(
+      CourierAssignmentController.new,
     );
 
 /// Loads the board again — its page, the summary and the attention list —
