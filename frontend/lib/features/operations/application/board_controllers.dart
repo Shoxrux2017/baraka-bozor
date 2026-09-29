@@ -124,42 +124,65 @@ final FutureProviderFamily<BoardOrder, String> boardOrderProvider =
       return ref.watch(operationsRepositoryProvider).order(id);
     });
 
-/// The Shopper assignment of one order, from its page (`docs/09` section
-/// 39): one change at a time, shown on that order's page only. After it,
-/// and after a conflict — the order changed under the Operator — the order,
-/// the board and the Shoppers' counts are loaded again (`DL-28` (11)).
-class ShopperAssignmentController extends AccountMutation {
-  ShopperAssignmentController(this.orderId);
+/// The Shopper or the Courier assignment of one order, from its page
+/// (`docs/09` section 39, `DL-54` (10)): one change at a time, shown on that
+/// order's page only. After it, and after a conflict — the order changed
+/// under the Operator — the order, the board and the role's counts are
+/// loaded again (`DL-28` (11)).
+sealed class StaffAssignmentController extends AccountMutation {
+  StaffAssignmentController(this.orderId);
 
   final String orderId;
 
   @override
   Provider<String?> get account => staffAccountProvider;
 
-  OperationsRepository get _operations =>
-      ref.read(operationsRepositoryProvider);
+  /// The role's picker, whose counts a change moves.
+  FutureProvider<List<StaffChoice>> get _options;
 
-  Future<BoardOrder?> assign(String shopperId) => perform(
-    () => _operations.assignShopper(orderId, shopperId),
-    reload: (BoardOrder? _) => _reload(),
+  /// Assigns [staffId], or reassigns to them when [replacesAssignmentId]
+  /// names the assignment they replace.
+  Future<BoardOrder> _send(
+    OperationsRepository operations,
+    String staffId,
+    String? replacesAssignmentId,
   );
 
-  Future<BoardOrder?> reassign(String shopperId, String replacesAssignmentId) =>
+  Future<BoardOrder?> assign(String staffId) => _change(staffId, null);
+
+  Future<BoardOrder?> reassign(String staffId, String replacesAssignmentId) =>
+      _change(staffId, replacesAssignmentId);
+
+  Future<BoardOrder?> _change(String staffId, String? replacesAssignmentId) =>
       perform(
-        () => _operations.reassignShopper(
-          orderId,
-          shopperId,
+        () => _send(
+          ref.read(operationsRepositoryProvider),
+          staffId,
           replacesAssignmentId,
         ),
-        reload: (BoardOrder? _) => _reload(),
+        reload: (BoardOrder? _) => ref
+          ..invalidate(boardOrderProvider(orderId))
+          ..invalidate(boardPageProvider)
+          ..invalidate(boardSummaryProvider)
+          ..invalidate(attentionProvider)
+          ..invalidate(_options),
       );
+}
 
-  void _reload() => ref
-    ..invalidate(boardOrderProvider(orderId))
-    ..invalidate(boardPageProvider)
-    ..invalidate(boardSummaryProvider)
-    ..invalidate(attentionProvider)
-    ..invalidate(shopperOptionsProvider);
+class ShopperAssignmentController extends StaffAssignmentController {
+  ShopperAssignmentController(super.orderId);
+
+  @override
+  FutureProvider<List<StaffChoice>> get _options => shopperOptionsProvider;
+
+  @override
+  Future<BoardOrder> _send(
+    OperationsRepository operations,
+    String staffId,
+    String? replacesAssignmentId,
+  ) => replacesAssignmentId == null
+      ? operations.assignShopper(orderId, staffId)
+      : operations.reassignShopper(orderId, staffId, replacesAssignmentId);
 }
 
 final NotifierProviderFamily<ShopperAssignmentController, MutationState, String>
@@ -168,40 +191,20 @@ shopperAssignmentProvider = NotifierProvider.autoDispose
       ShopperAssignmentController.new,
     );
 
-/// The Courier assignment of one order, from its page, as the Shopper's is
-/// (`docs/09` section 39, `DL-54` (10)).
-class CourierAssignmentController extends AccountMutation {
-  CourierAssignmentController(this.orderId);
-
-  final String orderId;
+class CourierAssignmentController extends StaffAssignmentController {
+  CourierAssignmentController(super.orderId);
 
   @override
-  Provider<String?> get account => staffAccountProvider;
+  FutureProvider<List<StaffChoice>> get _options => courierOptionsProvider;
 
-  OperationsRepository get _operations =>
-      ref.read(operationsRepositoryProvider);
-
-  Future<BoardOrder?> assign(String courierId) => perform(
-    () => _operations.assignCourier(orderId, courierId),
-    reload: (BoardOrder? _) => _reload(),
-  );
-
-  Future<BoardOrder?> reassign(String courierId, String replacesAssignmentId) =>
-      perform(
-        () => _operations.reassignCourier(
-          orderId,
-          courierId,
-          replacesAssignmentId,
-        ),
-        reload: (BoardOrder? _) => _reload(),
-      );
-
-  void _reload() => ref
-    ..invalidate(boardOrderProvider(orderId))
-    ..invalidate(boardPageProvider)
-    ..invalidate(boardSummaryProvider)
-    ..invalidate(attentionProvider)
-    ..invalidate(courierOptionsProvider);
+  @override
+  Future<BoardOrder> _send(
+    OperationsRepository operations,
+    String staffId,
+    String? replacesAssignmentId,
+  ) => replacesAssignmentId == null
+      ? operations.assignCourier(orderId, staffId)
+      : operations.reassignCourier(orderId, staffId, replacesAssignmentId);
 }
 
 final NotifierProviderFamily<CourierAssignmentController, MutationState, String>

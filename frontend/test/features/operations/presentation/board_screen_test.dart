@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/formatting/phone_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
@@ -201,6 +203,83 @@ void main() {
         );
         expect(find.text(words.boardPendingQuestions(2)), findsOneWidget);
         expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
+    'the questions go under the status, so the table keeps its width',
+    (WidgetTester tester) async {
+      operations.rows = <BoardRow>[
+        OperationsApi.parseRow(rowJson(pendingApprovals: 3)),
+      ];
+      await open(tester, size: const Size(1800, 1200));
+      final Finder chip = find.descendant(
+        of: find.byType(DataTable),
+        matching: find.byType(OrderStatusChip),
+      );
+      final Finder questions = byKey('board-questions-$orderA');
+      Finder header(String text) => find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text(text),
+      );
+      final AppLocalizations words = l10n(tester);
+
+      expect(
+        tester.getTopLeft(questions).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(chip).dy),
+      );
+      expect(tester.getTopLeft(questions).dx, tester.getTopLeft(chip).dx);
+      // The column is as wide as the widest of its lines, not their sum.
+      final double widest = <double>[
+        tester.getSize(chip).width,
+        tester.getSize(questions).width,
+        tester.getSize(header(words.boardColumnStatus)).width,
+      ].reduce(math.max);
+      expect(
+        tester.getTopLeft(header(words.boardColumnPayment)).dx -
+            tester.getTopLeft(chip).dx,
+        lessThanOrEqualTo(widest + 24 + 0.5),
+      );
+    },
+  );
+
+  testWidgets(
+    'the Courier\'s and the cancellation\'s attention have their words',
+    (WidgetTester tester) async {
+      const Map<String, String Function(AppLocalizations)> types =
+          <String, String Function(AppLocalizations)>{
+            'courier_delayed': _courierDelayed,
+            'delivery_failed': _deliveryFailed,
+            'cancellation_request': _cancellationRequest,
+            'staff_blocked': _staffBlocked,
+          };
+      operations.attentionAnswer = <AttentionItem>[
+        for (final String type in types.keys)
+          OperationsApi.parseAttention(<String, Object?>{
+            ...attentionJson(order: orderB, number: 1002),
+            'type': type,
+          }),
+      ];
+
+      for (final Locale language in const <Locale>[
+        Locale('uz'),
+        Locale('ru'),
+      ]) {
+        await open(tester, size: const Size(1800, 1600), device: language);
+        final AppLocalizations words = l10n(tester);
+
+        for (final MapEntry<String, String Function(AppLocalizations)> type
+            in types.entries) {
+          expect(
+            find.descendant(
+              of: byKey('attention-${type.key}-$orderB'),
+              matching: find.textContaining(type.value(words)),
+            ),
+            findsOneWidget,
+            reason: type.key,
+          );
+        }
       }
     },
   );
@@ -644,6 +723,34 @@ void main() {
   );
 
   testWidgets(
+    'a Courier filter the options no longer hold still shows one is chosen',
+    (WidgetTester tester) async {
+      operations.rows = <BoardRow>[
+        OperationsApi.parseRow(
+          rowJson(status: 'delivery_assigned', courier: courierId),
+        ),
+      ];
+      await open(tester);
+      await choose(tester, 'board-courier-filter', 'Kamol Karimov');
+      expect(lastQuery().courierId, courierId);
+
+      // The Courier is blocked meanwhile, so the options come back without them.
+      operations.courierList = <StaffChoice>[];
+      await tapAndSettle(tester, byKey('board-row-$orderA'));
+      await tapAndSettle(tester, byKey('order-back'));
+
+      expect(lastQuery().courierId, courierId);
+      expect(
+        find.descendant(
+          of: byKey('board-courier-filter'),
+          matching: find.text(l10n(tester).boardFilteredCourier),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
     'a Shopper filter the options no longer hold still shows one is chosen',
     (WidgetTester tester) async {
       await open(tester);
@@ -666,3 +773,12 @@ void main() {
     },
   );
 }
+
+String _courierDelayed(AppLocalizations l10n) => l10n.attentionCourierDelayed;
+
+String _deliveryFailed(AppLocalizations l10n) => l10n.attentionDeliveryFailed;
+
+String _cancellationRequest(AppLocalizations l10n) =>
+    l10n.attentionCancellationRequest;
+
+String _staffBlocked(AppLocalizations l10n) => l10n.attentionStaffBlocked;

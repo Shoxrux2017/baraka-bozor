@@ -344,30 +344,44 @@ class _BlockConfirmation extends ConsumerWidget {
       UserRole.courier => courierOptionsProvider,
       _ => null,
     };
-    int? count;
-    if (options != null) {
-      for (final StaffChoice choice
-          in ref.watch(options).value ?? const <StaffChoice>[]) {
-        if (choice.id == member.id) {
-          count = choice.currentAssignmentCount;
-        }
-      }
-    }
+    final String? orders = options == null
+        ? null
+        : _orders(l10n, ref.watch(options));
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(l10n.staffBlockConfirm(name)),
-        if (count != null && count > 0) ...<Widget>[
+        if (orders != null) ...<Widget>[
           const SizedBox(height: 12),
-          Text(
-            l10n.staffBlockCurrentOrders(count),
-            key: const ValueKey<String>('block-current-orders'),
-          ),
+          Text(orders, key: const ValueKey<String>('block-current-orders')),
         ],
       ],
     );
+  }
+
+  /// What the confirmation says of the orders in the member's hands: their
+  /// count when there are any, and that it is being learned or could not be
+  /// learned, so a missing count is never read as none.
+  String? _orders(
+    AppLocalizations l10n,
+    AsyncValue<List<StaffChoice>> choices,
+  ) {
+    if (choices.hasError) {
+      return l10n.staffBlockOrdersUnknown;
+    }
+    final List<StaffChoice>? list = choices.value;
+    if (list == null) {
+      return l10n.staffBlockOrdersLoading;
+    }
+    for (final StaffChoice choice in list) {
+      if (choice.id == member.id) {
+        final int count = choice.currentAssignmentCount;
+        return count > 0 ? l10n.staffBlockCurrentOrders(count) : null;
+      }
+    }
+    return l10n.staffBlockOrdersUnknown;
   }
 }
 

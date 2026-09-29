@@ -307,6 +307,24 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('a change loads the order and the Shoppers\' counts again', (
+    WidgetTester tester,
+  ) async {
+    operations.afterAssignment[orderB] = OperationsApi.parseOrder(
+      orderJson(id: orderB, history: <Object?>[]),
+    );
+    await openOrder(tester, orderB);
+    await tapAndSettle(tester, byKey('assign-shopper'));
+    operations.loads.clear();
+
+    await tapAndSettle(tester, byKey('pick-shopper-$shopperId'));
+
+    expect(
+      operations.loads,
+      containsAll(<String>['order:$orderB', 'shoppers']),
+    );
+  });
+
   testWidgets('an order opened by an id in capitals reloads after a change', (
     WidgetTester tester,
   ) async {

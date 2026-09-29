@@ -505,6 +505,9 @@ class OperationsApi {
     if ((assignment.endedAt == null) != (assignment.endedReason == null)) {
       throw const FormatException('an end has its reason');
     }
+    if (assignment.endedReason == AssignmentEndReason.deliveryFailed) {
+      throw const FormatException('only a delivery fails');
+    }
     return assignment;
   }
 
@@ -602,17 +605,26 @@ class OperationsApi {
     switch (event) {
       case OrderHistoryEvent.shopperAssigned:
       case OrderHistoryEvent.shopperReassigned:
+      case OrderHistoryEvent.courierAssigned:
+      case OrderHistoryEvent.courierReassigned:
         final JsonFields json = JsonFields.of(raw, 'assignment details');
-        final bool reassigned = event == OrderHistoryEvent.shopperReassigned;
+        final bool courier =
+            event == OrderHistoryEvent.courierAssigned ||
+            event == OrderHistoryEvent.courierReassigned;
+        final String staff = courier ? 'courier' : 'shopper';
+        final bool reassigned =
+            event == OrderHistoryEvent.shopperReassigned ||
+            event == OrderHistoryEvent.courierReassigned;
         return AssignmentDetails(
+          role: courier ? UserRole.courier : UserRole.shopper,
           assignmentId: json.uuid('assignment_id'),
-          shopperId: json.uuid('shopper_id'),
+          staffId: json.uuid('${staff}_id'),
           isSelfOrder: json.boolean('is_self_order'),
           previousAssignmentId: reassigned
               ? json.uuid('previous_assignment_id')
               : null,
-          previousShopperId: reassigned
-              ? json.uuid('previous_shopper_id')
+          previousStaffId: reassigned
+              ? json.uuid('previous_${staff}_id')
               : null,
         );
       case OrderHistoryEvent.edited:

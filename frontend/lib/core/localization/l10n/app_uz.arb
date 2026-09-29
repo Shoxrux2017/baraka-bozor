@@ -843,7 +843,7 @@
       }
     }
   },
-  "attentionShowFewer": "Yig'ish",
+  "attentionShowFewer": "Kamroq ko'rsatish",
   "orderSectionCouriers": "Kuryerlar",
   "assignCourier": "Kuryer tayinlash",
   "reassignCourier": "Kuryerni almashtirish",
@@ -873,5 +873,26 @@
       }
     }
   },
-  "courierAssignmentsNone": "Kuryer hali tayinlanmagan"
+  "courierAssignmentsNone": "Kuryer hali tayinlanmagan",
+  "historyCourierAssignedTo": "Kuryer: {name}",
+  "@historyCourierAssignedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "historyCourierReassignedTo": "Kuryer: {previous} → {name}",
+  "@historyCourierReassignedTo": {
+    "placeholders": {
+      "previous": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffBlockOrdersLoading": "Xodimdagi buyurtmalar soni yuklanmoqda…",
+  "staffBlockOrdersUnknown": "Xodimdagi buyurtmalar sonini bilib bo'lmadi. Boshlangan yig'ish yoki yo'ldagi yetkazish boshqa xodimga o'tmaydi."
 }

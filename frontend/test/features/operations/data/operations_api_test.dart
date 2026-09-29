@@ -201,9 +201,85 @@ void main() {
               'assignment',
               assignmentId,
             )
-            .having((AssignmentDetails d) => d.isSelfOrder, 'self', isFalse),
+            .having((AssignmentDetails d) => d.isSelfOrder, 'self', isFalse)
+            .having((AssignmentDetails d) => d.role, 'role', UserRole.shopper)
+            .having((AssignmentDetails d) => d.staffId, 'staff', shopperId),
       );
     });
+
+    test(
+      'a Courier\'s assignment details are read with the Courier\'s ids',
+      () {
+        const String second = '0192f0a0-0000-7000-8000-0000000000a8';
+        final BoardOrder order = OperationsApi.parseOrder(
+          orderJson(
+            history: <Object?>[
+              historyJson(
+                event: 'courier_reassigned',
+                details: <String, Object?>{
+                  'assignment_id': second,
+                  'courier_id': otherCourierId,
+                  'is_self_order': true,
+                  'previous_assignment_id': courierAssignmentId,
+                  'previous_courier_id': courierId,
+                },
+              ),
+            ],
+          ),
+        );
+
+        expect(
+          order.history.single.details,
+          isA<AssignmentDetails>()
+              .having((AssignmentDetails d) => d.role, 'role', UserRole.courier)
+              .having((AssignmentDetails d) => d.assignmentId, 'id', second)
+              .having(
+                (AssignmentDetails d) => d.staffId,
+                'staff',
+                otherCourierId,
+              )
+              .having((AssignmentDetails d) => d.isSelfOrder, 'self', isTrue)
+              .having(
+                (AssignmentDetails d) => d.previousAssignmentId,
+                'previous',
+                courierAssignmentId,
+              )
+              .having(
+                (AssignmentDetails d) => d.previousStaffId,
+                'previous staff',
+                courierId,
+              ),
+        );
+
+        // A Courier's entry names a Courier, and a reassignment the one before.
+        for (final Map<String, Object?> details in <Map<String, Object?>>[
+          <String, Object?>{
+            'assignment_id': courierAssignmentId,
+            'shopper_id': courierId,
+            'is_self_order': false,
+          },
+          <String, Object?>{
+            'assignment_id': second,
+            'courier_id': otherCourierId,
+            'is_self_order': false,
+            'previous_assignment_id': courierAssignmentId,
+          },
+        ]) {
+          final String event = details.containsKey('previous_assignment_id')
+              ? 'courier_reassigned'
+              : 'courier_assigned';
+          expect(
+            () => OperationsApi.parseOrder(
+              orderJson(
+                history: <Object?>[historyJson(event: event, details: details)],
+              ),
+            ),
+            throwsFormatException,
+            reason: '$details',
+          );
+        }
+      },
+    );
 
     test('every event of Wave 3\'s actions is read (DL-54 (2))', () {
       for (final String code in <String>[
@@ -283,6 +359,15 @@ void main() {
             'total_uzs': 3,
             'total_kind': 'none',
           },
+        ),
+        // Only a delivery fails; a Shopper's assignment never ends so.
+        orderJson(
+          assignments: <Object?>[
+            assignmentJson(
+              endedAt: '2026-09-27T08:00:00Z',
+              endedReason: 'delivery_failed',
+            ),
+          ],
         ),
         orderJson(
           assignments: <Object?>[

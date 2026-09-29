@@ -485,7 +485,8 @@ class _Table extends StatefulWidget {
   /// About the most the table takes in a desktop font: it measured 1 125 px
   /// on the real stack in either language, and the Customer's cell and the
   /// people's — the Shopper above the Courier, so the Courier adds no column
-  /// — the ones names widen, wrap at [nameWidth] and [peopleWidth]
+  /// — the ones names widen, wrap at [nameWidth] and [peopleWidth]. The
+  /// Customer's open questions go under the status, which they never widen
   /// (`DL-53` (2), `DL-67` (3)).
   static const double usualWidth = 1200;
   static const double nameWidth = 180;
@@ -584,7 +585,8 @@ class _TableState extends State<_Table> {
   }
 }
 
-/// The status, and the Customer's open questions when there are any.
+/// The status, and under it the Customer's open questions when there are
+/// any, so they add a line and never widen the column.
 class _StatusCell extends StatelessWidget {
   const _StatusCell({required this.row});
 
@@ -594,17 +596,18 @@ class _StatusCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 4,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         OrderStatusChip(row.status),
-        if (row.pendingApprovalCount > 0)
+        if (row.pendingApprovalCount > 0) ...<Widget>[
+          const SizedBox(height: 4),
           Text(
             l10n.boardPendingQuestions(row.pendingApprovalCount),
             key: ValueKey<String>('board-questions-${row.id}'),
           ),
+        ],
       ],
     );
   }

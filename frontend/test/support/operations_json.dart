@@ -119,6 +119,7 @@ Map<String, Object?> courierChoiceJson({
 Map<String, Object?> courierAssignmentJson({
   String id = courierAssignmentId,
   String courier = courierId,
+  String fullName = 'Kamol Karimov',
   bool selfOrder = false,
   String? acceptedAt,
   String? startedAt,
@@ -130,7 +131,7 @@ Map<String, Object?> courierAssignmentJson({
   'id': id,
   'courier': <String, Object?>{
     'id': courier,
-    'full_name': 'Kamol Karimov',
+    'full_name': fullName,
     'phone': '+998905554433',
   },
   'assigned_by': <String, Object?>{'id': operatorId, 'full_name': 'Olim'},

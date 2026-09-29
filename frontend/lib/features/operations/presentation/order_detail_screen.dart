@@ -16,6 +16,7 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/list_widgets.dart';
+import '../../auth/domain/app_user.dart';
 import '../application/board_controllers.dart';
 import '../domain/board.dart';
 import 'board_widgets.dart';
@@ -160,7 +161,7 @@ class _Order extends StatelessWidget {
         _Section(
           title: l10n.orderSectionShoppers,
           children: <Widget>[
-            _AssignmentActions(order: order),
+            _ShopperActions(order: order),
             if (order.shopperAssignments.isEmpty) Text(l10n.assignmentsNone),
             for (final ShopperAssignment assignment
                 in order.shopperAssignments.reversed)
@@ -393,7 +394,8 @@ class _Assignment extends StatelessWidget {
       switch (reason) {
         AssignmentEndReason.completed => l10n.assignmentEndCompleted,
         AssignmentEndReason.reassigned => l10n.assignmentEndReassigned,
-        // A Shopper's assignment never ends so; the words are the Courier's.
+        // A Shopper's assignment never ends so, and the parser refuses it;
+        // the case keeps the switch whole.
         AssignmentEndReason.deliveryFailed => l10n.courierEndDeliveryFailed,
         AssignmentEndReason.orderCancelled => l10n.assignmentEndOrderCancelled,
       };
@@ -542,22 +544,29 @@ class _History extends StatelessWidget {
           '(${roleLabel(l10n, entry.actor!.role)})',
   };
 
-  /// The facts the entry carries, in words: the Shopper an assignment went
-  /// to — and from, on a reassignment — and what an edit changed.
+  /// The facts the entry carries, in words: the Shopper or the Courier an
+  /// assignment went to — and from, on a reassignment — and what an edit
+  /// changed.
   String? _details(AppLocalizations l10n) {
     final HistoryDetails? details = entry.details;
     switch (details) {
       case AssignmentDetails():
-        final String? name = _shopperName(l10n, details.assignmentId);
+        final bool courier = details.role == UserRole.courier;
+        final String? name = _staffName(l10n, courier, details.assignmentId);
         final String? previousId = details.previousAssignmentId;
         final String? previous = previousId == null
             ? null
-            : _shopperName(l10n, previousId);
+            : _staffName(l10n, courier, previousId);
         if (name == null) {
           return null;
         }
-        return previous == null
-            ? l10n.historyAssignedTo(name)
+        if (previous == null) {
+          return courier
+              ? l10n.historyCourierAssignedTo(name)
+              : l10n.historyAssignedTo(name);
+        }
+        return courier
+            ? l10n.historyCourierReassignedTo(previous, name)
             : l10n.historyReassignedTo(previous, name);
       case EditDetails():
         final List<String> parts = <String>[
@@ -572,11 +581,21 @@ class _History extends StatelessWidget {
     }
   }
 
-  /// The name of the Shopper of the order's assignment [assignmentId].
-  String? _shopperName(AppLocalizations l10n, String assignmentId) {
-    for (final ShopperAssignment assignment in order.shopperAssignments) {
-      if (assignment.id == assignmentId) {
-        return nameOf(l10n, assignment.shopper);
+  /// The name of the Shopper, or the Courier when [courier], of the order's
+  /// assignment [assignmentId].
+  String? _staffName(AppLocalizations l10n, bool courier, String assignmentId) {
+    final Iterable<(String, PersonRef)> assignments = courier
+        ? order.courierAssignments.map(
+            (CourierAssignment assignment) =>
+                (assignment.id, assignment.courier),
+          )
+        : order.shopperAssignments.map(
+            (ShopperAssignment assignment) =>
+                (assignment.id, assignment.shopper),
+          );
+    for (final (String id, PersonRef person) in assignments) {
+      if (id == assignmentId) {
+        return nameOf(l10n, person);
       }
     }
     return null;
@@ -614,94 +633,38 @@ class _History extends StatelessWidget {
 }
 
 /// The way to assign a Shopper to a `new` order, or to replace the Shopper
-/// before shopping starts (`BR-ASSIGN-001`, `BR-ASSIGN-002`), and what the
-/// last attempt answered. The buttons follow the order as loaded; the
-/// server decides, and a conflict reloads the order and says why.
-class _AssignmentActions extends ConsumerWidget {
-  const _AssignmentActions({required this.order});
+/// before shopping starts (`BR-ASSIGN-001`, `BR-ASSIGN-002`).
+class _ShopperActions extends StatelessWidget {
+  const _ShopperActions({required this.order});
 
   final BoardOrder order;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final MutationState state = ref.watch(shopperAssignmentProvider(order.id));
-    // Until the order the last change reloaded has arrived, the buttons
-    // would act on the order as it was.
-    final bool busy =
-        state.isBusy || ref.watch(boardOrderProvider(order.id)).isLoading;
     final ShopperAssignment? current = order.currentAssignment;
-    final bool assigns =
-        order.status == OrderStatus.newOrder && current == null;
-    final bool reassigns =
-        order.status == OrderStatus.shoppingAssigned &&
-        current != null &&
-        current.startedAt == null;
 
-    if (!assigns && !reassigns) {
-      return FailureMessage(state.failure);
-    }
-
-    Future<void> pick() async {
-      final StaffChoice? chosen = await showDialog<StaffChoice>(
-        context: context,
-        builder: (BuildContext context) => _StaffPicker(
-          options: shopperOptionsProvider,
-          title: l10n.pickShopperTitle,
-          empty: l10n.pickShopperEmpty,
-          keyPrefix: 'pick-shopper',
-          currentId: current?.shopper.id,
-        ),
-      );
-      if (chosen == null || !context.mounted) {
-        return;
-      }
-      final ShopperAssignmentController assignment = ref.read(
-        shopperAssignmentProvider(order.id).notifier,
-      );
-      if (current == null) {
-        await assignment.assign(chosen.id);
-      } else {
-        await assignment.reassign(chosen.id, current.id);
-      }
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Wrap(
-            spacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              if (assigns)
-                FilledButton.icon(
-                  key: const ValueKey<String>('assign-shopper'),
-                  icon: const Icon(Icons.person_add_alt_1_outlined),
-                  label: Text(l10n.assignShopper),
-                  onPressed: busy ? null : pick,
-                )
-              else
-                OutlinedButton.icon(
-                  key: const ValueKey<String>('reassign-shopper'),
-                  icon: const Icon(Icons.swap_horiz),
-                  label: Text(l10n.reassignShopper),
-                  onPressed: busy ? null : pick,
-                ),
-              if (state.isBusy)
-                SizedBox.square(
-                  dimension: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    semanticsLabel: l10n.assigningShopper,
-                  ),
-                ),
-            ],
-          ),
-          FailureMessage(state.failure),
-        ],
+    return _AssignmentActions(
+      order: order,
+      assignment: shopperAssignmentProvider(order.id),
+      options: shopperOptionsProvider,
+      role: 'shopper',
+      assigns: order.status == OrderStatus.newOrder && current == null,
+      reassigns:
+          order.status == OrderStatus.shoppingAssigned &&
+          current != null &&
+          current.startedAt == null,
+      current: current == null
+          ? null
+          : (id: current.id, staffId: current.shopper.id),
+      words: (
+        pickTitle: l10n.pickShopperTitle,
+        pickEmpty: l10n.pickShopperEmpty,
+        assign: l10n.assignShopper,
+        reassign: l10n.reassignShopper,
+        busy: l10n.assigningShopper,
       ),
+      assignIcon: Icons.person_add_alt_1_outlined,
     );
   }
 }
@@ -709,24 +672,85 @@ class _AssignmentActions extends ConsumerWidget {
 /// The Courier's assignment actions, with the rules of the Shopper's
 /// (`DL-48`, `DL-54` (10)): assign while the order is ready and has no
 /// Courier, reassign while it is assigned and the Courier has not set off.
-class _CourierActions extends ConsumerWidget {
+class _CourierActions extends StatelessWidget {
   const _CourierActions({required this.order});
 
   final BoardOrder order;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final MutationState state = ref.watch(courierAssignmentProvider(order.id));
+    final CourierAssignment? current = order.currentCourierAssignment;
+
+    return _AssignmentActions(
+      order: order,
+      assignment: courierAssignmentProvider(order.id),
+      options: courierOptionsProvider,
+      role: 'courier',
+      assigns: order.status == OrderStatus.readyForDelivery && current == null,
+      reassigns:
+          order.status == OrderStatus.deliveryAssigned &&
+          current != null &&
+          current.deliveryStartedAt == null,
+      current: current == null
+          ? null
+          : (id: current.id, staffId: current.courier.id),
+      words: (
+        pickTitle: l10n.pickCourierTitle,
+        pickEmpty: l10n.pickCourierEmpty,
+        assign: l10n.assignCourier,
+        reassign: l10n.reassignCourier,
+        busy: l10n.assigningCourier,
+      ),
+      assignIcon: Icons.delivery_dining_outlined,
+    );
+  }
+}
+
+/// One role's assignment actions and what the last attempt answered. The
+/// buttons follow the order as loaded; the server decides, and a conflict
+/// reloads the order and says why.
+class _AssignmentActions extends ConsumerWidget {
+  const _AssignmentActions({
+    required this.order,
+    required this.assignment,
+    required this.options,
+    required this.role,
+    required this.assigns,
+    required this.reassigns,
+    required this.current,
+    required this.words,
+    required this.assignIcon,
+  });
+
+  final BoardOrder order;
+  final NotifierProvider<StaffAssignmentController, MutationState> assignment;
+  final FutureProvider<List<StaffChoice>> options;
+
+  /// `shopper` or `courier`, as the keys name it.
+  final String role;
+  final bool assigns;
+  final bool reassigns;
+
+  /// The current assignment and the Shopper or the Courier it names.
+  final ({String id, String staffId})? current;
+  final ({
+    String pickTitle,
+    String pickEmpty,
+    String assign,
+    String reassign,
+    String busy,
+  })
+  words;
+  final IconData assignIcon;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final MutationState state = ref.watch(assignment);
+    // Until the order the last change reloaded has arrived, the buttons
+    // would act on the order as it was.
     final bool busy =
         state.isBusy || ref.watch(boardOrderProvider(order.id)).isLoading;
-    final CourierAssignment? current = order.currentCourierAssignment;
-    final bool assigns =
-        order.status == OrderStatus.readyForDelivery && current == null;
-    final bool reassigns =
-        order.status == OrderStatus.deliveryAssigned &&
-        current != null &&
-        current.deliveryStartedAt == null;
 
     if (!assigns && !reassigns) {
       return FailureMessage(state.failure);
@@ -736,23 +760,22 @@ class _CourierActions extends ConsumerWidget {
       final StaffChoice? chosen = await showDialog<StaffChoice>(
         context: context,
         builder: (BuildContext context) => _StaffPicker(
-          options: courierOptionsProvider,
-          title: l10n.pickCourierTitle,
-          empty: l10n.pickCourierEmpty,
-          keyPrefix: 'pick-courier',
-          currentId: current?.courier.id,
+          options: options,
+          title: words.pickTitle,
+          empty: words.pickEmpty,
+          keyPrefix: 'pick-$role',
+          currentId: current?.staffId,
         ),
       );
       if (chosen == null || !context.mounted) {
         return;
       }
-      final CourierAssignmentController assignment = ref.read(
-        courierAssignmentProvider(order.id).notifier,
-      );
-      if (current == null) {
-        await assignment.assign(chosen.id);
+      final StaffAssignmentController change = ref.read(assignment.notifier);
+      final ({String id, String staffId})? replaced = current;
+      if (replaced == null) {
+        await change.assign(chosen.id);
       } else {
-        await assignment.reassign(chosen.id, current.id);
+        await change.reassign(chosen.id, replaced.id);
       }
     }
 
@@ -767,16 +790,16 @@ class _CourierActions extends ConsumerWidget {
             children: <Widget>[
               if (assigns)
                 FilledButton.icon(
-                  key: const ValueKey<String>('assign-courier'),
-                  icon: const Icon(Icons.delivery_dining_outlined),
-                  label: Text(l10n.assignCourier),
+                  key: ValueKey<String>('assign-$role'),
+                  icon: Icon(assignIcon),
+                  label: Text(words.assign),
                   onPressed: busy ? null : pick,
                 )
               else
                 OutlinedButton.icon(
-                  key: const ValueKey<String>('reassign-courier'),
+                  key: ValueKey<String>('reassign-$role'),
                   icon: const Icon(Icons.swap_horiz),
-                  label: Text(l10n.reassignCourier),
+                  label: Text(words.reassign),
                   onPressed: busy ? null : pick,
                 ),
               if (state.isBusy)
@@ -784,7 +807,7 @@ class _CourierActions extends ConsumerWidget {
                   dimension: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    semanticsLabel: l10n.assigningCourier,
+                    semanticsLabel: words.busy,
                   ),
                 ),
             ],

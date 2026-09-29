@@ -1635,7 +1635,7 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get attentionShowFewer => 'Yig\'ish';
+  String get attentionShowFewer => 'Kamroq ko\'rsatish';
 
   @override
   String get orderSectionCouriers => 'Kuryerlar';
@@ -1688,4 +1688,22 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get courierAssignmentsNone => 'Kuryer hali tayinlanmagan';
+
+  @override
+  String historyCourierAssignedTo(String name) {
+    return 'Kuryer: $name';
+  }
+
+  @override
+  String historyCourierReassignedTo(String previous, String name) {
+    return 'Kuryer: $previous → $name';
+  }
+
+  @override
+  String get staffBlockOrdersLoading =>
+      'Xodimdagi buyurtmalar soni yuklanmoqda…';
+
+  @override
+  String get staffBlockOrdersUnknown =>
+      'Xodimdagi buyurtmalar sonini bilib bo\'lmadi. Boshlangan yig\'ish yoki yo\'ldagi yetkazish boshqa xodimga o\'tmaydi.';
 }

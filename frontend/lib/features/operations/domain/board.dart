@@ -623,21 +623,24 @@ sealed class HistoryDetails {
   const HistoryDetails();
 }
 
-/// A Shopper assigned or reassigned.
+/// A Shopper or a Courier assigned or reassigned.
 final class AssignmentDetails extends HistoryDetails {
   const AssignmentDetails({
+    required this.role,
     required this.assignmentId,
-    required this.shopperId,
+    required this.staffId,
     required this.isSelfOrder,
     required this.previousAssignmentId,
-    required this.previousShopperId,
+    required this.previousStaffId,
   });
 
+  /// [UserRole.shopper] or [UserRole.courier].
+  final UserRole role;
   final String assignmentId;
-  final String shopperId;
+  final String staffId;
   final bool isSelfOrder;
   final String? previousAssignmentId;
-  final String? previousShopperId;
+  final String? previousStaffId;
 }
 
 /// An edit of the lines and the delivery wish.

@@ -866,5 +866,26 @@
       }
     }
   },
-  "courierAssignmentsNone": "Курьер ещё не назначен"
+  "courierAssignmentsNone": "Курьер ещё не назначен",
+  "historyCourierAssignedTo": "Курьер: {name}",
+  "@historyCourierAssignedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "historyCourierReassignedTo": "Курьер: {previous} → {name}",
+  "@historyCourierReassignedTo": {
+    "placeholders": {
+      "previous": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffBlockOrdersLoading": "Загружаем, сколько заказов у сотрудника…",
+  "staffBlockOrdersUnknown": "Не удалось узнать, сколько заказов у сотрудника. Начатая сборка или доставка в пути не перейдёт к другому."
 }

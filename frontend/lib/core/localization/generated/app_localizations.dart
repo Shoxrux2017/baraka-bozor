@@ -3041,7 +3041,7 @@ abstract class AppLocalizations {
   /// No description provided for @attentionShowFewer.
   ///
   /// In uz, this message translates to:
-  /// **'Yig\'ish'**
+  /// **'Kamroq ko\'rsatish'**
   String get attentionShowFewer;
 
   /// No description provided for @orderSectionCouriers.
@@ -3139,6 +3139,30 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Kuryer hali tayinlanmagan'**
   String get courierAssignmentsNone;
+
+  /// No description provided for @historyCourierAssignedTo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer: {name}'**
+  String historyCourierAssignedTo(String name);
+
+  /// No description provided for @historyCourierReassignedTo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer: {previous} → {name}'**
+  String historyCourierReassignedTo(String previous, String name);
+
+  /// No description provided for @staffBlockOrdersLoading.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xodimdagi buyurtmalar soni yuklanmoqda…'**
+  String get staffBlockOrdersLoading;
+
+  /// No description provided for @staffBlockOrdersUnknown.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xodimdagi buyurtmalar sonini bilib bo\'lmadi. Boshlangan yig\'ish yoki yo\'ldagi yetkazish boshqa xodimga o\'tmaydi.'**
+  String get staffBlockOrdersUnknown;
 }
 
 class _AppLocalizationsDelegate

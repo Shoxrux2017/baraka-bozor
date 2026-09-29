@@ -1713,4 +1713,22 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get courierAssignmentsNone => 'Курьер ещё не назначен';
+
+  @override
+  String historyCourierAssignedTo(String name) {
+    return 'Курьер: $name';
+  }
+
+  @override
+  String historyCourierReassignedTo(String previous, String name) {
+    return 'Курьер: $previous → $name';
+  }
+
+  @override
+  String get staffBlockOrdersLoading =>
+      'Загружаем, сколько заказов у сотрудника…';
+
+  @override
+  String get staffBlockOrdersUnknown =>
+      'Не удалось узнать, сколько заказов у сотрудника. Начатая сборка или доставка в пути не перейдёт к другому.';
 }
