@@ -284,12 +284,9 @@ class _Actions extends ConsumerWidget {
     final ShopperOrderController actions = ref.read(
       shopperOrderActionProvider(order.id).notifier,
     );
-    // Until the order a change loads again has arrived, the buttons would
-    // act on the order as it was; the periodic refresh does not hold them.
-    final bool busy =
-        state.isBusy ||
-        (actions.awaitingReload &&
-            ref.watch(shopperOrderProvider(order.id)).isLoading);
+    // Only the running action holds the buttons: a tap on the order as it
+    // was repeats harmlessly, and the periodic refresh never holds them.
+    final bool busy = state.isBusy;
     final String? phone = order.customerPhone;
 
     return Column(

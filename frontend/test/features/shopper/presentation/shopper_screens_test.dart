@@ -128,6 +128,33 @@ void main() {
     expect(find.text(l10n(tester).shopperOrdersEmpty), findsOneWidget);
   });
 
+  testWidgets('a line bought so cheaply that its total rounds to nothing is '
+      'shown', (WidgetTester tester) async {
+    shopper.details[shopperOrderA] = shopperOrder(
+      status: 'shopping',
+      items: <Object?>[
+        shopperLineJson(
+          status: 'purchased',
+          patch: <String, Object?>{
+            'purchase': <String, Object?>{
+              'product_id': shopperProductTomato,
+              'purchased_quantity': '0.400',
+              'billable_quantity': '0.400',
+              'actual_market_price_uzs': 1,
+              'billable_unit_price_uzs': 1,
+              'line_total_uzs': 0,
+            },
+          },
+        ),
+      ],
+    );
+    await open(tester);
+    await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
+
+    expect(byKey('shopper-line-bought-$shopperLineTomato'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('an order shows each line: what to buy, how far its price may '
       'go, and what became of it', (WidgetTester tester) async {
     shopper.details[shopperOrderA] = shopperOrder(
@@ -322,8 +349,8 @@ void main() {
     expect(shopper.loads, contains('order:$shopperOrderA'));
   });
 
-  testWidgets('one action at a time, and the buttons wait for the order it '
-      'loads', (WidgetTester tester) async {
+  testWidgets('one action at a time; once it is answered, the next is '
+      'offered even while a refresh runs', (WidgetTester tester) async {
     shopper.afterAction[shopperOrderA] = shopperOrder(accepted: true);
     await open(tester);
     await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
@@ -335,24 +362,26 @@ void main() {
     expect(
       tester.widget<FilledButton>(byKey('shopper-accept')).onPressed,
       isNull,
+      reason: 'the acceptance runs',
     );
+    await tester.tap(byKey('shopper-accept'), warnIfMissed: false);
     shopper.hold = null;
-    final Completer<void> reload = Completer<void>();
-    shopper.holdOrder = reload;
     hold.complete();
-    await tester.pump();
-    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(shopper.actions, <String>['accept:$shopperOrderA']);
 
-    expect(shopper.actions, hasLength(1));
+    // A refresh held after the action does not hold the start.
+    final Completer<void> refresh = Completer<void>();
+    shopper.holdOrder = refresh;
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pump();
     expect(
-      tester.widget<FilledButton>(byKey('shopper-accept')).onPressed,
-      isNull,
-      reason: 'the order the acceptance loads has not arrived',
+      tester.widget<FilledButton>(byKey('shopper-start')).onPressed,
+      isNotNull,
     );
     shopper.holdOrder = null;
-    reload.complete();
+    refresh.complete();
     await tester.pumpAndSettle();
-    expect(byKey('shopper-start'), findsOneWidget);
   });
 
   group('the refresh while shown (DL-54 (15))', () {

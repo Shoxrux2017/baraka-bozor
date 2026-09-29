@@ -285,7 +285,9 @@ class ShopperOrdersApi {
       billableQuantity: _quantityOf(json, 'billable_quantity', unit),
       actualMarketPriceUzs: _nullablePrice(json, 'actual_market_price_uzs'),
       billableUnitPriceUzs: _price(json, 'billable_unit_price_uzs'),
-      lineTotalUzs: _price(json, 'line_total_uzs'),
+      // A tiny quantity at a price of one sum rounds to nothing, which the
+      // table allows (`order_items_prices_check`).
+      lineTotalUzs: _amount(json, 'line_total_uzs'),
     );
   }
 

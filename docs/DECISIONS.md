@@ -961,11 +961,11 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - `can_accept` and `can_start` follow from the assignment;
    - a line is bought exactly when it has its purchase and removed exactly when it has its reason; a removed line has no replacement, and an open question sits on a line waiting for the Customer;
    - a fixed line has no bound and an estimate has one (`PriceBound::original`); the purchase names the product bought, the replacement when there is one;
-   - each quantity is written for its unit — three decimals for `kg`, `liter` and `meter`, a whole number otherwise (`QuantityPolicy::format`) — and every price, a replacement's included, is above zero.
+   - each quantity is written for its unit — three decimals for `kg`, `liter` and `meter`, a whole number otherwise (`QuantityPolicy::format`); every price per unit, a replacement's included, is above zero, and a line's total at least zero, since a tiny quantity at a price of one sum rounds to nothing.
    The actions' answers are held to their effect: the order acted on, accepted, or shopping and started.
 4. **Accept and start** run through one controller per order (`AccountMutation`, `DL-28`):
    - one at a time; a refusal that may come from a changed order reloads it;
-   - the buttons wait while the order a change loads again has not arrived, and not for the periodic refresh, which would otherwise switch them off every ten seconds.
+   - only the running action holds the buttons. Both repeat harmlessly and name nothing but the order, so a tap on the order as it was, before its reload arrives, sends the same request again; waiting for the reload would also switch the buttons off at every ten-second refresh. The Operator's assignments wait (`DL-48`), since a reassignment names the assignment it replaces.
    Neither needs a key: again is a natural repeat (`docs/09` section 29).
 5. **The app bar keeps two buttons:** the language, and one menu holding Customer mode for a Shopper or a Courier and the way out. This answers the Wave 2 risk row for this area. The placeholder shell and the menu share the way into Customer mode (`enterCustomerMode`).
 6. **The call to the Customer** (interview 7.3, `DL-54` (16)):

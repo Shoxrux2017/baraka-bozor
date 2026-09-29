@@ -294,6 +294,30 @@ void main() {
             },
           ),
         ),
+        withLine(
+          shopperLineJson(
+            status: 'purchased',
+            patch: <String, Object?>{
+              'purchase': <String, Object?>{
+                ...(shopperLineJson(status: 'purchased')['purchase']!
+                    as Map<String, Object?>),
+                'billable_quantity': '2',
+              },
+            },
+          ),
+        ),
+        withLine(
+          shopperLineJson(
+            status: 'purchased',
+            patch: <String, Object?>{
+              'purchase': <String, Object?>{
+                ...(shopperLineJson(status: 'purchased')['purchase']!
+                    as Map<String, Object?>),
+                'line_total_uzs': -1,
+              },
+            },
+          ),
+        ),
       ]) {
         expect(
           () => ShopperOrdersApi.parseOrder(broken),

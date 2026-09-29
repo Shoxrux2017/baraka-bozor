@@ -63,33 +63,15 @@ final FutureProviderFamily<ShopperOrder, String> shopperOrderProvider =
 /// The Shopper's acceptance and start of one order, one at a time. After
 /// either — and after a conflict, the order gone, or an uncertain outcome —
 /// the order and the list load again, so a `409` shows the order as it now
-/// is (`DL-28` (11)).
+/// is (`DL-28` (11)). Both repeat harmlessly and name nothing but the
+/// order, so nothing waits for that reload (`DL-69` (4)).
 class ShopperOrderController extends AccountMutation {
   ShopperOrderController(this.orderId);
 
   final String orderId;
-  bool _awaitingReload = false;
 
   @override
   Provider<String?> get account => staffAccountProvider;
-
-  /// Whether a change of this order was answered and the order it loads
-  /// again has not arrived; the buttons wait for it, and not for the
-  /// periodic refresh (`DL-69` (4)).
-  bool get awaitingReload => _awaitingReload;
-
-  @override
-  MutationState build() {
-    ref.listen(shopperOrderProvider(orderId), (
-      AsyncValue<ShopperOrder>? _,
-      AsyncValue<ShopperOrder> next,
-    ) {
-      if (!next.isLoading) {
-        _awaitingReload = false;
-      }
-    });
-    return super.build();
-  }
 
   ShopperOrdersRepository get _orders =>
       ref.read(shopperOrdersRepositoryProvider);
@@ -100,12 +82,9 @@ class ShopperOrderController extends AccountMutation {
   Future<ShopperOrder?> start() =>
       perform(() => _orders.start(orderId), reload: _reload);
 
-  void _reload(Object? _) {
-    _awaitingReload = true;
-    ref
-      ..invalidate(shopperOrderProvider(orderId))
-      ..invalidate(shopperOrdersProvider);
-  }
+  void _reload(Object? _) => ref
+    ..invalidate(shopperOrderProvider(orderId))
+    ..invalidate(shopperOrdersProvider);
 }
 
 final NotifierProviderFamily<ShopperOrderController, MutationState, String>
