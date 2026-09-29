@@ -206,6 +206,16 @@ class ApprovalDecisionController extends OrderMutation {
 
   final OrderLineRef line;
 
+  String? _approvalId;
+  ApprovalDecision? _sending;
+
+  /// The question the latest decision answered: its refusal is said while
+  /// that question, or none, is on the line, never under one asked since.
+  String? get approvalId => _approvalId;
+
+  /// The decision on its way, while one runs.
+  ApprovalDecision? get sending => state.isBusy ? _sending : null;
+
   Future<CustomerApproval?> decide(
     String approvalId,
     ApprovalDecision decision,
@@ -219,6 +229,8 @@ class ApprovalDecisionController extends OrderMutation {
     )[approvalId];
     final String key = unanswered?.key ?? newIdempotencyKey();
     final ApprovalDecision sent = unanswered?.sent ?? decision;
+    _approvalId = approvalId;
+    _sending = sent;
     final CustomerApproval? answer = await perform(
       () => orders.decide(orderId, approvalId, sent, key),
       reload: reload,

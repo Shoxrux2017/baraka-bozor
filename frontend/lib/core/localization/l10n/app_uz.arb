@@ -802,7 +802,7 @@
   "orderCancelKeep": "Yo'q, qoldirish",
   "orderCancelling": "Bekor qilinmoqda",
   "orderCancellationRequested": "Bekor qilish so'raldi: operator hal qiladi",
-  "orderCancellationNeedsReason": "Xarid boshlangan: bekor qilish sababini yozing, operator hal qiladi",
+  "orderCancellationNeedsReason": "Buyurtma allaqachon bajarilmoqda: bekor qilish sababini yozing, operator hal qiladi",
   "orderOpen": "Buyurtmani ochish",
   "orderLineRemoved": "Olib tashlandi: {reason}",
   "@orderLineRemoved": {
@@ -1367,7 +1367,7 @@
       }
     }
   },
-  "questionPrice": "{name}: narxi endi {price} (avval {was}). Shu narxga rozimisiz?",
+  "questionPrice": "{name}: narxi endi {price} (buyurtma paytida {was} edi). Shu narxga rozimisiz?",
   "@questionPrice": {
     "placeholders": {
       "name": {
@@ -1468,14 +1468,16 @@
     }
   },
   "requestStateApproved": "Tasdiqlandi — buyurtma bekor qilindi",
-  "requestStateRejected": "Rad etildi — buyurtma bajarilmoqda",
+  "requestStateRejected": "Operator rad etdi",
   "requestStateClosed": "Yopildi — buyurtma boshqacha yakunlandi",
   "orderRequestCancel": "Bekor qilishni so'rash",
   "orderRequestCancelTitle": "Buyurtmani bekor qilishni so'raysizmi?",
   "orderRequestCancelReason": "Sabab",
-  "orderRequestCancelExplained": "Yig'ish boshlangan — operator hal qiladi.",
+  "orderRequestCancelExplained": "Buyurtma allaqachon bajarilmoqda — operator hal qiladi.",
   "errorApprovalExpired": "Savolga javob berish vaqti o'tgan.",
   "questionRejectRemoves": "Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.",
   "removedYouRejected": "siz rad etdingiz",
-  "removedYouRemoved": "siz olib tashladingiz"
+  "removedYouRemoved": "siz olib tashladingiz",
+  "questionDropsReplacement": "Rozi bo'lsangiz, o'rniga boshqasi emas, buyurtma qilingan mahsulotning o'zi olinadi.",
+  "decisionSending": "Javob yuborilmoqda"
 }

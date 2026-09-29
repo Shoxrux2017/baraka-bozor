@@ -463,6 +463,12 @@ class _Line extends ConsumerWidget {
     final MutationState deciding = ref.watch(
       approvalDecisionProvider((orderId: orderId, lineId: line.id)),
     );
+    final String? answered = ref
+        .read(
+          approvalDecisionProvider((orderId: orderId, lineId: line.id))
+              .notifier,
+        )
+        .approvalId;
 
     return Column(
       key: ValueKey<String>('order-line-${line.id}'),
@@ -518,7 +524,12 @@ class _Line extends ConsumerWidget {
             key: ValueKey<String>('question-expired-${line.id}'),
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
-        FailureMessage(deciding.failure),
+        // A refusal belongs to the question it answered: it is said while
+        // that question, or none, is on the line, and not under a question
+        // asked since.
+        FailureMessage(
+          question == null || question.id == answered ? deciding.failure : null,
+        ),
       ],
     );
   }
@@ -589,6 +600,24 @@ class _Question extends ConsumerWidget {
     );
     VoidCallback? decide(ApprovalDecision decision) =>
         deciding.isBusy ? null : () => decisions.decide(question.id, decision);
+    // The decision on its way shows that it is, on its own button.
+    Widget label(ApprovalDecision decision, String text) =>
+        decisions.sending == decision
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              SizedBox.square(
+                dimension: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  semanticsLabel: l10n.decisionSending,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(child: Text(text)),
+            ],
+          )
+        : Text(text);
 
     return Card(
       key: ValueKey<String>('question-${question.id}'),
@@ -601,6 +630,17 @@ class _Question extends ConsumerWidget {
             if (question.requestNote != null)
               Text(l10n.questionNote(question.requestNote!)),
             Text(l10n.questionExpires(TashkentTime.format(question.expiresAt))),
+            // Agreeing to the price of the product ordered drops the
+            // replacement the line shows (`docs/09` section 23).
+            if (question.type == ApprovalType.priceOverTolerance &&
+                replacement == null &&
+                line.replacement != null)
+              Text(
+                l10n.questionDropsReplacement,
+                key: ValueKey<String>(
+                  'question-drops-replacement-${question.id}',
+                ),
+              ),
             Text(l10n.questionRejectRemoves),
             const SizedBox(height: 8),
             if (unanswered != null) ...<Widget>[
@@ -612,7 +652,7 @@ class _Question extends ConsumerWidget {
               FilledButton(
                 key: ValueKey<String>('decide-again-${question.id}'),
                 onPressed: decide(unanswered.sent),
-                child: Text(l10n.sendAgain),
+                child: label(unanswered.sent, l10n.sendAgain),
               ),
             ] else
               Wrap(
@@ -622,12 +662,15 @@ class _Question extends ConsumerWidget {
                   FilledButton(
                     key: ValueKey<String>('approve-${question.id}'),
                     onPressed: decide(ApprovalDecision.approve),
-                    child: Text(l10n.questionApprove),
+                    child: label(
+                      ApprovalDecision.approve,
+                      l10n.questionApprove,
+                    ),
                   ),
                   OutlinedButton(
                     key: ValueKey<String>('reject-${question.id}'),
                     onPressed: decide(ApprovalDecision.reject),
-                    child: Text(l10n.questionReject),
+                    child: label(ApprovalDecision.reject, l10n.questionReject),
                   ),
                 ],
               ),

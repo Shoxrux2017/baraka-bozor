@@ -25,6 +25,26 @@ import '../../../support/in_memory_stores.dart';
 
 const String lineApple = '0192f0a0-0000-7000-8000-00000000c014';
 const String orderTwo = '0192f0a0-0000-7000-8000-00000000c002';
+const String approvalTwo = '0192f0a0-0000-7000-8000-00000000c032';
+
+/// [line] with its question renamed [id], as a question asked later.
+Map<String, Object?> askedAgain(Map<String, Object?> line, String id) =>
+    <String, Object?>{
+      ...line,
+      'pending_approval': <String, Object?>{
+        ...line['pending_approval']! as Map<String, Object?>,
+        'id': id,
+      },
+    };
+
+/// The tomato line with the cherry replacement authorized.
+Map<String, Object?> replaced(Map<String, Object?> line) => <String, Object?>{
+  ...line,
+  'replacement': const <String, Object?>{
+    'name_uz': 'Olcha pomidor',
+    'name_ru': 'Помидоры черри',
+  },
+};
 
 /// The tomato line's question of [type], the price one about the
 /// replacement the Customer authorized when [aboutReplacement].
@@ -255,6 +275,47 @@ void main() {
       );
     }
 
+    testWidgets(
+      'a price question about the product ordered says it drops the replacement',
+      (WidgetTester tester) async {
+        orders.rows = <Map<String, Object?>>[
+          shopping(<Object?>[replaced(asked('price_over_tolerance'))]),
+          shopping(<Object?>[
+            asked('price_over_tolerance', aboutReplacement: true),
+          ], id: orderTwo),
+        ];
+        await open(tester, at: AppPaths.customerOrder(orderOne));
+        expect(
+          byKey('question-drops-replacement-$approvalOne'),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n(tester).questionDropsReplacement),
+          findsOneWidget,
+        );
+
+        // About the replacement itself, or with none on the line, nothing
+        // is dropped.
+        GoRouter.of(anywhere(tester)).push(AppPaths.customerOrder(orderTwo));
+        await tester.pumpAndSettle();
+        expect(byKey('question-drops-replacement-$approvalOne'), findsNothing);
+        orders.rows = <Map<String, Object?>>[
+          shopping(<Object?>[asked('price_over_tolerance')]),
+          // Nor does a smaller quantity, whatever replaced the line.
+          shopping(<Object?>[
+            replaced(asked('reduced_quantity')),
+          ], id: orderTwo),
+        ];
+        await tester.pumpWidget(const SizedBox.shrink());
+        await open(tester, at: AppPaths.customerOrder(orderOne));
+        expect(byKey('question-drops-replacement-$approvalOne'), findsNothing);
+        GoRouter.of(anywhere(tester)).push(AppPaths.customerOrder(orderTwo));
+        await tester.pumpAndSettle();
+        expect(byKey('question-$approvalOne'), findsOneWidget);
+        expect(byKey('question-drops-replacement-$approvalOne'), findsNothing);
+      },
+    );
+
     testWidgets('an approval is sent with its key, and the order reloaded', (
       WidgetTester tester,
     ) async {
@@ -312,6 +373,25 @@ void main() {
       await tester.pump();
       expect(pressed(tester, 'approve-$approvalOne'), isNull);
       expect(pressed(tester, 'reject-$approvalOne'), isNull);
+      // The answer on its way says so, on its own button.
+      expect(
+        tester
+            .widget<CircularProgressIndicator>(
+              find.descendant(
+                of: byKey('approve-$approvalOne'),
+                matching: find.byType(CircularProgressIndicator),
+              ),
+            )
+            .semanticsLabel,
+        l10n(tester).decisionSending,
+      );
+      expect(
+        find.descendant(
+          of: byKey('reject-$approvalOne'),
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsNothing,
+      );
 
       orders.hold = null;
       hold.complete();
@@ -445,6 +525,32 @@ void main() {
       );
       expect(byKey('question-$approvalOne'), findsNothing);
       expect(byKey('question-expired-$lineTomato'), findsNothing);
+    });
+
+    testWidgets('a refusal is not said under a question asked since', (
+      WidgetTester tester,
+    ) async {
+      orders.rows = <Map<String, Object?>>[
+        shopping(<Object?>[asked('price_over_tolerance')]),
+      ];
+      await open(tester, at: AppPaths.customerOrder(orderOne));
+      // Answered on another device, and the Shopper asked again since.
+      orders
+        ..decisionFailure = const ApiRefusal(
+          ApiError(status: 409, code: 'approval_already_resolved'),
+        )
+        ..afterDecision = shopping(<Object?>[
+          askedAgain(asked('reduced_quantity'), approvalTwo),
+        ]);
+
+      await tapAndSettle(tester, byKey('approve-$approvalOne'));
+
+      expect(byKey('question-$approvalTwo'), findsOneWidget);
+      expect(
+        find.text(l10n(tester).errorApprovalAlreadyResolved),
+        findsNothing,
+      );
+      expect(byKey('failure-message'), findsNothing);
     });
 
     testWidgets('a line waiting past its question offers no answer', (

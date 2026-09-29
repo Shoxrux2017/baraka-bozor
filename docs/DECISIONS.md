@@ -1034,29 +1034,31 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - A removed line says why in the Customer's words: "you refused" where the staff read "the client refused" (`OrderLabels.customerRemovedReason`, as `DL-51` (2) did for statuses).
 2. **Questions.** A line's open question shows on the line:
    - what is proposed, in the Customer's prices only (`BR-PRICE-001`):
-     - a higher price for the product ordered, with what it was;
+     - a higher price for the product ordered, with what it was when ordered;
      - a price for the replacement the Customer authorized;
      - a replacement and its price;
      - a smaller quantity, with what was ordered;
    - the Shopper's note;
    - the time it can be answered until, in Tashkent time;
-   - that refusing removes the line (`DL-54` (8)).
+   - that refusing removes the line (`DL-54` (8));
+   - on a price question about the product ordered while the line shows a replacement, that agreeing buys the product ordered instead, since approving it drops the replacement (`docs/09` section 23).
    A line still waiting whose question the server no longer shows is past its expiry (`docs/09` section 20). It says the time ran out and that the line will be removed, and offers no answer.
 3. **Answers** (`docs/09` section 23):
    - **Keys.** Agree and refuse are keyed, as `DL-70` (5) keys the Shopper's actions.
      - A decision whose answer failed to say what it did keeps its key and the decision sent, as state of the order (`unansweredDecisionsProvider`) that the order's page holds.
      - The line then offers only to send the same decision again, which it names, under the same key. The first sure answer lets them go.
      - `UnansweredRequest` moves to `core/network`, for both.
-   - **Refusals.** The answer's state belongs to the line rather than to the question. A refusal — `approval_expired`, `approval_already_resolved`, `order_state_conflict` — is therefore still said once the reloaded order has taken the question away.
+   - **Refusals.** The answer's state belongs to the line rather than to the question. A refusal — `approval_expired`, `approval_already_resolved`, `order_state_conflict` — is therefore still said once the reloaded order has taken the question away. It is said while the question it answered, or none, is on the line, and not under a question asked since.
+   - **Busy.** While a decision is on its way, both answers are disabled and the one sent shows a progress mark with its label.
    - **The answer's check.** The answer must show that question, on the order shown, decided as asked (`DL-27` (6)). A replay under the same key answers so too (`docs/09` section 48); a decision sent again under a new key is `approval_already_resolved`.
 4. **The cancellation request.**
    - The order shows its latest request: the Customer's reason, and where it stands:
      - waiting for an Operator;
      - approved, and the order cancelled;
-     - rejected, and the order going on;
+     - rejected by the Operator, in words that stay true whatever became of the order since;
      - closed, the order having ended otherwise first.
    - The Operator's note is not shown (`DL-65` (5)).
-   - **Asking.** While the server offers it (`can_request_cancellation`), "ask to cancel" opens a dialog that says an Operator decides and requires the reason, up to 300 characters. It uses the cancel endpoint and its key, which covers both branches (`DL-65` (1)).
+   - **Asking.** While the server offers it (`can_request_cancellation`), "ask to cancel" opens a dialog that says the order is already in progress and an Operator decides, and requires the reason, up to 300 characters. It uses the cancel endpoint and its key, which covers both branches (`DL-65` (1)).
    - **A lost answer.** A cancel whose answer was lost is sent again unchanged, with its reason or without one, even when the order has since passed into shopping. The server's replay answers what the first attempt did.
    - **Filed elsewhere.** `cancellation_already_pending` means a request was filed meanwhile from another device. It is not said as an error: its words are addressed to the Operator, and the reloaded order shows the request.
 5. **The payment.** Once made, the order shows the amount paid and when, as the Courier recorded it (`docs/08` section 19). An online payment not yet paid shows its state (Wave 5).
@@ -1080,3 +1082,4 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - **requests:** resolved exactly when no longer pending;
    - **payments:** paid exactly when they have their instant, and cash only ever paid.
 9. **Words** for `approval_expired`.
+10. **One instant per order read.** The Customer's order resource reads the clock once. The count of open questions and the questions its lines show then agree even when a question expires during the read, since the app holds one to the other in (8). Before this, each read the clock itself, and a question expiring between the two readings made the order unreadable for one refresh.

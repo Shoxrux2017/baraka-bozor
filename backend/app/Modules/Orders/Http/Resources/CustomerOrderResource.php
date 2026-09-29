@@ -43,6 +43,9 @@ final class CustomerOrderResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // One instant for the whole order, so the count of open questions
+        // and the questions its lines show agree at an expiry (`DL-71`).
+        $now = now();
         $order = $this->resource;
         $items = $order->items->sortBy([['created_at', 'asc'], ['id', 'asc']])->values();
         $totals = OrderTotals::of($order, $items);
@@ -54,7 +57,7 @@ final class CustomerOrderResource extends JsonResource
             'status' => $order->status->value,
             'payment_method' => $order->payment_method->value,
             'delivery_time_note' => $order->delivery_time_note,
-            'pending_approval_count' => $order->approvals->filter(static fn (CustomerApproval $approval): bool => ApprovalExpiry::isOpen($approval))->count(),
+            'pending_approval_count' => $order->approvals->filter(static fn (CustomerApproval $approval): bool => ApprovalExpiry::isOpen($approval, $now))->count(),
             'can_edit' => $changeable,
             'can_cancel_directly' => $changeable,
             'can_request_cancellation' => OrderPermissions::canRequestCancellation($order),
@@ -67,7 +70,7 @@ final class CustomerOrderResource extends JsonResource
                 'created_at' => self::instant($order->latestCancellationRequest->created_at),
                 'resolved_at' => self::instant($order->latestCancellationRequest->resolved_at),
             ],
-            'items' => $items->map(fn (OrderItem $item): array => $this->item($item, $order))->all(),
+            'items' => $items->map(fn (OrderItem $item): array => $this->item($item, $order, $now))->all(),
             'totals' => [
                 'merchandise_subtotal_uzs' => $totals->merchandiseSubtotalUzs,
                 'service_fee_uzs' => $totals->serviceFeeUzs,
@@ -108,9 +111,9 @@ final class CustomerOrderResource extends JsonResource
     /**
      * @return array<string, mixed>
      */
-    private function item(OrderItem $item, Order $order): array
+    private function item(OrderItem $item, Order $order, CarbonInterface $now): array
     {
-        $question = self::openQuestionOf($order, $item);
+        $question = self::openQuestionOf($order, $item, $now);
 
         $open = in_array($item->status, [OrderItemStatus::Pending, OrderItemStatus::AwaitingCustomer], true);
 
@@ -180,10 +183,10 @@ final class CustomerOrderResource extends JsonResource
     /**
      * The line's question still waiting for the Customer, if any.
      */
-    private static function openQuestionOf(Order $order, OrderItem $item): ?CustomerApproval
+    private static function openQuestionOf(Order $order, OrderItem $item, CarbonInterface $now): ?CustomerApproval
     {
         return $order->approvals->first(
-            static fn (CustomerApproval $approval): bool => $approval->order_item_id === $item->id && ApprovalExpiry::isOpen($approval)
+            static fn (CustomerApproval $approval): bool => $approval->order_item_id === $item->id && ApprovalExpiry::isOpen($approval, $now)
         );
     }
 

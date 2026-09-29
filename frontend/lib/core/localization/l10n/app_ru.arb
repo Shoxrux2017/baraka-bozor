@@ -795,7 +795,7 @@
   "orderCancelKeep": "Нет, оставить",
   "orderCancelling": "Отменяем",
   "orderCancellationRequested": "Отмена запрошена: решит оператор",
-  "orderCancellationNeedsReason": "Покупка уже началась: напишите причину отмены, и решит оператор",
+  "orderCancellationNeedsReason": "Заказ уже в работе: напишите причину отмены, и решит оператор",
   "orderOpen": "Открыть заказ",
   "orderLineRemoved": "Убрано: {reason}",
   "@orderLineRemoved": {
@@ -1360,7 +1360,7 @@
       }
     }
   },
-  "questionPrice": "{name}: цена теперь {price} (было {was}). Согласны на эту цену?",
+  "questionPrice": "{name}: цена теперь {price} (при заказе была {was}). Согласны на эту цену?",
   "@questionPrice": {
     "placeholders": {
       "name": {
@@ -1461,14 +1461,16 @@
     }
   },
   "requestStateApproved": "Одобрен — заказ отменён",
-  "requestStateRejected": "Отклонён — заказ выполняется",
+  "requestStateRejected": "Отклонён оператором",
   "requestStateClosed": "Закрыт — заказ завершился иначе",
   "orderRequestCancel": "Попросить отменить",
   "orderRequestCancelTitle": "Попросить отменить заказ?",
   "orderRequestCancelReason": "Причина",
-  "orderRequestCancelExplained": "Сборка уже идёт — решит оператор.",
+  "orderRequestCancelExplained": "Заказ уже в работе — решит оператор.",
   "errorApprovalExpired": "Время ответа на вопрос истекло.",
   "questionRejectRemoves": "Если откажетесь, этот товар уберут из заказа.",
   "removedYouRejected": "вы отказались",
-  "removedYouRemoved": "вы убрали"
+  "removedYouRemoved": "вы убрали",
+  "questionDropsReplacement": "Если согласитесь, купят заказанный товар, а не замену.",
+  "decisionSending": "Отправляем ответ"
 }

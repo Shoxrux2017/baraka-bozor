@@ -1595,7 +1595,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get orderCancellationNeedsReason =>
-      'Покупка уже началась: напишите причину отмены, и решит оператор';
+      'Заказ уже в работе: напишите причину отмены, и решит оператор';
 
   @override
   String get orderOpen => 'Открыть заказ';
@@ -2242,7 +2242,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String questionPrice(String name, String price, String was) {
-    return '$name: цена теперь $price (было $was). Согласны на эту цену?';
+    return '$name: цена теперь $price (при заказе была $was). Согласны на эту цену?';
   }
 
   @override
@@ -2302,7 +2302,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get requestStateApproved => 'Одобрен — заказ отменён';
 
   @override
-  String get requestStateRejected => 'Отклонён — заказ выполняется';
+  String get requestStateRejected => 'Отклонён оператором';
 
   @override
   String get requestStateClosed => 'Закрыт — заказ завершился иначе';
@@ -2317,7 +2317,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get orderRequestCancelReason => 'Причина';
 
   @override
-  String get orderRequestCancelExplained => 'Сборка уже идёт — решит оператор.';
+  String get orderRequestCancelExplained =>
+      'Заказ уже в работе — решит оператор.';
 
   @override
   String get errorApprovalExpired => 'Время ответа на вопрос истекло.';
@@ -2331,4 +2332,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get removedYouRemoved => 'вы убрали';
+
+  @override
+  String get questionDropsReplacement =>
+      'Если согласитесь, купят заказанный товар, а не замену.';
+
+  @override
+  String get decisionSending => 'Отправляем ответ';
 }

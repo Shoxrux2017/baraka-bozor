@@ -2963,7 +2963,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderCancellationNeedsReason.
   ///
   /// In uz, this message translates to:
-  /// **'Xarid boshlangan: bekor qilish sababini yozing, operator hal qiladi'**
+  /// **'Buyurtma allaqachon bajarilmoqda: bekor qilish sababini yozing, operator hal qiladi'**
   String get orderCancellationNeedsReason;
 
   /// No description provided for @orderOpen.
@@ -3971,7 +3971,7 @@ abstract class AppLocalizations {
   /// No description provided for @questionPrice.
   ///
   /// In uz, this message translates to:
-  /// **'{name}: narxi endi {price} (avval {was}). Shu narxga rozimisiz?'**
+  /// **'{name}: narxi endi {price} (buyurtma paytida {was} edi). Shu narxga rozimisiz?'**
   String questionPrice(String name, String price, String was);
 
   /// No description provided for @questionReplacementPrice.
@@ -4055,7 +4055,7 @@ abstract class AppLocalizations {
   /// No description provided for @requestStateRejected.
   ///
   /// In uz, this message translates to:
-  /// **'Rad etildi — buyurtma bajarilmoqda'**
+  /// **'Operator rad etdi'**
   String get requestStateRejected;
 
   /// No description provided for @requestStateClosed.
@@ -4085,7 +4085,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderRequestCancelExplained.
   ///
   /// In uz, this message translates to:
-  /// **'Yig\'ish boshlangan — operator hal qiladi.'**
+  /// **'Buyurtma allaqachon bajarilmoqda — operator hal qiladi.'**
   String get orderRequestCancelExplained;
 
   /// No description provided for @errorApprovalExpired.
@@ -4111,6 +4111,18 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'siz olib tashladingiz'**
   String get removedYouRemoved;
+
+  /// No description provided for @questionDropsReplacement.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rozi bo\'lsangiz, o\'rniga boshqasi emas, buyurtma qilingan mahsulotning o\'zi olinadi.'**
+  String get questionDropsReplacement;
+
+  /// No description provided for @decisionSending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob yuborilmoqda'**
+  String get decisionSending;
 }
 
 class _AppLocalizationsDelegate

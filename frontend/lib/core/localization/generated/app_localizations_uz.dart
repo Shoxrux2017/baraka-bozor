@@ -1586,7 +1586,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get orderCancellationNeedsReason =>
-      'Xarid boshlangan: bekor qilish sababini yozing, operator hal qiladi';
+      'Buyurtma allaqachon bajarilmoqda: bekor qilish sababini yozing, operator hal qiladi';
 
   @override
   String get orderOpen => 'Buyurtmani ochish';
@@ -2219,7 +2219,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String questionPrice(String name, String price, String was) {
-    return '$name: narxi endi $price (avval $was). Shu narxga rozimisiz?';
+    return '$name: narxi endi $price (buyurtma paytida $was edi). Shu narxga rozimisiz?';
   }
 
   @override
@@ -2279,7 +2279,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get requestStateApproved => 'Tasdiqlandi — buyurtma bekor qilindi';
 
   @override
-  String get requestStateRejected => 'Rad etildi — buyurtma bajarilmoqda';
+  String get requestStateRejected => 'Operator rad etdi';
 
   @override
   String get requestStateClosed => 'Yopildi — buyurtma boshqacha yakunlandi';
@@ -2296,7 +2296,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get orderRequestCancelExplained =>
-      'Yig\'ish boshlangan — operator hal qiladi.';
+      'Buyurtma allaqachon bajarilmoqda — operator hal qiladi.';
 
   @override
   String get errorApprovalExpired => 'Savolga javob berish vaqti o\'tgan.';
@@ -2310,4 +2310,11 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get removedYouRemoved => 'siz olib tashladingiz';
+
+  @override
+  String get questionDropsReplacement =>
+      'Rozi bo\'lsangiz, o\'rniga boshqasi emas, buyurtma qilingan mahsulotning o\'zi olinadi.';
+
+  @override
+  String get decisionSending => 'Javob yuborilmoqda';
 }
