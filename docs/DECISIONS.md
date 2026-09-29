@@ -1103,7 +1103,7 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - the note for the Courier, and the time wish;
    - the amount to collect, or that an online order takes none;
    - when it was assigned, accepted and set off, and the time after which it is late (`delay_at`).
-   A waiting cancellation request says the Courier may not set off, and the start is not offered (`DL-54` (12)). A start refused for one says so from the refusal's `details.reason`, and reloads the order, which then says so in its place. The delivery refreshes every ten seconds while shown; an outcome is sent from a dialog, which covers the page, so the refresh waits for it.
+   A waiting cancellation request says the Courier may not set off, and the start is not offered (`DL-54` (12)). A start refused for one reloads the order, which then says so; the refusal says nothing of its own, so no stale "do not set off" stands beside a start an Operator's rejection offers again. The delivery refreshes every ten seconds while shown; an outcome is sent from a dialog, which covers the page, so the refresh waits for it.
 4. **Calls and the map** (`DL-54` (16)):
    - **The recipient** is called through the dialer.
    - **The Shopper** is called too while the server sends their phone, that is, without a handoff point (`BR-DEL-006`); until the Courier sets off, a line says to collect the order from them.

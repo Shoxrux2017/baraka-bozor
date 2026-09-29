@@ -322,30 +322,41 @@ void main() {
     );
 
     testWidgets(
-      'a start refused for a waiting request says why from the refusal itself',
+      'once the request is decided, nothing tells the Courier to wait',
       (WidgetTester tester) async {
         courier.details[courierOrderA] = courierOrder(accepted: true);
         await open(tester, at: AppPaths.courierOrder(courierOrderA));
-        // The order read again does not show the request yet.
-        courier.actionFailure = const ApiRefusal(
-          ApiError(
-            status: 409,
-            code: 'delivery_state_conflict',
-            details: <String, Object?>{
-              'reason': 'cancellation_request_pending',
-            },
-          ),
-        );
+        courier
+          ..actionFailure = const ApiRefusal(
+            ApiError(
+              status: 409,
+              code: 'delivery_state_conflict',
+              details: <String, Object?>{
+                'reason': 'cancellation_request_pending',
+              },
+            ),
+          )
+          ..details[courierOrderA] = courierOrder(
+            accepted: true,
+            pending: true,
+          );
         await tapAndSettle(tester, byKey('courier-start'));
-        expect(byKey('courier-start-held'), findsOneWidget);
         expect(find.text(l10n(tester).courierRequestPending), findsOneWidget);
+
+        // An Operator rejects the request; the refresh offers the start
+        // again, and no stale "do not set off" stands beside it.
+        courier.details[courierOrderA] = courierOrder(accepted: true);
+        await tester.pump(const Duration(seconds: 10));
+        await tester.pumpAndSettle();
+        expect(byKey('courier-start'), findsOneWidget);
+        expect(find.text(l10n(tester).courierRequestPending), findsNothing);
+        expect(byKey('failure-message'), findsNothing);
 
         // Any other conflict reads as one.
         courier.actionFailure = const ApiRefusal(
           ApiError(status: 409, code: 'delivery_state_conflict'),
         );
         await tapAndSettle(tester, byKey('courier-start'));
-        expect(byKey('courier-start-held'), findsNothing);
         expect(
           find.text(l10n(tester).errorDeliveryStateConflict),
           findsOneWidget,

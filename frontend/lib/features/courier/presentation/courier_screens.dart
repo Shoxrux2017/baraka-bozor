@@ -446,9 +446,10 @@ class _Actions extends ConsumerWidget {
     // was repeats harmlessly, and the periodic refresh never holds them.
     final bool busy = state.isBusy;
     final ApiFailure? failure = state.failure;
-    // A start refused because a cancellation request now waits says why
-    // from the refusal itself (`docs/09` section 37), unless the order
-    // loaded again already says so.
+    // A start refused because a cancellation request now waits (`docs/09`
+    // section 37) says nothing of its own: the order loaded again says so
+    // while the request waits, and once an Operator has decided it, no
+    // stale "do not set off" stands beside a start offered again.
     final bool heldByRequest =
         failure is ApiRefusal &&
         failure.code == 'delivery_state_conflict' &&
@@ -483,17 +484,7 @@ class _Actions extends ConsumerWidget {
               ),
           ],
         ),
-        if (!heldByRequest)
-          FailureMessage(failure)
-        else if (!order.cancellationRequestPending)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(
-              l10n.courierRequestPending,
-              key: const ValueKey<String>('courier-start-held'),
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
+        FailureMessage(heldByRequest ? null : failure),
       ],
     );
   }
