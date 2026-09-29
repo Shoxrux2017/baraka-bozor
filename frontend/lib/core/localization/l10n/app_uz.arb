@@ -1240,5 +1240,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "shopperPageEmpty": "Bu sahifada buyurtma qolmadi. Oldingi sahifaga o'ting."
 }

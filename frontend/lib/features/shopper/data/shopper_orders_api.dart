@@ -80,7 +80,8 @@ class ShopperOrdersApi {
     return order;
   }
 
-  static final RegExp _quantity = RegExp(r'^\d{1,4}(\.\d{3})?$');
+  static final RegExp _fractional = RegExp(r'^\d{1,4}\.\d{3}$');
+  static final RegExp _whole = RegExp(r'^\d{1,4}$');
   static final RegExp _phone = RegExp(r'^\+998\d{9}$');
 
   /// The states an order is in while a Shopper holds it (`DL-54` (3)).
@@ -97,9 +98,6 @@ class ShopperOrdersApi {
     return value;
   }
 
-  static int? _nullableAmount(JsonFields json, String key) =>
-      json.member(key) == null ? null : _amount(json, key);
-
   static int _number(JsonFields json) {
     final int number = json.integer('order_number');
     if (number < 1) {
@@ -108,11 +106,25 @@ class ShopperOrdersApi {
     return number;
   }
 
-  static String _quantityOf(JsonFields json, String key) {
+  /// A price per unit or a total, which the tables hold above zero.
+  static int _price(JsonFields json, String key) {
+    final int value = json.integer(key);
+    if (value < 1) {
+      throw FormatException('$key is not a price');
+    }
+    return value;
+  }
+
+  static int? _nullablePrice(JsonFields json, String key) =>
+      json.member(key) == null ? null : _price(json, key);
+
+  /// A quantity of [unit] as the server writes it: three decimals for a
+  /// unit that takes fractions, a whole number for the others, above zero.
+  static String _quantityOf(JsonFields json, String key, UnitCode unit) {
     final String quantity = json.string(key);
-    if (!_quantity.hasMatch(quantity) ||
-        QuantityRules.thousandths(quantity) == 0) {
-      throw FormatException('$key is not a quantity: $quantity');
+    final RegExp shape = unit.takesFraction ? _fractional : _whole;
+    if (!shape.hasMatch(quantity) || QuantityRules.thousandths(quantity) == 0) {
+      throw FormatException('$key is not a quantity of ${unit.code}');
     }
     return quantity;
   }
@@ -134,8 +146,8 @@ class ShopperOrdersApi {
   static PriceBound _bound(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'bound');
     return PriceBound(
-      customerUnitPriceUzs: _amount(json, 'customer_unit_price_uzs'),
-      marketPriceUzs: _amount(json, 'market_price_uzs'),
+      customerUnitPriceUzs: _price(json, 'customer_unit_price_uzs'),
+      marketPriceUzs: _price(json, 'market_price_uzs'),
     );
   }
 
@@ -197,9 +209,10 @@ class ShopperOrdersApi {
 
   static ShopperLine _line(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'line');
+    final UnitCode unit = json.choice('unit_code', UnitCode.tryParse);
     final String? cap = json.member('approved_quantity_cap') == null
         ? null
-        : _quantityOf(json, 'approved_quantity_cap');
+        : _quantityOf(json, 'approved_quantity_cap', unit);
     final String? removed = json.nullableString('removed_reason_code');
     final Object? bound = json.member('bound');
     final Object? replacement = json.member('replacement');
@@ -210,9 +223,9 @@ class ShopperOrdersApi {
       productId: json.uuid('product_id'),
       nameUz: json.string('name_uz'),
       nameRu: json.string('name_ru'),
-      unit: json.choice('unit_code', UnitCode.tryParse),
+      unit: unit,
       priceMode: json.choice('price_mode', PriceMode.tryParse),
-      quantity: _quantityOf(json, 'quantity'),
+      quantity: _quantityOf(json, 'quantity', unit),
       approvedQuantityCap: cap,
       customerNote: json.nullableString('customer_note'),
       substitutionPolicy: json.choice(
@@ -220,11 +233,11 @@ class ShopperOrdersApi {
         SubstitutionPolicy.tryParse,
       ),
       status: json.choice('status', OrderItemStatus.tryParse),
-      marketPriceUzs: _amount(json, 'market_price_uzs'),
-      customerUnitPriceUzs: _amount(json, 'customer_unit_price_uzs'),
+      marketPriceUzs: _price(json, 'market_price_uzs'),
+      customerUnitPriceUzs: _price(json, 'customer_unit_price_uzs'),
       bound: bound == null ? null : _bound(bound),
       replacement: replacement == null ? null : _replacement(replacement),
-      purchase: purchase == null ? null : _purchase(purchase),
+      purchase: purchase == null ? null : _purchase(purchase, unit),
       removedReason: removed == null
           ? null
           : json.choice('removed_reason_code', ItemRemovedReason.tryParse),
@@ -232,11 +245,18 @@ class ShopperOrdersApi {
     );
     final bool bought = line.status == OrderItemStatus.purchased;
     final bool gone = line.status == OrderItemStatus.removed;
+    // As the resource and the tables hold a line (`docs/09` section 28):
+    // a fixed line has no bound and an estimate has one; the purchase names
+    // the product bought — the replacement, when there is one.
     if (bought != (line.purchase != null) ||
         gone != (line.removedReason != null) ||
         (gone && line.replacement != null) ||
         (line.openQuestion != null &&
-            line.status != OrderItemStatus.awaitingCustomer)) {
+            line.status != OrderItemStatus.awaitingCustomer) ||
+        (line.priceMode == PriceMode.fixed) != (line.bound == null) ||
+        (line.purchase != null &&
+            line.purchase!.productId !=
+                (line.replacement?.productId ?? line.productId))) {
       throw const FormatException('a line off the contract');
     }
     return line;
@@ -248,7 +268,7 @@ class ShopperOrdersApi {
       productId: json.uuid('product_id'),
       nameUz: json.string('name_uz'),
       nameRu: json.string('name_ru'),
-      marketPriceUzs: _nullableAmount(json, 'market_price_uzs'),
+      marketPriceUzs: _price(json, 'market_price_uzs'),
       resolution: json.choice(
         'substitution_resolution',
         SubstitutionResolution.tryParse,
@@ -257,15 +277,15 @@ class ShopperOrdersApi {
     );
   }
 
-  static ShopperPurchase _purchase(Object? raw) {
+  static ShopperPurchase _purchase(Object? raw, UnitCode unit) {
     final JsonFields json = JsonFields.of(raw, 'purchase');
     return ShopperPurchase(
       productId: json.uuid('product_id'),
-      purchasedQuantity: _quantityOf(json, 'purchased_quantity'),
-      billableQuantity: _quantityOf(json, 'billable_quantity'),
-      actualMarketPriceUzs: _nullableAmount(json, 'actual_market_price_uzs'),
-      billableUnitPriceUzs: _amount(json, 'billable_unit_price_uzs'),
-      lineTotalUzs: _amount(json, 'line_total_uzs'),
+      purchasedQuantity: _quantityOf(json, 'purchased_quantity', unit),
+      billableQuantity: _quantityOf(json, 'billable_quantity', unit),
+      actualMarketPriceUzs: _nullablePrice(json, 'actual_market_price_uzs'),
+      billableUnitPriceUzs: _price(json, 'billable_unit_price_uzs'),
+      lineTotalUzs: _price(json, 'line_total_uzs'),
     );
   }
 

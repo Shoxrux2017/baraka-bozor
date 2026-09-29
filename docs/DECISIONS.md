@@ -944,7 +944,7 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
 ## DL-69 — The app's Shopper area, from W3-15 (2026-09-29, agent)
 
 1. **Feature `shopper`** takes the Shopper's area over from the placeholder shell:
-   - `/shopper` is the list of current orders, the longest-waiting assignment first, page by page;
+   - `/shopper` is the list of current orders, the longest-waiting assignment first, page by page. A page its refresh emptied, past the last, says so and keeps the pager, so the Shopper goes back rather than reads "no orders";
    - `/shopper/orders/{order}` is one order, opened over the list so the system back returns to it.
    The Courier's and the Manager's areas keep the placeholder until their features arrive.
 2. **What an order shows** (`docs/09` section 28): its number, state and delivery wish, and when the assignment was made, accepted and started. Each line shows:
@@ -959,18 +959,20 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
    - a row's order is `shopping_assigned` or `shopping`, and its open lines are at most its lines;
    - the Customer's phone is there exactly while shopping, as `+998` and nine digits;
    - `can_accept` and `can_start` follow from the assignment;
-   - a line is bought exactly when it has its purchase and removed exactly when it has its reason; a removed line has no replacement, and an open question sits on a line waiting for the Customer.
+   - a line is bought exactly when it has its purchase and removed exactly when it has its reason; a removed line has no replacement, and an open question sits on a line waiting for the Customer;
+   - a fixed line has no bound and an estimate has one (`PriceBound::original`); the purchase names the product bought, the replacement when there is one;
+   - each quantity is written for its unit — three decimals for `kg`, `liter` and `meter`, a whole number otherwise (`QuantityPolicy::format`) — and every price, a replacement's included, is above zero.
    The actions' answers are held to their effect: the order acted on, accepted, or shopping and started.
 4. **Accept and start** run through one controller per order (`AccountMutation`, `DL-28`):
    - one at a time; a refusal that may come from a changed order reloads it;
-   - the buttons wait while the order loads again.
+   - the buttons wait while the order a change loads again has not arrived, and not for the periodic refresh, which would otherwise switch them off every ten seconds.
    Neither needs a key: again is a natural repeat (`docs/09` section 29).
 5. **The app bar keeps two buttons:** the language, and one menu holding Customer mode for a Shopper or a Courier and the way out. This answers the Wave 2 risk row for this area. The placeholder shell and the menu share the way into Customer mode (`enterCustomerMode`).
 6. **The call to the Customer** (interview 7.3, `DL-54` (16)):
    - offered while shopping, its button showing the number;
    - a `tel:` link through `url_launcher`, behind `PhoneCalls` in `core/platform`, so tests need no platform;
    - a phone that cannot open it says so, with the number to dial by hand.
-   The Android manifest's `<queries>` names the `tel:` view and dial intents and the `geo:` view intent. Android 11 needs them to see the apps that open these links; the Courier's map link (W3-18) uses the `geo:` one.
+   Opening the link starts the phone's own app directly. The Android manifest's `<queries>` names the `tel:` view and dial intents and the `geo:` view intent, which Android 11 needs only for the app to ask first whether such an app exists (`canLaunchUrl`); the Courier's map link (W3-18) may use the `geo:` one.
 7. **The refresh while shown** (`DL-54` (15)) is a core widget, `PeriodicRefresh`:
    - it refreshes ten seconds after each successful load, while the screen's route is the top one and the app is in the foreground;
    - it waits while a load runs and after one failed, so a failed refresh stops the refreshing and the screen shows the failure with its retry;

@@ -110,6 +110,10 @@ void main() {
       find.textContaining(words.shopperAssignedAt('27.09.2026 12:05')),
       findsOneWidget,
     );
+    expect(
+      find.textContaining('${words.orderSectionDeliveryWish}: Kechqurun'),
+      findsNWidgets(2),
+    );
 
     await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
     expect(byKey('shopper-order'), findsOneWidget);
@@ -220,6 +224,10 @@ void main() {
 
     await tapAndSettle(tester, byKey('call-customer'));
     expect(phone.calls, <String>['+998901112233']);
+    expect(
+      find.text(l10n(tester).callFailed('+998 90 111 22 33')),
+      findsNothing,
+    );
 
     // A phone that cannot place the call says so, with the number.
     phone.opens = false;
@@ -228,6 +236,73 @@ void main() {
       find.text(l10n(tester).callFailed('+998 90 111 22 33')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('back on the list, an accepted order is shown as it now is', (
+    WidgetTester tester,
+  ) async {
+    shopper.afterAction[shopperOrderA] = shopperOrder(accepted: true);
+    await open(tester);
+    await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
+    final int before = count('orders:1');
+
+    await tapAndSettle(tester, byKey('shopper-accept'));
+    await tapAndSettle(tester, find.byType(BackButton));
+
+    expect(count('orders:1'), greaterThan(before));
+  });
+
+  testWidgets('the buttons stay usable while the order refreshes itself', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
+    final Completer<void> refresh = Completer<void>();
+    shopper.holdOrder = refresh;
+
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pump();
+    expect(count('order:$shopperOrderA'), 2, reason: 'the refresh runs');
+    expect(
+      tester.widget<FilledButton>(byKey('shopper-accept')).onPressed,
+      isNotNull,
+    );
+
+    shopper.holdOrder = null;
+    refresh.complete();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('the list pages, and a page a refresh emptied leads back', (
+    WidgetTester tester,
+  ) async {
+    final ShopperOrderRow first = shopper.rows.first;
+    final ShopperOrderRow second = shopper.rows.last;
+    shopper
+      ..pages = <int, List<ShopperOrderRow>>{
+        1: <ShopperOrderRow>[first],
+        2: <ShopperOrderRow>[second],
+      }
+      ..lastPage = 2;
+    await open(tester);
+
+    await tapAndSettle(tester, byKey('next-page'));
+    expect(shopper.loads, contains('orders:2'));
+    expect(byKey('shopper-order-$shopperOrderB'), findsOneWidget);
+
+    // The order on page 2 is handed over; the next refresh finds it empty.
+    shopper
+      ..pages = <int, List<ShopperOrderRow>>{
+        1: <ShopperOrderRow>[first],
+      }
+      ..lastPage = 1;
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    expect(byKey('shopper-page-empty'), findsOneWidget);
+    expect(byKey('shopper-orders-empty'), findsNothing);
+
+    await tapAndSettle(tester, byKey('previous-page'));
+    expect(byKey('shopper-order-$shopperOrderA'), findsOneWidget);
   });
 
   testWidgets('a refusal is said and the order loaded again', (
@@ -303,6 +378,63 @@ void main() {
       await tester.pump();
       expect(count('order:$shopperOrderA'), 3);
       expect(count('orders:1'), list, reason: 'the list is not shown');
+    });
+
+    testWidgets('a refresh slower than ten seconds is not started again', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      final Completer<void> slow = Completer<void>();
+      shopper.hold = slow;
+
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pump();
+      expect(count('orders:1'), 2);
+      await tester.pump(const Duration(seconds: 30));
+      await tester.pump();
+      expect(count('orders:1'), 2, reason: 'the running load is left alone');
+
+      shopper.hold = null;
+      slow.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('shopper-order-$shopperOrderA'), findsOneWidget);
+    });
+
+    testWidgets('the retry of a failed list or order shows it loading', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      shopper.listFailure = const NetworkFailure();
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pumpAndSettle();
+      shopper.listFailure = null;
+      Completer<void> hold = Completer<void>();
+      shopper.hold = hold;
+
+      await tester.tap(byKey('retry-load'));
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text(l10n(tester).errorNetwork), findsNothing);
+      shopper.hold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+
+      await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
+      shopper.orderFailure = const NetworkFailure();
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      shopper.orderFailure = null;
+      hold = Completer<void>();
+      shopper.hold = hold;
+
+      await tester.tap(byKey('retry-load'));
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text(l10n(tester).errorNetwork), findsNothing);
+      shopper.hold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
     });
 
     testWidgets(

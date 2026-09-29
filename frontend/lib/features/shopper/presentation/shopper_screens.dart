@@ -58,7 +58,8 @@ class ShopperOrdersScreen extends ConsumerWidget {
                 child: page.when(
                   skipLoadingOnReload: false,
                   skipLoadingOnRefresh: !page.hasError,
-                  data: (Paged<ShopperOrderRow> page) => page.items.isEmpty
+                  data: (Paged<ShopperOrderRow> page) =>
+                      page.items.isEmpty && !page.hasPrevious
                       ? Center(
                           key: const ValueKey<String>('shopper-orders-empty'),
                           child: Padding(
@@ -73,6 +74,14 @@ class ShopperOrdersScreen extends ConsumerWidget {
                           key: const ValueKey<String>('shopper-orders'),
                           padding: const EdgeInsets.all(16),
                           children: <Widget>[
+                            // A page a refresh emptied, past the last one.
+                            if (page.items.isEmpty)
+                              Text(
+                                l10n.shopperPageEmpty,
+                                key: const ValueKey<String>(
+                                  'shopper-page-empty',
+                                ),
+                              ),
                             for (final ShopperOrderRow row in page.items)
                               _Row(row: row),
                             PaginationBar(
@@ -272,13 +281,15 @@ class _Actions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final MutationState state = ref.watch(shopperOrderActionProvider(order.id));
-    // Until the order a change or a refresh loads has arrived, the buttons
-    // would act on the order as it was.
-    final bool busy =
-        state.isBusy || ref.watch(shopperOrderProvider(order.id)).isLoading;
     final ShopperOrderController actions = ref.read(
       shopperOrderActionProvider(order.id).notifier,
     );
+    // Until the order a change loads again has arrived, the buttons would
+    // act on the order as it was; the periodic refresh does not hold them.
+    final bool busy =
+        state.isBusy ||
+        (actions.awaitingReload &&
+            ref.watch(shopperOrderProvider(order.id)).isLoading);
     final String? phone = order.customerPhone;
 
     return Column(

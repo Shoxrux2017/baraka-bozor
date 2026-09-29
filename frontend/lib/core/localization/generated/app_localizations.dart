@@ -3685,6 +3685,12 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Mijoz javobi kutilmoqda ({type}), {time} gacha'**
   String shopperQuestion(String type, String time);
+
+  /// No description provided for @shopperPageEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu sahifada buyurtma qolmadi. Oldingi sahifaga o\'ting.'**
+  String get shopperPageEmpty;
 }
 
 class _AppLocalizationsDelegate

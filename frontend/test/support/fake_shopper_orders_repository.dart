@@ -148,6 +148,11 @@ class FakeShopperOrdersRepository implements ShopperOrdersRepository {
   /// The order each action answers, which also becomes its detail.
   final Map<String, ShopperOrder> afterAction = <String, ShopperOrder>{};
 
+  /// When set, the rows of each page, [lastPage] the last; otherwise
+  /// [rows] are the one page.
+  Map<int, List<ShopperOrderRow>>? pages;
+  int lastPage = 1;
+
   Completer<void>? hold;
   Completer<void>? holdOrder;
   ApiFailure? listFailure;
@@ -168,12 +173,16 @@ class FakeShopperOrdersRepository implements ShopperOrdersRepository {
     if (listFailure != null) {
       throw listFailure!;
     }
+    final Map<int, List<ShopperOrderRow>>? pages = this.pages;
+    final List<ShopperOrderRow> items = pages == null
+        ? (page == 1 ? rows : <ShopperOrderRow>[])
+        : pages[page] ?? <ShopperOrderRow>[];
     return Paged<ShopperOrderRow>(
-      items: rows,
+      items: items,
       page: page,
       perPage: 20,
-      total: rows.length,
-      lastPage: 1,
+      total: items.length,
+      lastPage: pages == null ? 1 : lastPage,
     );
   }
 

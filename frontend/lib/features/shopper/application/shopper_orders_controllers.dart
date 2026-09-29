@@ -68,9 +68,28 @@ class ShopperOrderController extends AccountMutation {
   ShopperOrderController(this.orderId);
 
   final String orderId;
+  bool _awaitingReload = false;
 
   @override
   Provider<String?> get account => staffAccountProvider;
+
+  /// Whether a change of this order was answered and the order it loads
+  /// again has not arrived; the buttons wait for it, and not for the
+  /// periodic refresh (`DL-69` (4)).
+  bool get awaitingReload => _awaitingReload;
+
+  @override
+  MutationState build() {
+    ref.listen(shopperOrderProvider(orderId), (
+      AsyncValue<ShopperOrder>? _,
+      AsyncValue<ShopperOrder> next,
+    ) {
+      if (!next.isLoading) {
+        _awaitingReload = false;
+      }
+    });
+    return super.build();
+  }
 
   ShopperOrdersRepository get _orders =>
       ref.read(shopperOrdersRepositoryProvider);
@@ -81,9 +100,12 @@ class ShopperOrderController extends AccountMutation {
   Future<ShopperOrder?> start() =>
       perform(() => _orders.start(orderId), reload: _reload);
 
-  void _reload(Object? _) => ref
-    ..invalidate(shopperOrderProvider(orderId))
-    ..invalidate(shopperOrdersProvider);
+  void _reload(Object? _) {
+    _awaitingReload = true;
+    ref
+      ..invalidate(shopperOrderProvider(orderId))
+      ..invalidate(shopperOrdersProvider);
+  }
 }
 
 final NotifierProviderFamily<ShopperOrderController, MutationState, String>

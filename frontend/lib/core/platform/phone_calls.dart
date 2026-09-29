@@ -10,15 +10,19 @@ abstract interface class PhoneCalls {
   Future<bool> call(String phone);
 }
 
-/// The dialer through a `tel:` link; Android 11 and later see the apps that
-/// open one through the manifest's `<queries>`.
+/// The dialer through a `tel:` link. The link opens the phone's own app
+/// directly; the manifest's `<queries>` only lets the app ask first whether
+/// one exists.
 class DialerPhoneCalls implements PhoneCalls {
-  const DialerPhoneCalls();
+  const DialerPhoneCalls({this.launch = launchUrl});
+
+  /// Opens a link on the device; `url_launcher`'s own, but for tests.
+  final Future<bool> Function(Uri url) launch;
 
   @override
   Future<bool> call(String phone) async {
     try {
-      return await launchUrl(Uri(scheme: 'tel', path: phone));
+      return await launch(Uri(scheme: 'tel', path: phone));
     } on PlatformException {
       return false;
     }

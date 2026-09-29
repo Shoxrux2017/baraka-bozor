@@ -2042,4 +2042,8 @@ class AppLocalizationsUz extends AppLocalizations {
   String shopperQuestion(String type, String time) {
     return 'Mijoz javobi kutilmoqda ($type), $time gacha';
   }
+
+  @override
+  String get shopperPageEmpty =>
+      'Bu sahifada buyurtma qolmadi. Oldingi sahifaga o\'ting.';
 }

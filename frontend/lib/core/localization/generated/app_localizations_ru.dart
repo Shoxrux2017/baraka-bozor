@@ -2050,7 +2050,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String callFailed(String phone) {
-    return 'Не удалось открыть звонилку. Наберите номер вручную: $phone';
+    return 'Не удалось открыть приложение для звонков. Наберите номер вручную: $phone';
   }
 
   @override
@@ -2067,4 +2067,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String shopperQuestion(String type, String time) {
     return 'Ждём ответа клиента ($type) до $time';
   }
+
+  @override
+  String get shopperPageEmpty =>
+      'На этой странице заказов не осталось. Перейдите на предыдущую.';
 }

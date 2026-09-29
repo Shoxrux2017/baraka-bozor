@@ -208,6 +208,92 @@ void main() {
           shopperLineJson(patch: <String, Object?>{'unit_code': 'tonne'}),
         ),
         withLine(without(shopperLineJson(), 'bound')),
+        // A fixed line has no bound, and an estimate has one.
+        withLine(
+          shopperLineJson(
+            bread: true,
+            patch: <String, Object?>{'bound': shopperLineJson()['bound']},
+          ),
+        ),
+        withLine(shopperLineJson(patch: <String, Object?>{'bound': null})),
+        // Quantities follow their unit.
+        withLine(
+          shopperLineJson(
+            bread: true,
+            patch: <String, Object?>{'quantity': '2.000'},
+          ),
+        ),
+        withLine(shopperLineJson(patch: <String, Object?>{'quantity': '2'})),
+        withLine(
+          shopperLineJson(
+            patch: <String, Object?>{'approved_quantity_cap': '1'},
+          ),
+        ),
+        // Prices are above zero, and a replacement has its own.
+        withLine(
+          shopperLineJson(patch: <String, Object?>{'market_price_uzs': 0}),
+        ),
+        withLine(
+          shopperLineJson(
+            patch: <String, Object?>{
+              'bound': <String, Object?>{
+                'customer_unit_price_uzs': 21160,
+                'market_price_uzs': 0,
+              },
+            },
+          ),
+        ),
+        withLine(
+          shopperLineJson(
+            patch: <String, Object?>{
+              'replacement': <String, Object?>{
+                'product_id': shopperProductCherry,
+                'name_uz': 'Olcha pomidor',
+                'name_ru': 'Помидоры черри',
+                'market_price_uzs': null,
+                'substitution_resolution': 'automatic',
+                'bound': shopperLineJson()['bound'],
+              },
+            },
+          ),
+        ),
+        // The purchase names the product bought.
+        withLine(
+          shopperLineJson(
+            status: 'purchased',
+            patch: <String, Object?>{
+              'purchase': <String, Object?>{
+                ...(shopperLineJson(status: 'purchased')['purchase']!
+                    as Map<String, Object?>),
+                'product_id': shopperProductCherry,
+              },
+            },
+          ),
+        ),
+        withLine(
+          shopperLineJson(
+            status: 'purchased',
+            patch: <String, Object?>{
+              'purchase': <String, Object?>{
+                ...(shopperLineJson(status: 'purchased')['purchase']!
+                    as Map<String, Object?>),
+                'billable_unit_price_uzs': 0,
+              },
+            },
+          ),
+        ),
+        withLine(
+          shopperLineJson(
+            status: 'purchased',
+            patch: <String, Object?>{
+              'purchase': <String, Object?>{
+                ...(shopperLineJson(status: 'purchased')['purchase']!
+                    as Map<String, Object?>),
+                'purchased_quantity': '2',
+              },
+            },
+          ),
+        ),
       ]) {
         expect(
           () => ShopperOrdersApi.parseOrder(broken),

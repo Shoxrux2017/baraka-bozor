@@ -73,8 +73,8 @@ final class ShopperReplacement {
   final String nameUz;
   final String nameRu;
 
-  /// The product's market price now, when the answer gives it.
-  final int? marketPriceUzs;
+  /// The product's market price now.
+  final int marketPriceUzs;
   final SubstitutionResolution resolution;
   final PriceBound bound;
 }
@@ -161,7 +161,8 @@ final class ShopperLine {
   final int marketPriceUzs;
   final int customerUnitPriceUzs;
 
-  /// The original's bound; `null` for a fixed line bought as itself.
+  /// The original's bound; `null` exactly for a fixed line, which is
+  /// billed at its price whatever the stall charges.
   final PriceBound? bound;
   final ShopperReplacement? replacement;
 
