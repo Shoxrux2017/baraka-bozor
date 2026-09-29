@@ -22,11 +22,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * only while the business runs without a handoff point
  * (`delivery.handoff_point`, `BR-DEL-006`), and absent otherwise.
  *
- * Once the Courier's assignment has ended — the answer to a retry of
- * delivered or not-delivered — the order tells the outcome but no longer who
- * receives it, where or when: `recipient`, `address`, `delivery_note` and
- * `delivery_time_note` are `null` and `shopper_phone` is absent, since the
- * delivery is no longer the Courier's (`DL-64` (7)).
+ * Once the Courier's assignment has ended — every answer of delivered and
+ * not-delivered, the first one included — the order tells the outcome but no
+ * longer who receives it, where or when: `recipient`, `address`,
+ * `delivery_note` and `delivery_time_note` are `null` and `shopper_phone` is
+ * absent, since the delivery is no longer the Courier's (`DL-64` (7)).
  *
  * Expects what `CourierOrders::withDetails()` loads.
  *

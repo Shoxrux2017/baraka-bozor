@@ -66,6 +66,12 @@ final class DeliveryOutcomeApiTest extends TestCase
 
     public function test_delivered_records_the_cash_and_completes_the_order(): void
     {
+        // While the Courier holds the delivery, the order says who, where and when.
+        $held = $this->as($this->courier)->getJson("/api/v1/courier/orders/{$this->order->id}")->assertOk()->json('data');
+        $this->assertSame(['full_name' => $this->order->recipient_name_snapshot, 'phone' => $this->order->recipient_phone_snapshot], $held['recipient']);
+        $this->assertSame(['12', 'Напротив школы'], [$held['address']['apartment'], $held['address']['landmark']]);
+        $this->assertSame(['Позвонить у подъезда', 'после 18:00'], [$held['delivery_note'], $held['delivery_time_note']]);
+
         $data = $this->delivered(['cash_received_uzs' => self::TOTAL])->assertOk()->json('data');
 
         $this->assertSame('completed', $data['status']);
