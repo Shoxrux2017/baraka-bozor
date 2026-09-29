@@ -137,7 +137,8 @@ sealed class StaffAssignmentController extends AccountMutation {
   @override
   Provider<String?> get account => staffAccountProvider;
 
-  /// The role's picker, whose counts a change moves.
+  /// The role's picker, whose counts a change moves. It is loaded afresh
+  /// whenever it opens; invalidating it reaches whatever still shows it.
   FutureProvider<List<StaffChoice>> get _options;
 
   /// Assigns [staffId], or reassigns to them when [replacesAssignmentId]

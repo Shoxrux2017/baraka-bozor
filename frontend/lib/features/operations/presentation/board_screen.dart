@@ -486,8 +486,9 @@ class _Table extends StatefulWidget {
   /// on the real stack in either language, and the Customer's cell and the
   /// people's — the Shopper above the Courier, so the Courier adds no column
   /// — the ones names widen, wrap at [nameWidth] and [peopleWidth]. The
-  /// Customer's open questions go under the status, which they never widen
-  /// (`DL-53` (2), `DL-67` (3)).
+  /// Customer's open questions go under the status: they may widen the
+  /// column on a page of short statuses, but never past its widest status,
+  /// as measured in both languages (`DL-53` (2), `DL-67` (3)).
   static const double usualWidth = 1200;
   static const double nameWidth = 180;
   static const double peopleWidth = 170;
@@ -586,7 +587,7 @@ class _TableState extends State<_Table> {
 }
 
 /// The status, and under it the Customer's open questions when there are
-/// any, so they add a line and never widen the column.
+/// any, so they add a line and the column is as wide as its widest line.
 class _StatusCell extends StatelessWidget {
   const _StatusCell({required this.row});
 

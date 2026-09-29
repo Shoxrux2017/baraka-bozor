@@ -159,25 +159,33 @@ void main() {
   );
 
   // The board, its summary and its attention list are not on the order's
-  // page, so what is seen here is the order and the Couriers' counts.
-  testWidgets('a change loads the order and the Couriers\' counts again', (
-    WidgetTester tester,
-  ) async {
-    operations.details[orderA] = order('ready_for_delivery', <Object?>[]);
-    operations.afterAssignment[orderA] = order('delivery_assigned', <Object?>[
-      courierAssignmentJson(),
-    ]);
-    await openOrder(tester);
-    await tapAndSettle(tester, byKey('assign-courier'));
-    operations.loads.clear();
+  // page; what is seen here is the order, and the picker's counts, which
+  // are asked for afresh whenever it opens.
+  testWidgets(
+    'a change loads the order again, and the picker asks for fresh counts',
+    (WidgetTester tester) async {
+      int courierLoads() =>
+          operations.loads.where((String load) => load == 'couriers').length;
+      operations.details[orderA] = order('ready_for_delivery', <Object?>[]);
+      operations.afterAssignment[orderA] = order('delivery_assigned', <Object?>[
+        courierAssignmentJson(),
+      ]);
+      await openOrder(tester);
+      await tapAndSettle(tester, byKey('assign-courier'));
+      final int first = courierLoads();
+      await tapAndSettle(tester, byKey('pick-courier-cancel'));
+      await tapAndSettle(tester, byKey('assign-courier'));
+      expect(courierLoads(), greaterThan(first));
+      operations.loads.clear();
 
-    await tapAndSettle(tester, byKey('pick-courier-$courierId'));
+      await tapAndSettle(tester, byKey('pick-courier-$courierId'));
+      expect(operations.loads, contains('order:$orderA'));
 
-    expect(
-      operations.loads,
-      containsAll(<String>['order:$orderA', 'couriers']),
-    );
-  });
+      final int before = courierLoads();
+      await tapAndSettle(tester, byKey('reassign-courier'));
+      expect(courierLoads(), greaterThan(before));
+    },
+  );
 
   testWidgets(
     'an order that changed meanwhile is reloaded and the Operator told why',
