@@ -158,7 +158,8 @@ tasks/scripts/wave3_api_walkthrough.py`. The Wave 2 walkthrough also orders
 from the Shopper's own phone in Customer mode, so +998 90 000 00 02 must be
 among the test phones. The Wave 3 walkthrough takes about thirty-five
 minutes: a question to the Customer must really expire, which it waits for,
-and it runs `approvals:expire` through `docker compose exec` (`DL-73`). It
+and it runs `approvals:expire` through `docker compose exec`, checking in the
+order's history that the command wrote the expiry (`DL-73` (1)). It
 creates its own two Couriers, so the seeded Courier keeps its first-login
 gate. Each script takes the API's address as its argument when it is not
 `http://127.0.0.1:8000/api/v1`.

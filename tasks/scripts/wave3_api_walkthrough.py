@@ -11,9 +11,10 @@ precedence. Rerunning within a minute waits out the code resend limit.
 
 It takes about thirty-five minutes: a question to the Customer expires
 thirty minutes after it is asked, and an approval's instants cannot be moved
-(its guard trigger keeps them, `DL-55`), so the question is asked first and
-the rest of the scenario runs while it waits (`DL-73`). The expiry command
-runs through `docker compose exec`, as the stack has no scheduler yet.
+(its guard trigger keeps them, `DL-55`), so the question is asked first, on
+an order of its own, and the rest of the scenario runs while it waits
+(`DL-73` (1)). The expiry command runs through `docker compose exec`, as the
+stack has no scheduler yet; the order's history proves it wrote the expiry.
 
 The Admin completes the settings and a catalog and creates two Couriers, who
 pass their first-login gate. The Customer places three cash orders; the
@@ -26,13 +27,14 @@ with the final amount. A first Courier fails the delivery, which returns to
 the board; a second one delivers it and collects the exact cash. The second
 order's cancellation is requested during shopping and approved. On the third
 order a question about a smaller quantity expires, and the Operator removes
-its line. The attention list and the summary strip follow each step. Every
-step is checked; tokens, codes and passwords are never printed.
+its line. The attention list and the summary strip are checked as the orders
+move. Every step is checked; tokens, codes and passwords are never printed.
 """
 
 import json
 import os
 import pathlib
+import re
 import secrets
 import subprocess
 import sys
@@ -133,11 +135,52 @@ def summary(operator):
     return answer["data"] if status == 200 else {}
 
 
+def moved(before, after, **deltas):
+    """Whether the summary moved by exactly [deltas] between two readings:
+    `completed_today=1`, or `open_new=-3` for `open_by_status.new`."""
+    def value(reading, name):
+        if name.startswith("open_"):
+            return reading.get("open_by_status", {}).get(name[5:], 0)
+        return reading.get(name, 0)
+
+    return all(value(after, name) - value(before, name) == delta for name, delta in deltas.items())
+
+
+def picker(operator, path):
+    """Every entry of a staff picker, page by page, by phone."""
+    entries, page = {}, 1
+    while True:
+        status, answer = call("GET", f"{path}?per_page=100&page={page}", operator)
+        if status != 200:
+            return entries
+        entries.update({entry["phone"]: entry["id"] for entry in answer["data"]})
+        if page >= answer["meta"]["pagination"]["last_page"]:
+            return entries
+        page += 1
+
+
 def artisan(*arguments):
     run = subprocess.run(
         ["docker", "compose", "-f", str(ROOT / "docker" / "compose.yaml"), "exec", "-T", "app", "php", "artisan",
          *arguments], capture_output=True, text=True)
-    return run.returncode
+    return run.returncode, run.stdout
+
+
+def history_events(operator, order_id):
+    status, answer = call("GET", f"/operations/orders/{order_id}", operator)
+    return [h["event_type"] for h in answer["data"]["history"]] if status == 200 else None
+
+
+def await_attention(operator, item, timeout=240):
+    """Polls the attention list until [item] is on it; the server's clock,
+    not this machine's, decides when a question needs an Operator."""
+    deadline = time.monotonic() + timeout
+    while True:
+        if item in attention(operator):
+            return True
+        if time.monotonic() > deadline:
+            return False
+        time.sleep(10)
 
 
 def walk():
@@ -225,31 +268,35 @@ def walk():
     status, answer = staff(OPERATOR_PHONE)
     check("The Operator signs in", status == 200, f"{status}")
     operator = answer["data"]["token"]
-    status, answer = call("GET", "/operations/shoppers?per_page=100", operator)
-    shopper_id = next((s["id"] for s in answer["data"] if s["phone"] == SHOPPER_PHONE), None) if status == 200 else None
+    shopper_id = picker(operator, "/operations/shoppers").get(SHOPPER_PHONE)
+    placed_summary = summary(operator)
     for placed in (third, first, second):
         status, answer = call("POST", f"/operations/orders/{placed['id']}/shopper-assignment", operator,
                               {"shopper_id": shopper_id})
         check(f"The Operator assigns order {placed.get('order_number')} to the Shopper",
               status == 200 and answer["data"]["status"] == "shopping_assigned", f"{status}")
-    before = summary(operator)
+    assigned_summary = summary(operator)
+    check("The summary strip moves the three orders from new to a Shopper assigned",
+          moved(placed_summary, assigned_summary, open_new=-3, open_shopping_assigned=3), f"{assigned_summary}")
 
     status, answer = staff(SHOPPER_PHONE)
     check("The Shopper signs in", status == 200, f"{status}")
     shopper = answer["data"]["token"]
 
     def shopping(placed):
-        call("POST", f"/shopper/orders/{placed['id']}/accept", shopper)
+        _, accepted = call("POST", f"/shopper/orders/{placed['id']}/accept", shopper)
         status, answer = call("POST", f"/shopper/orders/{placed['id']}/start", shopper)
         lines = {i["product_id"]: i for i in answer["data"]["items"]} if status == 200 else {}
-        return status, answer, lines
+        return status, answer, lines, accepted
 
     def line_path(placed, lines, product):
         return f"/shopper/orders/{placed['id']}/items/{lines[products[product]]['id']}"
 
     # --- The third order: the question that will expire ----------------------
-    status, answer, third_lines = shopping(third)
-    check("The Shopper accepts and starts the third order; the Customer's phone is theirs while shopping",
+    status, answer, third_lines, accepted = shopping(third)
+    check("Accepted, the order shows the Shopper no phone yet",
+          (accepted or {}).get("data", {}).get("customer_phone", "") is None, "")
+    check("Started, it shows the Customer's phone while shopping",
           status == 200 and answer["data"]["status"] == "shopping" and answer["data"]["customer_phone"] == CUSTOMER_PHONE,
           f"{status}")
     call("POST", line_path(third, third_lines, "apple") + "/purchase", shopper, {"purchased_quantity": "15"},
@@ -264,7 +311,7 @@ def walk():
         else datetime.now(timezone.utc)
 
     # --- The first order at the market ---------------------------------------
-    status, answer, lines = shopping(first)
+    status, answer, lines, _ = shopping(first)
     check("The Shopper starts the first order; the Customer can no longer edit it",
           status == 200 and call("GET", f"/customer/orders/{first['id']}", customer)[1]["data"]["can_edit"] is False,
           f"{status}")
@@ -285,10 +332,15 @@ def walk():
                           {"purchased_quantity": "1.000", "actual_market_price_uzs": 12000}, str(uuid.uuid4()))
     check("A price above the tolerance needs the Customer (13 800 against a bound of 13 225)",
           status == 409 and code(answer) == "customer_approval_required"
-          and answer["details"]["ceiling_customer_unit_price_uzs"] == 13225, f"{status} {code(answer)}")
+          and answer["details"]["approval_type"] == "price_over_tolerance"
+          and answer["details"]["ceiling_customer_unit_price_uzs"] == 13225
+          and answer["details"]["proposed_customer_unit_price_uzs"] == 13800, f"{status} {code(answer)}")
     status, answer = call("POST", line_path(first, lines, "cucumber") + "/price-approval", shopper,
                           {"actual_market_price_uzs": 12000})
-    check("The Shopper asks the Customer about the price", status == 200, f"{status}")
+    cucumber = next((i for i in answer["data"]["items"] if i["product_id"] == products["cucumber"]), {}) if status == 200 else {}
+    check("The Shopper asks the Customer about the price", status == 200
+          and cucumber.get("status") == "awaiting_customer"
+          and (cucumber.get("pending_approval") or {}).get("type") == "price_over_tolerance", f"{status}")
     status, answer = call("POST", line_path(first, lines, "potato") + "/substitution", shopper,
                           {"replacement_product_id": products["new_potato"], "actual_market_price_uzs": 8500})
     potato = next((i for i in answer["data"]["items"] if i["product_id"] == products["potato"]), {}) if status == 200 else {}
@@ -297,13 +349,20 @@ def walk():
     status, answer = call("POST", line_path(first, lines, "potato") + "/purchase", shopper, {
         "purchased_quantity": "2.000", "actual_market_price_uzs": 8500, "fulfilled_product_id": products["new_potato"]},
         str(uuid.uuid4()))
-    check("The Shopper buys the replacement", status == 200, f"{status}")
+    potato = next((i for i in answer["data"]["items"] if i["product_id"] == products["potato"]), {}) if status == 200 else {}
+    check("The Shopper buys the replacement: 8 500 on the market bills 9 775", status == 200
+          and (potato.get("purchase") or {}).get("billable_unit_price_uzs") == 9775, f"{status}")
     status, answer = call("POST", line_path(first, lines, "onion") + "/substitution", shopper,
                           {"replacement_product_id": products["red_onion"], "actual_market_price_uzs": 6500,
                            "note": "Oq piyoz yo'q"})
-    check("A replacement under 'contact before' is asked of the Customer", status == 200, f"{status}")
+    onion = next((i for i in answer["data"]["items"] if i["product_id"] == products["onion"]), {}) if status == 200 else {}
+    check("A replacement under 'contact before' is asked of the Customer", status == 200
+          and onion.get("status") == "awaiting_customer"
+          and (onion.get("pending_approval") or {}).get("type") == "substitution", f"{status}")
     status, answer = call("POST", line_path(first, lines, "bread") + "/unavailable", shopper, {"note": "Tugagan"})
-    check("The Shopper marks a line unavailable", status == 200, f"{status}")
+    bread = next((i for i in answer["data"]["items"] if i["product_id"] == products["bread"]), {}) if status == 200 else {}
+    check("The Shopper marks a line unavailable", status == 200
+          and bread.get("removed_reason_code") == "unavailable", f"{status}")
     status, answer = call("POST", f"/shopper/orders/{first['id']}/complete", shopper, None, str(uuid.uuid4()))
     check("Shopping cannot complete while the Customer's questions wait",
           status == 409 and code(answer) == "shopping_incomplete" and len(answer["details"]["item_ids"]) == 2,
@@ -341,7 +400,9 @@ def walk():
 
     status, answer = call("POST", line_path(first, lines, "cucumber") + "/purchase", shopper,
                           {"purchased_quantity": "1.000", "actual_market_price_uzs": 12000}, str(uuid.uuid4()))
-    check("At the approved price the Shopper buys", status == 200, f"{status}")
+    cucumber = next((i for i in answer["data"]["items"] if i["product_id"] == products["cucumber"]), {}) if status == 200 else {}
+    check("At the approved price the Shopper buys: 12 000 bills 13 800", status == 200
+          and (cucumber.get("purchase") or {}).get("billable_unit_price_uzs") == 13800, f"{status}")
 
     # --- The Admin corrects a price ------------------------------------------
     status, answer = call("POST", f"/admin/orders/{first['id']}/items/{lines[products['tomato']]['id']}/price-correction",
@@ -364,28 +425,32 @@ def walk():
           removed == {products["onion"]: "customer_rejected", products["bread"]: "unavailable"}, f"{removed}")
 
     # --- The second order: a cancellation requested and approved ------------
-    status, answer, _ = shopping(second)
+    status, answer, _, _ = shopping(second)
     status, answer = call("POST", f"/customer/orders/{second['id']}/cancel", customer, {}, str(uuid.uuid4()))
-    check("Once shopping started, a cancel needs its reason", status == 422, f"{status}")
+    check("Once shopping started, a cancel needs its reason",
+          status == 422 and "reason" in (answer or {}).get("errors", {}), f"{status}")
     status, answer = call("POST", f"/customer/orders/{second['id']}/cancel", customer, {"reason": "Rejam o'zgardi"},
                           str(uuid.uuid4()))
     request = (answer["data"].get("cancellation_request") or {}) if status == 200 else {}
     check("The Customer asks for the cancellation during shopping", status == 200
           and answer["data"]["status"] == "shopping" and request.get("status") == "pending", f"{status}")
     check("The attention list shows the request", ("cancellation_request", second["id"]) in attention(operator), "")
+    before_decision = summary(operator)
     status, answer = call("POST", f"/operations/cancellation-requests/{request.get('id')}/decision", operator,
                           {"decision": "approve", "note": "Mijoz so'radi"})
     check("The Operator approves it: the order is cancelled", status == 200
           and answer["data"]["status"] == "cancelled", f"{status} {code(answer)}")
+    after_decision = summary(operator)
+    check("The summary strip counts the cancellation",
+          moved(before_decision, after_decision, cancelled_today=1, open_shopping=-1), f"{after_decision}")
     status, answer = call("GET", f"/customer/orders/{second['id']}", customer)
     check("The Customer sees the request approved", status == 200
           and answer["data"]["cancellation_request"]["status"] == "approved", f"{status}")
 
     # --- Delivery: a failure, then the cash ---------------------------------
-    status, answer = call("GET", "/operations/couriers?per_page=100", operator)
-    courier_ids = {c["phone"]: c["id"] for c in answer["data"]} if status == 200 else {}
+    courier_ids = picker(operator, "/operations/couriers")
     check("The Courier picker lists the new Couriers",
-          all(c["phone"] in courier_ids for c in couriers.values()), f"{status}")
+          all(c["phone"] in courier_ids for c in couriers.values()), "")
 
     def deliver_by(label):
         token = couriers[label]["token"]
@@ -414,6 +479,7 @@ def walk():
     second_courier = deliver_by("second")
     check("Assigning another Courier takes the failure off the list",
           ("delivery_failed", first["id"]) not in attention(operator), "")
+    before_delivery = summary(operator)
     key = str(uuid.uuid4())
     status, answer = call("POST", f"/courier/orders/{first['id']}/delivered", second_courier,
                           {"cash_received_uzs": 97200}, key)
@@ -426,7 +492,8 @@ def walk():
           and answer["data"]["status"] == "completed", f"{status} {code(answer)}")
     status, answer = call("POST", f"/courier/orders/{first['id']}/delivered", second_courier,
                           {"cash_received_uzs": 98200}, str(uuid.uuid4()))
-    check("Delivered again answers the completed order, no second payment", status == 200, f"{status}")
+    check("Delivered again with a new key answers the completed order", status == 200
+          and answer["data"]["status"] == "completed", f"{status}")
     status, answer = call("GET", f"/customer/orders/{first['id']}", customer)
     payment = answer["data"]["payment"] if status == 200 else None
     check("The Customer sees the order delivered and paid in cash", answer["data"]["status"] == "completed"
@@ -437,10 +504,10 @@ def walk():
           [(a["ended_reason"], a["failed_reason_code"]) for a in assignments]
           == [("delivery_failed", "no_answer"), ("completed", None)]
           and answer["data"]["payment"]["recorded_by"]["id"] == courier_ids[couriers["second"]["phone"]], f"{status}")
-    after = summary(operator)
+    after_delivery = summary(operator)
     check("The summary strip counts the delivery and its sales",
-          after.get("completed_today", 0) >= before.get("completed_today", 0) + 1
-          and after.get("sales_today_uzs", 0) >= before.get("sales_today_uzs", 0) + 98200, f"{after}")
+          moved(before_delivery, after_delivery, completed_today=1, sales_today_uzs=98200, open_on_the_way=-1),
+          f"{after_delivery}")
 
     # --- The third order: the question expires ------------------------------
     def wait_until(instant, what):
@@ -453,15 +520,21 @@ def walk():
     # Operator; thirty minutes after, it has expired (BR-APP-002, -003).
     wait_until(expires_at - timedelta(minutes=20), "for the question to need an Operator")
     check("Unanswered after ten minutes, the question is an attention item",
-          ("approval_pending", third["id"]) in attention(operator), "")
+          await_attention(operator, ("approval_pending", third["id"])), "")
     wait_until(expires_at, "for the question to expire")
-    check("Past its expiry the question is an attention item before anything writes it",
-          ("approval_expired", third["id"]) in attention(operator), "")
+    check("Past its expiry the question is an attention item",
+          await_attention(operator, ("approval_expired", third["id"])), "")
+    check("Nothing has written the expiry yet",
+          "approval_expired" not in (history_events(operator, third["id"]) or ["approval_expired"]), "")
+    returned, output = artisan("approvals:expire")
+    written = re.search(r"Expired (\d+) approval", output)
+    check("The expiry command writes it", returned == 0 and written and int(written.group(1)) >= 1
+          and (history_events(operator, third["id"]) or []).count("approval_expired") == 1,
+          (written.group(0) if written else "no count"))
     status, answer = call("POST", f"/customer/approvals/{question.get('id')}/decision", customer,
                           {"decision": "approve"}, str(uuid.uuid4()))
     check("The Customer can no longer answer it", status == 409 and code(answer) == "approval_expired",
           f"{status} {code(answer)}")
-    check("The expiry command runs", artisan("approvals:expire") == 0, "")
     status, answer = call("GET", "/customer/approvals?status=expired", customer)
     check("The Customer's expired questions list it",
           status == 200 and question.get("id") in [a["id"] for a in answer["data"]], f"{status}")
@@ -474,8 +547,9 @@ def walk():
     check("The expired question leaves the attention list", ("approval_expired", third["id"]) not in attention(operator),
           "")
     status, answer = call("POST", f"/shopper/orders/{third['id']}/complete", shopper, None, str(uuid.uuid4()))
-    check("The third order's shopping completes on what was bought", status == 200
-          and answer["data"]["status"] == "ready_for_delivery", f"{status} {code(answer)}")
+    check("The third order's shopping completes on what was bought, and the phone is gone", status == 200
+          and answer["data"]["status"] == "ready_for_delivery" and answer["data"]["customer_phone"] is None,
+          f"{status} {code(answer)}")
 
     for token in (customer, operator, admin, shopper, *(c["token"] for c in couriers.values())):
         call("POST", "/auth/logout", token)

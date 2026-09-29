@@ -1,6 +1,6 @@
 # Wave 3 — Fulfilment
 
-Status: **In progress** (planned 2026-09-28). Plan under workflow v6 (`tasks/README.md`). Scope from `docs/06-roadmap.md` sections 2 and 3; engineering decisions for the wave in `DL-54`.
+Status: **Closed** on 2026-09-29 (planned 2026-09-28). Plan under workflow v6 (`tasks/README.md`). Scope from `docs/06-roadmap.md` sections 2 and 3; engineering decisions for the wave in `DL-54`.
 
 ## Goal
 
@@ -380,7 +380,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
   - a committed `tasks/scripts/wave3_api_walkthrough.py`;
   - the panel;
   - the emulator.
-- The expired approval is made by moving its instants back 31 minutes in the development database, through `psql` in the `db` container, and then running `approvals:expire`. This is a walkthrough setup, not a clock in the application.
+- The expired approval is made by moving its instants back 31 minutes in the development database, through `psql` in the `db` container, and then running `approvals:expire`. This is a walkthrough setup, not a clock in the application. (Superseded by `DL-73` (1): the approval's guard trigger keeps its instants, so the walkthrough waits for a real expiry.)
 - The scenario:
   1. The Customer places two cash orders, and the Operator assigns a Shopper.
   2. The Shopper accepts and starts, then:
@@ -443,14 +443,14 @@ Closed on 2026-09-29 at `main` = merge of PR #85 (`3a3b76a`) plus the closure pu
 | Browser tests (`*_browser_test.dart`) | CI only; they pass there |
 | `flutter build web --release` | built |
 | `flutter build apk --release`, `BB_API_BASE_URL=http://10.0.2.2:8000/api/v1`, no MapKit key | built, 128.8 MB |
-| Real stack, the API walkthrough `tasks/scripts/wave3_api_walkthrough.py` (served on 8001, `DL-73` (3)) | 69 of 69 steps pass, in the order below |
+| Real stack, the API walkthrough `tasks/scripts/wave3_api_walkthrough.py` (served on 8001, `DL-73` (3)) | 73 of 73 steps pass, in the order below |
 | Real stack, the web panel (`build/web` on loopback, headless Chrome driven over the DevTools protocol, 1 440 px) | passes; details below |
 | Real stack, the Android app on the emulator (`barakabozor` AVD, a release build for 8001) | passes; details below |
 
 **The API walkthrough, step by step:**
 1. **Setup.** The Admin sets the settings and a catalog of nine products. They create two Couriers, and each passes the first-login gate.
-2. **Orders.** The Customer places three cash orders; the first is estimated at 105 100. The Operator assigns the Shopper to all three.
-3. **The third order's question.** The Shopper starts it, buys one line and asks the Customer to accept a smaller quantity on the other. The Customer's phone shows only while shopping.
+2. **Orders.** The Customer places three cash orders; the first is estimated at 105 100. The Operator assigns the Shopper to all three, and the summary strip moves exactly three orders from new to a Shopper assigned.
+3. **The third order's question.** The Shopper starts it, buys one line and asks the Customer to accept a smaller quantity on the other. The Customer's phone is absent on the accepted order, present while shopping, and absent again once shopping completes.
 4. **The first order at the market:**
    - the fixed line is bought as itself;
    - the estimate is bought within the tolerance: 17 000 at the market bills 19 550, and a retry under its key answers once;
@@ -462,13 +462,13 @@ Closed on 2026-09-29 at `main` = merge of PR #85 (`3a3b76a`) plus the closure pu
 5. **The Customer answers.** "My orders" counts the two waiting questions. The Customer reads them in their own prices, approves the price (a replay under the same key answers the same) and rejects the replacement. A second answer is refused as already resolved.
 6. **Buying and correcting.** The Shopper buys at the approved price. The Admin corrects the price paid on the tomatoes, so the line bills 18 975.
 7. **Completion.** Shopping completes. The Customer sees the final amount, 78 200 of goods and 98 200 in all, with the rejected and the unavailable lines removed for their reasons.
-8. **The second order.** Once shopping starts, a cancel without a reason is refused. With a reason it becomes a request, which the attention list shows. The Operator approves it, the order is cancelled, and the Customer sees the request approved.
+8. **The second order.** Once shopping starts, a cancel without a reason is refused, naming the reason. With a reason it becomes a request, which the attention list shows. The Operator approves it, the order is cancelled, and the Customer sees the request approved. The summary strip counts exactly one more cancellation.
 9. **The first Courier fails.** The Courier picker lists both new Couriers. The first sees the delivery with 98 200 to collect, sets off with a delay deadline, and cannot deliver. The order goes back to the Operator, the answer names no recipient, and the attention list shows the failure until a second Courier is assigned.
 10. **The second Courier delivers.** 97 200 in cash is refused with the amount to collect, 98 200. The exact cash completes the order, and delivered again answers the completed order with no second payment.
-11. **The record.** The Customer sees the order paid in cash. The board keeps both Couriers: the failure with its reason, then the delivery, with the payment recorded by the second. The summary strip counts the delivery and its sales.
+11. **The record.** The Customer sees the order paid in cash. The board keeps both Couriers: the failure with its reason, then the delivery, with the payment recorded by the second. The summary strip counts exactly one more completion and 98 200 more in sales.
 12. **The expiry.**
     - After ten minutes, the third order's question is an attention item.
-    - After thirty, it is expired before anything writes it. The Customer can no longer answer it, `approvals:expire` runs, and the Customer's expired questions list it.
+    - After thirty, it is an expired item while the order's history still holds no expiry. `approvals:expire` reports "Expired 1 approval", and the history then holds exactly one. The Customer can no longer answer it, and their expired questions list it.
     - The Operator removes its line, and the item leaves the attention list.
     - The third order completes on what was bought.
 
@@ -496,6 +496,13 @@ Found and fixed: quantities read "2.000 кг", which in Russian reads as two tho
 Found and left: the moment of stale list after an outcome (risk row above).
 
 **Not verified by the agent, on the Owner's checklist or waiting for a gate:**
+- on the device, the Shopper's replacement search and its dialog, "not found", and the smaller-quantity question. The walkthrough covers each through the API, and widget tests cover the screens;
+- on the real stack:
+  - the `courier_delayed` and `staff_blocked` attention types;
+  - the Operator's cancellation after a failed delivery;
+  - a Courier reassigned before setting off.
+
+  The backend's feature tests cover each;
 - the Yandex map, which needs a key Yandex accepts (`DL-36`);
 - iOS, which needs a Mac;
 - a real phone and its dialer;
@@ -505,30 +512,51 @@ Found and left: the moment of stale list after an outcome (risk row above).
 **Owner's manual check.**
 
 *Setup.* Serve the stack and seed the staff accounts as `docker/README.md` "Walk a wave on the real stack" says. The staff password, the test phones and their code are in the local `backend/.env`.
-- The emulator: install `frontend/build/app/outputs/flutter-apk/app-release.apk`, built for `http://10.0.2.2:8000/api/v1` without a MapKit key. It needs nothing else on the machine's port 8000.
+- The emulator: install `frontend/build/app/outputs/flutter-apk/app-release.apk`, built for `http://10.0.2.2:8000/api/v1` without a MapKit key.
 - The panel: `flutter run -d chrome --dart-define=BB_API_BASE_URL=http://127.0.0.1:8000/api/v1`.
+- **Port 8000 is taken on this machine.** Another project's container holds `127.0.0.1:8000` (TestLabUz). Serving there then fails with "port is already allocated", and if that container answers instead, the app and the panel would talk to the other project. Use port 8001 instead:
+  - serve with `-p 127.0.0.1:8001:8000` in the README's command;
+  - run the panel with `BB_API_BASE_URL=http://127.0.0.1:8001/api/v1`;
+  - build the app with `flutter build apk --release --dart-define=BB_API_BASE_URL=http://10.0.2.2:8001/api/v1` (`DL-73` (3)).
 - Until Wave 4 deploys a scheduler, an expiry is written by the next action on the order or by `docker compose -f docker/compose.yaml exec app php artisan approvals:expire`.
 
 *The checklist:*
-1. **Panel, the Admin (+998 90 000 00 05).** The settings keep the price tolerance (15 %) and the delivery delay (60 minutes). The catalog has a product sold by weight at an estimate price, and one sold by the piece at a fixed price.
-2. **App, the Customer (a test phone and the code).** Order both products with cash. On the weighed one, choose "contact me before a replacement".
+1. **Panel, the Admin (+998 90 000 00 05).** The settings keep the price tolerance (15 %) and the delivery delay (60 minutes). The catalog has at least:
+   - three products sold by weight at an estimate price;
+   - one sold by the piece at a fixed price;
+   - a second weighed product of the same kind, to offer as a replacement.
+2. **App, the Customer (a test phone and the code).** Order with cash:
+   - the fixed product;
+   - the first weighed product, with "contact me before a replacement";
+   - the second weighed product, with "a similar one will do";
+   - the third weighed product, 3 kg.
 3. **Panel, the Operator (+998 90 000 00 04).** Assign the order to the Shopper (+998 90 000 00 02).
 4. **App, the Shopper ("Sign in as staff").**
    - Accept and start.
    - Buy the fixed product as it is.
-   - On the weighed one, enter a price above the "at most, without asking" amount: the dialog offers to ask the Customer. Ask.
-5. **App, the Customer.** "My orders" says an answer is needed. The order shows the question in your own prices, with a deadline. Agree, or refuse: refusing removes the line.
+   - On the first weighed product, enter a price above the "at most, without asking" amount: the dialog offers to ask the Customer. Ask.
+   - On the second, choose "Replace", find the replacement by its name and give a price within the limit: the replacement is authorized at once. Buy it.
+   - On the third, buy only 2 kg: the dialog says what is owed and offers to ask the Customer about the smaller quantity. Ask.
+5. **App, the Customer.**
+   - "My orders" says an answer is needed.
+   - The order shows both questions in your own prices, with a deadline.
+   - Agree to the price.
+   - Refuse the smaller quantity: that line is removed.
 6. **App, the Shopper.** Buy at the agreed price. Complete the shopping: the closing screen shows the order number to write on the package.
-7. **Panel, the Admin.** On the order's page, correct the price paid on a bought line. The line and the total change, and the history shows the old and the new price.
+7. **Panel, the Admin.** On the order's page, correct the price paid on the bought weighed line. The line and the total change, and the history shows the old and the new price.
 8. **Panel, the Operator.** Assign a Courier: the seeded one on +998 90 000 00 03 meets the first-login gate at their first sign-in. Choose a new password of at least ten characters and keep it.
 9. **App, the Courier.**
    - The delivery shows the recipient, address, wish and the cash to collect. Call the recipient, and open the map.
    - Accept, then set off.
-   - "Delivered" with a wrong amount names the right one. The exact amount completes the order.
-10. **App, the Customer, and the panel.** The Customer sees the order delivered and paid in cash. The panel shows the payment and who took it.
-11. **A second order.** After the Shopper starts it, the Customer asks to cancel with a reason. The attention list shows the request; the Operator approves it; the Customer sees it approved.
-12. **Not delivered.** Instead of delivering, the Courier marks the order not delivered with a reason. It returns to the board as needing attention, and another Courier can be assigned.
-13. **Optional, a question left unanswered.** After ten minutes the attention list shows it. After thirty it has expired: the Customer reads that the time ran out, and the Operator removes the line.
+   - First mark it "Not delivered" with a reason. The order returns to the board as needing attention.
+   - Assign the same Courier again on the panel, and set off again.
+   - Now "Delivered" with a wrong amount names the right one. The exact amount completes the order.
+10. **App, the Customer, and the panel.** The Customer sees the order delivered and paid in cash. The panel shows both deliveries, the failure with its reason, and the payment with who took it.
+11. **A second order, of two lines.**
+    - The Shopper starts it and marks one line "Not found": it is removed with that reason. On the last line it would cancel the order.
+    - Then the Customer asks to cancel with a reason. The attention list shows the request.
+    - The Operator approves it, and the Customer sees it approved.
+12. **Optional, a question left unanswered.** After ten minutes the attention list shows it. After thirty it has expired: the Customer reads that the time ran out, and the Operator removes the line.
 
 **What remains open:**
 - the risk rows above marked Open;
