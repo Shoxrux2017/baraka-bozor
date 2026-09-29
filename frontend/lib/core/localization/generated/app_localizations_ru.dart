@@ -948,9 +948,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get boardColumnTotal => 'Сумма';
 
   @override
-  String get boardColumnShopper => 'Сборщик';
-
-  @override
   String boardItemCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1615,4 +1612,123 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get errorOrderCancellationNotAllowed =>
       'Заказ уже нельзя отменить. Заказ обновлён';
+
+  @override
+  String get boardColumnPeople => 'Сборщик и курьер';
+
+  @override
+  String boardCourierNamed(String name) {
+    return 'Курьер: $name';
+  }
+
+  @override
+  String get boardFilterCourier => 'Курьер';
+
+  @override
+  String get boardAllCouriers => 'Все курьеры';
+
+  @override
+  String get boardFilteredCourier => 'Выбранный курьер';
+
+  @override
+  String get boardAwaitingCustomerOnly => 'Ждут ответа клиента';
+
+  @override
+  String boardPendingQuestions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count вопроса клиенту',
+      many: '$count вопросов клиенту',
+      few: '$count вопроса клиенту',
+      one: '$count вопрос клиенту',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String attentionShowAll(int count) {
+    return 'Показать все ($count)';
+  }
+
+  @override
+  String get attentionShowFewer => 'Свернуть';
+
+  @override
+  String get orderSectionCouriers => 'Курьеры';
+
+  @override
+  String get assignCourier => 'Назначить курьера';
+
+  @override
+  String get reassignCourier => 'Сменить курьера';
+
+  @override
+  String get assigningCourier => 'Назначаем курьера';
+
+  @override
+  String get pickCourierTitle => 'Выберите курьера';
+
+  @override
+  String get pickCourierEmpty => 'Нет активных курьеров';
+
+  @override
+  String courierStarted(String time) {
+    return 'Выехал: $time';
+  }
+
+  @override
+  String get courierEndCompleted => 'доставлено';
+
+  @override
+  String get courierEndReassigned => 'передан другому курьеру';
+
+  @override
+  String get courierEndDeliveryFailed => 'не доставлено';
+
+  @override
+  String get deliveryFailureNoAnswer => 'Клиент не ответил';
+
+  @override
+  String get deliveryFailureRefused => 'Клиент отказался';
+
+  @override
+  String get deliveryFailureWrongAddress => 'Неверный адрес';
+
+  @override
+  String get deliveryFailureOther => 'Другая причина';
+
+  @override
+  String staffBlockCurrentOrders(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Сейчас у сотрудника $count заказа',
+      many: 'Сейчас у сотрудника $count заказов',
+      few: 'Сейчас у сотрудника $count заказа',
+      one: 'Сейчас у сотрудника $count заказ',
+    );
+    return '$_temp0. Начатая сборка или доставка в пути не перейдёт к другому.';
+  }
+
+  @override
+  String get courierAssignmentsNone => 'Курьер ещё не назначен';
+
+  @override
+  String historyCourierAssignedTo(String name) {
+    return 'Курьер: $name';
+  }
+
+  @override
+  String historyCourierReassignedTo(String previous, String name) {
+    return 'Курьер: $previous → $name';
+  }
+
+  @override
+  String get staffBlockOrdersLoading =>
+      'Загружаем, сколько заказов у сотрудника…';
+
+  @override
+  String get staffBlockOrdersUnknown =>
+      'Не удалось узнать, сколько заказов у сотрудника. Начатая сборка или доставка в пути не перейдёт к другому.';
 }

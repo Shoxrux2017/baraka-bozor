@@ -23,7 +23,7 @@ class OperationsRepositoryImpl implements OperationsRepository {
   Future<List<AttentionItem>> attention() => guardApiCall(_api.attention);
 
   @override
-  Future<List<ShopperChoice>> shoppers() => guardApiCall(_api.shoppers);
+  Future<List<StaffChoice>> shoppers() => guardApiCall(_api.shoppers);
 
   @override
   Future<BoardOrder> assignShopper(String orderId, String shopperId) =>
@@ -36,5 +36,21 @@ class OperationsRepositoryImpl implements OperationsRepository {
     String replacesAssignmentId,
   ) => guardApiCall(
     () => _api.reassignShopper(orderId, shopperId, replacesAssignmentId),
+  );
+
+  @override
+  Future<List<StaffChoice>> couriers() => guardApiCall(_api.couriers);
+
+  @override
+  Future<BoardOrder> assignCourier(String orderId, String courierId) =>
+      guardApiCall(() => _api.assignCourier(orderId, courierId));
+
+  @override
+  Future<BoardOrder> reassignCourier(
+    String orderId,
+    String courierId,
+    String replacesAssignmentId,
+  ) => guardApiCall(
+    () => _api.reassignCourier(orderId, courierId, replacesAssignmentId),
   );
 }

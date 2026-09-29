@@ -382,7 +382,6 @@
   "boardColumnStatus": "Статус",
   "boardColumnPayment": "Оплата",
   "boardColumnTotal": "Сумма",
-  "boardColumnShopper": "Сборщик",
   "boardItemCount": "{count, plural, one{{count} позиция} few{{count} позиции} many{{count} позиций} other{{count} позиции}}",
   "@boardItemCount": {
     "placeholders": {
@@ -807,5 +806,86 @@
     }
   },
   "errorOrderEditingLocked": "Заказ уже нельзя изменить. Заказ обновлён",
-  "errorOrderCancellationNotAllowed": "Заказ уже нельзя отменить. Заказ обновлён"
+  "errorOrderCancellationNotAllowed": "Заказ уже нельзя отменить. Заказ обновлён",
+  "boardColumnPeople": "Сборщик и курьер",
+  "boardCourierNamed": "Курьер: {name}",
+  "@boardCourierNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "boardFilterCourier": "Курьер",
+  "boardAllCouriers": "Все курьеры",
+  "boardFilteredCourier": "Выбранный курьер",
+  "boardAwaitingCustomerOnly": "Ждут ответа клиента",
+  "boardPendingQuestions": "{count, plural, one{{count} вопрос клиенту} few{{count} вопроса клиенту} many{{count} вопросов клиенту} other{{count} вопроса клиенту}}",
+  "@boardPendingQuestions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attentionShowAll": "Показать все ({count})",
+  "@attentionShowAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attentionShowFewer": "Свернуть",
+  "orderSectionCouriers": "Курьеры",
+  "assignCourier": "Назначить курьера",
+  "reassignCourier": "Сменить курьера",
+  "assigningCourier": "Назначаем курьера",
+  "pickCourierTitle": "Выберите курьера",
+  "pickCourierEmpty": "Нет активных курьеров",
+  "courierStarted": "Выехал: {time}",
+  "@courierStarted": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "courierEndCompleted": "доставлено",
+  "courierEndReassigned": "передан другому курьеру",
+  "courierEndDeliveryFailed": "не доставлено",
+  "deliveryFailureNoAnswer": "Клиент не ответил",
+  "deliveryFailureRefused": "Клиент отказался",
+  "deliveryFailureWrongAddress": "Неверный адрес",
+  "deliveryFailureOther": "Другая причина",
+  "staffBlockCurrentOrders": "{count, plural, one{Сейчас у сотрудника {count} заказ} few{Сейчас у сотрудника {count} заказа} many{Сейчас у сотрудника {count} заказов} other{Сейчас у сотрудника {count} заказа}}. Начатая сборка или доставка в пути не перейдёт к другому.",
+  "@staffBlockCurrentOrders": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courierAssignmentsNone": "Курьер ещё не назначен",
+  "historyCourierAssignedTo": "Курьер: {name}",
+  "@historyCourierAssignedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "historyCourierReassignedTo": "Курьер: {previous} → {name}",
+  "@historyCourierReassignedTo": {
+    "placeholders": {
+      "previous": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffBlockOrdersLoading": "Загружаем, сколько заказов у сотрудника…",
+  "staffBlockOrdersUnknown": "Не удалось узнать, сколько заказов у сотрудника. Начатая сборка или доставка в пути не перейдёт к другому."
 }

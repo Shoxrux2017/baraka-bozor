@@ -12,6 +12,9 @@ const String itemId = '0192f0a0-0000-7000-8000-0000000000f1';
 const String productId = '0192f0a0-0000-7000-8000-0000000000f2';
 const String assignmentId = '0192f0a0-0000-7000-8000-0000000000a1';
 const String historyId = '0192f0a0-0000-7000-8000-0000000000b1';
+const String courierId = '0192f0a0-0000-7000-8000-0000000000c7';
+const String otherCourierId = '0192f0a0-0000-7000-8000-0000000000c8';
+const String courierAssignmentId = '0192f0a0-0000-7000-8000-0000000000a7';
 
 Map<String, Object?> rowJson({
   String id = orderA,
@@ -22,7 +25,9 @@ Map<String, Object?> rowJson({
   int? totalUzs = 75200,
   String totalKind = 'estimate',
   String? shopper = shopperId,
+  String? courier,
   bool selfOrder = false,
+  int pendingApprovals = 0,
 }) => <String, Object?>{
   'id': id,
   'order_number': number,
@@ -34,13 +39,15 @@ Map<String, Object?> rowJson({
     'phone': '+998901112233',
   },
   'item_count': 3,
-  'pending_approval_count': 0,
+  'pending_approval_count': pendingApprovals,
   'total_uzs': totalUzs,
   'total_kind': totalKind,
   'shopper': shopper == null
       ? null
       : <String, Object?>{'id': shopper, 'full_name': 'Sardor Yusupov'},
-  'courier': null,
+  'courier': courier == null
+      ? null
+      : <String, Object?>{'id': courier, 'full_name': 'Kamol Karimov'},
   'is_self_order': selfOrder,
 };
 
@@ -97,6 +104,47 @@ Map<String, Object?> shopperJson({
   'full_name': fullName,
   'phone': '+998907654321',
   'current_assignment_count': 1,
+};
+
+Map<String, Object?> courierChoiceJson({
+  String id = courierId,
+  String fullName = 'Kamol Karimov',
+}) => <String, Object?>{
+  'id': id,
+  'full_name': fullName,
+  'phone': '+998905554433',
+  'current_assignment_count': 2,
+};
+
+Map<String, Object?> courierAssignmentJson({
+  String id = courierAssignmentId,
+  String courier = courierId,
+  String fullName = 'Kamol Karimov',
+  bool selfOrder = false,
+  String? acceptedAt,
+  String? startedAt,
+  String? endedAt,
+  String? endedReason,
+  String? failedReason,
+  String? failedNote,
+}) => <String, Object?>{
+  'id': id,
+  'courier': <String, Object?>{
+    'id': courier,
+    'full_name': fullName,
+    'phone': '+998905554433',
+  },
+  'assigned_by': <String, Object?>{'id': operatorId, 'full_name': 'Olim'},
+  'is_self_order': selfOrder,
+  'assigned_at': '2026-09-27T09:00:00Z',
+  'accepted_at': acceptedAt,
+  'delivery_started_at': startedAt,
+  'delay_at': startedAt == null ? null : '2026-09-27T10:30:00Z',
+  'completed_at': endedReason == 'completed' ? endedAt : null,
+  'ended_at': endedAt,
+  'ended_reason': endedReason,
+  'failed_reason_code': failedReason,
+  'failed_note': failedNote,
 };
 
 Map<String, Object?> itemJson({
@@ -177,6 +225,7 @@ Map<String, Object?> orderJson({
   List<Object?>? items,
   Map<String, Object?>? totals,
   List<Object?>? assignments,
+  List<Object?>? courierAssignments,
   List<Object?>? history,
   String? cancellationReason,
 }) => <String, Object?>{
@@ -210,7 +259,7 @@ Map<String, Object?> orderJson({
         'total_kind': 'estimate',
       },
   'shopper_assignments': assignments ?? <Object?>[assignmentJson()],
-  'courier_assignments': <Object?>[],
+  'courier_assignments': courierAssignments ?? <Object?>[],
   'approvals': <Object?>[],
   'payment': null,
   'refunds': <Object?>[],

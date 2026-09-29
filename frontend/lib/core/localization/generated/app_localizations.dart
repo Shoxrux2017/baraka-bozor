@@ -1874,12 +1874,6 @@ abstract class AppLocalizations {
   /// **'Summa'**
   String get boardColumnTotal;
 
-  /// No description provided for @boardColumnShopper.
-  ///
-  /// In uz, this message translates to:
-  /// **'Yig\'uvchi'**
-  String get boardColumnShopper;
-
   /// No description provided for @boardItemCount.
   ///
   /// In uz, this message translates to:
@@ -2995,6 +2989,180 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtmani endi bekor qilib bo\'lmaydi. Buyurtma yangilandi'**
   String get errorOrderCancellationNotAllowed;
+
+  /// No description provided for @boardColumnPeople.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi va kuryer'**
+  String get boardColumnPeople;
+
+  /// No description provided for @boardCourierNamed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer: {name}'**
+  String boardCourierNamed(String name);
+
+  /// No description provided for @boardFilterCourier.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer'**
+  String get boardFilterCourier;
+
+  /// No description provided for @boardAllCouriers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha kuryerlar'**
+  String get boardAllCouriers;
+
+  /// No description provided for @boardFilteredCourier.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tanlangan kuryer'**
+  String get boardFilteredCourier;
+
+  /// No description provided for @boardAwaitingCustomerOnly.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz javobini kutayotganlar'**
+  String get boardAwaitingCustomerOnly;
+
+  /// No description provided for @boardPendingQuestions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga {count} ta savol'**
+  String boardPendingQuestions(int count);
+
+  /// No description provided for @attentionShowAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hammasini ko\'rsatish ({count})'**
+  String attentionShowAll(int count);
+
+  /// No description provided for @attentionShowFewer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kamroq ko\'rsatish'**
+  String get attentionShowFewer;
+
+  /// No description provided for @orderSectionCouriers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryerlar'**
+  String get orderSectionCouriers;
+
+  /// No description provided for @assignCourier.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer tayinlash'**
+  String get assignCourier;
+
+  /// No description provided for @reassignCourier.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryerni almashtirish'**
+  String get reassignCourier;
+
+  /// No description provided for @assigningCourier.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer tayinlanmoqda'**
+  String get assigningCourier;
+
+  /// No description provided for @pickCourierTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryerni tanlang'**
+  String get pickCourierTitle;
+
+  /// No description provided for @pickCourierEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faol kuryerlar yo\'q'**
+  String get pickCourierEmpty;
+
+  /// No description provided for @courierStarted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'lga chiqdi: {time}'**
+  String courierStarted(String time);
+
+  /// No description provided for @courierEndCompleted.
+  ///
+  /// In uz, this message translates to:
+  /// **'yetkazildi'**
+  String get courierEndCompleted;
+
+  /// No description provided for @courierEndReassigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'boshqa kuryerga o\'tkazildi'**
+  String get courierEndReassigned;
+
+  /// No description provided for @courierEndDeliveryFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'yetkazilmadi'**
+  String get courierEndDeliveryFailed;
+
+  /// No description provided for @deliveryFailureNoAnswer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz javob bermadi'**
+  String get deliveryFailureNoAnswer;
+
+  /// No description provided for @deliveryFailureRefused.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz qabul qilmadi'**
+  String get deliveryFailureRefused;
+
+  /// No description provided for @deliveryFailureWrongAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil noto\'g\'ri'**
+  String get deliveryFailureWrongAddress;
+
+  /// No description provided for @deliveryFailureOther.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa sabab'**
+  String get deliveryFailureOther;
+
+  /// No description provided for @staffBlockCurrentOrders.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir xodimda {count} ta buyurtma bor. Boshlangan yig\'ish yoki yo\'ldagi yetkazish boshqa xodimga o\'tmaydi.'**
+  String staffBlockCurrentOrders(int count);
+
+  /// No description provided for @courierAssignmentsNone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer hali tayinlanmagan'**
+  String get courierAssignmentsNone;
+
+  /// No description provided for @historyCourierAssignedTo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer: {name}'**
+  String historyCourierAssignedTo(String name);
+
+  /// No description provided for @historyCourierReassignedTo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer: {previous} → {name}'**
+  String historyCourierReassignedTo(String previous, String name);
+
+  /// No description provided for @staffBlockOrdersLoading.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xodimdagi buyurtmalar soni yuklanmoqda…'**
+  String get staffBlockOrdersLoading;
+
+  /// No description provided for @staffBlockOrdersUnknown.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xodimdagi buyurtmalar sonini bilib bo\'lmadi. Boshlangan yig\'ish yoki yo\'ldagi yetkazish boshqa xodimga o\'tmaydi.'**
+  String get staffBlockOrdersUnknown;
 }
 
 class _AppLocalizationsDelegate

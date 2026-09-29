@@ -952,9 +952,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get boardColumnTotal => 'Summa';
 
   @override
-  String get boardColumnShopper => 'Yig\'uvchi';
-
-  @override
   String boardItemCount(int count) {
     return '$count ta mahsulot';
   }
@@ -1606,4 +1603,107 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get errorOrderCancellationNotAllowed =>
       'Buyurtmani endi bekor qilib bo\'lmaydi. Buyurtma yangilandi';
+
+  @override
+  String get boardColumnPeople => 'Yig\'uvchi va kuryer';
+
+  @override
+  String boardCourierNamed(String name) {
+    return 'Kuryer: $name';
+  }
+
+  @override
+  String get boardFilterCourier => 'Kuryer';
+
+  @override
+  String get boardAllCouriers => 'Barcha kuryerlar';
+
+  @override
+  String get boardFilteredCourier => 'Tanlangan kuryer';
+
+  @override
+  String get boardAwaitingCustomerOnly => 'Mijoz javobini kutayotganlar';
+
+  @override
+  String boardPendingQuestions(int count) {
+    return 'Mijozga $count ta savol';
+  }
+
+  @override
+  String attentionShowAll(int count) {
+    return 'Hammasini ko\'rsatish ($count)';
+  }
+
+  @override
+  String get attentionShowFewer => 'Kamroq ko\'rsatish';
+
+  @override
+  String get orderSectionCouriers => 'Kuryerlar';
+
+  @override
+  String get assignCourier => 'Kuryer tayinlash';
+
+  @override
+  String get reassignCourier => 'Kuryerni almashtirish';
+
+  @override
+  String get assigningCourier => 'Kuryer tayinlanmoqda';
+
+  @override
+  String get pickCourierTitle => 'Kuryerni tanlang';
+
+  @override
+  String get pickCourierEmpty => 'Faol kuryerlar yo\'q';
+
+  @override
+  String courierStarted(String time) {
+    return 'Yo\'lga chiqdi: $time';
+  }
+
+  @override
+  String get courierEndCompleted => 'yetkazildi';
+
+  @override
+  String get courierEndReassigned => 'boshqa kuryerga o\'tkazildi';
+
+  @override
+  String get courierEndDeliveryFailed => 'yetkazilmadi';
+
+  @override
+  String get deliveryFailureNoAnswer => 'Mijoz javob bermadi';
+
+  @override
+  String get deliveryFailureRefused => 'Mijoz qabul qilmadi';
+
+  @override
+  String get deliveryFailureWrongAddress => 'Manzil noto\'g\'ri';
+
+  @override
+  String get deliveryFailureOther => 'Boshqa sabab';
+
+  @override
+  String staffBlockCurrentOrders(int count) {
+    return 'Hozir xodimda $count ta buyurtma bor. Boshlangan yig\'ish yoki yo\'ldagi yetkazish boshqa xodimga o\'tmaydi.';
+  }
+
+  @override
+  String get courierAssignmentsNone => 'Kuryer hali tayinlanmagan';
+
+  @override
+  String historyCourierAssignedTo(String name) {
+    return 'Kuryer: $name';
+  }
+
+  @override
+  String historyCourierReassignedTo(String previous, String name) {
+    return 'Kuryer: $previous → $name';
+  }
+
+  @override
+  String get staffBlockOrdersLoading =>
+      'Xodimdagi buyurtmalar soni yuklanmoqda…';
+
+  @override
+  String get staffBlockOrdersUnknown =>
+      'Xodimdagi buyurtmalar sonini bilib bo\'lmadi. Boshlangan yig\'ish yoki yo\'ldagi yetkazish boshqa xodimga o\'tmaydi.';
 }

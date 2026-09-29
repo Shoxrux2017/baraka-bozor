@@ -382,7 +382,6 @@
   "boardColumnStatus": "Holat",
   "boardColumnPayment": "To'lov",
   "boardColumnTotal": "Summa",
-  "boardColumnShopper": "Yig'uvchi",
   "boardItemCount": "{count} ta mahsulot",
   "@boardItemCount": {
     "placeholders": {
@@ -814,5 +813,86 @@
     }
   },
   "errorOrderEditingLocked": "Buyurtmani endi o'zgartirib bo'lmaydi. Buyurtma yangilandi",
-  "errorOrderCancellationNotAllowed": "Buyurtmani endi bekor qilib bo'lmaydi. Buyurtma yangilandi"
+  "errorOrderCancellationNotAllowed": "Buyurtmani endi bekor qilib bo'lmaydi. Buyurtma yangilandi",
+  "boardColumnPeople": "Yig'uvchi va kuryer",
+  "boardCourierNamed": "Kuryer: {name}",
+  "@boardCourierNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "boardFilterCourier": "Kuryer",
+  "boardAllCouriers": "Barcha kuryerlar",
+  "boardFilteredCourier": "Tanlangan kuryer",
+  "boardAwaitingCustomerOnly": "Mijoz javobini kutayotganlar",
+  "boardPendingQuestions": "Mijozga {count} ta savol",
+  "@boardPendingQuestions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attentionShowAll": "Hammasini ko'rsatish ({count})",
+  "@attentionShowAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attentionShowFewer": "Kamroq ko'rsatish",
+  "orderSectionCouriers": "Kuryerlar",
+  "assignCourier": "Kuryer tayinlash",
+  "reassignCourier": "Kuryerni almashtirish",
+  "assigningCourier": "Kuryer tayinlanmoqda",
+  "pickCourierTitle": "Kuryerni tanlang",
+  "pickCourierEmpty": "Faol kuryerlar yo'q",
+  "courierStarted": "Yo'lga chiqdi: {time}",
+  "@courierStarted": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "courierEndCompleted": "yetkazildi",
+  "courierEndReassigned": "boshqa kuryerga o'tkazildi",
+  "courierEndDeliveryFailed": "yetkazilmadi",
+  "deliveryFailureNoAnswer": "Mijoz javob bermadi",
+  "deliveryFailureRefused": "Mijoz qabul qilmadi",
+  "deliveryFailureWrongAddress": "Manzil noto'g'ri",
+  "deliveryFailureOther": "Boshqa sabab",
+  "staffBlockCurrentOrders": "Hozir xodimda {count} ta buyurtma bor. Boshlangan yig'ish yoki yo'ldagi yetkazish boshqa xodimga o'tmaydi.",
+  "@staffBlockCurrentOrders": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courierAssignmentsNone": "Kuryer hali tayinlanmagan",
+  "historyCourierAssignedTo": "Kuryer: {name}",
+  "@historyCourierAssignedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "historyCourierReassignedTo": "Kuryer: {previous} → {name}",
+  "@historyCourierReassignedTo": {
+    "placeholders": {
+      "previous": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "staffBlockOrdersLoading": "Xodimdagi buyurtmalar soni yuklanmoqda…",
+  "staffBlockOrdersUnknown": "Xodimdagi buyurtmalar sonini bilib bo'lmadi. Boshlangan yig'ish yoki yo'ldagi yetkazish boshqa xodimga o'tmaydi."
 }

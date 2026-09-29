@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/formatting/phone_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
@@ -177,6 +179,147 @@ void main() {
   );
 
   testWidgets(
+    'a row names its Courier and the Customer\'s open questions, in a table and a card',
+    (WidgetTester tester) async {
+      operations.rows = <BoardRow>[
+        OperationsApi.parseRow(
+          rowJson(
+            status: 'delivery_assigned',
+            courier: courierId,
+            pendingApprovals: 2,
+          ),
+        ),
+      ];
+      for (final Size size in const <Size>[Size(1400, 1200), Size(420, 1600)]) {
+        await open(tester, size: size);
+        final AppLocalizations words = l10n(tester);
+
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey<String>('operations-board')),
+            matching: find.text(words.boardCourierNamed('Kamol Karimov')),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(words.boardPendingQuestions(2)), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
+    'the questions go under the status, so the table keeps its width',
+    (WidgetTester tester) async {
+      operations.rows = <BoardRow>[
+        OperationsApi.parseRow(rowJson(pendingApprovals: 3)),
+      ];
+      await open(tester, size: const Size(1800, 1200));
+      final Finder chip = find.descendant(
+        of: find.byType(DataTable),
+        matching: find.byType(OrderStatusChip),
+      );
+      final Finder questions = byKey('board-questions-$orderA');
+      Finder header(String text) => find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text(text),
+      );
+      final AppLocalizations words = l10n(tester);
+
+      expect(
+        tester.getTopLeft(questions).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(chip).dy),
+      );
+      expect(tester.getTopLeft(questions).dx, tester.getTopLeft(chip).dx);
+      // The column is as wide as the widest of its lines, not their sum.
+      final double widest = <double>[
+        tester.getSize(chip).width,
+        tester.getSize(questions).width,
+        tester.getSize(header(words.boardColumnStatus)).width,
+      ].reduce(math.max);
+      expect(
+        tester.getTopLeft(header(words.boardColumnPayment)).dx -
+            tester.getTopLeft(chip).dx,
+        lessThanOrEqualTo(widest + 24 + 0.5),
+      );
+    },
+  );
+
+  testWidgets(
+    'the Courier\'s and the cancellation\'s attention have their words',
+    (WidgetTester tester) async {
+      const Map<String, String Function(AppLocalizations)> types =
+          <String, String Function(AppLocalizations)>{
+            'courier_delayed': _courierDelayed,
+            'delivery_failed': _deliveryFailed,
+            'cancellation_request': _cancellationRequest,
+            'staff_blocked': _staffBlocked,
+          };
+      operations.attentionAnswer = <AttentionItem>[
+        for (final String type in types.keys)
+          OperationsApi.parseAttention(<String, Object?>{
+            ...attentionJson(order: orderB, number: 1002),
+            'type': type,
+          }),
+      ];
+
+      for (final Locale language in const <Locale>[
+        Locale('uz'),
+        Locale('ru'),
+      ]) {
+        await open(tester, size: const Size(1800, 1600), device: language);
+        final AppLocalizations words = l10n(tester);
+
+        for (final MapEntry<String, String Function(AppLocalizations)> type
+            in types.entries) {
+          expect(
+            find.descendant(
+              of: byKey('attention-${type.key}-$orderB'),
+              matching: find.textContaining(type.value(words)),
+            ),
+            findsOneWidget,
+            reason: type.key,
+          );
+        }
+      }
+    },
+  );
+
+  testWidgets('the attention list folds past five items and unfolds on a tap', (
+    WidgetTester tester,
+  ) async {
+    const List<String> orders = <String>[
+      '0192f0a0-0000-7000-8000-0000000001a1',
+      '0192f0a0-0000-7000-8000-0000000001a2',
+      '0192f0a0-0000-7000-8000-0000000001a3',
+      '0192f0a0-0000-7000-8000-0000000001a4',
+      '0192f0a0-0000-7000-8000-0000000001a5',
+      '0192f0a0-0000-7000-8000-0000000001a6',
+      '0192f0a0-0000-7000-8000-0000000001a7',
+    ];
+    operations.attentionAnswer = <AttentionItem>[
+      for (final String order in orders)
+        OperationsApi.parseAttention(<String, Object?>{
+          ...attentionJson(order: order),
+          'type': 'courier_delayed',
+          'shopper': null,
+        }),
+    ];
+    await open(tester, size: const Size(1800, 1600));
+    Finder items() => find.descendant(
+      of: byKey('board-attention'),
+      matching: find.byType(ListTile),
+    );
+
+    expect(items(), findsNWidgets(5));
+    expect(find.text(l10n(tester).attentionShowAll(7)), findsOneWidget);
+    await tapAndSettle(tester, byKey('attention-fold'));
+    expect(items(), findsNWidgets(7));
+    await tapAndSettle(tester, byKey('attention-fold'));
+    expect(items(), findsNWidgets(5));
+    expect(find.text(l10n(tester).attentionShowAll(7)), findsOneWidget);
+  });
+
+  testWidgets(
     'each filter narrows what the board asks for, and one tap clears them',
     (WidgetTester tester) async {
       await open(tester);
@@ -195,8 +338,14 @@ void main() {
       await choose(tester, 'board-shopper-filter', 'Sardor Yusupov');
       expect(lastQuery().shopperId, shopperId);
 
+      await choose(tester, 'board-courier-filter', 'Kamol Karimov');
+      expect(lastQuery().courierId, courierId);
+
       await tapAndSettle(tester, byKey('board-self-orders'));
       expect(lastQuery().selfOrdersOnly, isTrue);
+
+      await tapAndSettle(tester, byKey('board-awaiting-customer'));
+      expect(lastQuery().awaitingCustomerOnly, isTrue);
 
       await tester.enterText(byKey('board-search'), ' 1001 ');
       await tester.testTextInput.receiveAction(TextInputAction.search);
@@ -237,9 +386,11 @@ void main() {
             customerName: row.customerName,
             customerPhone: row.customerPhone,
             itemCount: row.itemCount,
+            pendingApprovalCount: row.pendingApprovalCount,
             totalUzs: row.totalUzs,
             totalKind: row.totalKind,
             shopper: row.shopper,
+            courier: row.courier,
             isSelfOrder: row.shopper != null,
           ),
         ),
@@ -409,9 +560,11 @@ void main() {
           customerName: 'Abdurakhmonova Shakhnoza Rustamovna',
           customerPhone: row.customerPhone,
           itemCount: row.itemCount,
+          pendingApprovalCount: row.pendingApprovalCount,
           totalUzs: row.totalUzs,
           totalKind: row.totalKind,
           shopper: row.shopper,
+          courier: row.courier,
           isSelfOrder: row.isSelfOrder,
         ),
     ];
@@ -570,6 +723,34 @@ void main() {
   );
 
   testWidgets(
+    'a Courier filter the options no longer hold still shows one is chosen',
+    (WidgetTester tester) async {
+      operations.rows = <BoardRow>[
+        OperationsApi.parseRow(
+          rowJson(status: 'delivery_assigned', courier: courierId),
+        ),
+      ];
+      await open(tester);
+      await choose(tester, 'board-courier-filter', 'Kamol Karimov');
+      expect(lastQuery().courierId, courierId);
+
+      // The Courier is blocked meanwhile, so the options come back without them.
+      operations.courierList = <StaffChoice>[];
+      await tapAndSettle(tester, byKey('board-row-$orderA'));
+      await tapAndSettle(tester, byKey('order-back'));
+
+      expect(lastQuery().courierId, courierId);
+      expect(
+        find.descendant(
+          of: byKey('board-courier-filter'),
+          matching: find.text(l10n(tester).boardFilteredCourier),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
     'a Shopper filter the options no longer hold still shows one is chosen',
     (WidgetTester tester) async {
       await open(tester);
@@ -577,7 +758,7 @@ void main() {
       expect(lastQuery().shopperId, shopperId);
 
       // The Shopper is blocked meanwhile, so the options come back without them.
-      operations.shopperList = <ShopperChoice>[];
+      operations.shopperList = <StaffChoice>[];
       await tapAndSettle(tester, byKey('board-row-$orderA'));
       await tapAndSettle(tester, byKey('order-back'));
 
@@ -592,3 +773,12 @@ void main() {
     },
   );
 }
+
+String _courierDelayed(AppLocalizations l10n) => l10n.attentionCourierDelayed;
+
+String _deliveryFailed(AppLocalizations l10n) => l10n.attentionDeliveryFailed;
+
+String _cancellationRequest(AppLocalizations l10n) =>
+    l10n.attentionCancellationRequest;
+
+String _staffBlocked(AppLocalizations l10n) => l10n.attentionStaffBlocked;

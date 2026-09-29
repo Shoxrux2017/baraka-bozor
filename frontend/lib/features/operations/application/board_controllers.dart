@@ -41,6 +41,9 @@ class BoardQueryController extends Notifier<BoardQuery> {
   void filterByShopper(String? shopperId) =>
       state = state.copyWith(shopperId: () => shopperId);
 
+  void filterByCourier(String? courierId) =>
+      state = state.copyWith(courierId: () => courierId);
+
   void filterByPaymentMethod(PaymentMethod? method) =>
       state = state.copyWith(paymentMethod: () => method);
 
@@ -50,6 +53,9 @@ class BoardQueryController extends Notifier<BoardQuery> {
 
   void selfOrdersOnly(bool only) =>
       state = state.copyWith(selfOrdersOnly: only);
+
+  void awaitingCustomerOnly(bool only) =>
+      state = state.copyWith(awaitingCustomerOnly: only);
 
   void search(String text) => state = state.copyWith(search: text.trim());
 
@@ -91,12 +97,22 @@ final FutureProvider<List<AttentionItem>> attentionProvider =
     });
 
 /// The active Shoppers, for the board's Shopper filter.
-final FutureProvider<List<ShopperChoice>> shopperOptionsProvider =
-    FutureProvider.autoDispose<List<ShopperChoice>>((Ref ref) {
+final FutureProvider<List<StaffChoice>> shopperOptionsProvider =
+    FutureProvider.autoDispose<List<StaffChoice>>((Ref ref) {
       if (ref.watch(staffAccountProvider) == null) {
-        return Completer<List<ShopperChoice>>().future;
+        return Completer<List<StaffChoice>>().future;
       }
       return ref.watch(operationsRepositoryProvider).shoppers();
+    });
+
+/// The active Couriers, for the board's Courier filter and the Courier
+/// picker.
+final FutureProvider<List<StaffChoice>> courierOptionsProvider =
+    FutureProvider.autoDispose<List<StaffChoice>>((Ref ref) {
+      if (ref.watch(staffAccountProvider) == null) {
+        return Completer<List<StaffChoice>>().future;
+      }
+      return ref.watch(operationsRepositoryProvider).couriers();
     });
 
 /// One order as the board shows it.
@@ -108,48 +124,94 @@ final FutureProviderFamily<BoardOrder, String> boardOrderProvider =
       return ref.watch(operationsRepositoryProvider).order(id);
     });
 
-/// The Shopper assignment of one order, from its page (`docs/09` section
-/// 39): one change at a time, shown on that order's page only. After it,
-/// and after a conflict — the order changed under the Operator — the order,
-/// the board and the Shoppers' counts are loaded again (`DL-28` (11)).
-class ShopperAssignmentController extends AccountMutation {
-  ShopperAssignmentController(this.orderId);
+/// The Shopper or the Courier assignment of one order, from its page
+/// (`docs/09` section 39, `DL-54` (10)): one change at a time, shown on that
+/// order's page only. After it, and after a conflict — the order changed
+/// under the Operator — the order, the board and the role's counts are
+/// loaded again (`DL-28` (11)).
+sealed class StaffAssignmentController extends AccountMutation {
+  StaffAssignmentController(this.orderId);
 
   final String orderId;
 
   @override
   Provider<String?> get account => staffAccountProvider;
 
-  OperationsRepository get _operations =>
-      ref.read(operationsRepositoryProvider);
+  /// The role's picker, whose counts a change moves. It is loaded afresh
+  /// whenever it opens; invalidating it reaches whatever still shows it.
+  FutureProvider<List<StaffChoice>> get _options;
 
-  Future<BoardOrder?> assign(String shopperId) => perform(
-    () => _operations.assignShopper(orderId, shopperId),
-    reload: (BoardOrder? _) => _reload(),
+  /// Assigns [staffId], or reassigns to them when [replacesAssignmentId]
+  /// names the assignment they replace.
+  Future<BoardOrder> _send(
+    OperationsRepository operations,
+    String staffId,
+    String? replacesAssignmentId,
   );
 
-  Future<BoardOrder?> reassign(String shopperId, String replacesAssignmentId) =>
+  Future<BoardOrder?> assign(String staffId) => _change(staffId, null);
+
+  Future<BoardOrder?> reassign(String staffId, String replacesAssignmentId) =>
+      _change(staffId, replacesAssignmentId);
+
+  Future<BoardOrder?> _change(String staffId, String? replacesAssignmentId) =>
       perform(
-        () => _operations.reassignShopper(
-          orderId,
-          shopperId,
+        () => _send(
+          ref.read(operationsRepositoryProvider),
+          staffId,
           replacesAssignmentId,
         ),
-        reload: (BoardOrder? _) => _reload(),
+        reload: (BoardOrder? _) => ref
+          ..invalidate(boardOrderProvider(orderId))
+          ..invalidate(boardPageProvider)
+          ..invalidate(boardSummaryProvider)
+          ..invalidate(attentionProvider)
+          ..invalidate(_options),
       );
+}
 
-  void _reload() => ref
-    ..invalidate(boardOrderProvider(orderId))
-    ..invalidate(boardPageProvider)
-    ..invalidate(boardSummaryProvider)
-    ..invalidate(attentionProvider)
-    ..invalidate(shopperOptionsProvider);
+class ShopperAssignmentController extends StaffAssignmentController {
+  ShopperAssignmentController(super.orderId);
+
+  @override
+  FutureProvider<List<StaffChoice>> get _options => shopperOptionsProvider;
+
+  @override
+  Future<BoardOrder> _send(
+    OperationsRepository operations,
+    String staffId,
+    String? replacesAssignmentId,
+  ) => replacesAssignmentId == null
+      ? operations.assignShopper(orderId, staffId)
+      : operations.reassignShopper(orderId, staffId, replacesAssignmentId);
 }
 
 final NotifierProviderFamily<ShopperAssignmentController, MutationState, String>
 shopperAssignmentProvider = NotifierProvider.autoDispose
     .family<ShopperAssignmentController, MutationState, String>(
       ShopperAssignmentController.new,
+    );
+
+class CourierAssignmentController extends StaffAssignmentController {
+  CourierAssignmentController(super.orderId);
+
+  @override
+  FutureProvider<List<StaffChoice>> get _options => courierOptionsProvider;
+
+  @override
+  Future<BoardOrder> _send(
+    OperationsRepository operations,
+    String staffId,
+    String? replacesAssignmentId,
+  ) => replacesAssignmentId == null
+      ? operations.assignCourier(orderId, staffId)
+      : operations.reassignCourier(orderId, staffId, replacesAssignmentId);
+}
+
+final NotifierProviderFamily<CourierAssignmentController, MutationState, String>
+courierAssignmentProvider = NotifierProvider.autoDispose
+    .family<CourierAssignmentController, MutationState, String>(
+      CourierAssignmentController.new,
     );
 
 /// Loads the board again — its page, the summary and the attention list —

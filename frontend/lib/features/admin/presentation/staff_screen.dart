@@ -12,6 +12,8 @@ import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../auth/domain/app_user.dart';
+import '../../operations/application/board_controllers.dart';
+import '../../operations/domain/board.dart';
 import '../application/admin_staff_controllers.dart';
 import '../domain/admin_staff.dart';
 import 'catalog_form_rules.dart';
@@ -229,7 +231,11 @@ class _StaffRow extends ConsumerWidget {
           onPressed: busy
               ? null
               : () async {
-                  final bool confirmed = await _confirmBlock(context, name);
+                  final bool confirmed = await _confirmBlock(
+                    context,
+                    member,
+                    name,
+                  );
                   // The confirmation outlives the list when the Admin
                   // moves elsewhere; then there is no block to make.
                   if (!confirmed || !context.mounted) {
@@ -292,13 +298,17 @@ class _StaffRow extends ConsumerWidget {
 
   /// Blocking ends every session of the account at once, so it asks first,
   /// with the action itself on the button (`DL-29` (2)).
-  static Future<bool> _confirmBlock(BuildContext context, String name) async {
+  static Future<bool> _confirmBlock(
+    BuildContext context,
+    StaffMember member,
+    String name,
+  ) async {
     final AppLocalizations l10n = AppLocalizations.of(context);
     return await showDialog<bool>(
           context: context,
           builder: (BuildContext context) => AlertDialog(
             scrollable: true,
-            content: Text(l10n.staffBlockConfirm(name)),
+            content: _BlockConfirmation(member: member, name: name),
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
@@ -313,6 +323,65 @@ class _StaffRow extends ConsumerWidget {
           ),
         ) ??
         false;
+  }
+}
+
+/// What blocking means, and for a Shopper or a Courier how many orders are
+/// in their hands now, from the pickers' own count (`DL-45` (1)): a
+/// started shopping or a delivery on the way cannot then move to someone
+/// else (`DL-62` (3), `DL-67` (5)).
+class _BlockConfirmation extends ConsumerWidget {
+  const _BlockConfirmation({required this.member, required this.name});
+
+  final StaffMember member;
+  final String name;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final FutureProvider<List<StaffChoice>>? options = switch (member.role) {
+      UserRole.shopper => shopperOptionsProvider,
+      UserRole.courier => courierOptionsProvider,
+      _ => null,
+    };
+    final String? orders = options == null
+        ? null
+        : _orders(l10n, ref.watch(options));
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(l10n.staffBlockConfirm(name)),
+        if (orders != null) ...<Widget>[
+          const SizedBox(height: 12),
+          Text(orders, key: const ValueKey<String>('block-current-orders')),
+        ],
+      ],
+    );
+  }
+
+  /// What the confirmation says of the orders in the member's hands: their
+  /// count when there are any, and that it is being learned or could not be
+  /// learned, so a missing count is never read as none.
+  String? _orders(
+    AppLocalizations l10n,
+    AsyncValue<List<StaffChoice>> choices,
+  ) {
+    if (choices.hasError) {
+      return l10n.staffBlockOrdersUnknown;
+    }
+    final List<StaffChoice>? list = choices.value;
+    if (list == null) {
+      return l10n.staffBlockOrdersLoading;
+    }
+    for (final StaffChoice choice in list) {
+      if (choice.id == member.id) {
+        final int count = choice.currentAssignmentCount;
+        return count > 0 ? l10n.staffBlockCurrentOrders(count) : null;
+      }
+    }
+    return l10n.staffBlockOrdersUnknown;
   }
 }
 

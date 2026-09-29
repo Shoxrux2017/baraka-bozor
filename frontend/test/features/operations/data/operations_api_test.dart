@@ -152,7 +152,7 @@ void main() {
         throwsFormatException,
       );
 
-      final ShopperChoice shopper = OperationsApi.parseShopper(shopperJson());
+      final StaffChoice shopper = OperationsApi.parseStaff(shopperJson());
       expect(shopper.currentAssignmentCount, 1);
     });
 
@@ -201,9 +201,85 @@ void main() {
               'assignment',
               assignmentId,
             )
-            .having((AssignmentDetails d) => d.isSelfOrder, 'self', isFalse),
+            .having((AssignmentDetails d) => d.isSelfOrder, 'self', isFalse)
+            .having((AssignmentDetails d) => d.role, 'role', UserRole.shopper)
+            .having((AssignmentDetails d) => d.staffId, 'staff', shopperId),
       );
     });
+
+    test(
+      'a Courier\'s assignment details are read with the Courier\'s ids',
+      () {
+        const String second = '0192f0a0-0000-7000-8000-0000000000a8';
+        final BoardOrder order = OperationsApi.parseOrder(
+          orderJson(
+            history: <Object?>[
+              historyJson(
+                event: 'courier_reassigned',
+                details: <String, Object?>{
+                  'assignment_id': second,
+                  'courier_id': otherCourierId,
+                  'is_self_order': true,
+                  'previous_assignment_id': courierAssignmentId,
+                  'previous_courier_id': courierId,
+                },
+              ),
+            ],
+          ),
+        );
+
+        expect(
+          order.history.single.details,
+          isA<AssignmentDetails>()
+              .having((AssignmentDetails d) => d.role, 'role', UserRole.courier)
+              .having((AssignmentDetails d) => d.assignmentId, 'id', second)
+              .having(
+                (AssignmentDetails d) => d.staffId,
+                'staff',
+                otherCourierId,
+              )
+              .having((AssignmentDetails d) => d.isSelfOrder, 'self', isTrue)
+              .having(
+                (AssignmentDetails d) => d.previousAssignmentId,
+                'previous',
+                courierAssignmentId,
+              )
+              .having(
+                (AssignmentDetails d) => d.previousStaffId,
+                'previous staff',
+                courierId,
+              ),
+        );
+
+        // A Courier's entry names a Courier, and a reassignment the one before.
+        for (final Map<String, Object?> details in <Map<String, Object?>>[
+          <String, Object?>{
+            'assignment_id': courierAssignmentId,
+            'shopper_id': courierId,
+            'is_self_order': false,
+          },
+          <String, Object?>{
+            'assignment_id': second,
+            'courier_id': otherCourierId,
+            'is_self_order': false,
+            'previous_assignment_id': courierAssignmentId,
+          },
+        ]) {
+          final String event = details.containsKey('previous_assignment_id')
+              ? 'courier_reassigned'
+              : 'courier_assigned';
+          expect(
+            () => OperationsApi.parseOrder(
+              orderJson(
+                history: <Object?>[historyJson(event: event, details: details)],
+              ),
+            ),
+            throwsFormatException,
+            reason: '$details',
+          );
+        }
+      },
+    );
 
     test('every event of Wave 3\'s actions is read (DL-54 (2))', () {
       for (final String code in <String>[
@@ -284,6 +360,15 @@ void main() {
             'total_kind': 'none',
           },
         ),
+        // Only a delivery fails; a Shopper's assignment never ends so.
+        orderJson(
+          assignments: <Object?>[
+            assignmentJson(
+              endedAt: '2026-09-27T08:00:00Z',
+              endedReason: 'delivery_failed',
+            ),
+          ],
+        ),
         orderJson(
           assignments: <Object?>[
             assignmentJson(endedAt: '2026-09-27T08:00:00Z'),
@@ -358,6 +443,10 @@ void main() {
             200,
             pageJson(<Object?>[shopperJson()]),
           ),
+          '/operations/couriers' => jsonReply(
+            200,
+            pageJson(<Object?>[courierChoiceJson()]),
+          ),
           _ => jsonReply(200, <String, Object?>{
             'data': orderAnswer ?? orderJson(),
           }),
@@ -385,6 +474,12 @@ void main() {
         await repository.orders(
           const BoardQuery(selfOrdersOnly: true, search: '   '),
         );
+        pageAnswer = pageJson(<Object?>[
+          rowJson(courier: courierId, pendingApprovals: 1),
+        ]);
+        await repository.orders(
+          const BoardQuery(courierId: courierId, awaitingCustomerOnly: true),
+        );
 
         expect(adapter.requests[0].path, '/operations/orders');
         expect(adapter.requests[0].queryParameters, <String, Object>{
@@ -403,6 +498,11 @@ void main() {
           'page': 1,
           'attention': 'self_order',
         });
+        expect(adapter.requests[3].queryParameters, <String, Object>{
+          'page': 1,
+          'courier_id': courierId,
+          'awaiting_customer': 'true',
+        });
       },
     );
 
@@ -412,6 +512,7 @@ void main() {
       await repository.summary();
       await repository.attention();
       await repository.shoppers();
+      await repository.couriers();
 
       expect(adapter.requests.map((RequestOptions o) => o.path), <String>[
         '/operations/orders',
@@ -419,6 +520,7 @@ void main() {
         '/operations/summary',
         '/operations/attention',
         '/operations/shoppers',
+        '/operations/couriers',
       ]);
       expect(adapter.requests.last.queryParameters, <String, Object>{
         'per_page': 100,
@@ -549,6 +651,113 @@ void main() {
         );
       },
     );
+
+    test('a Courier assignment is a POST and a reassignment a PUT naming what it replaces', () async {
+      const String second = '0192f0a0-0000-7000-8000-0000000000a8';
+      orderAnswer = orderJson(
+        status: 'delivery_assigned',
+        courierAssignments: <Object?>[courierAssignmentJson()],
+      );
+      await repository.assignCourier(orderA, courierId);
+      orderAnswer = orderJson(
+        status: 'delivery_assigned',
+        courierAssignments: <Object?>[
+          courierAssignmentJson(
+            endedAt: '2026-09-27T09:20:00Z',
+            endedReason: 'reassigned',
+          ),
+          courierAssignmentJson(id: second, courier: otherCourierId),
+        ],
+      );
+      await repository.reassignCourier(
+        orderA,
+        otherCourierId,
+        courierAssignmentId,
+      );
+
+      final RequestOptions assign = adapter.requests[0];
+      final RequestOptions reassign = adapter.requests[1];
+      expect(assign.method, 'POST');
+      expect(assign.path, '/operations/orders/$orderA/courier-assignment');
+      expect(assign.data, <String, String>{'courier_id': courierId});
+      expect(reassign.method, 'PUT');
+      expect(reassign.data, <String, String>{
+        'courier_id': otherCourierId,
+        'replaces_assignment_id': courierAssignmentId,
+      });
+
+      // An answer whose current Courier is another one is malformed.
+      await expectLater(
+        repository.assignCourier(orderA, courierId),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+    });
+
+    test('a Courier assignment and a row\'s Courier are read strictly', () {
+      final BoardOrder order = OperationsApi.parseOrder(
+        orderJson(
+          status: 'ready_for_delivery',
+          courierAssignments: <Object?>[
+            courierAssignmentJson(
+              acceptedAt: '2026-09-27T09:05:00Z',
+              startedAt: '2026-09-27T09:30:00Z',
+              endedAt: '2026-09-27T10:00:00Z',
+              endedReason: 'delivery_failed',
+              failedReason: 'no_answer',
+            ),
+          ],
+        ),
+      );
+      final CourierAssignment failed = order.courierAssignments.single;
+      expect(failed.endedReason, AssignmentEndReason.deliveryFailed);
+      expect(failed.failedReason, DeliveryFailureReason.noAnswer);
+      expect(order.currentCourierAssignment, isNull);
+
+      final BoardRow row = OperationsApi.parseRow(
+        rowJson(courier: courierId, pendingApprovals: 2),
+      );
+      expect(row.courier?.id, courierId);
+      expect(row.pendingApprovalCount, 2);
+
+      for (final Map<String, Object?> broken in <Map<String, Object?>>[
+        orderJson(
+          courierAssignments: <Object?>[
+            courierAssignmentJson(
+              endedAt: '2026-09-27T10:00:00Z',
+              endedReason: 'delivery_failed',
+            ),
+          ],
+        ),
+        orderJson(
+          courierAssignments: <Object?>[
+            courierAssignmentJson(failedReason: 'no_answer'),
+          ],
+        ),
+        orderJson(
+          courierAssignments: <Object?>[
+            courierAssignmentJson(),
+            courierAssignmentJson(
+              id: '0192f0a0-0000-7000-8000-0000000000a8',
+              courier: otherCourierId,
+            ),
+          ],
+        ),
+        <String, Object?>{...orderJson()}..remove('courier_assignments'),
+      ]) {
+        expect(
+          () => OperationsApi.parseOrder(broken),
+          throwsFormatException,
+          reason: '$broken',
+        );
+      }
+      for (final Map<String, Object?> broken in <Map<String, Object?>>[
+        <String, Object?>{...rowJson()}..remove('courier'),
+        <String, Object?>{...rowJson()}..remove('pending_approval_count'),
+        <String, Object?>{...rowJson(), 'pending_approval_count': -1},
+      ]) {
+        expect(() => OperationsApi.parseRow(broken), throwsFormatException);
+      }
+    });
 
     test('a page parses', () async {
       final Paged<BoardRow> page = await repository.orders(const BoardQuery());

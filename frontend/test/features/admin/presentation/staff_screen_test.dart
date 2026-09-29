@@ -10,6 +10,7 @@ import 'package:baraka_bozor/features/admin/application/admin_staff_controllers.
 import 'package:baraka_bozor/features/admin/domain/admin_staff.dart';
 import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/operations/domain/board.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,7 @@ import 'package:go_router/go_router.dart';
 import '../../../support/app_harness.dart';
 import '../../../support/fake_admin_staff_repository.dart';
 import '../../../support/fake_auth_repository.dart';
+import '../../../support/fake_operations_repository.dart';
 import '../../../support/in_memory_stores.dart';
 
 /// The panel's staff screen (W1-11) through the real router, session and
@@ -49,6 +51,7 @@ void main() {
   Future<void> open(
     WidgetTester tester, {
     Size size = const Size(1400, 1600),
+    FakeOperationsRepository? operations,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -76,6 +79,7 @@ void main() {
         tokens: tokens,
         repository: auth,
         surface: Surface.web,
+        operations: operations,
         overrides: [adminStaffRepositoryProvider.overrideWithValue(staff)],
       ),
     );
@@ -254,6 +258,126 @@ void main() {
       expect(find.text(l10n(tester).errorPhoneAlreadyActive), findsWidgets);
       expect(byKey('staff-save'), findsOneWidget);
       expect(staff.issued, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'blocking a Shopper or a Courier says how many orders are in their hands',
+    (WidgetTester tester) async {
+      staff.members = <StaffMember>[
+        staffMember(),
+        staffMember(
+          id: 's-2',
+          role: UserRole.courier,
+          phone: '+998905554433',
+          fullName: 'Kamol Karimov',
+        ),
+        staffMember(
+          id: 's-3',
+          role: UserRole.operator,
+          phone: '+998907776655',
+          fullName: 'Olim Operator',
+        ),
+        staffMember(
+          id: 's-4',
+          role: UserRole.courier,
+          phone: '+998903332211',
+          fullName: 'Botir Aliyev',
+        ),
+      ];
+      await open(
+        tester,
+        operations: FakeOperationsRepository(
+          // Each list holds only its own role, so a count read from the
+          // other role's list would be missing.
+          shopperList: const <StaffChoice>[
+            StaffChoice(
+              id: 's-1',
+              fullName: 'Dilnoza Karimova',
+              phone: '+998901112233',
+              currentAssignmentCount: 3,
+            ),
+          ],
+          courierList: const <StaffChoice>[
+            StaffChoice(
+              id: 's-2',
+              fullName: 'Kamol Karimov',
+              phone: '+998905554433',
+              currentAssignmentCount: 2,
+            ),
+            StaffChoice(
+              id: 's-4',
+              fullName: 'Botir Aliyev',
+              phone: '+998903332211',
+              currentAssignmentCount: 0,
+            ),
+          ],
+        ),
+      );
+
+      for (final (String id, int count) in <(String, int)>[
+        ('s-1', 3),
+        ('s-2', 2),
+      ]) {
+        await tapAndSettle(tester, byKey('block-$id'));
+        expect(
+          tester.widget<Text>(byKey('block-current-orders')).data,
+          l10n(tester).staffBlockCurrentOrders(count),
+        );
+        await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+      }
+
+      // Nothing in hand, or a role that holds no orders: nothing to say.
+      for (final String id in <String>['s-4', 's-3']) {
+        await tapAndSettle(tester, byKey('block-$id'));
+        expect(byKey('block-current-orders'), findsNothing);
+        await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+      }
+      expect(staff.actions, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'the block confirmation says when the count is loading or unknown, never nothing',
+    (WidgetTester tester) async {
+      final FakeOperationsRepository operations = FakeOperationsRepository(
+        shopperList: const <StaffChoice>[],
+      );
+      await open(tester, operations: operations);
+      String said() => tester.widget<Text>(byKey('block-current-orders')).data!;
+
+      // A Shopper the list does not hold.
+      await tapAndSettle(tester, byKey('block-s-1'));
+      expect(said(), l10n(tester).staffBlockOrdersUnknown);
+      await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+
+      // The list failed.
+      operations.shoppersFailure = const NetworkFailure();
+      await tapAndSettle(tester, byKey('block-s-1'));
+      expect(said(), l10n(tester).staffBlockOrdersUnknown);
+      await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+
+      // The list is on its way, then holds the Shopper.
+      operations
+        ..shoppersFailure = null
+        ..shopperList = const <StaffChoice>[
+          StaffChoice(
+            id: 's-1',
+            fullName: 'Dilnoza Karimova',
+            phone: '+998901112233',
+            currentAssignmentCount: 1,
+          ),
+        ];
+      final Completer<void> hold = Completer<void>();
+      operations.hold = hold;
+      await tapAndSettle(tester, byKey('block-s-1'));
+      expect(said(), l10n(tester).staffBlockOrdersLoading);
+      operations.hold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(said(), l10n(tester).staffBlockCurrentOrders(1));
+      await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+      expect(staff.actions, isEmpty);
     },
   );
 
