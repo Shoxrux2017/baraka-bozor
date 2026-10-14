@@ -686,7 +686,19 @@ class AppLocalizationsUz extends AppLocalizations {
   String get errorPhoneAlreadyActive => 'Bu raqam boshqa faol xodimga tegishli';
 
   @override
-  String get catalogSearchHint => 'Mahsulot qidirish';
+  String get catalogSearchHint => 'Qidirish: bodring, non…';
+
+  @override
+  String get deliveryAddressCaption => 'Shu manzilga yetkazamiz';
+
+  @override
+  String get deliveryAddressAdd => 'Yetkazish manzilini qo\'shing';
+
+  @override
+  String get deliveryAddressRetry => 'Manzil yuklanmadi — qayta urinish';
+
+  @override
+  String get deliveryAddressSheetTitle => 'Qayerga yetkazamiz?';
 
   @override
   String get catalogSearchClear => 'Tozalash';

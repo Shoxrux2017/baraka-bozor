@@ -1367,8 +1367,32 @@ abstract class AppLocalizations {
   /// No description provided for @catalogSearchHint.
   ///
   /// In uz, this message translates to:
-  /// **'Mahsulot qidirish'**
+  /// **'Qidirish: bodring, non…'**
   String get catalogSearchHint;
+
+  /// No description provided for @deliveryAddressCaption.
+  ///
+  /// In uz, this message translates to:
+  /// **'Shu manzilga yetkazamiz'**
+  String get deliveryAddressCaption;
+
+  /// No description provided for @deliveryAddressAdd.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish manzilini qo\'shing'**
+  String get deliveryAddressAdd;
+
+  /// No description provided for @deliveryAddressRetry.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil yuklanmadi — qayta urinish'**
+  String get deliveryAddressRetry;
+
+  /// No description provided for @deliveryAddressSheetTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qayerga yetkazamiz?'**
+  String get deliveryAddressSheetTitle;
 
   /// No description provided for @catalogSearchClear.
   ///
