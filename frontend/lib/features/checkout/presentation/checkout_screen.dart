@@ -13,11 +13,13 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/routing/app_paths.dart';
+import '../../../core/session/customer_account.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../addresses/application/addresses_controllers.dart';
+import '../../addresses/application/delivery_address.dart';
 import '../../addresses/domain/addresses.dart';
 import '../application/checkout_controllers.dart';
 import '../domain/checkout.dart';
@@ -177,8 +179,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final bool unconfirmed = prepared?.sent ?? false;
     final bool locked = busy || unconfirmed;
     final List<Address> list = addresses.value ?? const <Address>[];
+    // Until the Customer picks here, the home's delivery address (`DL-75`).
+    final String? selectedId =
+        _addressId ?? ref.watch(deliveryAddressProvider).value?.id;
     final Address? address = list
-        .where((Address a) => a.id == _addressId)
+        .where((Address a) => a.id == selectedId)
         .firstOrNull;
 
     return ListView(
@@ -195,6 +200,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             onSelected: (String id) {
               setState(() => _addressId = id);
               _changed();
+              final String? account = ref.read(customerAccountProvider);
+              if (account != null) {
+                ref
+                    .read(deliveryAddressChoiceProvider(account).notifier)
+                    .choose(id);
+              }
             },
           ),
           error: (Object error, StackTrace _) => LoadFailure(

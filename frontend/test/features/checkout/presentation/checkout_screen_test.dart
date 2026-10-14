@@ -6,6 +6,7 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,6 +29,7 @@ void main() {
   late FakeCheckoutRepository checkout;
   late FakeAddressesRepository addresses;
   late FakeCustomerOrdersRepository orders;
+  late InMemoryPreferenceStore preferences;
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
@@ -48,6 +50,7 @@ void main() {
       tester.widget<RadioListTile<String>>(byKey(key)).enabled ?? true;
 
   setUp(() {
+    preferences = InMemoryPreferenceStore();
     tokens = InMemoryTokenStore()..tokens[SessionSlot.customer] = 'c';
     auth = FakeAuthRepository()
       ..identities[SessionSlot.customer] = user(id: 'c');
@@ -86,6 +89,7 @@ void main() {
         checkout: checkout,
         addresses: addresses,
         orders: orders,
+        preferences: preferences,
         device: device,
       ),
     );
@@ -368,6 +372,71 @@ void main() {
     expect(find.text(l10n(tester).addressOutsideAreaPlain), findsOneWidget);
   });
 
+  group('the delivery address chosen on the home', () {
+    String? selected(WidgetTester tester) => tester
+        .widget<RadioGroup<String>>(find.byType(RadioGroup<String>))
+        .groupValue;
+
+    testWidgets('checkout opens with the delivery address chosen on the home', (
+      WidgetTester tester,
+    ) async {
+      preferences.values[DeliveryAddressChoice.preferenceKey('c')] = 'a-2';
+      await open(tester);
+
+      expect(selected(tester), 'a-2');
+    });
+
+    testWidgets('without a choice it opens on the newest address', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+
+      expect(selected(tester), 'a-1');
+    });
+
+    testWidgets(
+      'another address picked at checkout becomes the delivery address',
+      (WidgetTester tester) async {
+        await open(tester);
+        await tapAndSettle(tester, byKey('checkout-address-a-2'));
+
+        expect(
+          preferences.values[DeliveryAddressChoice.preferenceKey('c')],
+          'a-2',
+        );
+        expect(selected(tester), 'a-2');
+      },
+    );
+
+    testWidgets(
+      'a confirmation whose outcome is unknown keeps the address it was sent with',
+      (WidgetTester tester) async {
+        await open(tester);
+        await calculate(tester);
+        checkout.placeFailure = const NetworkFailure();
+        await tapAndSettle(tester, byKey('checkout-confirm'));
+        GoRouter.of(anywhere(tester)).pop();
+        await tester.pumpAndSettle();
+
+        // The home's choice moved meanwhile.
+        preferences.values[DeliveryAddressChoice.preferenceKey('c')] = 'a-2';
+        await tapAndSettle(tester, byKey('cart-check-unconfirmed'));
+
+        expect(byKey('checkout-unconfirmed'), findsOneWidget);
+        expect(selected(tester), 'a-1');
+      },
+    );
+
+    testWidgets('a chosen address since removed is not preselected', (
+      WidgetTester tester,
+    ) async {
+      preferences.values[DeliveryAddressChoice.preferenceKey('c')] = 'a-gone';
+      await open(tester);
+
+      expect(selected(tester), 'a-1');
+    });
+  });
+
   testWidgets('an address gone is no longer chosen', (
     WidgetTester tester,
   ) async {
@@ -382,9 +451,13 @@ void main() {
 
     expect(find.text(l10n(tester).errorAddressGone), findsOneWidget);
     expect(byKey('checkout-address-a-1'), findsNothing);
+    // Nothing of the gone address stays chosen: the delivery address falls
+    // back to the one left, and the Customer sees it selected.
     expect(
-      tester.widget<OutlinedButton>(byKey('checkout-calculate')).onPressed,
-      isNull,
+      tester
+          .widget<RadioGroup<String>>(find.byType(RadioGroup<String>))
+          .groupValue,
+      'a-2',
     );
   });
 
