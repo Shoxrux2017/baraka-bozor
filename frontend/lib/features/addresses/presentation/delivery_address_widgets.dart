@@ -27,7 +27,10 @@ class DeliveryAddressLine extends ConsumerWidget {
       ),
       AsyncData<Address?>() => (
         l10n.deliveryAddressAdd,
-        () => context.push(AppPaths.customerNewAddress),
+        () => addDeliveryAddress(
+          router: GoRouter.of(context),
+          container: ProviderScope.containerOf(context),
+        ),
       ),
       AsyncError<Address?>() => (
         l10n.deliveryAddressRetry,
@@ -89,21 +92,49 @@ class DeliveryAddressLine extends ConsumerWidget {
   }
 }
 
+/// Opens the new-address form and, when the Customer saves one, makes it
+/// the delivery address (`DL-75`); returns it then, otherwise `null`. A
+/// Customer who changed meanwhile keeps nothing of it. Takes the router and
+/// the container, not a context: the caller's may be gone when the form
+/// closes.
+Future<Address?> addDeliveryAddress({
+  required GoRouter router,
+  required ProviderContainer container,
+}) async {
+  final String? account = container.read(customerAccountProvider);
+  final Address? added = await router.push<Address>(
+    AppPaths.customerNewAddress,
+  );
+  if (added == null ||
+      account == null ||
+      container.read(customerAccountProvider) != account) {
+    return null;
+  }
+  await container
+      .read(deliveryAddressChoiceProvider(account).notifier)
+      .choose(added.id);
+  return added;
+}
+
 /// The Customer's active addresses to deliver to, and the way to add one.
 Future<void> showDeliveryAddressSheet(BuildContext context) =>
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (BuildContext sheet) =>
-          _DeliveryAddressSheet(router: GoRouter.of(context)),
+      builder: (BuildContext sheet) => _DeliveryAddressSheet(
+        router: GoRouter.of(context),
+        container: ProviderScope.containerOf(context),
+      ),
     );
 
 class _DeliveryAddressSheet extends ConsumerWidget {
-  const _DeliveryAddressSheet({required this.router});
+  const _DeliveryAddressSheet({required this.router, required this.container});
 
-  /// The home's router: the sheet's own context is gone once it closes.
+  /// The home's router and container: the sheet's own context is gone once
+  /// it closes.
   final GoRouter router;
+  final ProviderContainer container;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -158,7 +189,7 @@ class _DeliveryAddressSheet extends ConsumerWidget {
             title: Text(l10n.addressNew),
             onTap: () {
               Navigator.of(context).pop();
-              router.push(AppPaths.customerNewAddress);
+              addDeliveryAddress(router: router, container: container);
             },
           ),
         ],

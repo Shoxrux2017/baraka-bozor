@@ -21,6 +21,7 @@ import '../../../core/widgets/list_widgets.dart';
 import '../../addresses/application/addresses_controllers.dart';
 import '../../addresses/application/delivery_address.dart';
 import '../../addresses/domain/addresses.dart';
+import '../../addresses/presentation/delivery_address_widgets.dart';
 import '../application/checkout_controllers.dart';
 import '../domain/checkout.dart';
 
@@ -125,6 +126,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       paymentMethod: PaymentMethod.cash,
       deliveryTimeNote: note.isEmpty ? null : note,
     );
+  }
+
+  /// An address added here is the delivery address and the selected one.
+  Future<void> _addAddress() async {
+    final Address? added = await addDeliveryAddress(
+      router: GoRouter.of(context),
+      container: ProviderScope.containerOf(context),
+    );
+    if (added != null && mounted) {
+      setState(() => _addressId = added.id);
+      _changed();
+    }
   }
 
   Future<void> _calculate(Address address) async {
@@ -244,9 +257,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             key: const ValueKey<String>('checkout-add-address'),
             icon: const Icon(Icons.add_location_alt_outlined),
             label: Text(l10n.checkoutAddAddress),
-            onPressed: locked
-                ? null
-                : () => context.push(AppPaths.customerNewAddress),
+            onPressed: locked ? null : _addAddress,
           ),
         ),
         const SizedBox(height: 16),

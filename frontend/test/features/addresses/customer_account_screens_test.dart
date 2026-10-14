@@ -7,6 +7,7 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/map_picker.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
@@ -50,6 +51,7 @@ void main() {
   late FakeAuthRepository auth;
   late FakeProfileRepository profile;
   late FakeAddressesRepository addresses;
+  late InMemoryPreferenceStore preferences;
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
@@ -61,6 +63,7 @@ void main() {
     auth = FakeAuthRepository();
     profile = FakeProfileRepository();
     addresses = FakeAddressesRepository();
+    preferences = InMemoryPreferenceStore();
     tokens.tokens[SessionSlot.customer] = 'c';
     auth.identities[SessionSlot.customer] = user(id: 'c');
   });
@@ -78,6 +81,7 @@ void main() {
         tokens: tokens,
         repository: auth,
         addresses: addresses,
+        preferences: preferences,
         overrides: [
           profileRepositoryProvider.overrideWithValue(profile),
           if (fakeMap) mapPickerProvider.overrideWithValue(_fakeMap),
@@ -280,6 +284,27 @@ void main() {
       );
       expect(draft.house, '14');
       expect(draft.label, 'Uy');
+    });
+
+    testWidgets('editing an address does not change the delivery address', (
+      WidgetTester tester,
+    ) async {
+      addresses.rows = <Address>[
+        address(),
+        address(id: 'a-2', label: 'Ish', street: 'Bobur', house: '7'),
+      ];
+      preferences.values[DeliveryAddressChoice.preferenceKey('c')] = 'a-2';
+      await openAddresses(tester);
+
+      await tapAndSettle(tester, find.text('Uy'));
+      await tester.enterText(byKey('field-house'), '14');
+      await tapAndSettle(tester, byKey('address-save'));
+
+      expect(addresses.saved.single.$1, 'a-1');
+      expect(
+        preferences.values[DeliveryAddressChoice.preferenceKey('c')],
+        'a-2',
+      );
     });
 
     testWidgets('removing an address asks first', (WidgetTester tester) async {

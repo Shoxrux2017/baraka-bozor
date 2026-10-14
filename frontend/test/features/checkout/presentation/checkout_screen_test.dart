@@ -9,6 +9,7 @@ import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
+import 'package:baraka_bozor/features/addresses/presentation/map/map_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +22,13 @@ import '../../../support/fake_checkout_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/fake_customer_repositories.dart';
 import '../../../support/in_memory_stores.dart';
+
+/// A map that only shows where the pin starts.
+Widget _fakeMap({
+  required GeoPoint initial,
+  required bool enabled,
+  required ValueChanged<GeoPoint> onMoved,
+}) => Text('${initial.latitude},${initial.longitude}');
 
 /// The checkout of `docs/09` sections 18 and 19 through the real router,
 /// cart and checkout screens, with the repositories faked.
@@ -93,6 +101,7 @@ void main() {
         orders: orders,
         preferences: preferences,
         device: device,
+        overrides: [mapPickerProvider.overrideWithValue(_fakeMap)],
       ),
     );
     await tester.pumpAndSettle();
@@ -411,6 +420,26 @@ void main() {
     );
 
     testWidgets(
+      'an address added at checkout becomes the selected one and the choice',
+      (WidgetTester tester) async {
+        preferences.values[DeliveryAddressChoice.preferenceKey('c')] = 'a-2';
+        await open(tester);
+        expect(selected(tester), 'a-2');
+
+        await tapAndSettle(tester, byKey('checkout-add-address'));
+        await tester.enterText(byKey('field-street'), 'Dacha');
+        await tester.enterText(byKey('field-house'), '9');
+        await tapAndSettle(tester, byKey('address-save'));
+
+        expect(selected(tester), 'a-new-1');
+        expect(
+          preferences.values[DeliveryAddressChoice.preferenceKey('c')],
+          'a-new-1',
+        );
+      },
+    );
+
+    testWidgets(
       'a confirmation whose outcome is unknown keeps the address it was sent with',
       (WidgetTester tester) async {
         await open(tester);
@@ -421,7 +450,9 @@ void main() {
         await tester.pumpAndSettle();
 
         // The home's choice moved meanwhile.
-        preferences.values[DeliveryAddressChoice.preferenceKey('c')] = 'a-2';
+        await ProviderScope.containerOf(anywhere(tester))
+            .read(deliveryAddressChoiceProvider('c').notifier)
+            .choose('a-2');
         await tapAndSettle(tester, byKey('cart-check-unconfirmed'));
 
         expect(byKey('checkout-unconfirmed'), findsOneWidget);

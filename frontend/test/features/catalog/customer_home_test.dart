@@ -167,6 +167,62 @@ void main() {
     expect(find.byType(AddressFormScreen), findsOneWidget);
   });
 
+  Future<void> saveNewAddress(WidgetTester tester) async {
+    await tester.enterText(byKey('field-street'), 'Dacha');
+    await tester.enterText(byKey('field-house'), '9');
+    await tester.ensureVisible(byKey('address-save'));
+    await tester.pumpAndSettle();
+    await tester.tap(byKey('address-save'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('an address added from the sheet becomes the delivery address', (
+    WidgetTester tester,
+  ) async {
+    addresses.rows = <Address>[
+      address(id: 'a-1'),
+      address(id: 'a-2', label: 'Ish', street: 'Bobur', house: '7'),
+    ];
+    preferences.values[DeliveryAddressChoice.preferenceKey('c')] = 'a-2';
+    await open(tester);
+    expect(find.text('Bobur, 7'), findsOneWidget);
+
+    await tester.tap(byKey('delivery-address'));
+    await tester.pumpAndSettle();
+    await tester.tap(byKey('delivery-address-new'));
+    await tester.pumpAndSettle();
+    await saveNewAddress(tester);
+
+    expect(byKey('delivery-address'), findsOneWidget, reason: 'back home');
+    expect(
+      tester.widget<Text>(byKey('delivery-address-value')).data,
+      'Dacha, 9',
+    );
+    expect(
+      preferences.values[DeliveryAddressChoice.preferenceKey('c')],
+      'a-new-1',
+    );
+  });
+
+  testWidgets('the first address added from the header becomes the choice', (
+    WidgetTester tester,
+  ) async {
+    addresses.rows = <Address>[];
+    await open(tester);
+    await tester.tap(find.text(l10n(tester).deliveryAddressAdd));
+    await tester.pumpAndSettle();
+    await saveNewAddress(tester);
+
+    expect(
+      tester.widget<Text>(byKey('delivery-address-value')).data,
+      'Dacha, 9',
+    );
+    expect(
+      preferences.values[DeliveryAddressChoice.preferenceKey('c')],
+      'a-new-1',
+    );
+  });
+
   testWidgets('a list that failed to load offers a retry that reloads it', (
     WidgetTester tester,
   ) async {
