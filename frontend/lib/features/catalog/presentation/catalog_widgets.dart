@@ -72,7 +72,7 @@ class ProductList extends ConsumerWidget {
         if (state.items.isEmpty) {
           return Center(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: _centred(context),
               child: Text(
                 query.search.isEmpty
                     ? l10n.catalogNoProducts
@@ -95,7 +95,7 @@ class ProductList extends ConsumerWidget {
       },
       error: (Object error, StackTrace _) => Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: _centred(context),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
@@ -116,6 +116,11 @@ class ProductList extends ConsumerWidget {
     );
   }
 }
+
+/// The room around a centred message: under the home's floating bar the body
+/// runs behind it, so the message stops above it (zero elsewhere).
+EdgeInsets _centred(BuildContext context) =>
+    EdgeInsets.fromLTRB(24, 24, 24, 24 + MediaQuery.paddingOf(context).bottom);
 
 /// The last row of a list with more to load: it asks for the next page as
 /// it is built, and after a failure offers the retry instead.

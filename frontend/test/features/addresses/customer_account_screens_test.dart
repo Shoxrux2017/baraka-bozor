@@ -169,6 +169,22 @@ void main() {
     });
   });
 
+  group('profile that does not load', () {
+    testWidgets('the language can still be chosen while the profile fails', (
+      WidgetTester tester,
+    ) async {
+      profile.loadFailure = const NetworkFailure();
+      await openProfile(tester);
+      expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      expect(byKey('profile-language'), findsOneWidget);
+
+      await tapAndSettle(tester, find.text('Русский'));
+
+      expect(find.text('Профиль'), findsOneWidget);
+      expect(auth.calls, contains('language:customer:ru'));
+    });
+  });
+
   group('addresses', () {
     testWidgets('a new address takes the point where the pin was left', (
       WidgetTester tester,

@@ -32,22 +32,35 @@ class ActiveModeBar extends ConsumerWidget {
       color: colors.secondaryContainer,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: Row(
+        // The action shares the line while it fits; otherwise it takes its own
+        // line at the end, so a large text never squeezes both.
+        child: OverflowBar(
+          alignment: MainAxisAlignment.spaceBetween,
+          overflowAlignment: OverflowBarAlignment.end,
+          spacing: 8,
+          overflowSpacing: 4,
           children: <Widget>[
-            Icon(
-              customer ? Icons.shopping_basket_outlined : Icons.badge_outlined,
-              size: 18,
-              color: colors.onSecondaryContainer,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  customer
+                      ? Icons.shopping_basket_outlined
+                      : Icons.badge_outlined,
+                  size: 18,
+                  color: colors.onSecondaryContainer,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    customer ? l10n.customerModeLabel : l10n.staffModeLabel,
+                    key: const ValueKey<String>('active-mode'),
+                    style: TextStyle(color: colors.onSecondaryContainer),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                customer ? l10n.customerModeLabel : l10n.staffModeLabel,
-                key: const ValueKey<String>('active-mode'),
-                style: TextStyle(color: colors.onSecondaryContainer),
-              ),
-            ),
-            if (action case final Widget action) Flexible(child: action),
+            ?action,
           ],
         ),
       ),

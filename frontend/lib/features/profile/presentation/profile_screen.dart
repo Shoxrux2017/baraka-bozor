@@ -62,26 +62,35 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            error: (Object error, StackTrace _) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    FailureMessage(
-                      error is ApiFailure ? error : const UnexpectedFailure(),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: () =>
-                          ref.invalidate(profileControllerProvider),
-                      child: Text(l10n.retryButton),
-                    ),
-                  ],
+            // The language is on the profile in every state of it.
+            error: (Object error, StackTrace _) => ListView(
+              padding: const EdgeInsets.all(24),
+              children: <Widget>[
+                FailureMessage(
+                  error is ApiFailure ? error : const UnexpectedFailure(),
                 ),
-              ),
+                const SizedBox(height: 12),
+                Center(
+                  child: OutlinedButton(
+                    onPressed: () => ref.invalidate(profileControllerProvider),
+                    child: Text(l10n.retryButton),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const _LanguageChoice(),
+              ],
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => Column(
+              children: <Widget>[
+                const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: _LanguageChoice(),
+                ),
+              ],
+            ),
           ),
         ),
       ),

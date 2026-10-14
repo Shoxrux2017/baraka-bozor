@@ -163,7 +163,14 @@ class _Categories extends ConsumerWidget {
       skipLoadingOnReload: false,
       skipLoadingOnRefresh: !sections.hasError,
       data: (List<CatalogCategory> categories) => categories.isEmpty
-          ? Center(child: Text(l10n.catalogNoProducts))
+          ? Center(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.paddingOf(context).bottom,
+                ),
+                child: Text(l10n.catalogNoProducts),
+              ),
+            )
           : ListView(
               key: const ValueKey<String>('category-list'),
               children: <Widget>[
@@ -329,7 +336,12 @@ class _Retry extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          24,
+          24,
+          24 + MediaQuery.paddingOf(context).bottom,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[

@@ -235,6 +235,62 @@ void main() {
     expect(find.text('Amir Temur, 12'), findsOneWidget);
   });
 
+  group('centred messages stop above the floating bar', () {
+    Future<void> smallPhone(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    }
+
+    void expectClearOfBar(WidgetTester tester, Finder finder) {
+      final Rect bar = tester.getRect(find.byType(CustomerHomeNav));
+      expect(
+        tester.getRect(finder).overlaps(bar),
+        isFalse,
+        reason: 'under the bar',
+      );
+    }
+
+    testWidgets('a failed search keeps its retry above the bar', (
+      WidgetTester tester,
+    ) async {
+      await smallPhone(tester);
+      await open(tester);
+      catalog.nextFailure = const NetworkFailure();
+      await tester.enterText(byKey('catalog-search'), 'pom');
+      await tester.pump(CatalogHomeScreen.searchPause);
+      await tester.pumpAndSettle();
+
+      expect(byKey('retry-load'), findsOneWidget);
+      expectClearOfBar(tester, byKey('retry-load'));
+    });
+
+    testWidgets('a search with no answer keeps its message above the bar', (
+      WidgetTester tester,
+    ) async {
+      await smallPhone(tester);
+      await open(tester);
+      await tester.enterText(byKey('catalog-search'), 'zzz');
+      await tester.pump(CatalogHomeScreen.searchPause);
+      await tester.pumpAndSettle();
+
+      expectClearOfBar(tester, find.text(l10n(tester).catalogEmpty));
+    });
+
+    testWidgets('sections that failed to load keep their retry above the bar', (
+      WidgetTester tester,
+    ) async {
+      await smallPhone(tester);
+      catalog.categoriesFailure = const NetworkFailure();
+      await open(tester);
+
+      expect(byKey('retry-load'), findsOneWidget);
+      expectClearOfBar(tester, byKey('retry-load'));
+    });
+  });
+
   testWidgets(
     'the cart button on the header counts the cart lines and opens the cart',
     (WidgetTester tester) async {
@@ -260,6 +316,48 @@ void main() {
       expect(find.byType(CustomerHomeHeader), findsNothing);
     },
   );
+
+  for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+    testWidgets(
+      'large text on a small phone: the address sheet and the add and '
+      'retry states raise no exception (${device.languageCode})',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+        addresses.rows = <Address>[
+          address(id: 'a-1'),
+          address(
+            id: 'a-2',
+            label: 'Ota-onamning uyi, Chilonzor tumani',
+            street: 'Bunyodkor shoh yo\'li',
+          ),
+        ];
+        await open(tester, device: device);
+        await tester.tap(byKey('delivery-address'));
+        await tester.pumpAndSettle();
+        expect(byKey('delivery-address-sheet'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.tap(byKey('delivery-address-a-1'));
+        await tester.pumpAndSettle();
+
+        await tester.pumpWidget(const SizedBox());
+        addresses.rows = <Address>[];
+        await open(tester, device: device);
+        expect(find.text(l10n(tester).deliveryAddressAdd), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        await tester.pumpWidget(const SizedBox());
+        addresses.loadFailure = const UnexpectedFailure();
+        await open(tester, device: device);
+        expect(find.text(l10n(tester).deliveryAddressRetry), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
     for (final bool twoSessions in const <bool>[false, true]) {
@@ -293,6 +391,22 @@ void main() {
           }
           expect(tester.takeException(), isNull);
           expect(find.text('Amir Temur, 12'), findsOneWidget);
+          // The controls lie in what the header shows, not below its scroll.
+          final Rect visible = tester.getRect(
+            find.descendant(
+              of: find.byType(CustomerHomeHeader),
+              matching: byKey('home-header-controls'),
+            ),
+          );
+          for (final String key in const <String>[
+            'catalog-search',
+            'open-cart',
+            'delivery-address',
+          ]) {
+            final Rect rect = tester.getRect(byKey(key));
+            expect(rect.top, greaterThanOrEqualTo(visible.top), reason: key);
+            expect(rect.bottom, lessThanOrEqualTo(visible.bottom), reason: key);
+          }
           if (twoSessions) {
             expect(
               find.descendant(
