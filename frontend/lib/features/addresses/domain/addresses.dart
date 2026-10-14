@@ -47,6 +47,10 @@ final class Address {
   final String? apartment;
   final String? landmark;
   final String? deliveryNote;
+
+  /// The street and house as one line: how the home's header and checkout
+  /// name an address.
+  String get streetLine => '$street, $house';
 }
 
 /// An address as its form submits it.

@@ -8,6 +8,7 @@ import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/routing/app_paths.dart';
+import '../../../core/session/session_state.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
@@ -16,7 +17,7 @@ import '../domain/profile.dart';
 
 /// The Customer's profile (`docs/03-features.md` section 3): the phone they
 /// sign in with, their name — which checkout needs — the interface language,
-/// and the way to their addresses.
+/// the way to their addresses, and the way out of the session (`DL-75`).
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -28,7 +29,10 @@ class ProfileScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.profileTitle)),
+      appBar: AppBar(
+        title: Text(l10n.profileTitle),
+        actions: const <Widget>[_LogoutButton()],
+      ),
       body: SafeArea(
         child: UnderActiveMode(
           child: profile.when(
@@ -58,26 +62,35 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            error: (Object error, StackTrace _) => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    FailureMessage(
-                      error is ApiFailure ? error : const UnexpectedFailure(),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: () =>
-                          ref.invalidate(profileControllerProvider),
-                      child: Text(l10n.retryButton),
-                    ),
-                  ],
+            // The language is on the profile in every state of it.
+            error: (Object error, StackTrace _) => ListView(
+              padding: const EdgeInsets.all(24),
+              children: <Widget>[
+                FailureMessage(
+                  error is ApiFailure ? error : const UnexpectedFailure(),
                 ),
-              ),
+                const SizedBox(height: 12),
+                Center(
+                  child: OutlinedButton(
+                    onPressed: () => ref.invalidate(profileControllerProvider),
+                    child: Text(l10n.retryButton),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const _LanguageChoice(),
+              ],
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => Column(
+              children: <Widget>[
+                const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: _LanguageChoice(),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -228,6 +241,27 @@ class _LanguageChoice extends ConsumerWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+/// The way out of the Customer session, in the app bar so it is there
+/// whatever state the profile is in.
+class _LogoutButton extends ConsumerWidget {
+  const _LogoutButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final SessionState? state = ref.watch(sessionControllerProvider).value;
+    if (state is! SignedIn) {
+      return const SizedBox.shrink();
+    }
+    return IconButton(
+      key: const ValueKey<String>('logout-button'),
+      icon: const Icon(Icons.logout),
+      tooltip: AppLocalizations.of(context).logoutButton,
+      onPressed: () =>
+          ref.read(sessionControllerProvider.notifier).logout(state.activeMode),
     );
   }
 }

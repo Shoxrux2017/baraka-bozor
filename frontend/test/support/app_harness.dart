@@ -42,6 +42,7 @@ Widget appUnderTest({
   FakeCourierOrdersRepository? courier,
   FakePhoneCalls? phoneCalls,
   FakeMapLinks? maps,
+  InMemoryPreferenceStore? preferences,
   Surface surface = Surface.mobile,
   Locale device = const Locale('uz'),
   List<Override> overrides = const <Override>[],
@@ -50,7 +51,9 @@ Widget appUnderTest({
     retry: noAutomaticRetry,
     overrides: [
       tokenStoreProvider.overrideWithValue(tokens ?? InMemoryTokenStore()),
-      preferenceStoreProvider.overrideWithValue(InMemoryPreferenceStore()),
+      preferenceStoreProvider.overrideWithValue(
+        preferences ?? InMemoryPreferenceStore(),
+      ),
       deviceLocaleProvider.overrideWithValue(device),
       authRepositoryProvider.overrideWithValue(
         repository ?? FakeAuthRepository(),

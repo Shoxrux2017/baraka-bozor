@@ -6,8 +6,12 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
+import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
+import 'package:baraka_bozor/features/addresses/presentation/map/map_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,6 +23,13 @@ import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/fake_customer_repositories.dart';
 import '../../../support/in_memory_stores.dart';
 
+/// A map that only shows where the pin starts.
+Widget _fakeMap({
+  required GeoPoint initial,
+  required bool enabled,
+  required ValueChanged<GeoPoint> onMoved,
+}) => Text('${initial.latitude},${initial.longitude}');
+
 /// The checkout of `docs/09` sections 18 and 19 through the real router,
 /// cart and checkout screens, with the repositories faked.
 void main() {
@@ -28,6 +39,7 @@ void main() {
   late FakeCheckoutRepository checkout;
   late FakeAddressesRepository addresses;
   late FakeCustomerOrdersRepository orders;
+  late InMemoryPreferenceStore preferences;
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
@@ -48,6 +60,7 @@ void main() {
       tester.widget<RadioListTile<String>>(byKey(key)).enabled ?? true;
 
   setUp(() {
+    preferences = InMemoryPreferenceStore();
     tokens = InMemoryTokenStore()..tokens[SessionSlot.customer] = 'c';
     auth = FakeAuthRepository()
       ..identities[SessionSlot.customer] = user(id: 'c');
@@ -86,7 +99,9 @@ void main() {
         checkout: checkout,
         addresses: addresses,
         orders: orders,
+        preferences: preferences,
         device: device,
+        overrides: [mapPickerProvider.overrideWithValue(_fakeMap)],
       ),
     );
     await tester.pumpAndSettle();
@@ -366,6 +381,113 @@ void main() {
 
     expect(byKey('checkout-confirm'), findsNothing);
     expect(find.text(l10n(tester).addressOutsideAreaPlain), findsOneWidget);
+  });
+
+  group('the delivery address chosen on the home', () {
+    String? selected(WidgetTester tester) => tester
+        .widget<RadioGroup<String>>(find.byType(RadioGroup<String>))
+        .groupValue;
+
+    testWidgets('checkout opens with the delivery address chosen on the home', (
+      WidgetTester tester,
+    ) async {
+      preferences.values[DeliveryAddressChoice.preferenceKey('c')] = 'a-2';
+      await open(tester);
+
+      expect(selected(tester), 'a-2');
+    });
+
+    testWidgets('without a choice it opens on the newest address', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+
+      expect(selected(tester), 'a-1');
+    });
+
+    testWidgets(
+      'another address picked at checkout becomes the delivery address',
+      (WidgetTester tester) async {
+        await open(tester);
+        await tapAndSettle(tester, byKey('checkout-address-a-2'));
+
+        expect(
+          preferences.values[DeliveryAddressChoice.preferenceKey('c')],
+          'a-2',
+        );
+        expect(selected(tester), 'a-2');
+      },
+    );
+
+    testWidgets(
+      'an address added at checkout becomes the selected one and the choice',
+      (WidgetTester tester) async {
+        preferences.values[DeliveryAddressChoice.preferenceKey('c')] = 'a-2';
+        await open(tester);
+        expect(selected(tester), 'a-2');
+
+        await tapAndSettle(tester, byKey('checkout-add-address'));
+        await tester.enterText(byKey('field-street'), 'Dacha');
+        await tester.enterText(byKey('field-house'), '9');
+        await tapAndSettle(tester, byKey('address-save'));
+
+        expect(selected(tester), 'a-new-1');
+        expect(
+          preferences.values[DeliveryAddressChoice.preferenceKey('c')],
+          'a-new-1',
+        );
+      },
+    );
+
+    testWidgets(
+      'a confirmation whose outcome is unknown keeps the address it was sent with',
+      (WidgetTester tester) async {
+        await open(tester);
+        await calculate(tester);
+        checkout.placeFailure = const NetworkFailure();
+        await tapAndSettle(tester, byKey('checkout-confirm'));
+        GoRouter.of(anywhere(tester)).pop();
+        await tester.pumpAndSettle();
+
+        // The home's choice moved meanwhile.
+        await ProviderScope.containerOf(anywhere(tester))
+            .read(deliveryAddressChoiceProvider('c').notifier)
+            .choose('a-2');
+        await tapAndSettle(tester, byKey('cart-check-unconfirmed'));
+
+        expect(byKey('checkout-unconfirmed'), findsOneWidget);
+        expect(selected(tester), 'a-1');
+      },
+    );
+
+    testWidgets('the preselected address is held: when it disappears nothing '
+        'else is chosen silently', (WidgetTester tester) async {
+      await open(tester);
+      expect(selected(tester), 'a-1');
+
+      addresses.rows = <Address>[
+        address(id: 'a-2', label: 'Ish', street: 'Navoiy', house: '5'),
+      ];
+      final BuildContext context = anywhere(tester);
+      ProviderScope.containerOf(context).invalidate(addressesProvider);
+      await tester.pumpAndSettle();
+
+      expect(byKey('checkout-address-a-1'), findsNothing);
+      expect(selected(tester), isNull);
+      expect(
+        tester.widget<OutlinedButton>(byKey('checkout-calculate')).onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets('a chosen address since removed is not preselected', (
+      WidgetTester tester,
+    ) async {
+      preferences.values[DeliveryAddressChoice.preferenceKey('c')] = 'a-gone';
+      await open(tester);
+
+      expect(selected(tester), 'a-1');
+    });
   });
 
   testWidgets('an address gone is no longer chosen', (

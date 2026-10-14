@@ -684,7 +684,19 @@ class AppLocalizationsRu extends AppLocalizations {
       'Этот номер уже у другого активного сотрудника';
 
   @override
-  String get catalogSearchHint => 'Поиск товаров';
+  String get catalogSearchHint => 'Найти: огурцы, лепёшки…';
+
+  @override
+  String get deliveryAddressCaption => 'Доставим сюда';
+
+  @override
+  String get deliveryAddressAdd => 'Добавить адрес доставки';
+
+  @override
+  String get deliveryAddressRetry => 'Адрес не загрузился — повторить';
+
+  @override
+  String get deliveryAddressSheetTitle => 'Куда доставить?';
 
   @override
   String get catalogSearchClear => 'Очистить';
@@ -709,6 +721,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get catalogLoadMore => 'Загрузить ещё';
+
+  @override
+  String get homeNavHome => 'Главная';
+
+  @override
+  String get homeNavOrders => 'Заказы';
 
   @override
   String get profileTitle => 'Профиль';

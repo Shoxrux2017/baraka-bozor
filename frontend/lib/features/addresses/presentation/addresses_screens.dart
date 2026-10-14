@@ -253,7 +253,8 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(savedText)));
     if (context.canPop()) {
-      context.pop();
+      // A new address goes back to whoever asked for it (`DL-75`).
+      context.pop<Address>(address == null ? saved : null);
     } else {
       context.go(AppPaths.customerAddresses);
     }

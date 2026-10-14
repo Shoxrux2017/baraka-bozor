@@ -10,10 +10,9 @@ import '../../../core/catalog/catalog_values.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
-import '../../../core/localization/language_menu.dart';
 import '../../../core/network/api_failure.dart';
-import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
+import '../../../core/theme/brand_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/product_image.dart';
@@ -23,12 +22,16 @@ import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 import 'catalog_paths.dart';
 import 'catalog_widgets.dart';
+import 'customer_home_header.dart';
+import 'customer_home_nav.dart';
 
-/// The Customer area's home: the catalog's sections and a search over every
-/// product (`docs/09-api-contracts.md` section 14). The app bar carries
-/// what the area's entry carried before — the language, the way back to the
-/// staff area and the way out — and the active mode shows above the body
-/// while two sessions exist (`docs/02-user-roles.md` section 10).
+/// The Customer area's home (design 4a): the green header — the search over
+/// every product, the cart and the delivery address — over the catalog's
+/// sections (`docs/09-api-contracts.md` section 14), with the floating bar to
+/// the orders and the profile. The profile holds the language and the way out;
+/// the active mode shows at the top of the header while two sessions exist,
+/// with the way back to the staff area on it (`DL-75`,
+/// `docs/02-user-roles.md` section 10).
 class CatalogHomeScreen extends ConsumerStatefulWidget {
   const CatalogHomeScreen({super.key});
 
@@ -70,54 +73,18 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final SessionState? state = ref.watch(sessionControllerProvider).value;
-    final SignedIn? session = state is SignedIn ? state : null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.appTitle),
-        actions: <Widget>[
-          const CartButton(),
-          IconButton(
-            key: const ValueKey<String>('open-orders'),
-            icon: const Icon(Icons.receipt_long_outlined),
-            tooltip: l10n.myOrders,
-            onPressed: () => context.push(AppPaths.customerOrders),
-          ),
-          const LanguageMenuButton(),
-          IconButton(
-            key: const ValueKey<String>('open-profile'),
-            icon: const Icon(Icons.person_outline),
-            tooltip: l10n.profileTitle,
-            onPressed: () => context.push(AppPaths.customerProfile),
-          ),
-          if (session?.staffUser != null)
-            IconButton(
-              key: const ValueKey<String>('switch-to-staff-button'),
-              icon: const Icon(Icons.badge_outlined),
-              tooltip: l10n.switchToStaff,
-              onPressed: () => ref
-                  .read(sessionControllerProvider.notifier)
-                  .switchMode(SessionMode.staff),
-            ),
-          if (session != null)
-            IconButton(
-              key: const ValueKey<String>('logout-button'),
-              icon: const Icon(Icons.logout),
-              tooltip: l10n.logoutButton,
-              onPressed: () => ref
-                  .read(sessionControllerProvider.notifier)
-                  .logout(session.activeMode),
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      // Light status bar icons over the green header.
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        extendBody: true,
+        bottomNavigationBar: const CustomerHomeNav(),
+        body: Column(
           children: <Widget>[
-            const ActiveModeBar(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: TextField(
+            CustomerHomeHeader(
+              modeAction: const _SwitchToStaffButton(),
+              search: TextField(
                 key: const ValueKey<String>('catalog-search'),
                 controller: _search,
                 textInputAction: TextInputAction.search,
@@ -126,26 +93,53 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
                     ProductListQuery.searchMaxLength,
                   ),
                 ],
+                style: const TextStyle(color: BrandColors.ink, fontSize: 14.5),
                 decoration: InputDecoration(
                   hintText: l10n.catalogSearchHint,
-                  prefixIcon: const Icon(Icons.search),
+                  hintStyle: const TextStyle(
+                    color: BrandColors.muted,
+                    fontSize: 14.5,
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 13),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: BrandColors.ink,
+                  ),
                   suffixIcon: _query.isEmpty && _search.text.isEmpty
                       ? null
                       : IconButton(
                           key: const ValueKey<String>('catalog-search-clear'),
-                          icon: const Icon(Icons.clear),
+                          icon: const Icon(
+                            Icons.clear,
+                            color: BrandColors.muted,
+                          ),
                           tooltip: l10n.catalogSearchClear,
                           onPressed: _clear,
                         ),
-                  border: const OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(23),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 onChanged: _onTyped,
               ),
             ),
             Expanded(
-              child: _query.isEmpty
-                  ? const _Categories()
-                  : ProductList(query: ProductListQuery(search: _query)),
+              // The header took the top inset; the bottom one, which the
+              // floating bar adds, stays for the lists to pad by. The
+              // Builder reads the body's inset, not the screen's.
+              child: Builder(
+                builder: (BuildContext body) => MediaQuery.removePadding(
+                  context: body,
+                  removeTop: true,
+                  child: _query.isEmpty
+                      ? const _Categories()
+                      : ProductList(query: ProductListQuery(search: _query)),
+                ),
+              ),
             ),
           ],
         ),
@@ -169,7 +163,14 @@ class _Categories extends ConsumerWidget {
       skipLoadingOnReload: false,
       skipLoadingOnRefresh: !sections.hasError,
       data: (List<CatalogCategory> categories) => categories.isEmpty
-          ? Center(child: Text(l10n.catalogNoProducts))
+          ? Center(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.paddingOf(context).bottom,
+                ),
+                child: Text(l10n.catalogNoProducts),
+              ),
+            )
           : ListView(
               key: const ValueKey<String>('category-list'),
               children: <Widget>[
@@ -335,7 +336,12 @@ class _Retry extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          24,
+          24,
+          24 + MediaQuery.paddingOf(context).bottom,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
@@ -351,6 +357,26 @@ class _Retry extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The way back to the staff area for a Shopper or Courier in Customer
+/// mode, in one step (`docs/02-user-roles.md` section 10).
+class _SwitchToStaffButton extends ConsumerWidget {
+  const _SwitchToStaffButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return TextButton(
+      key: const ValueKey<String>('switch-to-staff-button'),
+      onPressed: () => ref
+          .read(sessionControllerProvider.notifier)
+          .switchMode(SessionMode.staff),
+      child: Text(
+        AppLocalizations.of(context).switchToStaff,
+        textAlign: TextAlign.end,
       ),
     );
   }

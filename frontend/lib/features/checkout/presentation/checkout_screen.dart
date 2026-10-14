@@ -13,12 +13,15 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/routing/app_paths.dart';
+import '../../../core/session/customer_account.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../addresses/application/addresses_controllers.dart';
+import '../../addresses/application/delivery_address.dart';
 import '../../addresses/domain/addresses.dart';
+import '../../addresses/presentation/delivery_address_widgets.dart';
 import '../application/checkout_controllers.dart';
 import '../domain/checkout.dart';
 
@@ -65,12 +68,39 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         : null;
     _addressId = sent?.request.addressId;
     _note = TextEditingController(text: sent?.request.deliveryTimeNote ?? '');
+    if (_addressId == null) {
+      _adoptDeliveryAddress();
+    }
     if (prepared != null && sent == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ref.read(preparedCheckoutProvider.notifier).clear();
         }
       });
+    }
+  }
+
+  /// Starts from the home's delivery address (`DL-75`) once, as if the
+  /// Customer had picked it: afterwards it is held like any pick, so it
+  /// never moves to another address by itself when the list reloads.
+  void _adoptDeliveryAddress() {
+    ProviderSubscription<AsyncValue<Address?>>? subscription;
+    subscription = ref.listenManual<AsyncValue<Address?>>(
+      deliveryAddressProvider,
+      (AsyncValue<Address?>? _, AsyncValue<Address?> next) {
+        final Address? delivery = next.value;
+        if (delivery == null) {
+          return;
+        }
+        subscription?.close();
+        if (mounted && _addressId == null) {
+          setState(() => _addressId = delivery.id);
+        }
+      },
+      fireImmediately: true,
+    );
+    if (_addressId != null) {
+      subscription.close();
     }
   }
 
@@ -98,6 +128,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
+  /// An address added here is the delivery address and the selected one.
+  Future<void> _addAddress() async {
+    final Address? added = await addDeliveryAddress(
+      router: GoRouter.of(context),
+      container: ProviderScope.containerOf(context),
+    );
+    if (added != null && mounted) {
+      setState(() => _addressId = added.id);
+      _changed();
+    }
+  }
+
   Future<void> _calculate(Address address) async {
     final CheckoutRequest? request = _request(address.id);
     if (request == null) {
@@ -106,7 +148,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final int revision = _revision;
     await ref
         .read(checkoutPreviewProvider.notifier)
-        .preview(request, addressLine: _addressLine(address));
+        .preview(request, addressLine: address.streetLine);
     if (mounted && revision != _revision) {
       ref.read(preparedCheckoutProvider.notifier).clear();
     }
@@ -195,6 +237,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             onSelected: (String id) {
               setState(() => _addressId = id);
               _changed();
+              final String? account = ref.read(customerAccountProvider);
+              if (account != null) {
+                ref
+                    .read(deliveryAddressChoiceProvider(account).notifier)
+                    .choose(id);
+              }
             },
           ),
           error: (Object error, StackTrace _) => LoadFailure(
@@ -209,9 +257,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             key: const ValueKey<String>('checkout-add-address'),
             icon: const Icon(Icons.add_location_alt_outlined),
             label: Text(l10n.checkoutAddAddress),
-            onPressed: locked
-                ? null
-                : () => context.push(AppPaths.customerNewAddress),
+            onPressed: locked ? null : _addAddress,
           ),
         ),
         const SizedBox(height: 16),
@@ -344,8 +390,6 @@ class _Busy extends StatelessWidget {
   );
 }
 
-String _addressLine(Address address) => '${address.street}, ${address.house}';
-
 /// The Customer's active addresses to deliver to.
 class _Addresses extends StatelessWidget {
   const _Addresses({
@@ -384,10 +428,8 @@ class _Addresses extends StatelessWidget {
               value: address.id,
               enabled: enabled,
               contentPadding: EdgeInsets.zero,
-              title: Text(address.label ?? _addressLine(address)),
-              subtitle: address.label == null
-                  ? null
-                  : Text(_addressLine(address)),
+              title: Text(address.label ?? address.streetLine),
+              subtitle: address.label == null ? null : Text(address.streetLine),
             ),
         ],
       ),

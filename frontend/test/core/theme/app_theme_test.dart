@@ -1,4 +1,5 @@
 import 'package:baraka_bozor/core/theme/app_theme.dart';
+import 'package:baraka_bozor/core/theme/brand_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -31,6 +32,19 @@ void main() {
           reason: 'the $brightness scheme must come from appSeedColor',
         );
       }
+    });
+
+    test('takes its seed from the brand green (DL-75)', () {
+      expect(appSeedColor, BrandColors.green);
+    });
+
+    test('sets the bundled Manrope as the font of every text style', () {
+      for (final Brightness brightness in Brightness.values) {
+        final TextTheme text = buildAppTheme(brightness).textTheme;
+        expect(text.bodyMedium!.fontFamily, appFontFamily);
+        expect(text.titleLarge!.fontFamily, appFontFamily);
+      }
+      expect(appFontFamily, 'Manrope');
     });
   });
 }
