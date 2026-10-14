@@ -67,12 +67,39 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         : null;
     _addressId = sent?.request.addressId;
     _note = TextEditingController(text: sent?.request.deliveryTimeNote ?? '');
+    if (_addressId == null) {
+      _adoptDeliveryAddress();
+    }
     if (prepared != null && sent == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ref.read(preparedCheckoutProvider.notifier).clear();
         }
       });
+    }
+  }
+
+  /// Starts from the home's delivery address (`DL-75`) once, as if the
+  /// Customer had picked it: afterwards it is held like any pick, so it
+  /// never moves to another address by itself when the list reloads.
+  void _adoptDeliveryAddress() {
+    ProviderSubscription<AsyncValue<Address?>>? subscription;
+    subscription = ref.listenManual<AsyncValue<Address?>>(
+      deliveryAddressProvider,
+      (AsyncValue<Address?>? _, AsyncValue<Address?> next) {
+        final Address? delivery = next.value;
+        if (delivery == null) {
+          return;
+        }
+        subscription?.close();
+        if (mounted && _addressId == null) {
+          setState(() => _addressId = delivery.id);
+        }
+      },
+      fireImmediately: true,
+    );
+    if (_addressId != null) {
+      subscription.close();
     }
   }
 
@@ -179,11 +206,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final bool unconfirmed = prepared?.sent ?? false;
     final bool locked = busy || unconfirmed;
     final List<Address> list = addresses.value ?? const <Address>[];
-    // Until the Customer picks here, the home's delivery address (`DL-75`).
-    final String? selectedId =
-        _addressId ?? ref.watch(deliveryAddressProvider).value?.id;
     final Address? address = list
-        .where((Address a) => a.id == selectedId)
+        .where((Address a) => a.id == _addressId)
         .firstOrNull;
 
     return ListView(

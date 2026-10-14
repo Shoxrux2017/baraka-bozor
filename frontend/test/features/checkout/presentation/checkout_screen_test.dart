@@ -8,7 +8,9 @@ import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
+import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -427,6 +429,26 @@ void main() {
       },
     );
 
+    testWidgets('the preselected address is held: when it disappears nothing '
+        'else is chosen silently', (WidgetTester tester) async {
+      await open(tester);
+      expect(selected(tester), 'a-1');
+
+      addresses.rows = <Address>[
+        address(id: 'a-2', label: 'Ish', street: 'Navoiy', house: '5'),
+      ];
+      final BuildContext context = anywhere(tester);
+      ProviderScope.containerOf(context).invalidate(addressesProvider);
+      await tester.pumpAndSettle();
+
+      expect(byKey('checkout-address-a-1'), findsNothing);
+      expect(selected(tester), isNull);
+      expect(
+        tester.widget<OutlinedButton>(byKey('checkout-calculate')).onPressed,
+        isNull,
+      );
+    });
+
     testWidgets('a chosen address since removed is not preselected', (
       WidgetTester tester,
     ) async {
@@ -451,13 +473,9 @@ void main() {
 
     expect(find.text(l10n(tester).errorAddressGone), findsOneWidget);
     expect(byKey('checkout-address-a-1'), findsNothing);
-    // Nothing of the gone address stays chosen: the delivery address falls
-    // back to the one left, and the Customer sees it selected.
     expect(
-      tester
-          .widget<RadioGroup<String>>(find.byType(RadioGroup<String>))
-          .groupValue,
-      'a-2',
+      tester.widget<OutlinedButton>(byKey('checkout-calculate')).onPressed,
+      isNull,
     );
   });
 
