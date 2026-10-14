@@ -26,9 +26,9 @@ import 'catalog_widgets.dart';
 
 /// The Customer area's home: the catalog's sections and a search over every
 /// product (`docs/09-api-contracts.md` section 14). The app bar carries
-/// what the area's entry carried before — the language, the way back to the
-/// staff area and the way out — and the active mode shows above the body
-/// while two sessions exist (`docs/02-user-roles.md` section 10).
+/// what the area's entry carried before — the language, the cart, the orders
+/// and the profile, where the way out now is. The active mode shows above the
+/// body while two sessions exist, with the way back to the staff area on it (`docs/02-user-roles.md` section 10).
 class CatalogHomeScreen extends ConsumerStatefulWidget {
   const CatalogHomeScreen({super.key});
 
@@ -70,8 +70,6 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final SessionState? state = ref.watch(sessionControllerProvider).value;
-    final SignedIn? session = state is SignedIn ? state : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -91,30 +89,12 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
             tooltip: l10n.profileTitle,
             onPressed: () => context.push(AppPaths.customerProfile),
           ),
-          if (session?.staffUser != null)
-            IconButton(
-              key: const ValueKey<String>('switch-to-staff-button'),
-              icon: const Icon(Icons.badge_outlined),
-              tooltip: l10n.switchToStaff,
-              onPressed: () => ref
-                  .read(sessionControllerProvider.notifier)
-                  .switchMode(SessionMode.staff),
-            ),
-          if (session != null)
-            IconButton(
-              key: const ValueKey<String>('logout-button'),
-              icon: const Icon(Icons.logout),
-              tooltip: l10n.logoutButton,
-              onPressed: () => ref
-                  .read(sessionControllerProvider.notifier)
-                  .logout(session.activeMode),
-            ),
         ],
       ),
       body: SafeArea(
         child: Column(
           children: <Widget>[
-            const ActiveModeBar(),
+            const ActiveModeBar(action: _SwitchToStaffButton()),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: TextField(
@@ -351,6 +331,26 @@ class _Retry extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The way back to the staff area for a Shopper or Courier in Customer
+/// mode, in one step (`docs/02-user-roles.md` section 10).
+class _SwitchToStaffButton extends ConsumerWidget {
+  const _SwitchToStaffButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return TextButton(
+      key: const ValueKey<String>('switch-to-staff-button'),
+      onPressed: () => ref
+          .read(sessionControllerProvider.notifier)
+          .switchMode(SessionMode.staff),
+      child: Text(
+        AppLocalizations.of(context).switchToStaff,
+        textAlign: TextAlign.end,
       ),
     );
   }

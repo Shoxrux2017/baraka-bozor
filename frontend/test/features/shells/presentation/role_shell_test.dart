@@ -139,6 +139,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(customerHome, findsOneWidget);
 
+    await tester.tap(find.byKey(const ValueKey<String>('open-profile')));
+    await tester.pumpAndSettle();
     await tester.tap(logoutButton);
     await tester.pumpAndSettle();
 

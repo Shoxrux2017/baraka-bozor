@@ -116,6 +116,16 @@ void main() {
       find.descendant(of: find.byType(Form), matching: finder);
 
   group('profile', () {
+    testWidgets('the profile logs the Customer out', (
+      WidgetTester tester,
+    ) async {
+      await openProfile(tester);
+      await tester.tap(byKey('logout-button'));
+      await tester.pumpAndSettle();
+      expect(auth.calls, contains('logout:customer'));
+      expect(byKey('profile-list'), findsNothing);
+    });
+
     testWidgets('the phone is shown and a name is saved', (
       WidgetTester tester,
     ) async {

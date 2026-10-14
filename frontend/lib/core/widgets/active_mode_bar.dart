@@ -10,7 +10,11 @@ import '../session/session_state.dart';
 /// (`docs/02-user-roles.md` section 10). A full-width bar rather than a chip
 /// among the app bar's actions, which it would crowd off a phone's screen.
 class ActiveModeBar extends ConsumerWidget {
-  const ActiveModeBar({super.key});
+  const ActiveModeBar({this.action, super.key});
+
+  /// Shown at the bar's end, and only while the bar shows: the Customer's
+  /// home puts the way back to the staff area here (`DL-75`).
+  final Widget? action;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,6 +47,7 @@ class ActiveModeBar extends ConsumerWidget {
                 style: TextStyle(color: colors.onSecondaryContainer),
               ),
             ),
+            if (action case final Widget action) Flexible(child: action),
           ],
         ),
       ),

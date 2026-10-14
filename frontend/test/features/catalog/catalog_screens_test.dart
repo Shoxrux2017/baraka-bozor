@@ -8,6 +8,7 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_screens.dart';
@@ -382,8 +383,19 @@ void main() {
         await tester.tap(byKey('switch-to-customer-button'));
         await tester.pumpAndSettle();
         expect(mode, findsOneWidget, reason: 'on the Customer home');
-        expect(byKey('logout-button'), findsOneWidget);
-        expect(byKey('switch-to-staff-button'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(ActiveModeBar),
+            matching: byKey('switch-to-staff-button'),
+          ),
+          findsOneWidget,
+          reason: 'the way back to the staff area sits on the mode bar',
+        );
+        expect(
+          byKey('logout-button'),
+          findsNothing,
+          reason: 'logout is on the profile',
+        );
 
         await tester.tap(
           find.text(device.languageCode == 'uz' ? 'Sabzavotlar' : 'Овощи'),
