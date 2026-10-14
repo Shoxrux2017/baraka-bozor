@@ -34,3 +34,10 @@ flutter:
   # `flutter gen-l10n` (configuration in l10n.yaml) into the committed
   # lib/core/localization/generated/ directory.
   generate: true
+
+  fonts:
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope-Variable.ttf
+  assets:
+    - assets/fonts/Manrope-OFL.txt

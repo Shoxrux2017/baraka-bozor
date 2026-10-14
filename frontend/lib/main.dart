@@ -6,9 +6,11 @@ import 'app/providers.dart';
 import 'core/localization/app_language.dart';
 import 'core/localization/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/font_licenses.dart';
 import 'features/notifications/application/push_registrar.dart';
 
 void main() {
+  registerFontLicenses();
   runApp(const ProviderScope(retry: noAutomaticRetry, child: BarakaBozorApp()));
 }
 
