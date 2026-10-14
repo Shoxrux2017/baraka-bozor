@@ -397,6 +397,10 @@ void main() {
           reason: 'logout is on the profile',
         );
 
+        // At this size the first section starts under the floating bar until
+        // the list is scrolled.
+        await tester.drag(byKey('category-list'), const Offset(0, -200));
+        await tester.pumpAndSettle();
         await tester.tap(
           find.text(device.languageCode == 'uz' ? 'Sabzavotlar' : 'Овощи'),
         );

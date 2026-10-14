@@ -711,6 +711,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get catalogLoadMore => 'Загрузить ещё';
 
   @override
+  String get homeNavHome => 'Главная';
+
+  @override
+  String get homeNavOrders => 'Заказы';
+
+  @override
   String get profileTitle => 'Профиль';
 
   @override

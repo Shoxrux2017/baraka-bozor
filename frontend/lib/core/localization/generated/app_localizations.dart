@@ -1412,6 +1412,18 @@ abstract class AppLocalizations {
   /// **'Yana yuklash'**
   String get catalogLoadMore;
 
+  /// No description provided for @homeNavHome.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bosh sahifa'**
+  String get homeNavHome;
+
+  /// No description provided for @homeNavOrders.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar'**
+  String get homeNavOrders;
+
   /// No description provided for @profileTitle.
   ///
   /// In uz, this message translates to:

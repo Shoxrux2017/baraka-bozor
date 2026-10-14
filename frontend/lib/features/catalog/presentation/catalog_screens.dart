@@ -12,7 +12,6 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/language_menu.dart';
 import '../../../core/network/api_failure.dart';
-import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
@@ -23,6 +22,7 @@ import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 import 'catalog_paths.dart';
 import 'catalog_widgets.dart';
+import 'customer_home_nav.dart';
 
 /// The Customer area's home: the catalog's sections and a search over every
 /// product (`docs/09-api-contracts.md` section 14). The app bar carries
@@ -72,26 +72,14 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
 
     return Scaffold(
+      extendBody: true,
+      bottomNavigationBar: const CustomerHomeNav(),
       appBar: AppBar(
         title: Text(l10n.appTitle),
-        actions: <Widget>[
-          const CartButton(),
-          IconButton(
-            key: const ValueKey<String>('open-orders'),
-            icon: const Icon(Icons.receipt_long_outlined),
-            tooltip: l10n.myOrders,
-            onPressed: () => context.push(AppPaths.customerOrders),
-          ),
-          const LanguageMenuButton(),
-          IconButton(
-            key: const ValueKey<String>('open-profile'),
-            icon: const Icon(Icons.person_outline),
-            tooltip: l10n.profileTitle,
-            onPressed: () => context.push(AppPaths.customerProfile),
-          ),
-        ],
+        actions: <Widget>[const CartButton(), const LanguageMenuButton()],
       ),
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: <Widget>[
             const ActiveModeBar(action: _SwitchToStaffButton()),

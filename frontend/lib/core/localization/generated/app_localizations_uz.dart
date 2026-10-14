@@ -713,6 +713,12 @@ class AppLocalizationsUz extends AppLocalizations {
   String get catalogLoadMore => 'Yana yuklash';
 
   @override
+  String get homeNavHome => 'Bosh sahifa';
+
+  @override
+  String get homeNavOrders => 'Buyurtmalar';
+
+  @override
   String get profileTitle => 'Profil';
 
   @override
