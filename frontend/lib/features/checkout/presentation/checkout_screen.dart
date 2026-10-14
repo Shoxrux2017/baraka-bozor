@@ -106,7 +106,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final int revision = _revision;
     await ref
         .read(checkoutPreviewProvider.notifier)
-        .preview(request, addressLine: _addressLine(address));
+        .preview(request, addressLine: address.streetLine);
     if (mounted && revision != _revision) {
       ref.read(preparedCheckoutProvider.notifier).clear();
     }
@@ -344,8 +344,6 @@ class _Busy extends StatelessWidget {
   );
 }
 
-String _addressLine(Address address) => '${address.street}, ${address.house}';
-
 /// The Customer's active addresses to deliver to.
 class _Addresses extends StatelessWidget {
   const _Addresses({
@@ -384,10 +382,8 @@ class _Addresses extends StatelessWidget {
               value: address.id,
               enabled: enabled,
               contentPadding: EdgeInsets.zero,
-              title: Text(address.label ?? _addressLine(address)),
-              subtitle: address.label == null
-                  ? null
-                  : Text(_addressLine(address)),
+              title: Text(address.label ?? address.streetLine),
+              subtitle: address.label == null ? null : Text(address.streetLine),
             ),
         ],
       ),
