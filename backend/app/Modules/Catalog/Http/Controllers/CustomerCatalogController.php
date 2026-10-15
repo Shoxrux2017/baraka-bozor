@@ -37,7 +37,7 @@ final class CustomerCatalogController extends Controller
         $prices = CustomerPriceCalculator::current();
 
         return PaginatedResponse::of(
-            CustomerCatalogListing::products($request->categoryId(), $request->search())
+            CustomerCatalogListing::products($request->categoryId(), $request->search(), $request->featuredOnly(), $request->sort())
                 ->paginate($request->perPage(), ['*'], 'page', $request->page()),
             static fn (Product $product): array => (new CustomerProductResource($product, $prices))->resolve($request),
         );

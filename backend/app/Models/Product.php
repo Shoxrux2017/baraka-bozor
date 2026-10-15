@@ -39,6 +39,7 @@ use Illuminate\Support\Carbon;
  * @property PriceMode $price_mode
  * @property int $market_price_uzs
  * @property bool $is_active
+ * @property bool $is_featured
  * @property int $sort_order
  * @property Carbon|null $archived_at
  * @property string $created_by_user_id
@@ -64,6 +65,7 @@ class Product extends Model
         'unit_code',
         'market_price_uzs',
         'sort_order',
+        'is_featured',
     ];
 
     /**
@@ -76,6 +78,7 @@ class Product extends Model
             'price_mode' => PriceMode::class,
             'market_price_uzs' => 'integer',
             'is_active' => 'boolean',
+            'is_featured' => 'boolean',
             'sort_order' => 'integer',
             'archived_at' => 'datetime',
         ];

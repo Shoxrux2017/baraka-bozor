@@ -212,6 +212,90 @@ final class CustomerCatalogApiTest extends TestCase
         }
     }
 
+    public function test_featured_lists_only_visible_featured_products(): void
+    {
+        $featured = Product::factory()->featured()->create(['name_uz' => 'Olma']);
+        Product::factory()->create(['name_uz' => 'Nok']);
+        Product::factory()->featured()->archived()->create();
+        Product::factory()->featured()->create(['is_active' => false]);
+        Product::factory()->featured()->create(['category_id' => Category::factory()->archived()->create()->id]);
+
+        $this->asCustomer()->getJson('/api/v1/catalog/products?featured=1')
+            ->assertOk()->assertJsonPath('data.*.id', [$featured->id]);
+        $this->asCustomer()->getJson('/api/v1/catalog/products?featured=true')
+            ->assertJsonPath('data.*.id', [$featured->id]);
+        $this->asCustomer()->getJson('/api/v1/catalog/products?featured=0')->assertJsonPath('meta.pagination.total', 2);
+        $this->asCustomer()->getJson('/api/v1/catalog/products?featured=false')->assertJsonPath('meta.pagination.total', 2);
+        $this->asCustomer()->getJson('/api/v1/catalog/products')->assertJsonPath('meta.pagination.total', 2);
+    }
+
+    public function test_the_price_sort_orders_by_price_then_by_the_shops_order(): void
+    {
+        $this->pricedProducts();
+
+        $this->asCustomer()->getJson('/api/v1/catalog/products?sort=price_asc')
+            ->assertJsonPath('data.*.name_uz', ['A5', 'B5', 'C7', 'D9']);
+        $this->asCustomer()->getJson('/api/v1/catalog/products?sort=price_desc')
+            ->assertJsonPath('data.*.name_uz', ['D9', 'C7', 'A5', 'B5']);
+        $this->asCustomer()->getJson('/api/v1/catalog/products?sort=default')
+            ->assertJsonPath('data.*.name_uz', ['A5', 'B5', 'D9', 'C7']);
+        $this->asCustomer()->getJson('/api/v1/catalog/products')
+            ->assertJsonPath('data.*.name_uz', ['A5', 'B5', 'D9', 'C7']);
+    }
+
+    public function test_pages_of_the_price_sort_list_every_product_once(): void
+    {
+        $this->pricedProducts();
+
+        $names = [];
+        $prices = [];
+        foreach ([1, 2] as $page) {
+            $data = $this->asCustomer()->getJson("/api/v1/catalog/products?sort=price_asc&per_page=2&page={$page}")
+                ->assertOk()->json('data');
+            foreach ($data as $row) {
+                $names[] = $row['name_uz'];
+                $prices[] = $row['customer_unit_price_uzs'];
+            }
+        }
+
+        $this->assertSame(['A5', 'B5', 'C7', 'D9'], $names);
+        $sorted = $prices;
+        sort($sorted);
+        $this->assertSame($sorted, $prices);
+    }
+
+    public function test_the_sort_composes_with_the_other_filters(): void
+    {
+        $vegetables = Category::factory()->create();
+        Product::factory()->featured()->create(['category_id' => $vegetables->id, 'name_uz' => 'Pomidor', 'market_price_uzs' => 9000]);
+        Product::factory()->featured()->create(['category_id' => $vegetables->id, 'name_uz' => 'Piyoz', 'market_price_uzs' => 3000]);
+        Product::factory()->create(['category_id' => $vegetables->id, 'name_uz' => 'Pista', 'market_price_uzs' => 1000]);
+        Product::factory()->featured()->create(['name_uz' => 'Pech', 'market_price_uzs' => 2000]);
+
+        $this->asCustomer()->getJson('/api/v1/catalog/products?sort=price_asc&featured=1&category_id='.$vegetables->id.'&search=p')
+            ->assertJsonPath('data.*.name_uz', ['Piyoz', 'Pomidor']);
+        $this->asCustomer()->getJson('/api/v1/catalog/products?sort=price_desc&category_id='.$vegetables->id)
+            ->assertJsonPath('data.*.name_uz', ['Pomidor', 'Piyoz', 'Pista']);
+        $this->asCustomer()->getJson('/api/v1/catalog/products?sort=price_asc&featured=1')
+            ->assertJsonPath('data.*.name_uz', ['Pech', 'Piyoz', 'Pomidor']);
+    }
+
+    public function test_an_unknown_sort_or_featured_value_is_refused(): void
+    {
+        $this->asCustomer()->getJson('/api/v1/catalog/products?sort=cheap')
+            ->assertStatus(422)->assertJsonPath('code', 'validation_failed');
+        $this->asCustomer()->getJson('/api/v1/catalog/products?featured=yes')
+            ->assertStatus(422)->assertJsonPath('code', 'validation_failed');
+    }
+
+    private function pricedProducts(): void
+    {
+        Product::factory()->create(['name_uz' => 'D9', 'market_price_uzs' => 9000, 'sort_order' => 2]);
+        Product::factory()->create(['name_uz' => 'B5', 'market_price_uzs' => 5000, 'sort_order' => 1]);
+        Product::factory()->create(['name_uz' => 'C7', 'market_price_uzs' => 7000, 'sort_order' => 3]);
+        Product::factory()->create(['name_uz' => 'A5', 'market_price_uzs' => 5000, 'sort_order' => 1]);
+    }
+
     private function asCustomer(): self
     {
         return $this->withToken(User::factory()->customer()->create()->createToken('t')->plainTextToken);

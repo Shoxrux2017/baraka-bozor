@@ -228,13 +228,29 @@ final class AdminProductsApiTest extends TestCase
         }
     }
 
+    public function test_a_product_is_recommended_only_when_the_admin_says_so(): void
+    {
+        $this->asAdmin()->postJson(self::URL, $this->body())->assertCreated()->assertJsonPath('data.is_featured', false);
+
+        $id = $this->asAdmin()->postJson(self::URL, $this->body(['is_featured' => true]))
+            ->assertCreated()->assertJsonPath('data.is_featured', true)->json('data.id');
+        $this->asAdmin()->patchJson(self::URL.'/'.$id, ['is_featured' => false])
+            ->assertOk()->assertJsonPath('data.is_featured', false);
+        $this->asAdmin()->patchJson(self::URL.'/'.$id, ['is_featured' => true])
+            ->assertOk()->assertJsonPath('data.is_featured', true);
+
+        $this->asAdmin()->postJson(self::URL, $this->body(['is_featured' => '1']))
+            ->assertStatus(422)->assertJsonPath('code', 'validation_failed');
+        $this->asAdmin()->patchJson(self::URL.'/'.$id, ['is_featured' => null])->assertStatus(422);
+    }
+
     public function test_the_response_carries_exactly_the_documented_fields(): void
     {
         $data = $this->asAdmin()->getJson(self::URL.'/'.Product::factory()->create()->id)->assertOk()->json('data');
 
         $this->assertSame([
             'id', 'category_id', 'name_uz', 'name_ru', 'description_uz', 'description_ru', 'unit_code', 'price_mode',
-            'market_price_uzs', 'customer_unit_price_uzs', 'image_url', 'sort_order', 'is_active', 'archived_at', 'created_at', 'updated_at',
+            'market_price_uzs', 'customer_unit_price_uzs', 'image_url', 'sort_order', 'is_active', 'is_featured', 'archived_at', 'created_at', 'updated_at',
         ], array_keys($data));
     }
 

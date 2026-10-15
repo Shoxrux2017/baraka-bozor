@@ -49,9 +49,9 @@ Checks: role in the six values; status `active|blocked`; phone `^\+998[0-9]{9}$`
 
 ## 7. `products` (migrated)
 
-`id, category_id → categories, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, is_active, sort_order, archived_at?, created_by_user_id, timestamps`.
+`id, category_id → categories, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, is_active, sort_order, is_featured, archived_at?, created_by_user_id, timestamps`. `is_featured` is not null, default false (`DL-79`).
 
-Checks: unit in `kg, gram, piece, liter, package, box, bundle, meter`; `price_mode = 'estimate'` (`DL-78`; `order_items.price_mode_snapshot` still holds `fixed` for earlier lines); `market_price_uzs > 0`; names `varchar(160)`, non-blank; an archived product is never active. Indexes `(category_id, is_active)`, `(is_active, sort_order)`, `lower(name_uz)`, `lower(name_ru)`.
+Checks: unit in `kg, gram, piece, liter, package, box, bundle, meter`; `price_mode = 'estimate'` (`DL-78`; `order_items.price_mode_snapshot` still holds `fixed` for earlier lines); `market_price_uzs > 0`; names `varchar(160)`, non-blank; an archived product is never active. Indexes `(category_id, is_active)`, `(is_active, sort_order)`, `lower(name_uz)`, `lower(name_ru)`, and the partial `(sort_order, name_uz, id) where is_featured` for the home row.
 
 The customer price is computed, never stored on the product: `half_up(market_price_uzs × (1 + markup_percent/100))`.
 

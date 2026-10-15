@@ -44,6 +44,7 @@ final class ProductRequest extends StrictFormRequest
             'market_price_uzs' => [$presence, 'required', 'integer:strict', 'min:1', 'max:'.self::MAX_MARKET_PRICE_UZS],
             'sort_order' => ['sometimes', 'required', 'integer:strict', 'between:-100000,100000'],
             'is_active' => ['sometimes', 'required', 'boolean:strict'],
+            'is_featured' => ['sometimes', 'required', 'boolean:strict'],
         ];
     }
 }

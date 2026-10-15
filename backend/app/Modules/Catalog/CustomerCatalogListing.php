@@ -46,15 +46,32 @@ final class CustomerCatalogListing
     /**
      * @return Builder<Product>
      */
-    public static function products(?string $categoryId, ?string $search): Builder
-    {
-        $query = CatalogSearch::ordered(CatalogSearch::matching(self::visibleProducts(), $search));
+    public static function products(
+        ?string $categoryId,
+        ?string $search,
+        bool $featuredOnly = false,
+        ProductSort $sort = ProductSort::Default,
+    ): Builder {
+        $query = CatalogSearch::matching(self::visibleProducts(), $search);
 
         if ($categoryId !== null) {
             $query->where($query->qualifyColumn('category_id'), $categoryId);
         }
 
-        return $query;
+        if ($featuredOnly) {
+            $query->where($query->qualifyColumn('is_featured'), true);
+        }
+
+        // One markup applies to every product, so the market price orders the
+        // customer prices too; ties keep the shop's order, which ends in `id`,
+        // so pages never repeat or skip a product.
+        match ($sort) {
+            ProductSort::PriceAsc => $query->orderBy($query->qualifyColumn('market_price_uzs')),
+            ProductSort::PriceDesc => $query->orderByDesc($query->qualifyColumn('market_price_uzs')),
+            ProductSort::Default => null,
+        };
+
+        return CatalogSearch::ordered($query);
     }
 
     /**

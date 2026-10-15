@@ -43,6 +43,7 @@ final class ProductsTableTest extends TestCase
             'market_price_uzs' => ['bigint', false],
             'is_active' => ['boolean', false],
             'sort_order' => ['integer', false],
+            'is_featured' => ['boolean', false],
             'archived_at' => ['timestamp with time zone', true],
             'created_by_user_id' => ['uuid', false],
             'created_at' => ['timestamp with time zone', false],
@@ -107,6 +108,15 @@ final class ProductsTableTest extends TestCase
         $this->assertStringContainsString('(is_active, sort_order)', $indexes['products_is_active_sort_order_index']);
         $this->assertStringContainsString('lower((name_uz)::text)', $indexes['products_name_uz_lower_index']);
         $this->assertStringContainsString('lower((name_ru)::text)', $indexes['products_name_ru_lower_index']);
+    }
+
+    public function test_a_product_is_not_recommended_by_default_and_the_flag_has_a_partial_index(): void
+    {
+        $row = $this->row();
+        DB::table(self::TABLE)->insert($row);
+
+        $this->assertFalse((bool) DB::table(self::TABLE)->where('id', $row['id'])->value('is_featured'));
+        $this->assertStringContainsString('WHERE is_featured', $this->indexesOn(self::TABLE)['products_featured_idx']);
     }
 
     public function test_a_valid_product_is_accepted(): void

@@ -1207,3 +1207,7 @@ Answers to the questions of kit stage 2 (`kit/02-glavnaya.dc.html`, approved the
 1. **How "every price an estimate" is enforced.** A migration sets every product to `estimate` and narrows `products_price_mode_check` to `price_mode = 'estimate'`; the Admin write body loses `price_mode`, so the strict request shape refuses it; a created product is an estimate. `price_mode` stays in product responses (always `estimate`) so clients keep one shape. `PriceMode::Fixed`, `order_items.price_mode_snapshot` and every Orders branch on a fixed line stay for lines placed before `DL-78`; the checkout's `final` total kind no longer occurs for a new cart. Tests of fixed lines build them with `OrderItemFactory::fixed()`, a line placed before the decision.
 
 2. **Category pictures** mirror product images: `category_images`, one per category, the same formats and size, a fresh key per upload under `categories/`, replace and remove serialized on the category row, the old file deleted after commit. The request class is shared (`CatalogImageRequest`). The Customer's category carries `image_url`; the letter shown without a picture is the client's.
+
+3. **"Рекомендуем"** is `products.is_featured`, set by the Admin; the Customer list takes `featured`. A partial index serves the home row.
+
+4. **The price sort** orders by `market_price_uzs`, which orders customer prices because one markup applies to all, then by the shop's order ending in `id`, so paging is stable. Popularity is not offered: no figures exist before the pilot (`docs/05` section 20).
