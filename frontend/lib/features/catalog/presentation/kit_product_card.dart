@@ -231,23 +231,29 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                         Positioned(
                           top: 0,
                           right: 0,
-                          child: IconButton(
-                            key: ValueKey<String>('heart-$id'),
-                            tooltip: favorite
-                                ? l10n.favoriteRemove
-                                : l10n.favoriteAdd,
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.all(6),
-                            constraints: const BoxConstraints.tightFor(
-                              width: 32,
-                              height: 32,
+                          child: _Absorb(
+                            child: IconButton(
+                              key: ValueKey<String>('heart-$id'),
+                              tooltip: favorite
+                                  ? l10n.favoriteRemove
+                                  : l10n.favoriteAdd,
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(6),
+                              constraints: const BoxConstraints.tightFor(
+                                width: 32,
+                                height: 32,
+                              ),
+                              iconSize: 18,
+                              color: favorite
+                                  ? KitColors.danger
+                                  : KitColors.ink,
+                              icon: Icon(
+                                favorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                              ),
+                              onPressed: _toggleHeart,
                             ),
-                            iconSize: 18,
-                            color: favorite ? KitColors.danger : KitColors.ink,
-                            icon: Icon(
-                              favorite ? Icons.favorite : Icons.favorite_border,
-                            ),
-                            onPressed: _toggleHeart,
                           ),
                         ),
                       ],
@@ -288,47 +294,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                   style: TextStyle(fontSize: unitSize, color: KitColors.muted),
                 ),
                 const SizedBox(height: 8),
-                if (!widget.available)
-                  _Unavailable(id: id, height: _compact ? 32 : 38)
-                else if (line != null)
-                  _Stepper(
-                    id: id,
-                    height: _compact ? 32 : 38,
-                    quantity:
-                        '${QuantityRules.display(line.quantity)}\u00A0'
-                        '${CatalogLabels.unit(l10n, product.unitCode)}',
-                    busy: _cartBusy,
-                    minusLabel: l10n.cartStepMinus,
-                    plusLabel: l10n.cartStepPlus,
-                    onMinus: () => _step(line, up: false),
-                    onPlus: () => _step(line, up: true),
-                  )
-                else
-                  SizedBox(
-                    height: _compact ? 32 : 38,
-                    child: FilledButton(
-                      key: ValueKey<String>('add-$id'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: KitColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: _cartBusy ? null : _add,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          l10n.catalogAdd,
-                          style: TextStyle(
-                            fontSize: _compact ? 12 : 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                _Absorb(child: _controls(l10n, line)),
               ],
             ),
           ),
@@ -336,6 +302,72 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
       ),
     );
   }
+
+  Widget _controls(AppLocalizations l10n, CartLine? line) {
+    final CatalogProduct product = widget.product;
+    final String id = product.id;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (!widget.available)
+          _Unavailable(id: id, height: _compact ? 32 : 38)
+        else if (line != null)
+          _Stepper(
+            id: id,
+            height: _compact ? 32 : 38,
+            quantity:
+                '${QuantityRules.display(line.quantity)}\u00A0'
+                '${CatalogLabels.unit(l10n, product.unitCode)}',
+            busy: _cartBusy,
+            minusLabel: l10n.cartStepMinus,
+            plusLabel: l10n.cartStepPlus,
+            onMinus: () => _step(line, up: false),
+            onPlus: () => _step(line, up: true),
+          )
+        else
+          SizedBox(
+            height: _compact ? 32 : 38,
+            child: FilledButton(
+              key: ValueKey<String>('add-$id'),
+              style: FilledButton.styleFrom(
+                backgroundColor: KitColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onPressed: _cartBusy ? null : _add,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  l10n.catalogAdd,
+                  style: TextStyle(
+                    fontSize: _compact ? 12 : 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Takes the taps on a control, enabled or not, so that a tap on a disabled
+/// one never reaches the card and opens the product.
+class _Absorb extends StatelessWidget {
+  const _Absorb({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTap: () {},
+    child: child,
+  );
 }
 
 class _Unavailable extends StatelessWidget {

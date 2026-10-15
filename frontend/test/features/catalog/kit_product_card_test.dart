@@ -387,6 +387,78 @@ void main() {
     });
   });
 
+  group('taps on the controls never open the product', () {
+    final String id = '0192f0a0-0000-7000-8000-0000000000a1';
+
+    testWidgets('step buttons while a change is pending', (
+      WidgetTester tester,
+    ) async {
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[
+          lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
+        ]),
+      );
+      await show(tester, tomato);
+      final Completer<void> hold = Completer<void>();
+      cart.hold = hold;
+      await tester.tap(byKey('step-plus-$id'));
+      await tester.pump();
+      await tester.tap(byKey('step-plus-$id'));
+      await tester.tap(byKey('step-minus-$id'));
+      await tester.pumpAndSettle();
+      expect(opened, isNull);
+      expect(find.text('product page'), findsNothing);
+      expect(cart.patches, hasLength(1));
+      hold.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the add button while the add is pending', (
+      WidgetTester tester,
+    ) async {
+      await show(tester, tomato);
+      final Completer<void> hold = Completer<void>();
+      cart.hold = hold;
+      await tester.tap(byKey('add-$id'));
+      await tester.pump();
+      await tester.tap(byKey('add-$id'));
+      await tester.pumpAndSettle();
+      expect(opened, isNull);
+      expect(cart.added, hasLength(1));
+      hold.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the heart while its toggle is pending', (
+      WidgetTester tester,
+    ) async {
+      await show(tester, tomato);
+      final Completer<void> hold = Completer<void>();
+      favorites.hold = hold;
+      await tester.tap(byKey('heart-$id'));
+      await tester.pump();
+      await tester.tap(byKey('heart-$id'));
+      await tester.pumpAndSettle();
+      expect(opened, isNull);
+      hold.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the quantity between the step buttons', (
+      WidgetTester tester,
+    ) async {
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[
+          lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
+        ]),
+      );
+      await show(tester, tomato);
+      await tester.tap(byKey('step-qty-$id'));
+      await tester.pumpAndSettle();
+      expect(opened, isNull);
+    });
+  });
+
   testWidgets('a product that is not sold shows no add button', (
     WidgetTester tester,
   ) async {
