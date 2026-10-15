@@ -1666,5 +1666,14 @@
   "showPassword": "Показать пароль",
   "hidePassword": "Скрыть пароль",
   "back": "Назад",
-  "wrongSurfaceWebTitle": "Откройте приложение"
+  "wrongSurfaceWebTitle": "Откройте приложение",
+  "catalogApproxPrice": "≈ {price}",
+  "catalogPerUnit": "за {unit}",
+  "catalogAdd": "Добавить",
+  "catalogUnavailable": "Нет в продаже",
+  "favoriteFailed": "Не удалось сохранить. Попробуйте ещё раз",
+  "favoriteAdd": "Добавить в избранное",
+  "favoriteRemove": "Убрать из избранного",
+  "cartStepMinus": "Уменьшить",
+  "cartStepPlus": "Увеличить"
 }

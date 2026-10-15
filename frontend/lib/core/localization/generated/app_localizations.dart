@@ -4531,6 +4531,60 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Ilovani oching'**
   String get wrongSurfaceWebTitle;
+
+  /// No description provided for @catalogApproxPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'≈ {price}'**
+  String catalogApproxPrice(String price);
+
+  /// No description provided for @catalogPerUnit.
+  ///
+  /// In uz, this message translates to:
+  /// **'{unit} uchun'**
+  String catalogPerUnit(String unit);
+
+  /// No description provided for @catalogAdd.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shish'**
+  String get catalogAdd;
+
+  /// No description provided for @catalogUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotuvda yo\'q'**
+  String get catalogUnavailable;
+
+  /// No description provided for @favoriteFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlab bo\'lmadi. Qayta urinib ko\'ring'**
+  String get favoriteFailed;
+
+  /// No description provided for @favoriteAdd.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilarga qo\'shish'**
+  String get favoriteAdd;
+
+  /// No description provided for @favoriteRemove.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilardan olib tashlash'**
+  String get favoriteRemove;
+
+  /// No description provided for @cartStepMinus.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kamaytirish'**
+  String get cartStepMinus;
+
+  /// No description provided for @cartStepPlus.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'paytirish'**
+  String get cartStepPlus;
 }
 
 class _AppLocalizationsDelegate

@@ -2571,4 +2571,35 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get wrongSurfaceWebTitle => 'Ilovani oching';
+
+  @override
+  String catalogApproxPrice(String price) {
+    return '≈ $price';
+  }
+
+  @override
+  String catalogPerUnit(String unit) {
+    return '$unit uchun';
+  }
+
+  @override
+  String get catalogAdd => 'Qo\'shish';
+
+  @override
+  String get catalogUnavailable => 'Sotuvda yo\'q';
+
+  @override
+  String get favoriteFailed => 'Saqlab bo\'lmadi. Qayta urinib ko\'ring';
+
+  @override
+  String get favoriteAdd => 'Sevimlilarga qo\'shish';
+
+  @override
+  String get favoriteRemove => 'Sevimlilardan olib tashlash';
+
+  @override
+  String get cartStepMinus => 'Kamaytirish';
+
+  @override
+  String get cartStepPlus => 'Ko\'paytirish';
 }

@@ -2592,4 +2592,35 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get wrongSurfaceWebTitle => 'Откройте приложение';
+
+  @override
+  String catalogApproxPrice(String price) {
+    return '≈ $price';
+  }
+
+  @override
+  String catalogPerUnit(String unit) {
+    return 'за $unit';
+  }
+
+  @override
+  String get catalogAdd => 'Добавить';
+
+  @override
+  String get catalogUnavailable => 'Нет в продаже';
+
+  @override
+  String get favoriteFailed => 'Не удалось сохранить. Попробуйте ещё раз';
+
+  @override
+  String get favoriteAdd => 'Добавить в избранное';
+
+  @override
+  String get favoriteRemove => 'Убрать из избранного';
+
+  @override
+  String get cartStepMinus => 'Уменьшить';
+
+  @override
+  String get cartStepPlus => 'Увеличить';
 }

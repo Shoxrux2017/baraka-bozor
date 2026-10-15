@@ -1673,5 +1673,28 @@
   "showPassword": "Parolni ko'rsatish",
   "hidePassword": "Parolni yashirish",
   "back": "Orqaga",
-  "wrongSurfaceWebTitle": "Ilovani oching"
+  "wrongSurfaceWebTitle": "Ilovani oching",
+  "catalogApproxPrice": "≈ {price}",
+  "@catalogApproxPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogPerUnit": "{unit} uchun",
+  "@catalogPerUnit": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogAdd": "Qo'shish",
+  "catalogUnavailable": "Sotuvda yo'q",
+  "favoriteFailed": "Saqlab bo'lmadi. Qayta urinib ko'ring",
+  "favoriteAdd": "Sevimlilarga qo'shish",
+  "favoriteRemove": "Sevimlilardan olib tashlash",
+  "cartStepMinus": "Kamaytirish",
+  "cartStepPlus": "Ko'paytirish"
 }
