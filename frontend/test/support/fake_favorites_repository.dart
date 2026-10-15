@@ -37,9 +37,16 @@ class FakeFavoritesRepository implements FavoritesRepository {
     }
   }
 
+  /// While set, every load of the list answers this.
+  ApiFailure? listFailure;
+
   @override
   Future<Paged<FavoriteProduct>> list({required int page}) async {
     listLoads++;
+    final ApiFailure? failure = listFailure;
+    if (failure != null) {
+      throw failure;
+    }
     final int lastPage = rows.isEmpty
         ? 1
         : (rows.length + pageSize - 1) ~/ pageSize;

@@ -6,6 +6,7 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
@@ -120,6 +121,19 @@ void main() {
       find.descendant(of: find.byType(Form), matching: finder);
 
   group('profile', () {
+    testWidgets(
+      'the profile carries the tab bar with the profile tab current',
+      (WidgetTester tester) async {
+        await openProfile(tester);
+
+        expect(find.byType(CustomerTabBar), findsOneWidget);
+        expect(
+          tester.widget<CustomerTabBar>(find.byType(CustomerTabBar)).current,
+          CustomerTab.profile,
+        );
+      },
+    );
+
     testWidgets('the profile logs the Customer out', (
       WidgetTester tester,
     ) async {

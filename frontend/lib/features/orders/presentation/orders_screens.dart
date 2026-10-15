@@ -19,6 +19,7 @@ import '../../../core/orders/quantity_rules.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
+import '../../../core/widgets/customer_tab_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/periodic_refresh.dart';
@@ -54,6 +55,7 @@ class OrdersScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.myOrders)),
+      bottomNavigationBar: const CustomerTabBar(current: CustomerTab.orders),
       body: SafeArea(
         child: Column(
           children: <Widget>[

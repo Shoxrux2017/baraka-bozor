@@ -2660,4 +2660,17 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get cartSummaryOpen => 'В корзину';
+
+  @override
+  String get favoritesTitle => 'Избранное';
+
+  @override
+  String get favoritesEmptyTitle => 'Пока пусто';
+
+  @override
+  String get favoritesEmptyText =>
+      'Нажмите сердечко на товаре — он появится здесь, и его будет легко заказать снова';
+
+  @override
+  String get favoritesEmptyAction => 'За покупками';
 }

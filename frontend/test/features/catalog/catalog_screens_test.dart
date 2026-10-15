@@ -6,11 +6,15 @@ import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
+import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/catalog/presentation/all_products_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
+import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
+import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_screens.dart';
 import 'package:flutter/material.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
@@ -430,5 +434,42 @@ void main() {
         expect(mode, findsOneWidget, reason: 'back in the staff shell');
       },
     );
+  }
+
+  for (final (String, Type) screen in <(String, Type)>[
+    (CatalogPaths.recommended, RecommendedScreen),
+    (CatalogPaths.products, AllProductsScreen),
+    (AppPaths.customerFavorites, FavoritesScreen),
+  ]) {
+    final String path = screen.$1;
+    testWidgets('with two sessions $path shows the mode bar', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      tokens.tokens[SessionSlot.staff] = 's';
+      auth.identities[SessionSlot.staff] = user(
+        id: 's',
+        role: UserRole.courier,
+      );
+
+      await open(tester);
+      await tester.tap(byKey('staff-menu'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('switch-to-customer-button'));
+      await tester.pumpAndSettle();
+      GoRouter.of(tester.element(find.byType(Scaffold).first)).push(path);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(screen.$2), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(screen.$2),
+          matching: byKey('active-mode'),
+        ),
+        findsOneWidget,
+      );
+    });
   }
 }

@@ -1684,5 +1684,9 @@
   "recommendedTitle": "Рекомендуем",
   "recommendedEmpty": "Пока нет рекомендованных товаров",
   "cartSummaryCount": "{count, plural, one{{count} товар} few{{count} товара} many{{count} товаров} other{{count} товара}}",
-  "cartSummaryOpen": "В корзину"
+  "cartSummaryOpen": "В корзину",
+  "favoritesTitle": "Избранное",
+  "favoritesEmptyTitle": "Пока пусто",
+  "favoritesEmptyText": "Нажмите сердечко на товаре — он появится здесь, и его будет легко заказать снова",
+  "favoritesEmptyAction": "За покупками"
 }

@@ -2636,4 +2636,17 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get cartSummaryOpen => 'Savatga';
+
+  @override
+  String get favoritesTitle => 'Sevimlilar';
+
+  @override
+  String get favoritesEmptyTitle => 'Hozircha bo\'sh';
+
+  @override
+  String get favoritesEmptyText =>
+      'Mahsulotdagi yurakchani bosing — u shu yerda paydo bo\'ladi va uni qayta buyurtma qilish oson bo\'ladi';
+
+  @override
+  String get favoritesEmptyAction => 'Xaridga';
 }

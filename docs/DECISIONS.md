@@ -1225,3 +1225,4 @@ Answers to the questions of kit stage 2 (`kit/02-glavnaya.dc.html`, approved the
 3. **The cart bar** appears on the product lists without the tab bar (a category, "Рекомендуем", every product) while the cart holds a line; the tab screens show the count on the cart button instead.
 4. **The sort** is remembered while the app runs and applies to every product and to the home's search results; it starts as the shop's order.
 5. **A category's screen** carries a rail of every category, as the kit's subcategory rail, because categories are flat (`docs/08` §6); switching replaces the location. A category without a picture shows its first letter.
+6. **The tab bar** (`DL-78` item 6) is drawn by the home, favourites, orders and profile, which stay separate routes: a tab opened from the home is pushed over it and one opened from another tab replaces that tab, so the system back always returns to the home. Orders and profile keep their content until their stages.

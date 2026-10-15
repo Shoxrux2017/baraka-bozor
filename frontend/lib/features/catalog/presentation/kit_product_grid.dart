@@ -9,6 +9,22 @@ import '../domain/catalog.dart';
 import 'catalog_widgets.dart';
 import 'kit_product_card.dart';
 
+/// The height of one kit card: the picture, and the texts and the control
+/// under it, which grow with the text scale.
+double kitCardExtent(
+  TextScaler scaler, {
+  required KitCardSize size,
+  required double imageHeight,
+}) {
+  final bool compact = size == KitCardSize.compact;
+  final double controls = compact ? 32 : 38;
+  final double name = scaler.scale(compact ? 34 : 40);
+  final double price = scaler.scale(compact ? 13 : 15) * 1.4;
+  final double unit = scaler.scale(compact ? 11 : 12) * 1.4;
+  // Padding 16, gaps 8 + 4 + 8, and a little slack for the line heights.
+  return 16 + imageHeight + 8 + name + 4 + price + unit + 8 + controls + 6;
+}
+
 /// A product list as a grid of kit cards, loaded a page at a time: the next
 /// page when the end comes into view, a failed page with the retry of the
 /// plain list. [empty] is shown when nothing matches; [padding] leaves room
@@ -30,18 +46,6 @@ class KitProductGrid extends ConsumerWidget {
   final double imageHeight;
   final Widget? empty;
   final EdgeInsets padding;
-
-  /// The height of one card: the picture, and the texts and the control
-  /// under it, which grow with the text scale.
-  double _cardExtent(TextScaler scaler) {
-    final bool compact = size == KitCardSize.compact;
-    final double controls = compact ? 32 : 38;
-    final double name = scaler.scale(compact ? 34 : 40);
-    final double price = scaler.scale(compact ? 13 : 15) * 1.4;
-    final double unit = scaler.scale(compact ? 11 : 12) * 1.4;
-    // Padding 16, gaps 8 + 4 + 8, and a little slack for the line heights.
-    return 16 + imageHeight + 8 + name + 4 + price + unit + 8 + controls + 6;
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -71,7 +75,11 @@ class KitProductGrid extends ConsumerWidget {
           );
         }
         final int rows = (state.items.length + columns - 1) ~/ columns;
-        final double extent = _cardExtent(MediaQuery.textScalerOf(context));
+        final double extent = kitCardExtent(
+          MediaQuery.textScalerOf(context),
+          size: size,
+          imageHeight: imageHeight,
+        );
         // Rows of one lazy list, so the end of the list is built, and asks
         // for the next page, only when it comes into view.
         return ListView.builder(

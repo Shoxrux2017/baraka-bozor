@@ -4639,6 +4639,30 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Savatga'**
   String get cartSummaryOpen;
+
+  /// No description provided for @favoritesTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilar'**
+  String get favoritesTitle;
+
+  /// No description provided for @favoritesEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha bo\'sh'**
+  String get favoritesEmptyTitle;
+
+  /// No description provided for @favoritesEmptyText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotdagi yurakchani bosing — u shu yerda paydo bo\'ladi va uni qayta buyurtma qilish oson bo\'ladi'**
+  String get favoritesEmptyText;
+
+  /// No description provided for @favoritesEmptyAction.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaridga'**
+  String get favoritesEmptyAction;
 }
 
 class _AppLocalizationsDelegate

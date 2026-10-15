@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/active_mode_bar.dart';
 import '../../cart/presentation/cart_summary_bar.dart';
 import '../domain/catalog.dart';
 import 'kit_product_grid.dart';
@@ -28,27 +29,30 @@ class RecommendedScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: Stack(
-        children: <Widget>[
-          Positioned.fill(
-            child: KitProductGrid(
-              query: const ProductListQuery(featuredOnly: true),
-              padding: const EdgeInsets.fromLTRB(
-                16,
-                8,
-                16,
-                16 + CartSummaryBar.height,
+      // The mode stays visible while two sessions exist (DL-75).
+      body: UnderActiveMode(
+        child: Stack(
+          children: <Widget>[
+            Positioned.fill(
+              child: KitProductGrid(
+                query: const ProductListQuery(featuredOnly: true),
+                padding: const EdgeInsets.fromLTRB(
+                  16,
+                  8,
+                  16,
+                  16 + CartSummaryBar.height,
+                ),
+                empty: Text(l10n.recommendedEmpty, textAlign: TextAlign.center),
               ),
-              empty: Text(l10n.recommendedEmpty, textAlign: TextAlign.center),
             ),
-          ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: CartSummaryBar(),
-          ),
-        ],
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: CartSummaryBar(),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1712,5 +1712,9 @@
       }
     }
   },
-  "cartSummaryOpen": "Savatga"
+  "cartSummaryOpen": "Savatga",
+  "favoritesTitle": "Sevimlilar",
+  "favoritesEmptyTitle": "Hozircha bo'sh",
+  "favoritesEmptyText": "Mahsulotdagi yurakchani bosing — u shu yerda paydo bo'ladi va uni qayta buyurtma qilish oson bo'ladi",
+  "favoritesEmptyAction": "Xaridga"
 }

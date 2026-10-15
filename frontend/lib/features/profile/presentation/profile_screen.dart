@@ -11,6 +11,7 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
+import '../../../core/widgets/customer_tab_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/profile_controllers.dart';
 import '../domain/profile.dart';
@@ -33,6 +34,7 @@ class ProfileScreen extends ConsumerWidget {
         title: Text(l10n.profileTitle),
         actions: const <Widget>[_LogoutButton()],
       ),
+      bottomNavigationBar: const CustomerTabBar(current: CustomerTab.profile),
       body: SafeArea(
         child: UnderActiveMode(
           child: profile.when(
