@@ -175,12 +175,11 @@ void main() {
   });
 
   group('BarakaBozorApp', () {
-    testWidgets('boots into a neutral screen with no text', (
+    testWidgets('boots into the white wordmark screen', (
       WidgetTester tester,
     ) async {
-      // The bootstrap screen shows nothing until the session is known; a
-      // stored language choice may still be loading, and any text here could
-      // flash in the wrong language.
+      // The bootstrap screen shows only the brand name, which is the same in
+      // every language, until the session is known.
       final FakeAuthRepository repository = FakeAuthRepository()
         ..identities[SessionSlot.customer] = user()
         ..holdAnswers = Completer<void>();
@@ -194,8 +193,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byType(Text), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('BarakaBozor'), findsOneWidget);
 
       repository.holdAnswers!.complete();
       await tester.pumpAndSettle();

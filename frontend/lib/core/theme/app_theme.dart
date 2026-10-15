@@ -1,28 +1,60 @@
 import 'package:flutter/material.dart';
 
-import 'brand_colors.dart';
+import 'kit_colors.dart';
 
-/// The seed every Material colour in the client is derived from: the brand
-/// green of design 4a (`DL-75`).
+/// The seed every Material colour in the client is derived from: the kit
+/// primary green.
 ///
 /// Public so a test can prove both schemes really come from this one value
 /// rather than merely differing from each other.
-const Color appSeedColor = BrandColors.green;
+const Color appSeedColor = KitColors.primary;
 
 /// The interface font, bundled with the app (`assets/fonts`), so text looks
 /// the same offline and on every device.
-const String appFontFamily = 'Manrope';
+const String appFontFamily = 'Montserrat';
 
-/// Builds the Material 3 theme for [brightness]: one seed, the brand font.
-/// Screens redesigned after design 4a take their brand colours from
-/// [BrandColors]; component themes arrive with the parts that need them.
+/// Builds the Material 3 theme for [brightness]: one seed with the brand
+/// primary pinned, the brand font, and the kit's button and field shapes.
 ThemeData buildAppTheme(Brightness brightness) {
+  final RoundedRectangleBorder buttonShape = RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(16),
+  );
+  const TextStyle buttonText = TextStyle(
+    fontFamily: appFontFamily,
+    fontWeight: FontWeight.w600,
+    fontSize: 16,
+  );
+  OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(14),
+    borderSide: BorderSide(color: color, width: width),
+  );
   return ThemeData(
     useMaterial3: true,
     fontFamily: appFontFamily,
     colorScheme: ColorScheme.fromSeed(
       seedColor: appSeedColor,
       brightness: brightness,
+    ).copyWith(primary: KitColors.primary, onPrimary: Colors.white),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(0, 56),
+        shape: buttonShape,
+        textStyle: buttonText,
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size(0, 56),
+        shape: buttonShape,
+        textStyle: buttonText,
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: KitColors.field,
+      border: border(KitColors.line, 1),
+      enabledBorder: border(KitColors.line, 1),
+      focusedBorder: border(KitColors.primary, 1.5),
     ),
   );
 }

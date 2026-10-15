@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/routing/app_paths.dart';
 import '../core/routing/feature_routes.dart';
+import '../core/widgets/brand_wordmark.dart';
 import '../features/admin/presentation/admin_routes.dart';
 import '../features/auth/presentation/auth_routes.dart';
 import '../features/addresses/presentation/addresses_routes.dart';
@@ -94,14 +95,16 @@ final FeatureRoutes _bootstrapFragment = FeatureRoutes(
 
 /// What the client shows until the session is known.
 ///
-/// It carries no text: the session guard leaves it the moment the bootstrap
-/// answers, and a stored language choice may still be loading, so any text
-/// here could flash in the wrong language.
+/// The brand wordmark on white, like the system splash before it. The name is
+/// the same in every language, so nothing here can flash in the wrong one.
 class _BootstrapScreen extends StatelessWidget {
   const _BootstrapScreen();
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return const Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(child: BrandWordmark()),
+    );
   }
 }
