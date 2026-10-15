@@ -6,6 +6,7 @@ use App\Models\Enums\Role;
 use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Auth\Http\Middleware\RequireRole;
 use App\Modules\Catalog\Http\Controllers\AdminCategoryController;
+use App\Modules\Catalog\Http\Controllers\AdminCategoryImageController;
 use App\Modules\Catalog\Http\Controllers\AdminProductController;
 use App\Modules\Catalog\Http\Controllers\AdminProductImageController;
 use App\Modules\Catalog\Http\Controllers\CustomerCatalogController;
@@ -31,6 +32,9 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Admin)]
         Route::patch('categories/{category}', [AdminCategoryController::class, 'update'])->name('admin.categories.update');
         Route::post('categories/{category}/archive', [AdminCategoryController::class, 'archive'])->name('admin.categories.archive');
         Route::post('categories/{category}/restore', [AdminCategoryController::class, 'restore'])->name('admin.categories.restore');
+
+        Route::post('categories/{category}/image', [AdminCategoryImageController::class, 'store'])->name('admin.categories.image.store');
+        Route::delete('categories/{category}/image', [AdminCategoryImageController::class, 'destroy'])->name('admin.categories.image.destroy');
 
         Route::get('products', [AdminProductController::class, 'index'])->name('admin.products.index');
         Route::post('products', [AdminProductController::class, 'store'])->name('admin.products.store');

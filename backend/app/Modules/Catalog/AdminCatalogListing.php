@@ -19,7 +19,7 @@ final class AdminCatalogListing
      */
     public static function categories(bool $includeArchived): Builder
     {
-        $query = CatalogSearch::ordered(Category::query());
+        $query = CatalogSearch::ordered(Category::query()->with('image'));
 
         if (! $includeArchived) {
             $query->whereNull($query->qualifyColumn('archived_at'));

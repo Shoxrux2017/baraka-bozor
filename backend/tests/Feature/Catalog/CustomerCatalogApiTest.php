@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Catalog;
 
 use App\Models\Category;
+use App\Models\CategoryImage;
 use App\Models\Enums\Role;
 use App\Models\Product;
 use App\Models\ProductImage;
@@ -38,9 +39,25 @@ final class CustomerCatalogApiTest extends TestCase
         $response->assertJsonPath('data.*.name_uz', ['Sabzavotlar', 'Mevalar'])
             ->assertJsonPath('meta.pagination.total', 2);
         $this->assertSame(
-            ['id', 'name_uz', 'name_ru', 'description_uz', 'description_ru', 'sort_order'],
+            ['id', 'name_uz', 'name_ru', 'description_uz', 'description_ru', 'sort_order', 'image_url'],
             array_keys($response->json('data.0'))
         );
+    }
+
+    public function test_a_listed_category_carries_its_picture_url_or_null(): void
+    {
+        $category = Category::factory()->create();
+        Product::factory()->for($category)->create();
+
+        $this->asCustomer()->getJson('/api/v1/catalog/categories')
+            ->assertOk()
+            ->assertJsonPath('data.0.image_url', null);
+
+        $image = CategoryImage::factory()->create(['category_id' => $category->id]);
+
+        $this->asCustomer()->getJson('/api/v1/catalog/categories')
+            ->assertOk()
+            ->assertJsonPath('data.0.image_url', Storage::disk('public')->url($image->storage_key));
     }
 
     public function test_a_product_shows_the_customer_price_and_never_the_market_price(): void

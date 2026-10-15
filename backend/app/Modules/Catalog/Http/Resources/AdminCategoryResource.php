@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Http\Resources;
 
 use App\Models\Category;
+use App\Modules\Catalog\CategoryImages;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -30,6 +31,7 @@ final class AdminCategoryResource extends JsonResource
             'description_uz' => $category->description_uz,
             'description_ru' => $category->description_ru,
             'sort_order' => $category->sort_order,
+            'image_url' => CategoryImages::url($category->image),
             'is_active' => $category->is_active,
             'archived_at' => $category->archived_at?->toIso8601ZuluString(),
             'created_at' => $category->created_at->toIso8601ZuluString(),

@@ -14,6 +14,7 @@ PostgreSQL 17 with a UTF-8 character type (`en_US.utf8` in the Compose stack and
 users                       customer_otp_challenges
 customer_addresses
 categories                  products                 product_images
+category_images
 carts                       cart_items
 business_settings           payment_provider_settings
 orders                      order_items              order_history
@@ -202,3 +203,7 @@ Application: role and ownership, unit precision, lifecycle transitions, the ceil
 ## 30. Deliberately Absent
 
 Markets, cities, sellers, warehouses, inventory, promotions, bonuses, subscriptions, delivery zones, GPS tracks, chat, refund attempts.
+
+## 31. `category_images` (migrated)
+
+`id, category_id → categories (unique, restrict), storage_key (unique), original_filename?, mime_type, size_bytes, timestamps`. Size from 1 byte to 5 MiB (5 242 880 bytes) inclusive (`category_images_size_bytes_check`); MIME in `image/jpeg`, `image/png`, `image/webp` (`category_images_mime_type_check`). The same shape as `product_images` (`DL-79` (2)).

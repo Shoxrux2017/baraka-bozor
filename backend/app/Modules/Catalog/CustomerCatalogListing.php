@@ -27,7 +27,7 @@ final class CustomerCatalogListing
      */
     public static function categories(): Builder
     {
-        $query = CatalogSearch::ordered(Category::query());
+        $query = CatalogSearch::ordered(Category::query()->with('image'));
 
         // A category the Admin is still filling would open onto an empty
         // list, so it stays out of the Customer's list until it has a product.
