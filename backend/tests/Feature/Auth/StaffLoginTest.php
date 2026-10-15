@@ -8,6 +8,7 @@ use App\Models\Enums\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use Laravel\Sanctum\PersonalAccessToken;
 use Tests\TestCase;
 
 /**
@@ -60,7 +61,7 @@ final class StaffLoginTest extends TestCase
 
     public function test_the_first_login_gate_is_reported(): void
     {
-        User::factory()->role(Role::Shopper)->mustChangePassword()->create([
+        User::factory()->role(Role::Operator)->mustChangePassword()->create([
             'phone' => self::PHONE,
             'password' => self::PASSWORD,
         ]);
@@ -93,7 +94,7 @@ final class StaffLoginTest extends TestCase
 
     public function test_a_blocked_staff_account_with_the_right_password_is_account_blocked(): void
     {
-        User::factory()->role(Role::Courier)->blocked()->create(['phone' => self::PHONE, 'password' => self::PASSWORD]);
+        User::factory()->role(Role::Manager)->blocked()->create(['phone' => self::PHONE, 'password' => self::PASSWORD]);
 
         $this->assertRefused($this->login(self::PHONE, self::PASSWORD), 401, 'account_blocked');
 
@@ -103,13 +104,37 @@ final class StaffLoginTest extends TestCase
 
     public function test_the_active_account_wins_when_a_blocked_one_shares_the_phone(): void
     {
-        User::factory()->role(Role::Shopper)->blocked()->create(['phone' => self::PHONE, 'password' => 'old password'.'!!']);
-        $active = User::factory()->role(Role::Courier)->create(['phone' => self::PHONE, 'password' => self::PASSWORD]);
+        User::factory()->role(Role::Manager)->blocked()->create(['phone' => self::PHONE, 'password' => 'old password'.'!!']);
+        $active = User::factory()->role(Role::Admin)->create(['phone' => self::PHONE, 'password' => self::PASSWORD]);
 
         $this->login(self::PHONE, self::PASSWORD)
             ->assertOk()
             ->assertJsonPath('data.user.id', $active->id)
-            ->assertJsonPath('data.user.role', 'courier');
+            ->assertJsonPath('data.user.role', 'admin');
+    }
+
+    public function test_a_shopper_or_courier_with_the_right_password_must_take_the_code_step(): void
+    {
+        foreach ([Role::Shopper, Role::Courier] as $role) {
+            User::query()->where('phone', self::PHONE)->delete();
+            User::factory()->role($role)->create(['phone' => self::PHONE, 'password' => self::PASSWORD]);
+            $tokens = PersonalAccessToken::query()->count();
+
+            $response = $this->login(self::PHONE, self::PASSWORD);
+
+            $response->assertStatus(403)->assertJsonPath('code', 'staff_code_required');
+            $this->assertStringNotContainsString('token', (string) $response->getContent());
+            $this->assertSame($tokens, PersonalAccessToken::query()->count());
+
+            $this->assertRefused($this->login(self::PHONE, 'wrong'), 401, 'invalid_credentials');
+        }
+    }
+
+    public function test_an_admin_with_the_right_password_still_logs_in(): void
+    {
+        User::factory()->role(Role::Admin)->create(['phone' => self::PHONE, 'password' => self::PASSWORD]);
+
+        $this->login(self::PHONE, self::PASSWORD)->assertOk()->assertJsonPath('data.user.role', 'admin');
     }
 
     public function test_a_malformed_phone_is_a_validation_failure(): void

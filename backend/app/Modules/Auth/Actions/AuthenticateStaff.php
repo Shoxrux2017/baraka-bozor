@@ -75,6 +75,16 @@ final class AuthenticateStaff
             throw ApiException::unauthenticated('account_blocked');
         }
 
+        if (in_array($account->role, [Role::Shopper, Role::Courier], true)) {
+            // Counted like a failure, as for a blocked account: the caller holds
+            // the password, so learning that the code step is required
+            // discloses nothing new.
+            $this->limiter->hit($phoneKey, self::DECAY_SECONDS);
+            $this->limiter->hit($ipKey, self::DECAY_SECONDS);
+
+            throw ApiException::forbidden('staff_code_required');
+        }
+
         $this->limiter->clear($phoneKey);
 
         $account->forceFill(['last_login_at' => now()])->save();

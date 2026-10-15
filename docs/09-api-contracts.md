@@ -57,14 +57,16 @@ Phone: E.164 `+998` plus nine digits. Policy: six digits, five-minute lifetime, 
 Resolves the active Customer account or creates one when none is active, then issues a token:
 
 ```json
-{"data":{"token":"...","user":{"id":"...","role":"customer","phone":"+998901234567","full_name":null,"status":"active","must_change_password":false,"preferred_language":"uz"}}}
+{"data":{"token":"...","user":{"id":"...","role":"customer","phone":"+998901234567","full_name":null,"status":"active","must_change_password":false,"preferred_language":"uz"},"staff_step":null}}
 ```
 
-Codes: `code_invalid`, `code_expired`, `code_attempts_exhausted`, `account_blocked` (evaluated only after the code is valid, `401`). Never issues a staff session. A configured test phone accepts the configured fixed code.
+`staff_step` is `null`, or `{"token":"<64 characters>","expires_at":"2026-10-15T09:05:00Z"}` when the phone also holds an active or blocked Shopper or Courier account (`DL-77`). Codes: `code_invalid`, `code_expired`, `code_attempts_exhausted`, `account_blocked` (evaluated only after the code is valid, `401`). Never issues a staff session; for a phone that also holds a Shopper or Courier account it returns a single-use `staff_step` (5 minutes, 5 wrong passwords) for `POST /auth/staff/step`, and a new verification closes the earlier open step. A configured test phone accepts the configured fixed code.
 
 ## 8. Staff Login
 
-`POST /auth/staff/login` `{"phone":"+998901234567","password":"..."}` → token plus the user object above with the staff role. Codes: `invalid_credentials`, `account_blocked`, `rate_limited` (five failures per phone per minute, twenty per IP per minute). A token unused for 30 days answers `401 authentication_required`; a valid token on a blocked account answers `401 account_blocked`.
+`POST /auth/staff/login` `{"phone":"+998901234567","password":"..."}` → token plus the user object above with the staff role. Codes: `invalid_credentials`, `account_blocked`, `rate_limited` (five failures per phone per minute, twenty per IP per minute). A token unused for 30 days answers `401 authentication_required`; a valid token on a blocked account answers `401 account_blocked`. A Shopper or Courier with the right password is answered `403 staff_code_required` and no token: those two roles sign in with the login code first and then `POST /auth/staff/step` (`DL-77`); a wrong password stays `401 invalid_credentials`, and the refusal counts like a failure toward the limits.
+
+`POST /auth/staff/step` `{"staff_step":"<64 characters>","password":"..."}` → `{"data":{"token":"...","user":{...}}}`, the staff token and user object of the staff login. The step is single use: a right password consumes it, a wrong one answers `401 invalid_credentials` and counts an attempt, and the fifth wrong password exhausts it. Codes: `staff_step_invalid` (unknown, used or exhausted, `401`), `staff_step_expired` (older than 5 minutes, `401`), `invalid_credentials`, `account_blocked` (right password on a blocked account; the step is spent), `rate_limited` (twenty refusals per IP per minute), `validation_failed`. The first-login gate applies to the session as for any staff login.
 
 ## 9. Current Identity
 
@@ -327,7 +329,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 52. Auth
 
-`invalid_credentials`, `account_blocked`, `password_change_required`, `code_invalid`, `code_expired`, `code_attempts_exhausted`, `code_resend_too_soon`.
+`invalid_credentials`, `account_blocked`, `password_change_required`, `code_invalid`, `code_expired`, `code_attempts_exhausted`, `code_resend_too_soon`, `staff_code_required` (`403`), `staff_step_invalid`, `staff_step_expired`.
 
 ## 53. Catalog, Cart, Checkout, Editing
 
