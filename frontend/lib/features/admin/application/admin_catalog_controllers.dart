@@ -257,6 +257,28 @@ productImageControllerProvider =
       ProductImageController.new,
     );
 
+/// The category dialog's picture card: upload and removal.
+class CategoryImageController extends CatalogMutation {
+  Future<AdminCategory?> upload(String categoryId, PickedImage image) =>
+      perform(
+        () => catalog.uploadCategoryImage(categoryId, image),
+        reload: _reload,
+      );
+
+  Future<AdminCategory?> remove(String categoryId) =>
+      perform(() => catalog.removeCategoryImage(categoryId), reload: _reload);
+
+  void _reload(AdminCategory? _) => ref
+    ..invalidate(categoryPageProvider)
+    ..invalidate(categoryOptionsProvider);
+}
+
+final NotifierProvider<CategoryImageController, MutationState>
+categoryImageControllerProvider =
+    NotifierProvider.autoDispose<CategoryImageController, MutationState>(
+      CategoryImageController.new,
+    );
+
 /// Where the panel gets an image from: the browser's file dialog in the
 /// build, a fake in tests.
 final Provider<ProductImagePicker> productImagePickerProvider =

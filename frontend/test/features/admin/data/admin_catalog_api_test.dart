@@ -18,18 +18,20 @@ const String categoryId = '0f0e3c6a-6b1f-4f7e-9a51-2d6c1c1e9a01';
 const String productId = '5b2a1c3d-8e4f-4a6b-9c7d-1e2f3a4b5c6d';
 
 /// A category as `docs/09-api-contracts.md` section 15 returns it.
-Map<String, Object?> categoryJson({String? archivedAt}) => <String, Object?>{
-  'id': categoryId,
-  'name_uz': 'Sabzavotlar',
-  'name_ru': 'Овощи',
-  'description_uz': null,
-  'description_ru': 'Свежие',
-  'sort_order': 2,
-  'is_active': archivedAt == null,
-  'archived_at': archivedAt,
-  'created_at': '2026-09-26T05:00:00Z',
-  'updated_at': '2026-09-26T05:00:00Z',
-};
+Map<String, Object?> categoryJson({String? archivedAt, String? imageUrl}) =>
+    <String, Object?>{
+      'id': categoryId,
+      'name_uz': 'Sabzavotlar',
+      'name_ru': 'Овощи',
+      'description_uz': null,
+      'description_ru': 'Свежие',
+      'sort_order': 2,
+      'is_active': archivedAt == null,
+      'archived_at': archivedAt,
+      'image_url': imageUrl,
+      'created_at': '2026-09-26T05:00:00Z',
+      'updated_at': '2026-09-26T05:00:00Z',
+    };
 
 /// A product as sections 15 and 16 return it.
 Map<String, Object?> productJson({String? imageUrl, bool isFeatured = false}) =>
@@ -500,6 +502,59 @@ void main() {
       expect(form.files.single.value.filename, 'pomidor.png');
       expect(form.files.single.value.length, 10);
       expect(request.contentType, startsWith('multipart/form-data'));
+    });
+
+    test('a category picture goes as the one multipart field', () async {
+      reply = (RequestOptions options) => jsonReply(200, <String, Object?>{
+        'data': categoryJson(
+          imageUrl: 'https://api.test/storage/categories/a.webp',
+        ),
+      });
+      final PickedImage image = PickedImage(
+        bytes: Uint8List.fromList(<int>[
+          0x89,
+          0x50,
+          0x4E,
+          0x47,
+          0x0D,
+          0x0A,
+          0x1A,
+          0x0A,
+          1,
+          2,
+        ]),
+        name: 'sabzavot.png',
+      );
+
+      final AdminCategory saved = await repository.uploadCategoryImage(
+        categoryId,
+        image,
+      );
+
+      final RequestOptions request = adapter.requests.single;
+      expect(request.method, 'POST');
+      expect(request.path, '/admin/categories/$categoryId/image');
+      expect(slotOf(request), SessionSlot.staff);
+      final FormData form = request.data as FormData;
+      expect(form.fields, isEmpty);
+      expect(form.files.single.key, 'image');
+      expect(form.files.single.value.filename, 'sabzavot.png');
+      expect(saved.imageUrl, 'https://api.test/storage/categories/a.webp');
+    });
+
+    test('a category picture is removed with DELETE', () async {
+      reply = (RequestOptions options) =>
+          jsonReply(200, <String, Object?>{'data': categoryJson()});
+
+      final AdminCategory saved = await repository.removeCategoryImage(
+        categoryId,
+      );
+
+      final RequestOptions request = adapter.requests.single;
+      expect(request.method, 'DELETE');
+      expect(request.path, '/admin/categories/$categoryId/image');
+      expect(slotOf(request), SessionSlot.staff);
+      expect(saved.imageUrl, isNull);
     });
 
     test('a refusal keeps its code', () async {

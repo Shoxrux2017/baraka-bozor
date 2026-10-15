@@ -18,6 +18,7 @@ final class AdminCategory {
     required this.sortOrder,
     required this.isActive,
     required this.archivedAt,
+    required this.imageUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -30,6 +31,7 @@ final class AdminCategory {
   final int sortOrder;
   final bool isActive;
   final DateTime? archivedAt;
+  final String? imageUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
 

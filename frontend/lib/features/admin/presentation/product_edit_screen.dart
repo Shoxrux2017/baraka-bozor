@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/catalog/catalog_values.dart';
-import '../../../core/errors/report_unexpected_error.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
@@ -16,8 +15,8 @@ import '../application/admin_catalog_controllers.dart';
 import '../domain/admin_catalog.dart';
 import 'admin_paths.dart';
 import 'catalog_form_rules.dart';
+import 'catalog_image_card.dart';
 import 'catalog_widgets.dart';
-import 'products_screen.dart' show ProductThumbnail;
 
 /// One product's page: its form, and its image once it exists
 /// (`docs/09-api-contracts.md` sections 15 and 16). With no [productId] it
@@ -478,180 +477,23 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
   }
 }
 
-/// The product's image: the current one, a picked one waiting to be sent,
-/// the way to choose another and the way to remove it.
-class _ProductImageCard extends ConsumerStatefulWidget {
+/// The product's picture, through the card the category dialog shares.
+class _ProductImageCard extends ConsumerWidget {
   const _ProductImageCard({required this.product});
 
   final AdminProduct product;
 
   @override
-  ConsumerState<_ProductImageCard> createState() => _ProductImageCardState();
-}
-
-class _ProductImageCardState extends ConsumerState<_ProductImageCard> {
-  PickedImage? _picked;
-  String? _problem;
-
-  Future<void> _choose() async {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final PickedImage? image;
-    try {
-      image = await ref.read(productImagePickerProvider).pick();
-    } on Object catch (error, stackTrace) {
-      // A file moved or deleted after it was chosen cannot be read.
-      reportUnexpectedError(error, stackTrace, 'while reading a picked image');
-      if (mounted) {
-        setState(() {
-          _picked = null;
-          _problem = l10n.productImageUnreadable;
-        });
-      }
-      return;
-    }
-    if (!mounted || image == null) {
-      return;
-    }
-    final String? problem = image.isTooLarge
-        ? l10n.productImageTooLarge
-        : image.looksLikeAcceptedImage
-        ? null
-        : l10n.productImageWrongType;
-    setState(() {
-      _problem = problem;
-      _picked = problem == null ? image : null;
-    });
-  }
-
-  Future<void> _upload() async {
-    final PickedImage? image = _picked;
-    if (image == null) {
-      return;
-    }
-    final AdminProduct? updated = await ref
-        .read(productImageControllerProvider.notifier)
-        .upload(widget.product.id, image);
-    if (mounted && updated != null) {
-      setState(() => _picked = null);
-    }
-  }
-
-  Future<void> _remove() async {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final bool confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            content: Text(l10n.productRemoveImageConfirm),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(l10n.cancelButton),
-              ),
-              FilledButton(
-                key: const ValueKey<String>('confirm-remove-image'),
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text(l10n.productRemoveImage),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-    if (!confirmed || !mounted) {
-      return;
-    }
-    await ref
-        .read(productImageControllerProvider.notifier)
-        .remove(widget.product.id);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final MutationState change = ref.watch(productImageControllerProvider);
-    final PickedImage? picked = _picked;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              l10n.productImage,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 4),
-            Text(l10n.productImageRules),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 16,
-              runSpacing: 12,
-              children: <Widget>[
-                ProductThumbnail(
-                  key: const ValueKey<String>('current-image'),
-                  url: widget.product.imageUrl,
-                  size: 160,
-                ),
-                if (picked != null)
-                  ClipRRect(
-                    key: const ValueKey<String>('picked-image'),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.memory(
-                      picked.bytes,
-                      width: 160,
-                      height: 160,
-                      fit: BoxFit.cover,
-                      errorBuilder:
-                          (BuildContext context, Object error, StackTrace? _) =>
-                              const SizedBox.square(
-                                dimension: 160,
-                                child: Icon(Icons.broken_image_outlined),
-                              ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              children: <Widget>[
-                OutlinedButton.icon(
-                  key: const ValueKey<String>('choose-image'),
-                  icon: const Icon(Icons.image_outlined),
-                  label: Text(l10n.productChooseImage),
-                  onPressed: change.isBusy ? null : _choose,
-                ),
-                if (picked != null)
-                  FilledButton.icon(
-                    key: const ValueKey<String>('upload-image'),
-                    icon: const Icon(Icons.upload),
-                    label: Text(l10n.productUploadImage),
-                    onPressed: change.isBusy ? null : _upload,
-                  ),
-                if (widget.product.imageUrl != null && picked == null)
-                  TextButton.icon(
-                    key: const ValueKey<String>('remove-image'),
-                    icon: const Icon(Icons.delete_outline),
-                    label: Text(l10n.productRemoveImage),
-                    onPressed: change.isBusy ? null : _remove,
-                  ),
-              ],
-            ),
-            if (_problem != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  _problem!,
-                  key: const ValueKey<String>('image-problem'),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-            FailureMessage(change.failure),
-          ],
-        ),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ProductImageController images = ref.read(
+      productImageControllerProvider.notifier,
+    );
+    return CatalogImageCard(
+      imageUrl: product.imageUrl,
+      onUpload: (PickedImage image) => images.upload(product.id, image),
+      onRemove: () => images.remove(product.id),
+      change: ref.watch(productImageControllerProvider),
+      keyPrefix: '',
     );
   }
 }

@@ -17,6 +17,7 @@ abstract final class AdminCatalogDto {
       sortOrder: json.integer('sort_order'),
       isActive: json.boolean('is_active'),
       archivedAt: json.nullableInstant('archived_at'),
+      imageUrl: json.nullableString('image_url'),
       createdAt: json.instant('created_at'),
       updatedAt: json.instant('updated_at'),
     );

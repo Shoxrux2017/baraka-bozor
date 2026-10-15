@@ -902,6 +902,24 @@ abstract class AppLocalizations {
   /// **'Kategoriyani tahrirlash'**
   String get categoryEditTitle;
 
+  /// No description provided for @categoryImage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasm'**
+  String get categoryImage;
+
+  /// No description provided for @categoryImageAfterSave.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasmni saqlagandan keyin qo\'shish mumkin'**
+  String get categoryImageAfterSave;
+
+  /// No description provided for @categoryRemoveImageConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kategoriya rasmi o\'chirilsinmi?'**
+  String get categoryRemoveImageConfirm;
+
   /// No description provided for @categorySaved.
   ///
   /// In uz, this message translates to:

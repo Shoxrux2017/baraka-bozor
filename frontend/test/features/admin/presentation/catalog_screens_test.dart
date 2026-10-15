@@ -664,6 +664,107 @@ void main() {
     });
   });
 
+  group('category picture', () {
+    testWidgets('a new category offers the picture only after saving', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.categories);
+      await tapAndSettle(tester, byKey('new-category'));
+
+      expect(find.text(l10n(tester).categoryImageAfterSave), findsOneWidget);
+      expect(byKey('category-choose-image'), findsNothing);
+    });
+
+    testWidgets('a picture is uploaded, shown and removed after asking', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.categories);
+      await tapAndSettle(tester, byKey('edit-c-1'));
+      expect(byKey('category-choose-image'), findsOneWidget);
+      expect(byKey('category-remove-image'), findsNothing);
+      picker.next = _png();
+
+      await tapAndSettle(tester, byKey('category-choose-image'));
+      expect(byKey('category-picked-image'), findsOneWidget);
+      await tapAndSettle(tester, byKey('category-upload-image'));
+
+      final (String id, PickedImage sent) = catalog.categoryUploads.single;
+      expect(id, 'c-1');
+      expect(sent.name, 'pomidor.png');
+      expect(byKey('category-picked-image'), findsNothing);
+      expect(byKey('category-remove-image'), findsOneWidget);
+      expect(
+        catalog.categoryRows.single.imageUrl,
+        'https://api.test/storage/categories/1.png',
+      );
+
+      await tapAndSettle(tester, byKey('category-remove-image'));
+      await tapAndSettle(tester, find.text(l10n(tester).cancelButton).last);
+      expect(catalog.removedCategoryImages, isEmpty);
+
+      await tapAndSettle(tester, byKey('category-remove-image'));
+      await tapAndSettle(tester, byKey('category-confirm-remove-image'));
+      expect(catalog.removedCategoryImages, <String>['c-1']);
+      expect(byKey('category-remove-image'), findsNothing);
+      expect(catalog.categoryRows.single.imageUrl, isNull);
+    });
+
+    testWidgets('the row shows the picture, or the first letter', (
+      WidgetTester tester,
+    ) async {
+      catalog.categoryRows = <AdminCategory>[
+        adminCategory(imageUrl: 'https://api.test/storage/categories/a.webp'),
+        adminCategory(id: 'c-2', nameUz: 'Mevalar', nameRu: 'Фрукты'),
+      ];
+      await open(tester, AdminPaths.categories);
+
+      expect(
+        find.descendant(
+          of: byKey('category-thumb-c-1'),
+          matching: find.byType(Image),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('category-thumb-c-2'),
+          matching: find.text('M'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('category-thumb-c-2'),
+          matching: find.byType(Image),
+        ),
+        findsNothing,
+      );
+    });
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets(
+        'the category dialog fits 320 px at double text in ${device.languageCode}',
+        (WidgetTester tester) async {
+          tester.platformDispatcher.textScaleFactorTestValue = 2;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+          await open(
+            tester,
+            AdminPaths.categories,
+            size: const Size(320, 640),
+            device: device,
+          );
+          await tapAndSettle(tester, byKey('edit-c-1'));
+          await tester.ensureVisible(byKey('category-choose-image'));
+          await tester.pumpAndSettle();
+
+          expect(byKey('category-choose-image'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  });
+
   group('product image', () {
     testWidgets('a picked image is previewed and uploaded as picked', (
       WidgetTester tester,

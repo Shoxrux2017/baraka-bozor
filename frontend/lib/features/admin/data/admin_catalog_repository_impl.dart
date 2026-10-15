@@ -34,6 +34,16 @@ class AdminCatalogRepositoryImpl implements AdminCatalogRepository {
       guardApiCall(() => _api.restoreCategory(id));
 
   @override
+  Future<AdminCategory> uploadCategoryImage(
+    String categoryId,
+    PickedImage image,
+  ) => guardApiCall(() => _api.uploadCategoryImage(categoryId, image));
+
+  @override
+  Future<AdminCategory> removeCategoryImage(String categoryId) =>
+      guardApiCall(() => _api.removeCategoryImage(categoryId));
+
+  @override
   Future<Paged<AdminProduct>> products(ProductQuery query) =>
       guardApiCall(() => _api.products(query));
 

@@ -32,7 +32,7 @@ Create, list, edit and deactivate own addresses. Required: a point on the map in
 
 ## 5. Catalog
 
-Admin manages a flat list of categories and the products in them: bilingual names (required) and descriptions (optional), unit, market price, one image (JPEG, PNG or WebP, at most 5 MB), sort order, archive and restore. Customers list active categories and products, search by name in both languages at once, and see the customer price (market price plus markup). The Admin marks products for "Рекомендуем"; Customers list the marked products and sort any list by price. Images are served from public URLs. A Customer keeps up to 500 favourite products and sees them in one list; a favourite that stops being sold stays, shown as unavailable (`BR-CAT-007`).
+Admin manages a flat list of categories and the products in them: bilingual names (required) and descriptions (optional), unit, market price, one image (JPEG, PNG or WebP, at most 5 MB), sort order, archive and restore. The Admin also uploads, replaces and removes a category's picture, once the category exists, in the same way. Customers list active categories and products, search by name in both languages at once, and see the customer price (market price plus markup). The Admin marks products for "Рекомендуем"; Customers list the marked products and sort any list by price. Images are served from public URLs. A Customer keeps up to 500 favourite products and sees them in one list; a favourite that stops being sold stays, shown as unavailable (`BR-CAT-007`).
 
 ## 6. Pricing
 

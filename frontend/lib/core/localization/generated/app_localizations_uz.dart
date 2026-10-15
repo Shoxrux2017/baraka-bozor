@@ -440,6 +440,16 @@ class AppLocalizationsUz extends AppLocalizations {
   String get categoryEditTitle => 'Kategoriyani tahrirlash';
 
   @override
+  String get categoryImage => 'Rasm';
+
+  @override
+  String get categoryImageAfterSave =>
+      'Rasmni saqlagandan keyin qo\'shish mumkin';
+
+  @override
+  String get categoryRemoveImageConfirm => 'Kategoriya rasmi o\'chirilsinmi?';
+
+  @override
   String get categorySaved => 'Kategoriya saqlandi';
 
   @override

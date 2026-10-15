@@ -22,6 +22,13 @@ abstract interface class AdminCatalogRepository {
 
   Future<AdminCategory> restoreCategory(String id);
 
+  Future<AdminCategory> uploadCategoryImage(
+    String categoryId,
+    PickedImage image,
+  );
+
+  Future<AdminCategory> removeCategoryImage(String categoryId);
+
   Future<Paged<AdminProduct>> products(ProductQuery query);
 
   Future<AdminProduct> product(String id);

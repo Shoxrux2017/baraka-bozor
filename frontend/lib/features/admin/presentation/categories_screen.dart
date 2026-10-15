@@ -9,7 +9,9 @@ import '../../../core/widgets/list_widgets.dart';
 import '../application/admin_catalog_controllers.dart';
 import '../domain/admin_catalog.dart';
 import 'catalog_form_rules.dart';
+import 'catalog_image_card.dart';
 import 'catalog_widgets.dart';
+import 'products_screen.dart' show ProductThumbnail;
 
 /// The Admin's categories (`docs/09-api-contracts.md` section 15): the
 /// paginated list, archived entries on request, a form to create or edit one
@@ -106,6 +108,7 @@ class _CategoryRow extends ConsumerWidget {
     return Card(
       child: ListTile(
         key: ValueKey<String>('category-${category.id}'),
+        leading: _CategoryThumbnail(category: category),
         title: Text('${category.nameUz} · ${category.nameRu}'),
         subtitle: Wrap(
           spacing: 12,
@@ -142,6 +145,30 @@ class _CategoryRow extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The category's picture, or its first letter when it has none.
+class _CategoryThumbnail extends StatelessWidget {
+  const _CategoryThumbnail({required this.category});
+
+  final AdminCategory category;
+
+  @override
+  Widget build(BuildContext context) {
+    final String? url = category.imageUrl;
+    return SizedBox.square(
+      key: ValueKey<String>('category-thumb-${category.id}'),
+      dimension: 48,
+      child: url != null
+          ? ProductThumbnail(url: url, size: 48)
+          : CircleAvatar(
+              child: Text(
+                String.fromCharCodes(category.nameUz.runes.take(1))
+                    .toUpperCase(),
+              ),
+            ),
     );
   }
 }
@@ -185,6 +212,7 @@ class _CategoryDialogState extends ConsumerState<_CategoryDialog> {
   late final TextEditingController _sortOrder;
   late bool _active;
   Set<String> _rejected = <String>{};
+  late String? _imageUrl;
 
   bool get _archived => widget.category?.state == CatalogEntryState.archived;
 
@@ -198,6 +226,7 @@ class _CategoryDialogState extends ConsumerState<_CategoryDialog> {
     _descriptionRu = TextEditingController(text: c?.descriptionRu ?? '');
     _sortOrder = TextEditingController(text: '${c?.sortOrder ?? 0}');
     _active = c?.isActive ?? true;
+    _imageUrl = c?.imageUrl;
   }
 
   @override
@@ -242,10 +271,34 @@ class _CategoryDialogState extends ConsumerState<_CategoryDialog> {
     _form.currentState?.validate();
   }
 
+  Future<void> _uploadImage(PickedImage image) async {
+    final AdminCategory? saved = await ref
+        .read(categoryImageControllerProvider.notifier)
+        .upload(widget.category!.id, image);
+    if (mounted && saved != null) {
+      setState(() => _imageUrl = saved.imageUrl);
+    }
+  }
+
+  Future<void> _removeImage() async {
+    final AdminCategory? saved = await ref
+        .read(categoryImageControllerProvider.notifier)
+        .remove(widget.category!.id);
+    if (mounted && saved != null) {
+      setState(() => _imageUrl = saved.imageUrl);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final MutationState change = ref.watch(categoryFormControllerProvider);
+    final MutationState saving = ref.watch(categoryFormControllerProvider);
+    final MutationState imageChange = ref.watch(
+      categoryImageControllerProvider,
+    );
+    final MutationState change = saving.isBusy || !imageChange.isBusy
+        ? saving
+        : imageChange;
 
     Widget field(
       String apiKey,
@@ -349,7 +402,20 @@ class _CategoryDialogState extends ConsumerState<_CategoryDialog> {
                           ? null
                           : (bool value) => setState(() => _active = value),
                     ),
-                  FailureMessage(change.failure),
+                  const SizedBox(height: 12),
+                  if (widget.category == null)
+                    Text(l10n.categoryImageAfterSave)
+                  else
+                    CatalogImageCard(
+                      imageUrl: _imageUrl,
+                      onUpload: _uploadImage,
+                      onRemove: _removeImage,
+                      change: imageChange,
+                      keyPrefix: 'category-',
+                      title: l10n.categoryImage,
+                      removeConfirm: l10n.categoryRemoveImageConfirm,
+                    ),
+                  FailureMessage(saving.failure),
                 ],
               ),
             ),

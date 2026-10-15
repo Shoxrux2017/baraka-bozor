@@ -438,6 +438,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get categoryEditTitle => 'Редактирование категории';
 
   @override
+  String get categoryImage => 'Картинка';
+
+  @override
+  String get categoryImageAfterSave =>
+      'Картинку можно добавить после сохранения';
+
+  @override
+  String get categoryRemoveImageConfirm => 'Удалить картинку категории?';
+
+  @override
   String get categorySaved => 'Категория сохранена';
 
   @override

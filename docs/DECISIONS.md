@@ -1215,3 +1215,5 @@ Answers to the questions of kit stage 2 (`kit/02-glavnaya.dc.html`, approved the
 5. **Favourites** live in `customer_favorites`, one row per Customer and product, at most 500. `PUT` adds only a product the Customer can see (otherwise the scope-safe `404`); `DELETE` answers `204` whatever the product, so it tells nothing. A favourite that stops being sold stays and is listed with `is_available: false`. The catalog product carries `is_favorite` so every list draws its hearts without another request.
 
 6. **Numbering.** New tables are appended to `docs/08` as sections 31 and 32 and the favourites API is `docs/09` section 58, so earlier section numbers cited across the documents stay.
+
+7. **The panel's picture card** is shared by the product form and the category dialog; a category takes a picture once it exists, as a product does.
