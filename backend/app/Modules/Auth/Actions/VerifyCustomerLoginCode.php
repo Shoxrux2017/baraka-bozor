@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Modules\Auth\LoginCodePolicy;
 use App\Modules\Auth\Models\LoginChallenge;
 use App\Modules\Auth\Models\StaffLoginStep;
+use App\Modules\Auth\StaffAccounts;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -106,14 +107,11 @@ final class VerifyCustomerLoginCode
      */
     private function withStaffStep(IssuedSession $session, string $phone): VerifiedLogin
     {
-        $staff = User::query()
-            ->where('phone', $phone)
-            ->whereIn('role', [Role::Shopper->value, Role::Courier->value])
-            ->whereIn('status', [UserStatus::Active->value, UserStatus::Blocked->value])
-            ->orderByDesc('created_at')
-            ->first();
+        // The same account the password login resolves: a Shopper or Courier
+        // that is not the phone's current staff account gets no step.
+        $staff = StaffAccounts::currentFor($phone);
 
-        if ($staff === null) {
+        if ($staff === null || ! in_array($staff->role, [Role::Shopper, Role::Courier], true)) {
             return new VerifiedLogin($session, null, null);
         }
 

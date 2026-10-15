@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Auth;
 
 use App\Models\Enums\Role;
+use App\Models\Enums\UserStatus;
 use App\Models\User;
 use App\Modules\Auth\CodeDelivery\FakeCodeSink;
 use App\Modules\Auth\Models\StaffLoginStep;
@@ -89,6 +90,45 @@ final class StaffStepTest extends TestCase
         $step = $this->verifyPhone()->assertOk()->json('data.staff_step.token');
 
         $this->assertIsString($step);
+    }
+
+    public function test_an_active_shopper_wins_over_a_newer_blocked_courier(): void
+    {
+        $shopper = User::factory()->role(Role::Shopper)->create(['phone' => self::PHONE, 'password' => self::PASSWORD]);
+        User::factory()->role(Role::Courier)->blocked()->create([
+            'phone' => self::PHONE,
+            'password' => self::PASSWORD,
+            'created_at' => now()->addDay(),
+        ]);
+
+        $step = $this->verifyPhone()->assertOk()->json('data.staff_step.token');
+
+        $this->assertIsString($step);
+        $this->assertSame($shopper->id, StaffLoginStep::query()->sole()->staff_user_id);
+    }
+
+    public function test_the_account_activated_again_gets_the_step_not_a_newer_blocked_one(): void
+    {
+        $shopper = User::factory()->role(Role::Shopper)->blocked()->create(['phone' => self::PHONE, 'password' => self::PASSWORD]);
+        User::factory()->role(Role::Courier)->blocked()->create([
+            'phone' => self::PHONE,
+            'password' => self::PASSWORD,
+            'created_at' => now()->addDay(),
+        ]);
+        $shopper->forceFill(['status' => UserStatus::Active, 'blocked_at' => null])->save();
+
+        $this->verifyPhone()->assertOk();
+
+        $this->assertSame($shopper->id, StaffLoginStep::query()->sole()->staff_user_id);
+    }
+
+    public function test_a_blocked_shopper_who_became_an_operator_gets_no_step(): void
+    {
+        User::factory()->role(Role::Shopper)->blocked()->create(['phone' => self::PHONE, 'password' => self::PASSWORD]);
+        User::factory()->role(Role::Operator)->create(['phone' => self::PHONE, 'password' => self::PASSWORD]);
+
+        $this->verifyPhone()->assertOk()->assertJsonPath('data.staff_step', null);
+        $this->assertSame(0, StaffLoginStep::query()->count());
     }
 
     public function test_a_second_verification_consumes_the_earlier_open_step(): void
