@@ -16,6 +16,9 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 
 - White text on the primary `#5AC268` has a contrast of 2.4:1, below WCAG AA. Kept as the kit's look.
 - Real Telegram delivery arrives in Wave 4. Until then only the configured test phones can sign in, staff included.
+- A blocked Customer account would also stop that person's staff sign-in on the phone (verify refuses before the step). Latent: no API blocks a Customer today.
+- Wave 3 walkthrough compiled, not run, after the staff sign-in change - run it before Wave 4 closes.
+- The green home header from part 1: when the mode bar's action wraps, "Режим клиента" is right-aligned - stage 2 rebuilds the home.
 
 ## Part 1 history (design 4a, `DL-74`, `DL-75`)
 

@@ -26,7 +26,11 @@ Everyone enters with phone number plus a six-digit login code (`DL-76`). The cod
 
 ### Web panel (Operator, Admin, Manager)
 
-Phone number and password. Admin creates every staff account except the first Admin, which a one-time server command creates. A new staff account starts with a server-generated temporary password and `must_change_password = true`; until the password is changed only the identity, password-change and logout endpoints work. Staff status is `active` or `blocked`.
+Phone number and password. An Operator, Admin or Manager who opens the mobile app and signs in with the code is simply a Customer there; their staff account works only in the web panel. A Shopper or Courier who opens the web panel gets the screen naming the app (`POST /auth/staff/login` answers `staff_code_required` after the right password).
+
+### Staff accounts (all five staff roles)
+
+The rules below apply to every staff account, whichever surface it signs in on. Admin creates every staff account except the first Admin, which a one-time server command creates. A new staff account starts with a server-generated temporary password and `must_change_password = true`; until the password is changed only the identity, password-change and logout endpoints work. Staff status is `active` or `blocked`.
 
 ## 3. Phone Uniqueness by Account Family
 
@@ -79,7 +83,7 @@ Read-only figures. Screens deferred past the pilot; the role exists so accounts 
 | Customer, Shopper, Courier | mobile app: Android from the first client wave, iOS when a Mac and an Apple developer account exist |
 | Operator, Admin, Manager | web panel in the browser, built from the same Flutter code |
 
-One Flutter codebase provides every role shell. A role that opens a surface not its own — an Admin on a phone, a Shopper in the browser — sees a screen naming the right surface; the backend does not enforce surfaces.
+One Flutter codebase provides every role shell. On a phone everyone signs in with the code, and an Operator, Admin or Manager who does so is a Customer there (their staff account works only in the web panel). The screen naming the right surface remains for a stored session on the wrong surface and for a Shopper or Courier who opens the web panel; the backend does not enforce surfaces.
 
 **Customer mode.** A Shopper or Courier reaches their own Customer account from inside the staff interface. It needs no second code: the Customer session was opened by the code verified at sign-in (`DL-76`), and the password alone never opens a session. The app keeps both sessions and switches in one step; the active mode is always visible. Logging out of one mode ends only that session. Customer mode is not reachable while the staff first-login gate is set. If the staff account is blocked, the app drops the staff session only. Shoppers and Couriers use their personal phones.
 
