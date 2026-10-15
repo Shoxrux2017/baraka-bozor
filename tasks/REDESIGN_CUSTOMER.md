@@ -35,4 +35,4 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 
 ## Review findings not acted on
 
-None.
+- Stage 2b, re-review of the final fix wave, P3: `FavoriteOverrides.toggle` (`frontend/lib/features/favorites/application/favorites_controllers.dart`) is now called only by `favorites_controllers_test.dart`; the card uses `change()`. Not removed in 2b because the review loop allows one fix wave; stage 3 deletes `toggle` and moves its tests to `change()` (AGENTS.md §8).
