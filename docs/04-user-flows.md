@@ -16,24 +16,36 @@ Customer login → catalog → cart → checkout preview → order
 → completed → history and reorder
 ```
 
-## 2. Customer Login
+## 2. Mobile Sign-In: Customer
 
-1. The Customer enters an Uzbekistan mobile number.
+1. The user enters an Uzbekistan mobile number and confirms it.
 2. The backend normalizes it, creates a login challenge, and sends the code through the code-delivery gateway: Telegram when the number has a Telegram account, otherwise SMS. The response says which channel was used and when a resend is allowed. It never says whether an account exists.
-3. The Customer enters the code.
+3. The user enters the code.
 4. The backend verifies the challenge. An invalid, expired or exhausted code fails with its own code and stops.
 5. The active Customer account for the phone is resolved, or created when none is active. A blocked Customer account is refused with `account_blocked`.
-6. A token is issued; the app bootstraps identity through `/auth/me`.
+6. A Customer token is issued, with `staff_step` when the phone also holds a Shopper or Courier account (section 3); the app bootstraps identity through `/auth/me`.
+7. A Customer without a name gives one on the name step and sees a welcome; then the home opens.
 
 A configured test phone number verifies with the configured fixed code and skips step 2's delivery. No cart is created here; the cart is created on first cart access.
 
-## 3. Staff Login and First Password Change
+## 3. Staff Sign-In and First Password Change
+
+**Shopper and Courier (mobile).**
+
+1. After the code (section 2), the app asks for the staff password and sends it with the `staff_step` token to `POST /auth/staff/step`.
+2. The backend validates the step (single use, 5 minutes, 5 wrong passwords), the password and the active status, and returns the staff token, the role and `must_change_password`. A wrong password keeps the step; an expired or exhausted step leaves the person signed in as a Customer, who asks for a new code.
+3. `POST /auth/staff/login` refuses a Shopper or Courier with `staff_code_required`, so the code step cannot be skipped.
+
+**Operator, Admin and Manager (web panel).**
 
 1. Staff enters phone and password.
 2. The backend validates credentials and active status and returns the role and `must_change_password`.
-3. While the gate is set, only `/auth/me`, `/auth/change-password` and `/auth/logout` work.
-4. Staff submits the temporary password and a new one; the backend updates the hash and clears the gate.
-5. The role shell opens. The web panel for Operator, Admin and Manager; the mobile shells for Shopper and Courier.
+
+**Both.**
+
+1. While the gate is set, only `/auth/me`, `/auth/change-password` and `/auth/logout` work.
+2. Staff submits the temporary password and a new one; the backend updates the hash and clears the gate.
+3. The role shell opens. The web panel for Operator, Admin and Manager; the mobile shells for Shopper and Courier.
 
 ## 4. Profile
 
