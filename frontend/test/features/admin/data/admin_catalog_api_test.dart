@@ -32,24 +32,26 @@ Map<String, Object?> categoryJson({String? archivedAt}) => <String, Object?>{
 };
 
 /// A product as sections 15 and 16 return it.
-Map<String, Object?> productJson({String? imageUrl}) => <String, Object?>{
-  'id': productId,
-  'category_id': categoryId,
-  'name_uz': 'Pomidor',
-  'name_ru': 'Помидор',
-  'description_uz': null,
-  'description_ru': null,
-  'unit_code': 'kg',
-  'price_mode': 'estimate',
-  'market_price_uzs': 16000,
-  'customer_unit_price_uzs': 18400,
-  'image_url': imageUrl,
-  'sort_order': 0,
-  'is_active': true,
-  'archived_at': null,
-  'created_at': '2026-09-26T05:00:00Z',
-  'updated_at': '2026-09-26T05:00:00Z',
-};
+Map<String, Object?> productJson({String? imageUrl, bool isFeatured = false}) =>
+    <String, Object?>{
+      'id': productId,
+      'category_id': categoryId,
+      'name_uz': 'Pomidor',
+      'name_ru': 'Помидор',
+      'description_uz': null,
+      'description_ru': null,
+      'unit_code': 'kg',
+      'price_mode': 'estimate',
+      'market_price_uzs': 16000,
+      'customer_unit_price_uzs': 18400,
+      'image_url': imageUrl,
+      'sort_order': 0,
+      'is_active': true,
+      'is_featured': isFeatured,
+      'archived_at': null,
+      'created_at': '2026-09-26T05:00:00Z',
+      'updated_at': '2026-09-26T05:00:00Z',
+    };
 
 Map<String, Object?> pageOf(
   List<Object?> items, {
@@ -96,7 +98,11 @@ void main() {
       );
 
       expect(parsed.unitCode, UnitCode.kg);
-      expect(parsed.priceMode, PriceMode.estimate);
+      expect(parsed.isFeatured, isFalse);
+      expect(
+        AdminCatalogDto.parseProduct(productJson(isFeatured: true)).isFeatured,
+        isTrue,
+      );
       expect(parsed.marketPriceUzs, 16000);
       expect(parsed.customerUnitPriceUzs, 18400);
       expect(parsed.imageUrl, 'https://api.test/storage/products/a.webp');
@@ -105,7 +111,8 @@ void main() {
     test('a payload that breaks the contract is refused', () {
       for (final Map<String, Object?> broken in <Map<String, Object?>>[
         <String, Object?>{...productJson(), 'unit_code': 'tonne'},
-        <String, Object?>{...productJson(), 'price_mode': 'free'},
+        <String, Object?>{...productJson(), 'is_featured': 'yes'},
+        <String, Object?>{...productJson()}..remove('is_featured'),
         <String, Object?>{...productJson(), 'market_price_uzs': '16000'},
         <String, Object?>{...productJson()}..remove('image_url'),
         <String, Object?>{...productJson(), 'archived_at': 'yesterday'},
@@ -171,9 +178,9 @@ void main() {
         descriptionUz: null,
         descriptionRu: 'Свежие',
         unitCode: UnitCode.piece,
-        priceMode: PriceMode.fixed,
         marketPriceUzs: 5000,
         sortOrder: -3,
+        isFeatured: false,
         isActive: null,
       );
 
@@ -184,9 +191,9 @@ void main() {
         'description_uz': null,
         'description_ru': 'Свежие',
         'unit_code': 'piece',
-        'price_mode': 'fixed',
         'market_price_uzs': 5000,
         'sort_order': -3,
+        'is_featured': false,
       });
       expect(
         AdminCatalogDto.categoryBody(
@@ -199,6 +206,34 @@ void main() {
             isActive: false,
           ),
         )['is_active'],
+        isFalse,
+      );
+    });
+
+    test('flipping only the switch sends exactly is_featured', () {
+      final AdminProduct product = AdminCatalogDto.parseProduct(productJson());
+      final ProductDraft unchanged = ProductDraft.fromProduct(product);
+
+      expect(
+        AdminCatalogDto.productBody(
+          ProductDraft(
+            categoryId: unchanged.categoryId,
+            nameUz: unchanged.nameUz,
+            nameRu: unchanged.nameRu,
+            descriptionUz: unchanged.descriptionUz,
+            descriptionRu: unchanged.descriptionRu,
+            unitCode: unchanged.unitCode,
+            marketPriceUzs: unchanged.marketPriceUzs,
+            sortOrder: unchanged.sortOrder,
+            isFeatured: true,
+            isActive: unchanged.isActive,
+          ),
+          base: product,
+        ),
+        <String, Object?>{'is_featured': true},
+      );
+      expect(
+        AdminCatalogDto.productBody(unchanged).containsKey('price_mode'),
         isFalse,
       );
     });
@@ -217,9 +252,9 @@ void main() {
             descriptionUz: unchanged.descriptionUz,
             descriptionRu: unchanged.descriptionRu,
             unitCode: unchanged.unitCode,
-            priceMode: unchanged.priceMode,
             marketPriceUzs: 17000,
             sortOrder: unchanged.sortOrder,
+            isFeatured: unchanged.isFeatured,
             isActive: false,
           ),
           base: product,
@@ -380,9 +415,9 @@ void main() {
           descriptionUz: productDraft.descriptionUz,
           descriptionRu: productDraft.descriptionRu,
           unitCode: productDraft.unitCode,
-          priceMode: productDraft.priceMode,
           marketPriceUzs: productDraft.marketPriceUzs,
           sortOrder: productDraft.sortOrder,
+          isFeatured: productDraft.isFeatured,
           isActive: productDraft.isActive,
         ),
       );

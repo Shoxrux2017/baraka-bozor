@@ -944,11 +944,23 @@ abstract class AppLocalizations {
   /// **'O\'lchov birligi'**
   String get productUnit;
 
-  /// No description provided for @productPriceMode.
+  /// No description provided for @productFeatured.
   ///
   /// In uz, this message translates to:
-  /// **'Narx turi'**
-  String get productPriceMode;
+  /// **'Tavsiya etamiz bo\'limida ko\'rsatish'**
+  String get productFeatured;
+
+  /// No description provided for @productFeaturedHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot bosh sahifadagi «Tavsiya etamiz» qatorida chiqadi'**
+  String get productFeaturedHint;
+
+  /// No description provided for @productFeaturedBadge.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tavsiya'**
+  String get productFeaturedBadge;
 
   /// No description provided for @productMarketPrice.
   ///

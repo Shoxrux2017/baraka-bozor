@@ -461,7 +461,14 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productUnit => 'O\'lchov birligi';
 
   @override
-  String get productPriceMode => 'Narx turi';
+  String get productFeatured => 'Tavsiya etamiz bo\'limida ko\'rsatish';
+
+  @override
+  String get productFeaturedHint =>
+      'Mahsulot bosh sahifadagi «Tavsiya etamiz» qatorida chiqadi';
+
+  @override
+  String get productFeaturedBadge => 'Tavsiya';
 
   @override
   String get productMarketPrice => 'Bozor narxi';

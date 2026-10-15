@@ -205,8 +205,13 @@ class _ProductRow extends ConsumerWidget {
           children: <Widget>[
             EntryStateChip(product.state),
             if (category != null) Text(_nameOf(context, category!)),
+            if (product.isFeatured)
+              Chip(
+                key: ValueKey<String>('featured-${product.id}'),
+                visualDensity: VisualDensity.compact,
+                label: Text(l10n.productFeaturedBadge),
+              ),
             Text(
-              '${CatalogLabels.priceMode(l10n, product.priceMode)}: '
               '${MoneyFormat.uzs(product.marketPriceUzs, language)} / '
               '${CatalogLabels.unit(l10n, product.unitCode)}',
             ),

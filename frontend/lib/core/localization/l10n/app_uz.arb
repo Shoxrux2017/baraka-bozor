@@ -179,7 +179,9 @@
   "productCategory": "Kategoriya",
   "productAllCategories": "Barcha kategoriyalar",
   "productUnit": "O'lchov birligi",
-  "productPriceMode": "Narx turi",
+  "productFeatured": "Tavsiya etamiz bo'limida ko'rsatish",
+  "productFeaturedHint": "Mahsulot bosh sahifadagi «Tavsiya etamiz» qatorida chiqadi",
+  "productFeaturedBadge": "Tavsiya",
   "productMarketPrice": "Bozor narxi",
   "productCustomerPrice": "Mijoz uchun narx: {price}",
   "@productCustomerPrice": {

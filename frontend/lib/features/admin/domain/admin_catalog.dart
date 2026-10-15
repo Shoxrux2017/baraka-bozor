@@ -51,12 +51,12 @@ final class AdminProduct {
     required this.descriptionUz,
     required this.descriptionRu,
     required this.unitCode,
-    required this.priceMode,
     required this.marketPriceUzs,
     required this.customerUnitPriceUzs,
     required this.imageUrl,
     required this.sortOrder,
     required this.isActive,
+    required this.isFeatured,
     required this.archivedAt,
     required this.createdAt,
     required this.updatedAt,
@@ -69,12 +69,12 @@ final class AdminProduct {
   final String? descriptionUz;
   final String? descriptionRu;
   final UnitCode unitCode;
-  final PriceMode priceMode;
   final int marketPriceUzs;
   final int customerUnitPriceUzs;
   final String? imageUrl;
   final int sortOrder;
   final bool isActive;
+  final bool isFeatured;
   final DateTime? archivedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -145,9 +145,9 @@ final class ProductDraft {
     required this.descriptionUz,
     required this.descriptionRu,
     required this.unitCode,
-    required this.priceMode,
     required this.marketPriceUzs,
     required this.sortOrder,
+    required this.isFeatured,
     required this.isActive,
   });
 
@@ -159,9 +159,9 @@ final class ProductDraft {
     descriptionUz: product.descriptionUz,
     descriptionRu: product.descriptionRu,
     unitCode: product.unitCode,
-    priceMode: product.priceMode,
     marketPriceUzs: product.marketPriceUzs,
     sortOrder: product.sortOrder,
+    isFeatured: product.isFeatured,
     isActive: product.state == CatalogEntryState.archived
         ? null
         : product.isActive,
@@ -173,9 +173,9 @@ final class ProductDraft {
   final String? descriptionUz;
   final String? descriptionRu;
   final UnitCode unitCode;
-  final PriceMode priceMode;
   final int marketPriceUzs;
   final int sortOrder;
+  final bool isFeatured;
 
   /// `null` leaves the flag as it is, as for [CategoryDraft.isActive].
   final bool? isActive;
@@ -187,9 +187,9 @@ final class ProductDraft {
     descriptionUz,
     descriptionRu,
     unitCode,
-    priceMode,
     marketPriceUzs,
     sortOrder,
+    isFeatured,
     isActive,
   ];
 

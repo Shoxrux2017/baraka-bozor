@@ -134,7 +134,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
   final TextEditingController _sortOrder = TextEditingController();
   String? _categoryId;
   UnitCode _unit = UnitCode.kg;
-  PriceMode _priceMode = PriceMode.estimate;
+  bool _featured = false;
   bool _active = true;
   Set<String> _rejected = <String>{};
 
@@ -181,7 +181,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     _sortOrder.text = '${p?.sortOrder ?? 0}';
     _categoryId = p?.categoryId;
     _unit = p?.unitCode ?? UnitCode.kg;
-    _priceMode = p?.priceMode ?? PriceMode.estimate;
+    _featured = p?.isFeatured ?? false;
     _active = p?.isActive ?? true;
     _rejected = <String>{};
     _filled = _fieldValues();
@@ -197,7 +197,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     _sortOrder.text,
     _categoryId,
     _unit,
-    _priceMode,
+    _featured,
     _active,
   ];
 
@@ -241,11 +241,11 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
             descriptionUz: CatalogFormRules.optional(_descriptionUz.text),
             descriptionRu: CatalogFormRules.optional(_descriptionRu.text),
             unitCode: _unit,
-            priceMode: _priceMode,
             marketPriceUzs: CatalogFormRules.marketPriceValue(
               _marketPrice.text,
             ),
             sortOrder: CatalogFormRules.sortOrderValue(_sortOrder.text),
+            isFeatured: _featured,
             isActive: _archived ? null : _active,
           ),
         );
@@ -432,23 +432,6 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
                     ),
             ),
           ),
-          Text(l10n.productPriceMode),
-          const SizedBox(height: 8),
-          SegmentedButton<PriceMode>(
-            key: const ValueKey<String>('field-price_mode'),
-            segments: <ButtonSegment<PriceMode>>[
-              for (final PriceMode mode in PriceMode.values)
-                ButtonSegment<PriceMode>(
-                  value: mode,
-                  label: Text(CatalogLabels.priceMode(l10n, mode)),
-                ),
-            ],
-            selected: <PriceMode>{_priceMode},
-            onSelectionChanged: change.isBusy
-                ? null
-                : (Set<PriceMode> selected) =>
-                      setState(() => _priceMode = selected.single),
-          ),
           const SizedBox(height: 12),
           field(
             'sort_order',
@@ -456,6 +439,16 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
             l10n.catalogSortOrder,
             (String text) => CatalogFormRules.sortOrder(l10n, text),
             helper: l10n.catalogSortOrderHint,
+          ),
+          SwitchListTile(
+            key: const ValueKey<String>('field-is_featured'),
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.productFeatured),
+            subtitle: Text(l10n.productFeaturedHint),
+            value: _featured,
+            onChanged: change.isBusy
+                ? null
+                : (bool value) => setState(() => _featured = value),
           ),
           if (_archived)
             Text(l10n.catalogArchivedNote)
