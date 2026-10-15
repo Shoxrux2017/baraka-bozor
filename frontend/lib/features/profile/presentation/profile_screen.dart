@@ -29,69 +29,75 @@ class ProfileScreen extends ConsumerWidget {
       profileControllerProvider,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.profileTitle),
-        actions: const <Widget>[_LogoutButton()],
-      ),
-      bottomNavigationBar: const CustomerTabBar(current: CustomerTab.profile),
-      body: SafeArea(
-        child: UnderActiveMode(
-          child: profile.when(
-            skipLoadingOnReload: false,
-            skipLoadingOnRefresh: !profile.hasError,
-            data: (CustomerProfile profile) => ListView(
-              key: const ValueKey<String>('profile-list'),
-              padding: const EdgeInsets.all(16),
-              children: <Widget>[
-                Text(
-                  formatPhone(profile.phone),
-                  key: const ValueKey<String>('profile-phone'),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 16),
-                _NameForm(key: ValueKey<String>(profile.id), profile: profile),
-                const SizedBox(height: 24),
-                const _LanguageChoice(),
-                const Divider(height: 32),
-                ListTile(
-                  key: const ValueKey<String>('profile-addresses'),
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.home_outlined),
-                  title: Text(l10n.addressesTitle),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push(AppPaths.customerAddresses),
-                ),
-              ],
-            ),
-            // The language is on the profile in every state of it.
-            error: (Object error, StackTrace _) => ListView(
-              padding: const EdgeInsets.all(24),
-              children: <Widget>[
-                FailureMessage(
-                  error is ApiFailure ? error : const UnexpectedFailure(),
-                ),
-                const SizedBox(height: 12),
-                Center(
-                  child: OutlinedButton(
-                    onPressed: () => ref.invalidate(profileControllerProvider),
-                    child: Text(l10n.retryButton),
+    return CustomerTabScope(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.profileTitle),
+          actions: const <Widget>[_LogoutButton()],
+        ),
+        bottomNavigationBar: const CustomerTabBar(current: CustomerTab.profile),
+        body: SafeArea(
+          child: UnderActiveMode(
+            child: profile.when(
+              skipLoadingOnReload: false,
+              skipLoadingOnRefresh: !profile.hasError,
+              data: (CustomerProfile profile) => ListView(
+                key: const ValueKey<String>('profile-list'),
+                padding: const EdgeInsets.all(16),
+                children: <Widget>[
+                  Text(
+                    formatPhone(profile.phone),
+                    key: const ValueKey<String>('profile-phone'),
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                ),
-                const SizedBox(height: 24),
-                const _LanguageChoice(),
-              ],
-            ),
-            loading: () => Column(
-              children: <Widget>[
-                const Expanded(
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: _LanguageChoice(),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  _NameForm(
+                    key: ValueKey<String>(profile.id),
+                    profile: profile,
+                  ),
+                  const SizedBox(height: 24),
+                  const _LanguageChoice(),
+                  const Divider(height: 32),
+                  ListTile(
+                    key: const ValueKey<String>('profile-addresses'),
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.home_outlined),
+                    title: Text(l10n.addressesTitle),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(AppPaths.customerAddresses),
+                  ),
+                ],
+              ),
+              // The language is on the profile in every state of it.
+              error: (Object error, StackTrace _) => ListView(
+                padding: const EdgeInsets.all(24),
+                children: <Widget>[
+                  FailureMessage(
+                    error is ApiFailure ? error : const UnexpectedFailure(),
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: OutlinedButton(
+                      onPressed: () =>
+                          ref.invalidate(profileControllerProvider),
+                      child: Text(l10n.retryButton),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const _LanguageChoice(),
+                ],
+              ),
+              loading: () => Column(
+                children: <Widget>[
+                  const Expanded(
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: _LanguageChoice(),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

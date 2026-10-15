@@ -621,20 +621,26 @@ void main() {
   });
 
   group('the cart button', () {
-    testWidgets('stands on a section too and is announced once, in words', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('on a section the cart summary bar is announced once and '
+        'opens the cart', (WidgetTester tester) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
       cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
       await open(tester, at: '/customer/categories/c-1');
 
-      expect(byKey('open-cart'), findsOneWidget);
+      expect(byKey('cart-summary'), findsOneWidget);
       expect(
         find.bySemanticsLabel(RegExp(r'^1$')),
         findsNothing,
-        reason: 'the badge number is not announced on its own',
+        reason: 'the count is not announced on its own',
       );
-      expect(find.byTooltip(l10n(tester).cartBadge(1)), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp(l10n(tester).cartSummaryOpen)),
+        findsOneWidget,
+        reason: 'the bar is announced once, in words',
+      );
+
+      await tapAndSettle(tester, byKey('cart-summary'));
+      expect(byKey('cart-lines'), findsOneWidget);
       semantics.dispose();
     });
 

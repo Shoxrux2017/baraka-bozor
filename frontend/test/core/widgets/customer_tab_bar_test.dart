@@ -144,6 +144,37 @@ void main() {
     expect(router.canPop(), isFalse);
   });
 
+  testWidgets('a tab that is the only route sends another tab over the home', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    router.go(AppPaths.customerOrders);
+    await tester.pumpAndSettle();
+    expect(router.canPop(), isFalse);
+
+    await tester.tap(byKey('open-favorites'));
+    await tester.pumpAndSettle();
+    expect(find.byType(FavoritesScreen), findsOneWidget);
+
+    await back(tester);
+    expect(find.text('stand-in home'), findsOneWidget);
+    expect(location(), AppPaths.customer);
+  });
+
+  testWidgets('the system back on a lone tab goes home instead of closing', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    router.go(AppPaths.customerFavorites);
+    await tester.pumpAndSettle();
+    expect(router.canPop(), isFalse);
+
+    await back(tester);
+
+    expect(find.text('stand-in home'), findsOneWidget);
+    expect(location(), AppPaths.customer);
+  });
+
   testWidgets('the current tab does nothing', (WidgetTester tester) async {
     await open(tester);
     await tester.tap(byKey('open-favorites'));

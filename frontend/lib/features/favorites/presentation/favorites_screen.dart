@@ -29,52 +29,56 @@ class FavoritesScreen extends ConsumerWidget {
       favoritesListProvider,
     );
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        title: Text(
-          l10n.favoritesTitle,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: KitColors.ink,
-          ),
-        ),
-      ),
-      // The mode stays visible while two sessions exist (DL-75).
-      body: UnderActiveMode(
-        child: list.when(
-          // A heart taken off reloads the list behind the cards, which stay
-          // until the new list arrives.
-          skipLoadingOnReload: true,
-          skipLoadingOnRefresh: !list.hasError,
-          data: (FavoritesListState state) =>
-              state.items.isEmpty ? const _Empty() : _Grid(state: state),
-          error: (Object error, StackTrace _) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  FailureMessage(
-                    error is ApiFailure ? error : const UnexpectedFailure(),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    key: const ValueKey<String>('retry-load'),
-                    onPressed: () => ref.invalidate(favoritesListProvider),
-                    child: Text(l10n.retryButton),
-                  ),
-                ],
-              ),
+    return CustomerTabScope(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          centerTitle: true,
+          title: Text(
+            l10n.favoritesTitle,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: KitColors.ink,
             ),
           ),
-          loading: () => const Center(child: CircularProgressIndicator()),
+        ),
+        // The mode stays visible while two sessions exist (DL-75).
+        body: UnderActiveMode(
+          child: list.when(
+            // A heart taken off reloads the list behind the cards, which stay
+            // until the new list arrives.
+            skipLoadingOnReload: true,
+            skipLoadingOnRefresh: !list.hasError,
+            data: (FavoritesListState state) =>
+                state.items.isEmpty ? const _Empty() : _Grid(state: state),
+            error: (Object error, StackTrace _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    FailureMessage(
+                      error is ApiFailure ? error : const UnexpectedFailure(),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      key: const ValueKey<String>('retry-load'),
+                      onPressed: () => ref.invalidate(favoritesListProvider),
+                      child: Text(l10n.retryButton),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+          ),
+        ),
+        bottomNavigationBar: const CustomerTabBar(
+          current: CustomerTab.favorites,
         ),
       ),
-      bottomNavigationBar: const CustomerTabBar(current: CustomerTab.favorites),
     );
   }
 }

@@ -10,6 +10,27 @@ import '../theme/kit_colors.dart';
 /// The four places the Customer's bottom bar leads to.
 enum CustomerTab { home, favorites, orders, profile }
 
+/// Wraps a tab screen other than the home: a system back it cannot pop — the
+/// tab is the only route — goes to the home instead of closing the app.
+class CustomerTabScope extends StatelessWidget {
+  const CustomerTabScope({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: context.canPop(),
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (!didPop) {
+          context.go(AppPaths.customer);
+        }
+      },
+      child: child,
+    );
+  }
+}
+
 /// The Customer's bottom bar (`DL-80` item 6): home, favourites, orders and
 /// profile. The home, the favourites, the orders and the profile stay
 /// separate routes, so the bar only decides how one is reached: the current
@@ -42,8 +63,13 @@ class CustomerTabBar extends StatelessWidget {
     };
     if (current == CustomerTab.home) {
       context.push<void>(path);
-    } else {
+    } else if (context.canPop()) {
       context.pushReplacement(path);
+    } else {
+      // The tab is the only route (opened by address): put the home beneath
+      // the next one, so the back never closes the app.
+      context.go(AppPaths.customer);
+      context.push<void>(path);
     }
   }
 
