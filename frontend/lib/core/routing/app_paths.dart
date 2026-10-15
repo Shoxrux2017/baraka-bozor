@@ -26,6 +26,8 @@ abstract final class AppPaths {
   // catalog's home opens the profile, the profile the addresses.
   static const String customerProfile = '$customer/profile';
   static const String customerAddresses = '$customer/addresses';
+  // The tab bar opens the favourites from every Customer tab.
+  static const String customerFavorites = '$customer/favorites';
   static const String customerNewAddress = '$customerAddresses/new';
   static const String customerAddressPattern = '$customerAddresses/:address';
   // The cart links to the checkout.

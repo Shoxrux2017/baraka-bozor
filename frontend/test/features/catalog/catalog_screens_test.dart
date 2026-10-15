@@ -6,12 +6,18 @@ import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
+import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/all_products_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
-import 'package:baraka_bozor/features/catalog/presentation/catalog_screens.dart';
+import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
+import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,6 +38,10 @@ void main() {
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
   final Finder search = byKey('catalog-search');
+  final Finder productScrollable = find.descendant(
+    of: byKey('product-grid'),
+    matching: find.byType(Scrollable),
+  );
 
   AppLocalizations l10n(WidgetTester tester) =>
       AppLocalizations.of(tester.element(find.byType(Scaffold).first));
@@ -75,6 +85,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    // The home asks for its recommended row too; the tests count the rest.
+    catalog.requests.clear();
   }
 
   Future<void> typeAndPause(WidgetTester tester, String text) async {
@@ -97,15 +109,9 @@ void main() {
       expect(find.text('Pomidor'), findsOneWidget);
       expect(find.text('Olma'), findsNothing);
       expect(
-        find.text(
-          l10n(tester).catalogPricePerUnit(
-            MoneyFormat.uzs(18400, AppLanguage.uz),
-            l10n(tester).unitKg,
-          ),
-        ),
+        find.text('≈ ${MoneyFormat.uzs(18400, AppLanguage.uz)}'),
         findsOneWidget,
       );
-      expect(find.text(l10n(tester).catalogEstimateNote), findsOneWidget);
       expect(catalog.requests, <String>['|c-1|1']);
     },
   );
@@ -168,7 +174,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Mahsulot 25'),
       300,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: productScrollable,
     );
     await tester.pumpAndSettle();
 
@@ -305,8 +311,8 @@ void main() {
   testWidgets('a first page that failed shows progress while it is retried', (
     WidgetTester tester,
   ) async {
-    catalog.nextFailure = const NetworkFailure();
     await open(tester);
+    catalog.nextFailure = const NetworkFailure();
     await tester.tap(find.text('Sabzavotlar'));
     await tester.pumpAndSettle();
     expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
@@ -334,7 +340,11 @@ void main() {
     await tester.pumpAndSettle();
 
     catalog.nextFailure = const NetworkFailure();
-    await tester.scrollUntilVisible(byKey('load-more'), 300);
+    await tester.scrollUntilVisible(
+      byKey('load-more'),
+      300,
+      scrollable: productScrollable,
+    );
     expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
     expect(find.text('Mahsulot 1'), findsNothing, reason: 'scrolled past');
 
@@ -342,7 +352,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(byKey('load-more'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Mahsulot 25'), 300);
+    await tester.scrollUntilVisible(
+      find.text('Mahsulot 25'),
+      300,
+      scrollable: productScrollable,
+    );
     expect(byKey('load-more'), findsNothing);
   });
 
@@ -397,9 +411,13 @@ void main() {
           reason: 'logout is on the profile',
         );
 
-        await tester.tap(
-          find.text(device.languageCode == 'uz' ? 'Sabzavotlar' : 'Овощи'),
+        final Finder section = find.text(
+          device.languageCode == 'uz' ? 'Sabzavotlar' : 'Овощи',
         );
+        // Below the header's two lines of large text: scroll to it.
+        await tester.ensureVisible(section);
+        await tester.pumpAndSettle();
+        await tester.tap(section);
         await tester.pumpAndSettle();
         expect(mode, findsOneWidget, reason: 'on a section');
 
@@ -424,5 +442,44 @@ void main() {
         expect(mode, findsOneWidget, reason: 'back in the staff shell');
       },
     );
+  }
+
+  for (final (String, Type) screen in <(String, Type)>[
+    (CatalogPaths.recommended, RecommendedScreen),
+    (CatalogPaths.products, AllProductsScreen),
+    (AppPaths.customerFavorites, FavoritesScreen),
+    (CatalogPaths.categories, AllCategoriesScreen),
+    (CatalogPaths.category('c-1'), CategoryScreen),
+  ]) {
+    final String path = screen.$1;
+    testWidgets('with two sessions $path shows the mode bar', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      tokens.tokens[SessionSlot.staff] = 's';
+      auth.identities[SessionSlot.staff] = user(
+        id: 's',
+        role: UserRole.courier,
+      );
+
+      await open(tester);
+      await tester.tap(byKey('staff-menu'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('switch-to-customer-button'));
+      await tester.pumpAndSettle();
+      GoRouter.of(tester.element(find.byType(Scaffold).first)).push(path);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(screen.$2), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(screen.$2),
+          matching: byKey('active-mode'),
+        ),
+        findsOneWidget,
+      );
+    });
   }
 }

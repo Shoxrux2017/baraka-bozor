@@ -89,7 +89,7 @@ class ProductList extends ConsumerWidget {
             if (index < state.items.length) {
               return ProductTile(product: state.items[index], onPick: onPick);
             }
-            return _ListEnd(query: query, state: state);
+            return ProductListEnd(query: query, state: state);
           },
         );
       },
@@ -124,8 +124,8 @@ EdgeInsets _centred(BuildContext context) =>
 
 /// The last row of a list with more to load: it asks for the next page as
 /// it is built, and after a failure offers the retry instead.
-class _ListEnd extends ConsumerWidget {
-  const _ListEnd({required this.query, required this.state});
+class ProductListEnd extends ConsumerWidget {
+  const ProductListEnd({required this.query, required this.state, super.key});
 
   final ProductListQuery query;
   final ProductListState state;

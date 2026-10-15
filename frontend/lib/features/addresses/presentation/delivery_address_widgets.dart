@@ -5,28 +5,31 @@ import 'package:go_router/go_router.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/customer_account.dart';
-import '../../../core/theme/brand_colors.dart';
+import '../../../core/theme/kit_colors.dart';
 import '../application/addresses_controllers.dart';
 import '../application/delivery_address.dart';
 import '../domain/addresses.dart';
 
-/// Where the order goes, under the home's search (design 4a). Tapping it
-/// changes the address, adds the first one, or reloads a list that failed.
+/// Where the order goes, at the top of the home (the kit's drawing 10): a
+/// green pin, the address's label — or its street when it has none — with a
+/// chevron, and the full street line under a label. Tapping it changes the
+/// address, adds the first one, or reloads a list that failed.
 class DeliveryAddressLine extends ConsumerWidget {
   const DeliveryAddressLine({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final (String value, VoidCallback? onTap) = switch (ref.watch(
-      deliveryAddressProvider,
-    )) {
+    final (String value, String? detail, VoidCallback? onTap) = switch (ref
+        .watch(deliveryAddressProvider)) {
       AsyncData<Address?>(value: final Address address) => (
-        address.streetLine,
+        address.label ?? address.streetLine,
+        address.label == null ? null : address.streetLine,
         () => showDeliveryAddressSheet(context),
       ),
       AsyncData<Address?>() => (
         l10n.deliveryAddressAdd,
+        l10n.deliveryAddressEmptyHint,
         () => addDeliveryAddress(
           router: GoRouter.of(context),
           container: ProviderScope.containerOf(context),
@@ -34,58 +37,64 @@ class DeliveryAddressLine extends ConsumerWidget {
       ),
       AsyncError<Address?>() => (
         l10n.deliveryAddressRetry,
+        null,
         () => ref.invalidate(addressesProvider),
       ),
-      _ => ('…', null),
+      _ => ('…', null, null),
     };
 
     return InkWell(
       key: const ValueKey<String>('delivery-address'),
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(12),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 48),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                l10n.deliveryAddressCaption,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.72),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Row(
+        child: Row(
+          children: <Widget>[
+            const Icon(Icons.location_on, size: 26, color: KitColors.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Flexible(
-                    child: Text(
-                      value,
-                      key: const ValueKey<String>('delivery-address-value'),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Flexible(
+                        child: Text(
+                          value,
+                          key: const ValueKey<String>('delivery-address-value'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: KitColors.ink,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 20,
+                        color: KitColors.ink,
+                      ),
+                    ],
+                  ),
+                  if (detail != null)
+                    Text(
+                      detail,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: BrandColors.lime,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                        color: KitColors.muted,
+                        fontSize: 11,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.near_me_rounded,
-                    size: 17,
-                    color: BrandColors.lime,
-                  ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

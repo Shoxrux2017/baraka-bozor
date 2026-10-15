@@ -6,6 +6,7 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -175,6 +176,19 @@ void main() {
     );
     expect(byKey('order-edit'), findsOneWidget);
     expect(byKey('order-cancel'), findsOneWidget);
+  });
+
+  testWidgets('the orders carry the tab bar with the orders tab current', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tapAndSettle(tester, byKey('open-orders'));
+
+    expect(find.byType(CustomerTabBar), findsOneWidget);
+    expect(
+      tester.widget<CustomerTabBar>(find.byType(CustomerTabBar)).current,
+      CustomerTab.orders,
+    );
   });
 
   testWidgets('an empty cart leads to the orders', (WidgetTester tester) async {

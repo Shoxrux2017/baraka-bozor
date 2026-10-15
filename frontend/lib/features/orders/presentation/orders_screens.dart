@@ -19,6 +19,7 @@ import '../../../core/orders/quantity_rules.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
+import '../../../core/widgets/customer_tab_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/periodic_refresh.dart';
@@ -52,80 +53,85 @@ class OrdersScreen extends ConsumerWidget {
       customerOrdersProvider,
     );
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.myOrders)),
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            const ActiveModeBar(),
-            Expanded(
-              child: page.when(
-                skipLoadingOnReload: false,
-                skipLoadingOnRefresh: !page.hasError,
-                data: (Paged<OrderSummary> page) => page.items.isEmpty
-                    ? Center(
-                        key: const ValueKey<String>('orders-empty'),
-                        child: Text(l10n.myOrdersEmpty),
-                      )
-                    : ListView(
-                        key: const ValueKey<String>('orders-list'),
-                        padding: const EdgeInsets.all(16),
-                        children: <Widget>[
-                          for (final OrderSummary order in page.items)
-                            Card(
-                              child: ListTile(
-                                key: ValueKey<String>('order-${order.id}'),
-                                title: Text(
-                                  '${l10n.boardOrderNumber('${order.orderNumber}')} · '
-                                  '${OrderLabels.customerStatus(l10n, order.status)}',
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Text(
-                                      '${TashkentTime.format(order.createdAt)}\n'
-                                      '${orderTotalText(l10n, language, order.totalUzs, order.totalKind)} · '
-                                      '${l10n.boardItemCount(order.itemCount)}',
-                                    ),
-                                    if (order.pendingApprovalCount > 0)
+    return CustomerTabScope(
+      child: Scaffold(
+        appBar: AppBar(title: Text(l10n.myOrders)),
+        bottomNavigationBar: const CustomerTabBar(current: CustomerTab.orders),
+        body: SafeArea(
+          child: Column(
+            children: <Widget>[
+              const ActiveModeBar(),
+              Expanded(
+                child: page.when(
+                  skipLoadingOnReload: false,
+                  skipLoadingOnRefresh: !page.hasError,
+                  data: (Paged<OrderSummary> page) => page.items.isEmpty
+                      ? Center(
+                          key: const ValueKey<String>('orders-empty'),
+                          child: Text(l10n.myOrdersEmpty),
+                        )
+                      : ListView(
+                          key: const ValueKey<String>('orders-list'),
+                          padding: const EdgeInsets.all(16),
+                          children: <Widget>[
+                            for (final OrderSummary order in page.items)
+                              Card(
+                                child: ListTile(
+                                  key: ValueKey<String>('order-${order.id}'),
+                                  title: Text(
+                                    '${l10n.boardOrderNumber('${order.orderNumber}')} · '
+                                    '${OrderLabels.customerStatus(l10n, order.status)}',
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
                                       Text(
-                                        l10n.ordersNeedAnswer,
-                                        key: ValueKey<String>(
-                                          'order-waiting-${order.id}',
-                                        ),
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .error,
-                                        ),
+                                        '${TashkentTime.format(order.createdAt)}\n'
+                                        '${orderTotalText(l10n, language, order.totalUzs, order.totalKind)} · '
+                                        '${l10n.boardItemCount(order.itemCount)}',
                                       ),
-                                  ],
-                                ),
-                                onTap: () => context.push(
-                                  AppPaths.customerOrder(order.id),
+                                      if (order.pendingApprovalCount > 0)
+                                        Text(
+                                          l10n.ordersNeedAnswer,
+                                          key: ValueKey<String>(
+                                            'order-waiting-${order.id}',
+                                          ),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .error,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  onTap: () => context.push(
+                                    AppPaths.customerOrder(order.id),
+                                  ),
                                 ),
                               ),
+                            PaginationBar(
+                              page: page,
+                              onPage: ref
+                                  .read(ordersPageProvider.notifier)
+                                  .goToPage,
                             ),
-                          PaginationBar(
-                            page: page,
-                            onPage: ref
-                                .read(ordersPageProvider.notifier)
-                                .goToPage,
-                          ),
-                        ],
-                      ),
-                error: (Object error, StackTrace _) => Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: LoadFailure(
-                    error: error,
-                    onRetry: () => ref.invalidate(customerOrdersProvider),
+                          ],
+                        ),
+                  error: (Object error, StackTrace _) => Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: LoadFailure(
+                      error: error,
+                      onRetry: () => ref.invalidate(customerOrdersProvider),
+                    ),
                   ),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                 ),
-                loading: () => const Center(child: CircularProgressIndicator()),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

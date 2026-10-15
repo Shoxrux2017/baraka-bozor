@@ -15,20 +15,23 @@ const String categoryId = '0f0e3c6a-6b1f-4f7e-9a51-2d6c1c1e9a01';
 const String productId = '5b2a1c3d-8e4f-4a6b-9c7d-1e2f3a4b5c6d';
 
 /// A product as `docs/09-api-contracts.md` section 14 shows it.
-Map<String, Object?> productJson({String priceMode = 'estimate'}) =>
-    <String, Object?>{
-      'id': productId,
-      'category_id': categoryId,
-      'name_uz': 'Pomidor',
-      'name_ru': 'Помидор',
-      'description_uz': null,
-      'description_ru': null,
-      'unit_code': 'kg',
-      'price_mode': priceMode,
-      'customer_unit_price_uzs': 18400,
-      'image_url': 'https://api.test/storage/products/p.webp',
-      'is_active': true,
-    };
+Map<String, Object?> productJson({
+  String priceMode = 'estimate',
+  bool isFavorite = false,
+}) => <String, Object?>{
+  'id': productId,
+  'category_id': categoryId,
+  'name_uz': 'Pomidor',
+  'name_ru': 'Помидор',
+  'description_uz': null,
+  'description_ru': null,
+  'unit_code': 'kg',
+  'price_mode': priceMode,
+  'customer_unit_price_uzs': 18400,
+  'image_url': 'https://api.test/storage/products/p.webp',
+  'is_active': true,
+  'is_favorite': isFavorite,
+};
 
 Map<String, Object?> categoryJson() => <String, Object?>{
   'id': categoryId,
@@ -37,6 +40,7 @@ Map<String, Object?> categoryJson() => <String, Object?>{
   'description_uz': null,
   'description_ru': null,
   'sort_order': 0,
+  'image_url': 'https://api.test/storage/categories/c.webp',
 };
 
 Map<String, Object?> page(List<Object?> items, {int page = 1, int last = 1}) =>
@@ -69,6 +73,26 @@ void main() {
     );
   });
 
+  test('a category parses its picture, which may be absent', () {
+    expect(
+      CatalogApi.parseCategory(categoryJson()).imageUrl,
+      'https://api.test/storage/categories/c.webp',
+    );
+    expect(
+      CatalogApi.parseCategory(<String, Object?>{
+        ...categoryJson(),
+        'image_url': null,
+      }).imageUrl,
+      isNull,
+    );
+    expect(
+      () => CatalogApi.parseCategory(
+        Map<String, Object?>.of(categoryJson())..remove('image_url'),
+      ),
+      throwsFormatException,
+    );
+  });
+
   test('a search is trimmed and cut to what the server takes', () {
     expect(ProductListQuery.searchOf('  olma  '), 'olma');
     expect(
@@ -84,6 +108,17 @@ void main() {
     expect(product.unitCode, UnitCode.kg);
     expect(product.priceMode, PriceMode.estimate);
     expect(product.imageUrl, 'https://api.test/storage/products/p.webp');
+    expect(product.isFavorite, isFalse);
+    expect(
+      CatalogApi.parseProduct(productJson(isFavorite: true)).isFavorite,
+      isTrue,
+    );
+    expect(
+      () => CatalogApi.parseProduct(
+        Map<String, Object?>.of(productJson())..remove('is_favorite'),
+      ),
+      throwsFormatException,
+    );
     expect(
       () => CatalogApi.parseProduct(<String, Object?>{
         ...productJson(),
@@ -180,6 +215,41 @@ void main() {
         expect(products.hasNext, isTrue);
       },
     );
+
+    test('the recommended filter and the price sort are sent', () async {
+      await repository.products(
+        const ProductListQuery(featuredOnly: true, sort: ProductSort.priceAsc),
+        page: 1,
+      );
+      await repository.products(
+        const ProductListQuery(sort: ProductSort.priceDesc),
+        page: 1,
+      );
+      await repository.products(
+        const ProductListQuery(sort: ProductSort.shop),
+        page: 1,
+      );
+
+      expect(adapter.requests[0].queryParameters, <String, Object>{
+        'page': 1,
+        'per_page': 20,
+        'featured': 1,
+        'sort': 'price_asc',
+      });
+      expect(adapter.requests[1].queryParameters['sort'], 'price_desc');
+      expect(
+        adapter.requests[1].queryParameters.containsKey('featured'),
+        isFalse,
+      );
+      expect(adapter.requests[2].queryParameters.containsKey('sort'), isFalse);
+    });
+
+    test('the filter and the sort tell two lists apart', () {
+      const ProductListQuery plain = ProductListQuery();
+      expect(plain, const ProductListQuery());
+      expect(plain, isNot(const ProductListQuery(featuredOnly: true)));
+      expect(plain, isNot(const ProductListQuery(sort: ProductSort.priceAsc)));
+    });
 
     test('an answer that does not match its request is refused', () async {
       const String otherId = '6d5c4b3a-2f1e-4d0c-9b8a-7f6e5d4c3b2a';

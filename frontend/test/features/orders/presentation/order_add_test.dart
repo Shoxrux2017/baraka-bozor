@@ -7,7 +7,7 @@ import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
-import 'package:baraka_bozor/features/catalog/presentation/catalog_screens.dart';
+import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
 import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

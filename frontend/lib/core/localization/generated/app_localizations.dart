@@ -1370,11 +1370,23 @@ abstract class AppLocalizations {
   /// **'Qidirish: bodring, non…'**
   String get catalogSearchHint;
 
-  /// No description provided for @deliveryAddressCaption.
+  /// No description provided for @deliveryAddressEmptyHint.
   ///
   /// In uz, this message translates to:
-  /// **'Shu manzilga yetkazamiz'**
-  String get deliveryAddressCaption;
+  /// **'Buyurtmani qayerga olib borish kerak'**
+  String get deliveryAddressEmptyHint;
+
+  /// No description provided for @homeCategories.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kategoriyalar'**
+  String get homeCategories;
+
+  /// No description provided for @homeSeeAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barchasi'**
+  String get homeSeeAll;
 
   /// No description provided for @deliveryAddressAdd.
   ///
@@ -4531,6 +4543,144 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Ilovani oching'**
   String get wrongSurfaceWebTitle;
+
+  /// No description provided for @catalogApproxPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'≈ {price}'**
+  String catalogApproxPrice(String price);
+
+  /// No description provided for @catalogPerUnit.
+  ///
+  /// In uz, this message translates to:
+  /// **'{unit} uchun'**
+  String catalogPerUnit(String unit);
+
+  /// No description provided for @catalogAdd.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shish'**
+  String get catalogAdd;
+
+  /// No description provided for @catalogUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotuvda yo\'q'**
+  String get catalogUnavailable;
+
+  /// No description provided for @favoriteFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlab bo\'lmadi. Qayta urinib ko\'ring'**
+  String get favoriteFailed;
+
+  /// No description provided for @favoritesFull.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilar to\'ldi: 500 tadan ko\'p bo\'lmaydi'**
+  String get favoritesFull;
+
+  /// No description provided for @favoriteAdd.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilarga qo\'shish'**
+  String get favoriteAdd;
+
+  /// No description provided for @favoriteRemove.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilardan olib tashlash'**
+  String get favoriteRemove;
+
+  /// No description provided for @cartStepMinus.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kamaytirish'**
+  String get cartStepMinus;
+
+  /// No description provided for @cartStepPlus.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'paytirish'**
+  String get cartStepPlus;
+
+  /// No description provided for @sortTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saralash'**
+  String get sortTitle;
+
+  /// No description provided for @sortShop.
+  ///
+  /// In uz, this message translates to:
+  /// **'Do\'kondagidek'**
+  String get sortShop;
+
+  /// No description provided for @sortPriceAsc.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval arzonlari'**
+  String get sortPriceAsc;
+
+  /// No description provided for @sortPriceDesc.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval qimmatlari'**
+  String get sortPriceDesc;
+
+  /// No description provided for @allProductsTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha mahsulotlar'**
+  String get allProductsTitle;
+
+  /// No description provided for @recommendedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tavsiya etamiz'**
+  String get recommendedTitle;
+
+  /// No description provided for @recommendedEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha tavsiya etilgan mahsulot yo\'q'**
+  String get recommendedEmpty;
+
+  /// No description provided for @cartSummaryCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count, plural, other{{count} ta mahsulot}}'**
+  String cartSummaryCount(int count);
+
+  /// No description provided for @cartSummaryOpen.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga'**
+  String get cartSummaryOpen;
+
+  /// No description provided for @favoritesTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilar'**
+  String get favoritesTitle;
+
+  /// No description provided for @favoritesEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha bo\'sh'**
+  String get favoritesEmptyTitle;
+
+  /// No description provided for @favoritesEmptyText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotdagi yurakchani bosing — u shu yerda paydo bo\'ladi va uni qayta buyurtma qilish oson bo\'ladi'**
+  String get favoritesEmptyText;
+
+  /// No description provided for @favoritesEmptyAction.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaridga'**
+  String get favoritesEmptyAction;
 }
 
 class _AppLocalizationsDelegate

@@ -153,6 +153,11 @@ class CartLineController extends CartMutation {
 
   Future<Cart?> change(CartLinePatch patch) =>
       perform(() => carts.change(lineId, patch), reload: showCart);
+
+  /// Removes the line; each line has its own controller, so two lines can be
+  /// removed at once.
+  Future<Cart?> remove() =>
+      perform(() => carts.remove(lineId), reload: showCart);
 }
 
 final NotifierProviderFamily<CartLineController, MutationState, String>

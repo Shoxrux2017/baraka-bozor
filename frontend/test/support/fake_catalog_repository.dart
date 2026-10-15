@@ -10,6 +10,7 @@ CatalogCategory catalogCategory({
   String id = 'c-1',
   String nameUz = 'Sabzavotlar',
   String nameRu = 'Овощи',
+  String? imageUrl,
 }) => CatalogCategory(
   id: id,
   nameUz: nameUz,
@@ -17,6 +18,7 @@ CatalogCategory catalogCategory({
   descriptionUz: null,
   descriptionRu: null,
   sortOrder: 0,
+  imageUrl: imageUrl,
 );
 
 CatalogProduct catalogProduct({
@@ -29,6 +31,7 @@ CatalogProduct catalogProduct({
   UnitCode unitCode = UnitCode.kg,
   PriceMode priceMode = PriceMode.estimate,
   int customerUnitPriceUzs = 18400,
+  bool isFavorite = false,
 }) => CatalogProduct(
   id: id,
   categoryId: categoryId,
@@ -40,6 +43,7 @@ CatalogProduct catalogProduct({
   priceMode: priceMode,
   customerUnitPriceUzs: customerUnitPriceUzs,
   imageUrl: null,
+  isFavorite: isFavorite,
 );
 
 /// The Customer catalog in memory, paginated and searched like the API. A
@@ -56,6 +60,9 @@ class FakeCatalogRepository implements CatalogRepository {
   List<CatalogProduct> productRows;
   int pageSize = 20;
 
+  /// The ids of the recommended products, which `featuredOnly` keeps.
+  Set<String> featuredIds = <String>{};
+
   /// Every product request, as `search|category|page`.
   final List<String> requests = <String>[];
 
@@ -71,9 +78,13 @@ class FakeCatalogRepository implements CatalogRepository {
   /// The next sections request answers this instead.
   ApiFailure? categoriesFailure;
 
+  /// While set, the sections request waits for it.
+  Completer<void>? categoriesGate;
+
   @override
   Future<List<CatalogCategory>> categories() async {
     categoryLoads++;
+    await categoriesGate?.future;
     final ApiFailure? failure = categoriesFailure;
     if (failure != null) {
       categoriesFailure = null;
@@ -99,11 +110,26 @@ class FakeCatalogRepository implements CatalogRepository {
         .where(
           (CatalogProduct p) =>
               (query.categoryId == null || p.categoryId == query.categoryId) &&
+              (!query.featuredOnly || featuredIds.contains(p.id)) &&
               (search.isEmpty ||
                   p.nameUz.toLowerCase().contains(search) ||
                   p.nameRu.toLowerCase().contains(search)),
         )
         .toList();
+    switch (query.sort) {
+      case ProductSort.shop:
+        break;
+      case ProductSort.priceAsc:
+        matching.sort(
+          (CatalogProduct a, CatalogProduct b) =>
+              a.customerUnitPriceUzs.compareTo(b.customerUnitPriceUzs),
+        );
+      case ProductSort.priceDesc:
+        matching.sort(
+          (CatalogProduct a, CatalogProduct b) =>
+              b.customerUnitPriceUzs.compareTo(a.customerUnitPriceUzs),
+        );
+    }
     final int lastPage = matching.isEmpty
         ? 1
         : (matching.length + pageSize - 1) ~/ pageSize;

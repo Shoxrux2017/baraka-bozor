@@ -285,7 +285,9 @@
   "errorSelfResetNotAllowed": "O'z parolingizni bu yerda tiklab bo'lmaydi",
   "errorPhoneAlreadyActive": "Bu raqam boshqa faol xodimga tegishli",
   "catalogSearchHint": "Qidirish: bodring, non…",
-  "deliveryAddressCaption": "Shu manzilga yetkazamiz",
+  "deliveryAddressEmptyHint": "Buyurtmani qayerga olib borish kerak",
+  "homeCategories": "Kategoriyalar",
+  "homeSeeAll": "Barchasi",
   "deliveryAddressAdd": "Yetkazish manzilini qo'shing",
   "deliveryAddressRetry": "Manzil yuklanmadi — qayta urinish",
   "deliveryAddressSheetTitle": "Qayerga yetkazamiz?",
@@ -1673,5 +1675,49 @@
   "showPassword": "Parolni ko'rsatish",
   "hidePassword": "Parolni yashirish",
   "back": "Orqaga",
-  "wrongSurfaceWebTitle": "Ilovani oching"
+  "wrongSurfaceWebTitle": "Ilovani oching",
+  "catalogApproxPrice": "≈ {price}",
+  "@catalogApproxPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogPerUnit": "{unit} uchun",
+  "@catalogPerUnit": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogAdd": "Qo'shish",
+  "catalogUnavailable": "Sotuvda yo'q",
+  "favoriteFailed": "Saqlab bo'lmadi. Qayta urinib ko'ring",
+  "favoritesFull": "Sevimlilar to'ldi: 500 tadan ko'p bo'lmaydi",
+  "favoriteAdd": "Sevimlilarga qo'shish",
+  "favoriteRemove": "Sevimlilardan olib tashlash",
+  "cartStepMinus": "Kamaytirish",
+  "cartStepPlus": "Ko'paytirish",
+  "sortTitle": "Saralash",
+  "sortShop": "Do'kondagidek",
+  "sortPriceAsc": "Avval arzonlari",
+  "sortPriceDesc": "Avval qimmatlari",
+  "allProductsTitle": "Barcha mahsulotlar",
+  "recommendedTitle": "Tavsiya etamiz",
+  "recommendedEmpty": "Hozircha tavsiya etilgan mahsulot yo'q",
+  "cartSummaryCount": "{count, plural, other{{count} ta mahsulot}}",
+  "@cartSummaryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cartSummaryOpen": "Savatga",
+  "favoritesTitle": "Sevimlilar",
+  "favoritesEmptyTitle": "Hozircha bo'sh",
+  "favoritesEmptyText": "Mahsulotdagi yurakchani bosing — u shu yerda paydo bo'ladi va uni qayta buyurtma qilish oson bo'ladi",
+  "favoritesEmptyAction": "Xaridga"
 }

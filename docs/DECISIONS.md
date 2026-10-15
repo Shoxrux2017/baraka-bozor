@@ -1217,3 +1217,20 @@ Answers to the questions of kit stage 2 (`kit/02-glavnaya.dc.html`, approved the
 6. **Numbering.** New tables are appended to `docs/08` as sections 31 and 32 and the favourites API is `docs/09` section 58, so earlier section numbers cited across the documents stay.
 
 7. **The panel's picture card** is shared by the product form and the category dialog; a category takes a picture once it exists, as a product does.
+
+## DL-80 — The Customer's kit home, kit stage 2b (2026-10-15, agent)
+
+1. **The card.** Every list shows the kit card: picture, heart, name, `≈` price and "за кг". "Добавить" sits under the price at full width, because a price in сум is two to three times longer than the kit's "$12". A tap adds one unit (one kilogram, one piece) with "allow similar" and no note; a product already in the cart shows the stepper instead.
+2. **The in-card stepper** steps by 0,5 for kilograms, litres and metres and by 1 otherwise; the minus at the step or below removes the line; any exact quantity is still typed in the cart. One change at a time per card.
+3. **The cart bar** appears on the product lists without the tab bar (a category, "Рекомендуем", every product) while the cart holds a line; the tab screens show the count on the cart button instead.
+4. **The sort** is remembered while the app runs and applies to every product and to the home's search results; it starts as the shop's order. With a search typed, the filter button sets the order and the results re-sort on the home; with no search it opens every product in that order.
+5. **A category's screen** carries a rail of every category, as the kit's subcategory rail, because categories are flat (`docs/08` §6); switching replaces the location. A category without a picture shows its first letter.
+6. **The tab bar** (`DL-78` item 6) is drawn by the home, favourites, orders and profile, which stay separate routes: a tab opened from the home is pushed over it and one opened from another tab replaces that tab, so the system back always returns to the home. Orders and profile keep their content until their stages.
+7. **The home's header** follows the kit: the address line on top with the cart at its right, then the search and the filter button. This moves the address above the search (supersedes the position in `DL-74` item 3; the behaviour of `DL-75` item 3 stands). The active-mode bar takes the kit's look everywhere it appears.
+8. **Brand values of design 4a** (`BrandColors`) are gone; `KitColors` is the one palette.
+9. **The header's scroll cap** is 60% of the screen's height above the keyboard, not of the whole screen's; this supersedes `DL-75` item 6's 45%, and the mode bar no longer yields first. Why: with two sessions at 320×640, text ×2 and the keyboard open, the cap taken from the screen's height cut the search off.
+10. **The address line** of the home and of the delivery sheet shows the street only for an address without a label, and label plus street for a labelled one.
+11. **The home row** (Рекомендуем) shows its pictures 130 high, not the 112 of the plan, so the card's picture matches the drawing at 150 wide.
+12. **The lone tab.** A tab that is the only route (opened as the first screen) goes home on back; a press on another tab from it goes home first and then pushes that tab, so back still returns home.
+13. **One heart change at a time per card**; a second tap while one is on its way is ignored. A `409 favorites_full` answer says the list is full (500), not the generic retry text. A favourite that is no longer sold shows its picture faded and its name and price in the muted colour (`DL-78` item 5).
+14. **Heights follow each font.** A card's height sums every text's own scaled size, because Android 14 and later scale small fonts more than large ones; the cart bar's reserved space is its real scaled height plus the bottom inset; a removal in a card uses the line's own controller, so two cards can remove at once.

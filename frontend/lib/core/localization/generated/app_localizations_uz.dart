@@ -692,7 +692,13 @@ class AppLocalizationsUz extends AppLocalizations {
   String get catalogSearchHint => 'Qidirish: bodring, non…';
 
   @override
-  String get deliveryAddressCaption => 'Shu manzilga yetkazamiz';
+  String get deliveryAddressEmptyHint => 'Buyurtmani qayerga olib borish kerak';
+
+  @override
+  String get homeCategories => 'Kategoriyalar';
+
+  @override
+  String get homeSeeAll => 'Barchasi';
 
   @override
   String get deliveryAddressAdd => 'Yetkazish manzilini qo\'shing';
@@ -2571,4 +2577,85 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get wrongSurfaceWebTitle => 'Ilovani oching';
+
+  @override
+  String catalogApproxPrice(String price) {
+    return '≈ $price';
+  }
+
+  @override
+  String catalogPerUnit(String unit) {
+    return '$unit uchun';
+  }
+
+  @override
+  String get catalogAdd => 'Qo\'shish';
+
+  @override
+  String get catalogUnavailable => 'Sotuvda yo\'q';
+
+  @override
+  String get favoriteFailed => 'Saqlab bo\'lmadi. Qayta urinib ko\'ring';
+
+  @override
+  String get favoritesFull => 'Sevimlilar to\'ldi: 500 tadan ko\'p bo\'lmaydi';
+
+  @override
+  String get favoriteAdd => 'Sevimlilarga qo\'shish';
+
+  @override
+  String get favoriteRemove => 'Sevimlilardan olib tashlash';
+
+  @override
+  String get cartStepMinus => 'Kamaytirish';
+
+  @override
+  String get cartStepPlus => 'Ko\'paytirish';
+
+  @override
+  String get sortTitle => 'Saralash';
+
+  @override
+  String get sortShop => 'Do\'kondagidek';
+
+  @override
+  String get sortPriceAsc => 'Avval arzonlari';
+
+  @override
+  String get sortPriceDesc => 'Avval qimmatlari';
+
+  @override
+  String get allProductsTitle => 'Barcha mahsulotlar';
+
+  @override
+  String get recommendedTitle => 'Tavsiya etamiz';
+
+  @override
+  String get recommendedEmpty => 'Hozircha tavsiya etilgan mahsulot yo\'q';
+
+  @override
+  String cartSummaryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ta mahsulot',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cartSummaryOpen => 'Savatga';
+
+  @override
+  String get favoritesTitle => 'Sevimlilar';
+
+  @override
+  String get favoritesEmptyTitle => 'Hozircha bo\'sh';
+
+  @override
+  String get favoritesEmptyText =>
+      'Mahsulotdagi yurakchani bosing — u shu yerda paydo bo\'ladi va uni qayta buyurtma qilish oson bo\'ladi';
+
+  @override
+  String get favoritesEmptyAction => 'Xaridga';
 }

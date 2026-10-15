@@ -168,3 +168,16 @@ productListProvider = AsyncNotifierProvider.autoDispose
     .family<ProductListController, ProductListState, ProductListQuery>(
       ProductListController.new,
     );
+
+/// How the Customer's product lists are ordered, kept for the app's run.
+class ProductSortController extends Notifier<ProductSort> {
+  @override
+  ProductSort build() => ProductSort.shop;
+
+  void set(ProductSort sort) => state = sort;
+}
+
+final NotifierProvider<ProductSortController, ProductSort> productSortProvider =
+    NotifierProvider<ProductSortController, ProductSort>(
+      ProductSortController.new,
+    );

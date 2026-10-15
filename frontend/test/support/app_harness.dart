@@ -3,6 +3,7 @@ import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
+import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:baraka_bozor/features/checkout/application/checkout_controllers.dart';
 import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
 import 'package:baraka_bozor/core/platform/map_links.dart';
@@ -22,6 +23,7 @@ import 'fake_checkout_repository.dart';
 import 'fake_courier_orders_repository.dart';
 import 'fake_customer_orders_repository.dart';
 import 'fake_customer_repositories.dart';
+import 'fake_favorites_repository.dart';
 import 'fake_operations_repository.dart';
 import 'fake_shopper_orders_repository.dart';
 import 'in_memory_stores.dart';
@@ -35,6 +37,7 @@ Widget appUnderTest({
   FakeCatalogRepository? catalog,
   FakeOperationsRepository? operations,
   FakeCartRepository? cart,
+  FakeFavoritesRepository? favorites,
   FakeCheckoutRepository? checkout,
   FakeAddressesRepository? addresses,
   FakeCustomerOrdersRepository? orders,
@@ -66,6 +69,9 @@ Widget appUnderTest({
         operations ?? FakeOperationsRepository(),
       ),
       cartRepositoryProvider.overrideWithValue(cart ?? FakeCartRepository()),
+      favoritesRepositoryProvider.overrideWithValue(
+        favorites ?? FakeFavoritesRepository(),
+      ),
       checkoutRepositoryProvider.overrideWithValue(
         checkout ?? FakeCheckoutRepository(),
       ),

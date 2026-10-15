@@ -10,20 +10,17 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
-import '../../../core/theme/brand_colors.dart';
+import '../../../core/theme/kit_colors.dart';
 import '../application/cart_controllers.dart';
 import '../domain/cart.dart';
 import 'cart_paths.dart';
 
 /// The way to the cart from the Customer's screens, with the number of its
-/// lines. The count is the signed-in Customer's own, never another
-/// account's, and is announced once, in words.
+/// lines (the kit's shopping bag with a green count). The count is the
+/// signed-in Customer's own, never another account's, and is announced once,
+/// in words.
 class CartButton extends ConsumerWidget {
-  const CartButton({this.onBrand = false, super.key});
-
-  /// The home header's round white button on the brand green (design 4a);
-  /// otherwise the plain app bar icon of the other screens.
-  final bool onBrand;
+  const CartButton({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,21 +32,49 @@ class CartButton extends ConsumerWidget {
     return IconButton(
       key: const ValueKey<String>('open-cart'),
       tooltip: l10n.cartBadge(count),
-      style: onBrand
-          ? IconButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: BrandColors.green,
-              minimumSize: const Size.square(46),
-            )
-          : null,
-      icon: Badge(
-        isLabelVisible: count > 0,
-        backgroundColor: onBrand ? BrandColors.orange : null,
-        textColor: onBrand ? Colors.white : null,
-        label: ExcludeSemantics(
-          child: Text('$count', key: const ValueKey<String>('cart-count')),
-        ),
-        child: const Icon(Icons.shopping_cart_outlined),
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: <Widget>[
+          const Icon(
+            Icons.shopping_bag_outlined,
+            size: 26,
+            color: KitColors.ink,
+          ),
+          if (count > 0)
+            Positioned(
+              top: -7,
+              right: -9,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: KitColors.primary,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: ExcludeSemantics(
+                      child: Text(
+                        '$count',
+                        key: const ValueKey<String>('cart-count'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          height: 1.3,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       onPressed: () => context.push(CartPaths.cart),
     );

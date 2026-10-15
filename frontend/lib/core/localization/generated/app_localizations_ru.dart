@@ -690,7 +690,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get catalogSearchHint => 'Найти: огурцы, лепёшки…';
 
   @override
-  String get deliveryAddressCaption => 'Доставим сюда';
+  String get deliveryAddressEmptyHint => 'Куда привезти заказ';
+
+  @override
+  String get homeCategories => 'Категории';
+
+  @override
+  String get homeSeeAll => 'Все';
 
   @override
   String get deliveryAddressAdd => 'Добавить адрес доставки';
@@ -2592,4 +2598,88 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get wrongSurfaceWebTitle => 'Откройте приложение';
+
+  @override
+  String catalogApproxPrice(String price) {
+    return '≈ $price';
+  }
+
+  @override
+  String catalogPerUnit(String unit) {
+    return 'за $unit';
+  }
+
+  @override
+  String get catalogAdd => 'Добавить';
+
+  @override
+  String get catalogUnavailable => 'Нет в продаже';
+
+  @override
+  String get favoriteFailed => 'Не удалось сохранить. Попробуйте ещё раз';
+
+  @override
+  String get favoritesFull => 'В избранном уже 500 товаров — уберите лишние';
+
+  @override
+  String get favoriteAdd => 'Добавить в избранное';
+
+  @override
+  String get favoriteRemove => 'Убрать из избранного';
+
+  @override
+  String get cartStepMinus => 'Уменьшить';
+
+  @override
+  String get cartStepPlus => 'Увеличить';
+
+  @override
+  String get sortTitle => 'Сортировка';
+
+  @override
+  String get sortShop => 'Как в магазине';
+
+  @override
+  String get sortPriceAsc => 'Сначала дешевле';
+
+  @override
+  String get sortPriceDesc => 'Сначала дороже';
+
+  @override
+  String get allProductsTitle => 'Все товары';
+
+  @override
+  String get recommendedTitle => 'Рекомендуем';
+
+  @override
+  String get recommendedEmpty => 'Пока нет рекомендованных товаров';
+
+  @override
+  String cartSummaryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count товара',
+      many: '$count товаров',
+      few: '$count товара',
+      one: '$count товар',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cartSummaryOpen => 'В корзину';
+
+  @override
+  String get favoritesTitle => 'Избранное';
+
+  @override
+  String get favoritesEmptyTitle => 'Пока пусто';
+
+  @override
+  String get favoritesEmptyText =>
+      'Нажмите сердечко на товаре — он появится здесь, и его будет легко заказать снова';
+
+  @override
+  String get favoritesEmptyAction => 'За покупками';
 }
