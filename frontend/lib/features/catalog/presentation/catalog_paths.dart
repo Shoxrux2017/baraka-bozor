@@ -7,6 +7,10 @@ abstract final class CatalogPaths {
       '${AppPaths.customer}/categories/:category';
   static const String productPattern = '${AppPaths.customer}/products/:product';
 
+  /// The recommended products, and every product with its sort.
+  static const String recommended = '${AppPaths.customer}/recommended';
+  static const String products = '${AppPaths.customer}/products';
+
   static String category(String id) =>
       '${AppPaths.customer}/categories/${Uri.encodeComponent(id)}';
 

@@ -1222,3 +1222,5 @@ Answers to the questions of kit stage 2 (`kit/02-glavnaya.dc.html`, approved the
 
 1. **The card.** Every list shows the kit card: picture, heart, name, `≈` price and "за кг". "Добавить" sits under the price at full width, because a price in сум is two to three times longer than the kit's "$12". A tap adds one unit (one kilogram, one piece) with "allow similar" and no note; a product already in the cart shows the stepper instead.
 2. **The in-card stepper** steps by 0,5 for kilograms, litres and metres and by 1 otherwise; the minus at the step or below removes the line; any exact quantity is still typed in the cart. One change at a time per card.
+3. **The cart bar** appears on the product lists without the tab bar (a category, "Рекомендуем", every product) while the cart holds a line; the tab screens show the count on the cart button instead.
+4. **The sort** is remembered while the app runs and applies to every product and to the home's search results; it starts as the shop's order.

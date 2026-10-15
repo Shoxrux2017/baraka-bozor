@@ -2602,4 +2602,38 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get cartStepPlus => 'Ko\'paytirish';
+
+  @override
+  String get sortTitle => 'Saralash';
+
+  @override
+  String get sortShop => 'Do\'kondagidek';
+
+  @override
+  String get sortPriceAsc => 'Avval arzonlari';
+
+  @override
+  String get sortPriceDesc => 'Avval qimmatlari';
+
+  @override
+  String get allProductsTitle => 'Barcha mahsulotlar';
+
+  @override
+  String get recommendedTitle => 'Tavsiya etamiz';
+
+  @override
+  String get recommendedEmpty => 'Hozircha tavsiya etilgan mahsulot yo\'q';
+
+  @override
+  String cartSummaryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ta mahsulot',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cartSummaryOpen => 'Savatga';
 }

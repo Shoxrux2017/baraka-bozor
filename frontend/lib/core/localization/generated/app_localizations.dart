@@ -4585,6 +4585,60 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Ko\'paytirish'**
   String get cartStepPlus;
+
+  /// No description provided for @sortTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saralash'**
+  String get sortTitle;
+
+  /// No description provided for @sortShop.
+  ///
+  /// In uz, this message translates to:
+  /// **'Do\'kondagidek'**
+  String get sortShop;
+
+  /// No description provided for @sortPriceAsc.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval arzonlari'**
+  String get sortPriceAsc;
+
+  /// No description provided for @sortPriceDesc.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval qimmatlari'**
+  String get sortPriceDesc;
+
+  /// No description provided for @allProductsTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha mahsulotlar'**
+  String get allProductsTitle;
+
+  /// No description provided for @recommendedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tavsiya etamiz'**
+  String get recommendedTitle;
+
+  /// No description provided for @recommendedEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha tavsiya etilgan mahsulot yo\'q'**
+  String get recommendedEmpty;
+
+  /// No description provided for @cartSummaryCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count, plural, other{{count} ta mahsulot}}'**
+  String cartSummaryCount(int count);
+
+  /// No description provided for @cartSummaryOpen.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga'**
+  String get cartSummaryOpen;
 }
 
 class _AppLocalizationsDelegate

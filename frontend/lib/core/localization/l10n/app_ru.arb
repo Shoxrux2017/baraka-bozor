@@ -1675,5 +1675,14 @@
   "favoriteAdd": "Добавить в избранное",
   "favoriteRemove": "Убрать из избранного",
   "cartStepMinus": "Уменьшить",
-  "cartStepPlus": "Увеличить"
+  "cartStepPlus": "Увеличить",
+  "sortTitle": "Сортировка",
+  "sortShop": "Как в магазине",
+  "sortPriceAsc": "Сначала дешевле",
+  "sortPriceDesc": "Сначала дороже",
+  "allProductsTitle": "Все товары",
+  "recommendedTitle": "Рекомендуем",
+  "recommendedEmpty": "Пока нет рекомендованных товаров",
+  "cartSummaryCount": "{count, plural, one{{count} товар} few{{count} товара} many{{count} товаров} other{{count} товара}}",
+  "cartSummaryOpen": "В корзину"
 }

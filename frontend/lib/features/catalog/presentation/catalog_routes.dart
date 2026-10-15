@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'catalog_paths.dart';
+import 'all_products_screen.dart';
 import 'catalog_screens.dart';
+import 'recommended_screen.dart';
 
 /// The Customer catalog is the Customer area's home (`docs/07-architecture.md`
 /// section 27): the area's entry, a category's products and a product. The
@@ -24,6 +26,18 @@ final FeatureRoutes catalogRoutes = FeatureRoutes(
       name: 'catalog-category',
       builder: (BuildContext context, GoRouterState state) =>
           CategoryProductsScreen(categoryId: state.pathParameters['category']!),
+    ),
+    GoRoute(
+      path: CatalogPaths.recommended,
+      name: 'catalog-recommended',
+      builder: (BuildContext context, GoRouterState state) =>
+          const RecommendedScreen(),
+    ),
+    GoRoute(
+      path: CatalogPaths.products,
+      name: 'catalog-all-products',
+      builder: (BuildContext context, GoRouterState state) =>
+          const AllProductsScreen(),
     ),
     GoRoute(
       path: CatalogPaths.productPattern,

@@ -2623,4 +2623,41 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get cartStepPlus => 'Увеличить';
+
+  @override
+  String get sortTitle => 'Сортировка';
+
+  @override
+  String get sortShop => 'Как в магазине';
+
+  @override
+  String get sortPriceAsc => 'Сначала дешевле';
+
+  @override
+  String get sortPriceDesc => 'Сначала дороже';
+
+  @override
+  String get allProductsTitle => 'Все товары';
+
+  @override
+  String get recommendedTitle => 'Рекомендуем';
+
+  @override
+  String get recommendedEmpty => 'Пока нет рекомендованных товаров';
+
+  @override
+  String cartSummaryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count товара',
+      many: '$count товаров',
+      few: '$count товара',
+      one: '$count товар',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cartSummaryOpen => 'В корзину';
 }

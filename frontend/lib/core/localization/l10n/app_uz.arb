@@ -1696,5 +1696,21 @@
   "favoriteAdd": "Sevimlilarga qo'shish",
   "favoriteRemove": "Sevimlilardan olib tashlash",
   "cartStepMinus": "Kamaytirish",
-  "cartStepPlus": "Ko'paytirish"
+  "cartStepPlus": "Ko'paytirish",
+  "sortTitle": "Saralash",
+  "sortShop": "Do'kondagidek",
+  "sortPriceAsc": "Avval arzonlari",
+  "sortPriceDesc": "Avval qimmatlari",
+  "allProductsTitle": "Barcha mahsulotlar",
+  "recommendedTitle": "Tavsiya etamiz",
+  "recommendedEmpty": "Hozircha tavsiya etilgan mahsulot yo'q",
+  "cartSummaryCount": "{count, plural, other{{count} ta mahsulot}}",
+  "@cartSummaryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cartSummaryOpen": "Savatga"
 }
