@@ -41,6 +41,8 @@ class CatalogApi {
         'per_page': pageSize,
         if (query.categoryId != null) 'category_id': query.categoryId!,
         if (search.isNotEmpty) 'search': search,
+        if (query.featuredOnly) 'featured': 1,
+        if (query.sort != ProductSort.shop) 'sort': query.sort.wire,
       },
       options: _customer,
     );
@@ -83,6 +85,7 @@ class CatalogApi {
       descriptionUz: json.nullableString('description_uz'),
       descriptionRu: json.nullableString('description_ru'),
       sortOrder: json.integer('sort_order'),
+      imageUrl: json.nullableString('image_url'),
     );
   }
 
@@ -105,6 +108,7 @@ class CatalogApi {
       priceMode: json.choice('price_mode', PriceMode.tryParse),
       customerUnitPriceUzs: price,
       imageUrl: json.nullableString('image_url'),
+      isFavorite: json.boolean('is_favorite'),
     );
   }
 }

@@ -11,6 +11,7 @@ final class CatalogCategory {
     required this.descriptionUz,
     required this.descriptionRu,
     required this.sortOrder,
+    required this.imageUrl,
   });
 
   final String id;
@@ -19,6 +20,7 @@ final class CatalogCategory {
   final String? descriptionUz;
   final String? descriptionRu;
   final int sortOrder;
+  final String? imageUrl;
 
   String name(AppLanguage language) =>
       language == AppLanguage.ru ? nameRu : nameUz;
@@ -38,6 +40,7 @@ final class CatalogProduct {
     required this.priceMode,
     required this.customerUnitPriceUzs,
     required this.imageUrl,
+    required this.isFavorite,
   });
 
   final String id;
@@ -51,6 +54,9 @@ final class CatalogProduct {
   final int customerUnitPriceUzs;
   final String? imageUrl;
 
+  /// Whether the signed-in Customer has the product among their favourites.
+  final bool isFavorite;
+
   String name(AppLanguage language) =>
       language == AppLanguage.ru ? nameRu : nameUz;
 
@@ -62,10 +68,28 @@ final class CatalogProduct {
       language == AppLanguage.ru ? descriptionRu : descriptionUz;
 }
 
+/// The order of a product list: the shop's own, or by price
+/// (`docs/09-api-contracts.md` section 14).
+enum ProductSort {
+  shop('default'),
+  priceAsc('price_asc'),
+  priceDesc('price_desc');
+
+  const ProductSort(this.wire);
+
+  /// The value of the `sort` parameter.
+  final String wire;
+}
+
 /// Which products a list shows: those of one category, those matching a
-/// search, or both.
+/// search, or both; only the recommended ones; in an order.
 final class ProductListQuery {
-  const ProductListQuery({this.categoryId, this.search = ''});
+  const ProductListQuery({
+    this.categoryId,
+    this.search = '',
+    this.featuredOnly = false,
+    this.sort = ProductSort.shop,
+  });
 
   /// The longest search the server takes, in code points
   /// (`CatalogSearch::MAX_TERM_LENGTH`).
@@ -78,13 +102,17 @@ final class ProductListQuery {
 
   final String? categoryId;
   final String search;
+  final bool featuredOnly;
+  final ProductSort sort;
 
   @override
   bool operator ==(Object other) =>
       other is ProductListQuery &&
       other.categoryId == categoryId &&
-      other.search == search;
+      other.search == search &&
+      other.featuredOnly == featuredOnly &&
+      other.sort == sort;
 
   @override
-  int get hashCode => Object.hash(categoryId, search);
+  int get hashCode => Object.hash(categoryId, search, featuredOnly, sort);
 }
