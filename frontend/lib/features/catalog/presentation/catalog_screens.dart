@@ -201,43 +201,6 @@ class _Categories extends ConsumerWidget {
   }
 }
 
-/// One category's products, loaded as the Customer scrolls.
-class CategoryProductsScreen extends ConsumerWidget {
-  const CategoryProductsScreen({required this.categoryId, super.key});
-
-  final String categoryId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLanguage language = interfaceLanguage(context);
-    final List<CatalogCategory>? categories = ref
-        .watch(catalogCategoriesProvider)
-        .value;
-    final CatalogCategory? category = categories
-        ?.where((CatalogCategory c) => c.id == categoryId)
-        .firstOrNull;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(category?.name(language) ?? ''),
-        actions: const <Widget>[CartButton()],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            const ActiveModeBar(),
-            Expanded(
-              child: ProductList(
-                query: ProductListQuery(categoryId: categoryId),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// One product: its image, its name in the interface language with the
 /// other language's under it, the price per unit and what an estimate means,
 /// and its description.

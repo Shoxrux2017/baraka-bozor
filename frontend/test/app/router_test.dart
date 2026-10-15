@@ -56,6 +56,7 @@ void main() {
         AppPaths.operations,
         OperationsPaths.orderPattern,
         AppPaths.customer,
+        CatalogPaths.categories,
         CatalogPaths.categoryPattern,
         CatalogPaths.recommended,
         CatalogPaths.products,

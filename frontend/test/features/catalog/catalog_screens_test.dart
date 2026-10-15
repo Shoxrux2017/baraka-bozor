@@ -32,6 +32,10 @@ void main() {
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
   final Finder search = byKey('catalog-search');
+  final Finder productScrollable = find.descendant(
+    of: byKey('product-grid'),
+    matching: find.byType(Scrollable),
+  );
 
   AppLocalizations l10n(WidgetTester tester) =>
       AppLocalizations.of(tester.element(find.byType(Scaffold).first));
@@ -97,15 +101,9 @@ void main() {
       expect(find.text('Pomidor'), findsOneWidget);
       expect(find.text('Olma'), findsNothing);
       expect(
-        find.text(
-          l10n(tester).catalogPricePerUnit(
-            MoneyFormat.uzs(18400, AppLanguage.uz),
-            l10n(tester).unitKg,
-          ),
-        ),
+        find.text('≈ ${MoneyFormat.uzs(18400, AppLanguage.uz)}'),
         findsOneWidget,
       );
-      expect(find.text(l10n(tester).catalogEstimateNote), findsOneWidget);
       expect(catalog.requests, <String>['|c-1|1']);
     },
   );
@@ -168,7 +166,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Mahsulot 25'),
       300,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: productScrollable,
     );
     await tester.pumpAndSettle();
 
@@ -334,7 +332,11 @@ void main() {
     await tester.pumpAndSettle();
 
     catalog.nextFailure = const NetworkFailure();
-    await tester.scrollUntilVisible(byKey('load-more'), 300);
+    await tester.scrollUntilVisible(
+      byKey('load-more'),
+      300,
+      scrollable: productScrollable,
+    );
     expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
     expect(find.text('Mahsulot 1'), findsNothing, reason: 'scrolled past');
 
@@ -342,7 +344,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(byKey('load-more'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Mahsulot 25'), 300);
+    await tester.scrollUntilVisible(
+      find.text('Mahsulot 25'),
+      300,
+      scrollable: productScrollable,
+    );
     expect(byKey('load-more'), findsNothing);
   });
 
