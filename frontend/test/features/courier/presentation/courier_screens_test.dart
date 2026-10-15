@@ -166,6 +166,9 @@ void main() {
     testWidgets('the app bar holds the language and one menu', (
       WidgetTester tester,
     ) async {
+      // The customer session opened with the code that signed in.
+      tokens.tokens[SessionSlot.customer] = 'c';
+      auth.identities[SessionSlot.customer] = user(id: 'c');
       await open(tester, size: const Size(360, 800));
       final Finder bar = find.byType(AppBar);
       expect(

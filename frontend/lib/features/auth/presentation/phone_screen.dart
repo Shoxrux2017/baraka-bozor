@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/providers.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/code_login_controller.dart';
+import '../domain/app_user.dart';
 import 'auth_scaffold.dart';
 import 'phone_field.dart';
 
@@ -26,7 +28,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
   void initState() {
     super.initState();
     final CodeLoginState state = ref.read(codeLoginControllerProvider);
-    final String? phone = state.forStaffAccount ? null : state.phone;
+    final String? phone = state.phone;
     _phone = TextEditingController(
       text: phone == null ? '' : phone.substring(phoneCountryCode.length),
     );
@@ -86,14 +88,18 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                 onPressed: state.busy ? null : _submit,
                 child: Text(l10n.continueButton),
               ),
-              const SizedBox(height: 12),
-              TextButton(
-                key: const ValueKey<String>('staff-login-link'),
-                onPressed: state.busy
-                    ? null
-                    : () => context.go(AppPaths.staffLogin),
-                child: Text(l10n.staffLoginLink),
-              ),
+              // Only the web panel has a separate staff sign-in; on mobile
+              // every role signs in with the code.
+              if (ref.watch(surfaceProvider) == Surface.web) ...<Widget>[
+                const SizedBox(height: 12),
+                TextButton(
+                  key: const ValueKey<String>('staff-login-link'),
+                  onPressed: state.busy
+                      ? null
+                      : () => context.go(AppPaths.staffLogin),
+                  child: Text(l10n.staffLoginLink),
+                ),
+              ],
             ],
           ),
         ),

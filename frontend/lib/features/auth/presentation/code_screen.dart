@@ -18,7 +18,7 @@ class CodeScreen extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final CodeLoginState state = ref.watch(codeLoginControllerProvider);
 
-    if (!state.hasCode || state.forStaffAccount) {
+    if (!state.hasCode) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
           context.go(AppPaths.auth);

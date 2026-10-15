@@ -25,13 +25,25 @@ class AuthApi {
     return UserDto.parseRequestedCode(ApiEnvelope.unwrap(response.data));
   }
 
-  Future<IssuedSession> verifyCustomerCode({
+  Future<VerifiedLogin> verifyCustomerCode({
     required String phone,
     required String code,
   }) async {
     final Response<dynamic> response = await _dio.post<dynamic>(
       '/auth/customer/code/verify',
       data: <String, String>{'phone': phone, 'code': code},
+      options: RequestSlot.of(null),
+    );
+    return UserDto.parseVerifiedLogin(ApiEnvelope.unwrap(response.data));
+  }
+
+  Future<IssuedSession> staffStep({
+    required String token,
+    required String password,
+  }) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '/auth/staff/step',
+      data: <String, String>{'staff_step': token, 'password': password},
       options: RequestSlot.of(null),
     );
     return UserDto.parseIssuedSession(ApiEnvelope.unwrap(response.data));

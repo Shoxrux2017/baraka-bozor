@@ -71,12 +71,16 @@ final class AppUser {
   final bool mustChangePassword;
   final AppLanguage preferredLanguage;
 
-  AppUser copyWith({bool? mustChangePassword, AppLanguage? preferredLanguage}) {
+  AppUser copyWith({
+    String? fullName,
+    bool? mustChangePassword,
+    AppLanguage? preferredLanguage,
+  }) {
     return AppUser(
       id: id,
       role: role,
       phone: phone,
-      fullName: fullName,
+      fullName: fullName ?? this.fullName,
       status: status,
       mustChangePassword: mustChangePassword ?? this.mustChangePassword,
       preferredLanguage: preferredLanguage ?? this.preferredLanguage,
@@ -106,4 +110,24 @@ final class IssuedSession {
 
   final String token;
   final AppUser user;
+}
+
+/// The pending password step of a Shopper or Courier whose code was verified:
+/// the one-time token that `POST /auth/staff/step` exchanges, with the
+/// password, for the staff session. It lives in memory only and is never
+/// logged, stored or put in a URL.
+final class StaffStep {
+  const StaffStep({required this.token, required this.expiresAt});
+
+  final String token;
+  final DateTime expiresAt;
+}
+
+/// The answer to a verified customer code: the customer session, and the
+/// staff step when the phone belongs to a Shopper or a Courier.
+final class VerifiedLogin {
+  const VerifiedLogin({required this.customer, required this.staffStep});
+
+  final IssuedSession customer;
+  final StaffStep? staffStep;
 }

@@ -17,10 +17,16 @@ class AuthRepositoryImpl implements AuthRepository {
       guardApiCall(() => _api.requestCustomerCode(phone));
 
   @override
-  Future<IssuedSession> verifyCustomerCode({
+  Future<VerifiedLogin> verifyCustomerCode({
     required String phone,
     required String code,
   }) => guardApiCall(() => _api.verifyCustomerCode(phone: phone, code: code));
+
+  @override
+  Future<IssuedSession> staffStep({
+    required String token,
+    required String password,
+  }) => guardApiCall(() => _api.staffStep(token: token, password: password));
 
   @override
   Future<IssuedSession> staffLogin({

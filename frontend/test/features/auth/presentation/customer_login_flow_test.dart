@@ -239,7 +239,7 @@ void main() {
     },
   );
 
-  testWidgets('while a request runs the other ways off the screen wait', (
+  testWidgets('while a request runs the continue button waits', (
     WidgetTester tester,
   ) async {
     repository.holdAnswers = Completer<void>();
@@ -250,6 +250,29 @@ void main() {
     await tester.pump();
 
     expect(tester.widget<FilledButton>(continueButton).onPressed, isNull);
+
+    repository.holdAnswers!.complete();
+    await tester.pumpAndSettle();
+    expect(codeField, findsOneWidget);
+  });
+
+  testWidgets('on the web, while a request runs the staff login link waits', (
+    WidgetTester tester,
+  ) async {
+    repository.holdAnswers = Completer<void>();
+    await tester.pumpWidget(
+      appUnderTest(
+        tokens: tokens,
+        repository: repository,
+        surface: Surface.web,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(phoneField, '901234567');
+    await tester.tap(continueButton);
+    await tester.pump();
+
     expect(
       tester
           .widget<TextButton>(
@@ -261,7 +284,6 @@ void main() {
 
     repository.holdAnswers!.complete();
     await tester.pumpAndSettle();
-    expect(codeField, findsOneWidget);
   });
 
   testWidgets(
@@ -281,22 +303,43 @@ void main() {
     },
   );
 
-  testWidgets('the staff login link leads to the staff login and back', (
+  testWidgets('on mobile there is no separate staff login to reach', (
     WidgetTester tester,
   ) async {
     await openApp(tester);
 
-    await tester.tap(find.byKey(const ValueKey<String>('staff-login-link')));
-    await tester.pumpAndSettle();
     expect(
-      find.byKey(const ValueKey<String>('password-field')),
-      findsOneWidget,
+      find.byKey(const ValueKey<String>('staff-login-link')),
+      findsNothing,
     );
-
-    await tester.tap(find.byKey(const ValueKey<String>('customer-login-link')));
-    await tester.pumpAndSettle();
-    expect(phoneField, findsOneWidget);
   });
+
+  testWidgets(
+    'on the web the staff login link leads to the staff login and back',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        appUnderTest(
+          tokens: tokens,
+          repository: repository,
+          surface: Surface.web,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey<String>('staff-login-link')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('password-field')),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('customer-login-link')),
+      );
+      await tester.pumpAndSettle();
+      expect(phoneField, findsOneWidget);
+    },
+  );
 
   testWidgets('the language switch changes every string at once', (
     WidgetTester tester,

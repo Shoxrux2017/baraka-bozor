@@ -10,7 +10,8 @@ abstract final class AppPaths {
   static const String customerCode = '/auth/code';
   static const String staffLogin = '/auth/staff';
   static const String changePassword = '/auth/change-password';
-  static const String customerMode = '/auth/customer-mode';
+  static const String staffPassword = '/auth/staff-password';
+  static const String customerName = '/auth/name';
   static const String unreachable = '/auth/unreachable';
   static const String wrongSurface = '/auth/wrong-surface';
 

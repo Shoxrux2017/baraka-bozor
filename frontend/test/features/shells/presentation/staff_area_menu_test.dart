@@ -23,20 +23,23 @@ class _Session extends SessionController {
 /// The staff area's menu offers Customer mode only to those
 /// `docs/02-user-roles.md` section 10 lets in, and always the way out.
 void main() {
-  Future<void> openMenu(WidgetTester tester, AppUser staff) async {
+  late _Session session;
+
+  Future<void> openMenu(
+    WidgetTester tester,
+    AppUser staff, {
+    AppUser? customer,
+  }) async {
+    session = _Session(
+      SignedIn(
+        activeMode: SessionMode.staff,
+        staffUser: staff,
+        customerUser: customer,
+      ),
+    );
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          sessionControllerProvider.overrideWith(
-            () => _Session(
-              SignedIn(
-                activeMode: SessionMode.staff,
-                staffUser: staff,
-                customerUser: null,
-              ),
-            ),
-          ),
-        ],
+        overrides: [sessionControllerProvider.overrideWith(() => session)],
         child: MaterialApp(
           locale: const Locale('uz'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -57,14 +60,49 @@ void main() {
   );
   final Finder logout = find.byKey(const ValueKey<String>('logout-button'));
 
-  testWidgets('a Courier is offered Customer mode and the way out', (
+  testWidgets(
+    'a Courier with a customer session is offered Customer mode and the way out',
+    (WidgetTester tester) async {
+      await openMenu(
+        tester,
+        user(role: UserRole.courier),
+        customer: user(id: 'c'),
+      );
+
+      expect(customerMode, findsOneWidget);
+      expect(logout, findsOneWidget);
+    },
+  );
+
+  testWidgets('choosing Customer mode switches at once, with no code', (
     WidgetTester tester,
   ) async {
-    await openMenu(tester, user(role: UserRole.courier));
+    await openMenu(
+      tester,
+      user(role: UserRole.shopper),
+      customer: user(id: 'c'),
+    );
 
-    expect(customerMode, findsOneWidget);
-    expect(logout, findsOneWidget);
+    await tester.tap(customerMode);
+    await tester.pumpAndSettle();
+
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(AppBar)),
+    );
+    final SignedIn state =
+        container.read(sessionControllerProvider).value! as SignedIn;
+    expect(state.activeMode, SessionMode.customer);
   });
+
+  testWidgets(
+    'a session from before the change, with no customer session, is not offered it',
+    (WidgetTester tester) async {
+      await openMenu(tester, user(role: UserRole.courier));
+
+      expect(customerMode, findsNothing);
+      expect(logout, findsOneWidget);
+    },
+  );
 
   testWidgets('an Operator, or a Shopper before the password change, is not', (
     WidgetTester tester,
@@ -73,7 +111,7 @@ void main() {
       user(role: UserRole.operator),
       user(role: UserRole.shopper, mustChangePassword: true),
     ]) {
-      await openMenu(tester, staff);
+      await openMenu(tester, staff, customer: user(id: 'c'));
 
       expect(customerMode, findsNothing, reason: '${staff.role}');
       expect(logout, findsOneWidget);

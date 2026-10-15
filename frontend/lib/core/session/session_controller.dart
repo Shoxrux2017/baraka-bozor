@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../features/auth/domain/app_user.dart';
 import '../../features/auth/domain/auth_repository.dart';
+import '../../features/profile/application/profile_controllers.dart';
+import '../../features/profile/domain/profile.dart';
 import '../errors/report_unexpected_error.dart';
 import '../localization/app_language.dart';
 import '../network/api_failure.dart';
@@ -126,30 +128,105 @@ class SessionController extends AsyncNotifier<SessionState> {
   Future<RequestedCode> requestCustomerCode(String phone) =>
       _repository.requestCustomerCode(phone);
 
+  /// Every sign-in starts as the Customer. A Shopper or Courier comes back
+  /// with a pending staff step, which [completeStaffStep] finishes with the
+  /// password.
   Future<void> verifyCustomerCode({
     required String phone,
     required String code,
   }) async {
-    final IssuedSession session = await _repository.verifyCustomerCode(
+    final VerifiedLogin login = await _repository.verifyCustomerCode(
       phone: phone,
       code: code,
     );
-    await _afterLogin(SessionMode.customer, session);
-  }
-
-  /// Customer mode from the staff interface: the code goes to the staff
-  /// account's own phone (`docs/02-user-roles.md` section 10), so the phone is
-  /// the staff user's and never typed.
-  Future<RequestedCode> requestCustomerModeCode() =>
-      _repository.requestCustomerCode(_staffPhone());
-
-  Future<void> enterCustomerMode({required String code}) async {
-    final IssuedSession session = await _repository.verifyCustomerCode(
-      phone: _staffPhone(),
-      code: code,
+    await _afterLogin(
+      SessionMode.customer,
+      login.customer,
+      staffStep: login.staffStep,
     );
-    await _afterLogin(SessionMode.customer, session);
   }
+
+  /// Exchanges the pending step and the password for the staff session. A
+  /// refused password keeps the step; a step the server calls expired or
+  /// invalid is cleared and the person stays the Customer. An answer that
+  /// arrives after the Customer session or its step moved on is discarded.
+  Future<void> completeStaffStep(String password) async {
+    final SignedIn? before = _signedIn();
+    final StaffStep? step = before?.staffStep;
+    final String? customerId = before?.customerUser?.id;
+    if (step == null || customerId == null) {
+      throw StateError('no pending staff step');
+    }
+
+    final IssuedSession session;
+    try {
+      session = await _repository.staffStep(
+        token: step.token,
+        password: password,
+      );
+    } on ApiRefusal catch (refusal) {
+      if (refusal.code == 'staff_step_expired' ||
+          refusal.code == 'staff_step_invalid') {
+        _clearStep(step);
+      }
+      rethrow;
+    }
+
+    final SignedIn? now = _signedIn();
+    if (now == null ||
+        !identical(now.staffStep, step) ||
+        now.customerUser?.id != customerId) {
+      return;
+    }
+    await _tokenStore.write(SessionSlot.staff, session.token);
+    state = AsyncData<SessionState>(
+      SignedIn(
+        activeMode: SessionMode.staff,
+        staffUser: session.user,
+        customerUser: now.customerUser,
+      ),
+    );
+  }
+
+  /// Leaves the staff step: the person stays the Customer.
+  void dismissStaffStep() {
+    final SignedIn? current = _signedIn();
+    if (current?.staffStep != null) {
+      state = AsyncData<SessionState>(current!.withoutStaffStep());
+    }
+  }
+
+  void _clearStep(StaffStep step) {
+    final SignedIn? current = _signedIn();
+    if (current != null && identical(current.staffStep, step)) {
+      state = AsyncData<SessionState>(current.withoutStaffStep());
+    }
+  }
+
+  /// Saves the Customer's name on the profile and refreshes the session's
+  /// user, only while that Customer is still signed in.
+  Future<void> updateCustomerName(String fullName) async {
+    final String? customerId = _signedIn()?.customerUser?.id;
+    if (customerId == null) {
+      throw StateError('no customer session');
+    }
+    final ProfileRepository profiles = ref.read(profileRepositoryProvider);
+    final CustomerProfile loaded = await profiles.profile();
+    if (loaded.id != customerId) {
+      throw const MalformedResponseFailure();
+    }
+    final CustomerProfile saved = await profiles.rename(loaded, fullName);
+    _updateUser(
+      SessionMode.customer,
+      customerId,
+      (AppUser user) => user.copyWith(fullName: saved.fullName),
+    );
+  }
+
+  SignedIn? _signedIn() => switch (state.value) {
+    final SignedIn signedIn => signedIn,
+    _ => null,
+  };
 
   Future<void> staffLogin({
     required String phone,
@@ -288,16 +365,27 @@ class SessionController extends AsyncNotifier<SessionState> {
     }
   }
 
-  Future<void> _afterLogin(SessionMode mode, IssuedSession session) async {
+  Future<void> _afterLogin(
+    SessionMode mode,
+    IssuedSession session, {
+    StaffStep? staffStep,
+  }) async {
     await _tokenStore.write(mode.slot, session.token);
 
     final SessionState? current = state.value;
 
     if (current is SignedIn) {
+      // A step belongs to the login that brought it; a new login drops any
+      // earlier one.
+      final SignedIn base = current.withoutStaffStep();
       state = AsyncData<SessionState>(
         mode == SessionMode.staff
-            ? current.copyWith(activeMode: mode, staffUser: session.user)
-            : current.copyWith(activeMode: mode, customerUser: session.user),
+            ? base.copyWith(activeMode: mode, staffUser: session.user)
+            : base.copyWith(
+                activeMode: mode,
+                customerUser: session.user,
+                staffStep: staffStep,
+              ),
       );
       return;
     }
@@ -311,6 +399,7 @@ class SessionController extends AsyncNotifier<SessionState> {
           activeMode: mode,
           staffUser: mode == SessionMode.staff ? session.user : null,
           customerUser: mode == SessionMode.customer ? session.user : null,
+          staffStep: staffStep,
         ),
       );
       return;
@@ -319,7 +408,12 @@ class SessionController extends AsyncNotifier<SessionState> {
     // Unreachable at bootstrap, and the other slot holds a token that was
     // never confirmed. The server is evidently reachable now, so confirm
     // everything rather than show one session and hide the other.
-    state = AsyncData<SessionState>(await _bootstrap(prefer: mode));
+    final SessionState confirmed = await _bootstrap(prefer: mode);
+    state = AsyncData<SessionState>(
+      confirmed is SignedIn && staffStep != null
+          ? confirmed.copyWith(staffStep: staffStep)
+          : confirmed,
+    );
   }
 
   /// Applies a server answer to the session it was made for, and only while
@@ -352,6 +446,4 @@ class SessionController extends AsyncNotifier<SessionState> {
     }
     throw StateError('no confirmed staff session');
   }
-
-  String _staffPhone() => _staffUser().phone;
 }

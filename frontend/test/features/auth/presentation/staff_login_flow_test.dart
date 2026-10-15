@@ -61,11 +61,25 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// A Shopper or Courier on the gate, with the staff session already stored:
+  /// on mobile they arrive through the staff step, not through this form.
+  Future<void> openGate(WidgetTester tester, UserRole role) async {
+    tokens.tokens[SessionSlot.staff] = 's';
+    repository.identities[SessionSlot.staff] = user(
+      role: role,
+      mustChangePassword: true,
+    );
+    await tester.pumpWidget(
+      appUnderTest(tokens: tokens, repository: repository),
+    );
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('wrong credentials show their text and keep the form usable', (
     WidgetTester tester,
   ) async {
     repository.staffLoginFailure = refusal(401, 'invalid_credentials');
-    await openStaffLogin(tester);
+    await openStaffLogin(tester, surface: Surface.web);
 
     await login(tester);
 
@@ -93,12 +107,7 @@ void main() {
   testWidgets(
     'the first-login gate opens the password change, and only a matching pair of the right length is sent',
     (WidgetTester tester) async {
-      repository.staffLoginResult = IssuedSession(
-        token: 's',
-        user: user(role: UserRole.shopper, mustChangePassword: true),
-      );
-      await openStaffLogin(tester);
-      await login(tester);
+      await openGate(tester, UserRole.shopper);
 
       expect(currentPassword, findsOneWidget);
       expect(find.text(l10n(tester).shellShopper), findsNothing);
@@ -143,13 +152,8 @@ void main() {
   testWidgets('a wrong current password shows its text and stays on the gate', (
     WidgetTester tester,
   ) async {
-    repository.staffLoginResult = IssuedSession(
-      token: 's',
-      user: user(role: UserRole.courier, mustChangePassword: true),
-    );
     repository.changePasswordFailure = refusal(401, 'invalid_credentials');
-    await openStaffLogin(tester);
-    await login(tester);
+    await openGate(tester, UserRole.courier);
 
     await tester.enterText(currentPassword, 'wrong');
     await tester.enterText(newPassword, 'long enough one');
@@ -165,12 +169,7 @@ void main() {
   testWidgets('logging out from the gate returns to the login', (
     WidgetTester tester,
   ) async {
-    repository.staffLoginResult = IssuedSession(
-      token: 's',
-      user: user(role: UserRole.courier, mustChangePassword: true),
-    );
-    await openStaffLogin(tester);
-    await login(tester);
+    await openGate(tester, UserRole.courier);
 
     await tester.tap(find.byKey(const ValueKey<String>('logout-button')));
     await tester.pumpAndSettle();

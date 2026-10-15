@@ -57,12 +57,20 @@ void main() {
     expect(code.channel, 'sms');
   });
 
-  test('verify code: POST /auth/customer/code/verify with phone and code, no session', () async {
-    reply = (RequestOptions _) => jsonReply(200, <String, Object?>{
-      'data': <String, Object?>{'token': '7|tok', 'user': identity()},
-    });
+  final String stepToken = 'a' * 64;
 
-    final IssuedSession session = await api.verifyCustomerCode(
+  Map<String, Object?> verifyBody({Object? staffStep}) => <String, Object?>{
+    'data': <String, Object?>{
+      'token': '7|tok',
+      'user': identity(),
+      'staff_step': staffStep,
+    },
+  };
+
+  test('verify code: POST /auth/customer/code/verify with phone and code, no session', () async {
+    reply = (RequestOptions _) => jsonReply(200, verifyBody());
+
+    final VerifiedLogin login = await api.verifyCustomerCode(
       phone: '+998901234567',
       code: '482913',
     );
@@ -74,7 +82,148 @@ void main() {
       'code': '482913',
     });
     expect(slotOf(sent), isNull);
-    expect(session.token, '7|tok');
+    expect(login.customer.token, '7|tok');
+    expect(login.staffStep, isNull);
+  });
+
+  test(
+    'verify code: a staff_step object is parsed into the pending step',
+    () async {
+      reply = (RequestOptions _) => jsonReply(
+        200,
+        verifyBody(
+          staffStep: <String, Object?>{
+            'token': stepToken,
+            'expires_at': '2026-10-15T10:05:00Z',
+          },
+        ),
+      );
+
+      final VerifiedLogin login = await api.verifyCustomerCode(
+        phone: '+998901234567',
+        code: '482913',
+      );
+
+      expect(login.staffStep?.token, stepToken);
+      expect(login.staffStep?.expiresAt, DateTime.utc(2026, 10, 15, 10, 5));
+    },
+  );
+
+  test(
+    'verify code: a step token that is not 64 characters is malformed',
+    () async {
+      for (final String token in <String>['a' * 63, 'a' * 65]) {
+        reply = (RequestOptions _) => jsonReply(
+          200,
+          verifyBody(
+            staffStep: <String, Object?>{
+              'token': token,
+              'expires_at': '2026-10-15T10:05:00Z',
+            },
+          ),
+        );
+
+        await expectLater(
+          repository.verifyCustomerCode(phone: '+998901234567', code: '482913'),
+          throwsA(isA<MalformedResponseFailure>()),
+        );
+      }
+    },
+  );
+
+  test(
+    'verify code: a step instant that is not UTC ISO-8601 is malformed',
+    () async {
+      for (final Object? instant in <Object?>[
+        'tomorrow',
+        '2026-10-15T10:05:00+05:00',
+        null,
+      ]) {
+        reply = (RequestOptions _) => jsonReply(
+          200,
+          verifyBody(
+            staffStep: <String, Object?>{
+              'token': stepToken,
+              'expires_at': instant,
+            },
+          ),
+        );
+
+        await expectLater(
+          repository.verifyCustomerCode(phone: '+998901234567', code: '482913'),
+          throwsA(isA<MalformedResponseFailure>()),
+        );
+      }
+    },
+  );
+
+  test(
+    'verify code: a response without the staff_step member is malformed',
+    () async {
+      reply = (RequestOptions _) => jsonReply(200, <String, Object?>{
+        'data': <String, Object?>{'token': '7|tok', 'user': identity()},
+      });
+
+      await expectLater(
+        repository.verifyCustomerCode(phone: '+998901234567', code: '482913'),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+    },
+  );
+
+  test('staff step: POST /auth/staff/step with the step token and the password, no session', () async {
+    reply = (RequestOptions _) => jsonReply(200, <String, Object?>{
+      'data': <String, Object?>{
+        'token': '9|staff',
+        'user': identity(role: 'courier'),
+      },
+    });
+
+    final IssuedSession session = await api.staffStep(
+      token: stepToken,
+      password: 'secret',
+    );
+
+    final RequestOptions sent = adapter.requests.single;
+    expect(sent.method, 'POST');
+    expect(sent.path, '/auth/staff/step');
+    expect(sent.data, <String, String>{
+      'staff_step': stepToken,
+      'password': 'secret',
+    });
+    expect(slotOf(sent), isNull);
+    expect(session.token, '9|staff');
+    expect(session.user.role, UserRole.courier);
+  });
+
+  test('the staff refusals reach the caller with their codes', () async {
+    final Map<String, int> refusals = <String, int>{
+      'staff_step_invalid': 401,
+      'staff_step_expired': 401,
+      'invalid_credentials': 401,
+      'account_blocked': 401,
+    };
+    for (final MapEntry<String, int> entry in refusals.entries) {
+      reply = (RequestOptions _) => errorReply(entry.value, entry.key);
+      await expectLater(
+        repository.staffStep(token: stepToken, password: 'x'),
+        throwsA(
+          isA<ApiRefusal>().having((ApiRefusal f) => f.code, 'code', entry.key),
+        ),
+      );
+    }
+
+    reply = (RequestOptions _) => errorReply(403, 'staff_code_required');
+    await expectLater(
+      repository.staffLogin(phone: '+998901234567', password: 'x'),
+      throwsA(
+        isA<ApiRefusal>().having(
+          (ApiRefusal f) => f.code,
+          'code',
+          'staff_code_required',
+        ),
+      ),
+    );
   });
 
   test('staff login: POST /auth/staff/login, no session', () async {

@@ -5,7 +5,6 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'change_password_screen.dart';
 import 'code_screen.dart';
-import 'customer_mode_screen.dart';
 import 'phone_screen.dart';
 import 'staff_login_screen.dart';
 import 'unreachable_screen.dart';
@@ -41,11 +40,19 @@ final FeatureRoutes authRoutes = FeatureRoutes(
       builder: (BuildContext context, GoRouterState state) =>
           const ChangePasswordScreen(),
     ),
+    // Stage 1 / Task 5 replaces these two with the real screens; until then
+    // the guard has somewhere to send the two new steps.
     GoRoute(
-      path: AppPaths.customerMode,
-      name: 'customer-mode',
+      path: AppPaths.staffPassword,
+      name: 'staff-password',
       builder: (BuildContext context, GoRouterState state) =>
-          const CustomerModeScreen(),
+          const Scaffold(key: ValueKey<String>('staff-password-screen')),
+    ),
+    GoRoute(
+      path: AppPaths.customerName,
+      name: 'customer-name',
+      builder: (BuildContext context, GoRouterState state) =>
+          const Scaffold(key: ValueKey<String>('customer-name-screen')),
     ),
     GoRoute(
       path: AppPaths.unreachable,
