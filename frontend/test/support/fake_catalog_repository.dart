@@ -78,9 +78,13 @@ class FakeCatalogRepository implements CatalogRepository {
   /// The next sections request answers this instead.
   ApiFailure? categoriesFailure;
 
+  /// While set, the sections request waits for it.
+  Completer<void>? categoriesGate;
+
   @override
   Future<List<CatalogCategory>> categories() async {
     categoryLoads++;
+    await categoriesGate?.future;
     final ApiFailure? failure = categoriesFailure;
     if (failure != null) {
       categoriesFailure = null;

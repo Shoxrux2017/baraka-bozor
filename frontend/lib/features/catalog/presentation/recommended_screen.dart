@@ -36,11 +36,11 @@ class RecommendedScreen extends StatelessWidget {
             Positioned.fill(
               child: KitProductGrid(
                 query: const ProductListQuery(featuredOnly: true),
-                padding: const EdgeInsets.fromLTRB(
+                padding: EdgeInsets.fromLTRB(
                   16,
                   8,
                   16,
-                  16 + CartSummaryBar.height,
+                  16 + CartSummaryBar.reserved(context),
                 ),
                 empty: Text(l10n.recommendedEmpty, textAlign: TextAlign.center),
               ),

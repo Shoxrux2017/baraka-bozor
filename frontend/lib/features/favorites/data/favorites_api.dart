@@ -10,7 +10,7 @@ import '../domain/favorites.dart';
 import '../domain/favorites_repository.dart';
 
 /// The data source for the favourites of `docs/09-api-contracts.md`
-/// section 14, always asking as the Customer account.
+/// section 58, always asking as the Customer account.
 class FavoritesApi {
   FavoritesApi(this._dio);
 

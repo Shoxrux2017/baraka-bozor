@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
@@ -38,40 +39,44 @@ class AllCategoriesScreen extends ConsumerWidget {
           ),
         ),
       ),
-      body: categories.when(
-        skipLoadingOnReload: false,
-        skipLoadingOnRefresh: !categories.hasError,
-        data: (List<CatalogCategory> rows) {
-          if (rows.isEmpty) {
-            return Center(child: Text(l10n.catalogNoProducts));
-          }
-          final double width = MediaQuery.sizeOf(context).width;
-          final double tile = (width - 32 - _gap * (_columns - 1)) / _columns;
-          final double label =
-              MediaQuery.textScalerOf(context).scale(12) * 1.25;
-          return GridView.builder(
-            key: const ValueKey<String>('category-grid'),
-            padding: const EdgeInsets.all(16),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: _columns,
-              crossAxisSpacing: _gap,
-              mainAxisSpacing: _gap,
-              mainAxisExtent: tile + 6 + label * 2 + 2,
-            ),
-            itemCount: rows.length,
-            itemBuilder: (BuildContext context, int index) => InkWell(
-              key: ValueKey<String>('category-${rows[index].id}'),
-              borderRadius: BorderRadius.circular(14),
-              onTap: () => context.push(CatalogPaths.category(rows[index].id)),
-              child: CategoryTile(category: rows[index]),
-            ),
-          );
-        },
-        error: (Object error, StackTrace _) => CategoriesFailure(
-          failure: error is ApiFailure ? error : const UnexpectedFailure(),
-          onRetry: () => ref.invalidate(catalogCategoriesProvider),
+      // The mode stays visible while two sessions exist (DL-75).
+      body: UnderActiveMode(
+        child: categories.when(
+          skipLoadingOnReload: false,
+          skipLoadingOnRefresh: !categories.hasError,
+          data: (List<CatalogCategory> rows) {
+            if (rows.isEmpty) {
+              return Center(child: Text(l10n.catalogNoProducts));
+            }
+            final double width = MediaQuery.sizeOf(context).width;
+            final double tile = (width - 32 - _gap * (_columns - 1)) / _columns;
+            final double label =
+                MediaQuery.textScalerOf(context).scale(12) * 1.25;
+            return GridView.builder(
+              key: const ValueKey<String>('category-grid'),
+              padding: const EdgeInsets.all(16),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: _columns,
+                crossAxisSpacing: _gap,
+                mainAxisSpacing: _gap,
+                mainAxisExtent: tile + 6 + label * 2 + 2,
+              ),
+              itemCount: rows.length,
+              itemBuilder: (BuildContext context, int index) => InkWell(
+                key: ValueKey<String>('category-${rows[index].id}'),
+                borderRadius: BorderRadius.circular(14),
+                onTap: () =>
+                    context.push(CatalogPaths.category(rows[index].id)),
+                child: CategoryTile(category: rows[index]),
+              ),
+            );
+          },
+          error: (Object error, StackTrace _) => CategoriesFailure(
+            failure: error is ApiFailure ? error : const UnexpectedFailure(),
+            onRetry: () => ref.invalidate(catalogCategoriesProvider),
+          ),
+          loading: () => const Center(child: CircularProgressIndicator()),
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
       ),
     );
   }

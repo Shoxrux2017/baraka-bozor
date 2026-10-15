@@ -10,7 +10,9 @@ import 'catalog_widgets.dart';
 import 'kit_product_card.dart';
 
 /// The height of one kit card: the picture, and the texts and the control
-/// under it, which grow with the text scale.
+/// under it, which grow with the text scale. Each text is scaled by its own
+/// font size, as a nonlinear scaler (Android 14 and later) enlarges small
+/// sizes more than large ones.
 double kitCardExtent(
   TextScaler scaler, {
   required KitCardSize size,
@@ -18,9 +20,11 @@ double kitCardExtent(
 }) {
   final bool compact = size == KitCardSize.compact;
   final double controls = compact ? 32 : 38;
-  final double name = scaler.scale(compact ? 34 : 40);
-  final double price = scaler.scale(compact ? 13 : 15) * 1.4;
-  final double unit = scaler.scale(compact ? 11 : 12) * 1.4;
+  final KitCardType type = KitCardType.of(size);
+  final double name =
+      2 * scaler.scale(type.nameSize) * (type.nameHeight / type.nameSize);
+  final double price = scaler.scale(type.priceSize) * 1.4;
+  final double unit = scaler.scale(type.unitSize) * 1.4;
   // Padding 16, gaps 8 + 4 + 8, and a little slack for the line heights.
   return 16 + imageHeight + 8 + name + 4 + price + unit + 8 + controls + 6;
 }
@@ -105,6 +109,9 @@ class KitProductGrid extends ConsumerWidget {
                       Expanded(
                         child: row * columns + column < state.items.length
                             ? KitProductCard(
+                                key: ValueKey<String>(
+                                  state.items[row * columns + column].id,
+                                ),
                                 product: state.items[row * columns + column],
                                 size: size,
                                 imageHeight: imageHeight,

@@ -25,6 +25,12 @@ void main() {
     expect(CardQuantity.next(UnitCode.kg, '9998.75'), '9999');
   });
 
+  test('next never takes a quantity past the largest down', () {
+    expect(CardQuantity.next(UnitCode.kg, '9999.5'), '9999.5');
+    expect(CardQuantity.next(UnitCode.kg, '9999.500'), '9999.500');
+    expect(CardQuantity.next(UnitCode.piece, '10000'), '10000');
+  });
+
   test('previous subtracts the step, and removes the line at or below it', () {
     expect(CardQuantity.previous(UnitCode.kg, '1'), '0.5');
     expect(CardQuantity.previous(UnitCode.kg, '1.25'), '0.75');

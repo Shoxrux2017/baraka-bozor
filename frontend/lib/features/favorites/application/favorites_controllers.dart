@@ -32,7 +32,11 @@ class FavoriteOverrides extends Notifier<Map<String, bool>> {
   /// Flips the heart of [productId] — [current] is what it shows now — at
   /// once, then asks the server. On a failure the heart goes back and the
   /// answer is `false`, so the caller can say so.
-  Future<bool> toggle(String productId, {required bool current}) async {
+  Future<bool> toggle(String productId, {required bool current}) async =>
+      await change(productId, current: current) == null;
+
+  /// [toggle] answering why it failed: `null` when the server agreed.
+  Future<ApiFailure?> change(String productId, {required bool current}) async {
     final String? account = ref.read(customerAccountProvider);
     final bool wanted = !current;
     final bool? previous = state[productId];
@@ -54,13 +58,13 @@ class FavoriteOverrides extends Notifier<Map<String, bool>> {
         }
         state = restored;
       }
-      return false;
+      return error is ApiFailure ? error : const UnexpectedFailure();
     }
 
     if (_sameAccount(account) && ref.exists(favoritesListProvider)) {
       ref.invalidate(favoritesListProvider);
     }
-    return true;
+    return null;
   }
 
   bool _sameAccount(String? account) =>

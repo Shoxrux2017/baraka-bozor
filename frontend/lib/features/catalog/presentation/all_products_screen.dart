@@ -70,11 +70,11 @@ class AllProductsScreen extends ConsumerWidget {
                   Expanded(
                     child: KitProductGrid(
                       query: ProductListQuery(sort: sort),
-                      padding: const EdgeInsets.fromLTRB(
+                      padding: EdgeInsets.fromLTRB(
                         16,
                         8,
                         16,
-                        16 + CartSummaryBar.height,
+                        16 + CartSummaryBar.reserved(context),
                       ),
                     ),
                   ),

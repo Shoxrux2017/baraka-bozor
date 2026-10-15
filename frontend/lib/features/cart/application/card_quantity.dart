@@ -9,9 +9,12 @@ abstract final class CardQuantity {
 
   /// [current] plus a step, capped at [QuantityRules.maxWhole].
   static String? next(UnitCode unit, String current) {
-    final int sum =
-        QuantityRules.thousandths(current) +
-        QuantityRules.thousandths(step(unit));
+    final int now = QuantityRules.thousandths(current);
+    // At or past the cap a plus never takes the quantity down.
+    if (now >= QuantityRules.maxWhole * 1000) {
+      return current;
+    }
+    final int sum = now + QuantityRules.thousandths(step(unit));
     if (sum >= QuantityRules.maxWhole * 1000) {
       return '${QuantityRules.maxWhole}';
     }

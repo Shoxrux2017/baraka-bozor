@@ -5,6 +5,7 @@ import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
+import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:baraka_bozor/features/favorites/domain/favorites.dart';
 import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
@@ -119,6 +120,17 @@ void main() {
     expect(
       tester.widget<CustomerTabBar>(find.byType(CustomerTabBar)).current,
       CustomerTab.favorites,
+    );
+  });
+
+  testWidgets('each card is keyed by its product', (WidgetTester tester) async {
+    await open(tester);
+
+    expect(
+      tester
+          .widgetList<KitProductCard>(find.byType(KitProductCard))
+          .map((KitProductCard c) => c.key),
+      <Key>[const ValueKey<String>('p-1'), const ValueKey<String>('p-2')],
     );
   });
 

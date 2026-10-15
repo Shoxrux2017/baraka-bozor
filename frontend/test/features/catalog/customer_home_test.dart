@@ -11,6 +11,7 @@ import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_products_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
 import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -127,6 +128,49 @@ void main() {
     await tester.tap(byKey('open-profile'));
     await tester.pumpAndSettle();
     expect(find.byType(CatalogHomeScreen), findsNothing);
+  });
+
+  testWidgets('the system back from a tab returns to the home', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.tap(byKey('open-orders'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CatalogHomeScreen), findsNothing);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(CatalogHomeScreen), findsOneWidget);
+
+    await tester.tap(byKey('open-favorites'));
+    await tester.pumpAndSettle();
+    await tester.tap(byKey('open-profile'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CatalogHomeScreen), findsNothing);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(CatalogHomeScreen), findsOneWidget);
+  });
+
+  testWidgets('each card of the recommended row is keyed by its product', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.drag(byKey('home-body'), const Offset(0, -2000));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widgetList<KitProductCard>(
+            find.descendant(
+              of: byKey('recommended-row'),
+              matching: find.byType(KitProductCard),
+            ),
+          )
+          .map((KitProductCard c) => c.key),
+      <Key>[const ValueKey<String>('p-1'), const ValueKey<String>('p-2')],
+    );
   });
 
   testWidgets(
@@ -300,6 +344,36 @@ void main() {
       );
     },
   );
+
+  testWidgets('with a search typed the filter button re-sorts the results and '
+      'the home stays', (WidgetTester tester) async {
+    await open(tester);
+    await typeAndPause(tester, 'o');
+    double place(String name) {
+      final Offset at = tester.getTopLeft(find.text(name));
+      return at.dy * 1000 + at.dx;
+    }
+
+    expect(
+      place('Pomidor'),
+      lessThan(place('Olma')),
+      reason: 'the shop order before a sort is chosen',
+    );
+
+    await tester.tap(byKey('open-sort'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n(tester).sortPriceAsc));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AllProductsScreen), findsNothing);
+    expect(find.byType(CatalogHomeScreen), findsOneWidget);
+    expect(find.text('Banan'), findsNothing, reason: 'still the results');
+    expect(
+      place('Olma'),
+      lessThan(place('Pomidor')),
+      reason: 'cheaper first in the results',
+    );
+  });
 
   testWidgets('dismissing the sort sheet opens nothing', (
     WidgetTester tester,
@@ -563,6 +637,51 @@ void main() {
         addresses.loadFailure = const UnexpectedFailure();
         await open(tester, device: device);
         expect(find.text(l10n(tester).deliveryAddressRetry), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+    testWidgets(
+      'with the keyboard open at large text and two sessions the header '
+      'scrolls inside what is left and nothing overflows '
+      '(${device.languageCode})',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        tokens.tokens[SessionSlot.staff] = 's';
+        auth.identities[SessionSlot.staff] = user(
+          id: 's',
+          role: UserRole.courier,
+        );
+        await open(tester, device: device);
+        await tester.tap(byKey('staff-menu'));
+        await tester.pumpAndSettle();
+        await tester.tap(byKey('switch-to-customer-button'));
+        await tester.pumpAndSettle();
+
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        addTearDown(tester.view.resetViewInsets);
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        final double above = 640 - 300;
+        final Rect header = tester.getRect(byKey('home-header'));
+        expect(
+          header.height,
+          lessThanOrEqualTo(above * CatalogHomeScreen.headerShare + 0.5),
+          reason: 'the cap is a share of what the keyboard leaves',
+        );
+        expect(header.bottom, lessThanOrEqualTo(above));
+        await tester.ensureVisible(byKey('catalog-search'));
+        await tester.pumpAndSettle();
+        final Rect field = tester.getRect(byKey('catalog-search'));
+        expect(field.bottom, lessThanOrEqualTo(header.bottom));
+        expect(field.top, greaterThanOrEqualTo(header.top));
         expect(tester.takeException(), isNull);
       },
     );

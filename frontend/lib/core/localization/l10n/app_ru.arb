@@ -1674,6 +1674,7 @@
   "catalogAdd": "Добавить",
   "catalogUnavailable": "Нет в продаже",
   "favoriteFailed": "Не удалось сохранить. Попробуйте ещё раз",
+  "favoritesFull": "В избранном уже 500 товаров — уберите лишние",
   "favoriteAdd": "Добавить в избранное",
   "favoriteRemove": "Убрать из избранного",
   "cartStepMinus": "Уменьшить",

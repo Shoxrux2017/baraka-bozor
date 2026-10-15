@@ -36,8 +36,9 @@ class CatalogHomeScreen extends ConsumerStatefulWidget {
   /// quickly asks once rather than once per letter.
   static const Duration searchPause = Duration(milliseconds: 300);
 
-  /// The most of the screen's height the header takes before it scrolls, so
-  /// a large text on a small phone still leaves the sections room.
+  /// The most of the screen's height above the keyboard that the header
+  /// takes before it scrolls, so a large text on a small phone still leaves
+  /// the sections room.
   static const double headerShare = 0.6;
 
   @override
@@ -71,7 +72,8 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
     setState(() => _query = '');
   }
 
-  /// Asks the order, then opens every product in it.
+  /// Asks the order. With a search typed, its results take the order and
+  /// the home stays; otherwise every product opens in it.
   Future<void> _openSort() async {
     final ProductSort? chosen = await showSortSheet(
       context,
@@ -81,15 +83,21 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
       return;
     }
     ref.read(productSortProvider.notifier).set(chosen);
-    context.push<void>(CatalogPaths.products);
+    if (_query.isEmpty) {
+      context.push<void>(CatalogPaths.products);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ProductSort sort = ref.watch(productSortProvider);
+    // A share of the screen above the keyboard, so the keyboard never leaves
+    // the body less room than the header's cap allows.
     final double maxHeader =
-        MediaQuery.sizeOf(context).height * CatalogHomeScreen.headerShare;
+        (MediaQuery.sizeOf(context).height -
+            MediaQuery.viewInsetsOf(context).bottom) *
+        CatalogHomeScreen.headerShare;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -102,38 +110,7 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
             // loses the field's focus.
             ConstrainedBox(
               constraints: BoxConstraints(maxHeight: maxHeader),
-              child: SingleChildScrollView(
-                key: const ValueKey<String>('home-header'),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    const ActiveModeBar(action: _SwitchToStaffButton()),
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 8, 4, 0),
-                      child: Row(
-                        children: <Widget>[
-                          Expanded(child: DeliveryAddressLine()),
-                          SizedBox(width: 8),
-                          CartButton(),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                      child: Row(
-                        children: <Widget>[
-                          Expanded(child: _searchField(l10n)),
-                          const SizedBox(width: 10),
-                          _FilterButton(
-                            label: l10n.sortTitle,
-                            onTap: _openSort,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              child: _header(l10n),
             ),
             Expanded(
               child: _query.isEmpty
@@ -148,6 +125,38 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _header(AppLocalizations l10n) {
+    return SingleChildScrollView(
+      key: const ValueKey<String>('home-header'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const ActiveModeBar(action: _SwitchToStaffButton()),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 4, 0),
+            child: Row(
+              children: <Widget>[
+                Expanded(child: DeliveryAddressLine()),
+                SizedBox(width: 8),
+                CartButton(),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Row(
+              children: <Widget>[
+                Expanded(child: _searchField(l10n)),
+                const SizedBox(width: 10),
+                _FilterButton(label: l10n.sortTitle, onTap: _openSort),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -403,6 +412,7 @@ class _Recommended extends ConsumerWidget {
             itemBuilder: (BuildContext context, int index) => SizedBox(
               width: cardWidth,
               child: KitProductCard(
+                key: ValueKey<String>(items[index].id),
                 product: items[index],
                 imageHeight: imageHeight,
               ),

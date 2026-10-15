@@ -49,63 +49,56 @@ class CategoryScreen extends ConsumerWidget {
           ),
         ),
       ),
-      body: categories.when(
-        skipLoadingOnReload: false,
-        skipLoadingOnRefresh: !categories.hasError,
-        data: (List<CatalogCategory> rows) {
-          if (category == null) {
-            return Center(child: Text(l10n.errorNotFound));
-          }
-          return Column(
-            children: <Widget>[
-              // The mode stays visible while two sessions exist (DL-75).
-              const ActiveModeBar(),
-              Expanded(
-                child: Stack(
-                  children: <Widget>[
-                    Positioned.fill(
-                      child: Row(
-                        children: <Widget>[
-                          _CategoryRail(
-                            categories: rows,
-                            selectedId: categoryId,
-                          ),
-                          Expanded(
-                            child: ColoredBox(
-                              color: KitColors.card,
-                              child: KitProductGrid(
-                                query: ProductListQuery(categoryId: categoryId),
-                                size: KitCardSize.compact,
-                                imageHeight: 84,
-                                padding: const EdgeInsets.fromLTRB(
-                                  10,
-                                  12,
-                                  10,
-                                  12 + CartSummaryBar.height,
-                                ),
-                              ),
+      // The mode stays visible while two sessions exist (DL-75), whatever
+      // the body shows: loading, an error, not found or the products.
+      body: UnderActiveMode(
+        child: categories.when(
+          skipLoadingOnReload: false,
+          skipLoadingOnRefresh: !categories.hasError,
+          data: (List<CatalogCategory> rows) {
+            if (category == null) {
+              return Center(child: Text(l10n.errorNotFound));
+            }
+            return Stack(
+              children: <Widget>[
+                Positioned.fill(
+                  child: Row(
+                    children: <Widget>[
+                      _CategoryRail(categories: rows, selectedId: categoryId),
+                      Expanded(
+                        child: ColoredBox(
+                          color: KitColors.card,
+                          child: KitProductGrid(
+                            query: ProductListQuery(categoryId: categoryId),
+                            size: KitCardSize.compact,
+                            imageHeight: 84,
+                            padding: EdgeInsets.fromLTRB(
+                              10,
+                              12,
+                              10,
+                              12 + CartSummaryBar.reserved(context),
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                    const Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: CartSummaryBar(),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
-        error: (Object error, StackTrace _) => CategoriesFailure(
-          failure: error is ApiFailure ? error : const UnexpectedFailure(),
-          onRetry: () => ref.invalidate(catalogCategoriesProvider),
+                const Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: CartSummaryBar(),
+                ),
+              ],
+            );
+          },
+          error: (Object error, StackTrace _) => CategoriesFailure(
+            failure: error is ApiFailure ? error : const UnexpectedFailure(),
+            onRetry: () => ref.invalidate(catalogCategoriesProvider),
+          ),
+          loading: () => const Center(child: CircularProgressIndicator()),
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
       ),
     );
   }
@@ -143,7 +136,7 @@ class _CategoryRailState extends State<_CategoryRail> {
       width: 94,
       child: SingleChildScrollView(
         key: const ValueKey<String>('category-rail'),
-        padding: const EdgeInsets.only(bottom: CartSummaryBar.height),
+        padding: EdgeInsets.only(bottom: CartSummaryBar.reserved(context)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[

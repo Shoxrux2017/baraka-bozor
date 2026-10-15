@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,8 +20,18 @@ import 'cart_paths.dart';
 class CartSummaryBar extends ConsumerWidget {
   const CartSummaryBar({super.key});
 
-  /// The room the bar and its fade take at the foot of a list.
-  static const double height = 64 + 12 + 24;
+  /// The room the bar and its fade take at the foot of a list: the bar's
+  /// own height at the current text scale, its paddings, and the bottom
+  /// inset of the screen.
+  static double reserved(BuildContext context) {
+    final TextScaler scaler = MediaQuery.textScalerOf(context);
+    final double count = scaler.scale(12) * 1.5;
+    final double total = scaler.scale(15) * 1.5;
+    final double open = scaler.scale(14) * 1.5 * 2;
+    final double content = math.max(46, math.max(count + total, open));
+    final double bar = math.max(64, content + 16);
+    return 24 + bar + 12 + MediaQuery.paddingOf(context).bottom;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

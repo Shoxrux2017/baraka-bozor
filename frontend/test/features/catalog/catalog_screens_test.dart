@@ -11,7 +11,9 @@ import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_products_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
 import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
@@ -446,6 +448,8 @@ void main() {
     (CatalogPaths.recommended, RecommendedScreen),
     (CatalogPaths.products, AllProductsScreen),
     (AppPaths.customerFavorites, FavoritesScreen),
+    (CatalogPaths.categories, AllCategoriesScreen),
+    (CatalogPaths.category('c-1'), CategoryScreen),
   ]) {
     final String path = screen.$1;
     testWidgets('with two sessions $path shows the mode bar', (

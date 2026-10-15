@@ -132,6 +132,7 @@ class _Grid extends StatelessWidget {
   }
 
   Widget _card(FavoriteProduct entry) => KitProductCard(
+    key: ValueKey<String>(entry.product.id),
     product: entry.product,
     imageHeight: FavoritesScreen._imageHeight,
     available: entry.isAvailable,

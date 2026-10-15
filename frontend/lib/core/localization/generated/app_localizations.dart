@@ -4574,6 +4574,12 @@ abstract class AppLocalizations {
   /// **'Saqlab bo\'lmadi. Qayta urinib ko\'ring'**
   String get favoriteFailed;
 
+  /// No description provided for @favoritesFull.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilar to\'ldi: 500 tadan ko\'p bo\'lmaydi'**
+  String get favoritesFull;
+
   /// No description provided for @favoriteAdd.
   ///
   /// In uz, this message translates to:

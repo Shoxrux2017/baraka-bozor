@@ -27,6 +27,29 @@ import 'catalog_paths.dart';
 /// The two sizes of the kit card: the rail grid's and everything else's.
 enum KitCardSize { compact, regular }
 
+/// The type of one card size: font sizes and the name's line height, in
+/// logical pixels before the text scale. The card and [kitCardExtent] share
+/// them, so the height asked for always matches the text drawn.
+class KitCardType {
+  const KitCardType._(
+    this.nameSize,
+    this.nameHeight,
+    this.priceSize,
+    this.unitSize,
+  );
+
+  final double nameSize;
+  final double nameHeight;
+  final double priceSize;
+  final double unitSize;
+
+  static const KitCardType compact = KitCardType._(12, 17, 13, 11);
+  static const KitCardType regular = KitCardType._(13, 20, 15, 12);
+
+  static KitCardType of(KitCardSize size) =>
+      size == KitCardSize.compact ? compact : regular;
+}
+
 /// A product in a Customer list (`DL-80`): picture, heart, name, the
 /// approximate price with its unit, and either "Добавить" — one tap adds one
 /// unit — or, once the product is in the cart, the quantity stepper.
@@ -67,18 +90,26 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
     }
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final bool current = isFavorite(ref, widget.product);
+    final CatalogProduct product = widget.product;
+    final bool current = favoriteOf(
+      ref.read(favoriteOverridesProvider),
+      product,
+    );
     setState(() => _heartBusy = true);
-    final bool saved = await ref
+    final ApiFailure? failure = await ref
         .read(favoriteOverridesProvider.notifier)
-        .toggle(widget.product.id, current: current);
+        .change(product.id, current: current);
     if (mounted) {
       setState(() => _heartBusy = false);
     }
-    if (!saved) {
+    if (failure != null) {
+      final String text =
+          failure is ApiRefusal && failure.code == 'favorites_full'
+          ? l10n.favoritesFull
+          : l10n.favoriteFailed;
       messenger
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(l10n.favoriteFailed)));
+        ..showSnackBar(SnackBar(content: Text(text)));
     }
   }
 
@@ -96,9 +127,10 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     setState(() => _cartBusy = true);
     final Cart? answer = await change();
-    if (mounted) {
-      setState(() => _cartBusy = false);
+    if (!mounted) {
+      return;
     }
+    setState(() => _cartBusy = false);
     if (answer != null) {
       return;
     }
@@ -115,19 +147,23 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
     }
   }
 
-  Future<void> _add() => _change(
-    () => ref
-        .read(addToCartProvider(widget.product.id).notifier)
-        .add(
-          NewCartLine(
-            productId: widget.product.id,
-            quantity: '1',
-            customerNote: null,
-            substitutionPolicy: SubstitutionPolicy.allowSimilar,
+  Future<void> _add() {
+    // Taken before the wait: the card may show another product by then.
+    final String productId = widget.product.id;
+    return _change(
+      () => ref
+          .read(addToCartProvider(productId).notifier)
+          .add(
+            NewCartLine(
+              productId: productId,
+              quantity: '1',
+              customerNote: null,
+              substitutionPolicy: SubstitutionPolicy.allowSimilar,
+            ),
           ),
-        ),
-    () => ref.read(addToCartProvider(widget.product.id)),
-  );
+      () => ref.read(addToCartProvider(productId)),
+    );
+  }
 
   Future<void> _step(CartLine line, {required bool up}) {
     final UnitCode unit = widget.product.unitCode;
@@ -136,8 +172,8 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
         : CardQuantity.previous(unit, line.quantity);
     if (quantity == null) {
       return _change(
-        () => ref.read(cartListActionsProvider.notifier).remove(line.id),
-        () => ref.read(cartListActionsProvider),
+        () => ref.read(cartLineProvider(line.id).notifier).remove(),
+        () => ref.read(cartLineProvider(line.id)),
       );
     }
     final CartLinePatch patch = CartLinePatch.between(
@@ -170,10 +206,14 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
         .firstOrNull;
 
     final double imageHeight = widget.imageHeight ?? (_compact ? 84.0 : 112.0);
-    final double nameSize = _compact ? 12 : 13;
-    final double nameHeight = _compact ? 17 : 20;
-    final double priceSize = _compact ? 13 : 15;
-    final double unitSize = _compact ? 11 : 12;
+    final KitCardType type = KitCardType.of(widget.size);
+    final double nameSize = type.nameSize;
+    final double nameHeight = type.nameHeight;
+    final double priceSize = type.priceSize;
+    final double unitSize = type.unitSize;
+    // A favourite no longer sold is greyed (`DL-78` (5)).
+    final bool available = widget.available;
+    final Color textColor = available ? KitColors.ink : KitColors.muted;
 
     return Material(
       key: ValueKey<String>('product-card-$id'),
@@ -215,13 +255,17 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                                   BuildContext context,
                                   BoxConstraints constraints,
                                 ) => Center(
-                                  child: ProductImage(
-                                    url: product.imageUrl,
-                                    size: math.max(
-                                      0,
-                                      math.min(
-                                        imageHeight - 8,
-                                        constraints.maxWidth - 8,
+                                  child: Opacity(
+                                    key: ValueKey<String>('picture-$id'),
+                                    opacity: available ? 1 : 0.45,
+                                    child: ProductImage(
+                                      url: product.imageUrl,
+                                      size: math.max(
+                                        0,
+                                        math.min(
+                                          imageHeight - 8,
+                                          constraints.maxWidth - 8,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -269,7 +313,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                     fontSize: nameSize,
                     height: nameHeight / nameSize,
                     fontWeight: FontWeight.w500,
-                    color: KitColors.ink,
+                    color: textColor,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -282,7 +326,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                   style: TextStyle(
                     fontSize: priceSize,
                     fontWeight: FontWeight.w700,
-                    color: KitColors.ink,
+                    color: textColor,
                   ),
                 ),
                 Text(

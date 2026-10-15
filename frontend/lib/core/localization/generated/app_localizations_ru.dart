@@ -2619,6 +2619,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get favoriteFailed => 'Не удалось сохранить. Попробуйте ещё раз';
 
   @override
+  String get favoritesFull => 'В избранном уже 500 товаров — уберите лишние';
+
+  @override
   String get favoriteAdd => 'Добавить в избранное';
 
   @override

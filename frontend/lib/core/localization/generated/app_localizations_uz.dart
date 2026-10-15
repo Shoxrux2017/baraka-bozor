@@ -2598,6 +2598,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get favoriteFailed => 'Saqlab bo\'lmadi. Qayta urinib ko\'ring';
 
   @override
+  String get favoritesFull => 'Sevimlilar to\'ldi: 500 tadan ko\'p bo\'lmaydi';
+
+  @override
   String get favoriteAdd => 'Sevimlilarga qo\'shish';
 
   @override

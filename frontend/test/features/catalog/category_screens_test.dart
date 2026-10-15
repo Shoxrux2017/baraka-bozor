@@ -1,7 +1,13 @@
 import 'dart:async';
 
+import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
+import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
+import 'package:baraka_bozor/core/session/session_controller.dart';
+import 'package:baraka_bozor/core/session/session_state.dart';
+import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
+import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
@@ -14,9 +20,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../support/fake_auth_repository.dart';
 import '../../support/fake_cart_repository.dart';
 import '../../support/fake_catalog_repository.dart';
 import '../../support/fake_favorites_repository.dart';
+
+/// Both sessions signed in, the Customer's active.
+class _TwoSessions extends SessionController {
+  @override
+  Future<SessionState> build() async => SignedIn(
+    activeMode: SessionMode.customer,
+    staffUser: user(id: 's', role: UserRole.courier),
+    customerUser: user(id: 'c'),
+  );
+}
 
 void main() {
   late FakeCatalogRepository catalog;
@@ -53,6 +70,8 @@ void main() {
     WidgetTester tester,
     String path, {
     Locale locale = const Locale('uz'),
+    bool twoSessions = false,
+    bool settle = true,
   }) async {
     router = GoRouter(
       routes: <RouteBase>[
@@ -78,6 +97,8 @@ void main() {
         retry: (int count, Object error) => null,
         overrides: [
           customerAccountProvider.overrideWithValue('c'),
+          if (twoSessions)
+            sessionControllerProvider.overrideWith(_TwoSessions.new),
           catalogRepositoryProvider.overrideWithValue(catalog),
           cartRepositoryProvider.overrideWithValue(FakeCartRepository()),
           favoritesRepositoryProvider.overrideWithValue(
@@ -94,7 +115,12 @@ void main() {
     );
     await tester.pumpAndSettle();
     unawaited(router.push(path));
-    await tester.pumpAndSettle();
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+    }
   }
 
   group('all categories', () {
@@ -212,6 +238,74 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(CategoryScreen), findsOneWidget);
+    });
+  });
+
+  group('with two sessions the mode bar shows whatever the body shows', () {
+    Finder modeOn(Type screen) => find.descendant(
+      of: find.byType(screen),
+      matching: find.byType(ActiveModeBar),
+    );
+
+    testWidgets('on every category', (WidgetTester tester) async {
+      await open(tester, CatalogPaths.categories, twoSessions: true);
+      expect(find.byType(AllCategoriesScreen), findsOneWidget);
+      expect(modeOn(AllCategoriesScreen), findsOneWidget);
+      expect(byKey('active-mode'), findsOneWidget);
+    });
+
+    testWidgets('on every category while it loads', (
+      WidgetTester tester,
+    ) async {
+      catalog.categoriesGate = Completer<void>();
+      await open(
+        tester,
+        CatalogPaths.categories,
+        twoSessions: true,
+        settle: false,
+      );
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(byKey('active-mode'), findsOneWidget);
+      catalog.categoriesGate!.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('on a category', (WidgetTester tester) async {
+      await open(tester, CatalogPaths.category('c-1'), twoSessions: true);
+      expect(find.text('Pomidor'), findsOneWidget);
+      expect(modeOn(CategoryScreen), findsOneWidget);
+      expect(byKey('active-mode'), findsOneWidget);
+    });
+
+    testWidgets('on a category while it loads', (WidgetTester tester) async {
+      catalog.categoriesGate = Completer<void>();
+      await open(
+        tester,
+        CatalogPaths.category('c-1'),
+        twoSessions: true,
+        settle: false,
+      );
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(modeOn(CategoryScreen), findsOneWidget);
+      expect(byKey('active-mode'), findsOneWidget);
+      catalog.categoriesGate!.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('on a category whose load failed', (WidgetTester tester) async {
+      catalog.categoriesFailure = const UnexpectedFailure();
+      await open(tester, CatalogPaths.category('c-1'), twoSessions: true);
+      expect(byKey('retry-load'), findsOneWidget);
+      expect(modeOn(CategoryScreen), findsOneWidget);
+      expect(byKey('active-mode'), findsOneWidget);
+    });
+
+    testWidgets('on a category that does not exist', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, CatalogPaths.category('c-404'), twoSessions: true);
+      expect(modeOn(CategoryScreen), findsOneWidget);
+      expect(byKey('active-mode'), findsOneWidget);
     });
   });
 
