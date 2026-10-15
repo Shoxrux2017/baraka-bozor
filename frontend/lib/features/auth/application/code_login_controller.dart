@@ -6,7 +6,6 @@ import '../../../app/providers.dart';
 import '../../../core/errors/report_unexpected_error.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/session/session_controller.dart';
-import '../../../core/session/session_state.dart';
 import '../domain/app_user.dart';
 
 /// Where a code login stands: which phone the code went to, what the server
@@ -15,7 +14,6 @@ import '../domain/app_user.dart';
 final class CodeLoginState {
   const CodeLoginState({
     this.phone,
-    this.forStaffAccount = false,
     this.requested,
     this.resendInSeconds = 0,
     this.busy = false,
@@ -24,10 +22,6 @@ final class CodeLoginState {
 
   /// The E.164 phone the code was requested for.
   final String? phone;
-
-  /// Customer mode from the staff interface: the phone is the staff
-  /// account's own and the session that opens is the customer one.
-  final bool forStaffAccount;
 
   final RequestedCode? requested;
 
@@ -44,7 +38,6 @@ final class CodeLoginState {
 
   CodeLoginState copyWith({
     String? phone,
-    bool? forStaffAccount,
     RequestedCode? requested,
     int? resendInSeconds,
     bool? busy,
@@ -53,7 +46,6 @@ final class CodeLoginState {
   }) {
     return CodeLoginState(
       phone: phone ?? this.phone,
-      forStaffAccount: forStaffAccount ?? this.forStaffAccount,
       requested: requested ?? this.requested,
       resendInSeconds: resendInSeconds ?? this.resendInSeconds,
       busy: busy ?? this.busy,
@@ -62,9 +54,8 @@ final class CodeLoginState {
   }
 }
 
-/// The code login of `docs/04-user-flows.md` section 2, and the Customer-mode
-/// entry of `docs/02-user-roles.md` section 10, which is the same flow with
-/// the staff account's own phone.
+/// The code login of `docs/04-user-flows.md` section 2, the one way into the
+/// app for every role.
 ///
 /// Every request carries a generation number; an answer to a request this
 /// controller has since superseded — a changed phone, a reset — is discarded
@@ -86,24 +77,8 @@ class CodeLoginController extends Notifier<CodeLoginState> {
       ref.read(sessionControllerProvider.notifier);
 
   /// Customer login: asks for a code for [phone].
-  Future<bool> requestCode(String phone) => _request(
-    phone: phone,
-    forStaffAccount: false,
-    send: () => _session.requestCustomerCode(phone),
-  );
-
-  /// Customer mode: asks for a code for the confirmed staff account's phone.
-  Future<bool> requestCodeForStaffAccount() {
-    final AppUser? staff = _staffUser();
-    if (staff == null) {
-      return Future<bool>.value(false);
-    }
-    return _request(
-      phone: staff.phone,
-      forStaffAccount: true,
-      send: _session.requestCustomerModeCode,
-    );
-  }
+  Future<bool> requestCode(String phone) =>
+      _request(phone: phone, send: () => _session.requestCustomerCode(phone));
 
   /// Another code for the same phone. The code already on the way stays
   /// valid, so a refused resend keeps the entry screen and shows why.
@@ -114,10 +89,7 @@ class CodeLoginController extends Notifier<CodeLoginState> {
     }
     return _request(
       phone: phone,
-      forStaffAccount: state.forStaffAccount,
-      send: state.forStaffAccount
-          ? _session.requestCustomerModeCode
-          : () => _session.requestCustomerCode(phone),
+      send: () => _session.requestCustomerCode(phone),
       resend: true,
     );
   }
@@ -129,22 +101,11 @@ class CodeLoginController extends Notifier<CodeLoginState> {
     if (phone == null || state.busy) {
       return false;
     }
-    if (state.forStaffAccount && _staffUser()?.phone != phone) {
-      // The staff session ended, or another staff account signed in, while
-      // the code was on its way; the router has already left this screen.
-      _clear();
-      return false;
-    }
-
     final int generation = ++_generation;
     state = state.copyWith(busy: true, clearFailure: true);
 
     try {
-      if (state.forStaffAccount) {
-        await _session.enterCustomerMode(code: code);
-      } else {
-        await _session.verifyCustomerCode(phone: phone, code: code);
-      }
+      await _session.verifyCustomerCode(phone: phone, code: code);
     } on ApiFailure catch (failure) {
       _fail(generation, failure);
       return false;
@@ -165,11 +126,10 @@ class CodeLoginController extends Notifier<CodeLoginState> {
   void changePhone() {
     _generation++;
     _countdown?.cancel();
-    state = CodeLoginState(phone: state.forStaffAccount ? null : state.phone);
+    state = CodeLoginState(phone: state.phone);
   }
 
-  /// Abandons the flow entirely, for example when Customer mode is
-  /// cancelled.
+  /// Abandons the flow entirely.
   void reset() {
     _generation++;
     _clear();
@@ -177,7 +137,6 @@ class CodeLoginController extends Notifier<CodeLoginState> {
 
   Future<bool> _request({
     required String phone,
-    required bool forStaffAccount,
     required Future<RequestedCode> Function() send,
     bool resend = false,
   }) async {
@@ -190,11 +149,7 @@ class CodeLoginController extends Notifier<CodeLoginState> {
       state = state.copyWith(busy: true, clearFailure: true);
     } else {
       _countdown?.cancel();
-      state = CodeLoginState(
-        phone: phone,
-        forStaffAccount: forStaffAccount,
-        busy: true,
-      );
+      state = CodeLoginState(phone: phone, busy: true);
     }
 
     try {
@@ -243,11 +198,6 @@ class CodeLoginController extends Notifier<CodeLoginState> {
   void _clear() {
     _countdown?.cancel();
     state = const CodeLoginState();
-  }
-
-  AppUser? _staffUser() {
-    final SessionState? session = ref.read(sessionControllerProvider).value;
-    return session is SignedIn ? session.staffUser : null;
   }
 }
 

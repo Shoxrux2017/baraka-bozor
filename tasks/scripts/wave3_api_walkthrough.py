@@ -5,7 +5,10 @@ usage: python tasks/scripts/wave3_api_walkthrough.py [base]
 
 Needs the stack served as `docker/README.md` says, the staff accounts of
 `WalkthroughSeeder`, and the first of `LOGIN_CODE_TEST_PHONES` as the
-Customer. The staff password, the test phones and their code are read from
+Customer. Shoppers and Couriers sign in with the login code and then the
+password (`DL-77`), so the Shopper's phone (+998 90 000 00 02) and the two
+Courier phones of `COURIER_POOL` (+998 90 000 00 22 and 23) must also be
+listed in the local `backend/.env` `LOGIN_CODE_TEST_PHONES`. The staff password, the test phones and their code are read from
 `backend/.env`; variables of the same names in the environment take
 precedence. Rerunning within a minute waits out the code resend limit.
 
@@ -70,6 +73,11 @@ CUSTOMER_PHONE = TEST_PHONES[0]
 SHOPPER_PHONE = "+998900000002"
 OPERATOR_PHONE = "+998900000004"
 ADMIN_PHONE = "+998900000005"
+# The fresh Couriers of a run take these phones; they must be test phones.
+COURIER_POOL = {"first": "+998900000022", "second": "+998900000023"}
+for pool_phone in (SHOPPER_PHONE, *COURIER_POOL.values()):
+    if pool_phone not in TEST_PHONES:
+        sys.exit(f"{pool_phone} must be one of LOGIN_CODE_TEST_PHONES (see backend/.env.example)")
 
 
 def call(method, path, token=None, body=None, key=None):
@@ -105,6 +113,40 @@ def code(answer):
 def staff(phone, password=STAFF_PASSWORD):
     status, answer = call("POST", "/auth/staff/login", body={"phone": phone, "password": password})
     return status, answer
+
+
+def staff_with_code(phone, password):
+    """Shopper and Courier sign in with the login code, then the password (DL-77)."""
+    status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
+    # A resend within the minute waits it out; the hourly limit does not pass
+    # by waiting, and the verify below then fails as itself.
+    if code(answer) == "code_resend_too_soon":
+        time.sleep(61)
+        status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
+    status, answer = call("POST", "/auth/customer/code/verify", body={"phone": phone, "code": TEST_CODE})
+    if status != 200:
+        sys.exit(f"the login code of {phone} was refused: {status} {code(answer)}; "
+                 "is the phone one of LOGIN_CODE_TEST_PHONES?")
+    step = answer["data"].get("staff_step")
+    if not step:
+        sys.exit(f"the verify of {phone} returned no staff_step: no active or blocked Shopper or Courier holds it")
+    status, answer = call("POST", "/auth/staff/step", body={"staff_step": step["token"], "password": password})
+    if status != 200:
+        sys.exit(f"the staff step of {phone} was refused: {status} {code(answer)}")
+    return status, answer
+
+
+def block_active_staff(admin, phone):
+    """A pool phone still held by an active account of an earlier run is freed."""
+    page = 1
+    while True:
+        status, answer = call("GET", f"/admin/staff?per_page=100&page={page}", admin)
+        if status != 200 or not answer["data"]:
+            return
+        for member in answer["data"]:
+            if member["phone"] == phone and member["status"] == "active":
+                call("POST", f"/admin/staff/{member['id']}/block", admin)
+        page += 1
 
 
 def customer_sign_in(phone, name):
@@ -223,12 +265,12 @@ def walk():
     check("Admin creates nine products, fixed and estimate", all(products.values()), "")
 
     couriers = {}
-    for label, prefix in (("first", "+99893"), ("second", "+99894")):
-        phone = prefix + stamp.rjust(7, "0")
+    for label, phone in COURIER_POOL.items():
+        block_active_staff(admin, phone)
         status, answer = call("POST", "/admin/staff", admin, {
             "full_name": f"Courier {label.title()} {stamp}", "phone": phone, "role": "courier"})
         temporary = answer["data"]["temporary_password"] if status == 201 else ""
-        status, answer = staff(phone, temporary)
+        status, answer = staff_with_code(phone, temporary)
         token = answer["data"]["token"] if status == 200 else None
         password = secrets.token_urlsafe(16)
         status, _ = call("POST", "/auth/change-password", token, {
@@ -279,7 +321,7 @@ def walk():
     check("The summary strip moves the three orders from new to a Shopper assigned",
           moved(placed_summary, assigned_summary, open_new=-3, open_shopping_assigned=3), f"{assigned_summary}")
 
-    status, answer = staff(SHOPPER_PHONE)
+    status, answer = staff_with_code(SHOPPER_PHONE, STAFF_PASSWORD)
     check("The Shopper signs in", status == 200, f"{status}")
     shopper = answer["data"]["token"]
 

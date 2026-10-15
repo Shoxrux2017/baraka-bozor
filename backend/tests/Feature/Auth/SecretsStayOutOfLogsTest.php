@@ -112,6 +112,26 @@ final class SecretsStayOutOfLogsTest extends TestCase
         $this->assertLoggedWithout($code);
     }
 
+    public function test_a_staff_step_and_its_password_stay_out_of_the_log_when_the_step_fails_after_the_check(): void
+    {
+        $password = 'Tmp7pQx9KmT3';
+        User::factory()->role(Role::Shopper)->create(['phone' => self::PHONE, 'password' => $password]);
+        $this->postJson('/api/v1/auth/customer/code/request', ['phone' => self::PHONE])->assertOk();
+        $code = (string) $this->app->make(FakeCodeSink::class)->codeFor(self::PHONE);
+        $step = (string) $this->postJson('/api/v1/auth/customer/code/verify', ['phone' => self::PHONE, 'code' => $code])
+            ->assertOk()
+            ->json('data.staff_step.token');
+        $this->assertSame(64, strlen($step));
+        User::updating(static function (): void {
+            throw new RuntimeException('The database went away.');
+        });
+
+        $this->postJson('/api/v1/auth/staff/step', ['staff_step' => $step, 'password' => $password])
+            ->assertStatus(500);
+
+        $this->assertLoggedWithout($step, $password);
+    }
+
     public function test_a_login_code_stays_out_of_the_log_when_its_delivery_fails(): void
     {
         $gateway = new class implements CodeDeliveryGateway

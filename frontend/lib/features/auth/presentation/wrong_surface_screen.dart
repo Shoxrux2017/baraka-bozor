@@ -18,28 +18,23 @@ class WrongSurfaceScreen extends ConsumerWidget {
     final Surface surface = ref.watch(surfaceProvider);
     final SessionState? session = ref.watch(sessionControllerProvider).value;
 
-    return AuthScaffold(
-      title: l10n.wrongSurfaceTitle,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(
-            surface == Surface.mobile
-                ? l10n.wrongSurfaceMobile
-                : l10n.wrongSurfaceWeb,
-            key: const ValueKey<String>('wrong-surface-text'),
-          ),
-          const SizedBox(height: 24),
-          if (session is SignedIn)
-            FilledButton(
+    final bool onPhone = surface == Surface.mobile;
+
+    return AuthStatusScaffold(
+      icon: onPhone ? Icons.computer : Icons.smartphone,
+      title: onPhone ? l10n.wrongSurfaceTitle : l10n.wrongSurfaceWebTitle,
+      bodyKey: const ValueKey<String>('wrong-surface-text'),
+      body: onPhone ? l10n.wrongSurfaceMobile : l10n.wrongSurfaceWeb,
+      button: session is SignedIn
+          ? OutlinedButton(
               key: const ValueKey<String>('logout-button'),
+              style: authOutlinedButtonStyle,
               onPressed: () => ref
                   .read(sessionControllerProvider.notifier)
                   .logout(session.activeMode),
               child: Text(l10n.logoutButton),
-            ),
-        ],
-      ),
+            )
+          : const SizedBox.shrink(),
     );
   }
 }

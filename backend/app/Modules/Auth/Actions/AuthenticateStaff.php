@@ -7,7 +7,7 @@ namespace App\Modules\Auth\Actions;
 use App\Exceptions\ApiException;
 use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
-use App\Models\User;
+use App\Modules\Auth\StaffAccounts;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -52,7 +52,7 @@ final class AuthenticateStaff
             }
         }
 
-        $account = $this->activeStaff($phone) ?? $this->blockedStaff($phone);
+        $account = StaffAccounts::currentFor($phone);
 
         // The hash is checked even when no account exists, so the response
         // time does not say whether the phone is known.
@@ -75,33 +75,21 @@ final class AuthenticateStaff
             throw ApiException::unauthenticated('account_blocked');
         }
 
+        if (in_array($account->role, [Role::Shopper, Role::Courier], true)) {
+            // Counted like a failure, as for a blocked account: the caller holds
+            // the password, so learning that the code step is required
+            // discloses nothing new.
+            $this->limiter->hit($phoneKey, self::DECAY_SECONDS);
+            $this->limiter->hit($ipKey, self::DECAY_SECONDS);
+
+            throw ApiException::forbidden('staff_code_required');
+        }
+
         $this->limiter->clear($phoneKey);
 
         $account->forceFill(['last_login_at' => now()])->save();
 
         return new IssuedSession($account->createToken('staff')->plainTextToken, $account);
-    }
-
-    private function activeStaff(string $phone): ?User
-    {
-        return User::query()
-            ->where('phone', $phone)
-            ->where('role', '<>', Role::Customer->value)
-            ->where('status', UserStatus::Active->value)
-            ->first();
-    }
-
-    /**
-     * The most recently blocked Staff account for the phone, if any.
-     */
-    private function blockedStaff(string $phone): ?User
-    {
-        return User::query()
-            ->where('phone', $phone)
-            ->where('role', '<>', Role::Customer->value)
-            ->where('status', UserStatus::Blocked->value)
-            ->orderByDesc('blocked_at')
-            ->first();
     }
 
     private function dummyHash(): string

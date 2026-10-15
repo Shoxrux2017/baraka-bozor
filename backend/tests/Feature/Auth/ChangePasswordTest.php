@@ -24,20 +24,20 @@ final class ChangePasswordTest extends TestCase
 
     public function test_a_staff_member_changes_the_password_and_the_gate_clears(): void
     {
-        $shopper = User::factory()->role(Role::Shopper)->mustChangePassword()->create(['password' => self::CURRENT]);
-        $token = $this->tokenFor($shopper);
+        $operator = User::factory()->role(Role::Operator)->mustChangePassword()->create(['password' => self::CURRENT]);
+        $token = $this->tokenFor($operator);
 
         $this->change($token, self::CURRENT, self::NEW)->assertNoContent();
 
-        $fresh = $shopper->fresh();
+        $fresh = $operator->fresh();
         $this->assertNotNull($fresh);
         $this->assertTrue(Hash::check(self::NEW, (string) $fresh->password));
         $this->assertFalse($fresh->must_change_password);
         $this->assertNotNull($fresh->password_changed_at);
 
         // The changed password is what logs in now.
-        $this->postJson('/api/v1/auth/staff/login', ['phone' => $shopper->phone, 'password' => self::NEW])->assertOk();
-        $this->postJson('/api/v1/auth/staff/login', ['phone' => $shopper->phone, 'password' => self::CURRENT])
+        $this->postJson('/api/v1/auth/staff/login', ['phone' => $operator->phone, 'password' => self::NEW])->assertOk();
+        $this->postJson('/api/v1/auth/staff/login', ['phone' => $operator->phone, 'password' => self::CURRENT])
             ->assertStatus(401);
     }
 

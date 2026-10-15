@@ -10,7 +10,7 @@ AppUser user({
   String id = 'u-1',
   UserRole role = UserRole.customer,
   String phone = '+998901234567',
-  String? fullName,
+  String? fullName = 'Aziza Karimova',
   bool mustChangePassword = false,
   AppLanguage language = AppLanguage.uz,
 }) {
@@ -38,6 +38,12 @@ class FakeAuthRepository implements AuthRepository {
   ApiFailure? staffLoginFailure;
   IssuedSession? verifyResult;
   ApiFailure? verifyFailure;
+
+  /// The pending staff step `verifyCustomerCode` answers per phone; a phone
+  /// without one verifies as a plain customer.
+  final Map<String, StaffStep> staffSteps = <String, StaffStep>{};
+  IssuedSession? staffStepResult;
+  ApiFailure? staffStepFailure;
   RequestedCode requestResult = const RequestedCode(
     channel: 'fake',
     expiresInSeconds: 300,
@@ -72,7 +78,7 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<IssuedSession> verifyCustomerCode({
+  Future<VerifiedLogin> verifyCustomerCode({
     required String phone,
     required String code,
   }) async {
@@ -81,7 +87,20 @@ class FakeAuthRepository implements AuthRepository {
     if (verifyFailure != null) {
       throw verifyFailure!;
     }
-    return verifyResult!;
+    return VerifiedLogin(customer: verifyResult!, staffStep: staffSteps[phone]);
+  }
+
+  @override
+  Future<IssuedSession> staffStep({
+    required String token,
+    required String password,
+  }) async {
+    calls.add('step:$token');
+    await _held();
+    if (staffStepFailure != null) {
+      throw staffStepFailure!;
+    }
+    return staffStepResult!;
   }
 
   @override

@@ -1,14 +1,34 @@
-# Customer Redesign
+# Kit stages
 
-Design 4a (`DL-74`), built part by part on the Customer's home first. Plan per part in `docs/superpowers/plans/`.
+The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is no longer the target. Plan per stage in `docs/superpowers/plans/`.
+
+| Stage | What | Status |
+|---|---|---|
+| 1 | Вход: splash, phone, code, name, staff password (`DL-77`) | In Progress |
+| 2 | Главная | Planned |
+| 3 | Каталог | Planned |
+| 4 | Корзина | Planned |
+| 5 | Оформление | Planned |
+| 6 | Заказы | Planned |
+| 7 | Профиль | Planned |
+
+## Risks
+
+- White text on the primary `#5AC268` has a contrast of 2.4:1, below WCAG AA. Kept as the kit's look.
+- Real Telegram delivery arrives in Wave 4. Until then only the configured test phones can sign in, staff included.
+- A blocked Customer account would also stop that person's staff sign-in on the phone (verify refuses before the step). Latent: no API blocks a Customer today.
+- Wave 3 walkthrough compiled, not run, after the staff sign-in change - run it before Wave 4 closes.
+- The green home header from part 1: when the mode bar's action wraps, "Режим клиента" is right-aligned - stage 2 rebuilds the home.
+
+## Part 1 history (design 4a, `DL-74`, `DL-75`)
 
 | Part | What | Status |
 |---|---|---|
-| 1 | Header: search, cart, delivery address; floating bar; theme and font (`DL-75`) | In Progress |
+| 1 | Header: search, cart, delivery address; floating bar; theme and font (`DL-75`) | Merged (PR #87) |
 | 2 | Category circles on the header's arc | Planned |
 | 3 | Product grid with the in-cart stepper | Planned |
 
-## Risks
+### Part 1 risks
 
 - At 320×640 with text ×2 the fixed header and the floating bar leave a small list viewport (the header scrolls inside 45% of the screen). Part 2, which puts the category circles on the header's arc, should consider letting the header scroll away with the content.
 - Addresses with the same street and house (different apartments) read the same in the delivery address sheet, which shows the label or `street, house` only. Seen on the walk with the local data. A later part can add the apartment to the line.

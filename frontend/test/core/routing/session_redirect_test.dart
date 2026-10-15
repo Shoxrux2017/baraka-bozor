@@ -26,14 +26,24 @@ void main() {
     AppUser? staff,
     AppUser? customer,
     SessionMode? active,
+    StaffStep? step,
   }) => AsyncData<SessionState>(
     SignedIn(
       activeMode:
           active ?? (staff != null ? SessionMode.staff : SessionMode.customer),
       staffUser: staff,
       customerUser: customer,
+      staffStep: step,
     ),
   );
+
+  final StaffStep pendingStep = StaffStep(
+    token: 'a' * 64,
+    expiresAt: DateTime.utc(2026, 10, 15, 10, 5),
+  );
+
+  // A customer who has already given a name: the name step is behind them.
+  AppUser named({String id = 'c'}) => user(id: id, fullName: 'Aziza');
 
   group('before the bootstrap answers', () {
     test(
@@ -79,11 +89,10 @@ void main() {
   });
 
   group('signed out', () {
-    test('only the public auth screens are reachable', () {
+    test('on mobile only the phone and the code screens are reachable', () {
       for (final String public in <String>[
         AppPaths.auth,
         AppPaths.customerCode,
-        AppPaths.staffLogin,
       ]) {
         expect(redirect(signedOut, public), isNull, reason: public);
       }
@@ -91,8 +100,10 @@ void main() {
         AppPaths.bootstrap,
         AppPaths.customer,
         AppPaths.admin,
+        AppPaths.staffLogin,
+        AppPaths.staffPassword,
+        AppPaths.customerName,
         AppPaths.changePassword,
-        AppPaths.customerMode,
         AppPaths.wrongSurface,
         AppPaths.unreachable,
         '/customer/orders',
@@ -100,6 +111,28 @@ void main() {
         expect(redirect(signedOut, closed), AppPaths.auth, reason: closed);
       }
     });
+
+    test(
+      'on the web the sign-in is /auth, and the code routes are not reachable',
+      () {
+        expect(
+          redirect(signedOut, AppPaths.auth, surface: Surface.web),
+          isNull,
+        );
+        expect(
+          redirect(signedOut, AppPaths.customerCode, surface: Surface.web),
+          AppPaths.auth,
+        );
+        expect(
+          redirect(signedOut, AppPaths.staffPassword, surface: Surface.web),
+          AppPaths.auth,
+        );
+        expect(
+          redirect(signedOut, AppPaths.customerName, surface: Surface.web),
+          AppPaths.auth,
+        );
+      },
+    );
   });
 
   group('unreachable', () {
@@ -155,7 +188,9 @@ void main() {
         final UserRole role = entry.key;
         final (String home, List<String> areas) = entry.value;
         final AsyncValue<SessionState> session = role == UserRole.customer
-            ? signedIn(customer: user(role: role))
+            ? signedIn(
+                customer: user(role: role, fullName: 'Aziza'),
+              )
             : signedIn(staff: user(role: role));
         final Surface surface = role.surface;
 
@@ -188,7 +223,9 @@ void main() {
     test('the page a reload asked for opens once the session is known, inside the role\'s areas only', () {
       String? after(UserRole role, String next) => redirect(
         role == UserRole.customer
-            ? signedIn(customer: user(role: role))
+            ? signedIn(
+                customer: user(role: role, fullName: 'Aziza'),
+              )
             : signedIn(staff: user(role: role)),
         Uri(
           path: AppPaths.bootstrap,
@@ -281,7 +318,7 @@ void main() {
 
       expect(redirect(gated, AppPaths.courier), AppPaths.changePassword);
       expect(redirect(gated, AppPaths.changePassword), isNull);
-      expect(redirect(gated, AppPaths.customerMode), AppPaths.changePassword);
+      expect(redirect(gated, AppPaths.staffPassword), AppPaths.changePassword);
       expect(
         redirect(gated, AppPaths.admin, surface: Surface.web),
         AppPaths.wrongSurface,
@@ -289,51 +326,97 @@ void main() {
       );
     });
 
-    test('the Customer-mode entry is open to a Shopper or Courier without a customer session', () {
+    test('a pending staff step admits only the staff password screen', () {
+      final AsyncValue<SessionState> pending = signedIn(
+        customer: user(id: 'c', fullName: 'Aziza'),
+        step: pendingStep,
+      );
+
+      expect(redirect(pending, AppPaths.staffPassword), isNull);
+      for (final String other in <String>[
+        AppPaths.customer,
+        AppPaths.bootstrap,
+        AppPaths.auth,
+        AppPaths.customerName,
+        '/customer/orders',
+      ]) {
+        expect(redirect(pending, other), AppPaths.staffPassword, reason: other);
+      }
+    });
+
+    test('a pending step wins over the missing name', () {
+      final AsyncValue<SessionState> pending = signedIn(
+        customer: user(id: 'c', fullName: null),
+        step: pendingStep,
+      );
+
+      expect(redirect(pending, AppPaths.customerName), AppPaths.staffPassword);
+    });
+
+    test('without a step the staff password screen leads to the role home', () {
+      expect(
+        redirect(signedIn(customer: named()), AppPaths.staffPassword),
+        AppPaths.customer,
+      );
+    });
+
+    test('a customer without a name sees only the name screen; with a name, the home', () {
+      final AsyncValue<SessionState> unnamed = signedIn(
+        customer: user(id: 'c', fullName: null),
+      );
+
+      expect(redirect(unnamed, AppPaths.customerName), isNull);
+      for (final String other in <String>[
+        AppPaths.customer,
+        AppPaths.bootstrap,
+        AppPaths.auth,
+        '/customer/orders',
+      ]) {
+        expect(redirect(unnamed, other), AppPaths.customerName, reason: other);
+      }
+      expect(
+        redirect(signedIn(customer: named()), AppPaths.customerName),
+        AppPaths.customer,
+      );
+    });
+
+    test(
+      'a staff user in Customer mode without a name also gives it first',
+      () {
+        final AsyncValue<SessionState> session = signedIn(
+          staff: user(id: 's', role: UserRole.shopper),
+          customer: user(id: 'c', fullName: null),
+          active: SessionMode.customer,
+        );
+
+        expect(redirect(session, AppPaths.customer), AppPaths.customerName);
+        expect(
+          redirect(
+            signedIn(
+              staff: user(id: 's', role: UserRole.shopper),
+              customer: user(id: 'c', fullName: null),
+            ),
+            AppPaths.shopper,
+          ),
+          isNull,
+          reason: 'the staff mode is not held up by the customer name',
+        );
+      },
+    );
+
+    test('the customer-mode path is gone', () {
       expect(
         redirect(
           signedIn(staff: user(role: UserRole.shopper)),
-          AppPaths.customerMode,
-        ),
-        isNull,
-      );
-      expect(
-        redirect(
-          signedIn(staff: user(role: UserRole.admin)),
-          AppPaths.customerMode,
-          surface: Surface.web,
-        ),
-        AppPaths.operations,
-        reason: 'an Admin has no Customer mode',
-      );
-      expect(
-        redirect(
-          signedIn(
-            staff: user(id: 's', role: UserRole.shopper),
-            customer: user(id: 'c'),
-          ),
-          AppPaths.customerMode,
+          '/auth/customer-mode',
         ),
         AppPaths.shopper,
-        reason: 'with a customer session the switch needs no code',
-      );
-      expect(
-        redirect(
-          signedIn(
-            staff: user(id: 's', role: UserRole.shopper),
-            customer: user(id: 'c'),
-            active: SessionMode.customer,
-          ),
-          AppPaths.customerMode,
-        ),
-        AppPaths.customer,
-        reason: 'not from Customer mode itself',
       );
     });
 
     test('the active mode decides the area when two sessions exist', () {
       final AppUser staff = user(id: 's', role: UserRole.courier);
-      final AppUser customer = user(id: 'c');
+      final AppUser customer = named();
 
       expect(
         redirect(signedIn(staff: staff, customer: customer), AppPaths.customer),

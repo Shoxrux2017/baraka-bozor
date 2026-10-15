@@ -57,7 +57,6 @@ void main() {
 
       final CodeLoginState s = state(c);
       expect(s.phone, '+998901234567');
-      expect(s.forStaffAccount, isFalse);
       expect(s.requested?.channel, 'telegram');
       expect(s.resendInSeconds, 45, reason: 'the server timer, not a constant');
       expect(s.canResend, isFalse);
@@ -122,40 +121,28 @@ void main() {
     },
   );
 
-  test('Customer mode takes the confirmed staff phone and opens the customer session', () async {
-    tokens.tokens[SessionSlot.staff] = 's';
-    repository.identities[SessionSlot.staff] = user(
-      id: 's',
-      role: UserRole.courier,
-      phone: '+998901111111',
-    );
+  test('a verified code for a Shopper or Courier phone opens the customer session with a pending staff step', () async {
     repository.verifyResult = IssuedSession(
       token: 'c',
       user: user(id: 'c', phone: '+998901111111'),
     );
+    repository.staffSteps['+998901111111'] = StaffStep(
+      token: 'a' * 64,
+      expiresAt: DateTime.utc(2026, 10, 15, 10, 5),
+    );
     final ProviderContainer c = container();
     await c.read(sessionControllerProvider.future);
 
-    expect(await controller(c).requestCodeForStaffAccount(), isTrue);
-    expect(state(c).phone, '+998901111111');
-    expect(state(c).forStaffAccount, isTrue);
-
+    expect(await controller(c).requestCode('+998901111111'), isTrue);
     expect(await controller(c).verify('123456'), isTrue);
 
-    expect(repository.calls, contains('request:+998901111111'));
     expect(repository.calls, contains('verify:+998901111111:123456'));
     final SignedIn session =
         c.read(sessionControllerProvider).value as SignedIn;
     expect(session.activeMode, SessionMode.customer);
-    expect(session.staffUser?.id, 's');
-  });
-
-  test('Customer mode without a staff session does nothing', () async {
-    final ProviderContainer c = container();
-    await c.read(sessionControllerProvider.future);
-
-    expect(await controller(c).requestCodeForStaffAccount(), isFalse);
-    expect(repository.calls, isEmpty);
+    expect(session.staffStep?.token, 'a' * 64);
+    expect(session.staffUser, isNull);
+    expect(state(c).hasCode, isFalse, reason: 'the flow is over');
   });
 
   test(
@@ -176,22 +163,15 @@ void main() {
   );
 
   test('a new request starts clean: nothing of an earlier flow shows while it runs', () async {
-    tokens.tokens[SessionSlot.staff] = 's';
-    repository.identities[SessionSlot.staff] = user(
-      id: 's',
-      role: UserRole.shopper,
-      phone: '+998901111111',
-    );
     final ProviderContainer c = container();
     await c.read(sessionControllerProvider.future);
-    await controller(c).requestCodeForStaffAccount();
+    await controller(c).requestCode('+998901111111');
     expect(state(c).hasCode, isTrue);
 
     repository.holdAnswers = Completer<void>();
     final Future<bool> pending = controller(c).requestCode('+998902222222');
 
     expect(state(c).hasCode, isFalse, reason: 'the old code is not shown');
-    expect(state(c).forStaffAccount, isFalse);
     expect(state(c).phone, '+998902222222');
     expect(state(c).busy, isTrue);
 
@@ -235,22 +215,15 @@ void main() {
   );
 
   test('a new request starts clean: nothing of an earlier flow shows while it runs', () async {
-    tokens.tokens[SessionSlot.staff] = 's';
-    repository.identities[SessionSlot.staff] = user(
-      id: 's',
-      role: UserRole.shopper,
-      phone: '+998901111111',
-    );
     final ProviderContainer c = container();
     await c.read(sessionControllerProvider.future);
-    await controller(c).requestCodeForStaffAccount();
+    await controller(c).requestCode('+998901111111');
     expect(state(c).hasCode, isTrue);
 
     repository.holdAnswers = Completer<void>();
     final Future<bool> pending = controller(c).requestCode('+998902222222');
 
     expect(state(c).hasCode, isFalse, reason: 'the old code is not shown');
-    expect(state(c).forStaffAccount, isFalse);
     expect(state(c).phone, '+998902222222');
     expect(state(c).busy, isTrue);
 

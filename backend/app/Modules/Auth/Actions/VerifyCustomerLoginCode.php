@@ -10,8 +10,12 @@ use App\Models\Enums\UserStatus;
 use App\Models\User;
 use App\Modules\Auth\LoginCodePolicy;
 use App\Modules\Auth\Models\LoginChallenge;
+use App\Modules\Auth\Models\StaffLoginStep;
+use App\Modules\Auth\StaffAccounts;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /**
  * `POST /auth/customer/code/verify` — docs/09 Section 7.
@@ -22,12 +26,14 @@ use Illuminate\Support\Facades\Hash;
  * whatever the account's status, so `account_blocked` is reachable only by
  * whoever holds the code and never becomes an account-status oracle.
  *
- * Never resolves a Staff account: a phone held by an active Staff account
- * simply gets a Customer account beside it (`BR-ROLE-010`).
+ * Never issues a STAFF session: a phone held by a Staff account simply gets a
+ * Customer account beside it (`BR-ROLE-010`). For a Shopper or Courier it may
+ * hand out a single-use staff step, redeemed with the password at
+ * `POST /auth/staff/step` (`DL-77`).
  */
 final class VerifyCustomerLoginCode
 {
-    public function __invoke(string $phone, #[\SensitiveParameter] string $code): IssuedSession
+    public function __invoke(string $phone, #[\SensitiveParameter] string $code): VerifiedLogin
     {
         /** @var ApiException|null $refusal */
         $refusal = null;
@@ -35,7 +41,7 @@ final class VerifyCustomerLoginCode
         // A refusal is thrown only after the transaction has committed: the
         // failed-attempt count and the consumption of the code must persist,
         // and an exception escaping the closure would roll them back.
-        $session = DB::transaction(function () use ($phone, $code, &$refusal): ?IssuedSession {
+        $session = DB::transaction(function () use ($phone, $code, &$refusal): ?VerifiedLogin {
             try {
                 return $this->verify($phone, $code);
             } catch (ApiException $exception) {
@@ -50,12 +56,12 @@ final class VerifyCustomerLoginCode
         }
 
         // The closure returns null only alongside a refusal.
-        assert($session instanceof IssuedSession);
+        assert($session instanceof VerifiedLogin);
 
         return $session;
     }
 
-    private function verify(string $phone, #[\SensitiveParameter] string $code): IssuedSession
+    private function verify(string $phone, #[\SensitiveParameter] string $code): VerifiedLogin
     {
         $challenge = LoginChallenge::query()
             ->openFor($phone)
@@ -89,7 +95,41 @@ final class VerifyCustomerLoginCode
 
         $customer->forceFill(['last_login_at' => now()])->save();
 
-        return new IssuedSession($customer->createToken('customer')->plainTextToken, $customer);
+        $session = new IssuedSession($customer->createToken('customer')->plainTextToken, $customer);
+
+        return $this->withStaffStep($session, $phone);
+    }
+
+    /**
+     * Hands out the staff step when the phone also holds a Shopper or Courier
+     * account, active or blocked (the block is answered at the password), and
+     * closes any earlier open step of that account.
+     */
+    private function withStaffStep(IssuedSession $session, string $phone): VerifiedLogin
+    {
+        // The same account the password login resolves: a Shopper or Courier
+        // that is not the phone's current staff account gets no step.
+        $staff = StaffAccounts::currentFor($phone);
+
+        if ($staff === null || ! in_array($staff->role, [Role::Shopper, Role::Courier], true)) {
+            return new VerifiedLogin($session, null, null);
+        }
+
+        StaffLoginStep::query()
+            ->where('staff_user_id', $staff->id)
+            ->whereNull('consumed_at')
+            ->update(['consumed_at' => now()]);
+
+        $token = Str::random(64);
+        $expiresAt = CarbonImmutable::now()->addSeconds(StaffLoginStep::TTL_SECONDS);
+
+        StaffLoginStep::query()->forceCreate([
+            'staff_user_id' => $staff->id,
+            'token_hash' => hash('sha256', $token),
+            'expires_at' => $expiresAt,
+        ]);
+
+        return new VerifiedLogin($session, $token, $expiresAt);
     }
 
     /**

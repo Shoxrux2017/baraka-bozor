@@ -8,9 +8,16 @@ import 'app_user.dart';
 abstract interface class AuthRepository {
   Future<RequestedCode> requestCustomerCode(String phone);
 
-  Future<IssuedSession> verifyCustomerCode({
+  Future<VerifiedLogin> verifyCustomerCode({
     required String phone,
     required String code,
+  });
+
+  /// The password step of a Shopper or Courier: exchanges the step token and
+  /// the password for the staff session.
+  Future<IssuedSession> staffStep({
+    required String token,
+    required String password,
   });
 
   Future<IssuedSession> staffLogin({

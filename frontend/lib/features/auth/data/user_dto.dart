@@ -33,6 +33,26 @@ abstract final class UserDto {
     );
   }
 
+  /// The verify answer: the customer session, and `staff_step` as an object
+  /// or an explicit `null` — a missing member is malformed.
+  static VerifiedLogin parseVerifiedLogin(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'verified login');
+    final Object? step = json.member('staff_step');
+    return VerifiedLogin(
+      customer: parseIssuedSession(raw),
+      staffStep: step == null ? null : _parseStaffStep(step),
+    );
+  }
+
+  static StaffStep _parseStaffStep(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'staff step');
+    final String token = json.string('token');
+    if (token.length != 64) {
+      throw const FormatException('a staff step token is 64 characters');
+    }
+    return StaffStep(token: token, expiresAt: json.instant('expires_at'));
+  }
+
   static IssuedSession parseIssuedSession(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'session');
     return IssuedSession(

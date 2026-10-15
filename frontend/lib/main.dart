@@ -35,6 +35,9 @@ class BarakaBozorApp extends ConsumerWidget {
           AppLocalizations.of(context).appTitle,
       theme: buildAppTheme(Brightness.light),
       darkTheme: buildAppTheme(Brightness.dark),
+      // The kit and `DL-77` draw the light screens only; the dark theme stays
+      // in code until the kit's dark screens exist.
+      themeMode: ThemeMode.light,
       routerConfig: router,
       // Until the stored preference is read the device language applies,
       // which is the same value for anyone who never chose one. A person who

@@ -17,21 +17,16 @@ class UnreachableScreen extends ConsumerWidget {
     final SessionState? session = ref.watch(sessionControllerProvider).value;
     final bool retrying = session is SessionUnreachable && session.retrying;
 
-    return AuthScaffold(
+    return AuthStatusScaffold(
+      icon: Icons.cloud_off,
       title: l10n.sessionUnreachableTitle,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(l10n.sessionUnreachableBody),
-          const SizedBox(height: 24),
-          FilledButton(
-            key: const ValueKey<String>('retry-button'),
-            onPressed: retrying
-                ? null
-                : () => ref.read(sessionControllerProvider.notifier).retry(),
-            child: Text(l10n.retryButton),
-          ),
-        ],
+      body: l10n.sessionUnreachableBody,
+      button: FilledButton(
+        key: const ValueKey<String>('retry-button'),
+        onPressed: retrying
+            ? null
+            : () => ref.read(sessionControllerProvider.notifier).retry(),
+        child: Text(l10n.retryButton),
       ),
     );
   }

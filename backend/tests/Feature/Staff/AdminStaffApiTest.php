@@ -9,6 +9,7 @@ use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Models\PushDevice;
 use App\Models\User;
+use App\Modules\Auth\CodeDelivery\FakeCodeSink;
 use App\Modules\Staff\Actions\BlockStaff;
 use App\Modules\Staff\StaffDirectory;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -77,7 +78,7 @@ final class AdminStaffApiTest extends TestCase
 
         $this->asAdmin()->getJson(self::URL.'/'.$staff->id)->assertOk()->assertJsonMissingPath('data.temporary_password');
 
-        $this->login(self::PHONE, $password)
+        $this->signInThroughTheStep(self::PHONE, $password)
             ->assertOk()
             ->assertJsonPath('data.user.must_change_password', true);
     }
@@ -370,7 +371,7 @@ final class AdminStaffApiTest extends TestCase
             ->assertJsonPath('data.status', 'active');
 
         $this->withoutToken();
-        $this->login(self::PHONE, 'secret-password')->assertOk();
+        $this->signInThroughTheStep(self::PHONE, 'secret-password')->assertOk();
     }
 
     public function test_activate_is_refused_while_another_active_staff_account_holds_the_phone(): void
@@ -487,6 +488,24 @@ final class AdminStaffApiTest extends TestCase
     private function login(string $phone, string $password): TestResponse
     {
         return $this->postJson('/api/v1/auth/staff/login', ['phone' => $phone, 'password' => $password]);
+    }
+
+    /**
+     * Shoppers and Couriers sign in by the login code and then the password
+     * step (`DL-77`); the password login refuses them.
+     *
+     * @return TestResponse<Response>
+     */
+    private function signInThroughTheStep(string $phone, string $password): TestResponse
+    {
+        $this->postJson('/api/v1/auth/customer/code/request', ['phone' => $phone])->assertOk();
+        $code = $this->app->make(FakeCodeSink::class)->codeFor($phone);
+        $this->assertNotNull($code);
+        $step = $this->postJson('/api/v1/auth/customer/code/verify', ['phone' => $phone, 'code' => $code])
+            ->assertOk()
+            ->json('data.staff_step.token');
+
+        return $this->postJson('/api/v1/auth/staff/step', ['staff_step' => $step, 'password' => $password]);
     }
 
     private function asAdmin(): self

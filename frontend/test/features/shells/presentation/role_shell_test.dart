@@ -49,76 +49,63 @@ void main() {
   }
 
   testWidgets(
-    'a Courier enters Customer mode with a code sent to their own phone, then switches back and forth',
+    'a Courier with both sessions switches to Customer mode and back with no code',
     (WidgetTester tester) async {
       tokens.tokens[SessionSlot.staff] = 's';
+      tokens.tokens[SessionSlot.customer] = 'c';
       repository.identities[SessionSlot.staff] = user(
         id: 's',
         role: UserRole.courier,
         phone: '+998901111111',
       );
-      repository.verifyResult = IssuedSession(
-        token: 'c',
-        user: user(id: 'c', phone: '+998901111111'),
+      repository.identities[SessionSlot.customer] = user(
+        id: 'c',
+        phone: '+998901111111',
       );
       await openApp(tester);
 
       expect(find.text(l10n(tester).shellCourier), findsOneWidget);
-      expect(modeChip, findsNothing, reason: 'one session, nothing to show');
+      expect(modeChip, findsOneWidget);
 
       await tester.tap(staffMenu);
       await tester.pumpAndSettle();
       await tester.tap(switchToCustomer);
       await tester.pumpAndSettle();
 
-      expect(repository.calls, contains('request:+998901111111'));
-      expect(find.text(l10n(tester).customerModeIntro), findsOneWidget);
-      expect(find.byKey(const ValueKey<String>('phone-field')), findsNothing);
-
-      await tester.enterText(codeField, '123456');
-      await tester.tap(find.byKey(const ValueKey<String>('verify-button')));
-      await tester.pumpAndSettle();
-
-      expect(repository.calls, contains('verify:+998901111111:123456'));
       expect(customerHome, findsOneWidget);
-      expect(modeChip, findsOneWidget);
       expect(find.text(l10n(tester).customerModeLabel), findsOneWidget);
-      expect(tokens.tokens.keys, containsAll(SessionSlot.values));
+      expect(
+        repository.calls.where(
+          (String call) =>
+              call.startsWith('request:') || call.startsWith('verify:'),
+        ),
+        isEmpty,
+        reason: 'no code is asked for',
+      );
+      expect(codeField, findsNothing);
 
       await tester.tap(switchToStaff);
       await tester.pumpAndSettle();
 
       expect(find.text(l10n(tester).shellCourier), findsOneWidget);
       expect(find.text(l10n(tester).staffModeLabel), findsOneWidget);
-
-      // With both sessions the switch needs no code.
-      repository.calls.clear();
-      await tester.tap(staffMenu);
-      await tester.pumpAndSettle();
-      await tester.tap(switchToCustomer);
-      await tester.pumpAndSettle();
-
-      expect(customerHome, findsOneWidget);
-      expect(repository.calls, isEmpty);
     },
   );
 
-  testWidgets('cancelling the Customer-mode entry returns to the staff shell', (
-    WidgetTester tester,
-  ) async {
-    tokens.tokens[SessionSlot.staff] = 's';
-    repository.identities[SessionSlot.staff] = user(role: UserRole.shopper);
-    await openApp(tester);
+  testWidgets(
+    'a staff session without a customer session, from before the change, is offered no switch',
+    (WidgetTester tester) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = user(role: UserRole.shopper);
+      await openApp(tester);
 
-    await tester.tap(staffMenu);
-    await tester.pumpAndSettle();
-    await tester.tap(switchToCustomer);
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey<String>('cancel-button')));
-    await tester.pumpAndSettle();
+      await tester.tap(staffMenu);
+      await tester.pumpAndSettle();
 
-    expect(find.text(l10n(tester).shellShopper), findsOneWidget);
-  });
+      expect(switchToCustomer, findsNothing);
+      expect(logoutButton, findsOneWidget);
+    },
+  );
 
   testWidgets('logging out of Customer mode keeps the staff session', (
     WidgetTester tester,

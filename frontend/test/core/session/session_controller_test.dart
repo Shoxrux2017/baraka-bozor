@@ -19,6 +19,11 @@ void main() {
   late InMemoryTokenStore tokens;
   late FakeAuthRepository repository;
 
+  final StaffStep step = StaffStep(
+    token: 'a' * 64,
+    expiresAt: DateTime.utc(2026, 10, 15, 10, 5),
+  );
+
   ProviderContainer container() {
     final ProviderContainer container = ProviderContainer(
       overrides: [
@@ -40,6 +45,20 @@ void main() {
 
   SessionState current(ProviderContainer c) =>
       c.read(sessionControllerProvider).value!;
+
+  /// A customer code verified for a phone that carries a staff step.
+  Future<ProviderContainer> withPendingStep() async {
+    repository.verifyResult = IssuedSession(
+      token: 'new-customer',
+      user: user(id: 'c', phone: '+998901111111'),
+    );
+    repository.staffSteps['+998901111111'] = step;
+    final ProviderContainer c = container();
+    await bootstrap(c);
+    await controller(c)
+        .verifyCustomerCode(phone: '+998901111111', code: '000000');
+    return c;
+  }
 
   /// Lets every queued microtask run, so a call that is waiting on the
   /// repository has reached its await.
@@ -272,12 +291,7 @@ void main() {
       expect(tokens.tokens.keys, containsAll(SessionSlot.values));
     });
 
-    test('verifying a customer code from the staff interface adds the customer session and switches to it', () async {
-      tokens.tokens[SessionSlot.staff] = 's';
-      repository.identities[SessionSlot.staff] = user(
-        id: 's',
-        role: UserRole.shopper,
-      );
+    test('a customer code without a staff step opens a customer session and nothing more', () async {
       repository.verifyResult = IssuedSession(
         token: 'new-customer',
         user: user(id: 'c'),
@@ -289,50 +303,169 @@ void main() {
           .verifyCustomerCode(phone: '+998901234567', code: '000000');
 
       expect(tokens.tokens[SessionSlot.customer], 'new-customer');
-      SignedIn state = current(c) as SignedIn;
-      expect(state.activeMode, SessionMode.customer);
-      expect(state.staffUser?.id, 's', reason: 'the staff session is kept');
-
-      controller(c).switchMode(SessionMode.staff);
-      state = current(c) as SignedIn;
-      expect(state.activeMode, SessionMode.staff);
-      expect(controller(c).activeSlot, SessionSlot.staff);
-    });
-
-    test('customer mode from the staff interface uses the staff phone, never a typed one', () async {
-      tokens.tokens[SessionSlot.staff] = 's';
-      repository.identities[SessionSlot.staff] = user(
-        id: 's',
-        role: UserRole.courier,
-        phone: '+998901111111',
-      );
-      repository.verifyResult = IssuedSession(
-        token: 'c',
-        user: user(id: 'c', phone: '+998901111111'),
-      );
-      final ProviderContainer c = container();
-      await bootstrap(c);
-
-      await controller(c).requestCustomerModeCode();
-      await controller(c).enterCustomerMode(code: '123456');
-
-      expect(repository.calls, contains('request:+998901111111'));
-      expect(repository.calls, contains('verify:+998901111111:123456'));
       final SignedIn state = current(c) as SignedIn;
       expect(state.activeMode, SessionMode.customer);
-      expect(state.staffUser?.id, 's');
+      expect(state.staffStep, isNull);
+      expect(state.staffUser, isNull);
     });
 
-    test('customer mode cannot be entered without a staff session', () async {
-      final ProviderContainer c = container();
-      await bootstrap(c);
+    test('a customer code with a staff step keeps the customer session and holds the step', () async {
+      final ProviderContainer c = await withPendingStep();
 
-      await expectLater(
-        controller(c).enterCustomerMode(code: '123456'),
-        throwsStateError,
+      expect(tokens.tokens[SessionSlot.customer], 'new-customer');
+      expect(tokens.tokens.containsKey(SessionSlot.staff), isFalse);
+      final SignedIn state = current(c) as SignedIn;
+      expect(state.activeMode, SessionMode.customer);
+      expect(state.customerUser?.id, 'c');
+      expect(state.staffStep, same(step));
+    });
+
+    test('completing the staff step stores the staff token, activates staff and keeps both users', () async {
+      final ProviderContainer c = await withPendingStep();
+      repository.staffStepResult = IssuedSession(
+        token: 'new-staff',
+        user: user(id: 's', role: UserRole.courier),
       );
-      expect(repository.calls, isEmpty);
+
+      await controller(c).completeStaffStep('secret');
+
+      expect(repository.calls, contains('step:${step.token}'));
+      expect(tokens.tokens[SessionSlot.staff], 'new-staff');
+      expect(tokens.tokens[SessionSlot.customer], 'new-customer');
+      final SignedIn state = current(c) as SignedIn;
+      expect(state.activeMode, SessionMode.staff);
+      expect(state.staffUser?.id, 's');
+      expect(state.customerUser?.id, 'c');
+      expect(state.staffStep, isNull);
     });
+
+    test(
+      'a refused password keeps the step so the person may try again',
+      () async {
+        final ProviderContainer c = await withPendingStep();
+        repository.staffStepFailure = refusal(401, 'invalid_credentials');
+
+        await expectLater(
+          controller(c).completeStaffStep('wrong'),
+          throwsA(isA<ApiRefusal>()),
+        );
+
+        final SignedIn state = current(c) as SignedIn;
+        expect(state.staffStep, same(step));
+        expect(state.activeMode, SessionMode.customer);
+        expect(tokens.tokens.containsKey(SessionSlot.staff), isFalse);
+      },
+    );
+
+    for (final String code in <String>[
+      'staff_step_expired',
+      'staff_step_invalid',
+    ]) {
+      test('$code clears the step and the person stays the customer', () async {
+        final ProviderContainer c = await withPendingStep();
+        repository.staffStepFailure = refusal(401, code);
+
+        await expectLater(
+          controller(c).completeStaffStep('secret'),
+          throwsA(
+            isA<ApiRefusal>().having((ApiRefusal f) => f.code, 'code', code),
+          ),
+        );
+
+        final SignedIn state = current(c) as SignedIn;
+        expect(state.staffStep, isNull);
+        expect(state.activeMode, SessionMode.customer);
+        expect(tokens.tokens.containsKey(SessionSlot.staff), isFalse);
+      });
+    }
+
+    test('dismissing the step leaves the customer session', () async {
+      final ProviderContainer c = await withPendingStep();
+
+      controller(c).dismissStaffStep();
+
+      final SignedIn state = current(c) as SignedIn;
+      expect(state.staffStep, isNull);
+      expect(state.activeMode, SessionMode.customer);
+      expect(state.customerUser?.id, 'c');
+    });
+
+    test('a staff answer that arrives after the customer session was dropped is discarded', () async {
+      final ProviderContainer c = await withPendingStep();
+      repository.staffStepResult = IssuedSession(
+        token: 'late-staff',
+        user: user(id: 's', role: UserRole.courier),
+      );
+      repository.holdAnswers = Completer<void>();
+
+      final Future<void> pending = controller(c).completeStaffStep('secret');
+      await settle();
+      await controller(c).dropSession(SessionSlot.customer);
+      repository.holdAnswers!.complete();
+      await pending;
+
+      expect(current(c), isA<SignedOut>());
+      expect(tokens.tokens, isEmpty);
+    });
+
+    test(
+      'switching to customer needs no code once the customer session exists',
+      () async {
+        final ProviderContainer c = await withPendingStep();
+        repository.staffStepResult = IssuedSession(
+          token: 'new-staff',
+          user: user(id: 's', role: UserRole.shopper),
+        );
+        await controller(c).completeStaffStep('secret');
+
+        controller(c).switchMode(SessionMode.customer);
+
+        final SignedIn state = current(c) as SignedIn;
+        expect(state.activeMode, SessionMode.customer);
+        expect(state.staffUser?.id, 's');
+        expect(
+          repository.calls.where((String x) => x.startsWith('request:')),
+          isEmpty,
+        );
+        expect(controller(c).activeSlot, SessionSlot.customer);
+      },
+    );
+
+    test('logging out of the staff slot keeps the customer', () async {
+      final ProviderContainer c = await withPendingStep();
+      repository.staffStepResult = IssuedSession(
+        token: 'new-staff',
+        user: user(id: 's', role: UserRole.shopper),
+      );
+      await controller(c).completeStaffStep('secret');
+
+      await controller(c).logout(SessionMode.staff);
+
+      final SignedIn state = current(c) as SignedIn;
+      expect(state.activeMode, SessionMode.customer);
+      expect(state.staffUser, isNull);
+      expect(tokens.tokens[SessionSlot.customer], 'new-customer');
+    });
+
+    test(
+      'replacing the customer user refreshes it, for the same account only',
+      () async {
+        repository.verifyResult = IssuedSession(
+          token: 'new-customer',
+          user: user(id: 'c', fullName: null),
+        );
+        final ProviderContainer c = container();
+        await bootstrap(c);
+        await controller(c)
+            .verifyCustomerCode(phone: '+998901234567', code: '000000');
+
+        controller(c).replaceCustomerUser(user(id: 'other', fullName: 'Other'));
+        expect((current(c) as SignedIn).customerUser?.fullName, isNull);
+
+        controller(c).replaceCustomerUser(user(id: 'c', fullName: 'Aziza'));
+        expect((current(c) as SignedIn).customerUser?.fullName, 'Aziza');
+      },
+    );
 
     test('switching to a mode that has no session does nothing', () async {
       tokens.tokens[SessionSlot.staff] = 's';
@@ -410,6 +543,8 @@ void main() {
   group('password and language', () {
     test('a password change clears the gate on the staff user', () async {
       tokens.tokens[SessionSlot.staff] = 's';
+      tokens.tokens[SessionSlot.customer] = 'c';
+      repository.identities[SessionSlot.customer] = user(id: 'c');
       repository.identities[SessionSlot.staff] = user(
         role: UserRole.shopper,
         mustChangePassword: true,

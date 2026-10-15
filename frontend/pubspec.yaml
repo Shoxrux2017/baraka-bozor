@@ -36,8 +36,8 @@ flutter:
   generate: true
 
   fonts:
-    - family: Manrope
+    - family: Montserrat
       fonts:
-        - asset: assets/fonts/Manrope-Variable.ttf
+        - asset: assets/fonts/Montserrat-Variable.ttf
   assets:
-    - assets/fonts/Manrope-OFL.txt
+    - assets/fonts/Montserrat-OFL.txt

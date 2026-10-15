@@ -8,8 +8,9 @@ import '../application/code_login_controller.dart';
 import 'auth_scaffold.dart';
 import 'code_entry.dart';
 
-/// The Customer's code, after the phone screen sent one. Reached directly,
-/// with no code requested, it hands back to the phone screen.
+/// The Customer's code, after the phone screen sent one (screen 04 of
+/// `kit/01-vhod`). Reached directly, with no code requested, it hands back
+/// to the phone screen.
 class CodeScreen extends ConsumerWidget {
   const CodeScreen({super.key});
 
@@ -18,7 +19,7 @@ class CodeScreen extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final CodeLoginState state = ref.watch(codeLoginControllerProvider);
 
-    if (!state.hasCode || state.forStaffAccount) {
+    if (!state.hasCode) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
           context.go(AppPaths.auth);
@@ -28,7 +29,9 @@ class CodeScreen extends ConsumerWidget {
     }
 
     return AuthScaffold(
-      title: l10n.customerLoginTitle,
+      title: l10n.codeTitle,
+      subtitle: codeSentText(l10n, state),
+      card: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[

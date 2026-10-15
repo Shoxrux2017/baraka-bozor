@@ -17,7 +17,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get customerLoginIntro =>
-      'Введите номер телефона, мы отправим код для входа';
+      'Введите номер телефона — пришлём код для входа';
 
   @override
   String get phoneLabel => 'Номер телефона';
@@ -32,13 +32,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get continueButton => 'Продолжить';
 
   @override
-  String get codeSentTelegram => 'Код отправлен в Telegram';
-
-  @override
   String get codeSentSms => 'Код отправлен по SMS';
 
   @override
-  String get codeSentGeneric => 'Код отправлен';
+  String codeSentOnPhone(String phone) {
+    return 'Отправили код на $phone';
+  }
 
   @override
   String get codeLabel => 'Код для входа';
@@ -53,8 +52,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get resendCode => 'Отправить код ещё раз';
 
   @override
-  String resendIn(int seconds) {
-    return 'Отправить ещё раз через $seconds с';
+  String resendIn(String time) {
+    return 'Отправить ещё раз через $time';
   }
 
   @override
@@ -62,30 +61,17 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String codeSentToPhone(String phone) {
-    return 'Код отправлен на номер $phone';
+    return 'Отправили код в Telegram на $phone';
   }
-
-  @override
-  String get customerModeIntro =>
-      'Чтобы войти в режим клиента, введите код, отправленный на ваш номер';
 
   @override
   String get cancelButton => 'Отмена';
 
   @override
-  String get requestCodeButton => 'Запросить код';
-
-  @override
-  String get wrongSurfaceTitle => 'Отсюда войти нельзя';
+  String get wrongSurfaceTitle => 'Откройте веб-панель';
 
   @override
   String get staffLoginTitle => 'Вход для сотрудников';
-
-  @override
-  String get staffLoginLink => 'Войти как сотрудник';
-
-  @override
-  String get customerLoginLink => 'Войти как клиент';
 
   @override
   String get passwordLabel => 'Пароль';
@@ -97,29 +83,29 @@ class AppLocalizationsRu extends AppLocalizations {
   String get loginButton => 'Войти';
 
   @override
-  String get changePasswordTitle => 'Смена пароля';
+  String get changePasswordTitle => 'Придумайте пароль';
 
   @override
   String get changePasswordRequiredIntro =>
-      'Перед началом работы замените временный пароль на свой';
+      'Администратор выдал временный пароль. Замените его своим';
 
   @override
-  String get currentPasswordLabel => 'Текущий пароль';
+  String get currentPasswordLabel => 'Временный пароль';
 
   @override
   String get newPasswordLabel => 'Новый пароль';
 
   @override
-  String get confirmPasswordLabel => 'Повторите новый пароль';
+  String get confirmPasswordLabel => 'Повторите пароль';
 
   @override
-  String get passwordRuleHint => 'От 10 до 128 символов';
+  String get passwordRuleHint => 'Не меньше 10 символов';
 
   @override
   String get passwordsDoNotMatch => 'Пароли не совпадают';
 
   @override
-  String get savePasswordButton => 'Сохранить';
+  String get savePasswordButton => 'Сохранить пароль';
 
   @override
   String get passwordChanged => 'Пароль изменён';
@@ -129,11 +115,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get wrongSurfaceMobile =>
-      'Эта учётная запись работает в веб-панели. Войдите через браузер на компьютере.';
+      'Этот аккаунт работает в браузере на компьютере. Войдите через веб-панель BarakaBozor';
 
   @override
   String get wrongSurfaceWeb =>
-      'Эта учётная запись работает в мобильном приложении. Войдите через приложение BarakaBozor на телефоне.';
+      'Этот аккаунт работает в приложении BarakaBozor на телефоне';
 
   @override
   String get languageLabel => 'Язык';
@@ -2515,4 +2501,78 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get errorCashAmountMismatch =>
       'Сумма не совпадает с суммой к получению.';
+
+  @override
+  String get getCodeButton => 'Получить код';
+
+  @override
+  String get codeComesInTelegram => 'Код придёт в Telegram';
+
+  @override
+  String get termsLine =>
+      'Продолжая, вы соглашаетесь с условиями использования';
+
+  @override
+  String get confirmPhoneTitle => 'Проверьте номер';
+
+  @override
+  String get confirmPhoneBody => 'Отправим на него код в Telegram';
+
+  @override
+  String get editButton => 'Изменить';
+
+  @override
+  String get sendButton => 'Отправить';
+
+  @override
+  String get codeTitle => 'Введите код';
+
+  @override
+  String get nameTitle => 'Как вас зовут?';
+
+  @override
+  String get nameSubtitle => 'Имя нужно сборщику и курьеру';
+
+  @override
+  String welcomeTitle(String name) {
+    return 'Добро пожаловать, $name!';
+  }
+
+  @override
+  String get welcomeBody => 'Свежие продукты с базара уже ждут вас';
+
+  @override
+  String get welcomeButton => 'К покупкам';
+
+  @override
+  String get staffPasswordTitle => 'Вход для сотрудника';
+
+  @override
+  String get staffPasswordSubtitle =>
+      'Номер подтверждён. Введите пароль сотрудника';
+
+  @override
+  String get staffPasswordForgot =>
+      'Забыли пароль? Обратитесь к администратору';
+
+  @override
+  String get staffPasswordWrong => 'Неверный пароль';
+
+  @override
+  String get staffStepExpired => 'Подтверждение истекло. Получите новый код';
+
+  @override
+  String get getNewCodeButton => 'Получить новый код';
+
+  @override
+  String get showPassword => 'Показать пароль';
+
+  @override
+  String get hidePassword => 'Скрыть пароль';
+
+  @override
+  String get back => 'Назад';
+
+  @override
+  String get wrongSurfaceWebTitle => 'Откройте приложение';
 }

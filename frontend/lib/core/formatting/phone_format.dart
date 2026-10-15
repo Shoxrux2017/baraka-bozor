@@ -21,6 +21,27 @@ String formatPhone(String e164) {
       '${digits.substring(5, 7)} ${digits.substring(7)}';
 }
 
+/// The national digits grouped as typed into a phone field: `90 123 45 67`,
+/// with as many groups as there are digits. Only digits are expected.
+String groupNationalDigits(String digits) {
+  const List<int> groupEnds = <int>[2, 5, 7, 9];
+  final StringBuffer out = StringBuffer();
+  int start = 0;
+  for (final int end in groupEnds) {
+    if (digits.length <= start) {
+      break;
+    }
+    if (start > 0) {
+      out.write(' ');
+    }
+    out.write(
+      digits.substring(start, end < digits.length ? end : digits.length),
+    );
+    start = end;
+  }
+  return out.toString();
+}
+
 /// The E.164 phone for nine national digits, or `null` when [digits] is not
 /// exactly nine digits.
 String? phoneFromNationalDigits(String digits) {

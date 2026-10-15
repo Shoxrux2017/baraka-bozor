@@ -494,6 +494,9 @@ void main() {
 
   testWidgets('the app bar keeps two buttons; the menu holds Customer mode '
       'and the way out', (WidgetTester tester) async {
+    // The customer session opened with the code that signed in.
+    tokens.tokens[SessionSlot.customer] = 'c';
+    auth.identities[SessionSlot.customer] = user(id: 'c');
     await open(tester, size: const Size(360, 800));
     final AppLocalizations words = l10n(tester);
 

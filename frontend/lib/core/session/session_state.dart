@@ -38,6 +38,7 @@ final class SignedIn extends SessionState {
     required this.activeMode,
     required this.staffUser,
     required this.customerUser,
+    this.staffStep,
   }) : assert(
          (activeMode == SessionMode.staff && staffUser != null) ||
              (activeMode == SessionMode.customer && customerUser != null),
@@ -48,6 +49,10 @@ final class SignedIn extends SessionState {
   final AppUser? staffUser;
   final AppUser? customerUser;
 
+  /// The pending password step of a Shopper or Courier whose code was just
+  /// verified; the interface asks for the password while it is set.
+  final StaffStep? staffStep;
+
   AppUser get activeUser =>
       activeMode == SessionMode.staff ? staffUser! : customerUser!;
 
@@ -55,9 +60,12 @@ final class SignedIn extends SessionState {
       mode == SessionMode.staff ? staffUser : customerUser;
 
   /// Only a Shopper or Courier reaches Customer mode from the staff interface
-  /// (`docs/02` section 10), and not while the first-login gate is set.
+  /// (`docs/02` section 10), not while the first-login gate is set, and only
+  /// when the customer session already exists: the code that opened the
+  /// app opened it.
   bool get canOfferCustomerMode =>
       staffUser != null &&
+      customerUser != null &&
       (staffUser!.role == UserRole.shopper ||
           staffUser!.role == UserRole.courier) &&
       !staffUser!.mustChangePassword;
@@ -66,11 +74,20 @@ final class SignedIn extends SessionState {
     SessionMode? activeMode,
     AppUser? staffUser,
     AppUser? customerUser,
+    StaffStep? staffStep,
   }) {
     return SignedIn(
       activeMode: activeMode ?? this.activeMode,
       staffUser: staffUser ?? this.staffUser,
       customerUser: customerUser ?? this.customerUser,
+      staffStep: staffStep ?? this.staffStep,
     );
   }
+
+  /// The same sessions without the pending step; [copyWith] cannot clear it.
+  SignedIn withoutStaffStep() => SignedIn(
+    activeMode: activeMode,
+    staffUser: staffUser,
+    customerUser: customerUser,
+  );
 }

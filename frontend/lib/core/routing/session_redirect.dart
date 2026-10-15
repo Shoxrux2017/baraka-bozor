@@ -16,17 +16,18 @@ import 'app_paths.dart';
 ///    screen, which remembers the page asked for; a bootstrap that threw is
 ///    treated as unreachable, so the person gets a retry rather than a
 ///    spinner;
-/// 2. signed out, only the public auth screens are reachable;
+/// 2. signed out, only the public auth screens of the surface are reachable:
+///    the phone and the code on mobile, the sign-in alone on the web;
 /// 3. unreachable, only the retry screen, which keeps remembering the page;
 /// 4. signed in on the wrong surface, only the screen naming the right one
 ///    (`docs/02-user-roles.md` section 10);
-/// 5. signed in behind the first-login gate, only the password change
+/// 5. a pending staff step, only the staff password screen; a Customer who
+///    has not given a name, only the name screen;
+/// 6. signed in behind the first-login gate, only the password change
 ///    (`docs/04-user-flows.md` section 3);
-/// 6. otherwise the active role's areas, plus the Customer-mode entry for a
-///    Shopper or Courier who has no customer session yet; the page the
-///    bootstrap or the retry screen remembered opens when it lies inside
-///    those areas, and anything else goes to the role's home (`DL-37` (17),
-///    `DL-46` (1)).
+/// 7. otherwise the active role's areas; the page the bootstrap or the retry
+///    screen remembered opens when it lies inside those areas, and anything
+///    else goes to the role's home (`DL-37` (17), `DL-46` (1)).
 String? sessionRedirect({
   required AsyncValue<SessionState> session,
   required Surface surface,
@@ -46,20 +47,25 @@ String? sessionRedirect({
   }
 
   return switch (state) {
-    SignedOut() => _signedOut(location),
+    SignedOut() => _signedOut(location, surface),
     SessionUnreachable() => _unreachable(uri),
     final SignedIn signedIn => _signedIn(signedIn, surface, uri),
   };
 }
 
-const Set<String> _publicAuth = <String>{
+// Every mobile sign-in is the phone and the Telegram code; the web panel has
+// the staff sign-in alone, which never asks for a code.
+const Set<String> _publicMobile = <String>{
   AppPaths.auth,
   AppPaths.customerCode,
-  AppPaths.staffLogin,
 };
 
-String? _signedOut(String location) =>
-    _publicAuth.contains(location) ? null : AppPaths.auth;
+const Set<String> _publicWeb = <String>{AppPaths.auth, AppPaths.staffLogin};
+
+String? _signedOut(String location, Surface surface) =>
+    (surface == Surface.mobile ? _publicMobile : _publicWeb).contains(location)
+    ? null
+    : AppPaths.auth;
 
 String? _signedIn(SignedIn state, Surface surface, Uri uri) {
   final String location = uri.path;
@@ -69,16 +75,17 @@ String? _signedIn(SignedIn state, Surface surface, Uri uri) {
     return _only(AppPaths.wrongSurface, location);
   }
 
-  if (user.mustChangePassword) {
-    return _only(AppPaths.changePassword, location);
+  if (surface == Surface.mobile) {
+    if (state.staffStep != null) {
+      return _only(AppPaths.staffPassword, location);
+    }
+    if (state.activeMode == SessionMode.customer && user.fullName == null) {
+      return _only(AppPaths.customerName, location);
+    }
   }
 
-  final bool mayEnterCustomerMode =
-      state.activeMode == SessionMode.staff &&
-      state.canOfferCustomerMode &&
-      state.customerUser == null;
-  if (location == AppPaths.customerMode && mayEnterCustomerMode) {
-    return null;
+  if (user.mustChangePassword) {
+    return _only(AppPaths.changePassword, location);
   }
 
   final List<String> areas = AppPaths.areasOf(user.role);

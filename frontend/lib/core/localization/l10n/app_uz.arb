@@ -2,28 +2,34 @@
   "@@locale": "uz",
   "appTitle": "BarakaBozor",
   "customerLoginTitle": "Kirish",
-  "customerLoginIntro": "Telefon raqamingizni kiriting, biz sizga kirish kodini yuboramiz",
+  "customerLoginIntro": "Telefon raqamingizni kiriting — kirish kodini yuboramiz",
   "phoneLabel": "Telefon raqami",
   "phoneHint": "90 123 45 67",
   "phoneInvalid": "Raqamning 9 ta raqamini kiriting",
   "continueButton": "Davom etish",
-  "codeSentTelegram": "Kod Telegram orqali yuborildi",
   "codeSentSms": "Kod SMS orqali yuborildi",
-  "codeSentGeneric": "Kod yuborildi",
+  "codeSentOnPhone": "Kodni yubordik: {phone}",
+  "@codeSentOnPhone": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "codeLabel": "Kirish kodi",
   "codeInvalidFormat": "6 ta raqamdan iborat kodni kiriting",
   "verifyButton": "Tasdiqlash",
   "resendCode": "Kodni qayta yuborish",
-  "resendIn": "Qayta yuborish {seconds} soniyadan so'ng",
+  "resendIn": "{time} dan so'ng qayta yuborish",
   "@resendIn": {
     "placeholders": {
-      "seconds": {
-        "type": "int"
+      "time": {
+        "type": "String"
       }
     }
   },
   "changePhone": "Raqamni o'zgartirish",
-  "codeSentToPhone": "Kod {phone} raqamiga yuborildi",
+  "codeSentToPhone": "Kodni Telegramga yubordik: {phone}",
   "@codeSentToPhone": {
     "placeholders": {
       "phone": {
@@ -31,28 +37,24 @@
       }
     }
   },
-  "customerModeIntro": "Mijoz rejimiga kirish uchun o'z raqamingizga yuborilgan kodni kiriting",
   "cancelButton": "Bekor qilish",
-  "requestCodeButton": "Kod so'rash",
-  "wrongSurfaceTitle": "Bu yerdan kirib bo'lmaydi",
+  "wrongSurfaceTitle": "Veb-panelni oching",
   "staffLoginTitle": "Xodim kirishi",
-  "staffLoginLink": "Xodim sifatida kirish",
-  "customerLoginLink": "Mijoz sifatida kirish",
   "passwordLabel": "Parol",
   "passwordRequired": "Parolni kiriting",
   "loginButton": "Kirish",
-  "changePasswordTitle": "Parolni o'zgartirish",
-  "changePasswordRequiredIntro": "Davom etishdan oldin vaqtinchalik parolni o'zingiznikiga almashtiring",
-  "currentPasswordLabel": "Joriy parol",
+  "changePasswordTitle": "Parol o'ylab toping",
+  "changePasswordRequiredIntro": "Administrator vaqtinchalik parol berdi. Uni o'zingiznikiga almashtiring",
+  "currentPasswordLabel": "Vaqtinchalik parol",
   "newPasswordLabel": "Yangi parol",
-  "confirmPasswordLabel": "Yangi parolni takrorlang",
-  "passwordRuleHint": "10 tadan 128 tagacha belgi",
+  "confirmPasswordLabel": "Parolni takrorlang",
+  "passwordRuleHint": "Kamida 10 ta belgi",
   "passwordsDoNotMatch": "Parollar mos kelmadi",
-  "savePasswordButton": "Saqlash",
+  "savePasswordButton": "Parolni saqlash",
   "passwordChanged": "Parol o'zgartirildi",
   "logoutButton": "Chiqish",
-  "wrongSurfaceMobile": "Bu hisob veb-panelda ishlaydi. Kompyuterdagi brauzer orqali kiring.",
-  "wrongSurfaceWeb": "Bu hisob mobil ilovada ishlaydi. Telefondagi BarakaBozor ilovasi orqali kiring.",
+  "wrongSurfaceMobile": "Bu hisob kompyuterdagi brauzerda ishlaydi. BarakaBozor veb-paneli orqali kiring",
+  "wrongSurfaceWeb": "Bu hisob telefondagi BarakaBozor ilovasida ishlaydi",
   "languageLabel": "Til",
   "languageUzbek": "O'zbekcha",
   "languageRussian": "Русский",
@@ -1636,5 +1638,35 @@
   "courierOrderGone": "Bu yetkazish endi sizda emas.",
   "courierBack": "Yetkazishlarimga",
   "errorDeliveryStateConflict": "Yetkazish allaqachon o'zgargan, buyurtma yangilandi.",
-  "errorCashAmountMismatch": "Summa olinishi kerak bo'lgan summaga mos emas."
+  "errorCashAmountMismatch": "Summa olinishi kerak bo'lgan summaga mos emas.",
+  "getCodeButton": "Kod olish",
+  "codeComesInTelegram": "Kod Telegramga keladi",
+  "termsLine": "Davom etib, siz foydalanish shartlariga rozilik bildirasiz",
+  "confirmPhoneTitle": "Raqamni tekshiring",
+  "confirmPhoneBody": "Unga Telegramda kod yuboramiz",
+  "editButton": "O'zgartirish",
+  "sendButton": "Yuborish",
+  "codeTitle": "Kodni kiriting",
+  "nameTitle": "Ismingiz nima?",
+  "nameSubtitle": "Ism yig'uvchi va kuryerga kerak",
+  "welcomeTitle": "Xush kelibsiz, {name}!",
+  "@welcomeTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeBody": "Bozordan yangi mahsulotlar sizni kutmoqda",
+  "welcomeButton": "Xaridlarga",
+  "staffPasswordTitle": "Xodim sifatida kirish",
+  "staffPasswordSubtitle": "Raqam tasdiqlandi. Xodim parolini kiriting",
+  "staffPasswordForgot": "Parolni unutdingizmi? Administratorga murojaat qiling",
+  "staffPasswordWrong": "Noto'g'ri parol",
+  "staffStepExpired": "Tasdiqlash muddati tugadi. Yangi kod oling",
+  "getNewCodeButton": "Yangi kod olish",
+  "showPassword": "Parolni ko'rsatish",
+  "hidePassword": "Parolni yashirish",
+  "back": "Orqaga",
+  "wrongSurfaceWebTitle": "Ilovani oching"
 }

@@ -3,11 +3,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
+import 'auth_entry_screen.dart';
 import 'change_password_screen.dart';
 import 'code_screen.dart';
-import 'customer_mode_screen.dart';
-import 'phone_screen.dart';
+import 'customer_name_screen.dart';
 import 'staff_login_screen.dart';
+import 'staff_password_screen.dart';
 import 'unreachable_screen.dart';
 import 'wrong_surface_screen.dart';
 
@@ -21,7 +22,7 @@ final FeatureRoutes authRoutes = FeatureRoutes(
       path: AppPaths.auth,
       name: 'customer-phone',
       builder: (BuildContext context, GoRouterState state) =>
-          const PhoneScreen(),
+          const AuthEntryScreen(),
     ),
     GoRoute(
       path: AppPaths.customerCode,
@@ -42,10 +43,16 @@ final FeatureRoutes authRoutes = FeatureRoutes(
           const ChangePasswordScreen(),
     ),
     GoRoute(
-      path: AppPaths.customerMode,
-      name: 'customer-mode',
+      path: AppPaths.staffPassword,
+      name: 'staff-password',
       builder: (BuildContext context, GoRouterState state) =>
-          const CustomerModeScreen(),
+          const StaffPasswordScreen(),
+    ),
+    GoRoute(
+      path: AppPaths.customerName,
+      name: 'customer-name',
+      builder: (BuildContext context, GoRouterState state) =>
+          const CustomerNameScreen(),
     ),
     GoRoute(
       path: AppPaths.unreachable,

@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/code_login_controller.dart';
+import 'code_boxes.dart';
 
-/// The number of digits in a login code (`docs/09-api-contracts.md`
-/// section 6).
-const int loginCodeLength = 6;
-
-/// Steps 3 and 4 of `docs/04-user-flows.md` section 2: where the code went,
-/// the code itself, and a resend once the server allows one. Shared by the
-/// Customer login and the Customer-mode entry, which differ only in whose
-/// phone the code went to.
+/// Steps 3 and 4 of `docs/04-user-flows.md` section 2: the code itself, the
+/// verify button and a resend once the server allows one.
 ///
 /// On a successful verification the session changes and the router leaves
 /// this screen; nothing here navigates.
@@ -49,70 +45,69 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
     await ref.read(codeLoginControllerProvider.notifier).resend();
   }
 
-  String _sentText(AppLocalizations l10n, RequestedCodeChannel channel) =>
-      switch (channel) {
-        RequestedCodeChannel.telegram => l10n.codeSentTelegram,
-        RequestedCodeChannel.sms => l10n.codeSentSms,
-        RequestedCodeChannel.other => l10n.codeSentGeneric,
-      };
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final CodeLoginState state = widget.state;
-    final String phone = state.phone ?? '';
 
     return Form(
       key: _form,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(
-            _sentText(l10n, RequestedCodeChannel.of(state.requested?.channel)),
-            key: const ValueKey<String>('code-sent-text'),
-          ),
-          const SizedBox(height: 4),
-          Text(l10n.codeSentToPhone(formatPhone(phone))),
-          const SizedBox(height: 24),
-          TextFormField(
-            key: const ValueKey<String>('code-field'),
+          CodeBoxes(
             controller: _code,
-            autofocus: true,
-            keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.done,
-            autofillHints: const <String>[AutofillHints.oneTimeCode],
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(loginCodeLength),
-            ],
-            decoration: InputDecoration(labelText: l10n.codeLabel),
-            validator: (String? value) =>
-                (value ?? '').length == loginCodeLength
-                ? null
-                : l10n.codeInvalidFormat,
-            onFieldSubmitted: (String _) => _verify(),
+            invalidMessage: l10n.codeInvalidFormat,
+            onSubmitted: _verify,
           ),
           FailureMessage(state.failure),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           FilledButton(
             key: const ValueKey<String>('verify-button'),
             onPressed: state.busy ? null : _verify,
             child: Text(l10n.verifyButton),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           TextButton(
             key: const ValueKey<String>('resend-button'),
             onPressed: state.canResend ? _resend : null,
+            style: TextButton.styleFrom(
+              disabledForegroundColor: KitColors.muted,
+              textStyle: const TextStyle(
+                fontFamily: appFontFamily,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
             child: Text(
               state.resendInSeconds > 0
-                  ? l10n.resendIn(state.resendInSeconds)
+                  ? l10n.resendIn(formatCountdown(state.resendInSeconds))
                   : l10n.resendCode,
+              textAlign: TextAlign.center,
             ),
           ),
         ],
       ),
     );
   }
+}
+
+/// Seconds as `m:ss`, the way the resend countdown reads.
+String formatCountdown(int seconds) {
+  final int clamped = seconds < 0 ? 0 : seconds;
+  return '${clamped ~/ 60}:${(clamped % 60).toString().padLeft(2, '0')}';
+}
+
+/// Where the code went, in one line: the Telegram text names the channel and
+/// the phone; SMS says so; any other channel (the development and test-phone
+/// ones) says only that a code was sent to the phone.
+String codeSentText(AppLocalizations l10n, CodeLoginState state) {
+  final String phone = formatPhone(state.phone ?? '');
+  return switch (RequestedCodeChannel.of(state.requested?.channel)) {
+    RequestedCodeChannel.telegram => l10n.codeSentToPhone(phone),
+    RequestedCodeChannel.sms => '${l10n.codeSentSms}\n$phone',
+    RequestedCodeChannel.other => l10n.codeSentOnPhone(phone),
+  };
 }
 
 /// The delivery channels a screen distinguishes. `fake` and `test` are the

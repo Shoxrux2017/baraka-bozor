@@ -1,26 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/localization/generated/app_localizations.dart';
-import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
-import '../../auth/application/code_login_controller.dart';
-
-/// Enters Customer mode for a Shopper or a Courier (`docs/02-user-roles.md`
-/// section 10): straight in when the Customer session exists, otherwise
-/// through a code sent to their own phone.
-void enterCustomerMode(BuildContext context, WidgetRef ref, SignedIn session) {
-  if (session.customerUser != null) {
-    ref
-        .read(sessionControllerProvider.notifier)
-        .switchMode(SessionMode.customer);
-  } else {
-    ref.read(codeLoginControllerProvider.notifier).requestCodeForStaffAccount();
-    context.go(AppPaths.customerMode);
-  }
-}
 
 enum _StaffAction { customerMode, logout }
 
@@ -44,7 +27,12 @@ class StaffAreaMenu extends ConsumerWidget {
       onSelected: (_StaffAction action) {
         switch (action) {
           case _StaffAction.customerMode:
-            enterCustomerMode(context, ref, state);
+            // The Customer session opened with the code that signed in, so
+            // the switch asks for nothing (`docs/02-user-roles.md`
+            // section 10).
+            ref
+                .read(sessionControllerProvider.notifier)
+                .switchMode(SessionMode.customer);
           case _StaffAction.logout:
             ref
                 .read(sessionControllerProvider.notifier)
