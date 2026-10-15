@@ -21,7 +21,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 
 | Part | What | Status |
 |---|---|---|
-| 1 | Header: search, cart, delivery address; floating bar; theme and font (`DL-75`) | In Progress |
+| 1 | Header: search, cart, delivery address; floating bar; theme and font (`DL-75`) | Merged (PR #87) |
 | 2 | Category circles on the header's arc | Planned |
 | 3 | Product grid with the in-cart stepper | Planned |
 
