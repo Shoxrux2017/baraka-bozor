@@ -6,7 +6,9 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/core/session/session_controller.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
+import 'package:baraka_bozor/core/widgets/product_image.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
@@ -14,6 +16,7 @@ import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/kit_product_grid.dart';
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -192,6 +195,63 @@ void main() {
       );
       expect(find.text('Pomidor'), findsOneWidget);
       expect(find.text('Olma'), findsNothing);
+    });
+
+    testWidgets('a rail item shows the picture or the letter, and the '
+        'selected one a green line', (WidgetTester tester) async {
+      await open(tester, CatalogPaths.category('c-1'));
+
+      expect(
+        find.descendant(
+          of: byKey('rail-c-1'),
+          matching: find.byType(ProductImage),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<ProductImage>(
+              find.descendant(
+                of: byKey('rail-c-1'),
+                matching: find.byType(ProductImage),
+              ),
+            )
+            .url,
+        'https://example.test/veg.png',
+      );
+      expect(
+        find.descendant(of: byKey('rail-c-2'), matching: find.text('M')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('rail-c-2'),
+          matching: find.byType(ProductImage),
+        ),
+        findsNothing,
+      );
+      Finder line(String id) => find.descendant(
+        of: byKey('rail-$id'),
+        matching: find.byWidgetPredicate(
+          (Widget w) => w is ColoredBox && w.color == KitColors.primary,
+        ),
+      );
+      expect(line('c-1'), findsOneWidget);
+      expect(line('c-2'), findsNothing);
+    });
+
+    testWidgets('the rail starts at the top, level with the products', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await open(tester, CatalogPaths.category('c-3'));
+
+      expect(
+        tester.getTopLeft(byKey('rail-c-1')).dy,
+        tester.getTopLeft(find.byType(KitProductGrid)).dy,
+      );
     });
 
     testWidgets('choosing another rail item shows its products and title, '

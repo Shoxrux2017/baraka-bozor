@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/generated/app_localizations.dart';
-import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
+import '../../../core/widgets/kit_app_bar.dart';
 import '../../cart/presentation/cart_summary_bar.dart';
 import '../domain/catalog.dart';
 import 'kit_product_grid.dart';
@@ -18,17 +18,7 @@ class RecommendedScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        centerTitle: true,
-        title: Text(
-          l10n.recommendedTitle,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: KitColors.ink,
-          ),
-        ),
-      ),
+      appBar: kitAppBar(title: l10n.recommendedTitle),
       // The mode stays visible while two sessions exist (DL-75).
       body: UnderActiveMode(
         child: Stack(
