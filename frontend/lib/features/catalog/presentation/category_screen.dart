@@ -55,6 +55,7 @@ class CategoryScreen extends ConsumerWidget {
               children: <Widget>[
                 Positioned.fill(
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
                       _CategoryRail(categories: rows, selectedId: categoryId),
                       Expanded(

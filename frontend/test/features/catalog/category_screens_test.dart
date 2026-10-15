@@ -16,6 +16,7 @@ import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/kit_product_grid.dart';
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -239,12 +240,17 @@ void main() {
       expect(line('c-2'), findsNothing);
     });
 
-    testWidgets('the rail starts at the top', (WidgetTester tester) async {
+    testWidgets('the rail starts at the top, level with the products', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
       await open(tester, CatalogPaths.category('c-3'));
 
       expect(
         tester.getTopLeft(byKey('rail-c-1')).dy,
-        tester.getTopLeft(byKey('category-rail')).dy,
+        tester.getTopLeft(find.byType(KitProductGrid)).dy,
       );
     });
 
