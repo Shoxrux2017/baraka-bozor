@@ -63,7 +63,7 @@ The Customer browses categories, searches (both languages), sees unit, price mod
 
 1. The Customer opens checkout with a non-empty cart, picks an own active address (preselected: the delivery address chosen on the home, `DL-75`), picks `cash` or `online`, and may type a delivery wish.
 2. The backend checks name, address and service area, product availability and prices, quantities, minimum order amount, settings completeness, and provider enablement for `online`.
-3. It returns lines, subtotal, service fee, delivery fee and total, marked `final` (only fixed items) or `estimate` (any estimate item), plus a working-hours note when the order will be collected after opening.
+3. It returns lines, subtotal, service fee, delivery fee and total, marked `final` (only fixed items, which no new cart has since `DL-78`) or `estimate` (any estimate item), plus a working-hours note when the order will be collected after opening.
 4. It returns a signed five-minute checkout token bound to the current state.
 5. The Customer confirms.
 
@@ -94,7 +94,7 @@ The Shopper accepts the current assignment (repeatable, no duplicate history), t
 
 ## 13. Fixed Item
 
-The Shopper buys the physical quantity and records `purchased_quantity` and the fulfilled product. The actual market price may be recorded but is not required. The billable unit price is the fixed customer-price snapshot. The item becomes `purchased`.
+A line placed before `DL-78` is the only fixed line. The Shopper buys the physical quantity and records `purchased_quantity` and the fulfilled product. The actual market price may be recorded but is not required. The billable unit price is the fixed customer-price snapshot. The item becomes `purchased`.
 
 ## 14. Estimate Item
 
@@ -146,7 +146,7 @@ While at least one item is `awaiting_customer` the order's status stays `shoppin
 
 Every item is `purchased` or `removed` and no approval is pending. The Shopper calls complete with an `Idempotency-Key`. The backend locks the order, rounds every line half-up to 1 UZS, sums the merchandise, applies the service fee and the delivery fee snapshot, and stores the final amounts. Then:
 
-- `cash` → `ready_for_delivery`;
+- `cash` → `ready_for_delivery`, and the Customer is told the final amount (`DL-78`, Wave 4);
 - `online` → a payment obligation for the final total, `final_payment_pending`, `payment_required` sent to the Customer;
 - nothing purchased never reaches completion: the action that removed the last line cancelled the order with reason `no_items_purchased` (`DL-54` (7)).
 

@@ -15,6 +15,7 @@ AdminCategory adminCategory({
   int sortOrder = 0,
   bool isActive = true,
   DateTime? archivedAt,
+  String? imageUrl,
 }) => AdminCategory(
   id: id,
   nameUz: nameUz,
@@ -24,6 +25,7 @@ AdminCategory adminCategory({
   sortOrder: sortOrder,
   isActive: archivedAt == null && isActive,
   archivedAt: archivedAt,
+  imageUrl: imageUrl,
   createdAt: _at,
   updatedAt: _at,
 );
@@ -34,12 +36,12 @@ AdminProduct adminProduct({
   String nameUz = 'Pomidor',
   String nameRu = 'Помидор',
   UnitCode unitCode = UnitCode.kg,
-  PriceMode priceMode = PriceMode.estimate,
   int marketPriceUzs = 16000,
   int customerUnitPriceUzs = 18400,
   String? imageUrl,
   int sortOrder = 0,
   bool isActive = true,
+  bool isFeatured = false,
   DateTime? archivedAt,
   DateTime? updatedAt,
 }) => AdminProduct(
@@ -50,12 +52,12 @@ AdminProduct adminProduct({
   descriptionUz: null,
   descriptionRu: null,
   unitCode: unitCode,
-  priceMode: priceMode,
   marketPriceUzs: marketPriceUzs,
   customerUnitPriceUzs: customerUnitPriceUzs,
   imageUrl: imageUrl,
   sortOrder: sortOrder,
   isActive: archivedAt == null && isActive,
+  isFeatured: isFeatured,
   archivedAt: archivedAt,
   createdAt: _at,
   updatedAt: updatedAt ?? _at,
@@ -81,6 +83,8 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
       <(String?, ProductDraft)>[];
   final List<(String, PickedImage)> uploads = <(String, PickedImage)>[];
   final List<String> removedImages = <String>[];
+  final List<(String, PickedImage)> categoryUploads = <(String, PickedImage)>[];
+  final List<String> removedCategoryImages = <String>[];
   final List<String> actions = <String>[];
 
   /// The next change answers this failure instead.
@@ -227,6 +231,47 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
     );
   }
 
+  @override
+  Future<AdminCategory> uploadCategoryImage(
+    String categoryId,
+    PickedImage image,
+  ) {
+    categoryUploads.add((categoryId, image));
+    return _category(
+      'upload category $categoryId',
+      categoryId,
+      (AdminCategory c) => _categoryWithImage(
+        c,
+        'https://api.test/storage/categories/${categoryUploads.length}.png',
+      ),
+    );
+  }
+
+  @override
+  Future<AdminCategory> removeCategoryImage(String categoryId) {
+    removedCategoryImages.add(categoryId);
+    return _category(
+      'remove category image $categoryId',
+      categoryId,
+      (AdminCategory c) => _categoryWithImage(c, null),
+    );
+  }
+
+  AdminCategory _categoryWithImage(AdminCategory c, String? imageUrl) =>
+      AdminCategory(
+        id: c.id,
+        nameUz: c.nameUz,
+        nameRu: c.nameRu,
+        descriptionUz: c.descriptionUz,
+        descriptionRu: c.descriptionRu,
+        sortOrder: c.sortOrder,
+        isActive: c.isActive,
+        archivedAt: c.archivedAt,
+        imageUrl: imageUrl,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+      );
+
   Future<AdminCategory> _saveCategory(String? id, CategoryDraft draft) async {
     savedCategories.add((id, draft));
     await _answer();
@@ -236,6 +281,9 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
       nameRu: draft.nameRu,
       sortOrder: draft.sortOrder,
       isActive: draft.isActive ?? true,
+      imageUrl: id == null
+          ? null
+          : categoryRows.firstWhere((AdminCategory c) => c.id == id).imageUrl,
     );
     categoryRows = <AdminCategory>[
       for (final AdminCategory c in categoryRows)
@@ -257,11 +305,11 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
       nameUz: draft.nameUz,
       nameRu: draft.nameRu,
       unitCode: draft.unitCode,
-      priceMode: draft.priceMode,
       marketPriceUzs: draft.marketPriceUzs,
       imageUrl: current?.imageUrl,
       sortOrder: draft.sortOrder,
       isActive: draft.isActive ?? current?.isActive ?? true,
+      isFeatured: draft.isFeatured,
       archivedAt: current?.archivedAt,
       updatedAt: DateTime.utc(2026, 9, 26, 6, _next++),
     );
@@ -323,12 +371,12 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
     descriptionUz: p.descriptionUz,
     descriptionRu: p.descriptionRu,
     unitCode: p.unitCode,
-    priceMode: p.priceMode,
     marketPriceUzs: p.marketPriceUzs,
     customerUnitPriceUzs: p.customerUnitPriceUzs,
     imageUrl: imageUrl,
     sortOrder: p.sortOrder,
     isActive: p.isActive,
+    isFeatured: p.isFeatured,
     archivedAt: p.archivedAt,
     createdAt: p.createdAt,
     updatedAt: DateTime.utc(2026, 9, 26, 7, _next++),

@@ -162,6 +162,27 @@ class AdminCatalogApi {
     ),
   );
 
+  /// The multipart upload of a category's picture: one file field, `image`.
+  Future<AdminCategory> uploadCategoryImage(
+    String categoryId,
+    PickedImage image,
+  ) => _category(
+    _dio.post<dynamic>(
+      '/admin/categories/${Uri.encodeComponent(categoryId)}/image',
+      data: FormData.fromMap(<String, Object>{
+        'image': MultipartFile.fromBytes(image.bytes, filename: image.name),
+      }),
+      options: _staff,
+    ),
+  );
+
+  Future<AdminCategory> removeCategoryImage(String categoryId) => _category(
+    _dio.delete<dynamic>(
+      '/admin/categories/${Uri.encodeComponent(categoryId)}/image',
+      options: _staff,
+    ),
+  );
+
   static Future<AdminCategory> _category(
     Future<Response<dynamic>> request,
   ) async =>

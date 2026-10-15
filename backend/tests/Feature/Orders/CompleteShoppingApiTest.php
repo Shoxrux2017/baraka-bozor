@@ -296,8 +296,9 @@ final class CompleteShoppingApiTest extends TestCase
     private function fixedLine(): OrderItem
     {
         return OrderItem::factory()
+            ->fixed()
             ->for($this->order)
-            ->for(Product::factory()->fixed()->unit(UnitCode::Piece)->state(['market_price_uzs' => 3000]))
+            ->for(Product::factory()->unit(UnitCode::Piece)->state(['market_price_uzs' => 3000]))
             ->create(['ordered_quantity' => '3']);
     }
 

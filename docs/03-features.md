@@ -32,11 +32,11 @@ Create, list, edit and deactivate own addresses. Required: a point on the map in
 
 ## 5. Catalog
 
-Admin manages a flat list of categories and the products in them: bilingual names (required) and descriptions (optional), unit, price mode, market price, one image (JPEG, PNG or WebP, at most 5 MB), sort order, archive and restore. Customers list active categories and products, search by name in both languages at once, and see the customer price (market price plus markup). Images are served from public URLs.
+Admin manages a flat list of categories and the products in them: bilingual names (required) and descriptions (optional), unit, market price, one image (JPEG, PNG or WebP, at most 5 MB), sort order, archive and restore. The Admin also uploads, replaces and removes a category's picture, once the category exists, in the same way. Customers list active categories and products, search by name in both languages at once, and see the customer price (market price plus markup). The Admin marks products for "Рекомендуем"; Customers list the marked products and sort any list by price. Images are served from public URLs. A Customer keeps up to 500 favourite products and sees them in one list; a favourite that stops being sold stays, shown as unavailable (`BR-CAT-007`).
 
 ## 6. Pricing
 
-Two price modes, `fixed` and `estimate` (`01` Section 8). Business settings hold the markup percentage, the service fee (fixed or percentage), the delivery fee, the tolerance percentage and the minimum order amount. Everything is snapshotted into the order.
+Every product is an estimate since `DL-78`; `fixed` survives only on lines placed before it (`01` Section 8). Business settings hold the markup percentage, the service fee (fixed or percentage), the delivery fee, the tolerance percentage and the minimum order amount. Everything is snapshotted into the order.
 
 ## 7. Quantity
 
@@ -48,7 +48,7 @@ One active cart per Customer, created on first access. A product appears at most
 
 ## 9. Checkout Preview
 
-Input: an own active address, the payment method (`cash` or `online`), an optional free-text delivery wish. Checks: non-empty name, address inside the service area, non-empty cart, active products, valid quantities, minimum order amount, complete settings, and for `online` at least one enabled provider. Output: the lines with their kind, merchandise subtotal, service fee, delivery fee, total, and whether the total is `final` (only fixed items) or an `estimate` (any estimate item), plus a note when the order falls outside working hours. A signed checkout token valid for five minutes binds the preview to the current state.
+Input: an own active address, the payment method (`cash` or `online`), an optional free-text delivery wish. Checks: non-empty name, address inside the service area, non-empty cart, active products, valid quantities, minimum order amount, complete settings, and for `online` at least one enabled provider. Output: the lines with their kind, merchandise subtotal, service fee, delivery fee, total, and whether the total is `final` (only lines placed before `DL-78`; a new cart's total is always an `estimate`) or an `estimate`, plus a note when the order falls outside working hours. A signed checkout token valid for five minutes binds the preview to the current state.
 
 ## 10. Order Creation
 
@@ -111,7 +111,7 @@ Web panel. Order board with filters and the summary strip; attention list (appro
 
 ## 23. Notifications
 
-Push through FCM behind an abstraction: Customer `order_accepted`, `approval_required`, `payment_required`, `courier_started`, `order_delivered`, `order_cancelled`; Shopper `shopping_assigned`, `approval_answered`, `shopping_order_cancelled`; Courier `delivery_assigned`, `delivery_cancelled`. Texts in the user's language from backend templates; payloads carry the event and an ID only. Delivery is best-effort and never changes order state. The Shopper's order screen also polls while the app is open.
+Push through FCM behind an abstraction: Customer `order_accepted`, `approval_required`, `payment_required`, `courier_started`, `order_delivered`, `order_cancelled` and, for a cash order, the final amount at shopping completion (`DL-78`, Wave 4); Shopper `shopping_assigned`, `approval_answered`, `shopping_order_cancelled`; Courier `delivery_assigned`, `delivery_cancelled`. Texts in the user's language from backend templates; payloads carry the event and an ID only. Delivery is best-effort and never changes order state. The Shopper's order screen also polls while the app is open.
 
 ## 24. History and Reorder
 

@@ -14,6 +14,8 @@ PostgreSQL 17 with a UTF-8 character type (`en_US.utf8` in the Compose stack and
 users                       customer_otp_challenges
 customer_addresses
 categories                  products                 product_images
+category_images
+customer_favorites
 carts                       cart_items
 business_settings           payment_provider_settings
 orders                      order_items              order_history
@@ -48,9 +50,9 @@ Checks: role in the six values; status `active|blocked`; phone `^\+998[0-9]{9}$`
 
 ## 7. `products` (migrated)
 
-`id, category_id → categories, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, is_active, sort_order, archived_at?, created_by_user_id, timestamps`.
+`id, category_id → categories, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, is_active, sort_order, is_featured, archived_at?, created_by_user_id, timestamps`. `is_featured` is not null, default false (`DL-79`).
 
-Checks: unit in `kg, gram, piece, liter, package, box, bundle, meter`; `price_mode IN ('fixed','estimate')`; `market_price_uzs > 0`; names `varchar(160)`, non-blank; an archived product is never active. Indexes `(category_id, is_active)`, `(is_active, sort_order)`, `lower(name_uz)`, `lower(name_ru)`.
+Checks: unit in `kg, gram, piece, liter, package, box, bundle, meter`; `price_mode = 'estimate'` (`DL-78`; `order_items.price_mode_snapshot` still holds `fixed` for earlier lines); `market_price_uzs > 0`; names `varchar(160)`, non-blank; an archived product is never active. Indexes `(category_id, is_active)`, `(is_active, sort_order)`, `lower(name_uz)`, `lower(name_ru)`, and the partial `(sort_order, name_uz, id) where is_featured` for the home row.
 
 The customer price is computed, never stored on the product: `half_up(market_price_uzs × (1 + markup_percent/100))`.
 
@@ -202,3 +204,11 @@ Application: role and ownership, unit precision, lifecycle transitions, the ceil
 ## 30. Deliberately Absent
 
 Markets, cities, sellers, warehouses, inventory, promotions, bonuses, subscriptions, delivery zones, GPS tracks, chat, refund attempts.
+
+## 31. `category_images` (migrated)
+
+`id, category_id → categories (unique, restrict), storage_key (unique), original_filename?, mime_type, size_bytes, timestamps`. Size from 1 byte to 5 MiB (5 242 880 bytes) inclusive (`category_images_size_bytes_check`); MIME in `image/jpeg`, `image/png`, `image/webp` (`category_images_mime_type_check`). The same shape as `product_images` (`DL-79` (2)).
+
+## 32. `customer_favorites` (migrated)
+
+`id, customer_id → users (restrict), product_id → products (restrict), created_at`. Unique `(customer_id, product_id)`; index `(customer_id, created_at desc, id desc)` serves the list, newest first. At most 500 rows per Customer, held by the application under a lock on the Customer's row (`DL-79` (5)).

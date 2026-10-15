@@ -438,6 +438,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get categoryEditTitle => 'Редактирование категории';
 
   @override
+  String get categoryImage => 'Картинка';
+
+  @override
+  String get categoryImageAfterSave =>
+      'Картинку можно добавить после сохранения';
+
+  @override
+  String get categoryRemoveImageConfirm => 'Удалить картинку категории?';
+
+  @override
   String get categorySaved => 'Категория сохранена';
 
   @override
@@ -459,7 +469,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get productUnit => 'Единица измерения';
 
   @override
-  String get productPriceMode => 'Тип цены';
+  String get productFeatured => 'Показывать в «Рекомендуем»';
+
+  @override
+  String get productFeaturedHint =>
+      'Товар появится в ряду «Рекомендуем» на главной';
+
+  @override
+  String get productFeaturedBadge => 'Рекомендуем';
 
   @override
   String get productMarketPrice => 'Рыночная цена';

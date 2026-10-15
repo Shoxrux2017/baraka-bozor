@@ -9,7 +9,7 @@ use App\Http\Requests\EmptyBodyRequest;
 use App\Models\Product;
 use App\Modules\Catalog\Actions\RemoveProductImage;
 use App\Modules\Catalog\Actions\ReplaceProductImage;
-use App\Modules\Catalog\Http\Requests\ProductImageRequest;
+use App\Modules\Catalog\Http\Requests\CatalogImageRequest;
 use App\Modules\Catalog\Http\Resources\AdminProductResource;
 use App\Modules\Settings\CustomerPriceCalculator;
 use App\Support\Scope\ScopedLookup;
@@ -21,7 +21,7 @@ use App\Support\Scope\ScopedLookup;
  */
 final class AdminProductImageController extends Controller
 {
-    public function store(ProductImageRequest $request, string $product, ReplaceProductImage $replace): AdminProductResource
+    public function store(CatalogImageRequest $request, string $product, ReplaceProductImage $replace): AdminProductResource
     {
         return $this->resource($replace($this->find($product), $request->uploadedImage(), $request->mimeType()));
     }

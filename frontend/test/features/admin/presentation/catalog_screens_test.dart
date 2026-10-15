@@ -78,6 +78,7 @@ void main() {
     WidgetTester tester,
     String location, {
     Size size = const Size(1400, 2600),
+    Locale device = const Locale('uz'),
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -88,6 +89,7 @@ void main() {
         tokens: tokens,
         repository: auth,
         surface: Surface.web,
+        device: device,
         overrides: [
           adminCatalogRepositoryProvider.overrideWithValue(catalog),
           productImagePickerProvider.overrideWithValue(picker),
@@ -349,6 +351,41 @@ void main() {
       expect(find.text('Mahsulot 1 · Товар 1'), findsNothing);
     });
 
+    testWidgets('a featured product shows the badge in the list', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = <AdminProduct>[
+        adminProduct(id: 'p-1', isFeatured: true),
+        adminProduct(id: 'p-2'),
+      ];
+      await open(tester, AdminPaths.products);
+
+      expect(byKey('featured-p-1'), findsOneWidget);
+      expect(byKey('featured-p-2'), findsNothing);
+    });
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets(
+        'the product form fits 320 px at double text in ${device.languageCode}',
+        (WidgetTester tester) async {
+          tester.platformDispatcher.textScaleFactorTestValue = 2;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+          await open(
+            tester,
+            AdminPaths.product('p-1'),
+            size: const Size(320, 640),
+            device: device,
+          );
+          await tester.ensureVisible(field('is_featured'));
+          await tester.pumpAndSettle();
+
+          expect(field('is_featured'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+
     testWidgets(
       'a new product is created and its page opens, ready for an image',
       (WidgetTester tester) async {
@@ -361,14 +398,15 @@ void main() {
         await tester.enterText(field('name_uz'), 'Bodring');
         await tester.enterText(field('name_ru'), 'Огурец');
         await tester.enterText(field('market_price_uzs'), '12 000');
-        await tapAndSettle(tester, find.text(l10n(tester).priceModeFixed));
+        expect(field('price_mode'), findsNothing);
+        await tapAndSettle(tester, field('is_featured'));
         await tapAndSettle(tester, byKey('product-save'));
 
         final (String? id, ProductDraft draft) = catalog.savedProducts.single;
         expect(id, isNull);
         expect(draft.categoryId, 'c-1');
         expect(draft.marketPriceUzs, 12000);
-        expect(draft.priceMode, PriceMode.fixed);
+        expect(draft.isFeatured, isTrue);
         expect(draft.unitCode, UnitCode.kg);
         expect(draft.isActive, isTrue);
         expect(byKey('choose-image'), findsOneWidget);
@@ -624,6 +662,107 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(AlertDialog), findsOneWidget);
     });
+  });
+
+  group('category picture', () {
+    testWidgets('a new category offers the picture only after saving', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.categories);
+      await tapAndSettle(tester, byKey('new-category'));
+
+      expect(find.text(l10n(tester).categoryImageAfterSave), findsOneWidget);
+      expect(byKey('category-choose-image'), findsNothing);
+    });
+
+    testWidgets('a picture is uploaded, shown and removed after asking', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.categories);
+      await tapAndSettle(tester, byKey('edit-c-1'));
+      expect(byKey('category-choose-image'), findsOneWidget);
+      expect(byKey('category-remove-image'), findsNothing);
+      picker.next = _png();
+
+      await tapAndSettle(tester, byKey('category-choose-image'));
+      expect(byKey('category-picked-image'), findsOneWidget);
+      await tapAndSettle(tester, byKey('category-upload-image'));
+
+      final (String id, PickedImage sent) = catalog.categoryUploads.single;
+      expect(id, 'c-1');
+      expect(sent.name, 'pomidor.png');
+      expect(byKey('category-picked-image'), findsNothing);
+      expect(byKey('category-remove-image'), findsOneWidget);
+      expect(
+        catalog.categoryRows.single.imageUrl,
+        'https://api.test/storage/categories/1.png',
+      );
+
+      await tapAndSettle(tester, byKey('category-remove-image'));
+      await tapAndSettle(tester, find.text(l10n(tester).cancelButton).last);
+      expect(catalog.removedCategoryImages, isEmpty);
+
+      await tapAndSettle(tester, byKey('category-remove-image'));
+      await tapAndSettle(tester, byKey('category-confirm-remove-image'));
+      expect(catalog.removedCategoryImages, <String>['c-1']);
+      expect(byKey('category-remove-image'), findsNothing);
+      expect(catalog.categoryRows.single.imageUrl, isNull);
+    });
+
+    testWidgets('the row shows the picture, or the first letter', (
+      WidgetTester tester,
+    ) async {
+      catalog.categoryRows = <AdminCategory>[
+        adminCategory(imageUrl: 'https://api.test/storage/categories/a.webp'),
+        adminCategory(id: 'c-2', nameUz: 'Mevalar', nameRu: 'Фрукты'),
+      ];
+      await open(tester, AdminPaths.categories);
+
+      expect(
+        find.descendant(
+          of: byKey('category-thumb-c-1'),
+          matching: find.byType(Image),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('category-thumb-c-2'),
+          matching: find.text('M'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('category-thumb-c-2'),
+          matching: find.byType(Image),
+        ),
+        findsNothing,
+      );
+    });
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets(
+        'the category dialog fits 320 px at double text in ${device.languageCode}',
+        (WidgetTester tester) async {
+          tester.platformDispatcher.textScaleFactorTestValue = 2;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+          await open(
+            tester,
+            AdminPaths.categories,
+            size: const Size(320, 640),
+            device: device,
+          );
+          await tapAndSettle(tester, byKey('edit-c-1'));
+          await tester.ensureVisible(byKey('category-choose-image'));
+          await tester.pumpAndSettle();
+
+          expect(byKey('category-choose-image'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
   });
 
   group('product image', () {

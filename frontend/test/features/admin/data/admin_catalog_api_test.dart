@@ -18,38 +18,42 @@ const String categoryId = '0f0e3c6a-6b1f-4f7e-9a51-2d6c1c1e9a01';
 const String productId = '5b2a1c3d-8e4f-4a6b-9c7d-1e2f3a4b5c6d';
 
 /// A category as `docs/09-api-contracts.md` section 15 returns it.
-Map<String, Object?> categoryJson({String? archivedAt}) => <String, Object?>{
-  'id': categoryId,
-  'name_uz': 'Sabzavotlar',
-  'name_ru': 'Овощи',
-  'description_uz': null,
-  'description_ru': 'Свежие',
-  'sort_order': 2,
-  'is_active': archivedAt == null,
-  'archived_at': archivedAt,
-  'created_at': '2026-09-26T05:00:00Z',
-  'updated_at': '2026-09-26T05:00:00Z',
-};
+Map<String, Object?> categoryJson({String? archivedAt, String? imageUrl}) =>
+    <String, Object?>{
+      'id': categoryId,
+      'name_uz': 'Sabzavotlar',
+      'name_ru': 'Овощи',
+      'description_uz': null,
+      'description_ru': 'Свежие',
+      'sort_order': 2,
+      'is_active': archivedAt == null,
+      'archived_at': archivedAt,
+      'image_url': imageUrl,
+      'created_at': '2026-09-26T05:00:00Z',
+      'updated_at': '2026-09-26T05:00:00Z',
+    };
 
 /// A product as sections 15 and 16 return it.
-Map<String, Object?> productJson({String? imageUrl}) => <String, Object?>{
-  'id': productId,
-  'category_id': categoryId,
-  'name_uz': 'Pomidor',
-  'name_ru': 'Помидор',
-  'description_uz': null,
-  'description_ru': null,
-  'unit_code': 'kg',
-  'price_mode': 'estimate',
-  'market_price_uzs': 16000,
-  'customer_unit_price_uzs': 18400,
-  'image_url': imageUrl,
-  'sort_order': 0,
-  'is_active': true,
-  'archived_at': null,
-  'created_at': '2026-09-26T05:00:00Z',
-  'updated_at': '2026-09-26T05:00:00Z',
-};
+Map<String, Object?> productJson({String? imageUrl, bool isFeatured = false}) =>
+    <String, Object?>{
+      'id': productId,
+      'category_id': categoryId,
+      'name_uz': 'Pomidor',
+      'name_ru': 'Помидор',
+      'description_uz': null,
+      'description_ru': null,
+      'unit_code': 'kg',
+      'price_mode': 'estimate',
+      'market_price_uzs': 16000,
+      'customer_unit_price_uzs': 18400,
+      'image_url': imageUrl,
+      'sort_order': 0,
+      'is_active': true,
+      'is_featured': isFeatured,
+      'archived_at': null,
+      'created_at': '2026-09-26T05:00:00Z',
+      'updated_at': '2026-09-26T05:00:00Z',
+    };
 
 Map<String, Object?> pageOf(
   List<Object?> items, {
@@ -96,7 +100,11 @@ void main() {
       );
 
       expect(parsed.unitCode, UnitCode.kg);
-      expect(parsed.priceMode, PriceMode.estimate);
+      expect(parsed.isFeatured, isFalse);
+      expect(
+        AdminCatalogDto.parseProduct(productJson(isFeatured: true)).isFeatured,
+        isTrue,
+      );
       expect(parsed.marketPriceUzs, 16000);
       expect(parsed.customerUnitPriceUzs, 18400);
       expect(parsed.imageUrl, 'https://api.test/storage/products/a.webp');
@@ -105,7 +113,8 @@ void main() {
     test('a payload that breaks the contract is refused', () {
       for (final Map<String, Object?> broken in <Map<String, Object?>>[
         <String, Object?>{...productJson(), 'unit_code': 'tonne'},
-        <String, Object?>{...productJson(), 'price_mode': 'free'},
+        <String, Object?>{...productJson(), 'is_featured': 'yes'},
+        <String, Object?>{...productJson()}..remove('is_featured'),
         <String, Object?>{...productJson(), 'market_price_uzs': '16000'},
         <String, Object?>{...productJson()}..remove('image_url'),
         <String, Object?>{...productJson(), 'archived_at': 'yesterday'},
@@ -171,9 +180,9 @@ void main() {
         descriptionUz: null,
         descriptionRu: 'Свежие',
         unitCode: UnitCode.piece,
-        priceMode: PriceMode.fixed,
         marketPriceUzs: 5000,
         sortOrder: -3,
+        isFeatured: false,
         isActive: null,
       );
 
@@ -184,9 +193,9 @@ void main() {
         'description_uz': null,
         'description_ru': 'Свежие',
         'unit_code': 'piece',
-        'price_mode': 'fixed',
         'market_price_uzs': 5000,
         'sort_order': -3,
+        'is_featured': false,
       });
       expect(
         AdminCatalogDto.categoryBody(
@@ -199,6 +208,34 @@ void main() {
             isActive: false,
           ),
         )['is_active'],
+        isFalse,
+      );
+    });
+
+    test('flipping only the switch sends exactly is_featured', () {
+      final AdminProduct product = AdminCatalogDto.parseProduct(productJson());
+      final ProductDraft unchanged = ProductDraft.fromProduct(product);
+
+      expect(
+        AdminCatalogDto.productBody(
+          ProductDraft(
+            categoryId: unchanged.categoryId,
+            nameUz: unchanged.nameUz,
+            nameRu: unchanged.nameRu,
+            descriptionUz: unchanged.descriptionUz,
+            descriptionRu: unchanged.descriptionRu,
+            unitCode: unchanged.unitCode,
+            marketPriceUzs: unchanged.marketPriceUzs,
+            sortOrder: unchanged.sortOrder,
+            isFeatured: true,
+            isActive: unchanged.isActive,
+          ),
+          base: product,
+        ),
+        <String, Object?>{'is_featured': true},
+      );
+      expect(
+        AdminCatalogDto.productBody(unchanged).containsKey('price_mode'),
         isFalse,
       );
     });
@@ -217,9 +254,9 @@ void main() {
             descriptionUz: unchanged.descriptionUz,
             descriptionRu: unchanged.descriptionRu,
             unitCode: unchanged.unitCode,
-            priceMode: unchanged.priceMode,
             marketPriceUzs: 17000,
             sortOrder: unchanged.sortOrder,
+            isFeatured: unchanged.isFeatured,
             isActive: false,
           ),
           base: product,
@@ -380,9 +417,9 @@ void main() {
           descriptionUz: productDraft.descriptionUz,
           descriptionRu: productDraft.descriptionRu,
           unitCode: productDraft.unitCode,
-          priceMode: productDraft.priceMode,
           marketPriceUzs: productDraft.marketPriceUzs,
           sortOrder: productDraft.sortOrder,
+          isFeatured: productDraft.isFeatured,
           isActive: productDraft.isActive,
         ),
       );
@@ -465,6 +502,59 @@ void main() {
       expect(form.files.single.value.filename, 'pomidor.png');
       expect(form.files.single.value.length, 10);
       expect(request.contentType, startsWith('multipart/form-data'));
+    });
+
+    test('a category picture goes as the one multipart field', () async {
+      reply = (RequestOptions options) => jsonReply(200, <String, Object?>{
+        'data': categoryJson(
+          imageUrl: 'https://api.test/storage/categories/a.webp',
+        ),
+      });
+      final PickedImage image = PickedImage(
+        bytes: Uint8List.fromList(<int>[
+          0x89,
+          0x50,
+          0x4E,
+          0x47,
+          0x0D,
+          0x0A,
+          0x1A,
+          0x0A,
+          1,
+          2,
+        ]),
+        name: 'sabzavot.png',
+      );
+
+      final AdminCategory saved = await repository.uploadCategoryImage(
+        categoryId,
+        image,
+      );
+
+      final RequestOptions request = adapter.requests.single;
+      expect(request.method, 'POST');
+      expect(request.path, '/admin/categories/$categoryId/image');
+      expect(slotOf(request), SessionSlot.staff);
+      final FormData form = request.data as FormData;
+      expect(form.fields, isEmpty);
+      expect(form.files.single.key, 'image');
+      expect(form.files.single.value.filename, 'sabzavot.png');
+      expect(saved.imageUrl, 'https://api.test/storage/categories/a.webp');
+    });
+
+    test('a category picture is removed with DELETE', () async {
+      reply = (RequestOptions options) =>
+          jsonReply(200, <String, Object?>{'data': categoryJson()});
+
+      final AdminCategory saved = await repository.removeCategoryImage(
+        categoryId,
+      );
+
+      final RequestOptions request = adapter.requests.single;
+      expect(request.method, 'DELETE');
+      expect(request.path, '/admin/categories/$categoryId/image');
+      expect(slotOf(request), SessionSlot.staff);
+      expect(saved.imageUrl, isNull);
     });
 
     test('a refusal keeps its code', () async {

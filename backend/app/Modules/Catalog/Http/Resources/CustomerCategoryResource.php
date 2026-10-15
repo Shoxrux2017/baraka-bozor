@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Catalog\Http\Resources;
 
 use App\Models\Category;
+use App\Modules\Catalog\CategoryImages;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -29,6 +30,7 @@ final class CustomerCategoryResource extends JsonResource
             'description_uz' => $this->resource->description_uz,
             'description_ru' => $this->resource->description_ru,
             'sort_order' => $this->resource->sort_order,
+            'image_url' => CategoryImages::url($this->resource->image),
         ];
     }
 }

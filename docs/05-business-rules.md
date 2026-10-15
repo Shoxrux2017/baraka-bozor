@@ -52,11 +52,13 @@
 
 **BR-CAT-003** — An archived or inactive product cannot enter a cart or an order.
 
-**BR-CAT-004** — One current image per product; JPEG, PNG or WebP judged by the bytes; at most 5 MiB (5 242 880 bytes); validated by the backend.
+**BR-CAT-004** — One current image per product and per category; JPEG, PNG or WebP judged by the bytes; at most 5 MiB (5 242 880 bytes); validated by the backend.
 
 **BR-CAT-005** — `name_uz` and `name_ru` are required on categories and products; descriptions are optional. Search matches both languages.
 
 **BR-CAT-006** — Categories are a flat list ordered by `sort_order`.
+
+**BR-CAT-007** — A Customer keeps at most 500 favourite products; a product becomes a favourite only while the Customer can see it; a favourite that stops being sold stays, shown as unavailable.
 
 # 4. Quantity
 
@@ -76,9 +78,9 @@
 
 **BR-PRICE-001 — Customer price.** `customer_unit_price = half_up(market_price × (1 + markup_percent / 100))`. The Customer only ever sees customer prices.
 
-**BR-PRICE-002 — Fixed.** The order snapshots the customer price; the billable unit price is that snapshot regardless of what the Shopper paid.
+**BR-PRICE-002 — Fixed (lines placed before `DL-78`).** The order snapshots the customer price; the billable unit price is that snapshot regardless of what the Shopper paid.
 
-**BR-PRICE-003 — Estimate.** The order snapshots the estimate customer price, the markup and the tolerance; each line keeps the markup it was priced with (`DL-37` (8)). The billable unit price is `half_up(actual_market_price × (1 + line_markup_snapshot / 100))`. The ceiling is `half_up(estimate_snapshot × (1 + tolerance_snapshot / 100))`, or a higher ceiling an approval set. A billable unit price above the ceiling requires approval before purchase.
+**BR-PRICE-003 — Estimate.** Every product is an estimate (`DL-78`). The order snapshots the estimate customer price, the markup and the tolerance; each line keeps the markup it was priced with (`DL-37` (8)). The billable unit price is `half_up(actual_market_price × (1 + line_markup_snapshot / 100))`. The ceiling is `half_up(estimate_snapshot × (1 + tolerance_snapshot / 100))`, or a higher ceiling an approval set. A billable unit price above the ceiling requires approval before purchase.
 
 **BR-PRICE-004 — Replacement.** A replacement is billed at its own customer price computed the same way, subject to the original item's ceiling or an approval.
 
@@ -282,7 +284,7 @@ Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pendin
 
 # 18. Notifications
 
-Customer: `order_accepted`, `approval_required`, `payment_required`, `courier_started`, `order_delivered`, `order_cancelled`. Shopper: `shopping_assigned`, `approval_answered`, `shopping_order_cancelled`. Courier: `delivery_assigned`, `delivery_cancelled`.
+Customer: `order_accepted`, `approval_required`, `payment_required`, `courier_started`, `order_delivered`, `order_cancelled`. Shopper: `shopping_assigned`, `approval_answered`, `shopping_order_cancelled`. Courier: `delivery_assigned`, `delivery_cancelled`. For a cash order the Customer also gets the final amount when shopping completes (`DL-78`, Wave 4).
 
 **BR-NOTIF-001** — Delivery is best-effort and never changes state.
 

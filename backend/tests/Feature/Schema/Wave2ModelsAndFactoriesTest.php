@@ -108,10 +108,10 @@ final class Wave2ModelsAndFactoriesTest extends TestCase
 
     public function test_a_line_snapshots_its_product_and_the_states_hold(): void
     {
-        $product = Product::factory()->fixed()->unit(UnitCode::Piece)->create(['market_price_uzs' => 3000]);
+        $product = Product::factory()->unit(UnitCode::Piece)->create(['market_price_uzs' => 3000]);
         $order = Order::factory()->create();
 
-        $pending = OrderItem::factory()->for($order)->for($product)->create();
+        $pending = OrderItem::factory()->fixed()->for($order)->for($product)->create();
         $this->assertSame(OrderItemStatus::Pending, $pending->status);
         $this->assertSame(PriceMode::Fixed, $pending->price_mode_snapshot);
         $this->assertSame(UnitCode::Piece, $pending->unit_code_snapshot);
@@ -119,7 +119,7 @@ final class Wave2ModelsAndFactoriesTest extends TestCase
         $this->assertSame('15.00', $pending->markup_percent_snapshot);
         $this->assertSame('0.000', $pending->billable_quantity);
 
-        $bought = OrderItem::factory()->for($order)->for($product)->purchased()->create(['ordered_quantity' => '3']);
+        $bought = OrderItem::factory()->fixed()->for($order)->for($product)->purchased()->create(['ordered_quantity' => '3']);
         $this->assertSame(OrderItemStatus::Purchased, $bought->status);
         $this->assertSame('3.000', $bought->fresh()?->billable_quantity);
         $this->assertSame(10350, $bought->line_total_uzs);

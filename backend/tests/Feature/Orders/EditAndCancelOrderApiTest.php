@@ -55,10 +55,10 @@ final class EditAndCancelOrderApiTest extends TestCase
 
         $this->customer = User::factory()->customer()->create();
         $this->tomatoes = Product::factory()->create(['market_price_uzs' => 16000]);
-        $this->bread = Product::factory()->fixed()->unit(UnitCode::Piece)->create(['market_price_uzs' => 3000]);
+        $this->bread = Product::factory()->unit(UnitCode::Piece)->create(['market_price_uzs' => 3000]);
         $this->order = Order::factory()->create(['customer_id' => $this->customer->id, 'delivery_time_note' => 'Ertalab']);
         $this->tomatoLine = OrderItem::factory()->for($this->order)->for($this->tomatoes)->create(['ordered_quantity' => '3.000']);
-        $this->breadLine = OrderItem::factory()->for($this->order)->for($this->bread)->create(['ordered_quantity' => '2.000']);
+        $this->breadLine = OrderItem::factory()->fixed()->for($this->order)->for($this->bread)->create(['ordered_quantity' => '2.000']);
     }
 
     public function test_a_line_that_stays_keeps_its_price_while_the_catalog_moved(): void

@@ -94,24 +94,26 @@ Resolves the active Customer account or creates one when none is active, then is
 
 ## 14. Customer Catalog
 
-`GET /catalog/categories?page=&per_page=`, `GET /catalog/products?category_id=&search=&page=&per_page=`, `GET /catalog/products/{product}`, all paginated lists in the envelope of Section 2. A Customer session is required (`DL-17`). A product is listed only while it and its category are active and unarchived, and otherwise its detail is the scope-safe `404`; a category is listed only while it is active, unarchived and holds at least one such product (`DL-22`). Both lists are ordered by `sort_order`, then `name_uz`, then `id`; a `category_id` the Customer cannot see gives an empty list, like one that does not exist. A category carries `id, name_uz, name_ru, description_uz, description_ru, sort_order`; a product never carries the market price.
+`GET /catalog/categories?page=&per_page=`, `GET /catalog/products?category_id=&search=&featured=&sort=&page=&per_page=`, `GET /catalog/products/{product}`, all paginated lists in the envelope of Section 2. A Customer session is required (`DL-17`). A product is listed only while it and its category are active and unarchived, and otherwise its detail is the scope-safe `404`; a category is listed only while it is active, unarchived and holds at least one such product (`DL-22`). Both lists are ordered by `sort_order`, then `name_uz`, then `id`; a `category_id` the Customer cannot see gives an empty list, like one that does not exist. A category carries `id, name_uz, name_ru, description_uz, description_ru, sort_order, image_url` (`null` without a picture); a product never carries the market price. `featured` (`1|0|true|false`; absent or `0`/`false` lists every visible product) keeps only the products the Admin marked "Рекомендуем"; `sort` is `default` (the order above), `price_asc` or `price_desc` (by price, ties in the default order, so pages never repeat or skip a product); any other value of either is `422 validation_failed`. Both compose with `category_id` and `search` (`DL-79`).
 
 Product:
 
 ```json
 {"id":"...","category_id":"...","name_uz":"Pomidor","name_ru":"Помидор","description_uz":null,"description_ru":null,
- "unit_code":"kg","price_mode":"estimate","customer_unit_price_uzs":18400,"image_url":"https://.../storage/products/<uuid>.webp","is_active":true}
+ "unit_code":"kg","price_mode":"estimate","customer_unit_price_uzs":18400,"image_url":"https://.../storage/products/<uuid>.webp","is_active":true,"is_favorite":false}
 ```
+
+`is_favorite` is true when the session's Customer has the product among their favourites (Section 58).
 
 Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, reading `ё` as `е` and every form of the Uzbek apostrophe (ʻ ‘ ’ `) as `'` (`DL-20`).
 
 ## 15. Admin Catalog
 
-`GET|POST /admin/categories`, `GET|PATCH /admin/categories/{category}`, `POST .../archive`, `POST .../restore`; the same for `/admin/products`. Lists are paginated, ordered by `sort_order` then `name_uz`, and take `include_archived`; the product list also takes `category_id` and `search`. Product write body: `category_id, name_uz, name_ru, description_uz?, description_ru?, unit_code, price_mode, market_price_uzs, sort_order?, is_active?` (`sort_order` defaults to 0, `is_active` to true); an update takes any non-empty subset. Archive sets `archived_at` and `is_active = false`; restore clears `archived_at` and sets `is_active = true`; both are natural repeats; `is_active` alone hides an entry without archiving it, and `is_active: true` on an archived entry answers `409 business_conflict`. A product is created in, or moved to, an existing unarchived category only (`422 validation_failed` on `category_id`); an edit that re-sends the product's current category is not a move; archiving a category leaves its products as they are. Admin responses also carry `market_price_uzs`, the computed `customer_unit_price_uzs`, `image_url` (`null` without an image) and `archived_at`.
+`GET|POST /admin/categories`, `GET|PATCH /admin/categories/{category}`, `POST .../archive`, `POST .../restore`; the same for `/admin/products`. Lists are paginated, ordered by `sort_order` then `name_uz`, and take `include_archived`; the product list also takes `category_id` and `search`. Product write body: `category_id, name_uz, name_ru, description_uz?, description_ru?, unit_code, market_price_uzs, sort_order?, is_active?, is_featured?` (`is_featured` is a strict boolean, default false, the "Рекомендуем" mark; no `price_mode`: every product is an estimate, `DL-78`, and sending it is `422 validation_failed`; `sort_order` defaults to 0, `is_active` to true); an update takes any non-empty subset. Archive sets `archived_at` and `is_active = false`; restore clears `archived_at` and sets `is_active = true`; both are natural repeats; `is_active` alone hides an entry without archiving it, and `is_active: true` on an archived entry answers `409 business_conflict`. A product is created in, or moved to, an existing unarchived category only (`422 validation_failed` on `category_id`); an edit that re-sends the product's current category is not a move; archiving a category leaves its products as they are. Admin responses also carry `is_featured`, `market_price_uzs`, the computed `customer_unit_price_uzs`, `image_url` (`null` without an image) and `archived_at`; Admin category responses carry `image_url` too.
 
-## 16. Product Image
+## 16. Product and Category Images
 
-`POST /admin/products/{product}/image` (multipart field `image`; JPEG, PNG or WebP judged by the bytes, not the file name; at most 5 MiB) replaces the current image under a fresh key, so `image_url` changes; two uploads for one product at once are serialized, and one that still collides answers `409 business_conflict`; `DELETE` removes it and is a natural repeat. A file field other than `image` is refused like an unknown field. Both answer the Admin product with `image_url` (`null` without an image). An archived product accepts an image.
+`POST /admin/products/{product}/image` (multipart field `image`; JPEG, PNG or WebP judged by the bytes, not the file name; at most 5 MiB) replaces the current image under a fresh key, so `image_url` changes; two uploads for one product at once are serialized, and one that still collides answers `409 business_conflict`; `DELETE` removes it and is a natural repeat. A file field other than `image` is refused like an unknown field. Both answer the Admin product with `image_url` (`null` without an image). An archived product accepts an image. `POST|DELETE /admin/categories/{category}/image` work the same way for a category's picture and answer the Admin category.
 
 # Cart and Checkout
 
@@ -333,7 +335,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 53. Catalog, Cart, Checkout, Editing
 
-`product_unavailable`, `product_archived`, `cart_item_already_exists`, `cart_full`, `cart_empty`, `customer_profile_incomplete`, `address_incomplete`, `address_outside_service_area`, `minimum_order_not_reached`, `checkout_snapshot_stale`, `checkout_configuration_incomplete`, `payment_method_unavailable`, `order_editing_locked`.
+`product_unavailable`, `product_archived`, `cart_item_already_exists`, `cart_full`, `favorites_full`, `cart_empty`, `customer_profile_incomplete`, `address_incomplete`, `address_outside_service_area`, `minimum_order_not_reached`, `checkout_snapshot_stale`, `checkout_configuration_incomplete`, `payment_method_unavailable`, `order_editing_locked`.
 
 ## 54. Order, Shopping, Approval
 
@@ -350,3 +352,17 @@ The backend decides from locked state; a stale client receives a `409` with a st
 ## 57. Provider Safety
 
 Never expose raw provider errors, signatures, secrets, SQL, traces or card data. Normalize to the codes above; filter secrets from logs.
+
+# Favourites
+
+## 58. Customer Favourites
+
+A Customer session only (`DL-79` (5), `BR-CAT-007`).
+
+`GET /customer/favorites?page=&per_page=` lists the Customer's own favourites, newest first (ties by `id`), paginated as in Section 2. Each entry is a Customer product object (Section 14) with `"is_favorite": true` and `"is_available": bool`, which is `false` when the product or its category is inactive or archived; the market price is never shown.
+
+`PUT /customer/favorites/{product}` (no body) adds a favourite and answers `204`; repeating it answers `204` and changes nothing. A product the Customer cannot see (inactive, archived, in an inactive or archived category, unknown, or not a UUID) is the scope-safe `404 resource_not_found`. The 501st favourite is `409 favorites_full` with `details.limit = 500`; a product already a favourite is still `204`.
+
+`DELETE /customer/favorites/{product}` (no body) removes the Customer's own favourite and answers `204` for any well-formed product id, whatever the product, so it tells nothing about it.
+
+Both routes refuse any body field with `422 validation_failed`. Another Customer's favourites are never listed or touched.

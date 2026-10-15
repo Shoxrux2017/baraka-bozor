@@ -168,10 +168,11 @@ final class AdminCategoriesApiTest extends TestCase
         $data = $this->asAdmin()->getJson(self::URL.'/'.$category->id)->assertOk()->json('data');
 
         $this->assertSame(
-            ['id', 'name_uz', 'name_ru', 'description_uz', 'description_ru', 'sort_order', 'is_active', 'archived_at', 'created_at', 'updated_at'],
+            ['id', 'name_uz', 'name_ru', 'description_uz', 'description_ru', 'sort_order', 'image_url', 'is_active', 'archived_at', 'created_at', 'updated_at'],
             array_keys($data)
         );
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $data['created_at']);
+        $this->assertNull($data['image_url']);
     }
 
     public function test_the_bounds_themselves_are_accepted(): void

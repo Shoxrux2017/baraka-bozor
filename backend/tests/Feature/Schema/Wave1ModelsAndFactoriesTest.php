@@ -51,10 +51,10 @@ final class Wave1ModelsAndFactoriesTest extends TestCase
         $this->assertFalse($archivedCategory->is_active);
         $this->assertNotNull($archivedCategory->archived_at);
 
-        $fixedBox = Product::factory()->fixed()->unit(UnitCode::Box)->archived()->create();
-        $this->assertSame(PriceMode::Fixed, $fixedBox->price_mode);
-        $this->assertSame(UnitCode::Box, $fixedBox->unit_code);
-        $this->assertFalse($fixedBox->is_active);
+        $estimateBox = Product::factory()->unit(UnitCode::Box)->archived()->create();
+        $this->assertSame(PriceMode::Estimate, $estimateBox->price_mode);
+        $this->assertSame(UnitCode::Box, $estimateBox->unit_code);
+        $this->assertFalse($estimateBox->is_active);
 
         $image = ProductImage::factory()->create();
         $this->assertSame($image->id, $image->product->image?->id);

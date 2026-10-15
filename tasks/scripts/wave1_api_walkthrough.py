@@ -174,15 +174,15 @@ check("Admin creates a category", status == 201, f"{status}")
 category = answer["data"]["id"]
 status, answer = call("POST", "/admin/products", admin, {
     "category_id": category, "name_uz": f"Pomidor {stamp}", "name_ru": f"Помидор {stamp}",
-    "unit_code": "kg", "price_mode": "estimate", "market_price_uzs": 16000, "sort_order": 0})
+    "unit_code": "kg", "market_price_uzs": 16000, "sort_order": 0})
 check("Admin creates an estimate product", status == 201 and answer["data"]["customer_unit_price_uzs"] == 18400,
       f"{status} customer price {answer and answer.get('data', {}).get('customer_unit_price_uzs')}")
 product = answer["data"]["id"]
 status, answer = call("POST", "/admin/products", admin, {
     "category_id": category, "name_uz": f"Olma {stamp}", "name_ru": f"Яблоко {stamp}",
-    "unit_code": "piece", "price_mode": "fixed", "market_price_uzs": 3000, "sort_order": 1})
-check("Admin creates a fixed product", status == 201 and answer["data"]["customer_unit_price_uzs"] == 3450, f"{status}")
-fixed = answer["data"]["id"]
+    "unit_code": "piece", "market_price_uzs": 3000, "sort_order": 1})
+check("Admin creates a second product", status == 201 and answer["data"]["customer_unit_price_uzs"] == 3450, f"{status}")
+second = answer["data"]["id"]
 
 raw, content_type = multipart("image", "pomidor.png", png(), "image/png")
 status, answer = call("POST", f"/admin/products/{product}/image", admin, raw=raw, content_type=content_type)
@@ -198,11 +198,11 @@ raw, content_type = multipart("image", "fake.png", b"GIF89a....", "image/png")
 status, answer = call("POST", f"/admin/products/{product}/image", admin, raw=raw, content_type=content_type)
 check("A file that is not an image is refused", status == 422, f"{status}")
 
-status, _ = call("POST", f"/admin/products/{fixed}/archive", admin, {"reason": "x"})
+status, _ = call("POST", f"/admin/products/{second}/archive", admin, {"reason": "x"})
 check("A bodyless action refuses a body (DL-31)", status == 422, f"{status}")
-status, answer = call("POST", f"/admin/products/{fixed}/archive", admin)
+status, answer = call("POST", f"/admin/products/{second}/archive", admin)
 check("Admin archives a product", status == 200 and answer["data"]["archived_at"], f"{status}")
-status, answer = call("POST", f"/admin/products/{fixed}/restore", admin)
+status, answer = call("POST", f"/admin/products/{second}/restore", admin)
 check("Admin restores it", status == 200 and answer["data"]["archived_at"] is None, f"{status}")
 
 shopper_phone = SHOPPER_POOL_PHONE

@@ -440,6 +440,16 @@ class AppLocalizationsUz extends AppLocalizations {
   String get categoryEditTitle => 'Kategoriyani tahrirlash';
 
   @override
+  String get categoryImage => 'Rasm';
+
+  @override
+  String get categoryImageAfterSave =>
+      'Rasmni saqlagandan keyin qo\'shish mumkin';
+
+  @override
+  String get categoryRemoveImageConfirm => 'Kategoriya rasmi o\'chirilsinmi?';
+
+  @override
   String get categorySaved => 'Kategoriya saqlandi';
 
   @override
@@ -461,7 +471,14 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productUnit => 'O\'lchov birligi';
 
   @override
-  String get productPriceMode => 'Narx turi';
+  String get productFeatured => 'Tavsiya etamiz bo\'limida ko\'rsatish';
+
+  @override
+  String get productFeaturedHint =>
+      'Mahsulot bosh sahifadagi «Tavsiya etamiz» qatorida chiqadi';
+
+  @override
+  String get productFeaturedBadge => 'Tavsiya';
 
   @override
   String get productMarketPrice => 'Bozor narxi';

@@ -48,6 +48,7 @@ final class AdminProductResource extends JsonResource
             'image_url' => ProductImages::url($product->image),
             'sort_order' => $product->sort_order,
             'is_active' => $product->is_active,
+            'is_featured' => $product->is_featured,
             'archived_at' => $product->archived_at?->toIso8601ZuluString(),
             'created_at' => $product->created_at->toIso8601ZuluString(),
             'updated_at' => $product->updated_at->toIso8601ZuluString(),

@@ -46,14 +46,14 @@ final class ProductFactory extends Factory
         ];
     }
 
-    public function fixed(): self
-    {
-        return $this->state(fn (): array => ['price_mode' => PriceMode::Fixed]);
-    }
-
     public function unit(UnitCode $unit): self
     {
         return $this->state(fn (): array => ['unit_code' => $unit]);
+    }
+
+    public function featured(): self
+    {
+        return $this->state(fn (): array => ['is_featured' => true]);
     }
 
     public function archived(): self

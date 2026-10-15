@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
@@ -39,6 +40,7 @@ use Illuminate\Support\Carbon;
  * @property PriceMode $price_mode
  * @property int $market_price_uzs
  * @property bool $is_active
+ * @property bool $is_featured
  * @property int $sort_order
  * @property Carbon|null $archived_at
  * @property string $created_by_user_id
@@ -62,9 +64,9 @@ class Product extends Model
         'description_uz',
         'description_ru',
         'unit_code',
-        'price_mode',
         'market_price_uzs',
         'sort_order',
+        'is_featured',
     ];
 
     /**
@@ -77,6 +79,7 @@ class Product extends Model
             'price_mode' => PriceMode::class,
             'market_price_uzs' => 'integer',
             'is_active' => 'boolean',
+            'is_featured' => 'boolean',
             'sort_order' => 'integer',
             'archived_at' => 'datetime',
         ];
@@ -96,5 +99,13 @@ class Product extends Model
     public function image(): HasOne
     {
         return $this->hasOne(ProductImage::class);
+    }
+
+    /**
+     * @return HasMany<CustomerFavorite, $this>
+     */
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(CustomerFavorite::class);
     }
 }

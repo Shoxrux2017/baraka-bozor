@@ -902,6 +902,24 @@ abstract class AppLocalizations {
   /// **'Kategoriyani tahrirlash'**
   String get categoryEditTitle;
 
+  /// No description provided for @categoryImage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasm'**
+  String get categoryImage;
+
+  /// No description provided for @categoryImageAfterSave.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasmni saqlagandan keyin qo\'shish mumkin'**
+  String get categoryImageAfterSave;
+
+  /// No description provided for @categoryRemoveImageConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kategoriya rasmi o\'chirilsinmi?'**
+  String get categoryRemoveImageConfirm;
+
   /// No description provided for @categorySaved.
   ///
   /// In uz, this message translates to:
@@ -944,11 +962,23 @@ abstract class AppLocalizations {
   /// **'O\'lchov birligi'**
   String get productUnit;
 
-  /// No description provided for @productPriceMode.
+  /// No description provided for @productFeatured.
   ///
   /// In uz, this message translates to:
-  /// **'Narx turi'**
-  String get productPriceMode;
+  /// **'Tavsiya etamiz bo\'limida ko\'rsatish'**
+  String get productFeatured;
+
+  /// No description provided for @productFeaturedHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot bosh sahifadagi «Tavsiya etamiz» qatorida chiqadi'**
+  String get productFeaturedHint;
+
+  /// No description provided for @productFeaturedBadge.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tavsiya'**
+  String get productFeaturedBadge;
 
   /// No description provided for @productMarketPrice.
   ///

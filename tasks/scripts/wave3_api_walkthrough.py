@@ -22,7 +22,7 @@ stack has no scheduler yet; the order's history proves it wrote the expiry.
 The Admin completes the settings and a catalog and creates two Couriers, who
 pass their first-login gate. The Customer places three cash orders; the
 Operator assigns the Shopper to all three. On the first order the Shopper
-buys a fixed line and an estimate within the tolerance, asks about a price
+buys a piece line and an estimate within the tolerance, asks about a price
 above it, replaces a line automatically and another with the Customer's
 approval, and marks one line unavailable; the Customer approves one question
 and rejects the other; the Admin corrects a price; the shopping completes
@@ -247,22 +247,22 @@ def walk():
     check("Admin creates a category", status == 201, f"{status}")
 
     products = {}
-    for key, name_uz, name_ru, unit, mode, market in [
-        ("apple", "Olma", "Яблоко", "piece", "fixed", 3000),
-        ("bread", "Non", "Хлеб", "piece", "fixed", 4000),
-        ("tomato", "Pomidor", "Помидор", "kg", "estimate", 16000),
-        ("cucumber", "Bodring", "Огурец", "kg", "estimate", 10000),
-        ("potato", "Kartoshka", "Картофель", "kg", "estimate", 8000),
-        ("new_potato", "Yangi kartoshka", "Молодой картофель", "kg", "estimate", 8500),
-        ("onion", "Piyoz", "Лук", "kg", "estimate", 6000),
-        ("red_onion", "Qizil piyoz", "Красный лук", "kg", "estimate", 6500),
-        ("carrot", "Sabzi", "Морковь", "kg", "estimate", 5000),
+    for key, name_uz, name_ru, unit, market in [
+        ("apple", "Olma", "Яблоко", "piece", 3000),
+        ("bread", "Non", "Хлеб", "piece", 4000),
+        ("tomato", "Pomidor", "Помидор", "kg", 16000),
+        ("cucumber", "Bodring", "Огурец", "kg", 10000),
+        ("potato", "Kartoshka", "Картофель", "kg", 8000),
+        ("new_potato", "Yangi kartoshka", "Молодой картофель", "kg", 8500),
+        ("onion", "Piyoz", "Лук", "kg", 6000),
+        ("red_onion", "Qizil piyoz", "Красный лук", "kg", 6500),
+        ("carrot", "Sabzi", "Морковь", "kg", 5000),
     ]:
         status, answer = call("POST", "/admin/products", admin, {
             "category_id": category, "name_uz": f"{name_uz} {stamp}", "name_ru": f"{name_ru} {stamp}",
-            "unit_code": unit, "price_mode": mode, "market_price_uzs": market, "sort_order": 0})
+            "unit_code": unit, "market_price_uzs": market, "sort_order": 0})
         products[key] = answer["data"]["id"] if status == 201 else None
-    check("Admin creates nine products, fixed and estimate", all(products.values()), "")
+    check("Admin creates nine products", all(products.values()), "")
 
     couriers = {}
     for label, phone in COURIER_POOL.items():
@@ -341,8 +341,8 @@ def walk():
     check("Started, it shows the Customer's phone while shopping",
           status == 200 and answer["data"]["status"] == "shopping" and answer["data"]["customer_phone"] == CUSTOMER_PHONE,
           f"{status}")
-    call("POST", line_path(third, third_lines, "apple") + "/purchase", shopper, {"purchased_quantity": "15"},
-         str(uuid.uuid4()))
+    call("POST", line_path(third, third_lines, "apple") + "/purchase", shopper,
+         {"purchased_quantity": "15", "actual_market_price_uzs": 3000}, str(uuid.uuid4()))
     status, answer = call("POST", line_path(third, third_lines, "carrot") + "/reduced-quantity-approval", shopper,
                           {"proposed_quantity": "2.000", "note": "Faqat 2 kg qoldi"})
     carrot = next((i for i in answer["data"]["items"] if i["product_id"] == products["carrot"]), {}) if status == 200 else {}
@@ -358,8 +358,8 @@ def walk():
           status == 200 and call("GET", f"/customer/orders/{first['id']}", customer)[1]["data"]["can_edit"] is False,
           f"{status}")
     status, answer = call("POST", line_path(first, lines, "apple") + "/purchase", shopper,
-                          {"purchased_quantity": "2"}, str(uuid.uuid4()))
-    check("The Shopper buys the fixed line as itself", status == 200, f"{status}")
+                          {"purchased_quantity": "2", "actual_market_price_uzs": 3000}, str(uuid.uuid4()))
+    check("The Shopper buys the piece line at its market price", status == 200, f"{status}")
     key = str(uuid.uuid4())
     status, answer = call("POST", line_path(first, lines, "tomato") + "/purchase", shopper,
                           {"purchased_quantity": "2.000", "actual_market_price_uzs": 17000}, key)

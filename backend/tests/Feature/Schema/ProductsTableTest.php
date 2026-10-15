@@ -43,6 +43,7 @@ final class ProductsTableTest extends TestCase
             'market_price_uzs' => ['bigint', false],
             'is_active' => ['boolean', false],
             'sort_order' => ['integer', false],
+            'is_featured' => ['boolean', false],
             'archived_at' => ['timestamp with time zone', true],
             'created_by_user_id' => ['uuid', false],
             'created_at' => ['timestamp with time zone', false],
@@ -109,6 +110,15 @@ final class ProductsTableTest extends TestCase
         $this->assertStringContainsString('lower((name_ru)::text)', $indexes['products_name_ru_lower_index']);
     }
 
+    public function test_a_product_is_not_recommended_by_default_and_the_flag_has_a_partial_index(): void
+    {
+        $row = $this->row();
+        DB::table(self::TABLE)->insert($row);
+
+        $this->assertFalse((bool) DB::table(self::TABLE)->where('id', $row['id'])->value('is_featured'));
+        $this->assertStringContainsString('WHERE is_featured', $this->indexesOn(self::TABLE)['products_featured_idx']);
+    }
+
     public function test_a_valid_product_is_accepted(): void
     {
         DB::table(self::TABLE)->insert($this->row());
@@ -126,14 +136,18 @@ final class ProductsTableTest extends TestCase
         );
     }
 
-    public function test_a_price_mode_outside_fixed_and_estimate_is_rejected(): void
+    public function test_a_price_mode_other_than_estimate_is_rejected(): void
     {
-        $this->assertRejectedBy(
-            self::TABLE,
-            'products_price_mode_check',
-            $this->row(['price_mode' => 'range']),
-            'DL-2 2.2 removed the range and at_purchase modes.'
-        );
+        foreach (['fixed', 'range'] as $mode) {
+            $this->assertRejectedBy(
+                self::TABLE,
+                'products_price_mode_check',
+                $this->row(['price_mode' => $mode]),
+                'DL-78: every product is an estimate.'
+            );
+        }
+
+        $this->assertTrue(DB::table(self::TABLE)->insert($this->row(['price_mode' => 'estimate'])));
     }
 
     public function test_a_market_price_that_is_not_positive_is_rejected(): void

@@ -92,7 +92,7 @@ final class ShopperOrdersApiTest extends TestCase
     {
         $order = $this->shopping();
         $estimate = OrderItem::factory()->for($order)->create(['customer_note_snapshot' => 'Спелые']);
-        $fixed = OrderItem::factory()->for($order)->for(Product::factory()->fixed()->unit(UnitCode::Piece)->state(['market_price_uzs' => 3000]))
+        $fixed = OrderItem::factory()->fixed()->for($order)->for(Product::factory()->unit(UnitCode::Piece)->state(['market_price_uzs' => 3000]))
             ->create(['ordered_quantity' => '3']);
         $replacement = Product::factory()->unit(UnitCode::Piece)->create(['market_price_uzs' => 2800]);
         $fixed->forceFill([
