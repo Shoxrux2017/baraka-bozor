@@ -18,15 +18,23 @@ double kitCardExtent(
   required KitCardSize size,
   required double imageHeight,
 }) {
-  final bool compact = size == KitCardSize.compact;
-  final double controls = compact ? 32 : 38;
   final KitCardType type = KitCardType.of(size);
   final double name =
-      2 * scaler.scale(type.nameSize) * (type.nameHeight / type.nameSize);
-  final double price = scaler.scale(type.priceSize) * 1.4;
-  final double unit = scaler.scale(type.unitSize) * 1.4;
-  // Padding 16, gaps 8 + 4 + 8, and a little slack for the line heights.
-  return 16 + imageHeight + 8 + name + 4 + price + unit + 8 + controls + 6;
+      2 *
+      (scaler.scale(type.nameSize) * (type.nameHeight / type.nameSize))
+          .ceilToDouble();
+  // A laid-out line is as high as its rounded-up fractional height.
+  final double price =
+      (scaler.scale(type.priceSize) * KitCardType.priceLineHeight)
+          .ceilToDouble();
+  return 2 * KitCardType.padding +
+      imageHeight +
+      KitCardType.gapAfterPicture +
+      name +
+      KitCardType.gapAfterName +
+      price +
+      KitCardType.gapAfterPrice +
+      KitCardType.bottomRowHeight;
 }
 
 /// A product list as a grid of kit cards, loaded a page at a time: the next

@@ -36,3 +36,4 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 ## Review findings not acted on
 
 - Stage 2b, re-review of the final fix wave, P3: `FavoriteOverrides.toggle` (`frontend/lib/features/favorites/application/favorites_controllers.dart`) is now called only by `favorites_controllers_test.dart`; the card uses `change()`. Not removed in 2b because the review loop allows one fix wave; stage 3 deletes `toggle` and moves its tests to `change()` (AGENTS.md §8).
+- Card layout follow-up (`DL-81`), review P3: the card's "+" nests a `GestureDetector` around an `IconButton` inside `_Absorb`, so TalkBack may stop on an extra unlabeled node beside "Добавить"; the picture's top-right corner can overlap the heart's tap area by 4–10 px; `ceilToDouble()` in `kitCardExtent` may add 1 px of slack on rare float products. Not fixed in this follow-up (no functional effect, tests green); stage 3 excludes the outer semantics and nudges the picture.

@@ -7,6 +7,7 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
+import 'package:baraka_bozor/core/widgets/product_image.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
@@ -134,7 +135,69 @@ void main() {
     );
     expect(find.text('за кг'), findsOneWidget);
     expect(byKey('add-0192f0a0-0000-7000-8000-0000000000a1'), findsOneWidget);
-    expect(find.text('Добавить'), findsOneWidget);
+    expect(find.byTooltip('Добавить'), findsOneWidget);
+    expect(find.text('Добавить'), findsNothing);
+  });
+
+  testWidgets('the unit and the plus are on one row', (
+    WidgetTester tester,
+  ) async {
+    for (final KitCardSize size in KitCardSize.values) {
+      await show(tester, tomato, size: size);
+      final double unit = tester.getCenter(find.text('за кг')).dy;
+      final double plus = tester
+          .getCenter(byKey('add-0192f0a0-0000-7000-8000-0000000000a1'))
+          .dy;
+      expect((unit - plus).abs(), lessThanOrEqualTo(2), reason: '$size');
+      expect(
+        tester.getCenter(find.text('за кг')).dx,
+        lessThan(
+          tester
+              .getCenter(byKey('add-0192f0a0-0000-7000-8000-0000000000a1'))
+              .dx,
+        ),
+        reason: 'the unit is at the left',
+      );
+    }
+  });
+
+  testWidgets('in the cart the row is the stepper and shows no separate unit', (
+    WidgetTester tester,
+  ) async {
+    cart = FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[
+        lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
+      ]),
+    );
+    await show(tester, tomato);
+    expect(
+      byKey('step-qty-0192f0a0-0000-7000-8000-0000000000a1'),
+      findsOneWidget,
+    );
+    expect(find.text('за кг'), findsNothing);
+  });
+
+  testWidgets('the picture is smaller than its well and the tap area of the '
+      'plus is at least 40 square', (WidgetTester tester) async {
+    for (final KitCardSize size in KitCardSize.values) {
+      await show(tester, tomato, size: size);
+      final Size picture = tester.getSize(find.byType(ProductImage));
+      final double well = size == KitCardSize.compact ? 84 : 112;
+      expect(picture.height, lessThanOrEqualTo(0.75 * well), reason: '$size');
+      expect(picture.height, greaterThan(0));
+    }
+  });
+
+  testWidgets('a tap just outside the plus still adds, and opens nothing', (
+    WidgetTester tester,
+  ) async {
+    await show(tester, tomato, size: KitCardSize.compact);
+    final Finder plus = byKey('add-0192f0a0-0000-7000-8000-0000000000a1');
+    expect(tester.getSize(plus).width, 32);
+    await tester.tapAt(tester.getCenter(plus) + const Offset(-18, 0));
+    await tester.pumpAndSettle();
+    expect(cart.added, hasLength(1));
+    expect(opened, isNull);
   });
 
   testWidgets('shows the Uzbek name and unit line in Uzbek', (
@@ -143,7 +206,7 @@ void main() {
     await show(tester, tomato, locale: const Locale('uz'));
     expect(find.text('Pomidor'), findsOneWidget);
     expect(find.text('kg uchun'), findsOneWidget);
-    expect(find.text("Qo'shish"), findsOneWidget);
+    expect(find.byTooltip("Qo'shish"), findsOneWidget);
   });
 
   testWidgets('one tap adds one unit, allowing similar, with no note', (
@@ -493,10 +556,13 @@ void main() {
 
     for (final KitCardSize size in KitCardSize.values) {
       for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
-        for (final bool inCart in <bool>[false, true]) {
-          testWidgets('$size ${locale.languageCode} inCart=$inCart', (
-            WidgetTester tester,
-          ) async {
+        for (final (bool inCart, bool available) in <(bool, bool)>[
+          (false, true),
+          (true, true),
+          (false, false),
+        ]) {
+          testWidgets('$size ${locale.languageCode} inCart=$inCart '
+              'available=$available', (WidgetTester tester) async {
             tester.view.physicalSize = const Size(320, 640);
             tester.view.devicePixelRatio = 1;
             addTearDown(tester.view.reset);
@@ -520,6 +586,7 @@ void main() {
               longName,
               locale: locale,
               size: size,
+              available: available,
               width: size == KitCardSize.compact ? 119 : 150,
             );
             expect(tester.takeException(), isNull);

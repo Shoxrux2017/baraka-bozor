@@ -1234,3 +1234,7 @@ Answers to the questions of kit stage 2 (`kit/02-glavnaya.dc.html`, approved the
 12. **The lone tab.** A tab that is the only route (opened as the first screen) goes home on back; a press on another tab from it goes home first and then pushes that tab, so back still returns home.
 13. **One heart change at a time per card**; a second tap while one is on its way is ignored. A `409 favorites_full` answer says the list is full (500), not the generic retry text. A favourite that is no longer sold shows its picture faded and its name and price in the muted colour (`DL-78` item 5).
 14. **Heights follow each font.** A card's height sums every text's own scaled size, because Android 14 and later scale small fonts more than large ones; the cart bar's reserved space is its real scaled height plus the bottom inset; a removal in a card uses the line's own controller, so two cards can remove at once.
+
+## DL-81 — The product card, compact layout (2026-10-15, Owner)
+
+The Owner chose a more compact card after comparing it with the kit's: the picture with air around it; the name; the approximate price; at the bottom the unit and a round green "+" at the right, which becomes the quantity stepper once the product is in the cart. This supersedes the full-width "Добавить" of `DL-80` item 1.
