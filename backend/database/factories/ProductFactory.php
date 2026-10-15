@@ -46,11 +46,6 @@ final class ProductFactory extends Factory
         ];
     }
 
-    public function fixed(): self
-    {
-        return $this->state(fn (): array => ['price_mode' => PriceMode::Fixed]);
-    }
-
     public function unit(UnitCode $unit): self
     {
         return $this->state(fn (): array => ['unit_code' => $unit]);

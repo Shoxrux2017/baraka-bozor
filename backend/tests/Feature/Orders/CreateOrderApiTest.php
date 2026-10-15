@@ -74,7 +74,7 @@ final class CreateOrderApiTest extends TestCase
             'delivery_note' => 'Domofon 45',
         ]);
         $this->tomatoes = Product::factory()->create(['market_price_uzs' => 16000]);
-        $this->bread = Product::factory()->fixed()->unit(UnitCode::Piece)->create(['market_price_uzs' => 3000]);
+        $this->bread = Product::factory()->unit(UnitCode::Piece)->create(['market_price_uzs' => 3000]);
         $this->line($this->tomatoes, '3.000', 'Qizil bo\'lsin');
         $this->line($this->bread, '2.000');
     }

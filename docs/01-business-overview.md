@@ -80,9 +80,9 @@ The company earns a **markup on goods** plus a **service fee** plus a **delivery
 
 - Admin enters each product's **market price**, the price the company expects to pay at the market.
 - The **customer price** is the market price plus the markup percentage from business settings, rounded half-up to 1 UZS. That is the only price the Customer sees.
-- Each product has one of two **price modes**:
-  - **`fixed`** — the customer price is guaranteed. The Customer pays the price snapshotted at order time whatever the Shopper actually paid.
-  - **`estimate`** — the customer price is an estimate. The Customer pays the customer price computed from the price the Shopper actually paid (actual market price plus the markup snapshot). If that exceeds the estimate by more than the **tolerance percentage** from business settings, the Shopper needs the Customer's approval before buying at that price.
+- Every product is an **estimate** since `DL-78`; the Admin no longer chooses a price mode. The value `fixed` survives only on order lines placed before `DL-78`:
+  - **`fixed`** (lines placed before `DL-78`) — the customer price is guaranteed. The Customer pays the price snapshotted at order time whatever the Shopper actually paid.
+  - **`estimate`** (every product, every new line) — the customer price is an estimate. The Customer pays the customer price computed from the price the Shopper actually paid (actual market price plus the markup snapshot). If that exceeds the estimate by more than the **tolerance percentage** from business settings, the Shopper needs the Customer's approval before buying at that price.
 - The **service fee** is fixed or a percentage of the merchandise subtotal; the **delivery fee** is one fixed tariff. Both are business settings.
 - Every price, markup, fee and tolerance is snapshotted into the order at creation. Later changes to the catalog or settings never rewrite an existing order; an edit before shopping prices only the lines the Customer adds.
 

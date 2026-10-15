@@ -126,14 +126,18 @@ final class ProductsTableTest extends TestCase
         );
     }
 
-    public function test_a_price_mode_outside_fixed_and_estimate_is_rejected(): void
+    public function test_a_price_mode_other_than_estimate_is_rejected(): void
     {
-        $this->assertRejectedBy(
-            self::TABLE,
-            'products_price_mode_check',
-            $this->row(['price_mode' => 'range']),
-            'DL-2 2.2 removed the range and at_purchase modes.'
-        );
+        foreach (['fixed', 'range'] as $mode) {
+            $this->assertRejectedBy(
+                self::TABLE,
+                'products_price_mode_check',
+                $this->row(['price_mode' => $mode]),
+                'DL-78: every product is an estimate.'
+            );
+        }
+
+        $this->assertTrue(DB::table(self::TABLE)->insert($this->row(['price_mode' => 'estimate'])));
     }
 
     public function test_a_market_price_that_is_not_positive_is_rejected(): void

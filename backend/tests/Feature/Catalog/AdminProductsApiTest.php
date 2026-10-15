@@ -36,7 +36,6 @@ final class AdminProductsApiTest extends TestCase
             'name_uz' => 'Pomidor',
             'name_ru' => 'Помидор',
             'unit_code' => 'kg',
-            'price_mode' => 'estimate',
             'market_price_uzs' => 16_000,
         ], $overrides);
     }
@@ -56,6 +55,26 @@ final class AdminProductsApiTest extends TestCase
             ->assertJsonPath('data.sort_order', 0);
 
         $this->assertSame($admin->id, Product::query()->findOrFail($response->json('data.id'))->created_by_user_id);
+    }
+
+    public function test_the_price_mode_is_not_a_field_of_the_write_body_and_every_product_is_an_estimate(): void
+    {
+        foreach (['fixed', 'estimate'] as $mode) {
+            $this->asAdmin()->postJson(self::URL, $this->body(['price_mode' => $mode]))
+                ->assertStatus(422)
+                ->assertJsonPath('code', 'validation_failed')
+                ->assertJsonValidationErrorFor('price_mode', 'errors');
+        }
+
+        $product = Product::factory()->create();
+        $this->asAdmin()->patchJson(self::URL.'/'.$product->id, ['price_mode' => 'estimate'])
+            ->assertStatus(422)
+            ->assertJsonPath('code', 'validation_failed')
+            ->assertJsonValidationErrorFor('price_mode', 'errors');
+
+        $this->asAdmin()->postJson(self::URL, $this->body())
+            ->assertCreated()
+            ->assertJsonPath('data.price_mode', 'estimate');
     }
 
     public function test_the_customer_price_follows_the_current_markup_without_touching_the_product(): void
@@ -82,7 +101,6 @@ final class AdminProductsApiTest extends TestCase
             ['name_uz', ''],
             ['name_ru', str_repeat('я', 161)],
             ['unit_code', 'ton'],
-            ['price_mode', 'range'],
             ['market_price_uzs', 0],
             ['market_price_uzs', '16000'],
             ['market_price_uzs', 16000.5],

@@ -1189,3 +1189,19 @@ The five tables follow `docs/08` sections 17 to 21 with `DL-54` (2)'s additions.
 10. **Light only until the kit's dark screens are drawn.** The kit and this decision cover light screens only, so `BarakaBozorApp` pins `ThemeMode.light`; `buildAppTheme(Brightness.dark)` stays in the code, unused, until a dark kit exists. Without the pin a phone in dark mode drew the kit's `#F9F9F9` fields under dark-theme text and icons (about 1.2:1).
 11. **An Operator, Admin or Manager on a phone is a Customer there.** This is deliberate: everyone signs in on the phone by code, and only a Shopper or Courier is offered the staff password. The staff account of the other three roles works only in the web panel; the "works in the panel/app" screen remains for stored sessions and for a Shopper or Courier who opens the web panel (`docs/02` sections 2 and 10).
 12. **The name screen is not a dead end.** It carries "Выйти" (ends the Customer session) and, when a staff session exists, "Вернуться в режим сотрудника". The phone shows the number grouped as `90 123 45 67` while it is typed; the value sent stays E.164. A pasted code of six digits replaces a partly typed one.
+
+## DL-78 — The kit home, every price an estimate (2026-10-15, Owner)
+
+Answers to the questions of kit stage 2 (`kit/02-glavnaya.dc.html`, approved the same day).
+
+1. **The home.** From the top: the delivery address and the cart with its count; the search and the filter button; the categories four in a row, the first eight, with "Все" opening every category; the "Рекомендуем" row. No banner.
+2. **"Рекомендуем".** The Admin marks a product "show on the home" in the panel. The row lists the marked products and hides when none is marked; "Все" opens the full list. There are no discounts and no struck-out prices (`docs/08` section 30 stands).
+3. **Every price is an estimate.** The Admin no longer chooses a price mode; every product, existing ones included, is an estimate, and the Admin can change its market price at any time. The Customer pays after shopping, at the price the Shopper paid plus the markup, with the tolerance approval as before. This supersedes interview 2.2's two modes; lines of orders placed before this decision keep their `fixed` price. In Wave 4 the Customer is notified of the final amount for a cash order too, as `payment_required` does for an online one.
+4. **Category pictures.** The Admin uploads a picture per category, under the rules of the product image. Without one the tile shows the first letter of the name.
+5. **Favourites.** A heart on every product card keeps the product in the Customer's favourites, stored with the account on the server; the "Избранное" screen lists them, and one no longer sold stays, greyed, as "Нет в продаже".
+6. **The bottom bar.** Главная, Избранное, Заказы, Профиль. The cart stays at the top right with its count. No dot on Заказы. This supersedes `DL-75` item 4 on the bar's items.
+7. **The filter button** opens a sort: "Как в магазине", "Сначала дешевле", "Сначала дороже", over every product or the search results.
+
+## DL-79 — Catalog server and panel for the kit home, kit stage 2a (2026-10-15, agent)
+
+1. **How "every price an estimate" is enforced.** A migration sets every product to `estimate` and narrows `products_price_mode_check` to `price_mode = 'estimate'`; the Admin write body loses `price_mode`, so the strict request shape refuses it; a created product is an estimate. `price_mode` stays in product responses (always `estimate`) so clients keep one shape. `PriceMode::Fixed`, `order_items.price_mode_snapshot` and every Orders branch on a fixed line stay for lines placed before `DL-78`; the checkout's `final` total kind no longer occurs for a new cart. Tests of fixed lines build them with `OrderItemFactory::fixed()`, a line placed before the decision.

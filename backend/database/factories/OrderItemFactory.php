@@ -17,8 +17,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * Builds an order line for a product, snapshotted from that product at a 15 %
- * markup: two units of whatever the product sells, pending. A fixed line comes
- * from a fixed product; [purchased] and [removed] set what those states imply
+ * markup: two units of whatever the product sells, pending. A fixed line is one
+ * placed before DL-78 ([fixed]); [purchased] and [removed] set what those states imply
  * (`order_items_*_check`).
  *
  * @extends Factory<OrderItem>
@@ -54,6 +54,15 @@ final class OrderItemFactory extends Factory
             'substitution_policy_snapshot' => SubstitutionPolicy::AllowSimilar,
             'status' => OrderItemStatus::Pending,
         ];
+    }
+
+    /**
+     * A line placed before every product became an estimate (DL-78): its
+     * customer price was guaranteed.
+     */
+    public function fixed(): self
+    {
+        return $this->state(fn (): array => ['price_mode_snapshot' => PriceMode::Fixed]);
     }
 
     public function awaitingCustomer(): self

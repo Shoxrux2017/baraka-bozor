@@ -44,7 +44,7 @@ final class CheckoutPreviewApiTest extends TestCase
     /** Estimate, per kg: market 16 000, customer 18 400. */
     private Product $tomatoes;
 
-    /** Fixed, per piece: market 3 000, customer 3 450. */
+    /** An estimate, per piece: market 3 000, customer 3 450. */
     private Product $bread;
 
     protected function setUp(): void
@@ -57,7 +57,7 @@ final class CheckoutPreviewApiTest extends TestCase
         $this->customer = User::factory()->customer()->create(['full_name' => 'Aziza Karimova']);
         $this->address = CustomerAddress::factory()->create(['customer_id' => $this->customer->id]);
         $this->tomatoes = Product::factory()->create(['market_price_uzs' => 16000]);
-        $this->bread = Product::factory()->fixed()->unit(UnitCode::Piece)->create(['market_price_uzs' => 3000]);
+        $this->bread = Product::factory()->unit(UnitCode::Piece)->create(['market_price_uzs' => 3000]);
     }
 
     public function test_a_checkout_shows_its_lines_amounts_and_a_token_for_five_minutes(): void
@@ -88,14 +88,14 @@ final class CheckoutPreviewApiTest extends TestCase
         $this->assertStringNotContainsString('market_price', (string) json_encode($data));
     }
 
-    public function test_only_fixed_lines_make_a_final_total_and_a_percentage_fee_follows_the_subtotal(): void
+    public function test_every_new_line_is_an_estimate_so_the_total_is_one_and_a_percentage_fee_follows_the_subtotal(): void
     {
         $this->settings(['service_fee_mode' => 'percentage', 'service_fee_fixed_uzs' => null, 'service_fee_percent' => '3.00', 'minimum_order_uzs' => 0]);
         $this->line($this->bread, '3.000');
 
         $data = $this->preview()->assertOk()->json('data');
 
-        $this->assertSame('final', $data['total_kind']);
+        $this->assertSame('estimate', $data['total_kind'], 'DL-78: no new cart has a final total.');
         $this->assertSame(10350, $data['merchandise_subtotal_uzs']);
         $this->assertSame(311, $data['service_fee_uzs'], '3 % of 10 350 = 310.5, half-up.');
         $this->assertSame(25661, $data['total_uzs']);
@@ -274,7 +274,6 @@ final class CheckoutPreviewApiTest extends TestCase
                 $this->line($this->bread, '20.000');
             },
             'the product name' => fn () => Product::query()->whereKey($this->tomatoes->id)->update(['name_ru' => 'Томаты']),
-            'the price mode' => fn () => Product::query()->whereKey($this->tomatoes->id)->update(['price_mode' => 'fixed']),
             'the street' => fn () => $this->address->forceFill(['street' => 'Navoiy'])->save(),
             'the house' => fn () => $this->address->forceFill(['house' => '14'])->save(),
             'the apartment' => fn () => $this->address->forceFill(['apartment' => '7'])->save(),

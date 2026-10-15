@@ -62,7 +62,6 @@ class Product extends Model
         'description_uz',
         'description_ru',
         'unit_code',
-        'price_mode',
         'market_price_uzs',
         'sort_order',
     ];

@@ -6,6 +6,7 @@ namespace App\Modules\Catalog\Actions;
 
 use App\Exceptions\ApiException;
 use App\Models\Category;
+use App\Models\Enums\PriceMode;
 use App\Models\Product;
 use App\Models\User;
 use App\Support\Scope\ScopedLookup;
@@ -52,6 +53,7 @@ final class SaveCatalogEntry
 
             $product = new Product;
             $product->created_by_user_id = $admin->id;
+            $product->price_mode = PriceMode::Estimate;
 
             return $this->apply($product, $fields);
         });

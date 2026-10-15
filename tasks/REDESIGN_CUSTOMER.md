@@ -4,8 +4,8 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 
 | Stage | What | Status |
 |---|---|---|
-| 1 | Вход: splash, phone, code, name, staff password (`DL-77`) | In Progress |
-| 2 | Главная | Planned |
+| 1 | Вход: splash, phone, code, name, staff password (`DL-77`) | Merged (PR #88) |
+| 2 | Главная | In Progress (2a server and panel, 2b screens) |
 | 3 | Каталог | Planned |
 | 4 | Корзина | Planned |
 | 5 | Оформление | Planned |

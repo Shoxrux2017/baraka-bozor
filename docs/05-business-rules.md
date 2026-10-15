@@ -76,9 +76,9 @@
 
 **BR-PRICE-001 — Customer price.** `customer_unit_price = half_up(market_price × (1 + markup_percent / 100))`. The Customer only ever sees customer prices.
 
-**BR-PRICE-002 — Fixed.** The order snapshots the customer price; the billable unit price is that snapshot regardless of what the Shopper paid.
+**BR-PRICE-002 — Fixed (lines placed before `DL-78`).** The order snapshots the customer price; the billable unit price is that snapshot regardless of what the Shopper paid.
 
-**BR-PRICE-003 — Estimate.** The order snapshots the estimate customer price, the markup and the tolerance; each line keeps the markup it was priced with (`DL-37` (8)). The billable unit price is `half_up(actual_market_price × (1 + line_markup_snapshot / 100))`. The ceiling is `half_up(estimate_snapshot × (1 + tolerance_snapshot / 100))`, or a higher ceiling an approval set. A billable unit price above the ceiling requires approval before purchase.
+**BR-PRICE-003 — Estimate.** Every product is an estimate (`DL-78`). The order snapshots the estimate customer price, the markup and the tolerance; each line keeps the markup it was priced with (`DL-37` (8)). The billable unit price is `half_up(actual_market_price × (1 + line_markup_snapshot / 100))`. The ceiling is `half_up(estimate_snapshot × (1 + tolerance_snapshot / 100))`, or a higher ceiling an approval set. A billable unit price above the ceiling requires approval before purchase.
 
 **BR-PRICE-004 — Replacement.** A replacement is billed at its own customer price computed the same way, subject to the original item's ceiling or an approval.
 

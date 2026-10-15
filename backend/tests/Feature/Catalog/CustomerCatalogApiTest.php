@@ -46,7 +46,7 @@ final class CustomerCatalogApiTest extends TestCase
     public function test_a_product_shows_the_customer_price_and_never_the_market_price(): void
     {
         DB::table('business_settings')->where('id', 1)->update(['markup_percent' => '15.00']);
-        $product = Product::factory()->fixed()->create(['market_price_uzs' => 16_000]);
+        $product = Product::factory()->create(['market_price_uzs' => 16_000]);
 
         $data = $this->asCustomer()->getJson('/api/v1/catalog/products/'.$product->id)->assertOk()->json('data');
 
@@ -55,7 +55,7 @@ final class CustomerCatalogApiTest extends TestCase
             'unit_code', 'price_mode', 'customer_unit_price_uzs', 'image_url', 'is_active',
         ], array_keys($data));
         $this->assertSame(18_400, $data['customer_unit_price_uzs']);
-        $this->assertSame('fixed', $data['price_mode']);
+        $this->assertSame('estimate', $data['price_mode']);
         $this->assertNull($data['image_url']);
         $this->assertArrayNotHasKey('market_price_uzs', $data);
     }

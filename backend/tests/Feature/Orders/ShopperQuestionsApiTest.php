@@ -89,7 +89,7 @@ final class ShopperQuestionsApiTest extends TestCase
             ->assertJsonPath('code', 'approval_not_needed')
             ->assertJsonPath('details.ceiling_customer_unit_price_uzs', 21160);
 
-        $fixed = OrderItem::factory()->for($this->order)->for(Product::factory()->fixed())->create();
+        $fixed = OrderItem::factory()->fixed()->for($this->order)->for(Product::factory())->create();
         $this->ask($fixed, 'price-approval', ['actual_market_price_uzs' => 99999])
             ->assertStatus(409)->assertJsonPath('code', 'approval_not_needed');
 
@@ -257,7 +257,7 @@ final class ShopperQuestionsApiTest extends TestCase
 
     public function test_a_fixed_lines_replacement_meets_its_snapshot(): void
     {
-        $fixed = OrderItem::factory()->for($this->order)->for(Product::factory()->fixed()->unit(UnitCode::Piece)->state(['market_price_uzs' => 3000]))
+        $fixed = OrderItem::factory()->fixed()->for($this->order)->for(Product::factory()->unit(UnitCode::Piece)->state(['market_price_uzs' => 3000]))
             ->create(['ordered_quantity' => '3']);
         $replacement = Product::factory()->unit(UnitCode::Piece)->create();
 
