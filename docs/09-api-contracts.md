@@ -363,6 +363,6 @@ A Customer session only (`DL-79` (5), `BR-CAT-007`).
 
 `PUT /customer/favorites/{product}` (no body) adds a favourite and answers `204`; repeating it answers `204` and changes nothing. A product the Customer cannot see (inactive, archived, in an inactive or archived category, unknown, or not a UUID) is the scope-safe `404 resource_not_found`. The 501st favourite is `409 favorites_full` with `details.limit = 500`; a product already a favourite is still `204`.
 
-`DELETE /customer/favorites/{product}` (no body) removes the Customer's own favourite and answers `204` always, whatever the product, so it tells nothing about it.
+`DELETE /customer/favorites/{product}` (no body) removes the Customer's own favourite and answers `204` for any well-formed product id, whatever the product, so it tells nothing about it.
 
 Both routes refuse any body field with `422 validation_failed`. Another Customer's favourites are never listed or touched.

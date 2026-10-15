@@ -110,7 +110,7 @@ contact_before_substitution   any replacement needs the Customer's approval
 remove_if_unavailable         a missing item is removed without asking
 ```
 
-A replacement must be an active catalog product with the same unit. The automatic ceiling is the item's fixed customer price, or for an estimate item the estimate plus the tolerance. A replacement above the ceiling needs approval.
+A replacement must be an active catalog product with the same unit. The automatic ceiling is the item's fixed customer price (a line placed before `DL-78`), or for an estimate item the estimate plus the tolerance. A replacement above the ceiling needs approval.
 
 ## 11. Customer Approval
 

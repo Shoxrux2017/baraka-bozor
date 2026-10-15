@@ -9,9 +9,9 @@ use App\Modules\Catalog\ProductImages;
 use Illuminate\Http\UploadedFile;
 
 /**
- * The product or category image upload of `docs/09` section 16: one file under `image`, at most
- * 5 MiB, JPEG, PNG or WebP judged by the bytes rather than by the file name
- * (`BR-CAT-004`), so a PDF renamed `.jpg` is refused.
+ * The product or category image upload of `docs/09` section 16: one file
+ * under `image`, at most 5 MiB, JPEG, PNG or WebP judged by the bytes rather
+ * than by the file name (`BR-CAT-004`), so a PDF renamed `.jpg` is refused.
  */
 final class CatalogImageRequest extends StrictFormRequest
 {

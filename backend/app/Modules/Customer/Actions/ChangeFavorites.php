@@ -33,7 +33,7 @@ final class ChangeFavorites
             if (CustomerFavorites::own($customer)->count() >= CustomerFavorites::LIMIT) {
                 throw ApiException::conflict('favorites_full', ['limit' => CustomerFavorites::LIMIT]);
             }
-            CustomerFavorite::query()->create(['customer_id' => $customer->id, 'product_id' => $productId]);
+            (new CustomerFavorite)->forceFill(['customer_id' => $customer->id, 'product_id' => $productId])->save();
         });
     }
 

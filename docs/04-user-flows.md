@@ -146,7 +146,7 @@ While at least one item is `awaiting_customer` the order's status stays `shoppin
 
 Every item is `purchased` or `removed` and no approval is pending. The Shopper calls complete with an `Idempotency-Key`. The backend locks the order, rounds every line half-up to 1 UZS, sums the merchandise, applies the service fee and the delivery fee snapshot, and stores the final amounts. Then:
 
-- `cash` → `ready_for_delivery`;
+- `cash` → `ready_for_delivery`, and the Customer is told the final amount (`DL-78`, Wave 4);
 - `online` → a payment obligation for the final total, `final_payment_pending`, `payment_required` sent to the Customer;
 - nothing purchased never reaches completion: the action that removed the last line cancelled the order with reason `no_items_purchased` (`DL-54` (7)).
 

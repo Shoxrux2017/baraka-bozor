@@ -1212,7 +1212,7 @@ Answers to the questions of kit stage 2 (`kit/02-glavnaya.dc.html`, approved the
 
 4. **The price sort** orders by `market_price_uzs`, which orders customer prices because one markup applies to all, then by the shop's order ending in `id`, so paging is stable. Popularity is not offered: no figures exist before the pilot (`docs/05` section 20).
 
-5. **Favourites** live in `customer_favorites`, one row per Customer and product, at most 500. `PUT` adds only a product the Customer can see (otherwise the scope-safe `404`); `DELETE` answers `204` whatever the product, so it tells nothing. A favourite that stops being sold stays and is listed with `is_available: false`. The catalog product carries `is_favorite` so every list draws its hearts without another request.
+5. **Favourites** live in `customer_favorites`, one row per Customer and product, at most 500; an add locks the Customer's `users` row so the limit holds under concurrent requests. `PUT` adds only a product the Customer can see (otherwise the scope-safe `404`); `DELETE` answers `204` whatever the product, so it tells nothing. A favourite that stops being sold stays and is listed with `is_available: false`. The catalog product carries `is_favorite` so every list draws its hearts without another request.
 
 6. **Numbering.** New tables are appended to `docs/08` as sections 31 and 32 and the favourites API is `docs/09` section 58, so earlier section numbers cited across the documents stay.
 

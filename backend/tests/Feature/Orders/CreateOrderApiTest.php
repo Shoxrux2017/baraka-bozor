@@ -10,6 +10,7 @@ use App\Models\CartItem;
 use App\Models\CustomerAddress;
 use App\Models\Enums\CartStatus;
 use App\Models\Enums\OrderStatus;
+use App\Models\Enums\PriceMode;
 use App\Models\Enums\Role;
 use App\Models\Enums\UnitCode;
 use App\Models\IdempotencyKey;
@@ -128,6 +129,9 @@ final class CreateOrderApiTest extends TestCase
         $this->assertSame(18400, $tomatoLine->customer_unit_price_uzs_snapshot);
         $this->assertSame('15.00', $tomatoLine->markup_percent_snapshot);
         $this->assertSame('Qizil bo\'lsin', $tomatoLine->customer_note_snapshot);
+        $breadLine = $order->items->firstWhere('product_id', $this->bread->id);
+        $this->assertNotNull($breadLine);
+        $this->assertSame(PriceMode::Estimate, $breadLine->price_mode_snapshot, 'DL-78: every new line is an estimate.');
 
         $history = OrderHistory::query()->where('order_id', $order->id)->sole();
         $this->assertSame(OrderStatus::New, $history->to_status);

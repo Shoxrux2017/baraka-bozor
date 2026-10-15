@@ -192,7 +192,10 @@ final class FavoritesApiTest extends TestCase
         $this->customer->forceFill(['status' => UserStatus::Blocked, 'blocked_at' => now()])->save();
         $this->withToken($token)->getJson(self::URL)
             ->assertStatus(401)->assertJsonPath('code', 'account_blocked');
-
+        $this->withToken($this->customer->createToken('t')->plainTextToken)->putJson(self::URL.'/'.$product->id)
+            ->assertStatus(401)->assertJsonPath('code', 'account_blocked');
+        $this->withToken($this->customer->createToken('t')->plainTextToken)->deleteJson(self::URL.'/'.$product->id)
+            ->assertStatus(401)->assertJsonPath('code', 'account_blocked');
     }
 
     public function test_without_a_token_the_answer_is_authentication_required(): void

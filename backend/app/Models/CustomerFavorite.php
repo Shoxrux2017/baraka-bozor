@@ -33,10 +33,7 @@ class CustomerFavorite extends Model
     /**
      * @var list<string>
      */
-    protected $fillable = [
-        'customer_id',
-        'product_id',
-    ];
+    protected $fillable = [];
 
     /**
      * @return BelongsTo<User, $this>

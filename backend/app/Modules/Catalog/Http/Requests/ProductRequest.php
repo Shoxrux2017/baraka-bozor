@@ -12,8 +12,9 @@ use Illuminate\Validation\Rule;
 /**
  * The product write body of `docs/09` section 15. The category, both names,
  * the unit and the market price are required on create; the
- * descriptions, `sort_order` (default 0) and `is_active` (default true) are
- * optional; there is no price mode, every product is an estimate (`DL-78`); an update takes any non-empty subset. Names fit their
+ * descriptions, `sort_order` (default 0), `is_active` (default true) and
+ * `is_featured` are optional; there is no price mode, every product is an
+ * estimate (`DL-78`); an update takes any non-empty subset. Names fit their
  * `varchar(160)` columns (`DL-18` (1)); the other bounds are `DL-20`'s.
  *
  * Only the shape of `category_id` is checked here. Whether that category

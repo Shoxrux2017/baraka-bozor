@@ -149,22 +149,22 @@ def walk():
     category = answer["data"]["id"]
 
 
-    def product(name_uz, name_ru, unit, mode, market):
+    def product(name_uz, name_ru, unit, market):
         status, answer = call("POST", "/admin/products", admin, {
             "category_id": category, "name_uz": f"{name_uz} {stamp}", "name_ru": f"{name_ru} {stamp}",
-            "unit_code": unit, "price_mode": mode, "market_price_uzs": market, "sort_order": 0})
+            "unit_code": unit, "market_price_uzs": market, "sort_order": 0})
         return status, answer
 
 
-    status, answer = product("Pomidor", "Помидор", "kg", "estimate", 16000)
+    status, answer = product("Pomidor", "Помидор", "kg", 16000)
     check("Admin creates an estimate product by weight", status == 201 and answer["data"]["customer_unit_price_uzs"] == 18400,
           f"{status}")
     tomato = answer["data"]["id"]
-    status, answer = product("Olma", "Яблоко", "piece", "fixed", 3000)
-    check("Admin creates a fixed product by the piece", status == 201 and answer["data"]["customer_unit_price_uzs"] == 3450,
+    status, answer = product("Olma", "Яблоко", "piece", 3000)
+    check("Admin creates a product by the piece", status == 201 and answer["data"]["customer_unit_price_uzs"] == 3450,
           f"{status}")
     apple = answer["data"]["id"]
-    status, answer = product("Non", "Хлеб", "piece", "fixed", 4000)
+    status, answer = product("Non", "Хлеб", "piece", 4000)
     check("Admin creates a third product", status == 201 and answer["data"]["customer_unit_price_uzs"] == 4600, f"{status}")
     bread = answer["data"]["id"]
 
@@ -184,7 +184,7 @@ def walk():
           status == 201 and line_of(answer["data"], tomato)["quantity"] == "1.500", f"{status}")
     status, answer = call("POST", "/customer/cart/items", customer, {
         "product_id": apple, "quantity": "2", "customer_note": "Qizil", "substitution_policy": "contact_before_substitution"})
-    check("Two of the fixed product go in, with a note and a rule",
+    check("Two of the piece product go in, with a note and a rule",
           status == 201 and answer["data"]["item_count"] == 2 and answer["data"]["estimated_subtotal_uzs"] == 27600 + 6900,
           f"{status} {answer and answer.get('data', {}).get('estimated_subtotal_uzs')}")
     tomato_line = line_of(answer["data"], tomato)["id"]
