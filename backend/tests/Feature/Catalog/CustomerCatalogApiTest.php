@@ -6,6 +6,7 @@ namespace Tests\Feature\Catalog;
 
 use App\Models\Category;
 use App\Models\CategoryImage;
+use App\Models\CustomerFavorite;
 use App\Models\Enums\Role;
 use App\Models\Product;
 use App\Models\ProductImage;
@@ -69,7 +70,7 @@ final class CustomerCatalogApiTest extends TestCase
 
         $this->assertSame([
             'id', 'category_id', 'name_uz', 'name_ru', 'description_uz', 'description_ru',
-            'unit_code', 'price_mode', 'customer_unit_price_uzs', 'image_url', 'is_active',
+            'unit_code', 'price_mode', 'customer_unit_price_uzs', 'image_url', 'is_active', 'is_favorite',
         ], array_keys($data));
         $this->assertSame(18_400, $data['customer_unit_price_uzs']);
         $this->assertSame('estimate', $data['price_mode']);
@@ -286,6 +287,21 @@ final class CustomerCatalogApiTest extends TestCase
             ->assertStatus(422)->assertJsonPath('code', 'validation_failed');
         $this->asCustomer()->getJson('/api/v1/catalog/products?featured=yes')
             ->assertStatus(422)->assertJsonPath('code', 'validation_failed');
+    }
+
+    public function test_a_product_carries_the_callers_favourite_flag_in_list_and_detail(): void
+    {
+        $customer = User::factory()->customer()->create();
+        $product = Product::factory()->create();
+        $token = $customer->createToken('t')->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/v1/catalog/products')->assertJsonPath('data.0.is_favorite', false);
+        $this->withToken($token)->getJson('/api/v1/catalog/products/'.$product->id)->assertJsonPath('data.is_favorite', false);
+
+        CustomerFavorite::factory()->create(['customer_id' => $customer->id, 'product_id' => $product->id]);
+
+        $this->withToken($token)->getJson('/api/v1/catalog/products')->assertJsonPath('data.0.is_favorite', true);
+        $this->withToken($token)->getJson('/api/v1/catalog/products/'.$product->id)->assertJsonPath('data.is_favorite', true);
     }
 
     private function pricedProducts(): void

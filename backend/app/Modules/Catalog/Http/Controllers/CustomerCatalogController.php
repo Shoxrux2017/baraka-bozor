@@ -15,7 +15,9 @@ use App\Modules\Catalog\Http\Resources\CustomerCategoryResource;
 use App\Modules\Catalog\Http\Resources\CustomerProductResource;
 use App\Modules\Settings\CustomerPriceCalculator;
 use App\Support\Scope\ScopedLookup;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * `GET /catalog/categories`, `GET /catalog/products`,
@@ -37,19 +39,37 @@ final class CustomerCatalogController extends Controller
         $prices = CustomerPriceCalculator::current();
 
         return PaginatedResponse::of(
-            CustomerCatalogListing::products($request->categoryId(), $request->search(), $request->featuredOnly(), $request->sort())
-                ->paginate($request->perPage(), ['*'], 'page', $request->page()),
+            $this->withFavoriteFlag(
+                CustomerCatalogListing::products($request->categoryId(), $request->search(), $request->featuredOnly(), $request->sort()),
+                $request,
+            )->paginate($request->perPage(), ['*'], 'page', $request->page()),
             static fn (Product $product): array => (new CustomerProductResource($product, $prices))->resolve($request),
         );
     }
 
-    public function product(string $product): CustomerProductResource
+    public function product(Request $request, string $product): CustomerProductResource
     {
-        $visible = CustomerCatalogListing::visibleProducts();
+        $visible = $this->withFavoriteFlag(CustomerCatalogListing::visibleProducts(), $request);
 
         return new CustomerProductResource(
             ScopedLookup::firstOrNotFound($visible->whereKey($product)),
             CustomerPriceCalculator::current(),
         );
+    }
+
+    /**
+     * The `is_favorite` flag of the session's Customer. It is added here and
+     * not inside `visibleProducts()`, which the cart locks with `FOR UPDATE`.
+     *
+     * @param  Builder<Product>  $query
+     * @return Builder<Product>
+     */
+    private function withFavoriteFlag(Builder $query, Request $request): Builder
+    {
+        $customerId = $request->user()?->getAuthIdentifier();
+
+        return $query->withExists(['favorites as is_favorite' => static function (Builder $favorite) use ($customerId): void {
+            $favorite->where('customer_id', $customerId);
+        }]);
     }
 }

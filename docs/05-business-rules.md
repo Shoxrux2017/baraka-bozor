@@ -58,6 +58,8 @@
 
 **BR-CAT-006** — Categories are a flat list ordered by `sort_order`.
 
+**BR-CAT-007** — A Customer keeps at most 500 favourite products; a product becomes a favourite only while the Customer can see it; a favourite that stops being sold stays, shown as unavailable.
+
 # 4. Quantity
 
 **BR-QTY-001** — `kg`, `liter`, `meter`: positive, at most three decimals. `gram`, `piece`, `package`, `box`, `bundle`: positive integer.

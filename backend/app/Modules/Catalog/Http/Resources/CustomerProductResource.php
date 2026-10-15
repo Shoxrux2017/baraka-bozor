@@ -44,6 +44,7 @@ final class CustomerProductResource extends JsonResource
             'customer_unit_price_uzs' => $this->prices->priceOf($product->market_price_uzs),
             'image_url' => ProductImages::url($product->image),
             'is_active' => $product->is_active,
+            'is_favorite' => (bool) ($product->is_favorite ?? false),
         ];
     }
 }

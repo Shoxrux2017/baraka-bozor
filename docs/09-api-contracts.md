@@ -100,8 +100,10 @@ Product:
 
 ```json
 {"id":"...","category_id":"...","name_uz":"Pomidor","name_ru":"Помидор","description_uz":null,"description_ru":null,
- "unit_code":"kg","price_mode":"estimate","customer_unit_price_uzs":18400,"image_url":"https://.../storage/products/<uuid>.webp","is_active":true}
+ "unit_code":"kg","price_mode":"estimate","customer_unit_price_uzs":18400,"image_url":"https://.../storage/products/<uuid>.webp","is_active":true,"is_favorite":false}
 ```
+
+`is_favorite` is true when the session's Customer has the product among their favourites (Section 58).
 
 Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, reading `ё` as `е` and every form of the Uzbek apostrophe (ʻ ‘ ’ `) as `'` (`DL-20`).
 
@@ -333,7 +335,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 53. Catalog, Cart, Checkout, Editing
 
-`product_unavailable`, `product_archived`, `cart_item_already_exists`, `cart_full`, `cart_empty`, `customer_profile_incomplete`, `address_incomplete`, `address_outside_service_area`, `minimum_order_not_reached`, `checkout_snapshot_stale`, `checkout_configuration_incomplete`, `payment_method_unavailable`, `order_editing_locked`.
+`product_unavailable`, `product_archived`, `cart_item_already_exists`, `cart_full`, `favorites_full`, `cart_empty`, `customer_profile_incomplete`, `address_incomplete`, `address_outside_service_area`, `minimum_order_not_reached`, `checkout_snapshot_stale`, `checkout_configuration_incomplete`, `payment_method_unavailable`, `order_editing_locked`.
 
 ## 54. Order, Shopping, Approval
 
@@ -350,3 +352,17 @@ The backend decides from locked state; a stale client receives a `409` with a st
 ## 57. Provider Safety
 
 Never expose raw provider errors, signatures, secrets, SQL, traces or card data. Normalize to the codes above; filter secrets from logs.
+
+# Favourites
+
+## 58. Customer Favourites
+
+A Customer session only (`DL-79` (5), `BR-CAT-007`).
+
+`GET /customer/favorites?page=&per_page=` lists the Customer's own favourites, newest first (ties by `id`), paginated as in Section 2. Each entry is a Customer product object (Section 14) with `"is_favorite": true` and `"is_available": bool`, which is `false` when the product or its category is inactive or archived; the market price is never shown.
+
+`PUT /customer/favorites/{product}` (no body) adds a favourite and answers `204`; repeating it answers `204` and changes nothing. A product the Customer cannot see (inactive, archived, in an inactive or archived category, unknown, or not a UUID) is the scope-safe `404 resource_not_found`. The 501st favourite is `409 favorites_full` with `details.limit = 500`; a product already a favourite is still `204`.
+
+`DELETE /customer/favorites/{product}` (no body) removes the Customer's own favourite and answers `204` always, whatever the product, so it tells nothing about it.
+
+Both routes refuse any body field with `422 validation_failed`. Another Customer's favourites are never listed or touched.

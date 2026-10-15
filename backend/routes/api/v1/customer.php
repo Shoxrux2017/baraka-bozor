@@ -6,12 +6,13 @@ use App\Models\Enums\Role;
 use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Auth\Http\Middleware\RequireRole;
 use App\Modules\Customer\Http\Controllers\AddressController;
+use App\Modules\Customer\Http\Controllers\FavoriteController;
 use App\Modules\Customer\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Customer profile and addresses — docs/09-api-contracts.md Sections 12, 13
+| Customer profile and addresses — docs/09-api-contracts.md Sections 12, 13, 58
 |--------------------------------------------------------------------------
 |
 | A Customer session only; every record is the caller's own.
@@ -29,4 +30,8 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Custome
         Route::get('addresses/{address}', [AddressController::class, 'show'])->name('customer.addresses.show');
         Route::patch('addresses/{address}', [AddressController::class, 'update'])->name('customer.addresses.update');
         Route::delete('addresses/{address}', [AddressController::class, 'destroy'])->name('customer.addresses.destroy');
+
+        Route::get('favorites', [FavoriteController::class, 'index'])->name('customer.favorites.index');
+        Route::put('favorites/{product}', [FavoriteController::class, 'store'])->name('customer.favorites.store');
+        Route::delete('favorites/{product}', [FavoriteController::class, 'destroy'])->name('customer.favorites.destroy');
     });

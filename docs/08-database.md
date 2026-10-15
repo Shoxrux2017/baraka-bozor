@@ -15,6 +15,7 @@ users                       customer_otp_challenges
 customer_addresses
 categories                  products                 product_images
 category_images
+customer_favorites
 carts                       cart_items
 business_settings           payment_provider_settings
 orders                      order_items              order_history
@@ -207,3 +208,7 @@ Markets, cities, sellers, warehouses, inventory, promotions, bonuses, subscripti
 ## 31. `category_images` (migrated)
 
 `id, category_id → categories (unique, restrict), storage_key (unique), original_filename?, mime_type, size_bytes, timestamps`. Size from 1 byte to 5 MiB (5 242 880 bytes) inclusive (`category_images_size_bytes_check`); MIME in `image/jpeg`, `image/png`, `image/webp` (`category_images_mime_type_check`). The same shape as `product_images` (`DL-79` (2)).
+
+## 32. `customer_favorites` (migrated)
+
+`id, customer_id → users (restrict), product_id → products (restrict), created_at`. Unique `(customer_id, product_id)`; index `(customer_id, created_at desc, id desc)` serves the list, newest first. At most 500 rows per Customer, held by the application under a lock on the Customer's row (`DL-79` (5)).
