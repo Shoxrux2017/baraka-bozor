@@ -91,8 +91,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 autofillHint: AutofillHints.newPassword,
                 validator: (String? value) {
                   final int length = (value ?? '').length;
-                  return length < passwordMinLength ||
-                          length > passwordMaxLength
+                  if (length > passwordMaxLength) {
+                    return l10n.fieldTooLong(passwordMaxLength);
+                  }
+                  return length < passwordMinLength
                       ? l10n.passwordRuleHint
                       : null;
                 },

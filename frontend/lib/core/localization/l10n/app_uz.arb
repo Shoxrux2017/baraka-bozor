@@ -8,7 +8,14 @@
   "phoneInvalid": "Raqamning 9 ta raqamini kiriting",
   "continueButton": "Davom etish",
   "codeSentSms": "Kod SMS orqali yuborildi",
-  "codeSentGeneric": "Kod yuborildi",
+  "codeSentOnPhone": "Kodni yubordik: {phone}",
+  "@codeSentOnPhone": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "codeLabel": "Kirish kodi",
   "codeInvalidFormat": "6 ta raqamdan iborat kodni kiriting",
   "verifyButton": "Tasdiqlash",

@@ -35,7 +35,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get codeSentSms => 'Код отправлен по SMS';
 
   @override
-  String get codeSentGeneric => 'Код отправлен';
+  String codeSentOnPhone(String phone) {
+    return 'Отправили код на $phone';
+  }
 
   @override
   String get codeLabel => 'Код для входа';

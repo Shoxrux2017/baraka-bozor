@@ -32,7 +32,9 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     final CodeLoginState state = ref.read(codeLoginControllerProvider);
     final String? phone = state.phone;
     _phone = TextEditingController(
-      text: phone == null ? '' : phone.substring(phoneCountryCode.length),
+      text: phone == null
+          ? ''
+          : groupNationalDigits(phone.substring(phoneCountryCode.length)),
     );
   }
 

@@ -132,8 +132,7 @@ class _CodeBoxesState extends State<CodeBoxes> {
                             enableSuggestions: false,
                             showCursor: false,
                             inputFormatters: <TextInputFormatter>[
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(loginCodeLength),
+                              LoginCodeDigitsFormatter(),
                             ],
                             style: const TextStyle(
                               color: Colors.transparent,
@@ -175,6 +174,42 @@ class _CodeBoxesState extends State<CodeBoxes> {
           ],
         );
       },
+    );
+  }
+}
+
+/// Keeps the digits of a login code, at most [loginCodeLength]. A paste of a
+/// whole code (six or more digits inserted at once) replaces what was typed
+/// before it, so a code pasted into a partly filled field is not cut off by
+/// the digits already there.
+class LoginCodeDigitsFormatter extends TextInputFormatter {
+  static final RegExp _notDigits = RegExp(r'[^0-9]');
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    String digits = newValue.text.replaceAll(_notDigits, '');
+    if (digits.length > loginCodeLength) {
+      final int inserted = newValue.text.length - oldValue.text.length;
+      final int cursor = newValue.selection.isValid
+          ? newValue.selection.extentOffset.clamp(0, newValue.text.length)
+          : newValue.text.length;
+      final String pasted = inserted > 0
+          ? newValue.text
+                .substring((cursor - inserted).clamp(0, cursor), cursor)
+                .replaceAll(_notDigits, '')
+          : '';
+      digits = pasted.length >= loginCodeLength ? pasted : digits;
+      digits = digits.substring(0, loginCodeLength);
+    }
+    if (digits == newValue.text) {
+      return newValue;
+    }
+    return TextEditingValue(
+      text: digits,
+      selection: TextSelection.collapsed(offset: digits.length),
     );
   }
 }

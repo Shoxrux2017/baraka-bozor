@@ -146,11 +146,11 @@ abstract class AppLocalizations {
   /// **'Kod SMS orqali yuborildi'**
   String get codeSentSms;
 
-  /// No description provided for @codeSentGeneric.
+  /// No description provided for @codeSentOnPhone.
   ///
   /// In uz, this message translates to:
-  /// **'Kod yuborildi'**
-  String get codeSentGeneric;
+  /// **'Kodni yubordik: {phone}'**
+  String codeSentOnPhone(String phone);
 
   /// No description provided for @codeLabel.
   ///

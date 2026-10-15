@@ -163,8 +163,10 @@ class SessionController extends AsyncNotifier<SessionState> {
         password: password,
       );
     } on ApiRefusal catch (refusal) {
+      // The server spends the step on a blocked account too.
       if (refusal.code == 'staff_step_expired' ||
-          refusal.code == 'staff_step_invalid') {
+          refusal.code == 'staff_step_invalid' ||
+          refusal.code == 'account_blocked') {
         _clearStep(step);
       }
       rethrow;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/code_login_controller.dart';
@@ -73,6 +74,7 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
             style: TextButton.styleFrom(
               disabledForegroundColor: KitColors.muted,
               textStyle: const TextStyle(
+                fontFamily: appFontFamily,
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
               ),
@@ -96,14 +98,15 @@ String formatCountdown(int seconds) {
   return '${clamped ~/ 60}:${(clamped % 60).toString().padLeft(2, '0')}';
 }
 
-/// Where the code went, in one line: the Telegram text names the phone; the
-/// other channels say only that a code was sent, then name the phone.
+/// Where the code went, in one line: the Telegram text names the channel and
+/// the phone; SMS says so; any other channel (the development and test-phone
+/// ones) says only that a code was sent to the phone.
 String codeSentText(AppLocalizations l10n, CodeLoginState state) {
   final String phone = formatPhone(state.phone ?? '');
   return switch (RequestedCodeChannel.of(state.requested?.channel)) {
     RequestedCodeChannel.telegram => l10n.codeSentToPhone(phone),
     RequestedCodeChannel.sms => '${l10n.codeSentSms}\n$phone',
-    RequestedCodeChannel.other => '${l10n.codeSentGeneric}\n$phone',
+    RequestedCodeChannel.other => l10n.codeSentOnPhone(phone),
   };
 }
 

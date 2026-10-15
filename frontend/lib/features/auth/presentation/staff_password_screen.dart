@@ -56,7 +56,11 @@ class _StaffPasswordScreenState extends ConsumerState<StaffPasswordScreen> {
         ..clearSnackBars()
         ..showSnackBar(
           SnackBar(
-            content: Text(l10n.staffStepExpired),
+            content: Text(
+              controller.blocked
+                  ? l10n.errorAccountBlocked
+                  : l10n.staffStepExpired,
+            ),
             action: SnackBarAction(
               label: l10n.getNewCodeButton,
               onPressed: () => session.logout(SessionMode.customer),
@@ -91,6 +95,7 @@ class _StaffPasswordScreenState extends ConsumerState<StaffPasswordScreen> {
               PasswordField(
                 fieldKey: const ValueKey<String>('staff-password-field'),
                 controller: _password,
+                hintText: l10n.passwordLabel,
                 enabled: !state.isBusy,
                 autofocus: true,
                 textInputAction: TextInputAction.done,

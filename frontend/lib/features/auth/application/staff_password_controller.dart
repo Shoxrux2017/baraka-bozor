@@ -10,8 +10,12 @@ import '../../../core/state/mutation_state.dart';
 /// [stepGone] says so, since the screen is taken away by then.
 class StaffPasswordController extends MutationNotifier {
   bool _stepGone = false;
+  bool _blocked = false;
 
   bool get stepGone => _stepGone;
+
+  /// The step is gone because the account is blocked, not because it ran out.
+  bool get blocked => _blocked;
 
   Future<bool> submit(String password) => run(() async {
     try {
@@ -20,8 +24,10 @@ class StaffPasswordController extends MutationNotifier {
           .completeStaffStep(password);
     } on ApiRefusal catch (refusal) {
       if (refusal.code == 'staff_step_expired' ||
-          refusal.code == 'staff_step_invalid') {
+          refusal.code == 'staff_step_invalid' ||
+          refusal.code == 'account_blocked') {
         _stepGone = true;
+        _blocked = refusal.code == 'account_blocked';
       }
       rethrow;
     }

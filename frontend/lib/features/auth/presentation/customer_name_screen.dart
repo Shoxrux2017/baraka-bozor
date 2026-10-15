@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/providers.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/session/session_state.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/customer_name_controller.dart';
@@ -44,6 +46,9 @@ class _CustomerNameScreenState extends ConsumerState<CustomerNameScreen> {
 
     if (saved && mounted) {
       await showWelcomeDialog(context, name: name);
+      if (!mounted) {
+        return;
+      }
       controller.finish();
     }
   }
@@ -52,6 +57,12 @@ class _CustomerNameScreenState extends ConsumerState<CustomerNameScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final MutationState state = ref.watch(customerNameControllerProvider);
+    final bool hasStaffSession = switch (ref
+        .watch(sessionControllerProvider)
+        .value) {
+      final SignedIn signedIn => signedIn.staffUser != null,
+      _ => false,
+    };
 
     return AuthScaffold(
       title: l10n.nameTitle,
@@ -93,6 +104,27 @@ class _CustomerNameScreenState extends ConsumerState<CustomerNameScreen> {
               key: const ValueKey<String>('customer-name-continue'),
               onPressed: state.isBusy ? null : _submit,
               child: Text(l10n.continueButton),
+            ),
+            if (hasStaffSession) ...<Widget>[
+              const SizedBox(height: 8),
+              TextButton(
+                key: const ValueKey<String>('customer-name-to-staff'),
+                onPressed: state.isBusy
+                    ? null
+                    : () => ref
+                          .read(sessionControllerProvider.notifier)
+                          .switchMode(SessionMode.staff),
+                child: Text(l10n.switchToStaff),
+              ),
+            ],
+            TextButton(
+              key: const ValueKey<String>('customer-name-logout'),
+              onPressed: state.isBusy
+                  ? null
+                  : () => ref
+                        .read(sessionControllerProvider.notifier)
+                        .logout(SessionMode.customer),
+              child: Text(l10n.logoutButton),
             ),
           ],
         ),

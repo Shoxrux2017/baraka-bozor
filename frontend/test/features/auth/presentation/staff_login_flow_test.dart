@@ -155,6 +155,30 @@ void main() {
     },
   );
 
+  testWidgets('a new password over the maximum length names the maximum', (
+    WidgetTester tester,
+  ) async {
+    await openGate(tester, UserRole.shopper);
+
+    final String tooLong = 'a' * 129;
+    await tester.enterText(currentPassword, 'temporary pass');
+    await tester.enterText(newPassword, tooLong);
+    await tester.enterText(confirmPassword, tooLong);
+    await tapVisible(tester, saveButton);
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, isNot(contains('change-password:staff')));
+    expect(
+      tester
+          .widget<TextField>(
+            find.descendant(of: newPassword, matching: find.byType(TextField)),
+          )
+          .decoration
+          ?.errorText,
+      l10n(tester).fieldTooLong(128),
+    );
+  });
+
   testWidgets('a wrong current password shows its text and stays on the gate', (
     WidgetTester tester,
   ) async {
@@ -379,6 +403,42 @@ void main() {
       expect(stepPassword, findsOneWidget);
       expect(tester.widget<FilledButton>(stepSubmit).onPressed, isNotNull);
     });
+
+    testWidgets('the staff password field carries the Password hint', (
+      WidgetTester tester,
+    ) async {
+      await signInWithCode(tester);
+
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: stepPassword,
+                matching: find.byType(TextField),
+              ),
+            )
+            .decoration
+            ?.hintText,
+        l10n(tester).passwordLabel,
+      );
+    });
+
+    testWidgets(
+      'a blocked account at the step clears it and says so, not that the step expired',
+      (WidgetTester tester) async {
+        repository.staffStepFailure = refusal(401, 'account_blocked');
+        await signInWithCode(tester);
+
+        await tester.enterText(stepPassword, 'staff pass');
+        await tester.tap(stepSubmit);
+        await tester.pumpAndSettle();
+
+        expect(stepPassword, findsNothing);
+        expect(catalog, findsOneWidget);
+        expect(find.text(l10n(tester).errorAccountBlocked), findsOneWidget);
+        expect(find.text(l10n(tester).staffStepExpired), findsNothing);
+      },
+    );
 
     testWidgets('an empty password is refused before anything is sent', (
       WidgetTester tester,

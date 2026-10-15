@@ -10,6 +10,7 @@ class PasswordField extends StatefulWidget {
     required this.controller,
     this.fieldKey,
     this.label,
+    this.hintText,
     this.helperText,
     this.errorText,
     this.autofocus = false,
@@ -27,6 +28,9 @@ class PasswordField extends StatefulWidget {
 
   /// Shown above the field.
   final String? label;
+
+  /// Shown inside the empty field, for a field that has no label above it.
+  final String? hintText;
   final String? helperText;
 
   /// Shown under the field in place of the validator's, when the server
@@ -77,6 +81,11 @@ class _PasswordFieldState extends State<PasswordField> {
           textInputAction: widget.textInputAction,
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
+            hintText: widget.hintText,
+            hintStyle: const TextStyle(
+              fontWeight: FontWeight.w500,
+              color: KitColors.muted,
+            ),
             helperText: widget.helperText,
             helperStyle: const TextStyle(fontSize: 11, color: KitColors.muted),
             errorText: widget.errorText,

@@ -35,7 +35,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get codeSentSms => 'Kod SMS orqali yuborildi';
 
   @override
-  String get codeSentGeneric => 'Kod yuborildi';
+  String codeSentOnPhone(String phone) {
+    return 'Kodni yubordik: $phone';
+  }
 
   @override
   String get codeLabel => 'Kirish kodi';

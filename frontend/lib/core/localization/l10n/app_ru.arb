@@ -8,7 +8,14 @@
   "phoneInvalid": "Введите 9 цифр номера",
   "continueButton": "Продолжить",
   "codeSentSms": "Код отправлен по SMS",
-  "codeSentGeneric": "Код отправлен",
+  "codeSentOnPhone": "Отправили код на {phone}",
+  "@codeSentOnPhone": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
   "codeLabel": "Код для входа",
   "codeInvalidFormat": "Введите код из 6 цифр",
   "verifyButton": "Подтвердить",

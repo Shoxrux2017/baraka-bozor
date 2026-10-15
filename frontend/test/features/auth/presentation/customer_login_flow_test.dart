@@ -4,6 +4,7 @@ import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/app_theme.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:flutter/material.dart';
@@ -249,7 +250,10 @@ void main() {
       await tester.pumpAndSettle();
       await requestCode(tester, '901234567');
 
-      expect(find.textContaining(l10n(tester).codeSentGeneric), findsOneWidget);
+      expect(
+        find.text(l10n(tester).codeSentOnPhone('+998 90 123 45 67')),
+        findsOneWidget,
+      );
       expect(
         tester.widget<TextButton>(resendButton).onPressed,
         isNotNull,
@@ -312,8 +316,49 @@ void main() {
       expect(phoneField, findsOneWidget);
       expect(
         tester.widget<TextFormField>(phoneField).controller?.text,
-        '901234567',
+        '90 123 45 67',
       );
+    },
+  );
+
+  testWidgets('the phone is grouped while it is typed and sent as E.164', (
+    WidgetTester tester,
+  ) async {
+    await openApp(tester);
+
+    await tester.enterText(phoneField, '900000031');
+    await tester.pump();
+
+    expect(
+      tester.widget<TextFormField>(phoneField).controller?.text,
+      '90 000 00 31',
+    );
+
+    await tester.tap(continueButton);
+    await tester.pumpAndSettle();
+    await tester.tap(confirmSend);
+    await tester.pumpAndSettle();
+
+    expect(repository.calls, <String>['request:+998900000031']);
+  });
+
+  testWidgets(
+    'six digits pasted into a partly filled code become the whole code',
+    (WidgetTester tester) async {
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+
+      await tester.enterText(codeField, '1');
+      await tester.pump();
+      tester.testTextInput.updateEditingValue(
+        const TextEditingValue(
+          text: '1123456',
+          selection: TextSelection.collapsed(offset: 7),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.widget<TextField>(codeField).controller?.text, '123456');
     },
   );
 
@@ -357,6 +402,26 @@ void main() {
       expect(repository.calls.last, 'verify:+998901234567:987654');
     },
   );
+
+  testWidgets('the resend countdown is set in the interface font', (
+    WidgetTester tester,
+  ) async {
+    await openApp(tester);
+    await requestCode(tester, '901234567');
+
+    final Finder text = find.descendant(
+      of: resendButton,
+      matching: find.byType(Text),
+    );
+    expect(
+      DefaultTextStyle.of(tester.element(text)).style.fontFamily,
+      appFontFamily,
+    );
+    expect(tester.widget<Text>(text).data, contains('0:45'));
+
+    // Leave no timer behind.
+    await tester.pump(const Duration(seconds: 61));
+  });
 
   testWidgets('the code field offers the one-time-code autofill', (
     WidgetTester tester,
