@@ -17,7 +17,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get customerLoginIntro =>
-      'Telefon raqamingizni kiriting, biz sizga kirish kodini yuboramiz';
+      'Telefon raqamingizni kiriting — kirish kodini yuboramiz';
 
   @override
   String get phoneLabel => 'Telefon raqami';
@@ -30,9 +30,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get continueButton => 'Davom etish';
-
-  @override
-  String get codeSentTelegram => 'Kod Telegram orqali yuborildi';
 
   @override
   String get codeSentSms => 'Kod SMS orqali yuborildi';
@@ -53,8 +50,8 @@ class AppLocalizationsUz extends AppLocalizations {
   String get resendCode => 'Kodni qayta yuborish';
 
   @override
-  String resendIn(int seconds) {
-    return 'Qayta yuborish $seconds soniyadan so\'ng';
+  String resendIn(String time) {
+    return '$time dan so\'ng qayta yuborish';
   }
 
   @override
@@ -62,30 +59,17 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String codeSentToPhone(String phone) {
-    return 'Kod $phone raqamiga yuborildi';
+    return 'Kodni Telegramga yubordik: $phone';
   }
-
-  @override
-  String get customerModeIntro =>
-      'Mijoz rejimiga kirish uchun o\'z raqamingizga yuborilgan kodni kiriting';
 
   @override
   String get cancelButton => 'Bekor qilish';
 
   @override
-  String get requestCodeButton => 'Kod so\'rash';
-
-  @override
-  String get wrongSurfaceTitle => 'Bu yerdan kirib bo\'lmaydi';
+  String get wrongSurfaceTitle => 'Veb-panelni oching';
 
   @override
   String get staffLoginTitle => 'Xodim kirishi';
-
-  @override
-  String get staffLoginLink => 'Xodim sifatida kirish';
-
-  @override
-  String get customerLoginLink => 'Mijoz sifatida kirish';
 
   @override
   String get passwordLabel => 'Parol';
@@ -97,29 +81,29 @@ class AppLocalizationsUz extends AppLocalizations {
   String get loginButton => 'Kirish';
 
   @override
-  String get changePasswordTitle => 'Parolni o\'zgartirish';
+  String get changePasswordTitle => 'Parol o\'ylab toping';
 
   @override
   String get changePasswordRequiredIntro =>
-      'Davom etishdan oldin vaqtinchalik parolni o\'zingiznikiga almashtiring';
+      'Administrator vaqtinchalik parol berdi. Uni o\'zingiznikiga almashtiring';
 
   @override
-  String get currentPasswordLabel => 'Joriy parol';
+  String get currentPasswordLabel => 'Vaqtinchalik parol';
 
   @override
   String get newPasswordLabel => 'Yangi parol';
 
   @override
-  String get confirmPasswordLabel => 'Yangi parolni takrorlang';
+  String get confirmPasswordLabel => 'Parolni takrorlang';
 
   @override
-  String get passwordRuleHint => '10 tadan 128 tagacha belgi';
+  String get passwordRuleHint => 'Kamida 10 ta belgi';
 
   @override
   String get passwordsDoNotMatch => 'Parollar mos kelmadi';
 
   @override
-  String get savePasswordButton => 'Saqlash';
+  String get savePasswordButton => 'Parolni saqlash';
 
   @override
   String get passwordChanged => 'Parol o\'zgartirildi';
@@ -129,11 +113,11 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get wrongSurfaceMobile =>
-      'Bu hisob veb-panelda ishlaydi. Kompyuterdagi brauzer orqali kiring.';
+      'Bu hisob kompyuterdagi brauzerda ishlaydi. BarakaBozor veb-paneli orqali kiring';
 
   @override
   String get wrongSurfaceWeb =>
-      'Bu hisob mobil ilovada ishlaydi. Telefondagi BarakaBozor ilovasi orqali kiring.';
+      'Bu hisob telefondagi BarakaBozor ilovasida ishlaydi';
 
   @override
   String get languageLabel => 'Til';
@@ -2494,4 +2478,78 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get errorCashAmountMismatch =>
       'Summa olinishi kerak bo\'lgan summaga mos emas.';
+
+  @override
+  String get getCodeButton => 'Kod olish';
+
+  @override
+  String get codeComesInTelegram => 'Kod Telegramga keladi';
+
+  @override
+  String get termsLine =>
+      'Davom etib, siz foydalanish shartlariga rozilik bildirasiz';
+
+  @override
+  String get confirmPhoneTitle => 'Raqamni tekshiring';
+
+  @override
+  String get confirmPhoneBody => 'Unga Telegramda kod yuboramiz';
+
+  @override
+  String get editButton => 'O\'zgartirish';
+
+  @override
+  String get sendButton => 'Yuborish';
+
+  @override
+  String get codeTitle => 'Kodni kiriting';
+
+  @override
+  String get nameTitle => 'Ismingiz nima?';
+
+  @override
+  String get nameSubtitle => 'Ism yig\'uvchi va kuryerga kerak';
+
+  @override
+  String welcomeTitle(String name) {
+    return 'Xush kelibsiz, $name!';
+  }
+
+  @override
+  String get welcomeBody => 'Bozordan yangi mahsulotlar sizni kutmoqda';
+
+  @override
+  String get welcomeButton => 'Xaridlarga';
+
+  @override
+  String get staffPasswordTitle => 'Xodim sifatida kirish';
+
+  @override
+  String get staffPasswordSubtitle =>
+      'Raqam tasdiqlandi. Xodim parolini kiriting';
+
+  @override
+  String get staffPasswordForgot =>
+      'Parolni unutdingizmi? Administratorga murojaat qiling';
+
+  @override
+  String get staffPasswordWrong => 'Noto\'g\'ri parol';
+
+  @override
+  String get staffStepExpired => 'Tasdiqlash muddati tugadi. Yangi kod oling';
+
+  @override
+  String get getNewCodeButton => 'Yangi kod olish';
+
+  @override
+  String get showPassword => 'Parolni ko\'rsatish';
+
+  @override
+  String get hidePassword => 'Parolni yashirish';
+
+  @override
+  String get back => 'Orqaga';
+
+  @override
+  String get wrongSurfaceWebTitle => 'Ilovani oching';
 }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/theme/kit_colors.dart';
 
 /// The phone entry of every login: the country code is fixed and shown, the
 /// person types the nine national digits, and the value sent is the E.164
@@ -38,10 +39,34 @@ class PhoneField extends StatelessWidget {
       textInputAction: textInputAction,
       autofillHints: const <String>[AutofillHints.telephoneNumberNational],
       inputFormatters: <TextInputFormatter>[NationalPhoneDigitsFormatter()],
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: KitColors.ink,
+      ),
       decoration: InputDecoration(
-        labelText: l10n.phoneLabel,
-        prefixText: '$phoneCountryCode ',
         hintText: l10n.phoneHint,
+        hintStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          color: KitColors.muted,
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 18),
+        prefixIconConstraints: const BoxConstraints(),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(left: 20, right: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Text(
+                phoneCountryCode,
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+              const SizedBox(width: 12),
+              Container(width: 1, height: 22, color: KitColors.line),
+            ],
+          ),
+        ),
+        prefixIconColor: KitColors.ink,
       ),
       validator: (String? value) => phoneFromNationalDigits(value ?? '') == null
           ? l10n.phoneInvalid

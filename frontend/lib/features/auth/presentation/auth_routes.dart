@@ -3,10 +3,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
+import 'auth_entry_screen.dart';
 import 'change_password_screen.dart';
 import 'code_screen.dart';
-import 'phone_screen.dart';
+import 'customer_name_screen.dart';
 import 'staff_login_screen.dart';
+import 'staff_password_screen.dart';
 import 'unreachable_screen.dart';
 import 'wrong_surface_screen.dart';
 
@@ -20,7 +22,7 @@ final FeatureRoutes authRoutes = FeatureRoutes(
       path: AppPaths.auth,
       name: 'customer-phone',
       builder: (BuildContext context, GoRouterState state) =>
-          const PhoneScreen(),
+          const AuthEntryScreen(),
     ),
     GoRoute(
       path: AppPaths.customerCode,
@@ -40,19 +42,17 @@ final FeatureRoutes authRoutes = FeatureRoutes(
       builder: (BuildContext context, GoRouterState state) =>
           const ChangePasswordScreen(),
     ),
-    // Stage 1 / Task 5 replaces these two with the real screens; until then
-    // the guard has somewhere to send the two new steps.
     GoRoute(
       path: AppPaths.staffPassword,
       name: 'staff-password',
       builder: (BuildContext context, GoRouterState state) =>
-          const Scaffold(key: ValueKey<String>('staff-password-screen')),
+          const StaffPasswordScreen(),
     ),
     GoRoute(
       path: AppPaths.customerName,
       name: 'customer-name',
       builder: (BuildContext context, GoRouterState state) =>
-          const Scaffold(key: ValueKey<String>('customer-name-screen')),
+          const CustomerNameScreen(),
     ),
     GoRoute(
       path: AppPaths.unreachable,

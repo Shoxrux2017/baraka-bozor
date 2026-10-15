@@ -27,6 +27,7 @@ String _refusalText(AppLocalizations l10n, String code, int status) {
   return switch (code) {
     'authentication_required' => l10n.errorAuthenticationRequired,
     'account_blocked' => l10n.errorAccountBlocked,
+    'staff_code_required' => l10n.wrongSurfaceWeb,
     'password_change_required' => l10n.errorPasswordChangeRequired,
     'invalid_credentials' => l10n.errorInvalidCredentials,
     'code_invalid' => l10n.errorCodeInvalid,

@@ -8,6 +8,7 @@ import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/change_password_controller.dart';
 import 'auth_scaffold.dart';
+import 'password_field.dart';
 
 /// The password rule of `docs/09-api-contracts.md` section 10.
 const int passwordMinLength = 10;
@@ -65,36 +66,29 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
     return AuthScaffold(
       title: l10n.changePasswordTitle,
+      subtitle: l10n.changePasswordRequiredIntro,
+      wordmark: false,
       child: Form(
         key: _form,
         child: AutofillGroup(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Text(l10n.changePasswordRequiredIntro),
-              const SizedBox(height: 24),
-              TextFormField(
-                key: const ValueKey<String>('current-password-field'),
+              PasswordField(
+                fieldKey: const ValueKey<String>('current-password-field'),
                 controller: _current,
-                obscureText: true,
+                label: l10n.currentPasswordLabel,
                 autofocus: true,
-                autofillHints: const <String>[AutofillHints.password],
-                decoration: InputDecoration(
-                  labelText: l10n.currentPasswordLabel,
-                ),
                 validator: (String? value) =>
                     (value ?? '').isEmpty ? l10n.passwordRequired : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                key: const ValueKey<String>('new-password-field'),
+              PasswordField(
+                fieldKey: const ValueKey<String>('new-password-field'),
                 controller: _fresh,
-                obscureText: true,
-                autofillHints: const <String>[AutofillHints.newPassword],
-                decoration: InputDecoration(
-                  labelText: l10n.newPasswordLabel,
-                  helperText: l10n.passwordRuleHint,
-                ),
+                label: l10n.newPasswordLabel,
+                helperText: l10n.passwordRuleHint,
+                autofillHint: AutofillHints.newPassword,
                 validator: (String? value) {
                   final int length = (value ?? '').length;
                   return length < passwordMinLength ||
@@ -104,18 +98,15 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                key: const ValueKey<String>('confirm-password-field'),
+              PasswordField(
+                fieldKey: const ValueKey<String>('confirm-password-field'),
                 controller: _confirmation,
-                obscureText: true,
-                autofillHints: const <String>[AutofillHints.newPassword],
+                label: l10n.confirmPasswordLabel,
+                autofillHint: AutofillHints.newPassword,
                 textInputAction: TextInputAction.done,
-                decoration: InputDecoration(
-                  labelText: l10n.confirmPasswordLabel,
-                ),
                 validator: (String? value) =>
                     value != _fresh.text ? l10n.passwordsDoNotMatch : null,
-                onFieldSubmitted: (String _) => _submit(),
+                onSubmitted: (String _) => _submit(),
               ),
               FailureMessage(state.failure),
               const SizedBox(height: 24),
@@ -124,7 +115,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 onPressed: state.isBusy ? null : _submit,
                 child: Text(l10n.savePasswordButton),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               TextButton(
                 key: const ValueKey<String>('logout-button'),
                 onPressed: state.isBusy

@@ -113,7 +113,7 @@ abstract class AppLocalizations {
   /// No description provided for @customerLoginIntro.
   ///
   /// In uz, this message translates to:
-  /// **'Telefon raqamingizni kiriting, biz sizga kirish kodini yuboramiz'**
+  /// **'Telefon raqamingizni kiriting — kirish kodini yuboramiz'**
   String get customerLoginIntro;
 
   /// No description provided for @phoneLabel.
@@ -139,12 +139,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Davom etish'**
   String get continueButton;
-
-  /// No description provided for @codeSentTelegram.
-  ///
-  /// In uz, this message translates to:
-  /// **'Kod Telegram orqali yuborildi'**
-  String get codeSentTelegram;
 
   /// No description provided for @codeSentSms.
   ///
@@ -185,8 +179,8 @@ abstract class AppLocalizations {
   /// No description provided for @resendIn.
   ///
   /// In uz, this message translates to:
-  /// **'Qayta yuborish {seconds} soniyadan so\'ng'**
-  String resendIn(int seconds);
+  /// **'{time} dan so\'ng qayta yuborish'**
+  String resendIn(String time);
 
   /// No description provided for @changePhone.
   ///
@@ -197,14 +191,8 @@ abstract class AppLocalizations {
   /// No description provided for @codeSentToPhone.
   ///
   /// In uz, this message translates to:
-  /// **'Kod {phone} raqamiga yuborildi'**
+  /// **'Kodni Telegramga yubordik: {phone}'**
   String codeSentToPhone(String phone);
-
-  /// No description provided for @customerModeIntro.
-  ///
-  /// In uz, this message translates to:
-  /// **'Mijoz rejimiga kirish uchun o\'z raqamingizga yuborilgan kodni kiriting'**
-  String get customerModeIntro;
 
   /// No description provided for @cancelButton.
   ///
@@ -212,16 +200,10 @@ abstract class AppLocalizations {
   /// **'Bekor qilish'**
   String get cancelButton;
 
-  /// No description provided for @requestCodeButton.
-  ///
-  /// In uz, this message translates to:
-  /// **'Kod so\'rash'**
-  String get requestCodeButton;
-
   /// No description provided for @wrongSurfaceTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Bu yerdan kirib bo\'lmaydi'**
+  /// **'Veb-panelni oching'**
   String get wrongSurfaceTitle;
 
   /// No description provided for @staffLoginTitle.
@@ -229,18 +211,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Xodim kirishi'**
   String get staffLoginTitle;
-
-  /// No description provided for @staffLoginLink.
-  ///
-  /// In uz, this message translates to:
-  /// **'Xodim sifatida kirish'**
-  String get staffLoginLink;
-
-  /// No description provided for @customerLoginLink.
-  ///
-  /// In uz, this message translates to:
-  /// **'Mijoz sifatida kirish'**
-  String get customerLoginLink;
 
   /// No description provided for @passwordLabel.
   ///
@@ -263,19 +233,19 @@ abstract class AppLocalizations {
   /// No description provided for @changePasswordTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Parolni o\'zgartirish'**
+  /// **'Parol o\'ylab toping'**
   String get changePasswordTitle;
 
   /// No description provided for @changePasswordRequiredIntro.
   ///
   /// In uz, this message translates to:
-  /// **'Davom etishdan oldin vaqtinchalik parolni o\'zingiznikiga almashtiring'**
+  /// **'Administrator vaqtinchalik parol berdi. Uni o\'zingiznikiga almashtiring'**
   String get changePasswordRequiredIntro;
 
   /// No description provided for @currentPasswordLabel.
   ///
   /// In uz, this message translates to:
-  /// **'Joriy parol'**
+  /// **'Vaqtinchalik parol'**
   String get currentPasswordLabel;
 
   /// No description provided for @newPasswordLabel.
@@ -287,13 +257,13 @@ abstract class AppLocalizations {
   /// No description provided for @confirmPasswordLabel.
   ///
   /// In uz, this message translates to:
-  /// **'Yangi parolni takrorlang'**
+  /// **'Parolni takrorlang'**
   String get confirmPasswordLabel;
 
   /// No description provided for @passwordRuleHint.
   ///
   /// In uz, this message translates to:
-  /// **'10 tadan 128 tagacha belgi'**
+  /// **'Kamida 10 ta belgi'**
   String get passwordRuleHint;
 
   /// No description provided for @passwordsDoNotMatch.
@@ -305,7 +275,7 @@ abstract class AppLocalizations {
   /// No description provided for @savePasswordButton.
   ///
   /// In uz, this message translates to:
-  /// **'Saqlash'**
+  /// **'Parolni saqlash'**
   String get savePasswordButton;
 
   /// No description provided for @passwordChanged.
@@ -323,13 +293,13 @@ abstract class AppLocalizations {
   /// No description provided for @wrongSurfaceMobile.
   ///
   /// In uz, this message translates to:
-  /// **'Bu hisob veb-panelda ishlaydi. Kompyuterdagi brauzer orqali kiring.'**
+  /// **'Bu hisob kompyuterdagi brauzerda ishlaydi. BarakaBozor veb-paneli orqali kiring'**
   String get wrongSurfaceMobile;
 
   /// No description provided for @wrongSurfaceWeb.
   ///
   /// In uz, this message translates to:
-  /// **'Bu hisob mobil ilovada ishlaydi. Telefondagi BarakaBozor ilovasi orqali kiring.'**
+  /// **'Bu hisob telefondagi BarakaBozor ilovasida ishlaydi'**
   String get wrongSurfaceWeb;
 
   /// No description provided for @languageLabel.
@@ -4393,6 +4363,144 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Summa olinishi kerak bo\'lgan summaga mos emas.'**
   String get errorCashAmountMismatch;
+
+  /// No description provided for @getCodeButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod olish'**
+  String get getCodeButton;
+
+  /// No description provided for @codeComesInTelegram.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod Telegramga keladi'**
+  String get codeComesInTelegram;
+
+  /// No description provided for @termsLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davom etib, siz foydalanish shartlariga rozilik bildirasiz'**
+  String get termsLine;
+
+  /// No description provided for @confirmPhoneTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqamni tekshiring'**
+  String get confirmPhoneTitle;
+
+  /// No description provided for @confirmPhoneBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Unga Telegramda kod yuboramiz'**
+  String get confirmPhoneBody;
+
+  /// No description provided for @editButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgartirish'**
+  String get editButton;
+
+  /// No description provided for @sendButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yuborish'**
+  String get sendButton;
+
+  /// No description provided for @codeTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kodni kiriting'**
+  String get codeTitle;
+
+  /// No description provided for @nameTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismingiz nima?'**
+  String get nameTitle;
+
+  /// No description provided for @nameSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism yig\'uvchi va kuryerga kerak'**
+  String get nameSubtitle;
+
+  /// No description provided for @welcomeTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xush kelibsiz, {name}!'**
+  String welcomeTitle(String name);
+
+  /// No description provided for @welcomeBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bozordan yangi mahsulotlar sizni kutmoqda'**
+  String get welcomeBody;
+
+  /// No description provided for @welcomeButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaridlarga'**
+  String get welcomeButton;
+
+  /// No description provided for @staffPasswordTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xodim sifatida kirish'**
+  String get staffPasswordTitle;
+
+  /// No description provided for @staffPasswordSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqam tasdiqlandi. Xodim parolini kiriting'**
+  String get staffPasswordSubtitle;
+
+  /// No description provided for @staffPasswordForgot.
+  ///
+  /// In uz, this message translates to:
+  /// **'Parolni unutdingizmi? Administratorga murojaat qiling'**
+  String get staffPasswordForgot;
+
+  /// No description provided for @staffPasswordWrong.
+  ///
+  /// In uz, this message translates to:
+  /// **'Noto\'g\'ri parol'**
+  String get staffPasswordWrong;
+
+  /// No description provided for @staffStepExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tasdiqlash muddati tugadi. Yangi kod oling'**
+  String get staffStepExpired;
+
+  /// No description provided for @getNewCodeButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi kod olish'**
+  String get getNewCodeButton;
+
+  /// No description provided for @showPassword.
+  ///
+  /// In uz, this message translates to:
+  /// **'Parolni ko\'rsatish'**
+  String get showPassword;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In uz, this message translates to:
+  /// **'Parolni yashirish'**
+  String get hidePassword;
+
+  /// No description provided for @back.
+  ///
+  /// In uz, this message translates to:
+  /// **'Orqaga'**
+  String get back;
+
+  /// No description provided for @wrongSurfaceWebTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilovani oching'**
+  String get wrongSurfaceWebTitle;
 }
 
 class _AppLocalizationsDelegate
