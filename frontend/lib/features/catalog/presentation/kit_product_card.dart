@@ -48,11 +48,19 @@ class KitCardType {
 
   static KitCardType of(KitCardSize size) =>
       size == KitCardSize.compact ? compact : regular;
+
+  /// The side of the add button and of the stepper's buttons.
+  static double buttonSide(KitCardSize size) =>
+      size == KitCardSize.compact ? 32 : 36;
+
+  /// The height of the bottom row: the tap area around the add button.
+  static const double bottomRowHeight = 40;
 }
 
-/// A product in a Customer list (`DL-80`): picture, heart, name, the
-/// approximate price with its unit, and either "Добавить" — one tap adds one
-/// unit — or, once the product is in the cart, the quantity stepper.
+/// A product in a Customer list (`DL-80`, `DL-81`): picture, heart, name, the
+/// approximate price, and a bottom row with the unit at the left and a green
+/// "+" at the right — one tap adds one unit — which, once the product is in
+/// the cart, becomes the quantity stepper.
 class KitProductCard extends ConsumerStatefulWidget {
   const KitProductCard({
     required this.product,
@@ -235,111 +243,114 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
           onTap: () => context.push(CatalogPaths.product(id)),
           child: Padding(
             padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                SizedBox(
-                  height: imageHeight,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: KitColors.card,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Stack(
-                      children: <Widget>[
-                        Positioned.fill(
-                          child: LayoutBuilder(
-                            builder:
-                                (
-                                  BuildContext context,
-                                  BoxConstraints constraints,
-                                ) => Center(
-                                  child: Opacity(
-                                    key: ValueKey<String>('picture-$id'),
-                                    opacity: available ? 1 : 0.45,
-                                    child: ProductImage(
-                                      url: product.imageUrl,
-                                      size: math.max(
-                                        0,
-                                        math.min(
-                                          imageHeight - 8,
-                                          constraints.maxWidth - 8,
+            // Given an exact height, the bottom row is pinned to the bottom.
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) =>
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: constraints.hasTightHeight
+                        ? MainAxisSize.max
+                        : MainAxisSize.min,
+                    children: <Widget>[
+                      SizedBox(
+                        height: imageHeight,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: KitColors.card,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Stack(
+                            children: <Widget>[
+                              Positioned.fill(
+                                child: LayoutBuilder(
+                                  builder:
+                                      (
+                                        BuildContext context,
+                                        BoxConstraints constraints,
+                                      ) => Center(
+                                        child: Opacity(
+                                          key: ValueKey<String>('picture-$id'),
+                                          opacity: available ? 1 : 0.45,
+                                          child: ProductImage(
+                                            url: product.imageUrl,
+                                            size: math.max(
+                                              0,
+                                              0.7 *
+                                                  math.min(
+                                                    imageHeight,
+                                                    constraints.maxWidth,
+                                                  ),
+                                            ),
+                                          ),
                                         ),
                                       ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: _Absorb(
+                                  child: IconButton(
+                                    key: ValueKey<String>('heart-$id'),
+                                    tooltip: favorite
+                                        ? l10n.favoriteRemove
+                                        : l10n.favoriteAdd,
+                                    visualDensity: VisualDensity.compact,
+                                    padding: const EdgeInsets.all(6),
+                                    constraints: const BoxConstraints.tightFor(
+                                      width: 32,
+                                      height: 32,
                                     ),
+                                    iconSize: 18,
+                                    color: favorite
+                                        ? KitColors.danger
+                                        : KitColors.ink,
+                                    icon: Icon(
+                                      favorite
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                    ),
+                                    onPressed: _toggleHeart,
                                   ),
                                 ),
+                              ),
+                            ],
                           ),
                         ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: _Absorb(
-                            child: IconButton(
-                              key: ValueKey<String>('heart-$id'),
-                              tooltip: favorite
-                                  ? l10n.favoriteRemove
-                                  : l10n.favoriteAdd,
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.all(6),
-                              constraints: const BoxConstraints.tightFor(
-                                width: 32,
-                                height: 32,
-                              ),
-                              iconSize: 18,
-                              color: favorite
-                                  ? KitColors.danger
-                                  : KitColors.ink,
-                              icon: Icon(
-                                favorite
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                              ),
-                              onPressed: _toggleHeart,
-                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        product.name(language),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: nameSize,
+                          height: nameHeight / nameSize,
+                          fontWeight: FontWeight.w500,
+                          color: textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.catalogApproxPrice(
+                          MoneyFormat.uzs(
+                            product.customerUnitPriceUzs,
+                            language,
                           ),
                         ),
-                      ],
-                    ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: priceSize,
+                          fontWeight: FontWeight.w700,
+                          color: textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (constraints.hasTightHeight) const Spacer(),
+                      _bottomRow(l10n, line, unitSize),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  product.name(language),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: nameSize,
-                    height: nameHeight / nameSize,
-                    fontWeight: FontWeight.w500,
-                    color: textColor,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.catalogApproxPrice(
-                    MoneyFormat.uzs(product.customerUnitPriceUzs, language),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: priceSize,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
-                  ),
-                ),
-                Text(
-                  l10n.catalogPerUnit(
-                    CatalogLabels.unit(l10n, product.unitCode),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: unitSize, color: KitColors.muted),
-                ),
-                const SizedBox(height: 8),
-                _Absorb(child: _controls(l10n, line)),
-              ],
             ),
           ),
         ),
@@ -347,54 +358,81 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
     );
   }
 
-  Widget _controls(AppLocalizations l10n, CartLine? line) {
+  /// The bottom row: the unit and the "+", the stepper in the cart, or "not
+  /// sold". Taps on it never open the product.
+  Widget _bottomRow(AppLocalizations l10n, CartLine? line, double unitSize) {
     final CatalogProduct product = widget.product;
     final String id = product.id;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        if (!widget.available)
-          _Unavailable(id: id, height: _compact ? 32 : 38)
-        else if (line != null)
-          _Stepper(
-            id: id,
-            height: _compact ? 32 : 38,
-            quantity:
-                '${QuantityRules.display(line.quantity)}\u00A0'
-                '${CatalogLabels.unit(l10n, product.unitCode)}',
-            busy: _cartBusy,
-            minusLabel: l10n.cartStepMinus,
-            plusLabel: l10n.cartStepPlus,
-            onMinus: () => _step(line, up: false),
-            onPlus: () => _step(line, up: true),
-          )
-        else
-          SizedBox(
-            height: _compact ? 32 : 38,
-            child: FilledButton(
-              key: ValueKey<String>('add-$id'),
-              style: FilledButton.styleFrom(
-                backgroundColor: KitColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: _cartBusy ? null : _add,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  l10n.catalogAdd,
-                  style: TextStyle(
-                    fontSize: _compact ? 12 : 13,
-                    fontWeight: FontWeight.w600,
+    final double side = KitCardType.buttonSide(widget.size);
+    final double iconSize = _compact ? 20 : 22;
+    return _Absorb(
+      child: SizedBox(
+        height: KitCardType.bottomRowHeight,
+        child: !widget.available
+            ? _Unavailable(id: id)
+            : line != null
+            ? _Stepper(
+                id: id,
+                side: side,
+                iconSize: iconSize,
+                quantity:
+                    '${QuantityRules.display(line.quantity)} '
+                    '${CatalogLabels.unit(l10n, product.unitCode)}',
+                busy: _cartBusy,
+                minusLabel: l10n.cartStepMinus,
+                plusLabel: l10n.cartStepPlus,
+                onMinus: () => _step(line, up: false),
+                onPlus: () => _step(line, up: true),
+              )
+            : Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      l10n.catalogPerUnit(
+                        CatalogLabels.unit(l10n, product.unitCode),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: unitSize,
+                        color: KitColors.muted,
+                      ),
+                    ),
                   ),
-                ),
+                  // The tap area is the whole 40-square slot, the visible
+                  // button the smaller square inside it.
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _cartBusy ? () {} : _add,
+                    child: SizedBox.square(
+                      dimension: KitCardType.bottomRowHeight,
+                      child: Center(
+                        child: SizedBox.square(
+                          dimension: side,
+                          child: IconButton(
+                            key: ValueKey<String>('add-$id'),
+                            tooltip: l10n.catalogAdd,
+                            padding: EdgeInsets.zero,
+                            iconSize: iconSize,
+                            style: IconButton.styleFrom(
+                              backgroundColor: KitColors.primary,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: KitColors.primarySoft,
+                              disabledForegroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            icon: const Icon(Icons.add),
+                            onPressed: _cartBusy ? null : _add,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-      ],
+      ),
     );
   }
 }
@@ -415,26 +453,23 @@ class _Absorb extends StatelessWidget {
 }
 
 class _Unavailable extends StatelessWidget {
-  const _Unavailable({required this.id, required this.height});
+  const _Unavailable({required this.id});
 
   final String id;
-  final double height;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      key: ValueKey<String>('unavailable-$id'),
-      height: height,
-      child: Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            AppLocalizations.of(context).catalogUnavailable,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: KitColors.muted,
-            ),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          AppLocalizations.of(context).catalogUnavailable,
+          key: ValueKey<String>('unavailable-$id'),
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: KitColors.muted,
           ),
         ),
       ),
@@ -445,7 +480,8 @@ class _Unavailable extends StatelessWidget {
 class _Stepper extends StatelessWidget {
   const _Stepper({
     required this.id,
-    required this.height,
+    required this.side,
+    required this.iconSize,
     required this.quantity,
     required this.busy,
     required this.minusLabel,
@@ -455,7 +491,8 @@ class _Stepper extends StatelessWidget {
   });
 
   final String id;
-  final double height;
+  final double side;
+  final double iconSize;
   final String quantity;
   final bool busy;
   final String minusLabel;
@@ -465,18 +502,20 @@ class _Stepper extends StatelessWidget {
 
   Widget _button(Key key, IconData icon, String label, VoidCallback onTap) {
     return SizedBox.square(
-      dimension: height,
+      dimension: side,
       child: IconButton(
         key: key,
         tooltip: label,
         padding: EdgeInsets.zero,
-        iconSize: 18,
+        iconSize: iconSize,
         style: IconButton.styleFrom(
           backgroundColor: KitColors.primary,
           foregroundColor: Colors.white,
           disabledBackgroundColor: KitColors.primarySoft,
           disabledForegroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
         icon: Icon(icon),
         onPressed: busy ? null : onTap,

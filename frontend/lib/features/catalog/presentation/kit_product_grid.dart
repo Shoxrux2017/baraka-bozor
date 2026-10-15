@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,15 +20,14 @@ double kitCardExtent(
   required KitCardSize size,
   required double imageHeight,
 }) {
-  final bool compact = size == KitCardSize.compact;
-  final double controls = compact ? 32 : 38;
   final KitCardType type = KitCardType.of(size);
   final double name =
       2 * scaler.scale(type.nameSize) * (type.nameHeight / type.nameSize);
   final double price = scaler.scale(type.priceSize) * 1.4;
   final double unit = scaler.scale(type.unitSize) * 1.4;
+  final double bottomRow = math.max(KitCardType.bottomRowHeight, unit);
   // Padding 16, gaps 8 + 4 + 8, and a little slack for the line heights.
-  return 16 + imageHeight + 8 + name + 4 + price + unit + 8 + controls + 6;
+  return 16 + imageHeight + 8 + name + 4 + price + 8 + bottomRow + 6;
 }
 
 /// A product list as a grid of kit cards, loaded a page at a time: the next
