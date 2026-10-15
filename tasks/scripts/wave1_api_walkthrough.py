@@ -4,7 +4,10 @@ usage: python tasks/scripts/wave1_api_walkthrough.py [base]
        (default http://127.0.0.1:8000/api/v1)
 
 Needs the stack served as `docker/README.md` says, the staff accounts of
-`WalkthroughSeeder` and a test phone. The staff password, the test phone and
+`WalkthroughSeeder` and test phones: the first of `LOGIN_CODE_TEST_PHONES` is
+the Customer, and +998 90 000 00 21 (also a test phone, see
+`backend/.env.example`) is the Shopper the run creates, who signs in with the
+login code and then the password. The staff password, the test phone and
 its code are read from `backend/.env` (`WALKTHROUGH_STAFF_PASSWORD`, the first
 of `LOGIN_CODE_TEST_PHONES`, `LOGIN_CODE_TEST_CODE`); variables of the same
 names in the environment take precedence. Image URLs are built from
@@ -49,6 +52,11 @@ STAFF_PASSWORD = local_setting("WALKTHROUGH_STAFF_PASSWORD")
 TEST_PHONE = local_setting("LOGIN_CODE_TEST_PHONES").split(",")[0].strip()
 TEST_CODE = local_setting("LOGIN_CODE_TEST_CODE")
 ADMIN_PHONE = "+998900000005"
+# The Shopper this run creates signs in with the login code (DL-77), so the
+# phone must be one of LOGIN_CODE_TEST_PHONES (see backend/.env.example).
+SHOPPER_POOL_PHONE = "+998900000021"
+if SHOPPER_POOL_PHONE not in local_setting("LOGIN_CODE_TEST_PHONES").split(","):
+    sys.exit(f"{SHOPPER_POOL_PHONE} must be one of LOGIN_CODE_TEST_PHONES (see backend/.env.example)")
 
 
 def call(method, path, token=None, body=None, raw=None, content_type=None):
@@ -70,6 +78,44 @@ def call(method, path, token=None, body=None, raw=None, content_type=None):
     except urllib.error.HTTPError as error:
         text = error.read().decode()
         return error.code, (json.loads(text) if text else None)
+
+
+def code(answer):
+    return answer and answer.get("code")
+
+
+def staff_with_code(phone, password):
+    """Shopper and Courier sign in with the login code, then the password (DL-77)."""
+    status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
+    # A resend within the minute waits it out; the hourly limit does not pass
+    # by waiting, and the verify below then fails as itself.
+    if code(answer) == "code_resend_too_soon":
+        time.sleep(61)
+        status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
+    status, answer = call("POST", "/auth/customer/code/verify", body={"phone": phone, "code": TEST_CODE})
+    if status != 200:
+        sys.exit(f"the login code of {phone} was refused: {status} {code(answer)}; "
+                 "is the phone one of LOGIN_CODE_TEST_PHONES?")
+    step = answer["data"].get("staff_step")
+    if not step:
+        sys.exit(f"the verify of {phone} returned no staff_step: no active or blocked Shopper or Courier holds it")
+    status, answer = call("POST", "/auth/staff/step", body={"staff_step": step["token"], "password": password})
+    if status != 200:
+        sys.exit(f"the staff step of {phone} was refused: {status} {code(answer)}")
+    return status, answer
+
+
+def block_active_staff(admin, phone):
+    """A pool phone still held by an active account of an earlier run is freed."""
+    page = 1
+    while True:
+        status, answer = call("GET", f"/admin/staff?per_page=100&page={page}", admin)
+        if status != 200 or not answer["data"]:
+            return
+        for member in answer["data"]:
+            if member["phone"] == phone and member["status"] == "active":
+                call("POST", f"/admin/staff/{member['id']}/block", admin)
+        page += 1
 
 
 def check(name, ok, detail=""):
@@ -159,7 +205,8 @@ check("Admin archives a product", status == 200 and answer["data"]["archived_at"
 status, answer = call("POST", f"/admin/products/{fixed}/restore", admin)
 check("Admin restores it", status == 200 and answer["data"]["archived_at"] is None, f"{status}")
 
-shopper_phone = "+99891" + stamp.rjust(7, "0")
+shopper_phone = SHOPPER_POOL_PHONE
+block_active_staff(admin, shopper_phone)
 status, answer = call("POST", "/admin/staff", admin, {"full_name": "Aziz Rahimov", "phone": shopper_phone, "role": "shopper"})
 check("Admin creates a Shopper with a temporary password",
       status == 201 and answer["data"]["user"]["must_change_password"] is True and answer["data"]["temporary_password"],
@@ -167,7 +214,7 @@ check("Admin creates a Shopper with a temporary password",
 shopper_id = answer["data"]["user"]["id"]
 temporary = answer["data"]["temporary_password"]
 new_password = secrets.token_urlsafe(16)
-status, answer = call("POST", "/auth/staff/login", body={"phone": shopper_phone, "password": temporary})
+status, answer = staff_with_code(shopper_phone, temporary)
 check("The Shopper signs in with it and meets the password gate",
       status == 200 and answer["data"]["user"]["must_change_password"] is True, f"{status}")
 shopper = answer["data"]["token"]
