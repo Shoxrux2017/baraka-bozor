@@ -452,6 +452,37 @@ void main() {
     (CatalogPaths.category('c-1'), CategoryScreen),
   ]) {
     final String path = screen.$1;
+    testWidgets('$path has a white app bar without a tint', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      tokens.tokens[SessionSlot.staff] = 's';
+      auth.identities[SessionSlot.staff] = user(
+        id: 's',
+        role: UserRole.courier,
+      );
+
+      await open(tester);
+      await tester.tap(byKey('staff-menu'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('switch-to-customer-button'));
+      await tester.pumpAndSettle();
+      GoRouter.of(tester.element(find.byType(Scaffold).first)).push(path);
+      await tester.pumpAndSettle();
+
+      final AppBar bar = tester.widget<AppBar>(
+        find.descendant(
+          of: find.byType(screen.$2),
+          matching: find.byType(AppBar),
+        ),
+      );
+      expect(bar.backgroundColor, Colors.white);
+      expect(bar.surfaceTintColor, Colors.transparent);
+      expect(bar.scrolledUnderElevation, 0);
+    });
+
     testWidgets('with two sessions $path shows the mode bar', (
       WidgetTester tester,
     ) async {

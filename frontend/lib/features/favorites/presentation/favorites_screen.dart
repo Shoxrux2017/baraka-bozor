@@ -7,6 +7,7 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
+import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/customer_tab_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../catalog/presentation/kit_product_card.dart';
@@ -32,17 +33,9 @@ class FavoritesScreen extends ConsumerWidget {
     return CustomerTabScope(
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
+        appBar: kitAppBar(
+          title: l10n.favoritesTitle,
           automaticallyImplyLeading: false,
-          centerTitle: true,
-          title: Text(
-            l10n.favoritesTitle,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: KitColors.ink,
-            ),
-          ),
         ),
         // The mode stays visible while two sessions exist (DL-75).
         body: UnderActiveMode(

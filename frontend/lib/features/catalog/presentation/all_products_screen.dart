@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
+import '../../../core/widgets/kit_app_bar.dart';
 import '../../cart/presentation/cart_summary_bar.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
@@ -23,17 +24,7 @@ class AllProductsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        centerTitle: true,
-        title: Text(
-          l10n.allProductsTitle,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: KitColors.ink,
-          ),
-        ),
-      ),
+      appBar: kitAppBar(title: l10n.allProductsTitle),
       // The mode stays visible while two sessions exist (DL-75).
       body: UnderActiveMode(
         child: Stack(

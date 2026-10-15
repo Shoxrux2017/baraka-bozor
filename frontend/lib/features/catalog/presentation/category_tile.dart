@@ -18,29 +18,17 @@ class CategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String name = category.name(interfaceLanguage(context));
-    final String? imageUrl = category.imageUrl;
 
     final Widget well = AspectRatio(
       aspectRatio: 1,
       child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints box) => DecoratedBox(
-          decoration: BoxDecoration(
-            color: imageUrl == null ? KitColors.primaryWash : KitColors.card,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Center(
-            child: imageUrl == null
-                ? Text(
-                    name.isEmpty ? '' : name.characters.first.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: box.maxWidth * 0.4,
-                      fontWeight: FontWeight.w700,
-                      color: KitColors.primaryDark,
-                    ),
-                  )
-                : ProductImage(url: imageUrl, size: box.maxWidth * 0.7),
-          ),
-        ),
+        builder: (BuildContext context, BoxConstraints box) =>
+            CategoryPictureWell(
+              category: category,
+              size: box.maxWidth,
+              radius: 14,
+              pictureSize: box.maxWidth * 0.7,
+            ),
       ),
     );
 
@@ -65,5 +53,54 @@ class CategoryTile extends StatelessWidget {
       ],
     );
     return size == null ? tile : SizedBox(width: size, child: tile);
+  }
+}
+
+/// The square well of a category's picture, or — without one — the first
+/// letter of its name in green. Without a [color] the well is the card colour
+/// under a picture and the green wash under a letter.
+class CategoryPictureWell extends StatelessWidget {
+  const CategoryPictureWell({
+    required this.category,
+    required this.size,
+    required this.radius,
+    required this.pictureSize,
+    this.color,
+    super.key,
+  });
+
+  final CatalogCategory category;
+  final double size;
+  final double radius;
+  final double pictureSize;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final String name = category.name(interfaceLanguage(context));
+    final String? imageUrl = category.imageUrl;
+    return SizedBox.square(
+      dimension: size,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color:
+              color ??
+              (imageUrl == null ? KitColors.primaryWash : KitColors.card),
+          borderRadius: BorderRadius.circular(radius),
+        ),
+        child: Center(
+          child: imageUrl == null
+              ? Text(
+                  name.isEmpty ? '' : name.characters.first.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: size * 0.4,
+                    fontWeight: FontWeight.w700,
+                    color: KitColors.primaryDark,
+                  ),
+                )
+              : ProductImage(url: imageUrl, size: pictureSize),
+        ),
+      ),
+    );
   }
 }

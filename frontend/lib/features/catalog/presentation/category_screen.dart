@@ -8,11 +8,13 @@ import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
+import '../../../core/widgets/kit_app_bar.dart';
 import '../../cart/presentation/cart_summary_bar.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 import 'all_categories_screen.dart';
 import 'catalog_paths.dart';
+import 'category_tile.dart';
 import 'kit_product_card.dart';
 import 'kit_product_grid.dart';
 
@@ -38,17 +40,7 @@ class CategoryScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        centerTitle: true,
-        title: Text(
-          category?.name(language) ?? '',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: KitColors.ink,
-          ),
-        ),
-      ),
+      appBar: kitAppBar(title: category?.name(language) ?? ''),
       // The mode stays visible while two sessions exist (DL-75), whatever
       // the body shows: loading, an error, not found or the products.
       body: UnderActiveMode(
@@ -131,7 +123,6 @@ class _CategoryRailState extends State<_CategoryRail> {
 
   @override
   Widget build(BuildContext context) {
-    final AppLanguage language = interfaceLanguage(context);
     return SizedBox(
       width: 94,
       child: SingleChildScrollView(
@@ -143,8 +134,7 @@ class _CategoryRailState extends State<_CategoryRail> {
             for (final CatalogCategory c in widget.categories)
               _RailItem(
                 key: c.id == widget.selectedId ? _selected : null,
-                id: c.id,
-                name: c.name(language),
+                category: c,
                 selected: c.id == widget.selectedId,
                 onTap: () => context.replace(CatalogPaths.category(c.id)),
               ),
@@ -157,41 +147,50 @@ class _CategoryRailState extends State<_CategoryRail> {
 
 class _RailItem extends StatelessWidget {
   const _RailItem({
-    required this.id,
-    required this.name,
+    required this.category,
     required this.selected,
     required this.onTap,
     super.key,
   });
 
-  final String id;
-  final String name;
+  final CatalogCategory category;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final String name = category.name(interfaceLanguage(context));
     return InkWell(
-      key: ValueKey<String>('rail-$id'),
+      key: ValueKey<String>('rail-${category.id}'),
       onTap: selected ? null : onTap,
       child: Stack(
         children: <Widget>[
-          Container(
-            constraints: const BoxConstraints(minHeight: 56),
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-            color: selected ? KitColors.primaryWash : null,
-            child: Text(
-              name,
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                height: 1.25,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? KitColors.ink : KitColors.ink2,
-              ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                CategoryPictureWell(
+                  category: category,
+                  size: 70,
+                  radius: 12,
+                  pictureSize: 44,
+                  color: selected ? KitColors.primaryWash : KitColors.card,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 15 / 11,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? KitColors.ink : KitColors.ink2,
+                  ),
+                ),
+              ],
             ),
           ),
           if (selected)

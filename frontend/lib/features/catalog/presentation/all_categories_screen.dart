@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
-import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
+import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
@@ -28,17 +28,7 @@ class AllCategoriesScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        centerTitle: true,
-        title: Text(
-          l10n.catalogCategoriesTitle,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: KitColors.ink,
-          ),
-        ),
-      ),
+      appBar: kitAppBar(title: l10n.catalogCategoriesTitle),
       // The mode stays visible while two sessions exist (DL-75).
       body: UnderActiveMode(
         child: categories.when(
