@@ -8,19 +8,16 @@ import 'package:baraka_bozor/core/session/session_controller.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
-import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/fake_auth_repository.dart';
-import '../../support/fake_customer_repositories.dart';
 import '../../support/in_memory_stores.dart';
 
 void main() {
   late InMemoryTokenStore tokens;
   late FakeAuthRepository repository;
-  late FakeProfileRepository profiles;
 
   final StaffStep step = StaffStep(
     token: 'a' * 64,
@@ -32,7 +29,6 @@ void main() {
       overrides: [
         tokenStoreProvider.overrideWithValue(tokens),
         authRepositoryProvider.overrideWithValue(repository),
-        profileRepositoryProvider.overrideWithValue(profiles),
         preferenceStoreProvider.overrideWithValue(InMemoryPreferenceStore()),
         deviceLocaleProvider.overrideWithValue(const Locale('uz')),
       ],
@@ -71,7 +67,6 @@ void main() {
   setUp(() {
     tokens = InMemoryTokenStore();
     repository = FakeAuthRepository();
-    profiles = FakeProfileRepository();
   });
 
   group('bootstrap', () {
@@ -452,21 +447,25 @@ void main() {
       expect(tokens.tokens[SessionSlot.customer], 'new-customer');
     });
 
-    test('updating the customer name refreshes the customer user', () async {
-      repository.verifyResult = IssuedSession(
-        token: 'new-customer',
-        user: user(id: 'c', fullName: null),
-      );
-      final ProviderContainer c = container();
-      await bootstrap(c);
-      await controller(c)
-          .verifyCustomerCode(phone: '+998901234567', code: '000000');
+    test(
+      'replacing the customer user refreshes it, for the same account only',
+      () async {
+        repository.verifyResult = IssuedSession(
+          token: 'new-customer',
+          user: user(id: 'c', fullName: null),
+        );
+        final ProviderContainer c = container();
+        await bootstrap(c);
+        await controller(c)
+            .verifyCustomerCode(phone: '+998901234567', code: '000000');
 
-      await controller(c).updateCustomerName('Aziza Karimova');
+        controller(c).replaceCustomerUser(user(id: 'other', fullName: 'Other'));
+        expect((current(c) as SignedIn).customerUser?.fullName, isNull);
 
-      expect(profiles.renames, <String>['Aziza Karimova']);
-      expect((current(c) as SignedIn).customerUser?.fullName, 'Aziza Karimova');
-    });
+        controller(c).replaceCustomerUser(user(id: 'c', fullName: 'Aziza'));
+        expect((current(c) as SignedIn).customerUser?.fullName, 'Aziza');
+      },
+    );
 
     test('switching to a mode that has no session does nothing', () async {
       tokens.tokens[SessionSlot.staff] = 's';

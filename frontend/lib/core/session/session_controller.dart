@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../features/auth/domain/app_user.dart';
 import '../../features/auth/domain/auth_repository.dart';
-import '../../features/profile/application/profile_controllers.dart';
-import '../../features/profile/domain/profile.dart';
 import '../errors/report_unexpected_error.dart';
 import '../localization/app_language.dart';
 import '../network/api_failure.dart';
@@ -203,24 +201,10 @@ class SessionController extends AsyncNotifier<SessionState> {
     }
   }
 
-  /// Saves the Customer's name on the profile and refreshes the session's
-  /// user, only while that Customer is still signed in.
-  Future<void> updateCustomerName(String fullName) async {
-    final String? customerId = _signedIn()?.customerUser?.id;
-    if (customerId == null) {
-      throw StateError('no customer session');
-    }
-    final ProfileRepository profiles = ref.read(profileRepositoryProvider);
-    final CustomerProfile loaded = await profiles.profile();
-    if (loaded.id != customerId) {
-      throw const MalformedResponseFailure();
-    }
-    final CustomerProfile saved = await profiles.rename(loaded, fullName);
-    _updateUser(
-      SessionMode.customer,
-      customerId,
-      (AppUser user) => user.copyWith(fullName: saved.fullName),
-    );
+  /// Replaces the Customer's user with a fresher one from the server (a
+  /// saved name, say), only while that same account is still signed in.
+  void replaceCustomerUser(AppUser user) {
+    _updateUser(SessionMode.customer, user.id, (AppUser _) => user);
   }
 
   SignedIn? _signedIn() => switch (state.value) {

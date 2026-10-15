@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraka_bozor/core/widgets/brand_wordmark.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
@@ -230,7 +231,7 @@ void main() {
         hold: hold,
       );
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(BrandWordmark), findsOneWidget);
       expect(location(tester), '${AppPaths.bootstrap}?next=%2Fadmin%2Fstaff');
 
       hold.complete();
