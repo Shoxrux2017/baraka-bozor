@@ -79,4 +79,36 @@ void main() {
       expect(state.customerUser?.fullName, isNull);
     },
   );
+
+  test(
+    'rename saves the profile and leaves the session until finish',
+    () async {
+      final ProviderContainer c = container();
+      await c.read(sessionControllerProvider.future);
+      final CustomerNameController controller = c.read(
+        customerNameControllerProvider.notifier,
+      );
+
+      expect(await controller.rename('Aziza'), isTrue);
+
+      expect(profiles.renames, <String>['Aziza']);
+      SignedIn state = c.read(sessionControllerProvider).value! as SignedIn;
+      expect(state.customerUser?.fullName, isNull);
+
+      controller.finish();
+
+      state = c.read(sessionControllerProvider).value! as SignedIn;
+      expect(state.customerUser?.fullName, 'Aziza');
+    },
+  );
+
+  test('finish without a rename changes nothing', () async {
+    final ProviderContainer c = container();
+    await c.read(sessionControllerProvider.future);
+
+    c.read(customerNameControllerProvider.notifier).finish();
+
+    final SignedIn state = c.read(sessionControllerProvider).value! as SignedIn;
+    expect(state.customerUser?.fullName, isNull);
+  });
 }
