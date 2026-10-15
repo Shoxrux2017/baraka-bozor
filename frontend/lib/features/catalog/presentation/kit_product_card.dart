@@ -55,6 +55,16 @@ class KitCardType {
 
   /// The height of the bottom row: the tap area around the add button.
   static const double bottomRowHeight = 40;
+
+  /// The card's padding and the gaps between its parts; [kitCardExtent]
+  /// adds them up.
+  static const double padding = 8;
+  static const double gapAfterPicture = 8;
+  static const double gapAfterName = 4;
+  static const double gapAfterPrice = 8;
+
+  /// The price line's height as a multiple of its font size.
+  static const double priceLineHeight = 1.25;
 }
 
 /// A product in a Customer list (`DL-80`, `DL-81`): picture, heart, name, the
@@ -242,7 +252,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
           borderRadius: BorderRadius.circular(14),
           onTap: () => context.push(CatalogPaths.product(id)),
           child: Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(KitCardType.padding),
             // Given an exact height, the bottom row is pinned to the bottom.
             child: LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) =>
@@ -318,7 +328,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: KitCardType.gapAfterPicture),
                       Text(
                         product.name(language),
                         maxLines: 2,
@@ -330,7 +340,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                           color: textColor,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: KitCardType.gapAfterName),
                       Text(
                         l10n.catalogApproxPrice(
                           MoneyFormat.uzs(
@@ -342,11 +352,12 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: priceSize,
+                          height: KitCardType.priceLineHeight,
                           fontWeight: FontWeight.w700,
                           color: textColor,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: KitCardType.gapAfterPrice),
                       if (constraints.hasTightHeight) const Spacer(),
                       _bottomRow(l10n, line, unitSize),
                     ],

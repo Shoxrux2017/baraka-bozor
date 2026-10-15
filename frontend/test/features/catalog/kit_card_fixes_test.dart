@@ -173,6 +173,54 @@ void main() {
     }
   });
 
+  group('the extent leaves no empty band', () {
+    final CatalogProduct twoLines = catalogProduct(
+      id: idL,
+      nameRu: 'Очень длинное название товара для проверки ' * 2,
+      customerUnitPriceUzs: 12075,
+    );
+
+    for (final KitCardSize size in KitCardSize.values) {
+      testWidgets('$size, two-line name, text scale 1', (
+        WidgetTester tester,
+      ) async {
+        tester.view.physicalSize = const Size(400, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final double imageHeight = size == KitCardSize.compact ? 84 : 112;
+        final double extent = kitCardExtent(
+          TextScaler.noScaling,
+          size: size,
+          imageHeight: imageHeight,
+        );
+        await pump(
+          tester,
+          Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: size == KitCardSize.compact ? 119 : 150,
+              height: extent,
+              child: KitProductCard(
+                product: twoLines,
+                size: size,
+                imageHeight: imageHeight,
+              ),
+            ),
+          ),
+        );
+
+        final Rect card = tester.getRect(byKey('product-card-$idL'));
+        final Rect name = tester.getRect(find.text(twoLines.nameRu));
+        final Rect price = tester.getRect(find.textContaining('≈'));
+        final double rowTop = tester.getCenter(byKey('add-$idL')).dy - 20;
+        expect(name.top - card.top, closeTo(8 + imageHeight + 8, 2));
+        expect(price.top - name.bottom, closeTo(4, 2));
+        expect(rowTop - price.bottom, closeTo(8, 2), reason: 'no band');
+        expect(card.bottom - (rowTop + 40), closeTo(8, 2));
+      });
+    }
+  });
+
   testWidgets('a change that answers after the card is gone raises nothing', (
     WidgetTester tester,
   ) async {
