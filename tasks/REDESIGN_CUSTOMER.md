@@ -18,7 +18,8 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - Real Telegram delivery arrives in Wave 4. Until then only the configured test phones can sign in, staff included.
 - A blocked Customer account would also stop that person's staff sign-in on the phone (verify refuses before the step). Latent: no API blocks a Customer today.
 - Wave 3 walkthrough compiled, not run, after the staff sign-in change - run it before Wave 4 closes.
-- The kit home's header (mode bar, address and cart, search) scrolls inside 60% of the screen height; with two sessions at 320×640 and text ×2 it takes about that much and the sections below get a strip of about 150 px (they scroll). Only at that extreme size.
+- The list screens' header search icon arrives with stage 3 (search). Known gap.
+- The kit home's header (mode bar, address and cart, search) scrolls inside 60% of the screen height above the keyboard; with two sessions at 320×640 and text ×2 it takes about that much and the sections below get a strip of about 150 px (they scroll). Only at that extreme size.
 
 ## Part 1 history (design 4a, `DL-74`, `DL-75`)
 
