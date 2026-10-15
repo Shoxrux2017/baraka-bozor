@@ -15,7 +15,7 @@ import 'package:baraka_bozor/features/catalog/presentation/all_products_screen.d
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
 import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
-import 'package:baraka_bozor/features/catalog/presentation/catalog_screens.dart';
+import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -83,6 +83,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    // The home asks for its recommended row too; the tests count the rest.
+    catalog.requests.clear();
   }
 
   Future<void> typeAndPause(WidgetTester tester, String text) async {
@@ -307,8 +309,8 @@ void main() {
   testWidgets('a first page that failed shows progress while it is retried', (
     WidgetTester tester,
   ) async {
-    catalog.nextFailure = const NetworkFailure();
     await open(tester);
+    catalog.nextFailure = const NetworkFailure();
     await tester.tap(find.text('Sabzavotlar'));
     await tester.pumpAndSettle();
     expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
@@ -407,9 +409,13 @@ void main() {
           reason: 'logout is on the profile',
         );
 
-        await tester.tap(
-          find.text(device.languageCode == 'uz' ? 'Sabzavotlar' : 'Овощи'),
+        final Finder section = find.text(
+          device.languageCode == 'uz' ? 'Sabzavotlar' : 'Овощи',
         );
+        // Below the header's two lines of large text: scroll to it.
+        await tester.ensureVisible(section);
+        await tester.pumpAndSettle();
+        await tester.tap(section);
         await tester.pumpAndSettle();
         expect(mode, findsOneWidget, reason: 'on a section');
 

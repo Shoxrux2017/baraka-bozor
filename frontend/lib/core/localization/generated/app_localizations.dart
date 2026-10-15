@@ -1370,11 +1370,23 @@ abstract class AppLocalizations {
   /// **'Qidirish: bodring, non…'**
   String get catalogSearchHint;
 
-  /// No description provided for @deliveryAddressCaption.
+  /// No description provided for @deliveryAddressEmptyHint.
   ///
   /// In uz, this message translates to:
-  /// **'Shu manzilga yetkazamiz'**
-  String get deliveryAddressCaption;
+  /// **'Buyurtmani qayerga olib borish kerak'**
+  String get deliveryAddressEmptyHint;
+
+  /// No description provided for @homeCategories.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kategoriyalar'**
+  String get homeCategories;
+
+  /// No description provided for @homeSeeAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barchasi'**
+  String get homeSeeAll;
 
   /// No description provided for @deliveryAddressAdd.
   ///

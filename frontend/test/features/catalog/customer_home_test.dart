@@ -1,16 +1,17 @@
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
-import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
+import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/presentation/addresses_screens.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/map_picker.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
-import 'package:baraka_bozor/features/catalog/presentation/catalog_screens.dart';
-import 'package:baraka_bozor/features/catalog/presentation/customer_home_header.dart';
-import 'package:baraka_bozor/features/catalog/presentation/customer_home_nav.dart';
+import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/all_products_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -28,7 +29,7 @@ Widget _fakeMap({
   required ValueChanged<GeoPoint> onMoved,
 }) => Text('${initial.latitude},${initial.longitude}');
 
-/// The Customer home's floating bar (design 4a), through the real router.
+/// The Customer's home in the kit look (`DL-80`), through the real router.
 void main() {
   late InMemoryTokenStore tokens;
   late FakeAuthRepository auth;
@@ -36,8 +37,7 @@ void main() {
   late FakeAddressesRepository addresses;
   late InMemoryPreferenceStore preferences;
 
-  const int sections = 12;
-  const String lastCategoryId = 'c-$sections';
+  const int sections = 10;
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
@@ -58,8 +58,22 @@ void main() {
             nameRu: 'Раздел $i',
           ),
       ],
-      products: <CatalogProduct>[catalogProduct()],
-    );
+      products: <CatalogProduct>[
+        catalogProduct(),
+        catalogProduct(
+          id: 'p-2',
+          nameUz: 'Olma',
+          nameRu: 'Яблоко',
+          customerUnitPriceUzs: 3500,
+        ),
+        catalogProduct(
+          id: 'p-3',
+          nameUz: 'Banan',
+          nameRu: 'Банан',
+          customerUnitPriceUzs: 9000,
+        ),
+      ],
+    )..featuredIds = <String>{'p-1', 'p-2'};
     tokens.tokens[SessionSlot.customer] = 'c';
     auth.identities[SessionSlot.customer] = user(id: 'c');
   });
@@ -84,47 +98,234 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets(
-    'the floating bar opens the orders and the profile over the home',
-    (WidgetTester tester) async {
-      await open(tester);
-      expect(
-        find.descendant(
-          of: find.byType(CustomerHomeNav),
-          matching: byKey('open-orders'),
-        ),
-        findsOneWidget,
-      );
-      await tester.tap(byKey('open-orders'));
-      await tester.pumpAndSettle();
-      expect(find.byType(CustomerHomeNav), findsNothing);
-      await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
-      await tester.tap(byKey('open-profile'));
-      await tester.pumpAndSettle();
-      expect(find.byType(CustomerHomeNav), findsNothing);
-    },
-  );
+  Future<void> typeAndPause(WidgetTester tester, String text) async {
+    await tester.enterText(byKey('catalog-search'), text);
+    await tester.pump(CatalogHomeScreen.searchPause);
+    await tester.pumpAndSettle();
+  }
 
-  testWidgets('the header shows the search, the cart and the newest address', (
+  double top(WidgetTester tester, Finder finder) =>
+      tester.getTopLeft(finder).dy;
+
+  testWidgets('the tab bar opens the orders and the profile over the home', (
     WidgetTester tester,
   ) async {
     await open(tester);
-    final Finder header = find.byType(CustomerHomeHeader);
     expect(
-      find.descendant(of: header, matching: byKey('catalog-search')),
+      find.descendant(
+        of: find.byType(CustomerTabBar),
+        matching: byKey('open-orders'),
+      ),
       findsOneWidget,
     );
-    expect(
-      find.descendant(of: header, matching: byKey('open-cart')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: header, matching: find.text('Amir Temur, 12')),
-      findsOneWidget,
-    );
-    expect(find.byType(AppBar), findsNothing);
+    await tester.tap(byKey('open-orders'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CatalogHomeScreen), findsNothing);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.byType(CatalogHomeScreen), findsOneWidget);
+    await tester.tap(byKey('open-profile'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CatalogHomeScreen), findsNothing);
   });
+
+  testWidgets(
+    'the sections come in order: address and cart, search, categories, '
+    'recommended',
+    (WidgetTester tester) async {
+      await open(tester);
+      final AppLocalizations words = l10n(tester);
+
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.byType(CustomerTabBar), findsOneWidget);
+      expect(find.text('Amir Temur, 12'), findsOneWidget);
+      expect(
+        tester.getCenter(byKey('open-cart')).dx,
+        greaterThan(tester.getCenter(byKey('delivery-address')).dx),
+        reason: 'the cart at the right of the address',
+      );
+      expect(
+        top(tester, byKey('delivery-address')),
+        lessThan(top(tester, byKey('catalog-search'))),
+      );
+      expect(
+        tester.getCenter(byKey('open-sort')).dx,
+        greaterThan(tester.getCenter(byKey('catalog-search')).dx),
+      );
+      expect(tester.getSize(byKey('open-sort')), const Size(50, 50));
+      expect(
+        top(tester, byKey('catalog-search')),
+        lessThan(top(tester, find.text(words.homeCategories))),
+      );
+      expect(
+        top(tester, find.text(words.homeCategories)),
+        lessThan(top(tester, find.text(words.recommendedTitle))),
+      );
+      expect(byKey('open-categories'), findsOneWidget);
+      expect(byKey('open-recommended'), findsOneWidget);
+      expect(byKey('recommended-row'), findsOneWidget);
+      expect(find.text('Pomidor'), findsOneWidget);
+      expect(find.text('Olma'), findsOneWidget);
+      expect(find.text('Banan'), findsNothing, reason: 'not recommended');
+    },
+  );
+
+  testWidgets('eight of ten categories show, four to a row; "all" opens them '
+      'all', (WidgetTester tester) async {
+    await open(tester);
+    for (int i = 1; i <= 8; i++) {
+      expect(byKey('category-c-$i'), findsOneWidget, reason: 'c-$i');
+    }
+    expect(byKey('category-c-9'), findsNothing);
+    expect(byKey('category-c-10'), findsNothing);
+    expect(
+      top(tester, byKey('category-c-4')),
+      top(tester, byKey('category-c-1')),
+    );
+    expect(
+      top(tester, byKey('category-c-5')),
+      greaterThan(top(tester, byKey('category-c-1'))),
+    );
+
+    await tester.tap(byKey('open-categories'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AllCategoriesScreen), findsOneWidget);
+    expect(byKey('category-c-9'), findsOneWidget);
+    expect(byKey('category-c-10'), findsOneWidget);
+  });
+
+  testWidgets('a category tile opens the category', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.tap(byKey('category-c-2'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CatalogHomeScreen), findsNothing);
+    expect(catalog.requests.last, '|c-2|1');
+  });
+
+  testWidgets('"all" of the recommended opens the recommended products', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.ensureVisible(byKey('open-recommended'));
+    await tester.pumpAndSettle();
+    await tester.tap(byKey('open-recommended'));
+    await tester.pumpAndSettle();
+    expect(find.byType(RecommendedScreen), findsOneWidget);
+  });
+
+  testWidgets('no recommended section while nothing is recommended', (
+    WidgetTester tester,
+  ) async {
+    catalog.featuredIds = <String>{};
+    await open(tester);
+    expect(find.text(l10n(tester).recommendedTitle), findsNothing);
+    expect(byKey('open-recommended'), findsNothing);
+    expect(byKey('category-c-1'), findsOneWidget);
+  });
+
+  testWidgets('no recommended section when its request fails', (
+    WidgetTester tester,
+  ) async {
+    catalog.nextFailure = const NetworkFailure();
+    await open(tester);
+    expect(find.text(l10n(tester).recommendedTitle), findsNothing);
+    expect(byKey('category-c-1'), findsOneWidget);
+  });
+
+  testWidgets('a query replaces the sections with the results; clearing '
+      'brings them back', (WidgetTester tester) async {
+    await open(tester);
+    await typeAndPause(tester, 'ban');
+    expect(find.text('Banan'), findsOneWidget);
+    expect(find.text('Pomidor'), findsNothing);
+    expect(find.text(l10n(tester).homeCategories), findsNothing);
+    expect(byKey('category-c-1'), findsNothing);
+    expect(byKey('open-sort'), findsOneWidget, reason: 'the filter stays');
+
+    await tester.tap(byKey('catalog-search-clear'));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n(tester).homeCategories), findsOneWidget);
+    expect(byKey('category-c-1'), findsOneWidget);
+  });
+
+  testWidgets('the search asks once the typing pauses, not on every letter', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    int asked(String prefix) =>
+        catalog.requests.where((String r) => r.startsWith(prefix)).length;
+    await tester.enterText(byKey('catalog-search'), 'po');
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.enterText(byKey('catalog-search'), 'pom');
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(asked('pom|'), 0, reason: 'still within the pause');
+    await tester.pump(const Duration(milliseconds: 150));
+    await tester.pumpAndSettle();
+    expect(asked('pom|'), 1);
+    expect(asked('po|'), 0);
+  });
+
+  testWidgets(
+    'the filter button asks the sort and opens every product in it; the '
+    'results follow it too',
+    (WidgetTester tester) async {
+      await open(tester);
+      await tester.tap(byKey('open-sort'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n(tester).sortPriceAsc));
+      await tester.pumpAndSettle();
+      expect(find.byType(AllProductsScreen), findsOneWidget);
+
+      // Row-major order of the grid: Olma 3 500, Banan 9 000, Pomidor 18 400.
+      final List<String> names = <String>['Olma', 'Banan', 'Pomidor'];
+      double place(String name) {
+        final Offset at = tester.getTopLeft(find.text(name));
+        return at.dy * 1000 + at.dx;
+      }
+
+      final List<double> places = names.map(place).toList();
+      expect(places, orderedEquals(<double>[...places]..sort()));
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await typeAndPause(tester, 'o');
+      expect(find.text('Olma'), findsOneWidget);
+      expect(find.text('Pomidor'), findsOneWidget);
+      expect(
+        place('Olma'),
+        lessThan(place('Pomidor')),
+        reason: 'cheaper first in the results',
+      );
+    },
+  );
+
+  testWidgets('dismissing the sort sheet opens nothing', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.tap(byKey('open-sort'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(find.byType(AllProductsScreen), findsNothing);
+    expect(find.byType(CatalogHomeScreen), findsOneWidget);
+  });
+
+  testWidgets(
+    'the address line shows the label with the street under it, or the '
+    'street alone',
+    (WidgetTester tester) async {
+      addresses.rows = <Address>[
+        address(id: 'a-1', label: 'Ish', street: 'Bobur', house: '7'),
+      ];
+      await open(tester);
+      expect(tester.widget<Text>(byKey('delivery-address-value')).data, 'Ish');
+      expect(find.text('Bobur, 7'), findsOneWidget);
+      expect(find.byIcon(Icons.location_on), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'the address line changes the delivery address, and it is remembered',
@@ -150,9 +351,13 @@ void main() {
     },
   );
 
-  testWidgets('with no address the line adds one', (WidgetTester tester) async {
+  testWidgets('with no address the line asks for one and the tap adds it', (
+    WidgetTester tester,
+  ) async {
     addresses.rows = <Address>[];
     await open(tester);
+    expect(find.text(l10n(tester).deliveryAddressAdd), findsOneWidget);
+    expect(find.text(l10n(tester).deliveryAddressEmptyHint), findsOneWidget);
     await tester.tap(find.text(l10n(tester).deliveryAddressAdd));
     await tester.pumpAndSettle();
     expect(find.byType(AddressFormScreen), findsOneWidget);
@@ -235,7 +440,7 @@ void main() {
     expect(find.text('Amir Temur, 12'), findsOneWidget);
   });
 
-  group('centred messages stop above the floating bar', () {
+  group('centred messages stop above the tab bar', () {
     Future<void> smallPhone(WidgetTester tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
@@ -245,7 +450,7 @@ void main() {
     }
 
     void expectClearOfBar(WidgetTester tester, Finder finder) {
-      final Rect bar = tester.getRect(find.byType(CustomerHomeNav));
+      final Rect bar = tester.getRect(find.byType(CustomerTabBar));
       expect(
         tester.getRect(finder).overlaps(bar),
         isFalse,
@@ -259,9 +464,7 @@ void main() {
       await smallPhone(tester);
       await open(tester);
       catalog.nextFailure = const NetworkFailure();
-      await tester.enterText(byKey('catalog-search'), 'pom');
-      await tester.pump(CatalogHomeScreen.searchPause);
-      await tester.pumpAndSettle();
+      await typeAndPause(tester, 'pom');
 
       expect(byKey('retry-load'), findsOneWidget);
       expectClearOfBar(tester, byKey('retry-load'));
@@ -272,9 +475,7 @@ void main() {
     ) async {
       await smallPhone(tester);
       await open(tester);
-      await tester.enterText(byKey('catalog-search'), 'zzz');
-      await tester.pump(CatalogHomeScreen.searchPause);
-      await tester.pumpAndSettle();
+      await typeAndPause(tester, 'zzz');
 
       expectClearOfBar(tester, find.text(l10n(tester).catalogEmpty));
     });
@@ -291,31 +492,39 @@ void main() {
     });
   });
 
-  testWidgets(
-    'the cart button on the header counts the cart lines and opens the cart',
-    (WidgetTester tester) async {
-      final FakeCartRepository cart = FakeCartRepository(
-        cart: cartOf(<Map<String, Object?>>[
-          cartLineJson(),
-          cartLineJson(
-            id: breadLine,
-            productId: breadProduct,
-            unit: 'piece',
-            quantity: '2',
-          ),
-        ]),
-      );
-      await open(tester, cart: cart);
-      expect(
-        find.descendant(of: byKey('open-cart'), matching: byKey('cart-count')),
-        findsOneWidget,
-      );
-      expect(find.text('2'), findsOneWidget);
-      await tester.tap(byKey('open-cart'));
-      await tester.pumpAndSettle();
-      expect(find.byType(CustomerHomeHeader), findsNothing);
-    },
-  );
+  testWidgets('the cart button counts the cart lines and opens the cart', (
+    WidgetTester tester,
+  ) async {
+    final FakeCartRepository cart = FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[
+        cartLineJson(),
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '2',
+        ),
+      ]),
+    );
+    await open(tester, cart: cart);
+    expect(
+      find.descendant(of: byKey('open-cart'), matching: byKey('cart-count')),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<Text>(byKey('cart-count')).data,
+      '2',
+      reason: 'lines, not the quantity',
+    );
+    await tester.tap(byKey('open-cart'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CatalogHomeScreen), findsNothing);
+  });
+
+  testWidgets('an empty cart shows no count', (WidgetTester tester) async {
+    await open(tester);
+    expect(byKey('cart-count'), findsNothing);
+  });
 
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets(
@@ -362,8 +571,9 @@ void main() {
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
     for (final bool twoSessions in const <bool>[false, true]) {
       testWidgets(
-        'large text on a small phone: the header and the bar fit and the last '
-        'section is reachable (${device.languageCode}, '
+        'large text on a small phone: the header fits, the mode bar is whole '
+        'with its action reachable, and the last section is reachable '
+        '(${device.languageCode}, '
         '${twoSessions ? 'two sessions' : 'one session'})',
         (WidgetTester tester) async {
           tester.view.physicalSize = const Size(320, 640);
@@ -391,35 +601,45 @@ void main() {
           }
           expect(tester.takeException(), isNull);
           expect(find.text('Amir Temur, 12'), findsOneWidget);
+
           // The controls lie in what the header shows, not below its scroll.
-          final Rect visible = tester.getRect(
-            find.descendant(
-              of: find.byType(CustomerHomeHeader),
-              matching: byKey('home-header-controls'),
-            ),
-          );
-          for (final String key in const <String>[
+          final Rect visible = tester.getRect(byKey('home-header'));
+          final List<String> keys = <String>[
             'catalog-search',
+            'open-sort',
             'open-cart',
             'delivery-address',
-          ]) {
+            if (twoSessions) ...<String>[
+              'active-mode',
+              'switch-to-staff-button',
+            ],
+          ];
+          for (final String key in keys) {
             final Rect rect = tester.getRect(byKey(key));
             expect(rect.top, greaterThanOrEqualTo(visible.top), reason: key);
             expect(rect.bottom, lessThanOrEqualTo(visible.bottom), reason: key);
+            expect(rect.left, greaterThanOrEqualTo(0), reason: key);
+            expect(rect.right, lessThanOrEqualTo(320), reason: key);
           }
           if (twoSessions) {
+            // The part-1 residual: the label is whole, not cut or clipped.
+            final String label = l10n(tester).customerModeLabel;
+            final Text text = tester.widget<Text>(byKey('active-mode'));
+            expect(text.data, label);
+            expect(text.overflow, isNull);
+            expect(text.maxLines, isNull);
             expect(
-              find.descendant(
-                of: find.byType(ActiveModeBar),
-                matching: byKey('switch-to-staff-button'),
-              ),
-              findsOneWidget,
+              tester.getSize(byKey('active-mode')).height,
+              lessThan(tester.getSize(byKey('active-mode')).width),
             );
+            await tester.tap(byKey('switch-to-staff-button'));
+            await tester.pumpAndSettle();
+            expect(find.byType(CatalogHomeScreen), findsNothing);
+            expect(tester.takeException(), isNull);
+            return;
           }
 
-          await tester.enterText(byKey('catalog-search'), 'pom');
-          await tester.pump(CatalogHomeScreen.searchPause);
-          await tester.pumpAndSettle();
+          await typeAndPause(tester, 'pom');
           expect(
             find.text(device.languageCode == 'uz' ? 'Pomidor' : 'Помидор'),
             findsOneWidget,
@@ -428,17 +648,15 @@ void main() {
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
 
-          final Finder last = byKey('category-$lastCategoryId');
-          await tester.dragUntilVisible(
-            last,
-            byKey('category-list'),
-            const Offset(0, -100),
-          );
-          await tester.drag(byKey('category-list'), const Offset(0, -2000));
+          await tester.drag(byKey('home-body'), const Offset(0, -2000));
           await tester.pumpAndSettle();
-          await tester.tap(last);
+          expect(byKey('recommended-row'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          await tester.ensureVisible(byKey('category-c-1'));
           await tester.pumpAndSettle();
-          expect(find.byType(CustomerHomeNav), findsNothing);
+          await tester.tap(byKey('category-c-1'));
+          await tester.pumpAndSettle();
+          expect(find.byType(CatalogHomeScreen), findsNothing);
         },
       );
     }

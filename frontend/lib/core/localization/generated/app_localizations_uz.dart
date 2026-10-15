@@ -692,7 +692,13 @@ class AppLocalizationsUz extends AppLocalizations {
   String get catalogSearchHint => 'Qidirish: bodring, non…';
 
   @override
-  String get deliveryAddressCaption => 'Shu manzilga yetkazamiz';
+  String get deliveryAddressEmptyHint => 'Buyurtmani qayerga olib borish kerak';
+
+  @override
+  String get homeCategories => 'Kategoriyalar';
+
+  @override
+  String get homeSeeAll => 'Barchasi';
 
   @override
   String get deliveryAddressAdd => 'Yetkazish manzilini qo\'shing';

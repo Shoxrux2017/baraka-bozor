@@ -18,7 +18,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - Real Telegram delivery arrives in Wave 4. Until then only the configured test phones can sign in, staff included.
 - A blocked Customer account would also stop that person's staff sign-in on the phone (verify refuses before the step). Latent: no API blocks a Customer today.
 - Wave 3 walkthrough compiled, not run, after the staff sign-in change - run it before Wave 4 closes.
-- The green home header from part 1: when the mode bar's action wraps, "Режим клиента" is right-aligned - stage 2 rebuilds the home.
+- The kit home's header (mode bar, address and cart, search) scrolls inside 60% of the screen height; with two sessions at 320×640 and text ×2 it takes about that much and the sections below get a strip of about 150 px (they scroll). Only at that extreme size.
 
 ## Part 1 history (design 4a, `DL-74`, `DL-75`)
 
@@ -30,9 +30,8 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 
 ### Part 1 risks
 
-- At 320×640 with text ×2 the fixed header and the floating bar leave a small list viewport (the header scrolls inside 45% of the screen). Part 2, which puts the category circles on the header's arc, should consider letting the header scroll away with the content.
 - Addresses with the same street and house (different apartments) read the same in the delivery address sheet, which shows the label or `street, house` only. Seen on the walk with the local data. A later part can add the apartment to the line.
 
 ## Review findings not acted on
 
-- Part 1, re-review of the final fix wave, P3: with two sessions, text ×2 on a 320×640 phone, the header gives the search and the address its room first, so the active-mode bar is only partly visible (in Uzbek its label is cut in half) and its "back to staff" button needs a scroll inside the header. `docs/02` section 10 asks for the mode to be always visible. Not fixed in part 1 because it occurs only at that extreme size and part 2 reshapes the header (the risk above); part 2 must keep the mode label whole at that size and assert it in its large-text test.
+None.

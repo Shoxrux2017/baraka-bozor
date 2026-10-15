@@ -690,7 +690,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get catalogSearchHint => 'Найти: огурцы, лепёшки…';
 
   @override
-  String get deliveryAddressCaption => 'Доставим сюда';
+  String get deliveryAddressEmptyHint => 'Куда привезти заказ';
+
+  @override
+  String get homeCategories => 'Категории';
+
+  @override
+  String get homeSeeAll => 'Все';
 
   @override
   String get deliveryAddressAdd => 'Добавить адрес доставки';
