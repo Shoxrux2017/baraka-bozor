@@ -36,3 +36,6 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 
 - Card layout follow-up (`DL-81`), review P3: `ceilToDouble()` in `kitCardExtent` may add 1 px of slack on rare float products. Ruling: no functional effect, kept. (The TalkBack node and the picture corner were fixed in stage 3.)
 - The picture may lie under the heart's 40 px tap box by a few px; the heart is on top and takes those taps. Ruling: no visible or functional effect, kept.
+- Stage 3 branch review, latent: the product screen's `_form.currentState!` is reached only in the frame where the signed-in account changes, when the router removes the route anyway. Ruling: not reachable in use, kept.
+- Stage 3 re-review, P3: while an add is in flight the header's heart stays tappable. Ruling: independent of the add, harmless, kept.
+- Stage 3 branch review: a query typed by account A and left on screen when A signs out is remembered under A, as `DL-83` item 1 specifies; the device store is not wiped on sign-out. Ruling: by design, kept.
