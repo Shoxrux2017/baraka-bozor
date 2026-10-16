@@ -603,9 +603,22 @@ void main() {
           );
 
           final Rect picture = tester.getRect(byKey('picture-$id'));
-          final Rect heart = tester.getRect(byKey('heart-$id'));
+          final Rect glyph = tester.getRect(
+            find.descendant(
+              of: byKey('heart-$id'),
+              matching: find.byType(Icon),
+            ),
+          );
           expect(picture.shortestSide, greaterThan(0));
-          expect(picture.overlaps(heart), isFalse, reason: '$picture $heart');
+          expect(
+            picture.overlaps(glyph.inflate(2)),
+            isFalse,
+            reason: '$picture $glyph',
+          );
+          if (well != 150) {
+            final double side = picture.width;
+            expect(side, closeTo(0.7 * well!, 0.01), reason: 'full side');
+          }
         });
       }
     }

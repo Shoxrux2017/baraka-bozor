@@ -35,3 +35,4 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 ## Review findings not acted on
 
 - Card layout follow-up (`DL-81`), review P3: `ceilToDouble()` in `kitCardExtent` may add 1 px of slack on rare float products. Ruling: no functional effect, kept. (The TalkBack node and the picture corner were fixed in stage 3.)
+- The picture may lie under the heart's 40 px tap box by a few px; the heart is on top and takes those taps. Ruling: no visible or functional effect, kept.

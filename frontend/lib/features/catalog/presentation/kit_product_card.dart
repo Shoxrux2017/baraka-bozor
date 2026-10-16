@@ -376,22 +376,32 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
   }
 
   /// Where the picture sits in a well of [width] by [height]: centred, 0.7 of
-  /// the shorter side. When that would reach the heart's box at the top right
-  /// (the 32 square button in its 40 square tap target), it moves down to 2
-  /// below the box, and shrinks only if the well is too short for that.
+  /// the shorter side. The heart's glyph is 18 square in a 40 square box at
+  /// the top right, so it spans 11 to 29 from the top and the right edge.
+  /// When the picture would come within 2 of it, it moves down to 2 below the
+  /// glyph; if it no longer fits the well that way, it moves left clear of the
+  /// glyph instead; it shrinks only when neither keeps its size.
   static Rect _pictureRect(double width, double height) {
-    const double heart = 40;
+    const double glyphFar = 29;
     const double clearance = 2;
-    double side = math.max(0, 0.7 * math.min(height, width));
+    final double full = math.max(0, 0.7 * math.min(height, width));
+    double side = full;
     double top = (height - side) / 2;
-    final double left = (width - side) / 2;
-    if (left + side > width - heart && top < heart) {
-      top = heart + clearance;
-      if (top + side > height) {
+    double left = (width - side) / 2;
+    final double clearRight = width - glyphFar - clearance;
+    final double clearBottom = glyphFar + clearance;
+    if (left + side > clearRight && top < clearBottom) {
+      if (clearBottom + side <= height) {
+        top = clearBottom;
+      } else if (clearRight - side >= 0) {
+        left = clearRight - side;
+      } else {
+        top = clearBottom;
         side = math.max(0, height - top);
+        left = (width - side) / 2;
       }
     }
-    return Rect.fromLTWH((width - side) / 2, top, side, side);
+    return Rect.fromLTWH(left, top, side, side);
   }
 
   /// The bottom row: the unit and the "+", the stepper in the cart, or "not
