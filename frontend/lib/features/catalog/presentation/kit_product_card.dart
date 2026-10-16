@@ -277,23 +277,29 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                                       (
                                         BuildContext context,
                                         BoxConstraints constraints,
-                                      ) => Center(
-                                        child: Opacity(
-                                          key: ValueKey<String>('picture-$id'),
-                                          opacity: available ? 1 : 0.45,
-                                          child: ProductImage(
-                                            url: product.imageUrl,
-                                            size: math.max(
-                                              0,
-                                              0.7 *
-                                                  math.min(
-                                                    imageHeight,
-                                                    constraints.maxWidth,
-                                                  ),
+                                      ) {
+                                        final Rect rect = _pictureRect(
+                                          constraints.maxWidth,
+                                          imageHeight,
+                                        );
+                                        return Stack(
+                                          children: <Widget>[
+                                            Positioned.fromRect(
+                                              rect: rect,
+                                              child: Opacity(
+                                                key: ValueKey<String>(
+                                                  'picture-$id',
+                                                ),
+                                                opacity: available ? 1 : 0.45,
+                                                child: ProductImage(
+                                                  url: product.imageUrl,
+                                                  size: rect.width,
+                                                ),
+                                              ),
                                             ),
-                                          ),
-                                        ),
-                                      ),
+                                          ],
+                                        );
+                                      },
                                 ),
                               ),
                               Positioned(
@@ -369,6 +375,25 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
     );
   }
 
+  /// Where the picture sits in a well of [width] by [height]: centred, 0.7 of
+  /// the shorter side. When that would reach the heart's box at the top right
+  /// (the 32 square button in its 40 square tap target), it moves down to 2
+  /// below the box, and shrinks only if the well is too short for that.
+  static Rect _pictureRect(double width, double height) {
+    const double heart = 40;
+    const double clearance = 2;
+    double side = math.max(0, 0.7 * math.min(height, width));
+    double top = (height - side) / 2;
+    final double left = (width - side) / 2;
+    if (left + side > width - heart && top < heart) {
+      top = heart + clearance;
+      if (top + side > height) {
+        side = math.max(0, height - top);
+      }
+    }
+    return Rect.fromLTWH((width - side) / 2, top, side, side);
+  }
+
   /// The bottom row: the unit and the "+", the stepper in the cart, or "not
   /// sold". Taps on it never open the product.
   Widget _bottomRow(AppLocalizations l10n, CartLine? line, double unitSize) {
@@ -414,6 +439,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                   // button the smaller square inside it.
                   GestureDetector(
                     behavior: HitTestBehavior.opaque,
+                    excludeFromSemantics: true,
                     onTap: _cartBusy ? () {} : _add,
                     child: SizedBox.square(
                       dimension: KitCardType.bottomRowHeight,
@@ -458,6 +484,7 @@ class _Absorb extends StatelessWidget {
   @override
   Widget build(BuildContext context) => GestureDetector(
     behavior: HitTestBehavior.opaque,
+    excludeFromSemantics: true,
     onTap: () {},
     child: child,
   );

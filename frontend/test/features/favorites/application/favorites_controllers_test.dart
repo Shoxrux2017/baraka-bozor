@@ -50,20 +50,20 @@ void main() {
       final Completer<void> hold = Completer<void>();
       favorites.hold = hold;
 
-      final Future<bool> done = notifier().toggle('p-1', current: false);
+      final Future<ApiFailure?> done = notifier().change('p-1', current: false);
 
       expect(overrides(), <String, bool>{'p-1': true});
       hold.complete();
-      expect(await done, isTrue);
+      expect(await done, isNull);
       expect(overrides(), <String, bool>{'p-1': true});
       expect(favorites.changes, <String>['add:p-1']);
     },
   );
 
   test('un-favouriting calls remove', () async {
-    final bool done = await notifier().toggle('p-1', current: true);
+    final ApiFailure? done = await notifier().change('p-1', current: true);
 
-    expect(done, isTrue);
+    expect(done, isNull);
     expect(overrides()['p-1'], isFalse);
     expect(favorites.changes, <String>['remove:p-1']);
   });
@@ -75,27 +75,37 @@ void main() {
     final Completer<void> hold = Completer<void>();
     favorites.hold = hold;
 
-    final Future<bool> done = notifier().toggle('p-1', current: false);
+    final Future<ApiFailure?> done = notifier().change('p-1', current: false);
     expect(overrides()['p-1'], isTrue);
     hold.complete();
 
-    expect(await done, isFalse);
+    expect(
+      await done,
+      isA<ApiRefusal>().having(
+        (ApiRefusal f) => f.error.code,
+        'code',
+        'favorites_full',
+      ),
+    );
     expect(overrides().containsKey('p-1'), isFalse);
   });
 
   test(
     'a failed change restores an earlier override, not the product flag',
     () async {
-      await notifier().toggle('p-1', current: false);
+      await notifier().change('p-1', current: false);
       favorites.nextFailure = const UnexpectedFailure();
 
-      expect(await notifier().toggle('p-1', current: true), isFalse);
+      expect(
+        await notifier().change('p-1', current: true),
+        isA<UnexpectedFailure>(),
+      );
       expect(overrides()['p-1'], isTrue);
     },
   );
 
   test('another account starts with no overrides', () async {
-    await notifier().toggle('p-1', current: false);
+    await notifier().change('p-1', current: false);
     expect(overrides(), isNotEmpty);
 
     container.read(_account.notifier).signIn('customer-b');
@@ -108,14 +118,14 @@ void main() {
     favorites
       ..hold = hold
       ..nextFailure = const UnexpectedFailure();
-    final Future<bool> done = notifier().toggle('p-1', current: false);
+    final Future<ApiFailure?> done = notifier().change('p-1', current: false);
 
     container.read(_account.notifier).signIn('customer-b');
-    final Future<bool> other = notifier().toggle('p-1', current: false);
+    final Future<ApiFailure?> other = notifier().change('p-1', current: false);
     hold.complete();
 
-    expect(await done, isFalse);
-    expect(await other, isTrue);
+    expect(await done, isA<UnexpectedFailure>());
+    expect(await other, isNull);
     expect(
       overrides()['p-1'],
       isTrue,
@@ -165,7 +175,7 @@ void main() {
     expect(both.hasMore, isFalse);
 
     final int loads = favorites.listLoads;
-    await notifier().toggle('p-1', current: true);
+    await notifier().change('p-1', current: true);
     await container.read(favoritesListProvider.future);
 
     expect(favorites.listLoads, greaterThan(loads));

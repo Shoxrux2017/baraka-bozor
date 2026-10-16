@@ -5,8 +5,8 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 | Stage | What | Status |
 |---|---|---|
 | 1 | Вход: splash, phone, code, name, staff password (`DL-77`) | Merged (PR #88) |
-| 2 | Главная | In Progress (2a server and panel, 2b screens) |
-| 3 | Каталог | Planned |
+| 2 | Главная | Merged (PR #89, #90, #91, #92) |
+| 3 | Поиск и товар | In Progress |
 | 4 | Корзина | Planned |
 | 5 | Оформление | Planned |
 | 6 | Заказы | Planned |
@@ -18,7 +18,6 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - Real Telegram delivery arrives in Wave 4. Until then only the configured test phones can sign in, staff included.
 - A blocked Customer account would also stop that person's staff sign-in on the phone (verify refuses before the step). Latent: no API blocks a Customer today.
 - Wave 3 walkthrough compiled, not run, after the staff sign-in change - run it before Wave 4 closes.
-- The list screens' header search icon arrives with stage 3 (search). Known gap.
 - The kit home's header (mode bar, address and cart, search) scrolls inside 60% of the screen height above the keyboard; with two sessions at 320×640 and text ×2 it takes about that much and the sections below get a strip of about 150 px (they scroll). Only at that extreme size.
 
 ## Part 1 history (design 4a, `DL-74`, `DL-75`)
@@ -35,5 +34,4 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 
 ## Review findings not acted on
 
-- Stage 2b, re-review of the final fix wave, P3: `FavoriteOverrides.toggle` (`frontend/lib/features/favorites/application/favorites_controllers.dart`) is now called only by `favorites_controllers_test.dart`; the card uses `change()`. Not removed in 2b because the review loop allows one fix wave; stage 3 deletes `toggle` and moves its tests to `change()` (AGENTS.md §8).
-- Card layout follow-up (`DL-81`), review P3: the card's "+" nests a `GestureDetector` around an `IconButton` inside `_Absorb`, so TalkBack may stop on an extra unlabeled node beside "Добавить"; the picture's top-right corner can overlap the heart's tap area by 4–10 px; `ceilToDouble()` in `kitCardExtent` may add 1 px of slack on rare float products. Not fixed in this follow-up (no functional effect, tests green); stage 3 excludes the outer semantics and nudges the picture.
+- Card layout follow-up (`DL-81`), review P3: `ceilToDouble()` in `kitCardExtent` may add 1 px of slack on rare float products. Ruling: no functional effect, kept. (The TalkBack node and the picture corner were fixed in stage 3.)

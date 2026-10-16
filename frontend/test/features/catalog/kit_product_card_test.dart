@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show SemanticsAction;
 
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
@@ -544,6 +545,70 @@ void main() {
       opened,
       CatalogPaths.product('0192f0a0-0000-7000-8000-0000000000a1'),
     );
+  });
+
+  group('TalkBack', () {
+    testWidgets('a card alone exposes the card, the heart and the add', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await show(tester, tomato);
+
+      expect(find.semantics.byAction(SemanticsAction.tap), findsNWidgets(3));
+      handle.dispose();
+    });
+
+    testWidgets('in the cart it exposes the card, the heart, minus and plus', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[
+          lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
+        ]),
+      );
+      await show(tester, tomato);
+
+      expect(find.semantics.byAction(SemanticsAction.tap), findsNWidgets(4));
+      handle.dispose();
+    });
+  });
+
+  group('the picture keeps clear of the heart', () {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    for (final (String name, KitCardSize size, double? well, double cardWidth)
+        in <(String, KitCardSize, double?, double)>[
+          ('compact 320', KitCardSize.compact, 84, 119),
+          ('compact 375', KitCardSize.compact, 84, 119),
+          ('home 320', KitCardSize.regular, 112, 150),
+          ('home 375', KitCardSize.regular, 112, 150),
+          ('grid 320', KitCardSize.regular, 150, 144),
+          ('grid 375', KitCardSize.regular, 150, 171),
+        ]) {
+      for (final double scale in <double>[1, 2]) {
+        testWidgets('$name text x$scale', (WidgetTester tester) async {
+          final double screen = name.endsWith('320') ? 320 : 375;
+          tester.view.physicalSize = Size(screen, 640);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          tester.platformDispatcher.textScaleFactorTestValue = scale;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+          await show(
+            tester,
+            tomato,
+            size: size,
+            imageHeight: well,
+            width: cardWidth,
+          );
+
+          final Rect picture = tester.getRect(byKey('picture-$id'));
+          final Rect heart = tester.getRect(byKey('heart-$id'));
+          expect(picture.shortestSide, greaterThan(0));
+          expect(picture.overlaps(heart), isFalse, reason: '$picture $heart');
+        });
+      }
+    }
   });
 
   group('on a small screen at twice the text size', () {
