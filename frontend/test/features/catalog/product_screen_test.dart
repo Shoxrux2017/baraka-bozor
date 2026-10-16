@@ -16,6 +16,7 @@ import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/product_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -54,6 +55,15 @@ void main() {
 
   bool enabled(WidgetTester tester, String key) =>
       tester.widget<ButtonStyleButton>(byKey(key)).onPressed != null;
+
+  bool radioChosen(WidgetTester tester, String code) =>
+      tester
+          .widget<RadioGroup<SubstitutionPolicy>>(
+            find.byType(RadioGroup<SubstitutionPolicy>),
+          )
+          .groupValue
+          ?.code ==
+      code;
 
   bool iconEnabled(WidgetTester tester, String key) =>
       tester.widget<IconButton>(byKey(key)).onPressed != null;
@@ -225,6 +235,23 @@ void main() {
       expect(tester.widget<Text>(byKey('product-description')).maxLines, 3);
     });
 
+    testWidgets('a description just over three lines at text x2 reads on', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = <CatalogProduct>[
+        item(descriptionRu: List<String>.filled(14, 'Сочные томаты').join(' ')),
+      ];
+      await open(tester, size: const Size(320, 1400), textScale: 2);
+
+      final Finder text = byKey('product-description');
+      final RenderParagraph painted = tester.renderObject<RenderParagraph>(
+        text,
+      );
+      // The folded text really is cut, so the way to read on must show.
+      expect(painted.didExceedMaxLines, isTrue);
+      expect(byKey('product-more'), findsOneWidget);
+    });
+
     testWidgets('a short description has no reading on, none has no text', (
       WidgetTester tester,
     ) async {
@@ -251,17 +278,7 @@ void main() {
       for (final SubstitutionPolicy option in SubstitutionPolicy.values) {
         expect(byKey('substitution-${option.code}'), findsOneWidget);
       }
-      expect(
-        tester
-            .widget<Radio<SubstitutionPolicy>>(
-              find.descendant(
-                of: byKey('substitution-allow_similar_substitution'),
-                matching: find.byType(Radio<SubstitutionPolicy>),
-              ),
-            )
-            .value,
-        SubstitutionPolicy.allowSimilar,
-      );
+      expect(radioChosen(tester, 'allow_similar_substitution'), isTrue);
       expect(find.text('0 / 300'), findsOneWidget);
       expect(find.text('Например: покрепче, не перезрелые'), findsOneWidget);
 
@@ -381,6 +398,81 @@ void main() {
       expect(cart.added.single.customerNote, isNull);
       expect(cart.added.single.quantity, '1');
     });
+
+    testWidgets('while the add is in flight the stepper, rule and note wait', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      final Completer<void> hold = Completer<void>();
+      cart.hold = hold;
+
+      await tester.tap(byKey('add-to-cart'));
+      await tester.pump();
+      expect(iconEnabled(tester, 'product-plus'), isFalse);
+      expect(iconEnabled(tester, 'product-minus'), isFalse);
+      await tester.tap(byKey('product-qty'));
+      await tester.pump();
+      expect(byKey('quantity-done'), findsNothing);
+      await tester.ensureVisible(
+        byKey('substitution-contact_before_substitution'),
+      );
+      await tester.tap(byKey('substitution-contact_before_substitution'));
+      await tester.pump();
+      expect(radioChosen(tester, 'allow_similar_substitution'), isTrue);
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: byKey('line-note'),
+                matching: find.byType(TextField),
+              ),
+            )
+            .readOnly,
+        isTrue,
+      );
+
+      cart.hold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(iconEnabled(tester, 'product-plus'), isTrue);
+    });
+
+    for (final double scale in <double>[1, 2]) {
+      testWidgets('at 320 wide and text x$scale the exact quantity keeps its '
+          'size', (WidgetTester tester) async {
+        await open(tester, size: const Size(320, 640), textScale: scale);
+        await tester.tap(byKey('product-qty'));
+        await tester.pumpAndSettle();
+        await tester.enterText(byKey('line-quantity'), '1,25');
+        await tester.tap(byKey('quantity-done'));
+        await tester.pumpAndSettle();
+
+        expect(quantityShown(tester), '1,25 кг');
+        expect(
+          find.ancestor(
+            of: byKey('product-qty'),
+            matching: find.byType(FittedBox),
+          ),
+          findsNothing,
+        );
+        final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+          byKey('product-qty'),
+        );
+        final TextPainter wanted = TextPainter(
+          text: TextSpan(
+            text: '1,25 кг',
+            style: tester
+                .widget<Text>(byKey('product-qty'))
+                .style
+                ?.copyWith(fontFamily: 'Montserrat'),
+          ),
+          textDirection: TextDirection.ltr,
+          textScaler: TextScaler.linear(scale),
+        )..layout();
+        expect(paragraph.size.width, greaterThanOrEqualTo(wanted.width - 1));
+        expect(tester.takeException(), isNull);
+      });
+    }
 
     testWidgets(
       'while the add is in flight the button waits and ignores taps',
@@ -859,15 +951,6 @@ void main() {
       await container.read(cartProvider(account).notifier).refresh();
       await tester.pumpAndSettle();
     }
-
-    bool radioChosen(WidgetTester tester, String code) =>
-        tester
-            .widget<RadioGroup<SubstitutionPolicy>>(
-              find.byType(RadioGroup<SubstitutionPolicy>),
-            )
-            .groupValue
-            ?.code ==
-        code;
 
     String chipShown(WidgetTester tester) =>
         tester.widget<Text>(byKey('product-in-cart')).data!;

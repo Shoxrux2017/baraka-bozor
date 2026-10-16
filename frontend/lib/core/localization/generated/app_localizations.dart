@@ -2528,12 +2528,6 @@ abstract class AppLocalizations {
   /// **'Savat bo\'sh'**
   String get cartEmpty;
 
-  /// No description provided for @cartAdd.
-  ///
-  /// In uz, this message translates to:
-  /// **'Savatga qo\'shish'**
-  String get cartAdd;
-
   /// No description provided for @cartAdded.
   ///
   /// In uz, this message translates to:

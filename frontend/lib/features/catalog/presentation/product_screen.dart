@@ -276,6 +276,8 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     final CartLine? line = _line;
     final bool saving =
         line != null && ref.watch(cartLineProvider(line.id)).isBusy;
+    // What the Customer sets waits for the answer, which would overwrite it.
+    final bool locked = line == null ? adding.isBusy : saving;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -294,6 +296,7 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
             form: _form,
             note: _note,
             policy: _policy,
+            locked: locked,
             inCart: line == null
                 ? null
                 : l10n.productInCart(
@@ -374,6 +377,7 @@ class _Page extends StatelessWidget {
     required this.form,
     required this.note,
     required this.policy,
+    required this.locked,
     required this.inCart,
     required this.onPolicy,
   });
@@ -382,6 +386,9 @@ class _Page extends StatelessWidget {
   final GlobalKey<FormState> form;
   final TextEditingController note;
   final SubstitutionPolicy policy;
+
+  /// Whether an add or a save is on its way: the controls wait.
+  final bool locked;
 
   /// "В корзине: 2 кг" while the product has a line in the cart.
   final String? inCart;
@@ -495,7 +502,7 @@ class _Page extends StatelessWidget {
               child: RadioGroup<SubstitutionPolicy>(
                 groupValue: policy,
                 onChanged: (SubstitutionPolicy? option) {
-                  if (option != null) {
+                  if (option != null && !locked) {
                     onPolicy(option);
                   }
                 },
@@ -507,7 +514,7 @@ class _Page extends StatelessWidget {
                       _RuleRow(
                         option: option,
                         label: OrderLabels.substitution(l10n, option),
-                        onTap: () => onPolicy(option),
+                        onTap: locked ? null : () => onPolicy(option),
                       ),
                   ],
                 ),
@@ -516,7 +523,7 @@ class _Page extends StatelessWidget {
             const _Rule(),
             _Section(
               title: l10n.cartNote,
-              child: _NoteField(controller: note),
+              child: _NoteField(controller: note, locked: locked),
             ),
             const SizedBox(height: 8),
             MoreInCategory(product: product),
@@ -681,10 +688,15 @@ class _DescriptionState extends State<_Description> {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final TextPainter painter = TextPainter(
-          text: TextSpan(text: widget.text, style: style),
+          // The style the Text below really resolves to, font included.
+          text: TextSpan(
+            text: widget.text,
+            style: DefaultTextStyle.of(context).style.merge(style),
+          ),
           maxLines: foldedLines,
           textDirection: direction,
           textScaler: scaler,
+          locale: Localizations.maybeLocaleOf(context),
         )..layout(maxWidth: constraints.maxWidth);
         final bool longer = painter.didExceedMaxLines;
         painter.dispose();
@@ -733,7 +745,7 @@ class _RuleRow extends StatelessWidget {
 
   final SubstitutionPolicy option;
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -767,9 +779,10 @@ class _RuleRow extends StatelessWidget {
 }
 
 class _NoteField extends StatelessWidget {
-  const _NoteField({required this.controller});
+  const _NoteField({required this.controller, required this.locked});
 
   final TextEditingController controller;
+  final bool locked;
 
   @override
   Widget build(BuildContext context) {
@@ -780,6 +793,7 @@ class _NoteField extends StatelessWidget {
         TextFormField(
           key: const ValueKey<String>('line-note'),
           controller: controller,
+          readOnly: locked,
           minLines: 3,
           maxLines: 5,
           style: const TextStyle(fontSize: 14, color: KitColors.ink),

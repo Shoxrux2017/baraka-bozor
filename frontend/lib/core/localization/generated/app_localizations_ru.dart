@@ -1352,9 +1352,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get cartEmpty => 'Корзина пуста';
 
   @override
-  String get cartAdd => 'В корзину';
-
-  @override
   String get cartAdded => 'Добавлено в корзину';
 
   @override

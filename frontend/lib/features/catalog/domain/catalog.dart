@@ -60,10 +60,6 @@ final class CatalogProduct {
   String name(AppLanguage language) =>
       language == AppLanguage.ru ? nameRu : nameUz;
 
-  /// The name in the other language, shown under the first.
-  String otherName(AppLanguage language) =>
-      language == AppLanguage.ru ? nameUz : nameRu;
-
   String? description(AppLanguage language) =>
       language == AppLanguage.ru ? descriptionRu : descriptionUz;
 }

@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/features/catalog/application/recent_searches.dart';
+import 'package:baraka_bozor/core/storage/preference_store.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -102,4 +104,66 @@ void main() {
     expect(await read('a'), isEmpty);
     expect(await read('b'), isEmpty);
   });
+
+  test('two remembers started together keep both entries', () async {
+    await read('a');
+    final Future<void> first = notifier('a').remember('olma');
+    final Future<void> second = notifier('a').remember('nok');
+    await Future.wait(<Future<void>>[first, second]);
+    expect(container.read(recentSearchesProvider('a')).value, <String>[
+      'nok',
+      'olma',
+    ]);
+    expect(stored('a'), <String>['nok', 'olma']);
+  });
+
+  group('when the device storage fails', () {
+    late ProviderContainer broken;
+    late _ThrowingStore failing;
+
+    setUp(() {
+      failing = _ThrowingStore();
+      broken = ProviderContainer(
+        overrides: [preferenceStoreProvider.overrideWithValue(failing)],
+      );
+      addTearDown(broken.dispose);
+    });
+
+    test('a failing read gives an empty list', () async {
+      failing.failRead = true;
+      expect(await broken.read(recentSearchesProvider('a').future), isEmpty);
+    });
+
+    test('a failing write keeps the list for this run', () async {
+      failing.failWrite = true;
+      await broken.read(recentSearchesProvider('a').future);
+      final RecentSearches recent = broken.read(
+        recentSearchesProvider('a').notifier,
+      );
+      await recent.remember('olma');
+      expect(broken.read(recentSearchesProvider('a')).value, <String>['olma']);
+      await recent.clear();
+      expect(broken.read(recentSearchesProvider('a')).value, isEmpty);
+    });
+  });
+}
+
+class _ThrowingStore implements PreferenceStore {
+  bool failRead = false;
+  bool failWrite = false;
+
+  @override
+  Future<String?> read(String key) async {
+    if (failRead) {
+      throw PlatformException(code: 'read');
+    }
+    return null;
+  }
+
+  @override
+  Future<void> write(String key, String value) async {
+    if (failWrite) {
+      throw PlatformException(code: 'write');
+    }
+  }
 }

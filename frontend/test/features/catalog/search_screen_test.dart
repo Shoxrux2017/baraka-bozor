@@ -14,13 +14,16 @@ import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
+import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_auth_repository.dart';
+import '../../support/fake_cart_repository.dart';
 import '../../support/fake_catalog_repository.dart';
 import '../../support/in_memory_stores.dart';
 
@@ -30,6 +33,7 @@ void main() {
   late InMemoryTokenStore tokens;
   late FakeAuthRepository auth;
   late FakeCatalogRepository catalog;
+  late FakeCartRepository cart;
   late InMemoryPreferenceStore preferences;
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
@@ -53,6 +57,7 @@ void main() {
 
   setUp(() {
     preferences = InMemoryPreferenceStore();
+    cart = FakeCartRepository();
     tokens = InMemoryTokenStore();
     auth = FakeAuthRepository();
     catalog = FakeCatalogRepository(
@@ -91,6 +96,7 @@ void main() {
         repository: auth,
         device: device,
         catalog: catalog,
+        cart: cart,
         preferences: preferences,
       ),
     );
@@ -620,4 +626,52 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  group('the cart bar', () {
+    testWidgets('shows under the results once the cart holds a line and '
+        'opens the cart', (WidgetTester tester) async {
+      catalog.productRows = <CatalogProduct>[catalogProduct(id: tomatoProduct)];
+      await openSearch(tester, device: const Locale('ru'));
+      await typeAndPause(tester, 'pom');
+      expect(byKey('cart-summary'), findsNothing);
+
+      cart.answer = cartOf(<Map<String, Object?>>[
+        cartLineJson(quantity: '1.000', total: 18400),
+      ]);
+      await tester.tap(byKey('add-$tomatoProduct'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: byKey('cart-summary'),
+          matching: find.text('1 товар'),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(byKey('cart-summary'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CartScreen), findsOneWidget);
+    });
+  });
+
+  group('the sort button', () {
+    testWidgets('exposes a tap action to TalkBack', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await openSearch(tester);
+      await typeAndPause(tester, 'pom');
+
+      expect(
+        tester.getSemantics(byKey('search-sort')),
+        matchesSemantics(
+          label: l10n(tester).sortTitle,
+          isButton: true,
+          hasTapAction: true,
+          hasEnabledState: false,
+        ),
+      );
+      handle.dispose();
+    });
+  });
 }

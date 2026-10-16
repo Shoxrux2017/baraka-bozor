@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show AsyncNotifierProviderFamily;
 
@@ -36,9 +37,15 @@ class RecentSearches extends AsyncNotifier<List<String>> {
 
   @override
   Future<List<String>> build() async {
-    final String? raw = await ref
-        .read(preferenceStoreProvider)
-        .read(preferenceKey(account));
+    final String? raw;
+    try {
+      raw = await ref
+          .read(preferenceStoreProvider)
+          .read(preferenceKey(account));
+    } on PlatformException {
+      // The device storage cannot be read: start with nothing.
+      return const <String>[];
+    }
     if (raw == null) {
       return const <String>[];
     }
@@ -58,10 +65,12 @@ class RecentSearches extends AsyncNotifier<List<String>> {
     if (text.runes.length < _minLength) {
       return;
     }
-    final List<String> current = await future;
+    await future;
     if (!ref.mounted) {
       return;
     }
+    // Taken after the wait, so a remember started meanwhile is kept.
+    final List<String> current = state.value ?? const <String>[];
     final String folded = _fold(text);
     final List<String> next = <String>[
       text,
@@ -74,9 +83,13 @@ class RecentSearches extends AsyncNotifier<List<String>> {
 
   Future<void> _save(List<String> list) async {
     state = AsyncData<List<String>>(List<String>.unmodifiable(list));
-    await ref
-        .read(preferenceStoreProvider)
-        .write(preferenceKey(account), jsonEncode(list));
+    try {
+      await ref
+          .read(preferenceStoreProvider)
+          .write(preferenceKey(account), jsonEncode(list));
+    } on PlatformException {
+      // Not saved on the device: the list stays right for this run.
+    }
   }
 }
 

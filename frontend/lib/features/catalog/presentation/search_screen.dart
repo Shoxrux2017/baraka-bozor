@@ -9,6 +9,8 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/active_mode_bar.dart';
+import '../../cart/presentation/cart_summary_bar.dart';
 import '../application/catalog_controllers.dart';
 import '../application/recent_searches.dart';
 import '../domain/catalog.dart';
@@ -126,17 +128,35 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            _topRow(l10n),
-            Expanded(
-              child: _query.isEmpty
-                  ? _EmptyField(account: _account, onPick: _pick)
-                  : _Results(
-                      query: ProductListQuery(search: _query, sort: sort),
-                    ),
-            ),
-          ],
+        // The mode stays visible while two sessions exist (DL-75).
+        child: UnderActiveMode(
+          child: Column(
+            children: <Widget>[
+              _topRow(l10n),
+              Expanded(
+                child: _query.isEmpty
+                    ? _EmptyField(account: _account, onPick: _pick)
+                    : Stack(
+                        children: <Widget>[
+                          Positioned.fill(
+                            child: _Results(
+                              query: ProductListQuery(
+                                search: _query,
+                                sort: sort,
+                              ),
+                            ),
+                          ),
+                          const Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: CartSummaryBar(),
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -219,6 +239,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               button: true,
               label: l10n.sortTitle,
               excludeSemantics: true,
+              onTap: _openSort,
               child: Material(
                 color: KitColors.primary,
                 borderRadius: BorderRadius.circular(14),
@@ -366,6 +387,12 @@ class _Results extends ConsumerWidget {
         Expanded(
           child: KitProductGrid(
             query: query,
+            padding: EdgeInsets.fromLTRB(
+              16,
+              8,
+              16,
+              16 + CartSummaryBar.reserved(context),
+            ),
             empty: _NothingFound(query: query.search),
           ),
         ),

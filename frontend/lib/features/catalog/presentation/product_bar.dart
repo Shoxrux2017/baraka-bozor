@@ -49,13 +49,77 @@ class ProductBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
-    final String? lower = CardQuantity.previous(product.unitCode, quantity);
-    final String? upper = CardQuantity.next(product.unitCode, quantity);
+    // While the add or the save waits the quantity stays as sent.
+    final String? lower = busy
+        ? null
+        : CardQuantity.previous(product.unitCode, quantity);
+    final String? upper = busy
+        ? null
+        : CardQuantity.next(product.unitCode, quantity);
     final String sum = l10n.catalogApproxPrice(
       MoneyFormat.uzs(
         EstimatePreview.lineUzs(product.customerUnitPriceUzs, quantity),
         language,
       ),
+    );
+
+    final String shownQuantity =
+        '${QuantityRules.display(quantity)} '
+        '${CatalogLabels.unit(l10n, product.unitCode)}';
+
+    final Widget action = FilledButton(
+      key: actionKey,
+      style: FilledButton.styleFrom(
+        backgroundColor: KitColors.primary,
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: KitColors.primarySoft,
+        disabledForegroundColor: Colors.white,
+        minimumSize: const Size(0, height),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      // While busy the tap is taken and does nothing, so the button keeps
+      // its colour and shows the wait.
+      onPressed: onAction == null ? null : (busy ? () {} : onAction),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          busy
+              ? SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                    semanticsLabel: l10n.cartSaving,
+                  ),
+                )
+              : Text(
+                  actionLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+          Text(
+            sum,
+            key: const ValueKey<String>('product-sum'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+
+    Widget stepper() => _Stepper(
+      quantity: shownQuantity,
+      minusLabel: l10n.cartStepMinus,
+      plusLabel: l10n.cartStepPlus,
+      onQuantityTap: busy ? null : onQuantityTap,
+      onMinus: lower == null ? null : () => onQuantity(lower),
+      onPlus: upper == null ? null : () => onQuantity(upper),
     );
 
     return DecoratedBox(
@@ -76,81 +140,40 @@ class ProductBar extends StatelessWidget {
           16,
           12 + MediaQuery.viewPaddingOf(context).bottom,
         ),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              flex: 2,
-              child: _Stepper(
-                quantity:
-                    '${QuantityRules.display(quantity)} '
-                    '${CatalogLabels.unit(l10n, product.unitCode)}',
-                minusLabel: l10n.cartStepMinus,
-                plusLabel: l10n.cartStepPlus,
-                onQuantityTap: onQuantityTap,
-                onMinus: lower == null ? null : () => onQuantity(lower),
-                onPlus: upper == null ? null : () => onQuantity(upper),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              flex: 3,
-              child: FilledButton(
-                key: actionKey,
-                style: FilledButton.styleFrom(
-                  backgroundColor: KitColors.primary,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: KitColors.primarySoft,
-                  disabledForegroundColor: Colors.white,
-                  minimumSize: const Size(0, height),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                // While busy the tap is taken and does nothing, so the
-                // button keeps its colour and shows the wait.
-                onPressed: onAction == null ? null : (busy ? () {} : onAction),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      busy
-                          ? SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                                semanticsLabel: l10n.cartSaving,
-                              ),
-                            )
-                          : Text(
-                              actionLabel,
-                              maxLines: 1,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                      Text(
-                        sum,
-                        key: const ValueKey<String>('product-sum'),
-                        maxLines: 1,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            // The quantity is read at the Customer's text size and never
+            // shrunk: beside the action when both fit, else above it.
+            final double stepperWidth = _Stepper.widthOf(
+              context,
+              shownQuantity,
+            );
+            final bool beside =
+                stepperWidth + _gap + _actionMinWidth <= constraints.maxWidth;
+            if (beside) {
+              return Row(
+                children: <Widget>[
+                  SizedBox(width: stepperWidth, child: stepper()),
+                  const SizedBox(width: _gap),
+                  Expanded(child: action),
+                ],
+              );
+            }
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[stepper(), const SizedBox(height: 10), action],
+            );
+          },
         ),
       ),
     );
   }
+
+  static const double _gap = 10;
+
+  /// The least the action gets beside the stepper before it moves below.
+  static const double _actionMinWidth = 120;
 }
 
 class _Stepper extends StatelessWidget {
@@ -164,15 +187,48 @@ class _Stepper extends StatelessWidget {
   });
 
   final String quantity;
+
   final String minusLabel;
   final String plusLabel;
   final VoidCallback? onQuantityTap;
   final VoidCallback? onMinus;
   final VoidCallback? onPlus;
 
+  static const double _buttonSize = 38;
+  static const double _quantityMinWidth = 64;
+  static const double _edge = 4;
+
+  static const TextStyle quantityStyle = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: KitColors.ink,
+    decoration: TextDecoration.underline,
+    decorationStyle: TextDecorationStyle.dotted,
+    decorationColor: KitColors.muted,
+  );
+
+  /// The width the stepper needs: two buttons, the edges and the quantity at
+  /// the real font and text scale, at least [_quantityMinWidth].
+  static double widthOf(BuildContext context, String quantity) {
+    final TextPainter painter = TextPainter(
+      text: TextSpan(
+        text: quantity,
+        style: DefaultTextStyle.of(context).style.merge(quantityStyle),
+      ),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final double text = painter.width;
+    painter.dispose();
+    return 2 * _edge +
+        2 * _buttonSize +
+        (text > _quantityMinWidth ? text : _quantityMinWidth);
+  }
+
   Widget _button(Key key, IconData icon, String label, VoidCallback? onTap) {
     return SizedBox.square(
-      dimension: 38,
+      dimension: _buttonSize,
       child: IconButton(
         key: key,
         tooltip: label,
@@ -197,7 +253,7 @@ class _Stepper extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: ProductBar.height),
         child: Row(
           children: <Widget>[
-            const SizedBox(width: 4),
+            const SizedBox(width: _edge),
             _button(
               const ValueKey<String>('product-minus'),
               Icons.remove,
@@ -209,20 +265,17 @@ class _Stepper extends StatelessWidget {
               child: InkWell(
                 onTap: onQuantityTap,
                 borderRadius: BorderRadius.circular(10),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: _quantityMinWidth,
+                  ),
                   child: Text(
                     quantity,
                     key: const ValueKey<String>('product-qty'),
                     maxLines: 1,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: KitColors.ink,
-                      decoration: TextDecoration.underline,
-                      decorationStyle: TextDecorationStyle.dotted,
-                      decorationColor: KitColors.muted,
-                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: quantityStyle,
                   ),
                 ),
               ),
@@ -233,7 +286,7 @@ class _Stepper extends StatelessWidget {
               plusLabel,
               onPlus,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: _edge),
           ],
         ),
       ),

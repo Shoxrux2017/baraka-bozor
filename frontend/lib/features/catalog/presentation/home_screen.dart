@@ -124,6 +124,7 @@ class _SearchEntry extends StatelessWidget {
       button: true,
       label: hint,
       excludeSemantics: true,
+      onTap: () => context.push<void>(CatalogPaths.search),
       child: Material(
         color: KitColors.field,
         borderRadius: BorderRadius.circular(14),
@@ -173,6 +174,7 @@ class _FilterButton extends StatelessWidget {
       button: true,
       label: label,
       excludeSemantics: true,
+      onTap: onTap,
       child: Material(
         color: KitColors.primary,
         borderRadius: BorderRadius.circular(14),

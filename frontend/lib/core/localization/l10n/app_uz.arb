@@ -685,7 +685,6 @@
     }
   },
   "cartEmpty": "Savat bo'sh",
-  "cartAdd": "Savatga qo'shish",
   "cartAdded": "Savatga qo'shildi",
   "cartQuantity": "Miqdori",
   "cartQuantityFraction": "0 dan katta son: ko'pi bilan 4 xona va 3 kasr",

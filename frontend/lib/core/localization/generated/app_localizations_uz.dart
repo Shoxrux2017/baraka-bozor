@@ -1339,9 +1339,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get cartEmpty => 'Savat bo\'sh';
 
   @override
-  String get cartAdd => 'Savatga qo\'shish';
-
-  @override
   String get cartAdded => 'Savatga qo\'shildi';
 
   @override

@@ -15,6 +15,7 @@ import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart
 import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/app_harness.dart';
@@ -682,4 +683,28 @@ void main() {
       );
     }
   }
+
+  testWidgets('the search entry and the sort button expose a tap action', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester);
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(Scaffold).first),
+    );
+    for (final (String, String) entry in <(String, String)>[
+      ('catalog-search', l10n.catalogSearchHint),
+      ('open-sort', l10n.sortTitle),
+    ]) {
+      final String key = entry.$1;
+      final String label = entry.$2;
+      expect(
+        tester.getSemantics(byKey(key)),
+        matchesSemantics(isButton: true, hasTapAction: true, label: label),
+        reason: key,
+      );
+    }
+    handle.dispose();
+  });
 }

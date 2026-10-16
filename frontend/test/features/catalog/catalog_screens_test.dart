@@ -16,6 +16,7 @@ import 'package:baraka_bozor/features/catalog/presentation/all_products_screen.d
 import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
 import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
@@ -337,6 +338,21 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.byType(BackButton));
         await tester.pumpAndSettle();
+
+        await tester.ensureVisible(byKey('catalog-search'));
+        await tester.pumpAndSettle();
+        await tester.tap(byKey('catalog-search'));
+        await tester.pumpAndSettle();
+        expect(find.byType(SearchScreen), findsOneWidget);
+        expect(mode, findsOneWidget, reason: 'on the search');
+        await tester.enterText(byKey('search-field'), 'pom');
+        await tester.pump(SearchScreen.searchPause);
+        await tester.pumpAndSettle();
+        expect(mode, findsOneWidget, reason: 'on the search results');
+        expect(tester.takeException(), isNull);
+        await tester.tap(byKey('search-back'));
+        await tester.pumpAndSettle();
+
         await tester.tap(byKey('switch-to-staff-button'));
         await tester.pumpAndSettle();
         expect(mode, findsOneWidget, reason: 'back in the staff shell');
@@ -350,38 +366,42 @@ void main() {
     (AppPaths.customerFavorites, FavoritesScreen),
     (CatalogPaths.categories, AllCategoriesScreen),
     (CatalogPaths.category('c-1'), CategoryScreen),
+    (CatalogPaths.search, SearchScreen),
   ]) {
     final String path = screen.$1;
-    testWidgets('$path has a white app bar without a tint', (
-      WidgetTester tester,
-    ) async {
-      tester.view.physicalSize = const Size(320, 640);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      tokens.tokens[SessionSlot.staff] = 's';
-      auth.identities[SessionSlot.staff] = user(
-        id: 's',
-        role: UserRole.courier,
-      );
+    // The search screen draws its own top row, not an app bar.
+    if (screen.$2 != SearchScreen) {
+      testWidgets('$path has a white app bar without a tint', (
+        WidgetTester tester,
+      ) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        tokens.tokens[SessionSlot.staff] = 's';
+        auth.identities[SessionSlot.staff] = user(
+          id: 's',
+          role: UserRole.courier,
+        );
 
-      await open(tester);
-      await tester.tap(byKey('staff-menu'));
-      await tester.pumpAndSettle();
-      await tester.tap(byKey('switch-to-customer-button'));
-      await tester.pumpAndSettle();
-      GoRouter.of(tester.element(find.byType(Scaffold).first)).push(path);
-      await tester.pumpAndSettle();
+        await open(tester);
+        await tester.tap(byKey('staff-menu'));
+        await tester.pumpAndSettle();
+        await tester.tap(byKey('switch-to-customer-button'));
+        await tester.pumpAndSettle();
+        GoRouter.of(tester.element(find.byType(Scaffold).first)).push(path);
+        await tester.pumpAndSettle();
 
-      final AppBar bar = tester.widget<AppBar>(
-        find.descendant(
-          of: find.byType(screen.$2),
-          matching: find.byType(AppBar),
-        ),
-      );
-      expect(bar.backgroundColor, Colors.white);
-      expect(bar.surfaceTintColor, Colors.transparent);
-      expect(bar.scrolledUnderElevation, 0);
-    });
+        final AppBar bar = tester.widget<AppBar>(
+          find.descendant(
+            of: find.byType(screen.$2),
+            matching: find.byType(AppBar),
+          ),
+        );
+        expect(bar.backgroundColor, Colors.white);
+        expect(bar.surfaceTintColor, Colors.transparent);
+        expect(bar.scrolledUnderElevation, 0);
+      });
+    }
 
     testWidgets('with two sessions $path shows the mode bar', (
       WidgetTester tester,
