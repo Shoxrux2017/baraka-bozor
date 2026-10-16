@@ -7,6 +7,8 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/session/customer_account.dart';
+import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
 import 'package:baraka_bozor/features/cart/presentation/cart_paths.dart';
 import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
@@ -15,6 +17,7 @@ import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart'
 import 'package:baraka_bozor/features/catalog/presentation/product_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../support/app_harness.dart';
@@ -341,10 +344,10 @@ void main() {
     testWidgets('add sends the quantity, the trimmed note and the rule', (
       WidgetTester tester,
     ) async {
+      await open(tester);
       cart.answer = cartOf(<Map<String, Object?>>[
         cartLineJson(productId: tomatoProduct, quantity: '1.500'),
       ]);
-      await open(tester);
 
       await tester.tap(byKey('product-plus'));
       await tester.pumpAndSettle();
@@ -542,10 +545,16 @@ void main() {
     testWidgets(
       'a product already in the cart refreshes the cart and adds no second line',
       (WidgetTester tester) async {
-        cart.current = cartOf(<Map<String, Object?>>[
-          cartLineJson(productId: tomatoProduct),
-        ]);
         await open(tester);
+        // Another device put the product in the cart after this one looked.
+        cart.current = cartOf(<Map<String, Object?>>[
+          cartLineJson(
+            productId: tomatoProduct,
+            quantity: '2.000',
+            note: 'Покрепче',
+            policy: 'contact_before_substitution',
+          ),
+        ]);
         cart.calls.clear();
         cart.failure = const ApiRefusal(
           ApiError(
@@ -566,16 +575,25 @@ void main() {
         );
         expect(find.byType(CartScreen), findsNothing);
         expect(find.text(l10n(tester).cartAdded), findsNothing);
+        expect(find.text(l10n(tester).productAlreadyInCart), findsOneWidget);
+        expect(byKey('add-to-cart'), findsNothing);
+        expect(byKey('save-line'), findsOneWidget);
+        expect(quantityShown(tester), '2 кг');
+        expect(
+          tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+          'Покрепче',
+        );
+        expect(cart.added, hasLength(1), reason: 'no second add');
       },
     );
 
     testWidgets(
       'the snackbar opens the cart, also after the product was left',
       (WidgetTester tester) async {
+        await open(tester);
         cart.answer = cartOf(<Map<String, Object?>>[
           cartLineJson(productId: tomatoProduct),
         ]);
-        await open(tester);
         await tester.tap(byKey('add-to-cart'));
         await tester.pumpAndSettle();
 
@@ -592,10 +610,10 @@ void main() {
     testWidgets('a second notice replaces the first rather than queueing', (
       WidgetTester tester,
     ) async {
+      await open(tester);
       cart.answer = cartOf(<Map<String, Object?>>[
         cartLineJson(productId: tomatoProduct, quantity: '1.000'),
       ]);
-      await open(tester);
       // Frame by frame, so the notice's timer starts as it would.
       Future<void> wait(Duration time) async {
         for (int i = 0; i < time.inMilliseconds ~/ 100; i++) {
@@ -625,10 +643,10 @@ void main() {
     testWidgets('the notice stays behind when the Customer goes to checkout', (
       WidgetTester tester,
     ) async {
+      await open(tester);
       cart.answer = cartOf(<Map<String, Object?>>[
         cartLineJson(productId: tomatoProduct),
       ]);
-      await open(tester);
       await tester.tap(byKey('add-to-cart'));
       await tester.pumpAndSettle();
       // The Customer reaches the cart by another way than the notice's
@@ -647,10 +665,10 @@ void main() {
     testWidgets(
       'an answer that arrives after the Customer left the product navigates nowhere',
       (WidgetTester tester) async {
+        await open(tester);
         cart.current = cartOf(<Map<String, Object?>>[
           cartLineJson(productId: tomatoProduct),
         ]);
-        await open(tester);
         final Completer<void> hold = Completer<void>();
         cart
           ..hold = hold
@@ -814,6 +832,362 @@ void main() {
       await tester.pumpAndSettle();
       expect(byKey('product-name'), findsOneWidget);
     });
+  });
+
+  group('a product already in the cart', () {
+    CartLine lineOf(Cart cart) => cart.lines.single;
+
+    Cart tomatoInCart({
+      String quantity = '2.000',
+      String? note = 'Покрепче',
+      String policy = 'contact_before_substitution',
+    }) => cartOf(<Map<String, Object?>>[
+      cartLineJson(
+        quantity: quantity,
+        note: note,
+        policy: policy,
+        price: 21850,
+        total: 43700,
+      ),
+    ]);
+
+    Future<void> refreshCart(WidgetTester tester) async {
+      final ProviderContainer container = ProviderScope.containerOf(
+        anywhere(tester),
+      );
+      final String account = container.read(customerAccountProvider)!;
+      await container.read(cartProvider(account).notifier).refresh();
+      await tester.pumpAndSettle();
+    }
+
+    bool radioChosen(WidgetTester tester, String code) =>
+        tester
+            .widget<RadioGroup<SubstitutionPolicy>>(
+              find.byType(RadioGroup<SubstitutionPolicy>),
+            )
+            .groupValue
+            ?.code ==
+        code;
+
+    String chipShown(WidgetTester tester) =>
+        tester.widget<Text>(byKey('product-in-cart')).data!;
+
+    testWidgets('opens with the line, and "Сохранить" waits for a change', (
+      WidgetTester tester,
+    ) async {
+      cart.current = tomatoInCart();
+      await open(tester);
+
+      expect(chipShown(tester), 'В корзине: 2 кг');
+      expect(quantityShown(tester), '2 кг');
+      expect(sumShown(tester), approx(24150));
+      expect(radioChosen(tester, 'contact_before_substitution'), isTrue);
+      expect(
+        tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+        'Покрепче',
+      );
+      expect(byKey('add-to-cart'), findsNothing);
+      expect(find.text('Сохранить'), findsOneWidget);
+      expect(enabled(tester, 'save-line'), isFalse);
+    });
+
+    testWidgets('a changed quantity, note or rule enables it', (
+      WidgetTester tester,
+    ) async {
+      cart.current = tomatoInCart();
+      await open(tester);
+
+      await tester.tap(byKey('product-plus'));
+      await tester.pumpAndSettle();
+      expect(enabled(tester, 'save-line'), isTrue);
+      await tester.tap(byKey('product-minus'));
+      await tester.pumpAndSettle();
+      expect(enabled(tester, 'save-line'), isFalse, reason: 'back to the line');
+
+      await tester.enterText(byKey('line-note'), 'Помягче');
+      await tester.pumpAndSettle();
+      expect(enabled(tester, 'save-line'), isTrue);
+      await tester.enterText(byKey('line-note'), 'Покрепче');
+      await tester.pumpAndSettle();
+      expect(enabled(tester, 'save-line'), isFalse);
+
+      await tapAndSettle(tester, byKey('substitution-remove_if_unavailable'));
+      expect(enabled(tester, 'save-line'), isTrue);
+    });
+
+    testWidgets('saving sends the difference, says so and disables again', (
+      WidgetTester tester,
+    ) async {
+      cart.current = tomatoInCart();
+      await open(tester);
+      final CartLine line = lineOf(cart.current);
+
+      await tester.tap(byKey('product-plus'));
+      await tester.pumpAndSettle();
+      await tester.enterText(byKey('line-note'), '  Помягче ');
+      await tapAndSettle(tester, byKey('substitution-remove_if_unavailable'));
+      cart.answer = tomatoInCart(
+        quantity: '2.500',
+        note: 'Помягче',
+        policy: 'remove_if_unavailable',
+      );
+      await tapAndSettle(tester, byKey('save-line'));
+
+      final CartLinePatch expected = CartLinePatch.between(
+        line,
+        quantity: '2.5',
+        customerNote: 'Помягче',
+        substitutionPolicy: SubstitutionPolicy.removeIfUnavailable,
+      );
+      final CartLinePatch sent = cart.patches.single;
+      expect(sent.quantity, expected.quantity);
+      expect(sent.noteChanged, expected.noteChanged);
+      expect(sent.customerNote, expected.customerNote);
+      expect(sent.substitutionPolicy, expected.substitutionPolicy);
+      expect(cart.calls, contains('change:$tomatoLine'));
+      expect(find.text(l10n(tester).productSaved), findsOneWidget);
+      expect(enabled(tester, 'save-line'), isFalse);
+      expect(quantityShown(tester), '2,5 кг');
+      expect(chipShown(tester), 'В корзине: 2,5 кг');
+      expect(cart.added, isEmpty);
+    });
+
+    testWidgets('a piece line that kept decimals disables the stepper only', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '1.500',
+        ),
+      ]);
+      await open(tester, id: breadProduct);
+
+      expect(iconEnabled(tester, 'product-plus'), isFalse);
+      expect(iconEnabled(tester, 'product-minus'), isFalse);
+      expect(tester.takeException(), isNull);
+      await tester.tap(byKey('product-qty'));
+      await tester.pumpAndSettle();
+      expect(byKey('quantity-done'), findsOneWidget);
+    });
+
+    testWidgets('a note over 300 characters is not saved', (
+      WidgetTester tester,
+    ) async {
+      cart.current = tomatoInCart();
+      await open(tester);
+
+      await tester.enterText(
+        byKey('line-note'),
+        List<String>.filled(301, 'а').join(),
+      );
+      await tapAndSettle(tester, byKey('save-line'));
+
+      expect(find.text(l10n(tester).fieldTooLong(300)), findsOneWidget);
+      expect(cart.patches, isEmpty);
+    });
+
+    testWidgets('a failed save keeps the edit and does not claim success', (
+      WidgetTester tester,
+    ) async {
+      cart.current = tomatoInCart();
+      await open(tester);
+      await tester.tap(byKey('product-plus'));
+      await tester.pumpAndSettle();
+
+      cart.failure = const UnexpectedFailure();
+      await tapAndSettle(tester, byKey('save-line'));
+
+      expect(find.text(l10n(tester).productSaved), findsNothing);
+      expect(quantityShown(tester), '2,5 кг');
+      expect(enabled(tester, 'save-line'), isTrue);
+    });
+
+    testWidgets('a successful add turns the screen into the in-cart state', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await tester.tap(byKey('product-plus'));
+      await tester.pumpAndSettle();
+      cart.answer = tomatoInCart(
+        quantity: '1.500',
+        note: null,
+        policy: 'allow_similar_substitution',
+      );
+      await tester.tap(byKey('add-to-cart'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n(tester).cartAdded), findsOneWidget);
+      expect(byKey('add-to-cart'), findsNothing);
+      expect(byKey('save-line'), findsOneWidget);
+      expect(enabled(tester, 'save-line'), isFalse);
+      expect(chipShown(tester), 'В корзине: 1,5 кг');
+      expect(cart.added, hasLength(1));
+    });
+
+    testWidgets('a line removed elsewhere turns it back to a new add', (
+      WidgetTester tester,
+    ) async {
+      cart.current = tomatoInCart();
+      await open(tester);
+      expect(byKey('save-line'), findsOneWidget);
+
+      cart.current = cartOf(<Map<String, Object?>>[]);
+      await refreshCart(tester);
+
+      expect(byKey('save-line'), findsNothing);
+      expect(byKey('product-in-cart'), findsNothing);
+      expect(enabled(tester, 'add-to-cart'), isTrue);
+      expect(quantityShown(tester), '1 кг');
+      expect(radioChosen(tester, 'allow_similar_substitution'), isTrue);
+      expect(
+        tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+        isEmpty,
+      );
+    });
+
+    testWidgets('a refresh that leaves the line alone keeps the edits', (
+      WidgetTester tester,
+    ) async {
+      cart.current = tomatoInCart();
+      await open(tester);
+      await tester.tap(byKey('product-plus'));
+      await tester.enterText(byKey('line-note'), 'Помягче');
+      await tester.pumpAndSettle();
+
+      await refreshCart(tester);
+
+      expect(quantityShown(tester), '2,5 кг');
+      expect(
+        tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+        'Помягче',
+      );
+      expect(enabled(tester, 'save-line'), isTrue);
+    });
+
+    testWidgets('a line changed elsewhere is shown when nothing is edited', (
+      WidgetTester tester,
+    ) async {
+      cart.current = tomatoInCart();
+      await open(tester);
+
+      cart.current = tomatoInCart(quantity: '3.000', note: null);
+      await refreshCart(tester);
+
+      expect(quantityShown(tester), '3 кг');
+      expect(
+        tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+        isEmpty,
+      );
+      expect(enabled(tester, 'save-line'), isFalse);
+    });
+
+    testWidgets('a line changed elsewhere does not overwrite an edit', (
+      WidgetTester tester,
+    ) async {
+      cart.current = tomatoInCart();
+      await open(tester);
+      await tester.tap(byKey('product-plus'));
+      await tester.pumpAndSettle();
+
+      cart.current = tomatoInCart(quantity: '3.000');
+      await refreshCart(tester);
+
+      expect(quantityShown(tester), '2,5 кг', reason: 'the edit stays');
+      expect(enabled(tester, 'save-line'), isTrue);
+    });
+  });
+
+  group('an exact quantity', () {
+    testWidgets('the sheet takes 1,25 and the stepper goes on from it', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+
+      await tester.tap(byKey('product-qty'));
+      await tester.pumpAndSettle();
+      expect(byKey('quantity-done'), findsOneWidget);
+      await tester.enterText(byKey('line-quantity'), '1,25');
+      await tester.tap(byKey('quantity-done'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('quantity-done'), findsNothing);
+      expect(quantityShown(tester), '1,25 кг');
+      await tester.tap(byKey('product-plus'));
+      await tester.pumpAndSettle();
+      expect(quantityShown(tester), '1,75 кг');
+      await tester.tap(byKey('product-minus'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('product-minus'));
+      await tester.pumpAndSettle();
+      expect(quantityShown(tester), '0,75 кг');
+    });
+
+    for (final String bad in <String>['0', 'abc']) {
+      testWidgets('"$bad" keeps the sheet open and the quantity as it was', (
+        WidgetTester tester,
+      ) async {
+        await open(tester);
+
+        await tester.tap(byKey('product-qty'));
+        await tester.pumpAndSettle();
+        await tester.enterText(byKey('line-quantity'), bad);
+        await tester.tap(byKey('quantity-done'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n(tester).cartQuantityFraction), findsOneWidget);
+        expect(byKey('quantity-done'), findsOneWidget);
+        expect(cart.added, isEmpty);
+        await tester.tapAt(const Offset(200, 20));
+        await tester.pumpAndSettle();
+        expect(quantityShown(tester), '1 кг');
+      });
+    }
+
+    testWidgets(
+      'a piece product takes no fraction and refuses what is not whole',
+      (WidgetTester tester) async {
+        await open(tester, id: breadProduct);
+
+        await tester.tap(byKey('product-qty'));
+        await tester.pumpAndSettle();
+        // The field keeps the comma out, so 1,5 can only be typed as 15.
+        await tester.enterText(byKey('line-quantity'), '1,5');
+        expect(
+          tester.widget<TextFormField>(byKey('line-quantity')).controller!.text,
+          '15',
+        );
+        await tester.enterText(byKey('line-quantity'), '0');
+        await tester.tap(byKey('quantity-done'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n(tester).cartQuantityWhole), findsOneWidget);
+        expect(byKey('quantity-done'), findsOneWidget);
+        expect(cart.added, isEmpty);
+      },
+    );
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets('the sheet fits a phone-size window with large text '
+          '(${device.languageCode})', (WidgetTester tester) async {
+        cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+        await open(
+          tester,
+          size: const Size(320, 640),
+          textScale: 2,
+          device: device,
+        );
+
+        expect(byKey('product-in-cart'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.tap(byKey('product-qty'));
+        await tester.pumpAndSettle();
+        expect(byKey('quantity-done'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {

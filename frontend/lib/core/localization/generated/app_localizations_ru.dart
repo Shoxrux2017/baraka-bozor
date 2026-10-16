@@ -457,7 +457,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get productEditTitle => 'Редактирование товара';
 
   @override
-  String get productSaved => 'Товар сохранён';
+  String get productSaved => 'Корзина обновлена';
 
   @override
   String get productCategory => 'Категория';
@@ -2750,4 +2750,22 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get productGoneAction => 'В каталог';
+
+  @override
+  String productInCart(String quantity) {
+    return 'В корзине: $quantity';
+  }
+
+  @override
+  String get productSave => 'Сохранить';
+
+  @override
+  String get productAlreadyInCart =>
+      'Этот товар уже в корзине — можно изменить и сохранить';
+
+  @override
+  String get quantitySheetTitle => 'Количество';
+
+  @override
+  String get quantitySheetDone => 'Готово';
 }

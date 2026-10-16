@@ -15,6 +15,7 @@ import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/orders/order_values.dart';
+import '../../../core/orders/quantity_rules.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
@@ -31,6 +32,7 @@ import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 import 'more_in_category.dart';
 import 'product_bar.dart';
+import 'quantity_sheet.dart';
 
 /// One product (drawing 18): its picture, name, approximate price and what an
 /// estimate means, its description, the rule for when it is missing and a
@@ -53,10 +55,118 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   SubstitutionPolicy _policy = SubstitutionPolicy.allowSimilar;
   bool _heartBusy = false;
 
+  /// This product's line in the cart as the screen last took it, which is
+  /// what the controls are compared with; `null` while it is not in the cart.
+  CartLine? _line;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual<AsyncValue<Cart>>(
+      currentCartProvider,
+      (AsyncValue<Cart>? _, AsyncValue<Cart> next) => _onCart(next),
+      fireImmediately: true,
+    );
+  }
+
   @override
   void dispose() {
     _note.dispose();
     super.dispose();
+  }
+
+  /// A quantity as the stepper holds it: `2.000` is `2`.
+  static String _plain(String quantity) =>
+      QuantityRules.display(quantity).replaceAll(',', '.');
+
+  CartLinePatch _patch(CartLine line) {
+    final String note = trimLikeServer(_note.text);
+    return CartLinePatch.between(
+      line,
+      quantity: _quantity,
+      customerNote: note.isEmpty ? null : note,
+      substitutionPolicy: _policy,
+    );
+  }
+
+  void _onCart(AsyncValue<Cart> cart) {
+    // A cart on its way, or one that failed with nothing before it, says
+    // nothing about the line.
+    if (!cart.hasValue) {
+      return;
+    }
+    CartLine? line;
+    for (final CartLine candidate in cart.requireValue.lines) {
+      if (candidate.productId == widget.productId) {
+        line = candidate;
+        break;
+      }
+    }
+    final CartLine? before = _line;
+    setState(() {
+      _line = line;
+      if (line == null) {
+        if (before != null) {
+          // Removed elsewhere: a new add again.
+          _quantity = '1';
+          _policy = SubstitutionPolicy.allowSimilar;
+          _note.clear();
+        }
+      } else if (before == null || _patch(before).isEmpty) {
+        // The line first appears, or the server's line changed and the
+        // Customer has not edited it: show the server's values. Unsaved
+        // edits stay.
+        _quantity = _plain(line.quantity);
+        _policy = line.substitutionPolicy;
+        final String note = line.customerNote ?? '';
+        if (_note.text != note) {
+          _note.text = note;
+        }
+      }
+    });
+  }
+
+  Future<void> _askQuantity(CatalogProduct product) async {
+    final String? quantity = await showQuantitySheet(
+      context,
+      unit: product.unitCode,
+      current: _quantity,
+    );
+    if (quantity != null && mounted) {
+      setState(() => _quantity = quantity);
+    }
+  }
+
+  Future<void> _save(CartLine line) async {
+    if (!_form.currentState!.validate()) {
+      return;
+    }
+    final CartLinePatch patch = _patch(line);
+    if (patch.isEmpty) {
+      return;
+    }
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+
+    final Cart? answer = await ref
+        .read(cartLineProvider(line.id).notifier)
+        .change(patch);
+    if (!_current) {
+      return;
+    }
+    final ApiFailure? failure = answer == null
+        ? ref.read(cartLineProvider(line.id)).failure
+        : null;
+    final String? text = answer != null
+        ? l10n.productSaved
+        : failure == null
+        ? null
+        : failureText(l10n, failure);
+    if (text != null) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(text)));
+    }
   }
 
   /// Whether this product's page is still the one the Customer sees.
@@ -132,10 +242,15 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
       return;
     }
     final ApiFailure? failure = ref.read(addToCartProvider(product.id)).failure;
-    // A product already in the cart has been answered by the refreshed cart:
-    // no second line is made.
-    if (failure == null ||
-        (failure is ApiRefusal && failure.code == 'cart_item_already_exists')) {
+    if (failure == null) {
+      return;
+    }
+    // A product already in the cart has been answered by the refreshed cart,
+    // which turns the screen into the in-cart state: no second line is made.
+    if (failure is ApiRefusal && failure.code == 'cart_item_already_exists') {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.productAlreadyInCart)));
       return;
     }
     final String? text = failureText(l10n, failure);
@@ -158,6 +273,9 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     // The add waits while the cart is on its way: an add to a cart not yet
     // seen could not be told from one already holding the product.
     final bool cartKnown = cart.hasValue || cart.hasError;
+    final CartLine? line = _line;
+    final bool saving =
+        line != null && ref.watch(cartLineProvider(line.id)).isBusy;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -176,6 +294,12 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
             form: _form,
             note: _note,
             policy: _policy,
+            inCart: line == null
+                ? null
+                : l10n.productInCart(
+                    '${QuantityRules.display(line.quantity)} '
+                    '${CatalogLabels.unit(l10n, line.unit)}',
+                  ),
             onPolicy: (SubstitutionPolicy policy) =>
                 setState(() => _policy = policy),
           ),
@@ -197,15 +321,26 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
       ),
       bottomNavigationBar: shown == null
           ? null
-          : ProductBar(
-              product: shown,
-              quantity: _quantity,
-              onQuantity: (String quantity) =>
-                  setState(() => _quantity = quantity),
-              actionKey: const ValueKey<String>('add-to-cart'),
-              actionLabel: l10n.productAddToCart,
-              onAction: cartKnown ? () => _add(shown) : null,
-              busy: adding.isBusy,
+          // The note is part of what "Сохранить" waits for.
+          : ListenableBuilder(
+              listenable: _note,
+              builder: (BuildContext context, Widget? _) => ProductBar(
+                product: shown,
+                quantity: _quantity,
+                onQuantity: (String quantity) =>
+                    setState(() => _quantity = quantity),
+                onQuantityTap: () => _askQuantity(shown),
+                actionKey: ValueKey<String>(
+                  line == null ? 'add-to-cart' : 'save-line',
+                ),
+                actionLabel: line == null
+                    ? l10n.productAddToCart
+                    : l10n.productSave,
+                onAction: line == null
+                    ? (cartKnown ? () => _add(shown) : null)
+                    : (_patch(line).isEmpty ? null : () => _save(line)),
+                busy: line == null ? adding.isBusy : saving,
+              ),
             ),
     );
   }
@@ -239,6 +374,7 @@ class _Page extends StatelessWidget {
     required this.form,
     required this.note,
     required this.policy,
+    required this.inCart,
     required this.onPolicy,
   });
 
@@ -246,6 +382,9 @@ class _Page extends StatelessWidget {
   final GlobalKey<FormState> form;
   final TextEditingController note;
   final SubstitutionPolicy policy;
+
+  /// "В корзине: 2 кг" while the product has a line in the cart.
+  final String? inCart;
   final ValueChanged<SubstitutionPolicy> onPolicy;
 
   static const double side = 20;
@@ -284,8 +423,21 @@ class _Page extends StatelessWidget {
                 ),
               ),
             ),
+            if (inCart != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(side, 16, side, 0),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: _InCartChip(text: inCart!),
+                ),
+              ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(side, 16, side, 0),
+              padding: EdgeInsets.fromLTRB(
+                side,
+                inCart == null ? 16 : 10,
+                side,
+                0,
+              ),
               child: Text(
                 product.name(language),
                 key: const ValueKey<String>('product-name'),
@@ -369,6 +521,48 @@ class _Page extends StatelessWidget {
             const SizedBox(height: 8),
             MoreInCategory(product: product),
             const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "В корзине: 2 кг" above the name.
+class _InCartChip extends StatelessWidget {
+  const _InCartChip({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: KitColors.primarySoft,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Icon(
+              Icons.shopping_bag_outlined,
+              size: 16,
+              color: KitColors.primaryDark,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                text,
+                key: const ValueKey<String>('product-in-cart'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: KitColors.primaryDark,
+                ),
+              ),
+            ),
           ],
         ),
       ),

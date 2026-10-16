@@ -1758,5 +1758,18 @@
   "productAddToCart": "Savatga",
   "productGoneTitle": "Bu mahsulot endi sotilmaydi",
   "productGoneText": "U katalogdan olib tashlangan. O'xshash mahsulotlarni bo'limlarda topish mumkin.",
-  "productGoneAction": "Katalogga"
+  "productGoneAction": "Katalogga",
+  "productInCart": "Savatda: {quantity}",
+  "@productInCart": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "productSave": "Saqlash",
+  "productSaved": "Savat yangilandi",
+  "productAlreadyInCart": "Bu mahsulot savatda bor — o'zgartirib, saqlashingiz mumkin",
+  "quantitySheetTitle": "Miqdor",
+  "quantitySheetDone": "Tayyor"
 }

@@ -98,10 +98,10 @@ void main() {
     testWidgets(
       'a kg product is added with a stepped quantity, a note and the rule',
       (WidgetTester tester) async {
+        await open(tester, at: '/customer/products/$tomatoProduct');
         cart.answer = cartOf(<Map<String, Object?>>[
           cartLineJson(productId: tomatoProduct, quantity: '1.500'),
         ]);
-        await open(tester, at: '/customer/products/$tomatoProduct');
 
         await tester.tap(byKey('product-plus'));
         await tester.pumpAndSettle();
@@ -131,6 +131,7 @@ void main() {
     testWidgets('a piece product steps whole numbers, from one', (
       WidgetTester tester,
     ) async {
+      await open(tester, at: '/customer/products/$breadProduct');
       cart.answer = cartOf(<Map<String, Object?>>[
         cartLineJson(
           id: breadLine,
@@ -139,7 +140,6 @@ void main() {
           quantity: '3',
         ),
       ]);
-      await open(tester, at: '/customer/products/$breadProduct');
 
       expect(
         tester.widget<IconButton>(byKey('product-minus')).onPressed,
@@ -166,6 +166,9 @@ void main() {
     testWidgets(
       'a product already in the cart refreshes the cart and makes no second line',
       (WidgetTester tester) async {
+        cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+        await open(tester, at: '/customer/products/$breadProduct');
+        // Another device put the bread in the cart after this one looked.
         cart.current = cartOf(<Map<String, Object?>>[
           cartLineJson(),
           cartLineJson(
@@ -175,7 +178,6 @@ void main() {
             quantity: '2',
           ),
         ]);
-        await open(tester, at: '/customer/products/$breadProduct');
         cart.calls.clear();
         cart.failure = const ApiRefusal(
           ApiError(
@@ -198,10 +200,10 @@ void main() {
     testWidgets('a second notice replaces the first rather than queueing', (
       WidgetTester tester,
     ) async {
+      await open(tester, at: '/customer/products/$tomatoProduct');
       cart.answer = cartOf(<Map<String, Object?>>[
         cartLineJson(productId: tomatoProduct, quantity: '1.500'),
       ]);
-      await open(tester, at: '/customer/products/$tomatoProduct');
       await tester.tap(byKey('product-plus'));
       await tester.pump();
       // Frame by frame, so the notice's timer starts as it would.
@@ -238,10 +240,10 @@ void main() {
     testWidgets(
       'the notice stays behind when the Customer goes to the checkout',
       (WidgetTester tester) async {
+        await open(tester, at: '/customer/products/$tomatoProduct');
         cart.answer = cartOf(<Map<String, Object?>>[
           cartLineJson(productId: tomatoProduct, quantity: '1.500'),
         ]);
-        await open(tester, at: '/customer/products/$tomatoProduct');
         await tester.tap(byKey('product-plus'));
         await tester.pump();
         await tapAndSettle(tester, byKey('add-to-cart'));
@@ -261,8 +263,8 @@ void main() {
     testWidgets(
       'an answer that arrives after the Customer left the product navigates nowhere',
       (WidgetTester tester) async {
-        cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
         await open(tester, at: '/customer/products/$tomatoProduct');
+        cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
         final Completer<void> hold = Completer<void>();
         cart
           ..hold = hold
@@ -291,10 +293,10 @@ void main() {
     testWidgets(
       "the snackbar's way to the cart works after the product was left",
       (WidgetTester tester) async {
+        await open(tester, at: '/customer/products/$tomatoProduct');
         cart.answer = cartOf(<Map<String, Object?>>[
           cartLineJson(productId: tomatoProduct),
         ]);
-        await open(tester, at: '/customer/products/$tomatoProduct');
         await tapAndSettle(tester, byKey('add-to-cart'));
 
         GoRouter.of(anywhere(tester)).pop();

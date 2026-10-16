@@ -1716,5 +1716,18 @@
   "productAddToCart": "В корзину",
   "productGoneTitle": "Товара больше нет в продаже",
   "productGoneText": "Его убрали из каталога. Похожие товары можно найти в категориях.",
-  "productGoneAction": "В каталог"
+  "productGoneAction": "В каталог",
+  "productInCart": "В корзине: {quantity}",
+  "@productInCart": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "productSave": "Сохранить",
+  "productSaved": "Корзина обновлена",
+  "productAlreadyInCart": "Этот товар уже в корзине — можно изменить и сохранить",
+  "quantitySheetTitle": "Количество",
+  "quantitySheetDone": "Готово"
 }

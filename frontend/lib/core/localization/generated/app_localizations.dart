@@ -941,7 +941,7 @@ abstract class AppLocalizations {
   /// No description provided for @productSaved.
   ///
   /// In uz, this message translates to:
-  /// **'Mahsulot saqlandi'**
+  /// **'Savat yangilandi'**
   String get productSaved;
 
   /// No description provided for @productCategory.
@@ -4789,6 +4789,36 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Katalogga'**
   String get productGoneAction;
+
+  /// No description provided for @productInCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatda: {quantity}'**
+  String productInCart(String quantity);
+
+  /// No description provided for @productSave.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlash'**
+  String get productSave;
+
+  /// No description provided for @productAlreadyInCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu mahsulot savatda bor — o\'zgartirib, saqlashingiz mumkin'**
+  String get productAlreadyInCart;
+
+  /// No description provided for @quantitySheetTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Miqdor'**
+  String get quantitySheetTitle;
+
+  /// No description provided for @quantitySheetDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor'**
+  String get quantitySheetDone;
 }
 
 class _AppLocalizationsDelegate

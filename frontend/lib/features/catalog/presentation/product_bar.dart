@@ -25,6 +25,7 @@ class ProductBar extends StatelessWidget {
     required this.actionLabel,
     required this.onAction,
     required this.busy,
+    this.onQuantityTap,
     super.key,
   });
 
@@ -38,6 +39,10 @@ class ProductBar extends StatelessWidget {
   final VoidCallback? onAction;
   final bool busy;
 
+  /// Opens the entry of an exact quantity; the quantity is not a button
+  /// without it.
+  final VoidCallback? onQuantityTap;
+
   static const double height = 54;
 
   @override
@@ -45,7 +50,7 @@ class ProductBar extends StatelessWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
     final String? lower = CardQuantity.previous(product.unitCode, quantity);
-    final String upper = CardQuantity.next(product.unitCode, quantity)!;
+    final String? upper = CardQuantity.next(product.unitCode, quantity);
     final String sum = l10n.catalogApproxPrice(
       MoneyFormat.uzs(
         EstimatePreview.lineUzs(product.customerUnitPriceUzs, quantity),
@@ -81,8 +86,9 @@ class ProductBar extends StatelessWidget {
                     '${CatalogLabels.unit(l10n, product.unitCode)}',
                 minusLabel: l10n.cartStepMinus,
                 plusLabel: l10n.cartStepPlus,
+                onQuantityTap: onQuantityTap,
                 onMinus: lower == null ? null : () => onQuantity(lower),
-                onPlus: () => onQuantity(upper),
+                onPlus: upper == null ? null : () => onQuantity(upper),
               ),
             ),
             const SizedBox(width: 10),
@@ -152,6 +158,7 @@ class _Stepper extends StatelessWidget {
     required this.quantity,
     required this.minusLabel,
     required this.plusLabel,
+    required this.onQuantityTap,
     required this.onMinus,
     required this.onPlus,
   });
@@ -159,8 +166,9 @@ class _Stepper extends StatelessWidget {
   final String quantity;
   final String minusLabel;
   final String plusLabel;
+  final VoidCallback? onQuantityTap;
   final VoidCallback? onMinus;
-  final VoidCallback onPlus;
+  final VoidCallback? onPlus;
 
   Widget _button(Key key, IconData icon, String label, VoidCallback? onTap) {
     return SizedBox.square(
@@ -198,19 +206,23 @@ class _Stepper extends StatelessWidget {
             ),
             // Not in a Center: it would take the whole height it is offered.
             Expanded(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  quantity,
-                  key: const ValueKey<String>('product-qty'),
-                  maxLines: 1,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: KitColors.ink,
-                    decoration: TextDecoration.underline,
-                    decorationStyle: TextDecorationStyle.dotted,
-                    decorationColor: KitColors.muted,
+              child: InkWell(
+                onTap: onQuantityTap,
+                borderRadius: BorderRadius.circular(10),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    quantity,
+                    key: const ValueKey<String>('product-qty'),
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: KitColors.ink,
+                      decoration: TextDecoration.underline,
+                      decorationStyle: TextDecorationStyle.dotted,
+                      decorationColor: KitColors.muted,
+                    ),
                   ),
                 ),
               ),

@@ -459,7 +459,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productEditTitle => 'Mahsulotni tahrirlash';
 
   @override
-  String get productSaved => 'Mahsulot saqlandi';
+  String get productSaved => 'Savat yangilandi';
 
   @override
   String get productCategory => 'Kategoriya';
@@ -2724,4 +2724,22 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get productGoneAction => 'Katalogga';
+
+  @override
+  String productInCart(String quantity) {
+    return 'Savatda: $quantity';
+  }
+
+  @override
+  String get productSave => 'Saqlash';
+
+  @override
+  String get productAlreadyInCart =>
+      'Bu mahsulot savatda bor — o\'zgartirib, saqlashingiz mumkin';
+
+  @override
+  String get quantitySheetTitle => 'Miqdor';
+
+  @override
+  String get quantitySheetDone => 'Tayyor';
 }
