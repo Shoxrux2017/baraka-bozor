@@ -1238,3 +1238,12 @@ Answers to the questions of kit stage 2 (`kit/02-glavnaya.dc.html`, approved the
 ## DL-81 — The product card, compact layout (2026-10-15, Owner)
 
 The Owner chose a more compact card after comparing it with the kit's: the picture with air around it; the name; the approximate price; at the bottom the unit and a round green "+" at the right, which becomes the quantity stepper once the product is in the cart. This supersedes the full-width "Добавить" of `DL-80` item 1.
+
+## DL-82 — Search and the product screen, kit stage 3 (2026-10-16, Owner)
+
+The Owner approved the drawing `kit/03-poisk-tovar.dc.html`: search on its own screen, the search icon in the list headers, the nothing-found state, the three sorts of `DL-78`, the product screen with the substitution rule, the note, "Ещё в категории", the in-cart and gone states. Reviews and stars on the product screen, which the kit shows, are not built now. They go to the roadmap as a later item, to be decided on their own: who may review, moderation in the panel, and whether a rating belongs to the product or to the order.
+
+## DL-83 — Search and the product screen, kit stage 3 (2026-10-16, agent)
+
+1. **Recent searches** are kept on the device per account, as the delivery address is (`DL-75`): at most ten, newest first, repeats folded as the catalog search folds them (`DL-20`), queries under two letters ignored. A query is remembered when the Customer presses search on the keyboard, taps a recent query, or leaves the search screen with it typed. "Очистить" empties the list. They never reach the server.
+2. **The product screen's sum** under "В корзину" is a preview, `half_up(price × quantity)` as `BR-MONEY-003`, computed by one domain helper. The cart and the order keep the server's figures.
