@@ -4723,6 +4723,72 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Qidirish'**
   String get openSearch;
+
+  /// No description provided for @productTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot haqida'**
+  String get productTitle;
+
+  /// No description provided for @productReadMore.
+  ///
+  /// In uz, this message translates to:
+  /// **'Batafsil'**
+  String get productReadMore;
+
+  /// No description provided for @productReadLess.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish'**
+  String get productReadLess;
+
+  /// No description provided for @productIfMissing.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot bo\'lmasa'**
+  String get productIfMissing;
+
+  /// No description provided for @productNoteHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Masalan: qattiqroq, pishib o\'tmagan'**
+  String get productNoteHint;
+
+  /// No description provided for @productMoreIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{category}» bo\'limidan yana'**
+  String productMoreIn(String category);
+
+  /// No description provided for @productMoreGeneric.
+  ///
+  /// In uz, this message translates to:
+  /// **'Shu bo\'limdan yana'**
+  String get productMoreGeneric;
+
+  /// No description provided for @productAddToCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga'**
+  String get productAddToCart;
+
+  /// No description provided for @productGoneTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu mahsulot endi sotilmaydi'**
+  String get productGoneTitle;
+
+  /// No description provided for @productGoneText.
+  ///
+  /// In uz, this message translates to:
+  /// **'U katalogdan olib tashlangan. O\'xshash mahsulotlarni bo\'limlarda topish mumkin.'**
+  String get productGoneText;
+
+  /// No description provided for @productGoneAction.
+  ///
+  /// In uz, this message translates to:
+  /// **'Katalogga'**
+  String get productGoneAction;
 }
 
 class _AppLocalizationsDelegate

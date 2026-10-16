@@ -72,6 +72,9 @@ class FakeCatalogRepository implements CatalogRepository {
   /// The next product request answers this instead.
   ApiFailure? nextFailure;
 
+  /// The next single-product request answers this instead.
+  ApiFailure? productFailure;
+
   /// How many times the sections were asked for.
   int categoryLoads = 0;
 
@@ -143,10 +146,17 @@ class FakeCatalogRepository implements CatalogRepository {
   }
 
   @override
-  Future<CatalogProduct> product(String id) async => productRows.firstWhere(
-    (CatalogProduct p) => p.id == id,
-    orElse: () => throw const ApiRefusal(
-      ApiError(status: 404, code: 'resource_not_found'),
-    ),
-  );
+  Future<CatalogProduct> product(String id) async {
+    final ApiFailure? failure = productFailure;
+    if (failure != null) {
+      productFailure = null;
+      throw failure;
+    }
+    return productRows.firstWhere(
+      (CatalogProduct p) => p.id == id,
+      orElse: () => throw const ApiRefusal(
+        ApiError(status: 404, code: 'resource_not_found'),
+      ),
+    );
+  }
 }

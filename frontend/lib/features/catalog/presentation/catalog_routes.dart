@@ -6,7 +6,7 @@ import '../../../core/routing/feature_routes.dart';
 import 'catalog_paths.dart';
 import 'all_products_screen.dart';
 import 'all_categories_screen.dart';
-import 'catalog_screens.dart';
+import 'product_screen.dart';
 import 'home_screen.dart';
 import 'category_screen.dart';
 import 'recommended_screen.dart';

@@ -1740,5 +1740,23 @@
     }
   },
   "searchAllCategories": "Barcha kategoriyalar",
-  "openSearch": "Qidirish"
+  "openSearch": "Qidirish",
+  "productTitle": "Mahsulot haqida",
+  "productReadMore": "Batafsil",
+  "productReadLess": "Yig'ish",
+  "productIfMissing": "Mahsulot bo'lmasa",
+  "productNoteHint": "Masalan: qattiqroq, pishib o'tmagan",
+  "productMoreIn": "«{category}» bo'limidan yana",
+  "@productMoreIn": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "productMoreGeneric": "Shu bo'limdan yana",
+  "productAddToCart": "Savatga",
+  "productGoneTitle": "Bu mahsulot endi sotilmaydi",
+  "productGoneText": "U katalogdan olib tashlangan. O'xshash mahsulotlarni bo'limlarda topish mumkin.",
+  "productGoneAction": "Katalogga"
 }

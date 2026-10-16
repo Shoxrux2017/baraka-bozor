@@ -2714,4 +2714,40 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get openSearch => 'Поиск';
+
+  @override
+  String get productTitle => 'О товаре';
+
+  @override
+  String get productReadMore => 'Читать далее';
+
+  @override
+  String get productReadLess => 'Свернуть';
+
+  @override
+  String get productIfMissing => 'Если товара не будет';
+
+  @override
+  String get productNoteHint => 'Например: покрепче, не перезрелые';
+
+  @override
+  String productMoreIn(String category) {
+    return 'Ещё в «$category»';
+  }
+
+  @override
+  String get productMoreGeneric => 'Ещё из этой категории';
+
+  @override
+  String get productAddToCart => 'В корзину';
+
+  @override
+  String get productGoneTitle => 'Товара больше нет в продаже';
+
+  @override
+  String get productGoneText =>
+      'Его убрали из каталога. Похожие товары можно найти в категориях.';
+
+  @override
+  String get productGoneAction => 'В каталог';
 }

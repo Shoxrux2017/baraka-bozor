@@ -128,28 +128,15 @@ void main() {
 
     expect(
       find.text('Olma'),
-      findsOneWidget,
-      reason: 'the other name under the first',
+      findsNothing,
+      reason: 'the other language is not shown (DL-83)',
     );
     expect(find.text('Сочные'), findsOneWidget);
     expect(
-      find.text('${MoneyFormat.uzs(3500, AppLanguage.ru)} / шт.'),
-      findsOneWidget,
+      find.text('≈ ${MoneyFormat.uzs(3500, AppLanguage.ru)}'),
+      findsWidgets,
     );
-  });
-
-  testWidgets('an estimate product explains what its price means', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
-    await tester.tap(find.text('Sabzavotlar'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Pomidor'));
-    await tester.pumpAndSettle();
-
-    expect(byKey('product-name'), findsOneWidget);
-    expect(find.text('narx taxminiy'), findsOneWidget);
-    expect(find.text(l10n(tester).catalogEstimateExplain), findsOneWidget);
+    expect(find.text('за шт.'), findsOneWidget);
   });
 
   testWidgets('scrolling to the end loads the next page, and the list ends', (
@@ -173,19 +160,6 @@ void main() {
     expect(find.text('Mahsulot 25'), findsOneWidget);
     expect(catalog.requests, <String>['|c-1|1', '|c-1|2']);
     expect(find.byType(CircularProgressIndicator), findsNothing);
-  });
-
-  testWidgets('a product that no longer exists says so, with no retry', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
-
-    GoRouter.of(tester.element(find.byType(Scaffold).first))
-        .push(CatalogPaths.product('p-404'));
-    await tester.pumpAndSettle();
-
-    expect(find.text(l10n(tester).errorNotFound), findsOneWidget);
-    expect(byKey('retry-load'), findsNothing);
   });
 
   testWidgets('after signing out the catalog asks for nothing more', (
@@ -349,10 +323,14 @@ void main() {
         await tester.pumpAndSettle();
         expect(mode, findsOneWidget, reason: 'on a product');
         await tester.scrollUntilVisible(
-          find.textContaining(
-            device.languageCode == 'uz' ? 'yig\'uvchi' : 'сборщик',
+          find.text(
+            device.languageCode == 'uz'
+                ? 'Mahsulot bo\'lmasa'
+                : 'Если товара не будет',
           ),
           200,
+          // The page's own scroll view, the first in the tree.
+          scrollable: find.byType(Scrollable).first,
         );
 
         await tester.tap(find.byType(BackButton));

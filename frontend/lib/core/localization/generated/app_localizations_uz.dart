@@ -2688,4 +2688,40 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get openSearch => 'Qidirish';
+
+  @override
+  String get productTitle => 'Mahsulot haqida';
+
+  @override
+  String get productReadMore => 'Batafsil';
+
+  @override
+  String get productReadLess => 'Yig\'ish';
+
+  @override
+  String get productIfMissing => 'Mahsulot bo\'lmasa';
+
+  @override
+  String get productNoteHint => 'Masalan: qattiqroq, pishib o\'tmagan';
+
+  @override
+  String productMoreIn(String category) {
+    return '«$category» bo\'limidan yana';
+  }
+
+  @override
+  String get productMoreGeneric => 'Shu bo\'limdan yana';
+
+  @override
+  String get productAddToCart => 'Savatga';
+
+  @override
+  String get productGoneTitle => 'Bu mahsulot endi sotilmaydi';
+
+  @override
+  String get productGoneText =>
+      'U katalogdan olib tashlangan. O\'xshash mahsulotlarni bo\'limlarda topish mumkin.';
+
+  @override
+  String get productGoneAction => 'Katalogga';
 }

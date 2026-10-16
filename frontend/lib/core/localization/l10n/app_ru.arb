@@ -1698,5 +1698,23 @@
   "searchNothingTitle": "Ничего не нашли",
   "searchNothingText": "По запросу «{query}» товаров нет. Проверьте написание — мы ищем и по-русски, и по-узбекски.",
   "searchAllCategories": "Все категории",
-  "openSearch": "Поиск"
+  "openSearch": "Поиск",
+  "productTitle": "О товаре",
+  "productReadMore": "Читать далее",
+  "productReadLess": "Свернуть",
+  "productIfMissing": "Если товара не будет",
+  "productNoteHint": "Например: покрепче, не перезрелые",
+  "productMoreIn": "Ещё в «{category}»",
+  "@productMoreIn": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "productMoreGeneric": "Ещё из этой категории",
+  "productAddToCart": "В корзину",
+  "productGoneTitle": "Товара больше нет в продаже",
+  "productGoneText": "Его убрали из каталога. Похожие товары можно найти в категориях.",
+  "productGoneAction": "В каталог"
 }
