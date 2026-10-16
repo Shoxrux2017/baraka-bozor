@@ -17,7 +17,6 @@ import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart'
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
 import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
-import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,7 +36,6 @@ void main() {
   late FakeCatalogRepository catalog;
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
-  final Finder search = byKey('catalog-search');
   final Finder productScrollable = find.descendant(
     of: byKey('product-grid'),
     matching: find.byType(Scrollable),
@@ -87,12 +85,6 @@ void main() {
     await tester.pumpAndSettle();
     // The home asks for its recommended row too; the tests count the rest.
     catalog.requests.clear();
-  }
-
-  Future<void> typeAndPause(WidgetTester tester, String text) async {
-    await tester.enterText(search, text);
-    await tester.pump(CatalogHomeScreen.searchPause);
-    await tester.pumpAndSettle();
   }
 
   testWidgets(
@@ -183,59 +175,6 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
-  testWidgets('a search is sent once typing pauses', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
-
-    await tester.enterText(search, 'p');
-    await tester.pump(const Duration(milliseconds: 100));
-    await tester.enterText(search, 'po');
-    await tester.pump(const Duration(milliseconds: 100));
-    await typeAndPause(tester, 'pomi');
-
-    expect(catalog.requests, <String>['pomi|null|1']);
-    expect(find.text('Pomidor'), findsOneWidget);
-    expect(find.text('Sabzavotlar'), findsNothing);
-
-    await tester.tap(byKey('catalog-search-clear'));
-    await tester.pumpAndSettle();
-    expect(find.text('Sabzavotlar'), findsOneWidget);
-  });
-
-  testWidgets(
-    'the answer to a search typed past never replaces the current one',
-    (WidgetTester tester) async {
-      final Completer<void> slow = Completer<void>();
-      catalog.gates['pom'] = slow;
-      await open(tester);
-
-      // The first answer is held back, so its list shows a spinner that
-      // never settles; time is advanced by hand.
-      await tester.enterText(search, 'pom');
-      await tester.pump(CatalogHomeScreen.searchPause);
-      await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      await typeAndPause(tester, 'olm');
-      expect(find.text('Olma'), findsOneWidget);
-
-      slow.complete();
-      await tester.pumpAndSettle();
-
-      expect(find.text('Olma'), findsOneWidget);
-      expect(find.text('Pomidor'), findsNothing);
-      expect(catalog.requests, <String>['pom|null|1', 'olm|null|1']);
-    },
-  );
-
-  testWidgets('a search with no match says so', (WidgetTester tester) async {
-    await open(tester);
-
-    await typeAndPause(tester, 'shokolad');
-
-    expect(find.text(l10n(tester).catalogEmpty), findsOneWidget);
-  });
-
   testWidgets('a product that no longer exists says so, with no retry', (
     WidgetTester tester,
   ) async {
@@ -247,23 +186,6 @@ void main() {
 
     expect(find.text(l10n(tester).errorNotFound), findsOneWidget);
     expect(byKey('retry-load'), findsNothing);
-  });
-
-  testWidgets('the search takes no more than the server does', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
-
-    await typeAndPause(tester, 'a' * 150);
-
-    expect(
-      tester.widget<TextField>(search).controller!.text,
-      'a' * ProductListQuery.searchMaxLength,
-    );
-    expect(
-      catalog.requests.last,
-      startsWith('${'a' * ProductListQuery.searchMaxLength}|'),
-    );
   });
 
   testWidgets('after signing out the catalog asks for nothing more', (

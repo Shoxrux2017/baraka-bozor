@@ -1,7 +1,4 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,79 +16,40 @@ import '../domain/catalog.dart';
 import 'all_categories_screen.dart';
 import 'catalog_paths.dart';
 import 'category_tile.dart';
-import 'kit_product_card.dart';
-import 'kit_product_grid.dart';
+import 'recommended_row.dart';
+import 'section_title.dart';
 import 'sort_sheet.dart';
 
 /// The Customer area's home in the kit's look (`DL-80`, drawings 10 and 10a):
-/// where the order goes with the cart at its right, the search with the
-/// filter button, then the categories and the recommended products — or,
-/// while a query stands, the products it finds — over the tab bar. The active
-/// mode shows at the top while two sessions exist, with the way back to the
-/// staff area on it (`DL-75`, `docs/02-user-roles.md` section 10).
-class CatalogHomeScreen extends ConsumerStatefulWidget {
+/// where the order goes with the cart at its right, the search field, which
+/// opens the search screen (`DL-83`), with the filter button, then the
+/// categories and the recommended products, over the tab bar. The active mode
+/// shows at the top while two sessions exist, with the way back to the staff
+/// area on it (`DL-75`, `docs/02-user-roles.md` section 10).
+class CatalogHomeScreen extends ConsumerWidget {
   const CatalogHomeScreen({super.key});
-
-  /// How long typing must pause before a search is sent, so a word typed
-  /// quickly asks once rather than once per letter.
-  static const Duration searchPause = Duration(milliseconds: 300);
 
   /// The most of the screen's height above the keyboard that the header
   /// takes before it scrolls, so a large text on a small phone still leaves
   /// the sections room.
   static const double headerShare = 0.6;
 
-  @override
-  ConsumerState<CatalogHomeScreen> createState() => _CatalogHomeScreenState();
-}
-
-class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
-  final TextEditingController _search = TextEditingController();
-  Timer? _pause;
-  String _query = '';
-
-  @override
-  void dispose() {
-    _pause?.cancel();
-    _search.dispose();
-    super.dispose();
-  }
-
-  void _onTyped(String text) {
-    _pause?.cancel();
-    _pause = Timer(CatalogHomeScreen.searchPause, () {
-      if (mounted) {
-        setState(() => _query = ProductListQuery.searchOf(text));
-      }
-    });
-  }
-
-  void _clear() {
-    _pause?.cancel();
-    _search.clear();
-    setState(() => _query = '');
-  }
-
-  /// Asks the order. With a search typed, its results take the order and
-  /// the home stays; otherwise every product opens in it.
-  Future<void> _openSort() async {
+  /// Asks the order, then opens every product in it.
+  Future<void> _openSort(BuildContext context, WidgetRef ref) async {
     final ProductSort? chosen = await showSortSheet(
       context,
       ref.read(productSortProvider),
     );
-    if (chosen == null || !mounted) {
+    if (chosen == null || !context.mounted) {
       return;
     }
     ref.read(productSortProvider.notifier).set(chosen);
-    if (_query.isEmpty) {
-      context.push<void>(CatalogPaths.products);
-    }
+    context.push<void>(CatalogPaths.products);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final ProductSort sort = ref.watch(productSortProvider);
     // A share of the screen above the keyboard, so the keyboard never leaves
     // the body less room than the header's cap allows.
     final double maxHeader =
@@ -106,30 +64,18 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
         bottom: false,
         child: Column(
           children: <Widget>[
-            // The same widgets whatever the body shows, so typing never
-            // loses the field's focus.
             ConstrainedBox(
               constraints: BoxConstraints(maxHeight: maxHeader),
-              child: _header(l10n),
+              child: _header(context, ref, l10n),
             ),
-            Expanded(
-              child: _query.isEmpty
-                  ? const _Sections()
-                  : KitProductGrid(
-                      query: ProductListQuery(search: _query, sort: sort),
-                      empty: Text(
-                        l10n.catalogEmpty,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-            ),
+            const Expanded(child: _Sections()),
           ],
         ),
       ),
     );
   }
 
-  Widget _header(AppLocalizations l10n) {
+  Widget _header(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
     return SingleChildScrollView(
       key: const ValueKey<String>('home-header'),
       child: Column(
@@ -150,9 +96,12 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Row(
               children: <Widget>[
-                Expanded(child: _searchField(l10n)),
+                Expanded(child: _SearchEntry(hint: l10n.catalogSearchHint)),
                 const SizedBox(width: 10),
-                _FilterButton(label: l10n.sortTitle, onTap: _openSort),
+                _FilterButton(
+                  label: l10n.sortTitle,
+                  onTap: () => _openSort(context, ref),
+                ),
               ],
             ),
           ),
@@ -160,41 +109,53 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
       ),
     );
   }
+}
 
-  Widget _searchField(AppLocalizations l10n) {
-    final OutlineInputBorder border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide.none,
-    );
-    return TextField(
-      key: const ValueKey<String>('catalog-search'),
-      controller: _search,
-      textInputAction: TextInputAction.search,
-      inputFormatters: <TextInputFormatter>[
-        LengthLimitingTextInputFormatter(ProductListQuery.searchMaxLength),
-      ],
-      style: const TextStyle(color: KitColors.ink, fontSize: 14),
-      decoration: InputDecoration(
-        hintText: l10n.catalogSearchHint,
-        hintStyle: const TextStyle(color: KitColors.muted, fontSize: 14),
-        filled: true,
-        fillColor: KitColors.field,
-        constraints: const BoxConstraints(minHeight: 50),
-        contentPadding: const EdgeInsets.symmetric(vertical: 14),
-        prefixIcon: const Icon(Icons.search, color: KitColors.muted),
-        suffixIcon: _query.isEmpty && _search.text.isEmpty
-            ? null
-            : IconButton(
-                key: const ValueKey<String>('catalog-search-clear'),
-                icon: const Icon(Icons.clear, color: KitColors.muted),
-                tooltip: l10n.catalogSearchClear,
-                onPressed: _clear,
+/// The search field of the home: it looks like the field and opens the
+/// search screen when tapped.
+class _SearchEntry extends StatelessWidget {
+  const _SearchEntry({required this.hint});
+
+  final String hint;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: hint,
+      excludeSemantics: true,
+      child: Material(
+        color: KitColors.field,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          key: const ValueKey<String>('catalog-search'),
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => context.push<void>(CatalogPaths.search),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 50),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              child: Row(
+                children: <Widget>[
+                  const Icon(Icons.search, color: KitColors.muted),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      hint,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: KitColors.muted,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-        border: border,
-        enabledBorder: border,
-        focusedBorder: border,
+            ),
+          ),
+        ),
       ),
-      onChanged: _onTyped,
     );
   }
 }
@@ -251,7 +212,7 @@ class _Sections extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _SectionTitle(
+          SectionTitle(
             title: l10n.homeCategories,
             seeAllKey: 'open-categories',
             onSeeAll: () => context.push<void>(CatalogPaths.categories),
@@ -279,52 +240,7 @@ class _Sections extends ConsumerWidget {
               child: Center(child: CircularProgressIndicator()),
             ),
           ),
-          const _Recommended(),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.title,
-    required this.seeAllKey,
-    required this.onSeeAll,
-  });
-
-  final String title;
-  final String seeAllKey;
-  final VoidCallback onSeeAll;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: KitColors.ink,
-              ),
-            ),
-          ),
-          TextButton(
-            key: ValueKey<String>(seeAllKey),
-            style: TextButton.styleFrom(
-              foregroundColor: KitColors.primaryDark,
-              textStyle: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            onPressed: onSeeAll,
-            child: Text(AppLocalizations.of(context).homeSeeAll),
-          ),
+          const RecommendedRow(),
         ],
       ),
     );
@@ -358,68 +274,6 @@ class _CategoryGrid extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-/// "Рекомендуем": up to ten recommended products in a row. The section is
-/// absent while there is none, while it loads and when it fails: the home
-/// stands without it.
-class _Recommended extends ConsumerWidget {
-  const _Recommended();
-
-  static const int shown = 10;
-  static const double cardWidth = 150;
-  static const double imageHeight = 130;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final List<CatalogProduct> items =
-        ref
-            .watch(
-              productListProvider(const ProductListQuery(featuredOnly: true)),
-            )
-            .value
-            ?.items ??
-        const <CatalogProduct>[];
-    if (items.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    final double extent = kitCardExtent(
-      MediaQuery.textScalerOf(context),
-      size: KitCardSize.regular,
-      imageHeight: imageHeight,
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        _SectionTitle(
-          title: l10n.recommendedTitle,
-          seeAllKey: 'open-recommended',
-          onSeeAll: () => context.push<void>(CatalogPaths.recommended),
-        ),
-        SizedBox(
-          height: extent,
-          child: ListView.separated(
-            key: const ValueKey<String>('recommended-row'),
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: items.length < shown ? items.length : shown,
-            separatorBuilder: (BuildContext context, int index) =>
-                const SizedBox(width: 12),
-            itemBuilder: (BuildContext context, int index) => SizedBox(
-              width: cardWidth,
-              child: KitProductCard(
-                key: ValueKey<String>(items[index].id),
-                product: items[index],
-                imageHeight: imageHeight,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -2658,4 +2658,34 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get favoritesEmptyAction => 'Xaridga';
+
+  @override
+  String get searchRecentTitle => 'So\'nggi so\'rovlar';
+
+  @override
+  String get searchRecentClear => 'Tozalash';
+
+  @override
+  String searchFound(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Topildi: $count ta mahsulot',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get searchNothingTitle => 'Hech narsa topilmadi';
+
+  @override
+  String searchNothingText(String query) {
+    return '«$query» bo\'yicha mahsulot yo\'q. Yozilishini tekshiring — biz o\'zbekcha ham, ruscha ham qidiramiz.';
+  }
+
+  @override
+  String get searchAllCategories => 'Barcha kategoriyalar';
+
+  @override
+  String get openSearch => 'Qidirish';
 }

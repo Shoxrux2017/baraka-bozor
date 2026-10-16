@@ -40,7 +40,7 @@ class CategoryScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: kitAppBar(title: category?.name(language) ?? ''),
+      appBar: kitAppBar(title: category?.name(language) ?? '', search: true),
       // The mode stays visible while two sessions exist (DL-75), whatever
       // the body shows: loading, an error, not found or the products.
       body: UnderActiveMode(

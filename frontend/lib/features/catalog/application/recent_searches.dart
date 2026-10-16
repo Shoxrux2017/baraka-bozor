@@ -23,8 +23,16 @@ class RecentSearches extends AsyncNotifier<List<String>> {
   /// first one's queries.
   static String preferenceKey(String account) => 'recent_searches.$account';
 
-  /// A query as the catalog search reads it: lower case, `ё` as `е` (`DL-20`).
-  static String _fold(String query) => query.toLowerCase().replaceAll('ё', 'е');
+  /// The apostrophe forms Uzbek is typed with (U+02BB, U+2018, U+2019 and the
+  /// grave accent), all read as the plain apostrophe.
+  static final RegExp _apostrophes = RegExp(
+    '[${String.fromCharCodes(<int>[0x2BB, 0x2018, 0x2019, 0x60])}]',
+  );
+
+  /// A query as the catalog search reads it: lower case, `ё` as `е` and every
+  /// apostrophe form as one (`DL-20`).
+  static String _fold(String query) =>
+      query.toLowerCase().replaceAll('ё', 'е').replaceAll(_apostrophes, "'");
 
   @override
   Future<List<String>> build() async {
@@ -51,6 +59,9 @@ class RecentSearches extends AsyncNotifier<List<String>> {
       return;
     }
     final List<String> current = await future;
+    if (!ref.mounted) {
+      return;
+    }
     final String folded = _fold(text);
     final List<String> next = <String>[
       text,

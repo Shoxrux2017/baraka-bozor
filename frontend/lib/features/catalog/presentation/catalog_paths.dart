@@ -14,7 +14,7 @@ abstract final class CatalogPaths {
   static const String products = '${AppPaths.customer}/products';
 
   /// The search screen.
-  static const String search = '${AppPaths.customer}/search';
+  static const String search = AppPaths.customerSearch;
 
   static String category(String id) =>
       '${AppPaths.customer}/categories/${Uri.encodeComponent(id)}';

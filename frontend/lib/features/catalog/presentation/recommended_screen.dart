@@ -18,7 +18,7 @@ class RecommendedScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: kitAppBar(title: l10n.recommendedTitle),
+      appBar: kitAppBar(title: l10n.recommendedTitle, search: true),
       // The mode stays visible while two sessions exist (DL-75).
       body: UnderActiveMode(
         child: Stack(

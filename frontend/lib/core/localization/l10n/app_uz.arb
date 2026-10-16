@@ -1719,5 +1719,26 @@
   "favoritesTitle": "Sevimlilar",
   "favoritesEmptyTitle": "Hozircha bo'sh",
   "favoritesEmptyText": "Mahsulotdagi yurakchani bosing — u shu yerda paydo bo'ladi va uni qayta buyurtma qilish oson bo'ladi",
-  "favoritesEmptyAction": "Xaridga"
+  "favoritesEmptyAction": "Xaridga",
+  "searchRecentTitle": "So'nggi so'rovlar",
+  "searchRecentClear": "Tozalash",
+  "searchFound": "{count, plural, other{Topildi: {count} ta mahsulot}}",
+  "@searchFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchNothingTitle": "Hech narsa topilmadi",
+  "searchNothingText": "«{query}» bo'yicha mahsulot yo'q. Yozilishini tekshiring — biz o'zbekcha ham, ruscha ham qidiramiz.",
+  "@searchNothingText": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchAllCategories": "Barcha kategoriyalar",
+  "openSearch": "Qidirish"
 }

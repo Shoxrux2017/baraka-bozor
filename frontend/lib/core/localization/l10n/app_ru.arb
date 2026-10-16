@@ -1691,5 +1691,12 @@
   "favoritesTitle": "Избранное",
   "favoritesEmptyTitle": "Пока пусто",
   "favoritesEmptyText": "Нажмите сердечко на товаре — он появится здесь, и его будет легко заказать снова",
-  "favoritesEmptyAction": "За покупками"
+  "favoritesEmptyAction": "За покупками",
+  "searchRecentTitle": "Недавние запросы",
+  "searchRecentClear": "Очистить",
+  "searchFound": "{count, plural, one{Найдено: {count} товар} few{Найдено: {count} товара} other{Найдено: {count} товаров}}",
+  "searchNothingTitle": "Ничего не нашли",
+  "searchNothingText": "По запросу «{query}» товаров нет. Проверьте написание — мы ищем и по-русски, и по-узбекски.",
+  "searchAllCategories": "Все категории",
+  "openSearch": "Поиск"
 }

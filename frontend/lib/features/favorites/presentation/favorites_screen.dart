@@ -36,6 +36,7 @@ class FavoritesScreen extends ConsumerWidget {
         appBar: kitAppBar(
           title: l10n.favoritesTitle,
           automaticallyImplyLeading: false,
+          search: true,
         ),
         // The mode stays visible while two sessions exist (DL-75).
         body: UnderActiveMode(

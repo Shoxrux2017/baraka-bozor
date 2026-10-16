@@ -2682,4 +2682,36 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get favoritesEmptyAction => 'За покупками';
+
+  @override
+  String get searchRecentTitle => 'Недавние запросы';
+
+  @override
+  String get searchRecentClear => 'Очистить';
+
+  @override
+  String searchFound(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Найдено: $count товаров',
+      few: 'Найдено: $count товара',
+      one: 'Найдено: $count товар',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get searchNothingTitle => 'Ничего не нашли';
+
+  @override
+  String searchNothingText(String query) {
+    return 'По запросу «$query» товаров нет. Проверьте написание — мы ищем и по-русски, и по-узбекски.';
+  }
+
+  @override
+  String get searchAllCategories => 'Все категории';
+
+  @override
+  String get openSearch => 'Поиск';
 }

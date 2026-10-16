@@ -4681,6 +4681,48 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Xaridga'**
   String get favoritesEmptyAction;
+
+  /// No description provided for @searchRecentTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'nggi so\'rovlar'**
+  String get searchRecentTitle;
+
+  /// No description provided for @searchRecentClear.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tozalash'**
+  String get searchRecentClear;
+
+  /// No description provided for @searchFound.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count, plural, other{Topildi: {count} ta mahsulot}}'**
+  String searchFound(int count);
+
+  /// No description provided for @searchNothingTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hech narsa topilmadi'**
+  String get searchNothingTitle;
+
+  /// No description provided for @searchNothingText.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{query}» bo\'yicha mahsulot yo\'q. Yozilishini tekshiring — biz o\'zbekcha ham, ruscha ham qidiramiz.'**
+  String searchNothingText(String query);
+
+  /// No description provided for @searchAllCategories.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha kategoriyalar'**
+  String get searchAllCategories;
+
+  /// No description provided for @openSearch.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qidirish'**
+  String get openSearch;
 }
 
 class _AppLocalizationsDelegate

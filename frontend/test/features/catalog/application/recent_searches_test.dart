@@ -50,6 +50,19 @@ void main() {
     expect(stored('a'), <String>['ёжик']);
   });
 
+  test('every Uzbek apostrophe form folds to one entry', () async {
+    await read('a');
+    final String first = "qo'y";
+    final String second = 'qo${String.fromCharCode(0x2BB)}y';
+    final String third = 'qo${String.fromCharCode(0x2019)}y';
+    await notifier('a').remember(first);
+    await notifier('a').remember(second);
+    await notifier('a').remember(third);
+    await notifier('a').remember('qo${String.fromCharCode(0x2018)}y');
+    await notifier('a').remember('qo${String.fromCharCode(0x60)}y');
+    expect(stored('a'), <String>['qo${String.fromCharCode(0x60)}y']);
+  });
+
   test('eleven different queries keep the newest ten', () async {
     await read('a');
     for (int i = 1; i <= 11; i++) {
