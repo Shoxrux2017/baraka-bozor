@@ -685,7 +685,6 @@
     }
   },
   "cartEmpty": "Savat bo'sh",
-  "cartAdd": "Savatga qo'shish",
   "cartAdded": "Savatga qo'shildi",
   "cartQuantity": "Miqdori",
   "cartQuantityFraction": "0 dan katta son: ko'pi bilan 4 xona va 3 kasr",
@@ -1719,5 +1718,57 @@
   "favoritesTitle": "Sevimlilar",
   "favoritesEmptyTitle": "Hozircha bo'sh",
   "favoritesEmptyText": "Mahsulotdagi yurakchani bosing — u shu yerda paydo bo'ladi va uni qayta buyurtma qilish oson bo'ladi",
-  "favoritesEmptyAction": "Xaridga"
+  "favoritesEmptyAction": "Xaridga",
+  "searchRecentTitle": "So'nggi so'rovlar",
+  "searchRecentClear": "Tozalash",
+  "searchFound": "{count, plural, other{Topildi: {count} ta mahsulot}}",
+  "@searchFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "searchNothingTitle": "Hech narsa topilmadi",
+  "searchNothingText": "«{query}» bo'yicha mahsulot yo'q. Yozilishini tekshiring — biz o'zbekcha ham, ruscha ham qidiramiz.",
+  "@searchNothingText": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchAllCategories": "Barcha kategoriyalar",
+  "openSearch": "Qidirish",
+  "productTitle": "Mahsulot haqida",
+  "productReadMore": "Batafsil",
+  "productReadLess": "Yig'ish",
+  "productIfMissing": "Mahsulot bo'lmasa",
+  "productNoteHint": "Masalan: qattiqroq, pishib o'tmagan",
+  "productMoreIn": "«{category}» bo'limidan yana",
+  "@productMoreIn": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "productMoreGeneric": "Shu bo'limdan yana",
+  "productAddToCart": "Savatga",
+  "productGoneTitle": "Bu mahsulot endi sotilmaydi",
+  "productGoneText": "U katalogdan olib tashlangan. O'xshash mahsulotlarni bo'limlarda topish mumkin.",
+  "productGoneAction": "Katalogga",
+  "productInCart": "Savatda: {quantity}",
+  "@productInCart": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "productSave": "Saqlash",
+  "productSaved": "Savat yangilandi",
+  "productAlreadyInCart": "Bu mahsulot savatda bor — o'zgartirib, saqlashingiz mumkin",
+  "quantitySheetTitle": "Miqdor",
+  "quantitySheetDone": "Tayyor"
 }

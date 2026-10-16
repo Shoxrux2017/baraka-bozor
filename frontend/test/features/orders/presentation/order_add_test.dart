@@ -7,7 +7,7 @@ import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
-import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
 import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -139,7 +139,7 @@ void main() {
 
   Future<void> search(WidgetTester tester, String text) async {
     await tester.enterText(byKey('pick-search'), text);
-    await tester.pump(CatalogHomeScreen.searchPause);
+    await tester.pump(SearchScreen.searchPause);
     await tester.pumpAndSettle();
   }
 

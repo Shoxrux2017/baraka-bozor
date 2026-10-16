@@ -941,7 +941,7 @@ abstract class AppLocalizations {
   /// No description provided for @productSaved.
   ///
   /// In uz, this message translates to:
-  /// **'Mahsulot saqlandi'**
+  /// **'Savat yangilandi'**
   String get productSaved;
 
   /// No description provided for @productCategory.
@@ -2527,12 +2527,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Savat bo\'sh'**
   String get cartEmpty;
-
-  /// No description provided for @cartAdd.
-  ///
-  /// In uz, this message translates to:
-  /// **'Savatga qo\'shish'**
-  String get cartAdd;
 
   /// No description provided for @cartAdded.
   ///
@@ -4681,6 +4675,144 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Xaridga'**
   String get favoritesEmptyAction;
+
+  /// No description provided for @searchRecentTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'nggi so\'rovlar'**
+  String get searchRecentTitle;
+
+  /// No description provided for @searchRecentClear.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tozalash'**
+  String get searchRecentClear;
+
+  /// No description provided for @searchFound.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count, plural, other{Topildi: {count} ta mahsulot}}'**
+  String searchFound(int count);
+
+  /// No description provided for @searchNothingTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hech narsa topilmadi'**
+  String get searchNothingTitle;
+
+  /// No description provided for @searchNothingText.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{query}» bo\'yicha mahsulot yo\'q. Yozilishini tekshiring — biz o\'zbekcha ham, ruscha ham qidiramiz.'**
+  String searchNothingText(String query);
+
+  /// No description provided for @searchAllCategories.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha kategoriyalar'**
+  String get searchAllCategories;
+
+  /// No description provided for @openSearch.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qidirish'**
+  String get openSearch;
+
+  /// No description provided for @productTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot haqida'**
+  String get productTitle;
+
+  /// No description provided for @productReadMore.
+  ///
+  /// In uz, this message translates to:
+  /// **'Batafsil'**
+  String get productReadMore;
+
+  /// No description provided for @productReadLess.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish'**
+  String get productReadLess;
+
+  /// No description provided for @productIfMissing.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot bo\'lmasa'**
+  String get productIfMissing;
+
+  /// No description provided for @productNoteHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Masalan: qattiqroq, pishib o\'tmagan'**
+  String get productNoteHint;
+
+  /// No description provided for @productMoreIn.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{category}» bo\'limidan yana'**
+  String productMoreIn(String category);
+
+  /// No description provided for @productMoreGeneric.
+  ///
+  /// In uz, this message translates to:
+  /// **'Shu bo\'limdan yana'**
+  String get productMoreGeneric;
+
+  /// No description provided for @productAddToCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga'**
+  String get productAddToCart;
+
+  /// No description provided for @productGoneTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu mahsulot endi sotilmaydi'**
+  String get productGoneTitle;
+
+  /// No description provided for @productGoneText.
+  ///
+  /// In uz, this message translates to:
+  /// **'U katalogdan olib tashlangan. O\'xshash mahsulotlarni bo\'limlarda topish mumkin.'**
+  String get productGoneText;
+
+  /// No description provided for @productGoneAction.
+  ///
+  /// In uz, this message translates to:
+  /// **'Katalogga'**
+  String get productGoneAction;
+
+  /// No description provided for @productInCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatda: {quantity}'**
+  String productInCart(String quantity);
+
+  /// No description provided for @productSave.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlash'**
+  String get productSave;
+
+  /// No description provided for @productAlreadyInCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu mahsulot savatda bor — o\'zgartirib, saqlashingiz mumkin'**
+  String get productAlreadyInCart;
+
+  /// No description provided for @quantitySheetTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Miqdor'**
+  String get quantitySheetTitle;
+
+  /// No description provided for @quantitySheetDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor'**
+  String get quantitySheetDone;
 }
 
 class _AppLocalizationsDelegate

@@ -18,7 +18,7 @@ Build toward a **cash-first pilot** in the order below, one implementing agent, 
 | 3 | Fulfilment | Courier assignment (`DL-37` (12)), shopping with fixed and estimate items, unavailability, substitution, approvals with timers, Operator attention, Courier delivery with cash collection and not-delivered, cancellation requests, the Admin's price correction (`DL-54` (1)) | none |
 | 4 | Pilot readiness | real FCM push and every notification event (with the final-amount notice of a cash order, `DL-78`), history and reorder, Telegram Gateway login with the fixed-code test numbers kept, deployment to the Owner's VPS with backups, Android closed testing, web panel hosting, end-to-end check on cash, the pilot | Firebase, Telegram Gateway, hosting, Google Play |
 | 5 | Online payment | Payme and Click adapters from published protocols, the online flow with its 30-minute window and the Operator switch, provider reconciliation, manual refund tracking, Eskiz SMS fallback | legal entity, merchant agreements, Eskiz contract |
-| later | — | Manager figures, Paynet and xazna, automated refunds, iOS release, delivery zones and tariffs, spreadsheet import, chat | Apple, a Mac |
+| later | — | Manager figures, Paynet and xazna, automated refunds, iOS release, delivery zones and tariffs, spreadsheet import, chat, product reviews and ratings (`DL-82`) | Apple, a Mac |
 
 A wave may start before the previous one's Owner check when nothing in it depends on the check's outcome; fixes from the check are ordinary tasks.
 
@@ -73,3 +73,5 @@ Published provider documentation is enough to write a thin adapter ahead of cred
 ## 6. Post-MVP Boundary
 
 Not pulled into any wave: `01` Section 20.
+
+Product reviews and ratings: the kit draws them; the Owner postponed them (`DL-82`).

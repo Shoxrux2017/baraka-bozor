@@ -13,7 +13,7 @@ import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../catalog/application/catalog_controllers.dart';
 import '../../catalog/domain/catalog.dart';
-import '../../catalog/presentation/home_screen.dart';
+import '../../catalog/presentation/search_screen.dart';
 import '../../catalog/presentation/catalog_widgets.dart';
 
 /// Picks a product to add to an order (`docs/03` section 11, `DL-52`): a
@@ -46,7 +46,7 @@ class _OrderProductPickerScreenState
 
   void _onTyped(String text) {
     _pause?.cancel();
-    _pause = Timer(CatalogHomeScreen.searchPause, () {
+    _pause = Timer(SearchScreen.searchPause, () {
       if (mounted) {
         setState(() => _query = ProductListQuery.searchOf(text));
       }

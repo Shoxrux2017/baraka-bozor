@@ -685,7 +685,6 @@
     }
   },
   "cartEmpty": "Корзина пуста",
-  "cartAdd": "В корзину",
   "cartAdded": "Добавлено в корзину",
   "cartQuantity": "Количество",
   "cartQuantityFraction": "Число больше 0: до 4 цифр и до 3 знаков после запятой",
@@ -1691,5 +1690,43 @@
   "favoritesTitle": "Избранное",
   "favoritesEmptyTitle": "Пока пусто",
   "favoritesEmptyText": "Нажмите сердечко на товаре — он появится здесь, и его будет легко заказать снова",
-  "favoritesEmptyAction": "За покупками"
+  "favoritesEmptyAction": "За покупками",
+  "searchRecentTitle": "Недавние запросы",
+  "searchRecentClear": "Очистить",
+  "searchFound": "{count, plural, one{Найдено: {count} товар} few{Найдено: {count} товара} other{Найдено: {count} товаров}}",
+  "searchNothingTitle": "Ничего не нашли",
+  "searchNothingText": "По запросу «{query}» товаров нет. Проверьте написание — мы ищем и по-русски, и по-узбекски.",
+  "searchAllCategories": "Все категории",
+  "openSearch": "Поиск",
+  "productTitle": "О товаре",
+  "productReadMore": "Читать далее",
+  "productReadLess": "Свернуть",
+  "productIfMissing": "Если товара не будет",
+  "productNoteHint": "Например: покрепче, не перезрелые",
+  "productMoreIn": "Ещё в «{category}»",
+  "@productMoreIn": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "productMoreGeneric": "Ещё из этой категории",
+  "productAddToCart": "В корзину",
+  "productGoneTitle": "Товара больше нет в продаже",
+  "productGoneText": "Его убрали из каталога. Похожие товары можно найти в категориях.",
+  "productGoneAction": "В каталог",
+  "productInCart": "В корзине: {quantity}",
+  "@productInCart": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "productSave": "Сохранить",
+  "productSaved": "Корзина обновлена",
+  "productAlreadyInCart": "Этот товар уже в корзине — можно изменить и сохранить",
+  "quantitySheetTitle": "Количество",
+  "quantitySheetDone": "Готово"
 }

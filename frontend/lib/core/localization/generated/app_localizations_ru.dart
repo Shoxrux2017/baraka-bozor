@@ -457,7 +457,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get productEditTitle => 'Редактирование товара';
 
   @override
-  String get productSaved => 'Товар сохранён';
+  String get productSaved => 'Корзина обновлена';
 
   @override
   String get productCategory => 'Категория';
@@ -1350,9 +1350,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get cartEmpty => 'Корзина пуста';
-
-  @override
-  String get cartAdd => 'В корзину';
 
   @override
   String get cartAdded => 'Добавлено в корзину';
@@ -2682,4 +2679,90 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get favoritesEmptyAction => 'За покупками';
+
+  @override
+  String get searchRecentTitle => 'Недавние запросы';
+
+  @override
+  String get searchRecentClear => 'Очистить';
+
+  @override
+  String searchFound(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Найдено: $count товаров',
+      few: 'Найдено: $count товара',
+      one: 'Найдено: $count товар',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get searchNothingTitle => 'Ничего не нашли';
+
+  @override
+  String searchNothingText(String query) {
+    return 'По запросу «$query» товаров нет. Проверьте написание — мы ищем и по-русски, и по-узбекски.';
+  }
+
+  @override
+  String get searchAllCategories => 'Все категории';
+
+  @override
+  String get openSearch => 'Поиск';
+
+  @override
+  String get productTitle => 'О товаре';
+
+  @override
+  String get productReadMore => 'Читать далее';
+
+  @override
+  String get productReadLess => 'Свернуть';
+
+  @override
+  String get productIfMissing => 'Если товара не будет';
+
+  @override
+  String get productNoteHint => 'Например: покрепче, не перезрелые';
+
+  @override
+  String productMoreIn(String category) {
+    return 'Ещё в «$category»';
+  }
+
+  @override
+  String get productMoreGeneric => 'Ещё из этой категории';
+
+  @override
+  String get productAddToCart => 'В корзину';
+
+  @override
+  String get productGoneTitle => 'Товара больше нет в продаже';
+
+  @override
+  String get productGoneText =>
+      'Его убрали из каталога. Похожие товары можно найти в категориях.';
+
+  @override
+  String get productGoneAction => 'В каталог';
+
+  @override
+  String productInCart(String quantity) {
+    return 'В корзине: $quantity';
+  }
+
+  @override
+  String get productSave => 'Сохранить';
+
+  @override
+  String get productAlreadyInCart =>
+      'Этот товар уже в корзине — можно изменить и сохранить';
+
+  @override
+  String get quantitySheetTitle => 'Количество';
+
+  @override
+  String get quantitySheetDone => 'Готово';
 }

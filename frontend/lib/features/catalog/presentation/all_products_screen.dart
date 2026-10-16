@@ -24,7 +24,7 @@ class AllProductsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: kitAppBar(title: l10n.allProductsTitle),
+      appBar: kitAppBar(title: l10n.allProductsTitle, search: true),
       // The mode stays visible while two sessions exist (DL-75).
       body: UnderActiveMode(
         child: Stack(

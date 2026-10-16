@@ -59,6 +59,7 @@ void main() {
         CatalogPaths.categories,
         CatalogPaths.categoryPattern,
         CatalogPaths.recommended,
+        CatalogPaths.search,
         CatalogPaths.products,
         CatalogPaths.productPattern,
         AppPaths.customerFavorites,

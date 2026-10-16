@@ -95,79 +95,80 @@ void main() {
   }
 
   group('adding from the product screen', () {
-    testWidgets('a kg product takes a decimal quantity, a note and the rule', (
-      WidgetTester tester,
-    ) async {
-      cart.answer = cartOf(<Map<String, Object?>>[
-        cartLineJson(productId: tomatoProduct, quantity: '1.500'),
-      ]);
-      await open(tester, at: '/customer/products/$tomatoProduct');
-
-      expect(byKey('quantity-increase'), findsNothing, reason: 'no stepper');
-      await tester.enterText(byKey('line-quantity'), '1,5');
-      await tester.enterText(byKey('line-note'), '  Qizilini oling ');
-      await tapAndSettle(tester, byKey('add-to-cart'));
-
-      final NewCartLine sent = cart.added.single;
-      expect(sent.productId, tomatoProduct);
-      expect(sent.quantity, '1.5');
-      expect(sent.customerNote, 'Qizilini oling');
-      expect(sent.substitutionPolicy, SubstitutionPolicy.allowSimilar);
-      expect(find.text(l10n(tester).cartAdded), findsOneWidget);
-      expect(
-        find.descendant(of: byKey('open-cart'), matching: find.text('1')),
-        findsOneWidget,
-        reason: 'the badge counts the lines the server answered',
-      );
-
-      // The notice goes by itself, action or not.
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
-      expect(find.text(l10n(tester).cartAdded), findsNothing);
-    });
-
     testWidgets(
-      'a piece product steps whole numbers and refuses what the API would',
+      'a kg product is added with a stepped quantity, a note and the rule',
       (WidgetTester tester) async {
+        await open(tester, at: '/customer/products/$tomatoProduct');
         cart.answer = cartOf(<Map<String, Object?>>[
-          cartLineJson(
-            id: breadLine,
-            productId: breadProduct,
-            unit: 'piece',
-            quantity: '3',
-          ),
+          cartLineJson(productId: tomatoProduct, quantity: '1.500'),
         ]);
-        await open(tester, at: '/customer/products/$breadProduct');
 
-        await tapAndSettle(tester, byKey('quantity-increase'));
-        await tapAndSettle(tester, byKey('quantity-increase'));
-        expect(find.text('3'), findsOneWidget);
-
-        await tester.enterText(byKey('line-quantity'), '0');
-        await tapAndSettle(tester, byKey('add-to-cart'));
-        expect(find.text(l10n(tester).cartQuantityWhole), findsOneWidget);
-        expect(cart.added, isEmpty);
-
-        await tester.enterText(byKey('line-quantity'), '3');
-        await tester.tap(byKey('line-substitution'));
+        await tester.tap(byKey('product-plus'));
         await tester.pumpAndSettle();
-        await tester.tap(
-          find.text(l10n(tester).substitutionRemoveIfUnavailable).last,
-        );
-        await tester.pumpAndSettle();
+        await tester.enterText(byKey('line-note'), '  Qizilini oling ');
         await tapAndSettle(tester, byKey('add-to-cart'));
 
-        expect(cart.added.single.quantity, '3');
-        expect(
-          cart.added.single.substitutionPolicy,
-          SubstitutionPolicy.removeIfUnavailable,
-        );
+        final NewCartLine sent = cart.added.single;
+        expect(sent.productId, tomatoProduct);
+        expect(sent.quantity, '1.5');
+        expect(sent.customerNote, 'Qizilini oling');
+        expect(sent.substitutionPolicy, SubstitutionPolicy.allowSimilar);
+        expect(find.text(l10n(tester).cartAdded), findsOneWidget);
+
+        // The notice goes by itself, action or not.
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+        expect(find.text(l10n(tester).cartAdded), findsNothing);
+
+        // The cart holds the line the server answered.
+        GoRouter.of(anywhere(tester)).push('/customer/cart');
+        await tester.pumpAndSettle();
+        expect(find.byType(CartScreen), findsOneWidget);
+        expect(find.text('Pomidor'), findsOneWidget);
       },
     );
 
+    testWidgets('a piece product steps whole numbers, from one', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, at: '/customer/products/$breadProduct');
+      cart.answer = cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '3',
+        ),
+      ]);
+
+      expect(
+        tester.widget<IconButton>(byKey('product-minus')).onPressed,
+        isNull,
+        reason: 'one piece is the least',
+      );
+      await tapAndSettle(tester, byKey('product-plus'));
+      await tapAndSettle(tester, byKey('product-plus'));
+      expect(find.text('3 dona'), findsOneWidget);
+
+      await tester.ensureVisible(byKey('line-substitution'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('substitution-remove_if_unavailable'));
+      await tester.pumpAndSettle();
+      await tapAndSettle(tester, byKey('add-to-cart'));
+
+      expect(cart.added.single.quantity, '3');
+      expect(
+        cart.added.single.substitutionPolicy,
+        SubstitutionPolicy.removeIfUnavailable,
+      );
+    });
+
     testWidgets(
-      'a product already in the cart opens the line the answer names',
+      'a product already in the cart refreshes the cart and makes no second line',
       (WidgetTester tester) async {
+        cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+        await open(tester, at: '/customer/products/$breadProduct');
+        // Another device put the bread in the cart after this one looked.
         cart.current = cartOf(<Map<String, Object?>>[
           cartLineJson(),
           cartLineJson(
@@ -177,7 +178,7 @@ void main() {
             quantity: '2',
           ),
         ]);
-        await open(tester, at: '/customer/products/$breadProduct');
+        cart.calls.clear();
         cart.failure = const ApiRefusal(
           ApiError(
             status: 409,
@@ -188,24 +189,23 @@ void main() {
 
         await tapAndSettle(tester, byKey('add-to-cart'));
 
-        expect(find.text(l10n(tester).cartTitle), findsOneWidget);
-        expect(byKey('line-editor'), findsOneWidget);
-        expect(
-          tester.widget<TextFormField>(byKey('line-quantity')).controller!.text,
-          '2',
-          reason: "the bread line's, not the first line's",
-        );
+        expect(cart.added, hasLength(1), reason: 'only the refused add');
+        expect(cart.calls, contains('cart'), reason: 'asked for again');
+        expect(find.byType(CartScreen), findsNothing);
+        expect(byKey('line-editor'), findsNothing);
+        expect(find.text(l10n(tester).cartAdded), findsNothing);
       },
     );
 
     testWidgets('a second notice replaces the first rather than queueing', (
       WidgetTester tester,
     ) async {
+      await open(tester, at: '/customer/products/$tomatoProduct');
       cart.answer = cartOf(<Map<String, Object?>>[
         cartLineJson(productId: tomatoProduct, quantity: '1.500'),
       ]);
-      await open(tester, at: '/customer/products/$tomatoProduct');
-      await tester.enterText(byKey('line-quantity'), '1,5');
+      await tester.tap(byKey('product-plus'));
+      await tester.pump();
       // Frame by frame, so the notice's timer starts as it would.
       Future<void> wait(Duration time) async {
         for (int i = 0; i < time.inMilliseconds ~/ 100; i++) {
@@ -240,13 +240,15 @@ void main() {
     testWidgets(
       'the notice stays behind when the Customer goes to the checkout',
       (WidgetTester tester) async {
+        await open(tester, at: '/customer/products/$tomatoProduct');
         cart.answer = cartOf(<Map<String, Object?>>[
           cartLineJson(productId: tomatoProduct, quantity: '1.500'),
         ]);
-        await open(tester, at: '/customer/products/$tomatoProduct');
-        await tester.enterText(byKey('line-quantity'), '1,5');
+        await tester.tap(byKey('product-plus'));
+        await tester.pump();
         await tapAndSettle(tester, byKey('add-to-cart'));
-        await tester.tap(byKey('open-cart'));
+        // By the router: the notice's own action would dismiss the notice.
+        GoRouter.of(anywhere(tester)).push('/customer/cart');
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         expect(find.text(l10n(tester).cartAdded), findsOneWidget);
@@ -261,8 +263,8 @@ void main() {
     testWidgets(
       'an answer that arrives after the Customer left the product navigates nowhere',
       (WidgetTester tester) async {
-        cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
         await open(tester, at: '/customer/products/$tomatoProduct');
+        cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
         final Completer<void> hold = Completer<void>();
         cart
           ..hold = hold
@@ -277,7 +279,7 @@ void main() {
         await tester.tap(byKey('add-to-cart'));
         await tester.pump();
         // The Customer opens the cart while the add is on its way.
-        await tester.tap(byKey('open-cart'));
+        GoRouter.of(anywhere(tester)).push('/customer/cart');
         await tester.pump();
         cart.hold = null;
         hold.complete();
@@ -291,10 +293,10 @@ void main() {
     testWidgets(
       "the snackbar's way to the cart works after the product was left",
       (WidgetTester tester) async {
+        await open(tester, at: '/customer/products/$tomatoProduct');
         cart.answer = cartOf(<Map<String, Object?>>[
           cartLineJson(productId: tomatoProduct),
         ]);
-        await open(tester, at: '/customer/products/$tomatoProduct');
         await tapAndSettle(tester, byKey('add-to-cart'));
 
         GoRouter.of(anywhere(tester)).pop();
@@ -307,7 +309,7 @@ void main() {
       },
     );
 
-    testWidgets('what the Customer set survives scrolling out of the page', (
+    testWidgets('what the Customer set survives scrolling the page', (
       WidgetTester tester,
     ) async {
       catalog = FakeCatalogRepository(
@@ -328,31 +330,31 @@ void main() {
         size: const Size(360, 640),
       );
 
-      // The page's own list, not a text field's.
+      // The page's own scroll view, not a text field's.
       final Finder page = find
           .descendant(
-            of: find.byType(ListView).first,
+            of: find.byType(SingleChildScrollView).first,
             matching: find.byType(Scrollable),
           )
           .first;
+      await tester.tap(byKey('product-plus'));
+      await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         byKey('line-note'),
         600,
         scrollable: page,
       );
       await tester.enterText(byKey('line-note'), 'Qizilini oling');
-      await tester.enterText(byKey('line-quantity'), '2,5');
       await tester.ensureVisible(byKey('substitution-remove_if_unavailable'));
       await tester.tap(byKey('substitution-remove_if_unavailable'));
       await tester.pumpAndSettle();
 
-      // The keyboard closed: no focused field keeps the section alive.
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pump();
       await tester.drag(page, const Offset(0, 20000));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        byKey('add-to-cart'),
+        byKey('line-note'),
         600,
         scrollable: page,
       );
@@ -363,10 +365,12 @@ void main() {
         'Qizilini oling',
       );
       expect(
-        tester.widget<TextFormField>(byKey('line-quantity')).controller!.text,
-        '2,5',
+        tester.widget<Text>(byKey('product-qty')).data,
+        '1,5 kg',
+        reason: 'the bar is not part of the scrolling page',
       );
       await tapAndSettle(tester, byKey('add-to-cart'));
+      expect(cart.added.single.quantity, '1.5');
       expect(
         cart.added.single.substitutionPolicy,
         SubstitutionPolicy.removeIfUnavailable,

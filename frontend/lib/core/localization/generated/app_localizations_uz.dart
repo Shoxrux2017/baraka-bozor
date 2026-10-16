@@ -459,7 +459,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productEditTitle => 'Mahsulotni tahrirlash';
 
   @override
-  String get productSaved => 'Mahsulot saqlandi';
+  String get productSaved => 'Savat yangilandi';
 
   @override
   String get productCategory => 'Kategoriya';
@@ -1337,9 +1337,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get cartEmpty => 'Savat bo\'sh';
-
-  @override
-  String get cartAdd => 'Savatga qo\'shish';
 
   @override
   String get cartAdded => 'Savatga qo\'shildi';
@@ -2658,4 +2655,88 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get favoritesEmptyAction => 'Xaridga';
+
+  @override
+  String get searchRecentTitle => 'So\'nggi so\'rovlar';
+
+  @override
+  String get searchRecentClear => 'Tozalash';
+
+  @override
+  String searchFound(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Topildi: $count ta mahsulot',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get searchNothingTitle => 'Hech narsa topilmadi';
+
+  @override
+  String searchNothingText(String query) {
+    return '«$query» bo\'yicha mahsulot yo\'q. Yozilishini tekshiring — biz o\'zbekcha ham, ruscha ham qidiramiz.';
+  }
+
+  @override
+  String get searchAllCategories => 'Barcha kategoriyalar';
+
+  @override
+  String get openSearch => 'Qidirish';
+
+  @override
+  String get productTitle => 'Mahsulot haqida';
+
+  @override
+  String get productReadMore => 'Batafsil';
+
+  @override
+  String get productReadLess => 'Yig\'ish';
+
+  @override
+  String get productIfMissing => 'Mahsulot bo\'lmasa';
+
+  @override
+  String get productNoteHint => 'Masalan: qattiqroq, pishib o\'tmagan';
+
+  @override
+  String productMoreIn(String category) {
+    return '«$category» bo\'limidan yana';
+  }
+
+  @override
+  String get productMoreGeneric => 'Shu bo\'limdan yana';
+
+  @override
+  String get productAddToCart => 'Savatga';
+
+  @override
+  String get productGoneTitle => 'Bu mahsulot endi sotilmaydi';
+
+  @override
+  String get productGoneText =>
+      'U katalogdan olib tashlangan. O\'xshash mahsulotlarni bo\'limlarda topish mumkin.';
+
+  @override
+  String get productGoneAction => 'Katalogga';
+
+  @override
+  String productInCart(String quantity) {
+    return 'Savatda: $quantity';
+  }
+
+  @override
+  String get productSave => 'Saqlash';
+
+  @override
+  String get productAlreadyInCart =>
+      'Bu mahsulot savatda bor — o\'zgartirib, saqlashingiz mumkin';
+
+  @override
+  String get quantitySheetTitle => 'Miqdor';
+
+  @override
+  String get quantitySheetDone => 'Tayyor';
 }

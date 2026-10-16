@@ -28,6 +28,8 @@ abstract final class AppPaths {
   static const String customerAddresses = '$customer/addresses';
   // The tab bar opens the favourites from every Customer tab.
   static const String customerFavorites = '$customer/favorites';
+  // Every list's header opens the search (`DL-83`).
+  static const String customerSearch = '$customer/search';
   static const String customerNewAddress = '$customerAddresses/new';
   static const String customerAddressPattern = '$customerAddresses/:address';
   // The cart links to the checkout.

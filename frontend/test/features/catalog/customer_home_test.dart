@@ -13,7 +13,9 @@ import 'package:baraka_bozor/features/catalog/presentation/all_products_screen.d
 import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
 import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/app_harness.dart';
@@ -96,12 +98,6 @@ void main() {
         overrides: [mapPickerProvider.overrideWithValue(_fakeMap)],
       ),
     );
-    await tester.pumpAndSettle();
-  }
-
-  Future<void> typeAndPause(WidgetTester tester, String text) async {
-    await tester.enterText(byKey('catalog-search'), text);
-    await tester.pump(CatalogHomeScreen.searchPause);
     await tester.pumpAndSettle();
   }
 
@@ -278,101 +274,39 @@ void main() {
     expect(byKey('category-c-1'), findsOneWidget);
   });
 
-  testWidgets('a query replaces the sections with the results; clearing '
-      'brings them back', (WidgetTester tester) async {
-    await open(tester);
-    await typeAndPause(tester, 'ban');
-    expect(find.text('Banan'), findsOneWidget);
-    expect(find.text('Pomidor'), findsNothing);
-    expect(find.text(l10n(tester).homeCategories), findsNothing);
-    expect(byKey('category-c-1'), findsNothing);
-    expect(byKey('open-sort'), findsOneWidget, reason: 'the filter stays');
-
-    await tester.tap(byKey('catalog-search-clear'));
-    await tester.pumpAndSettle();
-    expect(find.text(l10n(tester).homeCategories), findsOneWidget);
-    expect(byKey('category-c-1'), findsOneWidget);
-  });
-
-  testWidgets('the search asks once the typing pauses, not on every letter', (
+  testWidgets('the filter button asks the sort and opens every product in it', (
     WidgetTester tester,
   ) async {
     await open(tester);
-    int asked(String prefix) =>
-        catalog.requests.where((String r) => r.startsWith(prefix)).length;
-    await tester.enterText(byKey('catalog-search'), 'po');
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.enterText(byKey('catalog-search'), 'pom');
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(asked('pom|'), 0, reason: 'still within the pause');
-    await tester.pump(const Duration(milliseconds: 150));
+    await tester.tap(byKey('open-sort'));
     await tester.pumpAndSettle();
-    expect(asked('pom|'), 1);
-    expect(asked('po|'), 0);
-  });
+    await tester.tap(find.text(l10n(tester).sortPriceAsc));
+    await tester.pumpAndSettle();
+    expect(find.byType(AllProductsScreen), findsOneWidget);
 
-  testWidgets(
-    'the filter button asks the sort and opens every product in it; the '
-    'results follow it too',
-    (WidgetTester tester) async {
-      await open(tester);
-      await tester.tap(byKey('open-sort'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(l10n(tester).sortPriceAsc));
-      await tester.pumpAndSettle();
-      expect(find.byType(AllProductsScreen), findsOneWidget);
-
-      // Row-major order of the grid: Olma 3 500, Banan 9 000, Pomidor 18 400.
-      final List<String> names = <String>['Olma', 'Banan', 'Pomidor'];
-      double place(String name) {
-        final Offset at = tester.getTopLeft(find.text(name));
-        return at.dy * 1000 + at.dx;
-      }
-
-      final List<double> places = names.map(place).toList();
-      expect(places, orderedEquals(<double>[...places]..sort()));
-
-      await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
-      await typeAndPause(tester, 'o');
-      expect(find.text('Olma'), findsOneWidget);
-      expect(find.text('Pomidor'), findsOneWidget);
-      expect(
-        place('Olma'),
-        lessThan(place('Pomidor')),
-        reason: 'cheaper first in the results',
-      );
-    },
-  );
-
-  testWidgets('with a search typed the filter button re-sorts the results and '
-      'the home stays', (WidgetTester tester) async {
-    await open(tester);
-    await typeAndPause(tester, 'o');
+    // Row-major order of the grid: Olma 3 500, Banan 9 000, Pomidor 18 400.
+    final List<String> names = <String>['Olma', 'Banan', 'Pomidor'];
     double place(String name) {
       final Offset at = tester.getTopLeft(find.text(name));
       return at.dy * 1000 + at.dx;
     }
 
-    expect(
-      place('Pomidor'),
-      lessThan(place('Olma')),
-      reason: 'the shop order before a sort is chosen',
-    );
+    final List<double> places = names.map(place).toList();
+    expect(places, orderedEquals(<double>[...places]..sort()));
+  });
 
-    await tester.tap(byKey('open-sort'));
+  testWidgets('the search field opens the search; no results show under it', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    expect(find.byType(TextField), findsNothing);
+    await tester.tap(byKey('catalog-search'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(l10n(tester).sortPriceAsc));
+    expect(find.byType(SearchScreen), findsOneWidget);
+    await tester.tap(byKey('search-back'));
     await tester.pumpAndSettle();
-
-    expect(find.byType(AllProductsScreen), findsNothing);
-    expect(find.byType(CatalogHomeScreen), findsOneWidget);
-    expect(find.text('Banan'), findsNothing, reason: 'still the results');
-    expect(
-      place('Olma'),
-      lessThan(place('Pomidor')),
-      reason: 'cheaper first in the results',
-    );
+    expect(find.byType(SearchScreen), findsNothing);
+    expect(byKey('category-c-1'), findsOneWidget);
   });
 
   testWidgets('dismissing the sort sheet opens nothing', (
@@ -531,28 +465,6 @@ void main() {
         reason: 'under the bar',
       );
     }
-
-    testWidgets('a failed search keeps its retry above the bar', (
-      WidgetTester tester,
-    ) async {
-      await smallPhone(tester);
-      await open(tester);
-      catalog.nextFailure = const NetworkFailure();
-      await typeAndPause(tester, 'pom');
-
-      expect(byKey('retry-load'), findsOneWidget);
-      expectClearOfBar(tester, byKey('retry-load'));
-    });
-
-    testWidgets('a search with no answer keeps its message above the bar', (
-      WidgetTester tester,
-    ) async {
-      await smallPhone(tester);
-      await open(tester);
-      await typeAndPause(tester, 'zzz');
-
-      expectClearOfBar(tester, find.text(l10n(tester).catalogEmpty));
-    });
 
     testWidgets('sections that failed to load keep their retry above the bar', (
       WidgetTester tester,
@@ -758,15 +670,6 @@ void main() {
             return;
           }
 
-          await typeAndPause(tester, 'pom');
-          expect(
-            find.text(device.languageCode == 'uz' ? 'Pomidor' : 'Помидор'),
-            findsOneWidget,
-          );
-          await tester.tap(byKey('catalog-search-clear'));
-          await tester.pumpAndSettle();
-          expect(tester.takeException(), isNull);
-
           await tester.drag(byKey('home-body'), const Offset(0, -2000));
           await tester.pumpAndSettle();
           expect(byKey('recommended-row'), findsOneWidget);
@@ -780,4 +683,28 @@ void main() {
       );
     }
   }
+
+  testWidgets('the search entry and the sort button expose a tap action', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester);
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(Scaffold).first),
+    );
+    for (final (String, String) entry in <(String, String)>[
+      ('catalog-search', l10n.catalogSearchHint),
+      ('open-sort', l10n.sortTitle),
+    ]) {
+      final String key = entry.$1;
+      final String label = entry.$2;
+      expect(
+        tester.getSemantics(byKey(key)),
+        matchesSemantics(isButton: true, hasTapAction: true, label: label),
+        reason: key,
+      );
+    }
+    handle.dispose();
+  });
 }

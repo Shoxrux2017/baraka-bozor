@@ -16,8 +16,8 @@ import 'package:baraka_bozor/features/catalog/presentation/all_products_screen.d
 import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
 import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
-import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,7 +37,6 @@ void main() {
   late FakeCatalogRepository catalog;
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
-  final Finder search = byKey('catalog-search');
   final Finder productScrollable = find.descendant(
     of: byKey('product-grid'),
     matching: find.byType(Scrollable),
@@ -89,12 +88,6 @@ void main() {
     catalog.requests.clear();
   }
 
-  Future<void> typeAndPause(WidgetTester tester, String text) async {
-    await tester.enterText(search, text);
-    await tester.pump(CatalogHomeScreen.searchPause);
-    await tester.pumpAndSettle();
-  }
-
   testWidgets(
     'the home lists the sections; a section lists its products at the customer price',
     (WidgetTester tester) async {
@@ -136,28 +129,15 @@ void main() {
 
     expect(
       find.text('Olma'),
-      findsOneWidget,
-      reason: 'the other name under the first',
+      findsNothing,
+      reason: 'the other language is not shown (DL-83)',
     );
     expect(find.text('Сочные'), findsOneWidget);
     expect(
-      find.text('${MoneyFormat.uzs(3500, AppLanguage.ru)} / шт.'),
-      findsOneWidget,
+      find.text('≈ ${MoneyFormat.uzs(3500, AppLanguage.ru)}'),
+      findsWidgets,
     );
-  });
-
-  testWidgets('an estimate product explains what its price means', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
-    await tester.tap(find.text('Sabzavotlar'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Pomidor'));
-    await tester.pumpAndSettle();
-
-    expect(byKey('product-name'), findsOneWidget);
-    expect(find.text('narx taxminiy'), findsOneWidget);
-    expect(find.text(l10n(tester).catalogEstimateExplain), findsOneWidget);
+    expect(find.text('за шт.'), findsOneWidget);
   });
 
   testWidgets('scrolling to the end loads the next page, and the list ends', (
@@ -181,89 +161,6 @@ void main() {
     expect(find.text('Mahsulot 25'), findsOneWidget);
     expect(catalog.requests, <String>['|c-1|1', '|c-1|2']);
     expect(find.byType(CircularProgressIndicator), findsNothing);
-  });
-
-  testWidgets('a search is sent once typing pauses', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
-
-    await tester.enterText(search, 'p');
-    await tester.pump(const Duration(milliseconds: 100));
-    await tester.enterText(search, 'po');
-    await tester.pump(const Duration(milliseconds: 100));
-    await typeAndPause(tester, 'pomi');
-
-    expect(catalog.requests, <String>['pomi|null|1']);
-    expect(find.text('Pomidor'), findsOneWidget);
-    expect(find.text('Sabzavotlar'), findsNothing);
-
-    await tester.tap(byKey('catalog-search-clear'));
-    await tester.pumpAndSettle();
-    expect(find.text('Sabzavotlar'), findsOneWidget);
-  });
-
-  testWidgets(
-    'the answer to a search typed past never replaces the current one',
-    (WidgetTester tester) async {
-      final Completer<void> slow = Completer<void>();
-      catalog.gates['pom'] = slow;
-      await open(tester);
-
-      // The first answer is held back, so its list shows a spinner that
-      // never settles; time is advanced by hand.
-      await tester.enterText(search, 'pom');
-      await tester.pump(CatalogHomeScreen.searchPause);
-      await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      await typeAndPause(tester, 'olm');
-      expect(find.text('Olma'), findsOneWidget);
-
-      slow.complete();
-      await tester.pumpAndSettle();
-
-      expect(find.text('Olma'), findsOneWidget);
-      expect(find.text('Pomidor'), findsNothing);
-      expect(catalog.requests, <String>['pom|null|1', 'olm|null|1']);
-    },
-  );
-
-  testWidgets('a search with no match says so', (WidgetTester tester) async {
-    await open(tester);
-
-    await typeAndPause(tester, 'shokolad');
-
-    expect(find.text(l10n(tester).catalogEmpty), findsOneWidget);
-  });
-
-  testWidgets('a product that no longer exists says so, with no retry', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
-
-    GoRouter.of(tester.element(find.byType(Scaffold).first))
-        .push(CatalogPaths.product('p-404'));
-    await tester.pumpAndSettle();
-
-    expect(find.text(l10n(tester).errorNotFound), findsOneWidget);
-    expect(byKey('retry-load'), findsNothing);
-  });
-
-  testWidgets('the search takes no more than the server does', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
-
-    await typeAndPause(tester, 'a' * 150);
-
-    expect(
-      tester.widget<TextField>(search).controller!.text,
-      'a' * ProductListQuery.searchMaxLength,
-    );
-    expect(
-      catalog.requests.last,
-      startsWith('${'a' * ProductListQuery.searchMaxLength}|'),
-    );
   });
 
   testWidgets('after signing out the catalog asks for nothing more', (
@@ -427,16 +324,35 @@ void main() {
         await tester.pumpAndSettle();
         expect(mode, findsOneWidget, reason: 'on a product');
         await tester.scrollUntilVisible(
-          find.textContaining(
-            device.languageCode == 'uz' ? 'yig\'uvchi' : 'сборщик',
+          find.text(
+            device.languageCode == 'uz'
+                ? 'Mahsulot bo\'lmasa'
+                : 'Если товара не будет',
           ),
           200,
+          // The page's own scroll view, the first in the tree.
+          scrollable: find.byType(Scrollable).first,
         );
 
         await tester.tap(find.byType(BackButton));
         await tester.pumpAndSettle();
         await tester.tap(find.byType(BackButton));
         await tester.pumpAndSettle();
+
+        await tester.ensureVisible(byKey('catalog-search'));
+        await tester.pumpAndSettle();
+        await tester.tap(byKey('catalog-search'));
+        await tester.pumpAndSettle();
+        expect(find.byType(SearchScreen), findsOneWidget);
+        expect(mode, findsOneWidget, reason: 'on the search');
+        await tester.enterText(byKey('search-field'), 'pom');
+        await tester.pump(SearchScreen.searchPause);
+        await tester.pumpAndSettle();
+        expect(mode, findsOneWidget, reason: 'on the search results');
+        expect(tester.takeException(), isNull);
+        await tester.tap(byKey('search-back'));
+        await tester.pumpAndSettle();
+
         await tester.tap(byKey('switch-to-staff-button'));
         await tester.pumpAndSettle();
         expect(mode, findsOneWidget, reason: 'back in the staff shell');
@@ -450,38 +366,42 @@ void main() {
     (AppPaths.customerFavorites, FavoritesScreen),
     (CatalogPaths.categories, AllCategoriesScreen),
     (CatalogPaths.category('c-1'), CategoryScreen),
+    (CatalogPaths.search, SearchScreen),
   ]) {
     final String path = screen.$1;
-    testWidgets('$path has a white app bar without a tint', (
-      WidgetTester tester,
-    ) async {
-      tester.view.physicalSize = const Size(320, 640);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      tokens.tokens[SessionSlot.staff] = 's';
-      auth.identities[SessionSlot.staff] = user(
-        id: 's',
-        role: UserRole.courier,
-      );
+    // The search screen draws its own top row, not an app bar.
+    if (screen.$2 != SearchScreen) {
+      testWidgets('$path has a white app bar without a tint', (
+        WidgetTester tester,
+      ) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        tokens.tokens[SessionSlot.staff] = 's';
+        auth.identities[SessionSlot.staff] = user(
+          id: 's',
+          role: UserRole.courier,
+        );
 
-      await open(tester);
-      await tester.tap(byKey('staff-menu'));
-      await tester.pumpAndSettle();
-      await tester.tap(byKey('switch-to-customer-button'));
-      await tester.pumpAndSettle();
-      GoRouter.of(tester.element(find.byType(Scaffold).first)).push(path);
-      await tester.pumpAndSettle();
+        await open(tester);
+        await tester.tap(byKey('staff-menu'));
+        await tester.pumpAndSettle();
+        await tester.tap(byKey('switch-to-customer-button'));
+        await tester.pumpAndSettle();
+        GoRouter.of(tester.element(find.byType(Scaffold).first)).push(path);
+        await tester.pumpAndSettle();
 
-      final AppBar bar = tester.widget<AppBar>(
-        find.descendant(
-          of: find.byType(screen.$2),
-          matching: find.byType(AppBar),
-        ),
-      );
-      expect(bar.backgroundColor, Colors.white);
-      expect(bar.surfaceTintColor, Colors.transparent);
-      expect(bar.scrolledUnderElevation, 0);
-    });
+        final AppBar bar = tester.widget<AppBar>(
+          find.descendant(
+            of: find.byType(screen.$2),
+            matching: find.byType(AppBar),
+          ),
+        );
+        expect(bar.backgroundColor, Colors.white);
+        expect(bar.surfaceTintColor, Colors.transparent);
+        expect(bar.scrolledUnderElevation, 0);
+      });
+    }
 
     testWidgets('with two sessions $path shows the mode bar', (
       WidgetTester tester,
