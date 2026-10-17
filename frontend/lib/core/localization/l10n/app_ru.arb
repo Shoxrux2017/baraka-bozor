@@ -1552,16 +1552,19 @@
       }
     }
   },
-  "courierDeliveryNote": "Комментарий для курьера: {note}",
-  "@courierDeliveryNote": {
+  "courierAddressTitle": "Адрес доставки",
+  "courierNoteLine": "Курьеру: {note}",
+  "@courierNoteLine": {
     "placeholders": {
       "note": {
         "type": "String"
       }
     }
   },
-  "courierOpenMap": "Открыть на карте",
-  "courierMapFailed": "Не удалось открыть приложение карт. Адрес: {address}",
+  "courierOpenYandex": "Открыть в Яндексе",
+  "courierCopyAddress": "Скопировать адрес",
+  "courierAddressCopied": "Адрес скопирован",
+  "courierMapFailed": "Не удалось открыть Яндекс. Адрес: {address}",
   "@courierMapFailed": {
     "placeholders": {
       "address": {

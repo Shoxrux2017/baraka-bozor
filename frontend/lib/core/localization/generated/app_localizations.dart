@@ -4388,22 +4388,40 @@ abstract class AppLocalizations {
   /// **'Mo\'ljal: {landmark}'**
   String courierLandmark(String landmark);
 
-  /// No description provided for @courierDeliveryNote.
+  /// No description provided for @courierAddressTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Kuryer uchun izoh: {note}'**
-  String courierDeliveryNote(String note);
+  /// **'Yetkazish manzili'**
+  String get courierAddressTitle;
 
-  /// No description provided for @courierOpenMap.
+  /// No description provided for @courierNoteLine.
   ///
   /// In uz, this message translates to:
-  /// **'Xaritada ochish'**
-  String get courierOpenMap;
+  /// **'Kuryerga: {note}'**
+  String courierNoteLine(String note);
+
+  /// No description provided for @courierOpenYandex.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yandexda ochish'**
+  String get courierOpenYandex;
+
+  /// No description provided for @courierCopyAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzilni nusxalash'**
+  String get courierCopyAddress;
+
+  /// No description provided for @courierAddressCopied.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil nusxalandi'**
+  String get courierAddressCopied;
 
   /// No description provided for @courierMapFailed.
   ///
   /// In uz, this message translates to:
-  /// **'Xarita ilovasi ochilmadi. Manzil: {address}'**
+  /// **'Yandex ochilmadi. Manzil: {address}'**
   String courierMapFailed(String address);
 
   /// No description provided for @courierCollect.

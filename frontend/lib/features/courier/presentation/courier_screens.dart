@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/formatting/address_format.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/formatting/tashkent_time.dart';
@@ -17,6 +19,7 @@ import '../../../core/platform/map_links.dart';
 import '../../../core/platform/phone_calls.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
+import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/list_widgets.dart';
@@ -32,9 +35,13 @@ bool _settled(AsyncValue<Object?> value) =>
     value.hasValue && !value.hasError && !value.isLoading;
 
 /// The address as one line: the street, the house and the apartment.
-String addressLine(DeliveryAddress address) =>
-    '${address.street}, ${address.house}'
-    '${address.apartment == null ? '' : ', ${address.apartment}'}';
+String addressLine(AppLocalizations l10n, DeliveryAddress address) =>
+    addressFullLine(
+      l10n,
+      street: address.street,
+      house: address.house,
+      apartment: address.apartment,
+    );
 
 /// The Courier's area: their current deliveries, the longest-waiting first,
 /// kept current while shown (`docs/09` section 36, `DL-72`). Its app bar
@@ -149,7 +156,8 @@ class _Row extends StatelessWidget {
         subtitle: Text(
           <String>[
             if (recipient != null) l10n.courierRecipient(recipient.fullName),
-            if (address != null) l10n.courierAddress(addressLine(address)),
+            if (address != null)
+              l10n.courierAddress(addressLine(l10n, address)),
             if (order.deliveryTimeNote != null)
               '${l10n.orderSectionDeliveryWish}: ${order.deliveryTimeNote}',
             _collect(l10n, language, order),
@@ -260,7 +268,6 @@ class _DeliveryView extends StatelessWidget {
     final DateTime? delayAt = assignment.delayAt;
     final Recipient? recipient = order.recipient;
     final DeliveryAddress? address = order.address;
-    final String? landmark = address?.landmark;
     final String? note = order.deliveryNote;
 
     return ListView(
@@ -299,13 +306,7 @@ class _DeliveryView extends StatelessWidget {
           ),
         const SizedBox(height: 8),
         if (recipient != null) Text(l10n.courierRecipient(recipient.fullName)),
-        if (address != null)
-          Text(
-            l10n.courierAddress(addressLine(address)),
-            key: const ValueKey<String>('courier-address'),
-          ),
-        if (landmark != null) Text(l10n.courierLandmark(landmark)),
-        if (note != null) Text(l10n.courierDeliveryNote(note)),
+        if (address != null) _AddressCard(address: address, note: note),
         Text(
           '${l10n.orderSectionDeliveryWish}: '
           '${order.deliveryTimeNote ?? l10n.orderNoDeliveryWish}',
@@ -340,9 +341,136 @@ class _DeliveryView extends StatelessWidget {
   }
 }
 
-/// The calls and the map: the recipient, the point in the phone's own map
-/// app, and — without a handoff point — the Shopper who has the order
-/// (`DL-54` (16), `BR-DEL-006`).
+/// Where to deliver (drawing 22в, `DL-86` (6)): the full line, the landmark
+/// and the note, then the route in Yandex and the line to copy.
+class _AddressCard extends ConsumerWidget {
+  const _AddressCard({required this.address, required this.note});
+
+  final DeliveryAddress address;
+  final String? note;
+
+  Future<void> _open(BuildContext context, WidgetRef ref) async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final bool opened = await ref
+        .read(mapLinksProvider)
+        .open(address.latitude, address.longitude);
+    if (!opened) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.courierMapFailed(addressLine(l10n, address))),
+        ),
+      );
+    }
+  }
+
+  Future<void> _copy(BuildContext context) async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    await Clipboard.setData(ClipboardData(text: addressLine(l10n, address)));
+    messenger.showSnackBar(SnackBar(content: Text(l10n.courierAddressCopied)));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String? landmark = address.landmark;
+    final String? note = this.note;
+    const TextStyle detail = TextStyle(fontSize: 14, color: KitColors.ink2);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: DecoratedBox(
+        key: const ValueKey<String>('courier-address-card'),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 12,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                l10n.courierAddressTitle.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.6,
+                  color: KitColors.muted,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                addressLine(l10n, address),
+                key: const ValueKey<String>('courier-address'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: KitColors.ink,
+                ),
+              ),
+              if (landmark != null) ...<Widget>[
+                const SizedBox(height: 6),
+                Text(l10n.courierLandmark(landmark), style: detail),
+              ],
+              if (note != null) ...<Widget>[
+                const SizedBox(height: 6),
+                Text(l10n.courierNoteLine(note), style: detail),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: FilledButton.icon(
+                  key: const ValueKey<String>('courier-open-yandex'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: KitColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.navigation_outlined),
+                  label: Text(l10n.courierOpenYandex),
+                  onPressed: () => _open(context, ref),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  key: const ValueKey<String>('courier-copy-address'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: KitColors.primaryDark,
+                    side: const BorderSide(color: KitColors.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.content_copy_outlined),
+                  label: Text(l10n.courierCopyAddress),
+                  onPressed: () => _copy(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The calls: the recipient and — without a handoff point — the Shopper who
+/// has the order (`DL-54` (16), `BR-DEL-006`).
 class _Contacts extends ConsumerWidget {
   const _Contacts({required this.order});
 
@@ -359,28 +487,10 @@ class _Contacts extends ConsumerWidget {
     }
   }
 
-  Future<void> _openMap(
-    BuildContext context,
-    WidgetRef ref,
-    DeliveryAddress address,
-  ) async {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final bool opened = await ref
-        .read(mapLinksProvider)
-        .open(address.latitude, address.longitude);
-    if (!opened) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.courierMapFailed(addressLine(address)))),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final Recipient? recipient = order.recipient;
-    final DeliveryAddress? address = order.address;
     final String? shopper = order.shopperPhone;
 
     return Column(
@@ -396,13 +506,6 @@ class _Contacts extends ConsumerWidget {
                 icon: const Icon(Icons.call_outlined),
                 label: Text(l10n.callRecipient(formatPhone(recipient.phone))),
                 onPressed: () => _call(context, ref, recipient.phone),
-              ),
-            if (address != null)
-              OutlinedButton.icon(
-                key: const ValueKey<String>('courier-open-map'),
-                icon: const Icon(Icons.map_outlined),
-                label: Text(l10n.courierOpenMap),
-                onPressed: () => _openMap(context, ref, address),
               ),
           ],
         ),

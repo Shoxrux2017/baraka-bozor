@@ -1573,16 +1573,19 @@
       }
     }
   },
-  "courierDeliveryNote": "Kuryer uchun izoh: {note}",
-  "@courierDeliveryNote": {
+  "courierAddressTitle": "Yetkazish manzili",
+  "courierNoteLine": "Kuryerga: {note}",
+  "@courierNoteLine": {
     "placeholders": {
       "note": {
         "type": "String"
       }
     }
   },
-  "courierOpenMap": "Xaritada ochish",
-  "courierMapFailed": "Xarita ilovasi ochilmadi. Manzil: {address}",
+  "courierOpenYandex": "Yandexda ochish",
+  "courierCopyAddress": "Manzilni nusxalash",
+  "courierAddressCopied": "Manzil nusxalandi",
+  "courierMapFailed": "Yandex ochilmadi. Manzil: {address}",
   "@courierMapFailed": {
     "placeholders": {
       "address": {

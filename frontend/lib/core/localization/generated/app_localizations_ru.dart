@@ -2497,16 +2497,25 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String courierDeliveryNote(String note) {
-    return 'Комментарий для курьера: $note';
+  String get courierAddressTitle => 'Адрес доставки';
+
+  @override
+  String courierNoteLine(String note) {
+    return 'Курьеру: $note';
   }
 
   @override
-  String get courierOpenMap => 'Открыть на карте';
+  String get courierOpenYandex => 'Открыть в Яндексе';
+
+  @override
+  String get courierCopyAddress => 'Скопировать адрес';
+
+  @override
+  String get courierAddressCopied => 'Адрес скопирован';
 
   @override
   String courierMapFailed(String address) {
-    return 'Не удалось открыть приложение карт. Адрес: $address';
+    return 'Не удалось открыть Яндекс. Адрес: $address';
   }
 
   @override

@@ -2475,16 +2475,25 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String courierDeliveryNote(String note) {
-    return 'Kuryer uchun izoh: $note';
+  String get courierAddressTitle => 'Yetkazish manzili';
+
+  @override
+  String courierNoteLine(String note) {
+    return 'Kuryerga: $note';
   }
 
   @override
-  String get courierOpenMap => 'Xaritada ochish';
+  String get courierOpenYandex => 'Yandexda ochish';
+
+  @override
+  String get courierCopyAddress => 'Manzilni nusxalash';
+
+  @override
+  String get courierAddressCopied => 'Manzil nusxalandi';
 
   @override
   String courierMapFailed(String address) {
-    return 'Xarita ilovasi ochilmadi. Manzil: $address';
+    return 'Yandex ochilmadi. Manzil: $address';
   }
 
   @override

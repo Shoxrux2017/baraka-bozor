@@ -9,8 +9,10 @@ import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/courier/data/courier_orders_api.dart';
 import 'package:baraka_bozor/features/courier/domain/courier_orders.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -136,7 +138,10 @@ void main() {
         findsOneWidget,
       );
       expect(
-        inRow(courierOrderA, words.courierAddress('Amir Temur, 12, 34')),
+        inRow(
+          courierOrderA,
+          words.courierAddress('Amir Temur, 12, 34-xonadon'),
+        ),
         findsOneWidget,
       );
       expect(
@@ -213,16 +218,24 @@ void main() {
         find.text(words.courierRecipient('Dilnoza Karimova')),
         findsOneWidget,
       );
+      expect(byKey('courier-address-card'), findsOneWidget);
       expect(
-        find.text(words.courierAddress('Amir Temur, 12, 34')),
+        find.descendant(
+          of: byKey('courier-address-card'),
+          matching: find.text(words.courierAddressTitle.toUpperCase()),
+        ),
         findsOneWidget,
+      );
+      expect(
+        tester.widget<Text>(byKey('courier-address')).data,
+        'Amir Temur, 12, 34-xonadon',
       );
       expect(
         find.text(words.courierLandmark('Maktab qarshisida')),
         findsOneWidget,
       );
       expect(
-        find.text(words.courierDeliveryNote("Podyezdda qo'ng'iroq qiling")),
+        find.text(words.courierNoteLine("Podyezdda qo'ng'iroq qiling")),
         findsOneWidget,
       );
       expect(
@@ -237,22 +250,98 @@ void main() {
       await tapAndSettle(tester, byKey('call-recipient'));
       await tapAndSettle(tester, byKey('call-shopper'));
       expect(phone.calls, <String>['+998901234567', '+998907654321']);
-      await tapAndSettle(tester, byKey('courier-open-map'));
-      expect(maps.opened, <String>['41.311081,69.240562']);
 
       phone.opens = false;
-      maps.opens = false;
       await tapAndSettle(tester, byKey('call-recipient'));
       expect(find.text(words.callFailed('+998 90 123 45 67')), findsOneWidget);
-      ScaffoldMessenger.of(tester.element(byKey('courier-order')))
-          .clearSnackBars();
-      await tester.pumpAndSettle();
-      await tapAndSettle(tester, byKey('courier-open-map'));
+    });
+
+    testWidgets('open in Yandex asks for the point', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, at: AppPaths.courierOrder(courierOrderB));
+
+      await tapAndSettle(tester, byKey('courier-open-yandex'));
+      expect(maps.opened, <String>['41.311081,69.240562']);
+      expect(byKey('courier-open-map'), findsNothing);
+    });
+
+    testWidgets('a failed open shows the address', (WidgetTester tester) async {
+      maps.opens = false;
+      await open(tester, at: AppPaths.courierOrder(courierOrderB));
+      final AppLocalizations words = l10n(tester);
+
+      await tapAndSettle(tester, byKey('courier-open-yandex'));
       expect(
-        find.text(words.courierMapFailed('Amir Temur, 12, 34')),
+        find.text(words.courierMapFailed('Amir Temur, 12, 34-xonadon')),
         findsOneWidget,
       );
     });
+
+    testWidgets('copy puts the line on the clipboard and says so', (
+      WidgetTester tester,
+    ) async {
+      final Map<String, Object?> json = courierOrderJson(
+        id: courierOrderB,
+        number: 1002,
+        status: 'on_the_way',
+      );
+      json['address'] = <String, Object?>{
+        'latitude': '41.311081',
+        'longitude': '69.240562',
+        'street': 'Чиланзар, 9-й квартал',
+        'house': '14',
+        'apartment': '5',
+        'landmark': null,
+      };
+      courier.details[courierOrderB] = CourierOrdersApi.parseOrder(json);
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied =
+                (call.arguments as Map<Object?, Object?>)['text']! as String;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await open(
+        tester,
+        at: AppPaths.courierOrder(courierOrderB),
+        device: const Locale('ru'),
+      );
+
+      await tapAndSettle(tester, byKey('courier-copy-address'));
+      expect(copied, 'Чиланзар, 9-й квартал, 14, кв. 5');
+      expect(find.text('Адрес скопирован'), findsOneWidget);
+    });
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets(
+        'the order holds at 320x640 with text x2 (${device.languageCode})',
+        (WidgetTester tester) async {
+          await open(
+            tester,
+            at: AppPaths.courierOrder(courierOrderB),
+            size: const Size(320, 640),
+            textScale: 2,
+            device: device,
+          );
+          expect(byKey('courier-address-card'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          await tapAndSettle(tester, byKey('courier-copy-address'));
+          await tapAndSettle(tester, byKey('courier-open-yandex'));
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
 
     testWidgets(
       'with a handoff point, the Shopper is not the Courier\'s to call',
