@@ -1362,7 +1362,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String cartLineEstimate(String amount) {
-    return '≈ $amount';
+    return '≈ $amount';
   }
 
   @override

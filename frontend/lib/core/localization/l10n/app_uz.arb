@@ -692,7 +692,7 @@
   "cartIncrease": "Ko'paytirish",
   "cartNote": "Yig'uvchi uchun izoh",
   "cartSubstitution": "Mahsulot bo'lmasa",
-  "cartLineEstimate": "≈ {amount}",
+  "cartLineEstimate": "≈ {amount}",
   "@cartLineEstimate": {
     "placeholders": {
       "amount": {

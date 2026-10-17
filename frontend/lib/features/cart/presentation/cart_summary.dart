@@ -128,7 +128,7 @@ class _AmountRow extends StatelessWidget {
         children: <Widget>[
           Expanded(child: Text(label, style: style)),
           const SizedBox(width: 12),
-          Flexible(
+          Expanded(
             child: Text(
               value,
               key: ValueKey<String>(valueKey),

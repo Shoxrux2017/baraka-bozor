@@ -692,7 +692,7 @@
   "cartIncrease": "Увеличить",
   "cartNote": "Комментарий для сборщика",
   "cartSubstitution": "Если товара нет",
-  "cartLineEstimate": "≈ {amount}",
+  "cartLineEstimate": "≈ {amount}",
   "@cartLineEstimate": {
     "placeholders": {
       "amount": {

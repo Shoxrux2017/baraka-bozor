@@ -8,9 +8,11 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/widgets/product_image.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
+import 'package:baraka_bozor/features/cart/presentation/cart_line_tile.dart';
 import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:flutter/material.dart';
@@ -486,6 +488,99 @@ void main() {
       );
     });
 
+    testWidgets('a line is laid out as drawn: the sum and the stepper beside '
+        'the picture', (WidgetTester tester) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/cart', size: const Size(375, 812));
+
+      final Finder picture = find.descendant(
+        of: byKey('cart-line-$tomatoLine'),
+        matching: find.byType(ProductImage),
+      );
+      final Rect image = tester.getRect(picture);
+      final Rect sumBox = tester.getRect(byKey('line-sum-$tomatoLine'));
+      final Rect minus = tester.getRect(byKey('line-minus-$tomatoLine'));
+      final Rect plus = tester.getRect(byKey('line-plus-$tomatoLine'));
+      final Rect tile = tester.getRect(byKey('cart-line-$tomatoLine'));
+
+      expect(sumBox.left, greaterThanOrEqualTo(image.right));
+      expect(minus.left, greaterThanOrEqualTo(image.right));
+      expect(
+        plus.bottom,
+        lessThanOrEqualTo(tile.top + 84 + 1),
+        reason: 'the stepper sits level with the picture, not under it',
+      );
+      expect(plus.right, closeTo(tile.right, 1));
+    });
+
+    testWidgets('a line no longer sold has Remove at the right edge', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '2',
+          available: false,
+        ),
+      ]);
+      await open(
+        tester,
+        at: '/customer/cart',
+        size: const Size(375, 812),
+        device: const Locale('ru'),
+      );
+
+      final Finder tileFinder = find.byType(CartLineTile);
+      final Rect remove = tester.getRect(byKey('remove-line-$breadLine'));
+      final Rect tile = tester.getRect(tileFinder);
+      final Rect picture = tester.getRect(
+        find.descendant(of: tileFinder, matching: find.byType(ProductImage)),
+      );
+      expect(remove.right, closeTo(tile.right, 1));
+      expect(remove.left, greaterThanOrEqualTo(picture.right));
+      expect(
+        tester.getRect(byKey('cart-line-unavailable-$breadLine')).left,
+        greaterThanOrEqualTo(picture.right),
+      );
+    });
+
+    testWidgets('the amounts are flush to the right edge of their rows', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(
+        <Map<String, Object?>>[cartLineJson(total: 61410)],
+        subtotal: 61410,
+        serviceFee: 3000,
+        deliveryFee: 12000,
+        total: 76410,
+      );
+      await open(tester, at: '/customer/cart', size: const Size(375, 812));
+
+      final double edge = tester.getRect(byKey('cart-estimate-note')).right;
+      for (final String key in <String>[
+        'cart-subtotal',
+        'cart-delivery',
+        'cart-service-fee',
+        'cart-total',
+      ]) {
+        expect(tester.getRect(byKey(key)).right, closeTo(edge, 1), reason: key);
+      }
+    });
+
+    testWidgets('the estimate sign never wraps away from its amount', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      for (final Locale locale in <Locale>[Locale('uz'), Locale('ru')]) {
+        expect(
+          lookupAppLocalizations(locale).cartLineEstimate('x'),
+          '≈${String.fromCharCode(0xA0)}x',
+        );
+      }
+    });
+
     testWidgets('a step sends only the quantity', (WidgetTester tester) async {
       cart.current = cartOf(<Map<String, Object?>>[cartLineJson(note: 'Eski')]);
       await open(tester, at: '/customer/cart');
@@ -918,15 +1013,15 @@ void main() {
       final AppLocalizations words = l10n(tester);
 
       String shown(String key) => tester.widget<Text>(byKey(key)).data!;
-      expect(shown('cart-subtotal'), '≈ ${sum(61410)}');
+      expect(shown('cart-subtotal'), '≈\u00A0${sum(61410)}');
       expect(shown('cart-delivery'), sum(12000));
       expect(shown('cart-service-fee'), sum(3000));
-      expect(shown('cart-total'), '≈ ${sum(76410)}');
+      expect(shown('cart-total'), '≈\u00A0${sum(76410)}');
       expect(byKey('cart-estimate-note'), findsOneWidget);
       expect(
         find.descendant(
           of: byKey('go-to-checkout'),
-          matching: find.text('≈ ${sum(76410)}'),
+          matching: find.text('≈\u00A0${sum(76410)}'),
         ),
         findsOneWidget,
       );
@@ -949,7 +1044,7 @@ void main() {
       await tester.pumpAndSettle();
       GoRouter.of(anywhere(tester)).push('/customer/cart');
       await tester.pumpAndSettle();
-      expect(shown('cart-service-fee'), '≈ ${sum(1380)}');
+      expect(shown('cart-service-fee'), '≈\u00A0${sum(1380)}');
     });
 
     testWidgets('unset settings hide their rows and keep checkout open', (
@@ -999,7 +1094,7 @@ void main() {
       expect(
         find.descendant(
           of: byKey('cart-minimum'),
-          matching: find.text(words.cartMinimumShort('≈ ${sum(35165)}')),
+          matching: find.text(words.cartMinimumShort('≈\u00A0${sum(35165)}')),
         ),
         findsOneWidget,
       );

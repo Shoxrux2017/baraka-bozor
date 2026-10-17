@@ -2573,7 +2573,7 @@ abstract class AppLocalizations {
   /// No description provided for @cartLineEstimate.
   ///
   /// In uz, this message translates to:
-  /// **'≈ {amount}'**
+  /// **'≈ {amount}'**
   String cartLineEstimate(String amount);
 
   /// No description provided for @cartLineUnavailable.

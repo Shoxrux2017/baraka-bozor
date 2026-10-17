@@ -268,20 +268,18 @@ class _CartLineTileState extends ConsumerState<CartLineTile> {
             ],
           )
         : Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
               Flexible(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      quantity,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: KitColors.muted,
-                      ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    quantity,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: KitColors.muted,
                     ),
                   ),
                 ),
@@ -316,13 +314,27 @@ class _CartLineTileState extends ConsumerState<CartLineTile> {
             ],
           );
 
-    final Widget top = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        picture,
-        const SizedBox(width: 12),
-        Expanded(child: info),
-      ],
+    // The picture on the left; the text, then the bottom row level with the
+    // picture's bottom when the text is short, in the column beside it.
+    final Widget row = IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Align(alignment: Alignment.topLeft, child: picture),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                info,
+                const Spacer(),
+                const SizedBox(height: 8),
+                bottom,
+              ],
+            ),
+          ),
+        ],
+      ),
     );
 
     return DecoratedBox(
@@ -331,21 +343,13 @@ class _CartLineTileState extends ConsumerState<CartLineTile> {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (available)
-              InkWell(
+        child: available
+            ? InkWell(
                 key: ValueKey<String>('cart-line-${line.id}'),
                 onTap: _openProduct,
-                child: top,
+                child: row,
               )
-            else
-              top,
-            const SizedBox(height: 10),
-            bottom,
-          ],
-        ),
+            : row,
       ),
     );
   }
