@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -191,8 +193,11 @@ class _GooglePickerState extends State<_GooglePicker> {
             gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
               Factory<OneSequenceGestureRecognizer>(EagerGestureRecognizer.new),
             },
-            onMapCreated: (GoogleMapController controller) =>
-                _controller = controller,
+            onMapCreated: (GoogleMapController controller) {
+              _controller = controller;
+              // A move asked for before the map existed is made now.
+              unawaited(_moverMoved());
+            },
             onCameraMoveStarted: _moves.moveStarted,
             onCameraMove: (CameraPosition position) => _moves.moved(
               position.target.latitude,

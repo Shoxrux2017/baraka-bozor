@@ -51,7 +51,7 @@ Some steps need the Owner:
 
 | Gate | Needed by |
 |---|---|
-| Yandex MapKit API key | Wave 1 address picker |
+| Google Maps keys: the app's Maps SDK for Android key, the server's Geocoding key | Owner; kit stage 4b address map |
 | Firebase project and Android app registration | Wave 4 push |
 | Telegram Gateway account and funding | Wave 4 login codes |
 | Hosting in Uzbekistan, domain, TLS | Wave 4 deployment |

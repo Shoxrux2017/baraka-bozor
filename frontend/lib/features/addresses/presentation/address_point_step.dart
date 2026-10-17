@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/generated/app_localizations.dart';
@@ -24,11 +25,16 @@ final class AddressPointResult {
 class AddressPointStep extends ConsumerStatefulWidget {
   const AddressPointStep({
     required this.initial,
+    required this.keepsWords,
     required this.onConfirmed,
     super.key,
   });
 
   final GeoPoint initial;
+
+  /// Whether the host will put the typed words into the street; the step
+  /// promises to keep them only then.
+  final bool keepsWords;
   final ValueChanged<AddressPointResult> onConfirmed;
 
   @override
@@ -39,6 +45,7 @@ enum _Search { start, found, notFound, unavailable }
 
 class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   static const int _shortest = 3;
+  static const int _searchMax = 200;
 
   final PointMapMover _mover = PointMapMover();
   final TextEditingController _field = TextEditingController();
@@ -224,6 +231,8 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
           key: const ValueKey<String>('address-search-field'),
           controller: _field,
           textInputAction: TextInputAction.search,
+          maxLength: _searchMax,
+          maxLengthEnforcement: MaxLengthEnforcement.enforced,
           onSubmitted: _submit,
           onChanged: (_) => setState(() {}),
           style: const TextStyle(fontSize: 14, color: KitColors.ink),
@@ -248,6 +257,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
                     icon: const Icon(Icons.close, color: KitColors.muted),
                     onPressed: _clear,
                   ),
+            counterText: '',
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 14),
           ),
@@ -345,7 +355,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
                               color: KitColors.ink2,
                             ),
                           ),
-                      if (_words != null) ...<Widget>[
+                      if (_words != null && widget.keepsWords) ...<Widget>[
                         const SizedBox(height: 10),
                         Row(
                           key: const ValueKey<String>('address-words-kept'),

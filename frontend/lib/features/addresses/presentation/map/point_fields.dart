@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/localization/generated/app_localizations.dart';
 import '../../domain/addresses.dart';
 
-/// The point as two fields, for a build without a MapKit key (`DL-33`).
+/// The point as two fields, for a build without a Google Maps key, the web and iOS (`DL-86` (2)).
 /// They belong to the address form: a field that is empty or not a
 /// coordinate stops the save, so the point sent is always the one shown.
 Widget pointFieldsPicker({

@@ -9,10 +9,10 @@ class _FakeGeolocator extends Fake implements GeolocatorPlatform {
   bool servicesOn = true;
   LocationPermission permission = LocationPermission.whileInUse;
   LocationPermission afterRequest = LocationPermission.whileInUse;
-  Completer<Position>? pending;
   Exception? positionError;
   Exception? requestError;
   int requests = 0;
+  LocationSettings? settings;
 
   @override
   Future<bool> isLocationServiceEnabled() async => servicesOn;
@@ -30,10 +30,12 @@ class _FakeGeolocator extends Fake implements GeolocatorPlatform {
   }
 
   @override
-  Future<Position> getCurrentPosition({LocationSettings? locationSettings}) =>
-      positionError != null
-      ? Future<Position>.error(positionError!)
-      : pending?.future ?? Future<Position>.value(_position);
+  Future<Position> getCurrentPosition({LocationSettings? locationSettings}) {
+    settings = locationSettings;
+    return positionError != null
+        ? Future<Position>.error(positionError!)
+        : Future<Position>.value(_position);
+  }
 }
 
 final Position _position = Position(
@@ -107,24 +109,15 @@ void main() {
     expect(await location.current(), isNull);
   });
 
-  testWidgets('a reading over ten seconds gives null', (
-    WidgetTester tester,
-  ) async {
-    platform.pending = Completer<Position>();
-    GeoPoint? result = const GeoPoint(latitude: '0', longitude: '0');
-    bool done = false;
-    unawaited(
-      location.current().then((GeoPoint? point) {
-        result = point;
-        done = true;
-      }),
-    );
+  test('the reading asks for a ten-second limit', () async {
+    await location.current();
 
-    await tester.pump(const Duration(seconds: 9));
-    expect(done, isFalse);
-    await tester.pump(const Duration(seconds: 2));
+    expect(platform.settings?.timeLimit, const Duration(seconds: 10));
+  });
 
-    expect(done, isTrue);
-    expect(result, isNull);
+  test('a reading that times out gives null', () async {
+    platform.positionError = TimeoutException('too long');
+
+    expect(await location.current(), isNull);
   });
 }

@@ -47,6 +47,7 @@ void main() {
     WidgetTester tester, {
     AddressMap? map,
     Locale locale = const Locale('uz'),
+    bool keepsWords = true,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -60,7 +61,11 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: AddressPointStep(initial: start, onConfirmed: confirmed.add),
+            body: AddressPointStep(
+              initial: start,
+              keepsWords: keepsWords,
+              onConfirmed: confirmed.add,
+            ),
           ),
         ),
       ),
@@ -157,6 +162,33 @@ void main() {
     expect(byKey('address-search-unavailable'), findsOneWidget);
     await confirm(tester);
     expect(confirmed.single.words, 'Navoiy 7');
+  });
+
+  testWidgets('the words are not promised where the street will not take '
+      'them', (WidgetTester tester) async {
+    search.answers['Navoiy 5'] = found;
+    await open(tester, keepsWords: false);
+    await type(tester, 'Navoiy 5');
+    await tester.pump();
+
+    expect(find.text(l10n(tester).addressSearchFound), findsOneWidget);
+    expect(byKey('address-words-kept'), findsNothing);
+    await confirm(tester);
+    expect(confirmed.single.words, 'Navoiy 5');
+  });
+
+  testWidgets('the search field takes 200 characters', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.enterText(byKey('address-search-field'), 'a' * 250);
+    await tester.pump();
+
+    expect(
+      tester.widget<TextField>(byKey('address-search-field')).controller!.text,
+      'a' * 200,
+    );
+    expect(find.text('200/200'), findsNothing, reason: 'no counter');
   });
 
   testWidgets('two characters search nothing', (WidgetTester tester) async {
@@ -303,6 +335,7 @@ void main() {
       tester.platformDispatcher.textScaleFactorTestValue = 2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       search.answers['Navoiy 5'] = null;
+      search.answers['Navoiy 9'] = found;
       search.failures['Navoiy 7'] = const NetworkFailure();
 
       await open(tester, locale: locale);
@@ -316,6 +349,12 @@ void main() {
       await type(tester, 'Navoiy 7');
       await tester.pump();
       expect(byKey('address-search-unavailable'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await type(tester, 'Navoiy 9');
+      await tester.pump();
+      expect(find.text(l10n(tester).addressSearchFound), findsOneWidget);
+      expect(byKey('address-words-kept'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }

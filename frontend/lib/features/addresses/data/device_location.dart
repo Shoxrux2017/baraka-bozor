@@ -36,8 +36,8 @@ final class GeolocatorDeviceLocation implements DeviceLocation {
           permission == LocationPermission.deniedForever) {
         return null;
       }
-      final Position position = await _platform.getCurrentPosition().timeout(
-        _limit,
+      final Position position = await _platform.getCurrentPosition(
+        locationSettings: const LocationSettings(timeLimit: _limit),
       );
       return GeoPoint.fromDegrees(position.latitude, position.longitude);
     } on TimeoutException {

@@ -2,8 +2,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// A delivery point opened in the phone's own map app (`DL-54` (16)); no
-/// staff screen embeds a map (`DL-36` (2)).
+/// A delivery point opened in the phone's own map app (`DL-54` (16)): the
+/// route to the point in the Courier's Yandex app (`DL-84` item 3, `DL-86`
+/// (6)); no staff screen embeds a map.
 abstract interface class MapLinks {
   /// Opens the point at [latitude], [longitude] — six-decimal strings, as
   /// the API carries them; `false` when nothing on the device opens it, and

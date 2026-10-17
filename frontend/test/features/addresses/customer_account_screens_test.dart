@@ -57,6 +57,7 @@ void main() {
     WidgetTester tester, {
     bool fakeMap = true,
     Size size = const Size(800, 2000),
+    Locale device = const Locale('uz'),
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -65,6 +66,7 @@ void main() {
       appUnderTest(
         tokens: tokens,
         repository: auth,
+        device: device,
         addresses: addresses,
         preferences: preferences,
         overrides: [
@@ -110,6 +112,16 @@ void main() {
         .clearSnackBars();
     await tester.pumpAndSettle();
   }
+
+  /// The map step: the address typed in words and searched.
+  Future<void> searchWords(WidgetTester tester, String words) async {
+    await tester.enterText(byKey('address-search-field'), words);
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+  }
+
+  String streetText(WidgetTester tester) =>
+      tester.widget<TextFormField>(byKey('field-street')).controller!.text;
 
   Future<void> fillNewAddress(WidgetTester tester) async {
     await tapAndSettle(tester, byKey('address-new'));
@@ -366,6 +378,56 @@ void main() {
       );
     });
 
+    testWidgets('an edit never takes the words and does not promise them', (
+      WidgetTester tester,
+    ) async {
+      await openAddresses(tester);
+      await tapAndSettle(tester, find.text('Uy'));
+      await tapAndSettle(tester, byKey('address-change-point'));
+      await searchWords(tester, 'квартал Ц-5, дом 12');
+      expect(byKey('address-words-kept'), findsNothing);
+      await confirmPoint(tester);
+
+      expect(streetText(tester), 'Amir Temur');
+    });
+
+    testWidgets('the latest words fill a street they filled before', (
+      WidgetTester tester,
+    ) async {
+      await openAddresses(tester);
+      await tapAndSettle(tester, byKey('address-new'));
+      await searchWords(tester, 'Navoiy 5');
+      expect(byKey('address-words-kept'), findsOneWidget);
+      await confirmPoint(tester);
+      expect(streetText(tester), 'Navoiy 5');
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await searchWords(tester, 'Bobur 7');
+      expect(byKey('address-words-kept'), findsOneWidget);
+      await confirmPoint(tester);
+
+      expect(streetText(tester), 'Bobur 7');
+    });
+
+    testWidgets('words do not overwrite a street the Customer edited', (
+      WidgetTester tester,
+    ) async {
+      await openAddresses(tester);
+      await tapAndSettle(tester, byKey('address-new'));
+      await searchWords(tester, 'Navoiy 5');
+      await confirmPoint(tester);
+      await tester.enterText(byKey('field-street'), 'Navoiy ko`chasi');
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await searchWords(tester, 'Bobur 7');
+      expect(byKey('address-words-kept'), findsNothing);
+      await confirmPoint(tester);
+
+      expect(streetText(tester), 'Navoiy ko`chasi');
+    });
+
     testWidgets('an edit keeps its street when the point changes', (
       WidgetTester tester,
     ) async {
@@ -410,6 +472,39 @@ void main() {
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       expect(byKey('address-point-confirm'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('address-new'), findsOneWidget, reason: 'the list');
+
+      // A new address changing its point from the form: back returns to the
+      // form with everything as it was.
+      await tapAndSettle(tester, byKey('address-new'));
+      await confirmPoint(tester, move: true);
+      await tester.enterText(byKey('field-street'), 'Navoiy');
+      await tester.enterText(byKey('field-house'), '5A');
+      await tapAndSettle(tester, byKey('address-change-point'));
+      expect(byKey('address-point-confirm'), findsOneWidget);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(byKey('address-save'), findsOneWidget);
+      expect(streetText(tester), 'Navoiy');
+      expect(
+        tester.widget<Text>(byKey('fake-map-preview')).data,
+        '${fakeDoor.latitude},${fakeDoor.longitude}',
+        reason: 'the point is unchanged',
+      );
+      await tapAndSettle(tester, byKey('address-change-point'));
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('address-save'), findsOneWidget);
+      expect(streetText(tester), 'Navoiy');
+      expect(
+        tester.widget<TextFormField>(byKey('field-house')).controller!.text,
+        '5A',
+      );
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('address-point-confirm'), findsOneWidget, reason: 'step 1');
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       expect(byKey('address-new'), findsOneWidget, reason: 'the list');
@@ -575,6 +670,77 @@ void main() {
         await tester.drag(byKey('address-form'), const Offset(0, -2000));
         await tester.pumpAndSettle();
         expect(byKey('field-label'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets('the change-point chip leaves the map logo free at 320x640 '
+          'with text x2 (${device.languageCode})', (WidgetTester tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await openProfile(tester, size: const Size(320, 640), device: device);
+        GoRouter.of(tester.element(find.byType(Scaffold).first))
+            .push(AppPaths.customerAddress('a-1'));
+        await tester.pumpAndSettle();
+
+        final Finder chip = byKey('address-change-point');
+        final Rect preview = tester.getRect(
+          find
+              .ancestor(
+                of: chip,
+                matching: find.byWidgetPredicate(
+                  (Widget w) => w is SizedBox && w.height == 118,
+                ),
+              )
+              .first,
+        );
+        expect(
+          tester.getTopLeft(chip).dx,
+          greaterThanOrEqualTo(preview.left + preview.width * 0.4),
+        );
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the outside-area refusal fits above the button at 320x640 '
+          'with text x2 (${device.languageCode})', (WidgetTester tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        addresses.saveFailure = const ApiRefusal(
+          ApiError(
+            status: 422,
+            code: 'address_outside_service_area',
+            details: <String, Object?>{
+              'max_distance_km': '5.00',
+              'distance_km': '7.25',
+            },
+          ),
+        );
+        await openProfile(tester, size: const Size(320, 640), device: device);
+        GoRouter.of(tester.element(find.byType(Scaffold).first))
+            .push(AppPaths.customerNewAddress);
+        await tester.pumpAndSettle();
+        await confirmPoint(tester);
+        await tester.enterText(byKey('field-street'), 'Navoiy');
+        await tester.enterText(byKey('field-house'), '5A');
+        await tapAndSettle(tester, byKey('address-save'));
+
+        final Finder refusal = byKey('address-outside-area');
+        expect(refusal, findsOneWidget);
+        final double buttonTop = tester.getTopLeft(byKey('address-save')).dy;
+        expect(tester.getTopLeft(refusal).dy, lessThan(buttonTop));
+        expect(
+          tester
+              .getBottomLeft(
+                find.ancestor(
+                  of: refusal,
+                  matching: find.byType(SingleChildScrollView),
+                ),
+              )
+              .dy,
+          lessThanOrEqualTo(buttonTop),
+          reason: 'the refusal scrolls in its own box above the button',
+        );
         expect(tester.takeException(), isNull);
       });
     }

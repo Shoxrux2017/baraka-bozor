@@ -215,6 +215,13 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
   /// while the pin is still where it was refused.
   GeoPoint? _sentPoint;
 
+  /// The words the street was last filled with from the map step.
+  String? _filledWords;
+
+  /// The map step was opened from the details of a new address, so back
+  /// from it returns there.
+  bool _backToDetails = false;
+
   bool get _isNew => widget.address == null;
 
   @override
@@ -262,15 +269,25 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
         AddressLabelKind.custom => _optional(_label.text),
       };
 
+  /// The words may fill the street on a new address while it is empty or
+  /// still holds what the words filled before, unedited.
+  bool get _streetTakesWords =>
+      _isNew && (_street.text.trim().isEmpty || _street.text == _filledWords);
+
   /// The Customer confirmed the pin: the details follow. The words they typed
-  /// fill a street that is still empty on a new address.
+  /// fill the street where [_streetTakesWords] allows.
   void _confirmed(AddressPointResult result) {
     setState(() {
       _point = result.point;
       final String? words = result.words;
-      if (_isNew && words != null && _street.text.trim().isEmpty) {
-        _street.text = String.fromCharCodes(words.runes.take(_streetMax));
+      if (words != null && _streetTakesWords) {
+        final String filled = String.fromCharCodes(
+          words.runes.take(_streetMax),
+        );
+        _street.text = filled;
+        _filledWords = filled;
       }
+      _backToDetails = false;
       _step = _Step.details;
     });
   }
@@ -280,7 +297,10 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
     if (didPop || ref.read(addressFormControllerProvider).isBusy) {
       return;
     }
-    setState(() => _step = _isNew ? _Step.point : _Step.details);
+    setState(() {
+      _step = _isNew && !_backToDetails ? _Step.point : _Step.details;
+      _backToDetails = false;
+    });
   }
 
   Future<void> _submit() async {
@@ -337,7 +357,8 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
         : l10n.addressEdit;
 
     return PopScope(
-      canPop: !change.isBusy && (_isNew ? onPoint : !onPoint),
+      canPop:
+          !change.isBusy && (_isNew ? onPoint && !_backToDetails : !onPoint),
       onPopInvokedWithResult: (bool didPop, Object? _) => _back(didPop),
       child: Scaffold(
         appBar: AppBar(title: Text(title)),
@@ -346,6 +367,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
               ? AddressPointStep(
                   key: const ValueKey<String>('address-point-step'),
                   initial: _point,
+                  keepsWords: _streetTakesWords,
                   onConfirmed: _confirmed,
                 )
               : _details(l10n, change),
@@ -459,65 +481,74 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
       height: 118,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          fit: StackFit.expand,
-          children: <Widget>[
-            IgnorePointer(child: map.preview(point: _point)),
-            Positioned(
-              left: 10,
-              right: 10,
-              bottom: 10,
-              child: Align(
-                alignment: Alignment.bottomRight,
-                child: Material(
-                  color: Colors.white,
-                  elevation: 2,
-                  shadowColor: const Color(0x33000000),
-                  borderRadius: BorderRadius.circular(10),
-                  child: InkWell(
-                    key: const ValueKey<String>('address-change-point'),
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: change.isBusy
-                        ? null
-                        : () => setState(() => _step = _Step.point),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 7,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Icon(
-                            Icons.edit_location_alt_outlined,
-                            size: 16,
-                            color: change.isBusy
-                                ? KitColors.muted
-                                : KitColors.primaryDark,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints box) => Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              IgnorePointer(child: map.preview(point: _point)),
+              Positioned(
+                right: 10,
+                bottom: 10,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: box.maxWidth * 0.6 - 11,
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Material(
+                      color: Colors.white,
+                      elevation: 2,
+                      shadowColor: const Color(0x33000000),
+                      borderRadius: BorderRadius.circular(10),
+                      child: InkWell(
+                        key: const ValueKey<String>('address-change-point'),
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: change.isBusy
+                            ? null
+                            : () => setState(() {
+                                _backToDetails = _isNew;
+                                _step = _Step.point;
+                              }),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 7,
                           ),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              l10n.addressChangePoint,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Icon(
+                                Icons.edit_location_alt_outlined,
+                                size: 16,
                                 color: change.isBusy
                                     ? KitColors.muted
-                                    : KitColors.ink,
+                                    : KitColors.primaryDark,
                               ),
-                            ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  l10n.addressChangePoint,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: change.isBusy
+                                        ? KitColors.muted
+                                        : KitColors.ink,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -23,6 +23,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - Stage 4b, the iOS Google key and `GMSServices` are set on the first Mac build.
 - Stage 4b, the server key's IP restriction is set at deployment.
 - Stage 4b, the Play signing SHA-1 is added to the app's key at the first Play upload.
+- Stage 4b, the Owner sets the Geocoding API daily quota (300 requests a day) and a $1 budget alert in Google Cloud, so the lookup stays within Google's free 10 000 a month (`DL-86` item 1).
 - Stage 4b, the Courier's Navigator link is called without the signature Yandex describes for version 2.40 and later; if a Courier's phone refuses it, the app is registered with Yandex and the server signs the link (`DL-86` item 6).
 
 ## Part 1 history (design 4a, `DL-74`, `DL-75`)
