@@ -57,7 +57,7 @@ The Customer places a point on the Yandex map, enters street and house, optional
 
 ## 6. Catalog and Cart
 
-The Customer browses categories, searches (both languages), sees unit, price mode and customer price, chooses a valid quantity, a note and a substitution rule (default: allow similar), and adds the product to the active cart — from a product card with one tap or from the product screen, where the substitution rule and the note are chosen. A product already in the cart is updated through its cart item, never duplicated.
+The Customer browses categories, searches (both languages), sees unit, price mode and customer price, chooses a valid quantity, a note and a substitution rule (default: allow similar), and adds the product to the active cart — from a product card with one tap or from the product screen, where the substitution rule and the note are chosen. A product already in the cart is updated through its cart item, never duplicated. The cart shows each line with its estimate and a stepper, the amounts checkout would charge, what is missing to the minimum order, the recommended products not yet in it (`DL-84`) and the delivery address; checkout opens only when every line is sold and the minimum is reached.
 
 ## 7. Checkout Preview
 

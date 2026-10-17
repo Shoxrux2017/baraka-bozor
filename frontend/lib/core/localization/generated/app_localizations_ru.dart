@@ -1349,9 +1349,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get cartEmpty => 'Корзина пуста';
-
-  @override
   String get cartAdded => 'Добавлено в корзину';
 
   @override
@@ -1377,13 +1374,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get cartSubstitution => 'Если товара нет';
 
   @override
-  String cartSubtotal(String amount) {
-    return 'Ориентировочно итого: $amount';
-  }
-
-  @override
   String cartLineEstimate(String amount) {
-    return '≈ $amount';
+    return '≈ $amount';
   }
 
   @override
@@ -1392,9 +1384,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get cartUnavailableHint =>
       'Уберите товары, которых нет в продаже, — с ними заказ не оформить';
-
-  @override
-  String get cartRemoveLine => 'Убрать из корзины';
 
   @override
   String get cartSaving => 'Сохраняем';
@@ -2765,4 +2754,70 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get quantitySheetDone => 'Готово';
+
+  @override
+  String cartUnitPrice(String unit, String price) {
+    return '≈ $price за $unit';
+  }
+
+  @override
+  String cartUnitPriceExact(String unit, String price) {
+    return '$price за $unit';
+  }
+
+  @override
+  String get cartRemoveTitle => 'Убрать из корзины?';
+
+  @override
+  String get cartRemoveConfirm => 'Убрать';
+
+  @override
+  String get cartEmptyTitle => 'Корзина пока пуста';
+
+  @override
+  String get cartEmptyText =>
+      'Добавьте товары из каталога — сборщик купит их на рынке, курьер привезёт.';
+
+  @override
+  String cartGoods(int count) {
+    return 'Товары ($count)';
+  }
+
+  @override
+  String get cartDelivery => 'Доставка';
+
+  @override
+  String get cartServiceFee => 'Сервисный сбор';
+
+  @override
+  String get cartTotal => 'Итого';
+
+  @override
+  String get cartEstimateNote =>
+      'Сумма ориентировочная. Итог считаем по ценам рынка после покупки; если цена выйдет выше допустимого — спросим вас.';
+
+  @override
+  String cartMinimumShort(String amount) {
+    return 'До минимального заказа не хватает $amount';
+  }
+
+  @override
+  String cartMinimumRule(String amount) {
+    return 'Минимальная сумма товаров — $amount, без доставки и сбора';
+  }
+
+  @override
+  String get cartWhyUnavailable =>
+      'Сначала уберите товары, которых нет в продаже';
+
+  @override
+  String cartWhyMinimum(String amount) {
+    return 'Минимальный заказ — $amount';
+  }
+
+  @override
+  String get cartAddMoreTitle => 'Добавьте к заказу';
+
+  @override
+  String get cartDeliveryTo => 'Доставка:';
 }

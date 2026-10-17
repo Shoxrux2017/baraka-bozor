@@ -2522,12 +2522,6 @@ abstract class AppLocalizations {
   /// **'Savat: {count}'**
   String cartBadge(int count);
 
-  /// No description provided for @cartEmpty.
-  ///
-  /// In uz, this message translates to:
-  /// **'Savat bo\'sh'**
-  String get cartEmpty;
-
   /// No description provided for @cartAdded.
   ///
   /// In uz, this message translates to:
@@ -2576,16 +2570,10 @@ abstract class AppLocalizations {
   /// **'Mahsulot bo\'lmasa'**
   String get cartSubstitution;
 
-  /// No description provided for @cartSubtotal.
-  ///
-  /// In uz, this message translates to:
-  /// **'Taxminiy jami: {amount}'**
-  String cartSubtotal(String amount);
-
   /// No description provided for @cartLineEstimate.
   ///
   /// In uz, this message translates to:
-  /// **'≈ {amount}'**
+  /// **'≈ {amount}'**
   String cartLineEstimate(String amount);
 
   /// No description provided for @cartLineUnavailable.
@@ -2599,12 +2587,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Sotuvda yo\'q mahsulotlarni olib tashlang — ular bilan buyurtma berib bo\'lmaydi'**
   String get cartUnavailableHint;
-
-  /// No description provided for @cartRemoveLine.
-  ///
-  /// In uz, this message translates to:
-  /// **'Savatdan olib tashlash'**
-  String get cartRemoveLine;
 
   /// No description provided for @cartSaving.
   ///
@@ -4813,6 +4795,108 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Tayyor'**
   String get quantitySheetDone;
+
+  /// No description provided for @cartUnitPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'{unit} uchun ≈ {price}'**
+  String cartUnitPrice(String unit, String price);
+
+  /// No description provided for @cartUnitPriceExact.
+  ///
+  /// In uz, this message translates to:
+  /// **'{unit} uchun {price}'**
+  String cartUnitPriceExact(String unit, String price);
+
+  /// No description provided for @cartRemoveTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatdan olib tashlansinmi?'**
+  String get cartRemoveTitle;
+
+  /// No description provided for @cartRemoveConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib tashlash'**
+  String get cartRemoveConfirm;
+
+  /// No description provided for @cartEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savat hozircha bo\'sh'**
+  String get cartEmptyTitle;
+
+  /// No description provided for @cartEmptyText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Katalogdan mahsulot qo\'shing — yig\'uvchi ularni bozordan oladi, kuryer olib keladi.'**
+  String get cartEmptyText;
+
+  /// No description provided for @cartGoods.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotlar ({count})'**
+  String cartGoods(int count);
+
+  /// No description provided for @cartDelivery.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berish'**
+  String get cartDelivery;
+
+  /// No description provided for @cartServiceFee.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xizmat haqi'**
+  String get cartServiceFee;
+
+  /// No description provided for @cartTotal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Jami'**
+  String get cartTotal;
+
+  /// No description provided for @cartEstimateNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Summa taxminiy. Yakuniy summani xariddan keyin bozor narxlari bo\'yicha hisoblaymiz; narx ruxsat etilganidan oshsa — sizdan so\'raymiz.'**
+  String get cartEstimateNote;
+
+  /// No description provided for @cartMinimumShort.
+  ///
+  /// In uz, this message translates to:
+  /// **'Minimal buyurtmagacha {amount} yetmayapti'**
+  String cartMinimumShort(String amount);
+
+  /// No description provided for @cartMinimumRule.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotlarning minimal summasi — {amount}, yetkazib berish va xizmat haqisiz'**
+  String cartMinimumRule(String amount);
+
+  /// No description provided for @cartWhyUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval sotuvda yo\'q mahsulotlarni olib tashlang'**
+  String get cartWhyUnavailable;
+
+  /// No description provided for @cartWhyMinimum.
+  ///
+  /// In uz, this message translates to:
+  /// **'Minimal buyurtma — {amount}'**
+  String cartWhyMinimum(String amount);
+
+  /// No description provided for @cartAddMoreTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmaga qo\'shing'**
+  String get cartAddMoreTitle;
+
+  /// No description provided for @cartDeliveryTo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish:'**
+  String get cartDeliveryTo;
 }
 
 class _AppLocalizationsDelegate

@@ -684,7 +684,6 @@
       }
     }
   },
-  "cartEmpty": "Savat bo'sh",
   "cartAdded": "Savatga qo'shildi",
   "cartQuantity": "Miqdori",
   "cartQuantityFraction": "0 dan katta son: ko'pi bilan 4 xona va 3 kasr",
@@ -693,15 +692,7 @@
   "cartIncrease": "Ko'paytirish",
   "cartNote": "Yig'uvchi uchun izoh",
   "cartSubstitution": "Mahsulot bo'lmasa",
-  "cartSubtotal": "Taxminiy jami: {amount}",
-  "@cartSubtotal": {
-    "placeholders": {
-      "amount": {
-        "type": "String"
-      }
-    }
-  },
-  "cartLineEstimate": "≈ {amount}",
+  "cartLineEstimate": "≈ {amount}",
   "@cartLineEstimate": {
     "placeholders": {
       "amount": {
@@ -711,7 +702,6 @@
   },
   "cartLineUnavailable": "Hozir sotuvda yo'q",
   "cartUnavailableHint": "Sotuvda yo'q mahsulotlarni olib tashlang — ular bilan buyurtma berib bo'lmaydi",
-  "cartRemoveLine": "Savatdan olib tashlash",
   "cartSaving": "Saqlanmoqda",
   "errorCartItemAlreadyExists": "Bu mahsulot allaqachon savatda",
   "errorCartFull": "Savatda ko'pi bilan 100 ta mahsulot bo'lishi mumkin",
@@ -1770,5 +1760,70 @@
   "productSaved": "Savat yangilandi",
   "productAlreadyInCart": "Bu mahsulot savatda bor — o'zgartirib, saqlashingiz mumkin",
   "quantitySheetTitle": "Miqdor",
-  "quantitySheetDone": "Tayyor"
+  "quantitySheetDone": "Tayyor",
+  "cartUnitPrice": "{unit} uchun ≈ {price}",
+  "@cartUnitPrice": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "cartUnitPriceExact": "{unit} uchun {price}",
+  "@cartUnitPriceExact": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "cartRemoveTitle": "Savatdan olib tashlansinmi?",
+  "cartRemoveConfirm": "Olib tashlash",
+  "cartEmptyTitle": "Savat hozircha bo'sh",
+  "cartEmptyText": "Katalogdan mahsulot qo'shing — yig'uvchi ularni bozordan oladi, kuryer olib keladi.",
+  "cartGoods": "Mahsulotlar ({count})",
+  "@cartGoods": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cartDelivery": "Yetkazib berish",
+  "cartServiceFee": "Xizmat haqi",
+  "cartTotal": "Jami",
+  "cartEstimateNote": "Summa taxminiy. Yakuniy summani xariddan keyin bozor narxlari bo'yicha hisoblaymiz; narx ruxsat etilganidan oshsa — sizdan so'raymiz.",
+  "cartMinimumShort": "Minimal buyurtmagacha {amount} yetmayapti",
+  "@cartMinimumShort": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartMinimumRule": "Mahsulotlarning minimal summasi — {amount}, yetkazib berish va xizmat haqisiz",
+  "@cartMinimumRule": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartWhyUnavailable": "Avval sotuvda yo'q mahsulotlarni olib tashlang",
+  "cartWhyMinimum": "Minimal buyurtma — {amount}",
+  "@cartWhyMinimum": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartAddMoreTitle": "Buyurtmaga qo'shing",
+  "cartDeliveryTo": "Yetkazish:"
 }

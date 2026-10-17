@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/features/cart/data/cart_api.dart';
@@ -22,11 +23,12 @@ Map<String, Object?> cartLineJson({
   int total = 27600,
   String? note,
   String policy = 'allow_similar_substitution',
+  String? name,
 }) => <String, Object?>{
   'id': id,
   'product_id': productId,
-  'name_uz': unit == 'kg' ? 'Pomidor' : 'Non',
-  'name_ru': unit == 'kg' ? 'Помидоры' : 'Хлеб',
+  'name_uz': name ?? (unit == 'kg' ? 'Pomidor' : 'Non'),
+  'name_ru': name ?? (unit == 'kg' ? 'Помидоры' : 'Хлеб'),
   'unit_code': unit,
   'price_mode': priceMode,
   'image_url': null,
@@ -41,21 +43,60 @@ Map<String, Object?> cartLineJson({
 Map<String, Object?> cartJson(
   List<Map<String, Object?>> lines, {
   int? subtotal,
-}) => <String, Object?>{
-  'id': cartId,
-  'items': lines,
-  'item_count': lines.length,
-  'estimated_subtotal_uzs':
+  int? serviceFee,
+  String serviceFeeKind = 'final',
+  int? deliveryFee,
+  int? total,
+  int? minimum,
+  int? shortfall,
+}) {
+  final int sum =
       subtotal ??
       lines.fold<int>(
         0,
         (int sum, Map<String, Object?> line) =>
             sum + ((line['estimated_line_total_uzs'] as int?) ?? 0),
-      ),
-};
+      );
+  return <String, Object?>{
+    'id': cartId,
+    'items': lines,
+    'item_count': lines.length,
+    'estimated_subtotal_uzs': sum,
+    'service_fee_uzs': serviceFee,
+    'service_fee_kind': serviceFee == null ? null : serviceFeeKind,
+    'delivery_fee_uzs': deliveryFee,
+    'estimated_total_uzs':
+        total ??
+        (serviceFee != null && deliveryFee != null
+            ? sum + serviceFee + deliveryFee
+            : null),
+    'minimum_order_uzs': minimum,
+    'minimum_order_shortfall_uzs':
+        shortfall ?? (minimum == null ? null : max(0, minimum - sum)),
+  };
+}
 
-Cart cartOf(List<Map<String, Object?>> lines, {int? subtotal}) =>
-    CartApi.parseCart(cartJson(lines, subtotal: subtotal));
+Cart cartOf(
+  List<Map<String, Object?>> lines, {
+  int? subtotal,
+  int? serviceFee,
+  String serviceFeeKind = 'final',
+  int? deliveryFee,
+  int? total,
+  int? minimum,
+  int? shortfall,
+}) => CartApi.parseCart(
+  cartJson(
+    lines,
+    subtotal: subtotal,
+    serviceFee: serviceFee,
+    serviceFeeKind: serviceFeeKind,
+    deliveryFee: deliveryFee,
+    total: total,
+    minimum: minimum,
+    shortfall: shortfall,
+  ),
+);
 
 /// The cart in memory. It answers with [answer] when set — a test decides
 /// what the server says — or with [current], and records every call.

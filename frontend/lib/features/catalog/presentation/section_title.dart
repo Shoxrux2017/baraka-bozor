@@ -15,7 +15,9 @@ class SectionTitle extends StatelessWidget {
 
   final String title;
   final String seeAllKey;
-  final VoidCallback onSeeAll;
+
+  /// `null` leaves "Все" out.
+  final VoidCallback? onSeeAll;
 
   @override
   Widget build(BuildContext context) {
@@ -33,18 +35,19 @@ class SectionTitle extends StatelessWidget {
               ),
             ),
           ),
-          TextButton(
-            key: ValueKey<String>(seeAllKey),
-            style: TextButton.styleFrom(
-              foregroundColor: KitColors.primaryDark,
-              textStyle: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+          if (onSeeAll != null)
+            TextButton(
+              key: ValueKey<String>(seeAllKey),
+              style: TextButton.styleFrom(
+                foregroundColor: KitColors.primaryDark,
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
+              onPressed: onSeeAll,
+              child: Text(AppLocalizations.of(context).homeSeeAll),
             ),
-            onPressed: onSeeAll,
-            child: Text(AppLocalizations.of(context).homeSeeAll),
-          ),
         ],
       ),
     );

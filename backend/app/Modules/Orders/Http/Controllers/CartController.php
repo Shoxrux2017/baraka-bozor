@@ -6,15 +6,18 @@ namespace App\Modules\Orders\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EmptyBodyRequest;
+use App\Models\BusinessSettings;
 use App\Models\Cart;
 use App\Models\User;
 use App\Modules\Orders\Actions\ChangeCart;
+use App\Modules\Orders\CartCharges;
 use App\Modules\Orders\CartView;
 use App\Modules\Orders\CustomerCart;
 use App\Modules\Orders\Http\Requests\AddCartItemRequest;
 use App\Modules\Orders\Http\Requests\UpdateCartItemRequest;
 use App\Modules\Orders\Http\Resources\CartResource;
 use App\Modules\Settings\CustomerPriceCalculator;
+use App\Support\Money\Percentage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -53,7 +56,10 @@ final class CartController extends Controller
 
     private function cart(Cart $cart): CartResource
     {
-        return new CartResource(CartView::of($cart, CustomerPriceCalculator::current()));
+        $settings = BusinessSettings::current();
+        $view = CartView::of($cart, new CustomerPriceCalculator(Percentage::fromString($settings->markup_percent)));
+
+        return new CartResource($view, CartCharges::of($view, $settings));
     }
 
     private function customer(Request $request): User

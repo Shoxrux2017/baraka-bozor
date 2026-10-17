@@ -1251,3 +1251,20 @@ The Owner approved the drawing `kit/03-poisk-tovar.dc.html`: search on its own s
 4. **The product screen** follows the kit: a picture, the name, the `≈` price and the estimate's explanation, the description, then the substitution rule and the note that `docs/04` §6 puts on this screen, "Ещё в категории" (up to four products of the same category in the shop's order) and a bottom bar with the stepper and "В корзину". The stepper steps as the card does (`DL-80` item 2). The other-language name is dropped, because the search matches both languages anyway. A product the Customer can no longer see (`404`) shows that it is gone and leads to the catalog.
 5. **A product already in the cart** opens with its cart line: the quantity, the rule and the note. "Сохранить" changes that line and is active only when something changed, so the screen never creates a second line (`docs/04` §6). Tapping the quantity opens a sheet to type an exact amount, as the cart allows. An add that the server answers with `cart_item_already_exists` turns into this state with the server's values, and a line removed elsewhere turns the screen back to a new add. A cart refresh that leaves the line alone keeps the Customer's unsaved edits.
 6. **The product screen's header** carries only back, the title and the heart, as drawn; the way to the cart is the add's snackbar action, the cart bar of the lists, or back.
+
+## DL-84 — Cart and address, kit stage 4 (2026-10-17, Owner)
+
+The Owner approved the drawing `kit/04-korzina-adres.dc.html`.
+
+1. **"Добавьте к заказу" in the cart** shows the recommended products (`DL-78` item 2) not yet in the cart, and is absent when none is left. The cart has no flag of its own.
+2. **Google Maps takes the Customer's address**, replacing Yandex MapKit (interview 5.2, `DL-36`). The Customer either puts the pin on the map or types the address in words. A typed address is looked up and the pin placed there for the Customer to check; when nothing is found, the Customer places the pin. The pin stays required (`BR-CHK-002`), so the service area is still checked.
+3. **Couriers navigate with Yandex Navigator**, which works better in Uzbekistan and is free on their phones. The Courier's order shows the full address with "Открыть в Яндексе", a route to the pin, and "Скопировать адрес".
+4. **The Google Maps key** is created by the Owner in Google Cloud. Items 2 to 4 are built in stage 4b, which updates `docs/03`, `docs/04`, `docs/06` and `docs/07`; until then those documents still name Yandex MapKit.
+
+## DL-85 — The cart, kit stage 4a (2026-10-17, agent)
+
+1. **The cart answers what checkout would charge now**: the service fee by the current rule on the subtotal of the available lines, marked `estimate` when it is a percentage of an estimate; the delivery fee; their total with the subtotal; the minimum order and what is missing to reach it, `0` once reached. A field is `null` while its setting is unset (`BR-SET-002`); checkout stays the authority and refuses as before. The client shows these figures and sums nothing (`DL-37` (19)); the minimum's bar is drawn from them.
+
+2. **The cart's lines follow the kit**: a line steps as the card does (`DL-80` item 2), the quantity opens the exact-amount sheet, and a minus at the smallest step asks before removing the line (drawing 20); a line no longer sold is removed with one tap, which cannot be an accident. Tapping a line opens its product, where the rule and the note are changed (`DL-83` item 5); the cart's own line editor and its `?line=` link are gone. The rule shows on the line only when it is not the default, and the note when there is one.
+
+3. **The rest of the cart**: under the lines, the minimum's notice while the subtotal is short of it, then "Добавьте к заказу" — the home's "Рекомендуем" row without the products already in the cart, so an added product leaves the row for the lines — then the amounts, the delivery address with "Изменить", and at the bottom "≈ total | Оформить", inactive with its reason while a line is not sold or the minimum is not reached. The empty cart leads to the catalog; orders are a tab of the bottom bar.

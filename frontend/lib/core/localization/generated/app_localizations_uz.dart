@@ -1336,9 +1336,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get cartEmpty => 'Savat bo\'sh';
-
-  @override
   String get cartAdded => 'Savatga qo\'shildi';
 
   @override
@@ -1364,13 +1361,8 @@ class AppLocalizationsUz extends AppLocalizations {
   String get cartSubstitution => 'Mahsulot bo\'lmasa';
 
   @override
-  String cartSubtotal(String amount) {
-    return 'Taxminiy jami: $amount';
-  }
-
-  @override
   String cartLineEstimate(String amount) {
-    return '≈ $amount';
+    return '≈ $amount';
   }
 
   @override
@@ -1379,9 +1371,6 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get cartUnavailableHint =>
       'Sotuvda yo\'q mahsulotlarni olib tashlang — ular bilan buyurtma berib bo\'lmaydi';
-
-  @override
-  String get cartRemoveLine => 'Savatdan olib tashlash';
 
   @override
   String get cartSaving => 'Saqlanmoqda';
@@ -2739,4 +2728,70 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get quantitySheetDone => 'Tayyor';
+
+  @override
+  String cartUnitPrice(String unit, String price) {
+    return '$unit uchun ≈ $price';
+  }
+
+  @override
+  String cartUnitPriceExact(String unit, String price) {
+    return '$unit uchun $price';
+  }
+
+  @override
+  String get cartRemoveTitle => 'Savatdan olib tashlansinmi?';
+
+  @override
+  String get cartRemoveConfirm => 'Olib tashlash';
+
+  @override
+  String get cartEmptyTitle => 'Savat hozircha bo\'sh';
+
+  @override
+  String get cartEmptyText =>
+      'Katalogdan mahsulot qo\'shing — yig\'uvchi ularni bozordan oladi, kuryer olib keladi.';
+
+  @override
+  String cartGoods(int count) {
+    return 'Mahsulotlar ($count)';
+  }
+
+  @override
+  String get cartDelivery => 'Yetkazib berish';
+
+  @override
+  String get cartServiceFee => 'Xizmat haqi';
+
+  @override
+  String get cartTotal => 'Jami';
+
+  @override
+  String get cartEstimateNote =>
+      'Summa taxminiy. Yakuniy summani xariddan keyin bozor narxlari bo\'yicha hisoblaymiz; narx ruxsat etilganidan oshsa — sizdan so\'raymiz.';
+
+  @override
+  String cartMinimumShort(String amount) {
+    return 'Minimal buyurtmagacha $amount yetmayapti';
+  }
+
+  @override
+  String cartMinimumRule(String amount) {
+    return 'Mahsulotlarning minimal summasi — $amount, yetkazib berish va xizmat haqisiz';
+  }
+
+  @override
+  String get cartWhyUnavailable =>
+      'Avval sotuvda yo\'q mahsulotlarni olib tashlang';
+
+  @override
+  String cartWhyMinimum(String amount) {
+    return 'Minimal buyurtma — $amount';
+  }
+
+  @override
+  String get cartAddMoreTitle => 'Buyurtmaga qo\'shing';
+
+  @override
+  String get cartDeliveryTo => 'Yetkazish:';
 }

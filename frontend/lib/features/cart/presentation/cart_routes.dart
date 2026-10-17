@@ -15,7 +15,7 @@ final FeatureRoutes cartRoutes = FeatureRoutes(
       path: CartPaths.cart,
       name: 'cart',
       builder: (BuildContext context, GoRouterState state) =>
-          CartScreen(openLineId: state.uri.queryParameters['line']),
+          const CartScreen(),
     ),
   ],
 );

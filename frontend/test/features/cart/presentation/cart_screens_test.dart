@@ -3,12 +3,16 @@ import 'dart:async';
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
+import 'package:baraka_bozor/core/localization/failure_text.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/widgets/product_image.dart';
+import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
+import 'package:baraka_bozor/features/cart/presentation/cart_line_tile.dart';
 import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +23,7 @@ import '../../../support/app_harness.dart';
 import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_catalog_repository.dart';
+import '../../../support/fake_customer_repositories.dart';
 import '../../../support/in_memory_stores.dart';
 
 /// The cart of `docs/09` section 17 through the real router, catalog and
@@ -28,6 +33,7 @@ void main() {
   late FakeAuthRepository auth;
   late FakeCatalogRepository catalog;
   late FakeCartRepository cart;
+  late FakeAddressesRepository addresses;
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
@@ -56,6 +62,7 @@ void main() {
       ],
     );
     cart = FakeCartRepository();
+    addresses = FakeAddressesRepository();
   });
 
   Future<void> open(
@@ -77,6 +84,7 @@ void main() {
         repository: auth,
         catalog: catalog,
         cart: cart,
+        addresses: addresses,
         device: device,
       ),
     );
@@ -192,7 +200,7 @@ void main() {
         expect(cart.added, hasLength(1), reason: 'only the refused add');
         expect(cart.calls, contains('cart'), reason: 'asked for again');
         expect(find.byType(CartScreen), findsNothing);
-        expect(byKey('line-editor'), findsNothing);
+        expect(find.byType(BottomSheet), findsNothing);
         expect(find.text(l10n(tester).cartAdded), findsNothing);
       },
     );
@@ -286,7 +294,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(CartScreen), findsOneWidget, reason: 'not a second');
-        expect(byKey('line-editor'), findsNothing);
+        expect(find.byType(BottomSheet), findsNothing);
       },
     );
 
@@ -427,114 +435,226 @@ void main() {
   });
 
   group('the cart screen', () {
-    testWidgets(
-      'shows the lines and the subtotal as the server computed them',
-      (WidgetTester tester) async {
-        cart.current = cartOf(<Map<String, Object?>>[
-          cartLineJson(),
-          cartLineJson(
-            id: breadLine,
-            productId: breadProduct,
-            unit: 'piece',
-            quantity: '2',
-            available: false,
+    testWidgets('shows the lines as the server priced them', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(),
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '2',
+          available: false,
+        ),
+      ], subtotal: 99999);
+      await open(tester, at: '/customer/cart');
+      final AppLocalizations words = l10n(tester);
+
+      expect(byKey('cart-line-$tomatoLine'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('line-qty-$tomatoLine'),
+          matching: find.text('1,5 ${words.unitKg}'),
+        ),
+        findsOneWidget,
+        reason: 'with the decimal comma, without trailing zeros',
+      );
+      expect(
+        tester.widget<Text>(byKey('line-sum-$tomatoLine')).data,
+        words.cartLineEstimate(MoneyFormat.uzs(27600, AppLanguage.uz)),
+      );
+      expect(
+        find.text(
+          words.cartUnitPrice(
+            words.unitKg,
+            MoneyFormat.uzs(18400, AppLanguage.uz),
           ),
-        ], subtotal: 99999);
-        await open(tester, at: '/customer/cart');
-        final AppLocalizations words = l10n(tester);
+        ),
+        findsOneWidget,
+      );
+      expect(byKey('cart-line-unavailable-$breadLine'), findsOneWidget);
+      expect(byKey('remove-line-$breadLine'), findsOneWidget);
+      expect(
+        byKey('cart-line-$breadLine'),
+        findsNothing,
+        reason: 'an unavailable line is removed, not opened',
+      );
+      expect(find.text(words.cartUnavailableHint), findsOneWidget);
+      expect(
+        tester.widget<Text>(byKey('cart-subtotal')).data,
+        words.cartLineEstimate(MoneyFormat.uzs(99999, AppLanguage.uz)),
+        reason: 'the client never sums money',
+      );
+    });
 
-        expect(byKey('cart-line-$tomatoLine'), findsOneWidget);
+    testWidgets('a line is laid out as drawn: the sum and the stepper beside '
+        'the picture', (WidgetTester tester) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/cart', size: const Size(375, 812));
+
+      final Finder picture = find.descendant(
+        of: byKey('cart-line-$tomatoLine'),
+        matching: find.byType(ProductImage),
+      );
+      final Rect image = tester.getRect(picture);
+      final Rect sumBox = tester.getRect(byKey('line-sum-$tomatoLine'));
+      final Rect minus = tester.getRect(byKey('line-minus-$tomatoLine'));
+      final Rect plus = tester.getRect(byKey('line-plus-$tomatoLine'));
+      final Rect tile = tester.getRect(byKey('cart-line-$tomatoLine'));
+
+      expect(sumBox.left, greaterThanOrEqualTo(image.right));
+      expect(minus.left, greaterThanOrEqualTo(image.right));
+      expect(
+        plus.bottom,
+        lessThanOrEqualTo(tile.top + 84 + 1),
+        reason: 'the stepper sits level with the picture, not under it',
+      );
+      expect(plus.right, closeTo(tile.right, 1));
+    });
+
+    testWidgets('a line no longer sold has Remove at the right edge', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '2',
+          available: false,
+        ),
+      ]);
+      await open(
+        tester,
+        at: '/customer/cart',
+        size: const Size(375, 812),
+        device: const Locale('ru'),
+      );
+
+      final Finder tileFinder = find.byType(CartLineTile);
+      final Rect remove = tester.getRect(byKey('remove-line-$breadLine'));
+      final Rect tile = tester.getRect(tileFinder);
+      final Rect picture = tester.getRect(
+        find.descendant(of: tileFinder, matching: find.byType(ProductImage)),
+      );
+      expect(remove.right, closeTo(tile.right, 1));
+      expect(remove.left, greaterThanOrEqualTo(picture.right));
+      expect(
+        tester.getRect(byKey('cart-line-unavailable-$breadLine')).left,
+        greaterThanOrEqualTo(picture.right),
+      );
+    });
+
+    testWidgets('the amounts are flush to the right edge of their rows', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(
+        <Map<String, Object?>>[cartLineJson(total: 61410)],
+        subtotal: 61410,
+        serviceFee: 3000,
+        deliveryFee: 12000,
+        total: 76410,
+      );
+      await open(tester, at: '/customer/cart', size: const Size(375, 812));
+
+      final double edge = tester.getRect(byKey('cart-estimate-note')).right;
+      for (final String key in <String>[
+        'cart-subtotal',
+        'cart-delivery',
+        'cart-service-fee',
+        'cart-total',
+      ]) {
+        expect(tester.getRect(byKey(key)).right, closeTo(edge, 1), reason: key);
+      }
+    });
+
+    testWidgets('the estimate sign never wraps away from its amount', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      for (final Locale locale in <Locale>[Locale('uz'), Locale('ru')]) {
         expect(
-          find.text('1,5 ${words.unitKg}'),
-          findsOneWidget,
-          reason: 'with the decimal comma, without trailing zeros',
+          lookupAppLocalizations(locale).cartLineEstimate('x'),
+          '≈${String.fromCharCode(0xA0)}x',
         );
-        expect(
-          find.text(
-            words.cartLineEstimate(MoneyFormat.uzs(27600, AppLanguage.uz)),
-          ),
-          findsOneWidget,
-        );
-        expect(byKey('cart-line-unavailable-$breadLine'), findsOneWidget);
-        expect(find.text(words.cartUnavailableHint), findsOneWidget);
-        expect(
-          find.text(words.cartSubtotal(MoneyFormat.uzs(99999, AppLanguage.uz))),
-          findsOneWidget,
-          reason: 'the client never sums money',
-        );
-        expect(
-          tester.widget<ListTile>(byKey('cart-line-$breadLine')).onTap,
-          isNull,
-          reason: 'an unavailable line is removed, not changed',
-        );
-      },
-    );
+      }
+    });
 
-    testWidgets(
-      'an edit sends only what changed, and nothing when nothing did',
-      (WidgetTester tester) async {
-        cart.current = cartOf(<Map<String, Object?>>[
-          cartLineJson(note: 'Eski'),
-        ]);
-        await open(tester, at: '/customer/cart');
+    testWidgets('a step sends only the quantity', (WidgetTester tester) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson(note: 'Eski')]);
+      await open(tester, at: '/customer/cart');
+      cart.answer = cartOf(<Map<String, Object?>>[
+        cartLineJson(quantity: '2.000', total: 36800, note: 'Eski'),
+      ]);
 
-        await tapAndSettle(tester, byKey('cart-line-$tomatoLine'));
-        await tapAndSettle(tester, byKey('save-line'));
-        expect(cart.patches, isEmpty);
-        expect(byKey('line-editor'), findsNothing, reason: 'closed');
+      await tapAndSettle(tester, byKey('line-plus-$tomatoLine'));
 
-        await tapAndSettle(tester, byKey('cart-line-$tomatoLine'));
-        await tester.enterText(byKey('line-quantity'), '2');
-        await tester.enterText(byKey('line-note'), '');
-        cart.answer = cartOf(<Map<String, Object?>>[
-          cartLineJson(quantity: '2.000', total: 36800),
-        ]);
-        await tapAndSettle(tester, byKey('save-line'));
+      final CartLinePatch patch = cart.patches.single;
+      expect(patch.quantity, '2');
+      expect(patch.noteChanged, isFalse);
+      expect(patch.substitutionPolicy, isNull);
+      expect(
+        find.descendant(
+          of: byKey('line-qty-$tomatoLine'),
+          matching: find.text('2 ${l10n(tester).unitKg}'),
+        ),
+        findsOneWidget,
+      );
+    });
 
-        final CartLinePatch patch = cart.patches.single;
-        expect(patch.quantity, '2');
-        expect(patch.noteChanged, isTrue);
-        expect(patch.customerNote, isNull);
-        expect(patch.substitutionPolicy, isNull);
-        expect(byKey('line-editor'), findsNothing);
-        expect(find.text('2 ${l10n(tester).unitKg}'), findsOneWidget);
-      },
-    );
-
-    testWidgets('the editor stays while its change runs', (
+    testWidgets("a line's buttons wait while its change runs", (
       WidgetTester tester,
     ) async {
       cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
       await open(tester, at: '/customer/cart');
-      await tapAndSettle(tester, byKey('cart-line-$tomatoLine'));
-      await tester.enterText(byKey('line-quantity'), '2');
+      bool active(String key) =>
+          (tester.widget(byKey(key)) is IconButton
+              ? tester.widget<IconButton>(byKey(key)).onPressed
+              : tester.widget<InkWell>(byKey(key)).onTap) !=
+          null;
+      expect(active('line-minus-$tomatoLine'), isTrue);
+      expect(active('line-plus-$tomatoLine'), isTrue);
+      expect(active('line-qty-$tomatoLine'), isTrue);
+
       final Completer<void> hold = Completer<void>();
       cart
         ..hold = hold
         ..answer = cartOf(<Map<String, Object?>>[
           cartLineJson(quantity: '2.000', total: 36800),
         ]);
+      await tester.tap(byKey('line-plus-$tomatoLine'));
+      await tester.pump();
 
-      await tester.tap(byKey('save-line'));
-      await tester.pump();
-      await tester.drag(byKey('line-editor'), const Offset(0, 600));
-      await tester.pump();
-      await tester.binding.handlePopRoute();
-      await tester.pump();
-      expect(
-        byKey('line-editor'),
-        findsOneWidget,
-        reason: 'neither a drag nor back closes it',
-      );
+      expect(active('line-minus-$tomatoLine'), isFalse);
+      expect(active('line-plus-$tomatoLine'), isFalse);
+      expect(active('line-qty-$tomatoLine'), isFalse);
 
       cart.hold = null;
       hold.complete();
       await tester.pumpAndSettle();
       expect(
-        byKey('line-editor'),
-        findsNothing,
-        reason: 'it closes with the answer',
+        active('line-plus-$tomatoLine'),
+        isTrue,
+        reason: 'with the answer',
       );
+    });
+
+    testWidgets('two quick taps send one change', (WidgetTester tester) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/cart');
+      final Completer<void> hold = Completer<void>();
+      cart.hold = hold;
+
+      await tester.tap(byKey('line-plus-$tomatoLine'));
+      await tester.pump();
+      await tester.tap(byKey('line-plus-$tomatoLine'), warnIfMissed: false);
+      await tester.pump();
+
+      expect(cart.patches, hasLength(1));
+      cart.hold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
     });
 
     testWidgets('a whole-unit line that kept its decimals is set anew', (
@@ -545,15 +665,240 @@ void main() {
       ]);
       await open(tester, at: '/customer/cart');
 
-      await tapAndSettle(tester, byKey('cart-line-$tomatoLine'));
+      expect(
+        tester.widget<IconButton>(byKey('line-minus-$tomatoLine')).onPressed,
+        isNull,
+      );
+      expect(
+        tester.widget<IconButton>(byKey('line-plus-$tomatoLine')).onPressed,
+        isNull,
+      );
 
+      await tapAndSettle(tester, byKey('line-qty-$tomatoLine'));
       expect(
         tester.widget<TextFormField>(byKey('line-quantity')).controller!.text,
         isEmpty,
       );
-      await tapAndSettle(tester, byKey('save-line'));
-      expect(find.text(l10n(tester).cartQuantityWhole), findsOneWidget);
+      cart.answer = cartOf(<Map<String, Object?>>[
+        cartLineJson(unit: 'piece', quantity: '2'),
+      ]);
+      await tester.enterText(byKey('line-quantity'), '2');
+      await tapAndSettle(tester, byKey('quantity-done'));
+
+      expect(cart.patches.single.quantity, '2');
+    });
+
+    testWidgets('minus at the smallest step asks first', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '1',
+          priceMode: 'fixed',
+          price: 4000,
+          total: 4000,
+        ),
+      ]);
+      await open(tester, at: '/customer/cart');
+
+      await tapAndSettle(tester, byKey('line-minus-$breadLine'));
+      expect(find.text(l10n(tester).cartRemoveTitle), findsOneWidget);
+      await tapAndSettle(tester, byKey('remove-cancel'));
+      expect(cart.calls.where((String c) => c.startsWith('remove')), isEmpty);
+      expect(byKey('remove-confirm'), findsNothing);
+
+      cart.answer = cartOf(<Map<String, Object?>>[]);
+      await tapAndSettle(tester, byKey('line-minus-$breadLine'));
+      await tapAndSettle(tester, byKey('remove-confirm'));
+      expect(cart.calls.last, 'remove:$breadLine');
+    });
+
+    testWidgets('minus above the step changes the quantity', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '2',
+          priceMode: 'fixed',
+          price: 4000,
+          total: 8000,
+        ),
+      ]);
+      await open(tester, at: '/customer/cart');
+
+      await tapAndSettle(tester, byKey('line-minus-$breadLine'));
+
+      expect(cart.patches.single.quantity, '1');
+      expect(find.text(l10n(tester).cartRemoveTitle), findsNothing);
+    });
+
+    testWidgets('the quantity opens the exact-amount sheet', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/cart');
+      cart.answer = cartOf(<Map<String, Object?>>[
+        cartLineJson(quantity: '2.250', total: 41400),
+      ]);
+
+      await tapAndSettle(tester, byKey('line-qty-$tomatoLine'));
+      await tester.enterText(byKey('line-quantity'), '2,25');
+      await tapAndSettle(tester, byKey('quantity-done'));
+
+      expect(cart.patches.single.quantity, '2.25');
+    });
+
+    testWidgets('confirming the same amount sends no change', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/cart');
+
+      await tapAndSettle(tester, byKey('line-qty-$tomatoLine'));
+      await tapAndSettle(tester, byKey('quantity-done'));
+
       expect(cart.patches, isEmpty);
+      expect(byKey('line-quantity'), findsNothing, reason: 'the sheet closed');
+    });
+
+    testWidgets('a remove sheet stays attached when an earlier line leaves', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          id: tomatoLine,
+          productId: tomatoProduct,
+          available: false,
+        ),
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '1',
+          priceMode: 'fixed',
+          price: 4000,
+          total: 4000,
+        ),
+      ]);
+      await open(tester, at: '/customer/cart');
+
+      final Completer<void> hold = Completer<void>();
+      cart.hold = hold;
+      await tester.tap(byKey('remove-line-$tomatoLine'));
+      await tester.pump();
+      await tester.tap(byKey('line-minus-$breadLine'));
+      await tester.pumpAndSettle();
+      expect(byKey('remove-confirm'), findsOneWidget);
+
+      cart
+        ..hold = null
+        ..answer = cartOf(<Map<String, Object?>>[
+          cartLineJson(
+            id: breadLine,
+            productId: breadProduct,
+            unit: 'piece',
+            quantity: '1',
+            priceMode: 'fixed',
+            price: 4000,
+            total: 4000,
+          ),
+        ]);
+      hold.complete();
+      await tester.pumpAndSettle();
+      await tapAndSettle(tester, byKey('remove-confirm'));
+
+      expect(cart.calls, contains('remove:$breadLine'));
+    });
+
+    testWidgets('an available line opens its product', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/cart');
+
+      await tapAndSettle(tester, byKey('cart-line-$tomatoLine'));
+
+      expect(
+        GoRouter.of(anywhere(tester))
+            .routerDelegate
+            .currentConfiguration
+            .last
+            .matchedLocation,
+        '/customer/products/$tomatoProduct',
+      );
+    });
+
+    testWidgets('the rule and the note show only when set', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/cart');
+      expect(byKey('line-rule-$tomatoLine'), findsNothing);
+      expect(byKey('line-note-$tomatoLine'), findsNothing);
+
+      cart.answer = cartOf(<Map<String, Object?>>[
+        cartLineJson(policy: 'contact_before_substitution', note: 'без вмятин'),
+      ]);
+      GoRouter.of(anywhere(tester)).pop();
+      await tester.pumpAndSettle();
+      GoRouter.of(anywhere(tester)).push('/customer/cart');
+      await tester.pumpAndSettle();
+
+      expect(byKey('line-rule-$tomatoLine'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('line-note-$tomatoLine'),
+          matching: find.text('без вмятин'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a step on a line gone elsewhere reloads the cart', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '1',
+          priceMode: 'fixed',
+          price: 4000,
+          total: 4000,
+        ),
+      ]);
+      await open(tester, at: '/customer/cart');
+      const ApiRefusal gone = ApiRefusal(
+        ApiError(status: 404, code: 'resource_not_found'),
+      );
+
+      cart
+        ..calls.clear()
+        ..failure = gone;
+      await tapAndSettle(tester, byKey('line-plus-$breadLine'));
+      expect(
+        find.text(failureText(l10n(tester), gone)!),
+        findsOneWidget,
+        reason: 'said, not crashed',
+      );
+      expect(cart.calls, contains('cart'), reason: 'asked for again');
+      expect(tester.takeException(), isNull);
+
+      cart
+        ..calls.clear()
+        ..failure = gone;
+      await tapAndSettle(tester, byKey('line-minus-$breadLine'));
+      await tapAndSettle(tester, byKey('remove-confirm'));
+      expect(byKey('remove-confirm'), findsNothing, reason: 'no sheet stays');
+      expect(cart.calls, contains('cart'));
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('the cart is asked for again whenever it opens', (
@@ -588,17 +933,36 @@ void main() {
       expect(byKey('active-mode'), findsOneWidget);
     });
 
-    testWidgets('a line is removed, and an empty cart says so', (
-      WidgetTester tester,
-    ) async {
-      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+    testWidgets('a line no longer sold is removed at once, and an empty cart '
+        'says so', (WidgetTester tester) async {
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '2',
+          available: false,
+        ),
+      ]);
       await open(tester, at: '/customer/cart');
 
       cart.answer = cartOf(<Map<String, Object?>>[]);
-      await tapAndSettle(tester, byKey('remove-line-$tomatoLine'));
+      await tapAndSettle(tester, byKey('remove-line-$breadLine'));
 
-      expect(cart.calls, contains('remove:$tomatoLine'));
+      expect(cart.calls, contains('remove:$breadLine'));
+      expect(byKey('remove-confirm'), findsNothing, reason: 'no sheet');
       expect(byKey('cart-empty'), findsOneWidget);
+      expect(find.text(l10n(tester).cartEmptyTitle), findsOneWidget);
+
+      await tapAndSettle(tester, byKey('cart-to-catalog'));
+      expect(
+        GoRouter.of(anywhere(tester))
+            .routerDelegate
+            .currentConfiguration
+            .last
+            .matchedLocation,
+        '/customer',
+      );
     });
 
     testWidgets('the cart opens from the catalog home and counts its lines', (
@@ -621,6 +985,311 @@ void main() {
       );
       await tapAndSettle(tester, byKey('open-cart'));
       expect(byKey('cart-lines'), findsOneWidget);
+    });
+  });
+
+  group("the cart's amounts, minimum, add-more, address and footer", () {
+    String sum(int amount) => MoneyFormat.uzs(amount, AppLanguage.uz);
+
+    bool checkoutActive(WidgetTester tester) =>
+        tester.widget<FilledButton>(byKey('go-to-checkout')).onPressed != null;
+
+    String path(WidgetTester tester) =>
+        GoRouter.of(anywhere(tester))
+            .routerDelegate
+            .currentConfiguration
+            .last
+            .matchedLocation;
+
+    testWidgets("the amounts are the server's", (WidgetTester tester) async {
+      cart.current = cartOf(
+        <Map<String, Object?>>[cartLineJson(total: 61410)],
+        subtotal: 61410,
+        serviceFee: 3000,
+        deliveryFee: 12000,
+        total: 76410,
+      );
+      await open(tester, at: '/customer/cart');
+      final AppLocalizations words = l10n(tester);
+
+      String shown(String key) => tester.widget<Text>(byKey(key)).data!;
+      expect(shown('cart-subtotal'), '≈\u00A0${sum(61410)}');
+      expect(shown('cart-delivery'), sum(12000));
+      expect(shown('cart-service-fee'), sum(3000));
+      expect(shown('cart-total'), '≈\u00A0${sum(76410)}');
+      expect(byKey('cart-estimate-note'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('go-to-checkout'),
+          matching: find.text('≈\u00A0${sum(76410)}'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('go-to-checkout'),
+          matching: find.text(words.checkoutGo),
+        ),
+        findsOneWidget,
+      );
+
+      cart.current = cartOf(
+        <Map<String, Object?>>[cartLineJson(total: 61410)],
+        subtotal: 61410,
+        serviceFee: 1380,
+        serviceFeeKind: 'estimate',
+        deliveryFee: 12000,
+      );
+      GoRouter.of(anywhere(tester)).pop();
+      await tester.pumpAndSettle();
+      GoRouter.of(anywhere(tester)).push('/customer/cart');
+      await tester.pumpAndSettle();
+      expect(shown('cart-service-fee'), '≈\u00A0${sum(1380)}');
+    });
+
+    testWidgets('unset settings hide their rows and keep checkout open', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/cart');
+
+      expect(byKey('cart-subtotal'), findsOneWidget);
+      expect(byKey('cart-delivery'), findsNothing);
+      expect(byKey('cart-service-fee'), findsNothing);
+      expect(byKey('cart-total'), findsNothing);
+      expect(byKey('cart-minimum'), findsNothing);
+      expect(byKey('cart-why'), findsNothing);
+      expect(
+        find.descendant(
+          of: byKey('go-to-checkout'),
+          matching: find.text(l10n(tester).checkoutGo),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('go-to-checkout'),
+          matching: find.textContaining('≈'),
+        ),
+        findsNothing,
+      );
+      expect(checkoutActive(tester), isTrue);
+
+      await tapAndSettle(tester, byKey('go-to-checkout'));
+      expect(path(tester), '/customer/checkout');
+    });
+
+    testWidgets('a short subtotal shows the minimum and closes checkout', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(
+        <Map<String, Object?>>[cartLineJson(total: 14835)],
+        subtotal: 14835,
+        minimum: 50000,
+        shortfall: 35165,
+      );
+      await open(tester, at: '/customer/cart');
+      final AppLocalizations words = l10n(tester);
+
+      expect(
+        find.descendant(
+          of: byKey('cart-minimum'),
+          matching: find.text(words.cartMinimumShort('≈\u00A0${sum(35165)}')),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('cart-minimum'),
+          matching: find.text(words.cartMinimumRule(sum(50000))),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<LinearProgressIndicator>(byKey('cart-minimum-bar')).value,
+        (50000 - 35165) / 50000,
+      );
+      expect(
+        tester.widget<Text>(byKey('cart-why')).data,
+        words.cartWhyMinimum(sum(50000)),
+      );
+      expect(checkoutActive(tester), isFalse);
+    });
+
+    testWidgets('the answer that reaches the minimum opens checkout', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(
+        <Map<String, Object?>>[cartLineJson(total: 14835)],
+        subtotal: 14835,
+        minimum: 50000,
+        shortfall: 35165,
+      );
+      await open(tester, at: '/customer/cart');
+      expect(checkoutActive(tester), isFalse);
+
+      cart.answer = cartOf(
+        <Map<String, Object?>>[cartLineJson(quantity: '3.000', total: 55200)],
+        subtotal: 55200,
+        minimum: 50000,
+        shortfall: 0,
+      );
+      await tapAndSettle(tester, byKey('line-plus-$tomatoLine'));
+
+      expect(byKey('cart-minimum'), findsNothing);
+      expect(byKey('cart-why'), findsNothing);
+      expect(checkoutActive(tester), isTrue);
+    });
+
+    testWidgets('a line no longer sold closes checkout with its reason', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(),
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '2',
+          available: false,
+        ),
+      ]);
+      await open(tester, at: '/customer/cart');
+
+      expect(
+        tester.widget<Text>(byKey('cart-why')).data,
+        l10n(tester).cartWhyUnavailable,
+      );
+      expect(checkoutActive(tester), isFalse);
+    });
+
+    testWidgets('a cart with nothing sold shows no fees and no total', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(
+        <Map<String, Object?>>[cartLineJson(available: false)],
+        serviceFee: 5000,
+        deliveryFee: 10000,
+        total: 15000,
+      );
+      await open(tester, at: '/customer/cart');
+
+      expect(byKey('cart-delivery'), findsNothing);
+      expect(byKey('cart-service-fee'), findsNothing);
+      expect(byKey('cart-total'), findsNothing);
+      expect(
+        find.descendant(
+          of: byKey('go-to-checkout'),
+          matching: find.textContaining('≈'),
+        ),
+        findsNothing,
+      );
+      expect(checkoutActive(tester), isFalse);
+      expect(byKey('cart-why'), findsOneWidget);
+    });
+
+    testWidgets('Добавьте к заказу leaves out what is in the cart', (
+      WidgetTester tester,
+    ) async {
+      const String third = '0192f0a0-0000-7000-8000-00000000cb03';
+      catalog = FakeCatalogRepository(
+        categories: <CatalogCategory>[catalogCategory()],
+        products: <CatalogProduct>[
+          catalogProduct(id: tomatoProduct),
+          catalogProduct(
+            id: breadProduct,
+            nameUz: 'Non',
+            unitCode: UnitCode.piece,
+          ),
+          catalogProduct(id: third, nameUz: 'Olma'),
+        ],
+      )..featuredIds = <String>{tomatoProduct, breadProduct, third};
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/cart');
+
+      Finder card(String id) =>
+          find.descendant(of: byKey('cart-add-more'), matching: byKey(id));
+      expect(card(tomatoProduct), findsNothing);
+      expect(card(breadProduct), findsOneWidget);
+      expect(card(third), findsOneWidget);
+      expect(find.text(l10n(tester).cartAddMoreTitle), findsOneWidget);
+      expect(byKey('open-recommended'), findsNothing, reason: 'no "Все"');
+
+      cart.answer = cartOf(<Map<String, Object?>>[
+        cartLineJson(),
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '1',
+        ),
+      ]);
+      await tapAndSettle(tester, byKey('add-$breadProduct'));
+
+      expect(cart.added.single.productId, breadProduct);
+      expect(card(breadProduct), findsNothing);
+      expect(card(third), findsOneWidget);
+
+      cart.answer = cartOf(<Map<String, Object?>>[
+        cartLineJson(),
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '1',
+        ),
+        cartLineJson(
+          id: '0192f0a0-0000-7000-8000-00000000ca13',
+          productId: third,
+        ),
+      ]);
+      await tapAndSettle(tester, byKey('add-$third'));
+      expect(byKey('cart-add-more'), findsNothing);
+    });
+
+    testWidgets('the address card shows and changes the delivery address', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/cart');
+      await tester.ensureVisible(byKey('cart-address'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: byKey('cart-address'),
+          matching: find.textContaining('Uy'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('cart-address'),
+          matching: find.text('Amir Temur, 12'),
+        ),
+        findsOneWidget,
+      );
+      await tapAndSettle(tester, byKey('cart-address-change'));
+      expect(byKey('delivery-address-sheet'), findsOneWidget);
+    });
+
+    testWidgets('with no address the card offers to add one', (
+      WidgetTester tester,
+    ) async {
+      addresses.rows = <Address>[];
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/cart');
+      await tester.ensureVisible(byKey('cart-address'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: byKey('cart-address'),
+          matching: find.text(l10n(tester).deliveryAddressAdd),
+        ),
+        findsOneWidget,
+      );
+      expect(byKey('cart-address-change'), findsNothing);
     });
   });
 
@@ -708,9 +1377,139 @@ void main() {
         GoRouter.of(anywhere(tester)).push('/customer/cart');
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
-        await tapAndSettle(tester, byKey('cart-line-$tomatoLine'));
+        await tapAndSettle(tester, byKey('line-qty-$tomatoLine'));
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets(
+      'the cart lines, the empty cart and the remove sheet hold at 320 wide '
+      'with large text (${language.languageCode})',
+      (WidgetTester tester) async {
+        cart.current = cartOf(<Map<String, Object?>>[
+          cartLineJson(
+            quantity: '9999.999',
+            total: 99999999,
+            note: List<String>.filled(300, 'n').join(),
+            policy: 'contact_before_substitution',
+          ),
+          cartLineJson(
+            id: breadLine,
+            productId: breadProduct,
+            unit: 'piece',
+            quantity: '1',
+            priceMode: 'fixed',
+            price: 4000,
+            total: 4000,
+          ),
+          cartLineJson(
+            id: '0192f0a0-0000-7000-8000-00000000ca13',
+            productId: '0192f0a0-0000-7000-8000-00000000cb03',
+            unit: 'piece',
+            quantity: '2',
+            available: false,
+          ),
+        ]);
+        await open(
+          tester,
+          at: '/customer/cart',
+          size: const Size(320, 640),
+          textScale: 2,
+          device: language,
+        );
+        expect(tester.takeException(), isNull);
+
+        // The lines no longer all fit above the footer: scroll to the second.
+        await tester.scrollUntilVisible(
+          byKey('line-minus-$breadLine'),
+          200,
+          scrollable: find.descendant(
+            of: byKey('cart-lines'),
+            matching: find.byType(Scrollable),
+          ),
+        );
+        await tapAndSettle(tester, byKey('line-minus-$breadLine'));
+        expect(byKey('remove-confirm'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tapAndSettle(tester, byKey('remove-cancel'));
+
+        cart.answer = cartOf(<Map<String, Object?>>[]);
+        // The lines no longer all fit above the footer: scroll to the last.
+        await tester.scrollUntilVisible(
+          byKey('remove-line-0192f0a0-0000-7000-8000-00000000ca13'),
+          200,
+          scrollable: find.descendant(
+            of: byKey('cart-lines'),
+            matching: find.byType(Scrollable),
+          ),
+        );
+        await tapAndSettle(
+          tester,
+          byKey('remove-line-0192f0a0-0000-7000-8000-00000000ca13'),
+        );
+        expect(byKey('cart-empty'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('the cart holds at the extremes (${language.languageCode})', (
+      WidgetTester tester,
+    ) async {
+      // The empty cart, the unavailable line and the short cart each hold.
+      for (final Cart next in <Cart>[
+        cartOf(<Map<String, Object?>>[]),
+        cartOf(
+          <Map<String, Object?>>[
+            cartLineJson(),
+            cartLineJson(
+              id: breadLine,
+              productId: breadProduct,
+              unit: 'piece',
+              quantity: '2',
+              available: false,
+            ),
+          ],
+          serviceFee: 3000,
+          deliveryFee: 12000,
+        ),
+        cartOf(
+          <Map<String, Object?>>[cartLineJson(total: 14835)],
+          subtotal: 14835,
+          minimum: 50000,
+          shortfall: 35165,
+        ),
+        cartOf(
+          <Map<String, Object?>>[
+            cartLineJson(
+              name: List<String>.filled(60, 'N').join(),
+              quantity: '9999.999',
+              total: 99999999,
+              note: List<String>.filled(300, 'n').join(),
+              policy: 'contact_before_substitution',
+            ),
+          ],
+          subtotal: 99999999,
+          serviceFee: 99999999,
+          serviceFeeKind: 'estimate',
+          deliveryFee: 99999999,
+          total: 99999999,
+        ),
+      ]) {
+        cart.current = next;
+        await open(
+          tester,
+          at: '/customer/cart',
+          size: const Size(320, 640),
+          textScale: 2,
+          device: language,
+        );
+        expect(tester.takeException(), isNull);
+        if (next.lines.isNotEmpty) {
+          await tester.drag(byKey('cart-lines'), const Offset(0, -3000));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+        }
+      }
+    });
   }
 }
