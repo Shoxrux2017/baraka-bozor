@@ -13,6 +13,97 @@ import '../../../support/fake_http_client_adapter.dart';
 
 /// The cart's data source against `docs/09-api-contracts.md` section 17.
 void main() {
+  group('charges', () {
+    final List<Map<String, Object?>> lines = <Map<String, Object?>>[
+      cartLineJson(),
+    ];
+
+    test('the six figures are read', () {
+      final Cart cart = CartApi.parseCart(
+        cartJson(
+          lines,
+          subtotal: 27600,
+          serviceFee: 1380,
+          serviceFeeKind: 'estimate',
+          deliveryFee: 12000,
+          minimum: 50000,
+        ),
+      );
+
+      expect(cart.serviceFeeUzs, 1380);
+      expect(cart.serviceFeeIsEstimate, isTrue);
+      expect(cart.deliveryFeeUzs, 12000);
+      expect(cart.estimatedTotalUzs, 40980);
+      expect(cart.minimumOrderUzs, 50000);
+      expect(cart.minimumShortfallUzs, 22400);
+      expect(cart.belowMinimum, isTrue);
+      expect(cart.canCheckout, isFalse);
+    });
+
+    test('a final fee is not an estimate', () {
+      final Cart cart = CartApi.parseCart(
+        cartJson(lines, serviceFee: 1000, deliveryFee: 0, minimum: 100),
+      );
+      expect(cart.serviceFeeIsEstimate, isFalse);
+      expect(cart.belowMinimum, isFalse);
+      expect(cart.canCheckout, isTrue);
+    });
+
+    test('unset settings read as null', () {
+      final Cart cart = CartApi.parseCart(cartJson(lines));
+      expect(cart.serviceFeeUzs, isNull);
+      expect(cart.serviceFeeIsEstimate, isFalse);
+      expect(cart.deliveryFeeUzs, isNull);
+      expect(cart.estimatedTotalUzs, isNull);
+      expect(cart.minimumOrderUzs, isNull);
+      expect(cart.minimumShortfallUzs, isNull);
+      expect(cart.canCheckout, isTrue);
+    });
+
+    test('availability decides the count and the checkout', () {
+      final Cart cart = CartApi.parseCart(
+        cartJson(<Map<String, Object?>>[
+          cartLineJson(),
+          cartLineJson(id: breadLine, available: false),
+        ]),
+      );
+      expect(cart.availableCount, 1);
+      expect(cart.hasUnavailable, isTrue);
+      expect(cart.canCheckout, isFalse);
+      final Cart empty = CartApi.parseCart(cartJson(<Map<String, Object?>>[]));
+      expect(empty.canCheckout, isFalse);
+    });
+
+    test('charges off the contract are refused', () {
+      final Map<String, Object?> base = cartJson(
+        lines,
+        subtotal: 27600,
+        serviceFee: 1380,
+        deliveryFee: 12000,
+        minimum: 50000,
+      );
+      for (final Map<String, Object?> broken in <Map<String, Object?>>[
+        <String, Object?>{...base, 'service_fee_uzs': null},
+        <String, Object?>{...base, 'service_fee_kind': null},
+        <String, Object?>{...base, 'service_fee_kind': 'free'},
+        <String, Object?>{...base, 'delivery_fee_uzs': null},
+        <String, Object?>{...base, 'estimated_total_uzs': null},
+        <String, Object?>{...base, 'delivery_fee_uzs': -1},
+        <String, Object?>{...base, 'service_fee_uzs': -1},
+        <String, Object?>{...base, 'estimated_total_uzs': -1},
+        <String, Object?>{...base, 'minimum_order_uzs': -1},
+        <String, Object?>{...base, 'minimum_order_uzs': null},
+        <String, Object?>{...base, 'minimum_order_shortfall_uzs': 50001},
+      ]) {
+        expect(
+          () => CartApi.parseCart(broken),
+          throwsA(isA<FormatException>()),
+          reason: '$broken',
+        );
+      }
+    });
+  });
+
   group('parsing', () {
     test('lines in both units, available or not', () {
       final Cart cart = CartApi.parseCart(

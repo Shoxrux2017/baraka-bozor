@@ -11,13 +11,37 @@ final class Cart {
     required this.id,
     required this.lines,
     required this.estimatedSubtotalUzs,
+    required this.serviceFeeUzs,
+    required this.serviceFeeIsEstimate,
+    required this.deliveryFeeUzs,
+    required this.estimatedTotalUzs,
+    required this.minimumOrderUzs,
+    required this.minimumShortfallUzs,
   });
 
   final String id;
   final List<CartLine> lines;
   final int estimatedSubtotalUzs;
 
+  /// What checkout would charge, as the server computes it; each is `null`
+  /// while its setting is not filled in.
+  final int? serviceFeeUzs;
+  final bool serviceFeeIsEstimate;
+  final int? deliveryFeeUzs;
+  final int? estimatedTotalUzs;
+  final int? minimumOrderUzs;
+  final int? minimumShortfallUzs;
+
   int get itemCount => lines.length;
+
+  int get availableCount =>
+      lines.where((CartLine line) => line.isAvailable).length;
+
+  bool get hasUnavailable => availableCount != lines.length;
+
+  bool get belowMinimum => (minimumShortfallUzs ?? 0) > 0;
+
+  bool get canCheckout => lines.isNotEmpty && !hasUnavailable && !belowMinimum;
 
   /// The line of [id], if the cart holds it.
   CartLine? line(String id) {

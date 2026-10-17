@@ -110,10 +110,46 @@ class CartApi {
     if (subtotal < 0) {
       throw const FormatException('the subtotal is negative');
     }
+    final int? serviceFee = json.nullableInteger('service_fee_uzs');
+    final String? kind = json.nullableString('service_fee_kind');
+    final int? deliveryFee = json.nullableInteger('delivery_fee_uzs');
+    final int? total = json.nullableInteger('estimated_total_uzs');
+    final int? minimum = json.nullableInteger('minimum_order_uzs');
+    final int? shortfall = json.nullableInteger('minimum_order_shortfall_uzs');
+    if ((serviceFee == null) != (kind == null)) {
+      throw const FormatException('the service fee and its kind go together');
+    }
+    if (kind != null && kind != 'final' && kind != 'estimate') {
+      throw FormatException('service_fee_kind is not known: $kind');
+    }
+    if ((total != null) != (serviceFee != null && deliveryFee != null)) {
+      throw const FormatException('the total needs both fees, and only them');
+    }
+    if ((shortfall == null) != (minimum == null)) {
+      throw const FormatException('the minimum and its shortfall go together');
+    }
+    if (<int?>[
+      serviceFee,
+      deliveryFee,
+      total,
+      minimum,
+      shortfall,
+    ].any((int? amount) => amount != null && amount < 0)) {
+      throw const FormatException('a charge is negative');
+    }
+    if (shortfall != null && minimum != null && shortfall > minimum) {
+      throw const FormatException('the shortfall is more than the minimum');
+    }
     return Cart(
       id: json.uuid('id'),
       lines: lines,
       estimatedSubtotalUzs: subtotal,
+      serviceFeeUzs: serviceFee,
+      serviceFeeIsEstimate: kind == 'estimate',
+      deliveryFeeUzs: deliveryFee,
+      estimatedTotalUzs: total,
+      minimumOrderUzs: minimum,
+      minimumShortfallUzs: shortfall,
     );
   }
 
