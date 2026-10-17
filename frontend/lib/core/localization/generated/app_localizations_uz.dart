@@ -783,7 +783,45 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get addressMapHint =>
-      'Xaritani suring: belgi eshigingiz ustida tursin';
+      'Xaritani suring: belgi uyingiz kirish joyida tursin';
+
+  @override
+  String get addressPointTitle => 'Yetkazish nuqtasi';
+
+  @override
+  String get addressSearchHint => 'Yoki manzilni yozing: ko\'cha, uy';
+
+  @override
+  String get addressSearchFound =>
+      'Belgini tekshiring: kuryer aynan unga keladi';
+
+  @override
+  String get addressPointText =>
+      'Kuryer belgiga keladi. Xonadon, podyezd va mo\'ljalni keyingi qadamda kiritasiz.';
+
+  @override
+  String get addressSearchNotFound =>
+      'Xaritada bunday manzil topilmadi. Xaritani surib, belgini uyingizga o\'zingiz qo\'ying.';
+
+  @override
+  String get addressSearchUnavailable =>
+      'Manzil qidiruvi hozir ishlamayapti. Xaritani surib, belgini o\'zingiz qo\'ying.';
+
+  @override
+  String get addressWordsKept => 'Yozgan manzilingizni kuryer uchun saqlaymiz';
+
+  @override
+  String get addressMyLocation => 'Men qayerdaman';
+
+  @override
+  String get addressLocationFailed =>
+      'Joylashuvingizni aniqlab bo\'lmadi. Xaritani o\'zingiz suring.';
+
+  @override
+  String get addressSearchClear => 'Tozalash';
+
+  @override
+  String get addressPointConfirm => 'Nuqtani tasdiqlash';
 
   @override
   String get addressMapUnavailable =>

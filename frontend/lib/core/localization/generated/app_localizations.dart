@@ -1547,8 +1547,74 @@ abstract class AppLocalizations {
   /// No description provided for @addressMapHint.
   ///
   /// In uz, this message translates to:
-  /// **'Xaritani suring: belgi eshigingiz ustida tursin'**
+  /// **'Xaritani suring: belgi uyingiz kirish joyida tursin'**
   String get addressMapHint;
+
+  /// No description provided for @addressPointTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish nuqtasi'**
+  String get addressPointTitle;
+
+  /// No description provided for @addressSearchHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yoki manzilni yozing: ko\'cha, uy'**
+  String get addressSearchHint;
+
+  /// No description provided for @addressSearchFound.
+  ///
+  /// In uz, this message translates to:
+  /// **'Belgini tekshiring: kuryer aynan unga keladi'**
+  String get addressSearchFound;
+
+  /// No description provided for @addressPointText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer belgiga keladi. Xonadon, podyezd va mo\'ljalni keyingi qadamda kiritasiz.'**
+  String get addressPointText;
+
+  /// No description provided for @addressSearchNotFound.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaritada bunday manzil topilmadi. Xaritani surib, belgini uyingizga o\'zingiz qo\'ying.'**
+  String get addressSearchNotFound;
+
+  /// No description provided for @addressSearchUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil qidiruvi hozir ishlamayapti. Xaritani surib, belgini o\'zingiz qo\'ying.'**
+  String get addressSearchUnavailable;
+
+  /// No description provided for @addressWordsKept.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yozgan manzilingizni kuryer uchun saqlaymiz'**
+  String get addressWordsKept;
+
+  /// No description provided for @addressMyLocation.
+  ///
+  /// In uz, this message translates to:
+  /// **'Men qayerdaman'**
+  String get addressMyLocation;
+
+  /// No description provided for @addressLocationFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Joylashuvingizni aniqlab bo\'lmadi. Xaritani o\'zingiz suring.'**
+  String get addressLocationFailed;
+
+  /// No description provided for @addressSearchClear.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tozalash'**
+  String get addressSearchClear;
+
+  /// No description provided for @addressPointConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nuqtani tasdiqlash'**
+  String get addressPointConfirm;
 
   /// No description provided for @addressMapUnavailable.
   ///

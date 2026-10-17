@@ -25,6 +25,7 @@ class FakeAddressMap implements AddressMap {
   }) => ListenableBuilder(
     listenable: mover,
     builder: (BuildContext context, Widget? child) => Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         Text(
           '${initial.latitude},${initial.longitude}',

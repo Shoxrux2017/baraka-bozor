@@ -781,7 +781,45 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get addressMapHint =>
-      'Двигайте карту, чтобы метка стояла у вашей двери';
+      'Передвиньте карту, чтобы метка встала на вход в ваш дом';
+
+  @override
+  String get addressPointTitle => 'Точка доставки';
+
+  @override
+  String get addressSearchHint => 'Или напишите адрес: улица, дом';
+
+  @override
+  String get addressSearchFound =>
+      'Проверьте метку: курьер приедет точно к ней';
+
+  @override
+  String get addressPointText =>
+      'Курьер приедет к метке. Квартиру, подъезд и ориентир укажете на следующем шаге.';
+
+  @override
+  String get addressSearchNotFound =>
+      'На карте такого адреса не нашлось. Передвиньте карту и поставьте метку на свой дом сами.';
+
+  @override
+  String get addressSearchUnavailable =>
+      'Поиск адреса сейчас не работает. Передвиньте карту и поставьте метку сами.';
+
+  @override
+  String get addressWordsKept => 'Ваш адрес словами сохраним для курьера';
+
+  @override
+  String get addressMyLocation => 'Где я';
+
+  @override
+  String get addressLocationFailed =>
+      'Не удалось определить, где вы. Передвиньте карту сами.';
+
+  @override
+  String get addressSearchClear => 'Очистить';
+
+  @override
+  String get addressPointConfirm => 'Подтвердить точку';
 
   @override
   String get addressMapUnavailable =>

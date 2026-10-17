@@ -6,12 +6,19 @@ import '../../../app/providers.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/state/account_mutation.dart';
 import '../../../core/state/mutation_state.dart';
+import '../data/address_search_api.dart';
 import '../data/addresses_api.dart';
+import '../domain/address_search.dart';
 import '../domain/addresses.dart';
 
 final Provider<AddressesRepository> addressesRepositoryProvider =
     Provider<AddressesRepository>(
       (Ref ref) => AddressesRepositoryImpl(ref.watch(apiClientProvider)),
+    );
+
+final Provider<AddressSearchRepository> addressSearchRepositoryProvider =
+    Provider<AddressSearchRepository>(
+      (Ref ref) => AddressSearchRepositoryImpl(ref.watch(apiClientProvider)),
     );
 
 /// The Customer's active addresses.
