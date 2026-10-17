@@ -92,6 +92,8 @@ Resolves the active Customer account or creates one when none is active, then is
 
 # Catalog
 
+`POST /customer/address-search` looks up an address typed in words (`DL-86` item 1): body `query` (3–200). It answers `{data: {latitude, longitude}}`, the point to move the map to, or `{data: null}` when nothing narrower than a city was found. The point is a suggestion: an address keeps the point the Customer confirms. `503 provider_unavailable` while the lookup cannot answer; `429 rate_limited` past 10 a minute or 30 a day per Customer.
+
 ## 14. Customer Catalog
 
 `GET /catalog/categories?page=&per_page=`, `GET /catalog/products?category_id=&search=&featured=&sort=&page=&per_page=`, `GET /catalog/products/{product}`, all paginated lists in the envelope of Section 2. A Customer session is required (`DL-17`). A product is listed only while it and its category are active and unarchived, and otherwise its detail is the scope-safe `404`; a category is listed only while it is active, unarchived and holds at least one such product (`DL-22`). Both lists are ordered by `sort_order`, then `name_uz`, then `id`; a `category_id` the Customer cannot see gives an empty list, like one that does not exist. A category carries `id, name_uz, name_ru, description_uz, description_ru, sort_order, image_url` (`null` without a picture); a product never carries the market price. `featured` (`1|0|true|false`; absent or `0`/`false` lists every visible product) keeps only the products the Admin marked "Рекомендуем"; `sort` is `default` (the order above), `price_asc` or `price_desc` (by price, ties in the default order, so pages never repeat or skip a product); any other value of either is `422 validation_failed`. Both compose with `category_id` and `search` (`DL-79`).
