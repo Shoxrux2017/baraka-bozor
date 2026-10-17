@@ -707,7 +707,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get deliveryAddressRetry => 'Manzil yuklanmadi — qayta urinish';
 
   @override
-  String get deliveryAddressSheetTitle => 'Qayerga yetkazamiz?';
+  String get deliveryAddressSheetTitle => 'Yetkazish manzili';
 
   @override
   String get catalogSearchClear => 'Tozalash';
@@ -764,9 +764,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get addressEdit => 'Manzilni tahrirlash';
 
   @override
-  String get addressLabel => 'Nomi, masalan, Uy yoki Ish';
-
-  @override
   String get addressStreet => 'Ko\'cha';
 
   @override
@@ -782,8 +779,82 @@ class AppLocalizationsUz extends AppLocalizations {
   String get addressDeliveryNote => 'Kuryer uchun izoh';
 
   @override
+  String get addressFieldStreet => 'Ko\'cha, massiv yoki mavze';
+
+  @override
+  String get addressFieldApartment => 'Xonadon yoki ofis';
+
+  @override
+  String get addressLandmarkHint => 'Masalan: 64-maktab qarshisida';
+
+  @override
+  String get addressFieldNote => 'Kuryerga izoh';
+
+  @override
+  String get addressNoteHint => 'Podyezd, qavat, domofon kodi';
+
+  @override
+  String get addressLabelTitle => 'Manzil nomi';
+
+  @override
+  String get addressLabelHome => 'Uy';
+
+  @override
+  String get addressLabelWork => 'Ish';
+
+  @override
+  String get addressLabelCustom => 'Boshqa';
+
+  @override
+  String get addressLabelName => 'Nomi';
+
+  @override
+  String get addressChangePoint => 'Nuqtani o\'zgartirish';
+
+  @override
+  String get addressSaveButton => 'Manzilni saqlash';
+
+  @override
   String get addressMapHint =>
-      'Xaritani suring: belgi eshigingiz ustida tursin';
+      'Xaritani suring: belgi uyingiz kirish joyida tursin';
+
+  @override
+  String get addressPointTitle => 'Yetkazish nuqtasi';
+
+  @override
+  String get addressSearchHint => 'Yoki manzilni yozing: ko\'cha, uy';
+
+  @override
+  String get addressSearchFound =>
+      'Belgini tekshiring: kuryer aynan unga keladi';
+
+  @override
+  String get addressPointText =>
+      'Kuryer belgiga keladi. Xonadon, podyezd va mo\'ljalni keyingi qadamda kiritasiz.';
+
+  @override
+  String get addressSearchNotFound =>
+      'Xaritada bunday manzil topilmadi. Xaritani surib, belgini uyingizga o\'zingiz qo\'ying.';
+
+  @override
+  String get addressSearchUnavailable =>
+      'Manzil qidiruvi hozir ishlamayapti. Xaritani surib, belgini o\'zingiz qo\'ying.';
+
+  @override
+  String get addressWordsKept => 'Yozgan manzilingizni kuryer uchun saqlaymiz';
+
+  @override
+  String get addressMyLocation => 'Men qayerdaman';
+
+  @override
+  String get addressLocationFailed =>
+      'Joylashuvingizni aniqlab bo\'lmadi. Xaritani o\'zingiz suring.';
+
+  @override
+  String get addressSearchClear => 'Tozalash';
+
+  @override
+  String get addressPointConfirm => 'Nuqtani tasdiqlash';
 
   @override
   String get addressMapUnavailable =>
@@ -817,6 +888,22 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get addressSaved => 'Manzil saqlandi';
+
+  @override
+  String get addressAddNew => 'Yangi manzil qo\'shish';
+
+  @override
+  String get addressMenuEdit => 'O\'zgartirish';
+
+  @override
+  String addressLandmarkLine(String landmark) {
+    return 'Mo\'ljal: $landmark';
+  }
+
+  @override
+  String addressApartmentShort(String apartment) {
+    return '$apartment-xonadon';
+  }
 
   @override
   String get addressRemove => 'O\'chirish';
@@ -2388,16 +2475,25 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String courierDeliveryNote(String note) {
-    return 'Kuryer uchun izoh: $note';
+  String get courierAddressTitle => 'Yetkazish manzili';
+
+  @override
+  String courierNoteLine(String note) {
+    return 'Kuryerga: $note';
   }
 
   @override
-  String get courierOpenMap => 'Xaritada ochish';
+  String get courierOpenYandex => 'Yandexda ochish';
+
+  @override
+  String get courierCopyAddress => 'Manzilni nusxalash';
+
+  @override
+  String get courierAddressCopied => 'Manzil nusxalandi';
 
   @override
   String courierMapFailed(String address) {
-    return 'Xarita ilovasi ochilmadi. Manzil: $address';
+    return 'Yandex ochilmadi. Manzil: $address';
   }
 
   @override

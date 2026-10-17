@@ -5,7 +5,7 @@ import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/presentation/addresses_screens.dart';
-import 'package:baraka_bozor/features/addresses/presentation/map/map_picker.dart';
+import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
@@ -19,18 +19,12 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/app_harness.dart';
+import '../../support/fake_address_map.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_cart_repository.dart';
 import '../../support/fake_catalog_repository.dart';
 import '../../support/fake_customer_repositories.dart';
 import '../../support/in_memory_stores.dart';
-
-/// A map that shows where the pin starts, as the address screens' tests do.
-Widget _fakeMap({
-  required GeoPoint initial,
-  required bool enabled,
-  required ValueChanged<GeoPoint> onMoved,
-}) => Text('${initial.latitude},${initial.longitude}');
 
 /// The Customer's home in the kit look (`DL-80`), through the real router.
 void main() {
@@ -95,7 +89,7 @@ void main() {
         addresses: addresses,
         preferences: preferences,
         cart: cart,
-        overrides: [mapPickerProvider.overrideWithValue(_fakeMap)],
+        overrides: [addressMapProvider.overrideWithValue(FakeAddressMap())],
       ),
     );
     await tester.pumpAndSettle();
@@ -394,9 +388,20 @@ void main() {
   });
 
   Future<void> saveNewAddress(WidgetTester tester) async {
+    await tester.tap(byKey('address-point-confirm'));
+    await tester.pumpAndSettle();
     await tester.enterText(byKey('field-street'), 'Dacha');
     await tester.enterText(byKey('field-house'), '9');
-    await tester.ensureVisible(byKey('address-save'));
+    await tester.scrollUntilVisible(
+      byKey('address-save'),
+      200,
+      scrollable: find
+          .descendant(
+            of: byKey('address-form'),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(byKey('address-save'));
     await tester.pumpAndSettle();

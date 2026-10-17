@@ -705,7 +705,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get deliveryAddressRetry => 'Адрес не загрузился — повторить';
 
   @override
-  String get deliveryAddressSheetTitle => 'Куда доставить?';
+  String get deliveryAddressSheetTitle => 'Адрес доставки';
 
   @override
   String get catalogSearchClear => 'Очистить';
@@ -762,9 +762,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressEdit => 'Изменить адрес';
 
   @override
-  String get addressLabel => 'Название, например, Дом или Работа';
-
-  @override
   String get addressStreet => 'Улица';
 
   @override
@@ -780,8 +777,82 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressDeliveryNote => 'Комментарий для курьера';
 
   @override
+  String get addressFieldStreet => 'Улица, массив или квартал';
+
+  @override
+  String get addressFieldApartment => 'Квартира или офис';
+
+  @override
+  String get addressLandmarkHint => 'Например: напротив школы № 64';
+
+  @override
+  String get addressFieldNote => 'Комментарий курьеру';
+
+  @override
+  String get addressNoteHint => 'Подъезд, этаж, код домофона';
+
+  @override
+  String get addressLabelTitle => 'Как назвать адрес';
+
+  @override
+  String get addressLabelHome => 'Дом';
+
+  @override
+  String get addressLabelWork => 'Работа';
+
+  @override
+  String get addressLabelCustom => 'Своё';
+
+  @override
+  String get addressLabelName => 'Название';
+
+  @override
+  String get addressChangePoint => 'Изменить точку';
+
+  @override
+  String get addressSaveButton => 'Сохранить адрес';
+
+  @override
   String get addressMapHint =>
-      'Двигайте карту, чтобы метка стояла у вашей двери';
+      'Передвиньте карту, чтобы метка встала на вход в ваш дом';
+
+  @override
+  String get addressPointTitle => 'Точка доставки';
+
+  @override
+  String get addressSearchHint => 'Или напишите адрес: улица, дом';
+
+  @override
+  String get addressSearchFound =>
+      'Проверьте метку: курьер приедет точно к ней';
+
+  @override
+  String get addressPointText =>
+      'Курьер приедет к метке. Квартиру, подъезд и ориентир укажете на следующем шаге.';
+
+  @override
+  String get addressSearchNotFound =>
+      'На карте такого адреса не нашлось. Передвиньте карту и поставьте метку на свой дом сами.';
+
+  @override
+  String get addressSearchUnavailable =>
+      'Поиск адреса сейчас не работает. Передвиньте карту и поставьте метку сами.';
+
+  @override
+  String get addressWordsKept => 'Ваш адрес словами сохраним для курьера';
+
+  @override
+  String get addressMyLocation => 'Где я';
+
+  @override
+  String get addressLocationFailed =>
+      'Не удалось определить, где вы. Передвиньте карту сами.';
+
+  @override
+  String get addressSearchClear => 'Очистить';
+
+  @override
+  String get addressPointConfirm => 'Подтвердить точку';
 
   @override
   String get addressMapUnavailable =>
@@ -813,6 +884,22 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get addressSaved => 'Адрес сохранён';
+
+  @override
+  String get addressAddNew => 'Добавить новый адрес';
+
+  @override
+  String get addressMenuEdit => 'Изменить';
+
+  @override
+  String addressLandmarkLine(String landmark) {
+    return 'Ориентир: $landmark';
+  }
+
+  @override
+  String addressApartmentShort(String apartment) {
+    return 'кв. $apartment';
+  }
 
   @override
   String get addressRemove => 'Удалить';
@@ -2410,16 +2497,25 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String courierDeliveryNote(String note) {
-    return 'Комментарий для курьера: $note';
+  String get courierAddressTitle => 'Адрес доставки';
+
+  @override
+  String courierNoteLine(String note) {
+    return 'Курьеру: $note';
   }
 
   @override
-  String get courierOpenMap => 'Открыть на карте';
+  String get courierOpenYandex => 'Открыть в Яндексе';
+
+  @override
+  String get courierCopyAddress => 'Скопировать адрес';
+
+  @override
+  String get courierAddressCopied => 'Адрес скопирован';
 
   @override
   String courierMapFailed(String address) {
-    return 'Не удалось открыть приложение карт. Адрес: $address';
+    return 'Не удалось открыть Яндекс. Адрес: $address';
   }
 
   @override

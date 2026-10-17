@@ -61,14 +61,16 @@ Address address({
   ),
   String street = 'Amir Temur',
   String house = '12',
+  String? apartment,
+  String? landmark,
 }) => Address(
   id: id,
   label: label,
   point: point,
   street: street,
   house: house,
-  apartment: null,
-  landmark: null,
+  apartment: apartment,
+  landmark: landmark,
   deliveryNote: null,
 );
 

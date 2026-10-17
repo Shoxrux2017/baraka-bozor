@@ -290,7 +290,7 @@
   "homeSeeAll": "Barchasi",
   "deliveryAddressAdd": "Yetkazish manzilini qo'shing",
   "deliveryAddressRetry": "Manzil yuklanmadi — qayta urinish",
-  "deliveryAddressSheetTitle": "Qayerga yetkazamiz?",
+  "deliveryAddressSheetTitle": "Yetkazish manzili",
   "catalogSearchClear": "Tozalash",
   "catalogCategoriesTitle": "Bo'limlar",
   "catalogNoProducts": "Bu yerda hozircha mahsulot yo'q",
@@ -318,13 +318,35 @@
   "addressNone": "Hali manzil qo'shilmagan",
   "addressNew": "Yangi manzil",
   "addressEdit": "Manzilni tahrirlash",
-  "addressLabel": "Nomi, masalan, Uy yoki Ish",
   "addressStreet": "Ko'cha",
   "addressHouse": "Uy",
   "addressApartment": "Xonadon",
   "addressLandmark": "Mo'ljal",
   "addressDeliveryNote": "Kuryer uchun izoh",
-  "addressMapHint": "Xaritani suring: belgi eshigingiz ustida tursin",
+  "addressFieldStreet": "Ko'cha, massiv yoki mavze",
+  "addressFieldApartment": "Xonadon yoki ofis",
+  "addressLandmarkHint": "Masalan: 64-maktab qarshisida",
+  "addressFieldNote": "Kuryerga izoh",
+  "addressNoteHint": "Podyezd, qavat, domofon kodi",
+  "addressLabelTitle": "Manzil nomi",
+  "addressLabelHome": "Uy",
+  "addressLabelWork": "Ish",
+  "addressLabelCustom": "Boshqa",
+  "addressLabelName": "Nomi",
+  "addressChangePoint": "Nuqtani o'zgartirish",
+  "addressSaveButton": "Manzilni saqlash",
+  "addressMapHint": "Xaritani suring: belgi uyingiz kirish joyida tursin",
+  "addressPointTitle": "Yetkazish nuqtasi",
+  "addressSearchHint": "Yoki manzilni yozing: ko'cha, uy",
+  "addressSearchFound": "Belgini tekshiring: kuryer aynan unga keladi",
+  "addressPointText": "Kuryer belgiga keladi. Xonadon, podyezd va mo'ljalni keyingi qadamda kiritasiz.",
+  "addressSearchNotFound": "Xaritada bunday manzil topilmadi. Xaritani surib, belgini uyingizga o'zingiz qo'ying.",
+  "addressSearchUnavailable": "Manzil qidiruvi hozir ishlamayapti. Xaritani surib, belgini o'zingiz qo'ying.",
+  "addressWordsKept": "Yozgan manzilingizni kuryer uchun saqlaymiz",
+  "addressMyLocation": "Men qayerdaman",
+  "addressLocationFailed": "Joylashuvingizni aniqlab bo'lmadi. Xaritani o'zingiz suring.",
+  "addressSearchClear": "Tozalash",
+  "addressPointConfirm": "Nuqtani tasdiqlash",
   "addressMapUnavailable": "Bu ilova versiyasida xarita yo'q. Nuqtaning koordinatalarini kiriting",
   "addressLatitude": "Kenglik",
   "addressLongitude": "Uzunlik",
@@ -344,6 +366,24 @@
     }
   },
   "addressSaved": "Manzil saqlandi",
+  "addressAddNew": "Yangi manzil qo'shish",
+  "addressMenuEdit": "O'zgartirish",
+  "addressLandmarkLine": "Mo'ljal: {landmark}",
+  "@addressLandmarkLine": {
+    "placeholders": {
+      "landmark": {
+        "type": "String"
+      }
+    }
+  },
+  "addressApartmentShort": "{apartment}-xonadon",
+  "@addressApartmentShort": {
+    "placeholders": {
+      "apartment": {
+        "type": "String"
+      }
+    }
+  },
   "addressRemove": "O'chirish",
   "addressRemoveConfirm": "Bu manzil o'chirilsinmi?",
   "errorConfigurationIncomplete": "Xizmat hali to'liq sozlanmagan. Keyinroq urinib ko'ring",
@@ -1533,16 +1573,19 @@
       }
     }
   },
-  "courierDeliveryNote": "Kuryer uchun izoh: {note}",
-  "@courierDeliveryNote": {
+  "courierAddressTitle": "Yetkazish manzili",
+  "courierNoteLine": "Kuryerga: {note}",
+  "@courierNoteLine": {
     "placeholders": {
       "note": {
         "type": "String"
       }
     }
   },
-  "courierOpenMap": "Xaritada ochish",
-  "courierMapFailed": "Xarita ilovasi ochilmadi. Manzil: {address}",
+  "courierOpenYandex": "Yandexda ochish",
+  "courierCopyAddress": "Manzilni nusxalash",
+  "courierAddressCopied": "Manzil nusxalandi",
+  "courierMapFailed": "Yandex ochilmadi. Manzil: {address}",
   "@courierMapFailed": {
     "placeholders": {
       "address": {

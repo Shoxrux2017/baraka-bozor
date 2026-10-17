@@ -53,7 +53,7 @@ A new Customer may browse with no name; checkout is blocked until `full_name` is
 
 ## 5. Address
 
-The Customer places a point on the Yandex map, enters street and house, optional label, apartment, landmark and note, and saves. The backend validates ownership, coordinates and that the point lies inside the service-area circle; a point outside is refused with `address_outside_service_area`.
+The Customer places the pin on the map, or types the address and checks where the map put the pin, then enters the street and house, optional label, apartment, landmark and note, and saves. The backend validates ownership, coordinates and that the point lies inside the service-area circle; a point outside is refused with `address_outside_service_area`.
 
 ## 6. Catalog and Cart
 

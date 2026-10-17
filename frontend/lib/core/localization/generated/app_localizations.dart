@@ -1403,7 +1403,7 @@ abstract class AppLocalizations {
   /// No description provided for @deliveryAddressSheetTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Qayerga yetkazamiz?'**
+  /// **'Yetkazish manzili'**
   String get deliveryAddressSheetTitle;
 
   /// No description provided for @catalogSearchClear.
@@ -1508,12 +1508,6 @@ abstract class AppLocalizations {
   /// **'Manzilni tahrirlash'**
   String get addressEdit;
 
-  /// No description provided for @addressLabel.
-  ///
-  /// In uz, this message translates to:
-  /// **'Nomi, masalan, Uy yoki Ish'**
-  String get addressLabel;
-
   /// No description provided for @addressStreet.
   ///
   /// In uz, this message translates to:
@@ -1544,11 +1538,149 @@ abstract class AppLocalizations {
   /// **'Kuryer uchun izoh'**
   String get addressDeliveryNote;
 
+  /// No description provided for @addressFieldStreet.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'cha, massiv yoki mavze'**
+  String get addressFieldStreet;
+
+  /// No description provided for @addressFieldApartment.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xonadon yoki ofis'**
+  String get addressFieldApartment;
+
+  /// No description provided for @addressLandmarkHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Masalan: 64-maktab qarshisida'**
+  String get addressLandmarkHint;
+
+  /// No description provided for @addressFieldNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryerga izoh'**
+  String get addressFieldNote;
+
+  /// No description provided for @addressNoteHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Podyezd, qavat, domofon kodi'**
+  String get addressNoteHint;
+
+  /// No description provided for @addressLabelTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil nomi'**
+  String get addressLabelTitle;
+
+  /// No description provided for @addressLabelHome.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uy'**
+  String get addressLabelHome;
+
+  /// No description provided for @addressLabelWork.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ish'**
+  String get addressLabelWork;
+
+  /// No description provided for @addressLabelCustom.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa'**
+  String get addressLabelCustom;
+
+  /// No description provided for @addressLabelName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nomi'**
+  String get addressLabelName;
+
+  /// No description provided for @addressChangePoint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nuqtani o\'zgartirish'**
+  String get addressChangePoint;
+
+  /// No description provided for @addressSaveButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzilni saqlash'**
+  String get addressSaveButton;
+
   /// No description provided for @addressMapHint.
   ///
   /// In uz, this message translates to:
-  /// **'Xaritani suring: belgi eshigingiz ustida tursin'**
+  /// **'Xaritani suring: belgi uyingiz kirish joyida tursin'**
   String get addressMapHint;
+
+  /// No description provided for @addressPointTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish nuqtasi'**
+  String get addressPointTitle;
+
+  /// No description provided for @addressSearchHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yoki manzilni yozing: ko\'cha, uy'**
+  String get addressSearchHint;
+
+  /// No description provided for @addressSearchFound.
+  ///
+  /// In uz, this message translates to:
+  /// **'Belgini tekshiring: kuryer aynan unga keladi'**
+  String get addressSearchFound;
+
+  /// No description provided for @addressPointText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer belgiga keladi. Xonadon, podyezd va mo\'ljalni keyingi qadamda kiritasiz.'**
+  String get addressPointText;
+
+  /// No description provided for @addressSearchNotFound.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaritada bunday manzil topilmadi. Xaritani surib, belgini uyingizga o\'zingiz qo\'ying.'**
+  String get addressSearchNotFound;
+
+  /// No description provided for @addressSearchUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil qidiruvi hozir ishlamayapti. Xaritani surib, belgini o\'zingiz qo\'ying.'**
+  String get addressSearchUnavailable;
+
+  /// No description provided for @addressWordsKept.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yozgan manzilingizni kuryer uchun saqlaymiz'**
+  String get addressWordsKept;
+
+  /// No description provided for @addressMyLocation.
+  ///
+  /// In uz, this message translates to:
+  /// **'Men qayerdaman'**
+  String get addressMyLocation;
+
+  /// No description provided for @addressLocationFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Joylashuvingizni aniqlab bo\'lmadi. Xaritani o\'zingiz suring.'**
+  String get addressLocationFailed;
+
+  /// No description provided for @addressSearchClear.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tozalash'**
+  String get addressSearchClear;
+
+  /// No description provided for @addressPointConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nuqtani tasdiqlash'**
+  String get addressPointConfirm;
 
   /// No description provided for @addressMapUnavailable.
   ///
@@ -1603,6 +1735,30 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Manzil saqlandi'**
   String get addressSaved;
+
+  /// No description provided for @addressAddNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi manzil qo\'shish'**
+  String get addressAddNew;
+
+  /// No description provided for @addressMenuEdit.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgartirish'**
+  String get addressMenuEdit;
+
+  /// No description provided for @addressLandmarkLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mo\'ljal: {landmark}'**
+  String addressLandmarkLine(String landmark);
+
+  /// No description provided for @addressApartmentShort.
+  ///
+  /// In uz, this message translates to:
+  /// **'{apartment}-xonadon'**
+  String addressApartmentShort(String apartment);
 
   /// No description provided for @addressRemove.
   ///
@@ -4232,22 +4388,40 @@ abstract class AppLocalizations {
   /// **'Mo\'ljal: {landmark}'**
   String courierLandmark(String landmark);
 
-  /// No description provided for @courierDeliveryNote.
+  /// No description provided for @courierAddressTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Kuryer uchun izoh: {note}'**
-  String courierDeliveryNote(String note);
+  /// **'Yetkazish manzili'**
+  String get courierAddressTitle;
 
-  /// No description provided for @courierOpenMap.
+  /// No description provided for @courierNoteLine.
   ///
   /// In uz, this message translates to:
-  /// **'Xaritada ochish'**
-  String get courierOpenMap;
+  /// **'Kuryerga: {note}'**
+  String courierNoteLine(String note);
+
+  /// No description provided for @courierOpenYandex.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yandexda ochish'**
+  String get courierOpenYandex;
+
+  /// No description provided for @courierCopyAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzilni nusxalash'**
+  String get courierCopyAddress;
+
+  /// No description provided for @courierAddressCopied.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil nusxalandi'**
+  String get courierAddressCopied;
 
   /// No description provided for @courierMapFailed.
   ///
   /// In uz, this message translates to:
-  /// **'Xarita ilovasi ochilmadi. Manzil: {address}'**
+  /// **'Yandex ochilmadi. Manzil: {address}'**
   String courierMapFailed(String address);
 
   /// No description provided for @courierCollect.

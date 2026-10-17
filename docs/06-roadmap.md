@@ -13,7 +13,7 @@ Build toward a **cash-first pilot** in the order below, one implementing agent, 
 | Wave | Name | Outcome | Owner gates |
 |---:|---|---|---|
 | 0 | Foundation | runtime, CI, identity, staff login, Customer login through the code-delivery abstraction (fake now, test numbers), authorization, client auth screens and role shells, web target | none |
-| 1 | Catalog and account | Admin catalog in the web panel, Customer catalog and search, profile and language, addresses with the Yandex map picker and service-area check, staff management, business settings, push device registration | Yandex MapKit key |
+| 1 | Catalog and account | Admin catalog in the web panel, Customer catalog and search, profile and language, addresses with the map picker and service-area check, staff management, business settings, push device registration | Yandex MapKit key |
 | 2 | Cart and order on cash | cart, checkout with cash (online shown as unavailable), order creation, editing and direct cancellation, Shopper assignment, the Admin and Operator board with the summary strip, the Customer-mode switch for Shoppers and Couriers | none |
 | 3 | Fulfilment | Courier assignment (`DL-37` (12)), shopping with fixed and estimate items, unavailability, substitution, approvals with timers, Operator attention, Courier delivery with cash collection and not-delivered, cancellation requests, the Admin's price correction (`DL-54` (1)) | none |
 | 4 | Pilot readiness | real FCM push and every notification event (with the final-amount notice of a cash order, `DL-78`), history and reorder, Telegram Gateway login with the fixed-code test numbers kept, deployment to the Owner's VPS with backups, Android closed testing, web panel hosting, end-to-end check on cash, the pilot | Firebase, Telegram Gateway, hosting, Google Play |
@@ -58,7 +58,7 @@ The wave's behaviour is implemented with tests; backend rules are enforced serve
 
 | Gate | Wave | Who |
 |---|---:|---|
-| Yandex MapKit API key | 1 | Owner |
+| Google Maps keys: the app's (Maps SDK for Android) and the server's (Geocoding API) | 4 | Owner |
 | Firebase project, Android app registration | 4 | Owner |
 | Telegram Gateway account and funding | 4 | Owner |
 | Hosting in Uzbekistan, domain, TLS | 4 | Owner |

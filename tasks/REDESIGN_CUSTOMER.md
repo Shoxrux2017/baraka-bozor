@@ -7,7 +7,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 | 1 | Вход: splash, phone, code, name, staff password (`DL-77`) | Merged (PR #88) |
 | 2 | Главная | Merged (PR #89, #90, #91, #92) |
 | 3 | Поиск и товар | Merged (PR #93) |
-| 4 | Корзина и адрес | In Progress (4a cart; 4b address, Google map, courier) |
+| 4 | Корзина и адрес | Merged (PR #94, #95) |
 | 5 | Оформление | Planned |
 | 6 | Заказы | Planned |
 | 7 | Профиль | Planned |
@@ -20,6 +20,11 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - Wave 3 walkthrough compiled, not run, after the staff sign-in change - run it before Wave 4 closes.
 - The kit home's header (mode bar, address and cart, search) scrolls inside 60% of the screen height above the keyboard; with two sessions at 320×640 and text ×2 it takes about that much and the sections below get a strip of about 150 px (they scroll). Only at that extreme size.
 - Stage 4a: the cart's footer is the screen's bottom bar, so a snackbar rises above the button; the lines, the notice, the row, the amounts and the address scroll above it. At 320×640 with text ×2 a single large line leaves little room above the footer, and the rest scrolls.
+- Stage 4b, the iOS Google key and `GMSServices` are set on the first Mac build.
+- Stage 4b, the server key's IP restriction is set at deployment.
+- Stage 4b, the Play signing SHA-1 is added to the app's key at the first Play upload.
+- Stage 4b, the Owner sets the Geocoding API daily quota (300 requests a day) and a $1 budget alert in Google Cloud, so the lookup stays within Google's free 10 000 a month (`DL-86` item 1).
+- Stage 4b, the Courier's Navigator link is called without the signature Yandex describes for version 2.40 and later; if a Courier's phone refuses it, the app is registered with Yandex and the server signs the link (`DL-86` item 6).
 
 ## Part 1 history (design 4a, `DL-74`, `DL-75`)
 

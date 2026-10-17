@@ -90,6 +90,8 @@ Resolves the active Customer account or creates one when none is active, then is
 
 `GET|POST /customer/addresses`, `GET|PATCH|DELETE /customer/addresses/{address}`, a Customer session and own addresses only. Body: `latitude`, `longitude` (decimal strings, at most six decimals, a JSON number is refused), `street` (1–160), `house` (1–40), optional `label` (60), `apartment` (40), `landmark` (160), `delivery_note` (300). PATCH takes any non-empty subset, but the two coordinates always together. The response carries `id, label, latitude, longitude, street, house, apartment, landmark, delivery_note, created_at, updated_at`, coordinates as six-decimal strings; create answers `201`, delete `204`. A point outside the service area answers `422 address_outside_service_area` with `details.max_distance_km` and `details.distance_km`; while the service area is not configured, create and an update that moves the point answer `409 checkout_configuration_incomplete`; an update that keeps the point is not checked again (`DL-23`). Delete always deactivates (`DL-17`); the list returns active addresses only, newest first, and a deactivated or foreign address is the scope-safe `404` everywhere.
 
+`POST /customer/address-search` looks up an address typed in words (`DL-86` item 1): body `query` (3–200). It answers `{data: {latitude, longitude}}`, the point to move the map to, or `{data: null}` when nothing narrower than a city was found. The point is a suggestion: an address keeps the point the Customer confirms. `503 provider_unavailable` while the lookup cannot answer; `429 rate_limited` past 10 a minute or 30 a day per Customer.
+
 # Catalog
 
 ## 14. Customer Catalog

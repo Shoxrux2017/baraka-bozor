@@ -9,8 +9,9 @@ import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
+import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
-import 'package:baraka_bozor/features/addresses/presentation/map/map_picker.dart';
+import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,30 +21,11 @@ import 'package:baraka_bozor/features/profile/domain/profile.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 
 import '../../support/app_harness.dart';
+import '../../support/fake_address_map.dart';
+import '../../support/fake_address_search.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_customer_repositories.dart';
 import '../../support/in_memory_stores.dart';
-
-const GeoPoint _door = GeoPoint(latitude: '41.320000', longitude: '69.250000');
-
-/// A map whose pin moves to [_door] when its button is tapped.
-Widget _fakeMap({
-  required GeoPoint initial,
-  required bool enabled,
-  required ValueChanged<GeoPoint> onMoved,
-}) => Column(
-  children: <Widget>[
-    Text(
-      '${initial.latitude},${initial.longitude}',
-      key: const ValueKey<String>('fake-map-initial'),
-    ),
-    TextButton(
-      key: const ValueKey<String>('fake-map-move'),
-      onPressed: () => onMoved(_door),
-      child: const Text('move'),
-    ),
-  ],
-);
 
 /// The Customer's profile and addresses (W1-13) through the real router,
 /// session and screens.
@@ -53,6 +35,7 @@ void main() {
   late FakeProfileRepository profile;
   late FakeAddressesRepository addresses;
   late InMemoryPreferenceStore preferences;
+  late FakeAddressSearch search;
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
@@ -65,6 +48,7 @@ void main() {
     profile = FakeProfileRepository();
     addresses = FakeAddressesRepository();
     preferences = InMemoryPreferenceStore();
+    search = FakeAddressSearch();
     tokens.tokens[SessionSlot.customer] = 'c';
     auth.identities[SessionSlot.customer] = user(id: 'c');
   });
@@ -73,6 +57,7 @@ void main() {
     WidgetTester tester, {
     bool fakeMap = true,
     Size size = const Size(800, 2000),
+    Locale device = const Locale('uz'),
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -81,11 +66,13 @@ void main() {
       appUnderTest(
         tokens: tokens,
         repository: auth,
+        device: device,
         addresses: addresses,
         preferences: preferences,
         overrides: [
           profileRepositoryProvider.overrideWithValue(profile),
-          if (fakeMap) mapPickerProvider.overrideWithValue(_fakeMap),
+          addressSearchRepositoryProvider.overrideWithValue(search),
+          if (fakeMap) addressMapProvider.overrideWithValue(FakeAddressMap()),
         ],
       ),
     );
@@ -111,8 +98,34 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The map step of a new address: the pin moved when asked, then confirmed.
+  Future<void> confirmPoint(WidgetTester tester, {bool move = false}) async {
+    if (move) {
+      await tapAndSettle(tester, byKey('fake-map-move'));
+    }
+    await tapAndSettle(tester, byKey('address-point-confirm'));
+  }
+
+  /// A notice left over covers the button of the list.
+  Future<void> closeSnackBars(WidgetTester tester) async {
+    ScaffoldMessenger.of(tester.element(find.byType(Scaffold).first))
+        .clearSnackBars();
+    await tester.pumpAndSettle();
+  }
+
+  /// The map step: the address typed in words and searched.
+  Future<void> searchWords(WidgetTester tester, String words) async {
+    await tester.enterText(byKey('address-search-field'), words);
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+  }
+
+  String streetText(WidgetTester tester) =>
+      tester.widget<TextFormField>(byKey('field-street')).controller!.text;
+
   Future<void> fillNewAddress(WidgetTester tester) async {
     await tapAndSettle(tester, byKey('address-new'));
+    await confirmPoint(tester);
     await tester.enterText(byKey('field-street'), 'Navoiy');
     await tester.enterText(byKey('field-house'), '5A');
   }
@@ -212,7 +225,12 @@ void main() {
         findsOneWidget,
         reason: 'the pin starts in Tashkent',
       );
-      await tapAndSettle(tester, byKey('fake-map-move'));
+      await confirmPoint(tester, move: true);
+      expect(
+        tester.widget<Text>(byKey('fake-map-preview')).data,
+        '${fakeDoor.latitude},${fakeDoor.longitude}',
+        reason: 'the form shows the point the map step confirmed',
+      );
       await tester.enterText(byKey('field-street'), 'Navoiy');
       await tester.enterText(byKey('field-house'), '5A');
       await tester.enterText(byKey('field-delivery_note'), 'Domofon 12');
@@ -220,7 +238,7 @@ void main() {
 
       final (String? id, AddressDraft draft) = addresses.saved.single;
       expect(id, isNull);
-      expect(draft.point, _door);
+      expect(draft.point, fakeDoor);
       expect(draft.street, 'Navoiy');
       expect(draft.label, isNull);
       expect(draft.deliveryNote, 'Domofon 12');
@@ -237,6 +255,7 @@ void main() {
     ) async {
       await openAddresses(tester);
       await tapAndSettle(tester, byKey('address-new'));
+      await confirmPoint(tester);
 
       await tapAndSettle(tester, byKey('address-save'));
 
@@ -258,9 +277,7 @@ void main() {
         ),
       );
       await openAddresses(tester);
-      await tapAndSettle(tester, byKey('address-new'));
-      await tester.enterText(byKey('field-street'), 'Navoiy');
-      await tester.enterText(byKey('field-house'), '5A');
+      await fillNewAddress(tester);
       await tapAndSettle(tester, byKey('address-save'));
 
       expect(
@@ -270,7 +287,8 @@ void main() {
       );
       expect(byKey('address-save'), findsOneWidget, reason: 'the form stays');
 
-      await tapAndSettle(tester, byKey('fake-map-move'));
+      await tapAndSettle(tester, byKey('address-change-point'));
+      await confirmPoint(tester, move: true);
       expect(
         byKey('address-outside-area'),
         findsNothing,
@@ -285,9 +303,7 @@ void main() {
         ApiError(status: 409, code: 'checkout_configuration_incomplete'),
       );
       await openAddresses(tester);
-      await tapAndSettle(tester, byKey('address-new'));
-      await tester.enterText(byKey('field-street'), 'Navoiy');
-      await tester.enterText(byKey('field-house'), '5A');
+      await fillNewAddress(tester);
       await tapAndSettle(tester, byKey('address-save'));
 
       expect(
@@ -302,7 +318,12 @@ void main() {
       await openAddresses(tester);
 
       await tapAndSettle(tester, find.text('Uy'));
-      expect(find.text('41.311081,69.240562'), findsOneWidget);
+      expect(
+        tester.widget<Text>(byKey('fake-map-preview')).data,
+        '41.311081,69.240562',
+        reason: 'an edit opens on the form with the stored point',
+      );
+      expect(byKey('address-point-confirm'), findsNothing);
       await tester.enterText(byKey('field-house'), '14');
       await tapAndSettle(tester, byKey('address-save'));
 
@@ -337,6 +358,412 @@ void main() {
       );
     });
 
+    testWidgets('typed words fill an empty street', (
+      WidgetTester tester,
+    ) async {
+      search.answers['квартал Ц-5, дом 12'] = fakeDoor;
+      await openAddresses(tester);
+      await tapAndSettle(tester, byKey('address-new'));
+      await tester.enterText(
+        byKey('address-search-field'),
+        'квартал Ц-5, дом 12',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      await confirmPoint(tester);
+
+      expect(
+        tester.widget<TextFormField>(byKey('field-street')).controller!.text,
+        'квартал Ц-5, дом 12',
+      );
+    });
+
+    testWidgets('an edit never takes the words and does not promise them', (
+      WidgetTester tester,
+    ) async {
+      await openAddresses(tester);
+      await tapAndSettle(tester, find.text('Uy'));
+      await tapAndSettle(tester, byKey('address-change-point'));
+      await searchWords(tester, 'квартал Ц-5, дом 12');
+      expect(byKey('address-words-kept'), findsNothing);
+      await confirmPoint(tester);
+
+      expect(streetText(tester), 'Amir Temur');
+    });
+
+    testWidgets('the latest words fill a street they filled before', (
+      WidgetTester tester,
+    ) async {
+      await openAddresses(tester);
+      await tapAndSettle(tester, byKey('address-new'));
+      await searchWords(tester, 'Navoiy 5');
+      expect(byKey('address-words-kept'), findsOneWidget);
+      await confirmPoint(tester);
+      expect(streetText(tester), 'Navoiy 5');
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await searchWords(tester, 'Bobur 7');
+      expect(byKey('address-words-kept'), findsOneWidget);
+      await confirmPoint(tester);
+
+      expect(streetText(tester), 'Bobur 7');
+    });
+
+    testWidgets('words do not overwrite a street the Customer edited', (
+      WidgetTester tester,
+    ) async {
+      await openAddresses(tester);
+      await tapAndSettle(tester, byKey('address-new'));
+      await searchWords(tester, 'Navoiy 5');
+      await confirmPoint(tester);
+      await tester.enterText(byKey('field-street'), 'Navoiy ko`chasi');
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await searchWords(tester, 'Bobur 7');
+      expect(byKey('address-words-kept'), findsNothing);
+      await confirmPoint(tester);
+
+      expect(streetText(tester), 'Navoiy ko`chasi');
+    });
+
+    testWidgets('an edit keeps its street when the point changes', (
+      WidgetTester tester,
+    ) async {
+      await openAddresses(tester);
+      await tapAndSettle(tester, find.text('Uy'));
+
+      await tapAndSettle(tester, byKey('address-change-point'));
+      await confirmPoint(tester, move: true);
+      expect(
+        tester.widget<TextFormField>(byKey('field-street')).controller!.text,
+        'Amir Temur',
+      );
+      await tapAndSettle(tester, byKey('address-save'));
+
+      final (String? id, AddressDraft draft) = addresses.saved.single;
+      expect(id, 'a-1');
+      expect(draft.point, fakeDoor);
+      expect(draft.street, 'Amir Temur');
+    });
+
+    testWidgets('the form and the map step use the kit app bar on white', (
+      WidgetTester tester,
+    ) async {
+      await openAddresses(tester);
+      await tapAndSettle(tester, byKey('address-new'));
+      for (int step = 0; step < 2; step++) {
+        final AppBar bar = tester.widget<AppBar>(find.byType(AppBar).last);
+        expect(bar.centerTitle, isTrue);
+        expect(bar.backgroundColor, Colors.white);
+        expect(
+          tester.widget<Scaffold>(find.byType(Scaffold).last).backgroundColor,
+          Colors.white,
+        );
+        if (step == 0) {
+          await confirmPoint(tester);
+        }
+      }
+    });
+
+    testWidgets('back walks the steps', (WidgetTester tester) async {
+      await openAddresses(tester);
+
+      // A new address: form, back, the map with the same point, back, list.
+      await tapAndSettle(tester, byKey('address-new'));
+      await confirmPoint(tester, move: true);
+      await tester.enterText(byKey('field-street'), 'Navoiy');
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(byKey('address-point-confirm'), findsOneWidget);
+      expect(
+        tester.widget<Text>(byKey('fake-map-initial')).data,
+        '${fakeDoor.latitude},${fakeDoor.longitude}',
+        reason: 'the point is kept',
+      );
+      await confirmPoint(tester);
+      expect(
+        tester.widget<TextFormField>(byKey('field-street')).controller!.text,
+        'Navoiy',
+        reason: 'what was typed is kept',
+      );
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('address-point-confirm'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('address-new'), findsOneWidget, reason: 'the list');
+
+      // A new address changing its point from the form: back returns to the
+      // form with everything as it was.
+      await tapAndSettle(tester, byKey('address-new'));
+      await confirmPoint(tester, move: true);
+      await tester.enterText(byKey('field-street'), 'Navoiy');
+      await tester.enterText(byKey('field-house'), '5A');
+      await tapAndSettle(tester, byKey('address-change-point'));
+      expect(byKey('address-point-confirm'), findsOneWidget);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(byKey('address-save'), findsOneWidget);
+      expect(streetText(tester), 'Navoiy');
+      expect(
+        tester.widget<Text>(byKey('fake-map-preview')).data,
+        '${fakeDoor.latitude},${fakeDoor.longitude}',
+        reason: 'the point is unchanged',
+      );
+      await tapAndSettle(tester, byKey('address-change-point'));
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('address-save'), findsOneWidget);
+      expect(streetText(tester), 'Navoiy');
+      expect(
+        tester.widget<TextFormField>(byKey('field-house')).controller!.text,
+        '5A',
+      );
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('address-point-confirm'), findsOneWidget, reason: 'step 1');
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('address-new'), findsOneWidget, reason: 'the list');
+
+      // An edit: the map step goes back to the form unchanged.
+      await tapAndSettle(tester, find.text('Uy'));
+      await tapAndSettle(tester, byKey('address-change-point'));
+      await tapAndSettle(tester, byKey('fake-map-move'));
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<Text>(byKey('fake-map-preview')).data,
+        '41.311081,69.240562',
+        reason: 'the old point, nothing changed',
+      );
+      await tapAndSettle(tester, byKey('address-change-point'));
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('address-save'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('address-new'), findsOneWidget, reason: 'the list');
+    });
+
+    testWidgets('back does not leave while a save is pending', (
+      WidgetTester tester,
+    ) async {
+      await openAddresses(tester);
+      await fillNewAddress(tester);
+      addresses.hold = Completer<void>();
+      await tester.tap(byKey('address-save'));
+      await tester.pump();
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(byKey('address-save'), findsOneWidget);
+      expect(byKey('address-point-confirm'), findsNothing);
+      expect(
+        tester.widget<InkWell>(byKey('address-change-point')).onTap,
+        isNull,
+        reason: 'the point cannot be changed mid-save',
+      );
+
+      addresses.hold!.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the label chips', (WidgetTester tester) async {
+      await openAddresses(tester);
+      await fillNewAddress(tester);
+
+      await tapAndSettle(tester, byKey('label-home'));
+      await tapAndSettle(tester, byKey('address-save'));
+      expect(addresses.saved.last.$2.label, 'Uy');
+
+      await closeSnackBars(tester);
+      await fillNewAddress(tester);
+      await tapAndSettle(tester, byKey('label-home'));
+      await tapAndSettle(tester, byKey('label-home'));
+      await tapAndSettle(tester, byKey('address-save'));
+      expect(addresses.saved.last.$2.label, isNull);
+
+      await closeSnackBars(tester);
+      await fillNewAddress(tester);
+      expect(byKey('field-label'), findsNothing);
+      await tapAndSettle(tester, byKey('label-custom'));
+      await tester.enterText(byKey('field-label'), 'Dacha');
+      await tapAndSettle(tester, byKey('address-save'));
+      expect(addresses.saved.last.$2.label, 'Dacha');
+    });
+
+    testWidgets('an existing label picks its chip', (
+      WidgetTester tester,
+    ) async {
+      addresses.rows = <Address>[
+        address(label: 'Ofis'),
+        address(id: 'a-2', label: 'Ish', street: 'Bobur', house: '7'),
+        address(id: 'a-3', label: null, street: 'Chilonzor', house: '1'),
+      ];
+      await openAddresses(tester);
+
+      await tapAndSettle(tester, find.text('Ofis'));
+      expect(
+        tester.widget<TextFormField>(byKey('field-label')).controller!.text,
+        'Ofis',
+      );
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      await tapAndSettle(tester, find.text('Ish'));
+      expect(byKey('field-label'), findsNothing, reason: 'Ish is a chip');
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      await tapAndSettle(tester, find.text('Chilonzor, 1'));
+      expect(byKey('field-label'), findsNothing, reason: 'no label, no chip');
+    });
+
+    testWidgets('a point outside the area is refused on the form', (
+      WidgetTester tester,
+    ) async {
+      addresses.saveFailure = const ApiRefusal(
+        ApiError(
+          status: 422,
+          code: 'address_outside_service_area',
+          details: <String, Object?>{
+            'max_distance_km': '5.00',
+            'distance_km': '7.25',
+          },
+        ),
+      );
+      await openAddresses(tester);
+      await fillNewAddress(tester);
+      await tapAndSettle(tester, byKey('address-save'));
+
+      final Finder refusal = byKey('address-outside-area');
+      expect(refusal, findsOneWidget);
+      expect(
+        tester.getBottomLeft(refusal).dy,
+        lessThanOrEqualTo(tester.getTopLeft(byKey('address-save')).dy),
+        reason: 'above the button',
+      );
+    });
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets('the form holds at 320x640 with text x2 '
+          '(${device.languageCode})', (WidgetTester tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        addresses.rows = <Address>[address(label: 'L' * 60, street: 'S' * 160)];
+        await tester.pumpWidget(
+          appUnderTest(
+            tokens: tokens,
+            repository: auth,
+            device: device,
+            addresses: addresses,
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(profile),
+              addressMapProvider.overrideWithValue(FakeAddressMap()),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tapAndSettle(tester, byKey('open-profile'));
+        await tester.scrollUntilVisible(
+          byKey('profile-addresses'),
+          200,
+          scrollable: find
+              .descendant(
+                of: byKey('profile-list'),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tapAndSettle(tester, byKey('profile-addresses'));
+        GoRouter.of(tester.element(find.byType(Scaffold).first))
+            .push(AppPaths.customerAddress('a-1'));
+        await tester.pumpAndSettle();
+        expect(byKey('address-save'), findsOneWidget);
+        await tester.drag(byKey('address-form'), const Offset(0, -2000));
+        await tester.pumpAndSettle();
+        expect(byKey('field-label'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets('the change-point chip leaves the map logo free at 320x640 '
+          'with text x2 (${device.languageCode})', (WidgetTester tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await openProfile(tester, size: const Size(320, 640), device: device);
+        GoRouter.of(tester.element(find.byType(Scaffold).first))
+            .push(AppPaths.customerAddress('a-1'));
+        await tester.pumpAndSettle();
+
+        final Finder chip = byKey('address-change-point');
+        final Rect preview = tester.getRect(
+          find
+              .ancestor(
+                of: chip,
+                matching: find.byWidgetPredicate(
+                  (Widget w) => w is SizedBox && w.height == 118,
+                ),
+              )
+              .first,
+        );
+        expect(
+          tester.getTopLeft(chip).dx,
+          greaterThanOrEqualTo(preview.left + preview.width * 0.4),
+        );
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the outside-area refusal fits above the button at 320x640 '
+          'with text x2 (${device.languageCode})', (WidgetTester tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        addresses.saveFailure = const ApiRefusal(
+          ApiError(
+            status: 422,
+            code: 'address_outside_service_area',
+            details: <String, Object?>{
+              'max_distance_km': '5.00',
+              'distance_km': '7.25',
+            },
+          ),
+        );
+        await openProfile(tester, size: const Size(320, 640), device: device);
+        GoRouter.of(tester.element(find.byType(Scaffold).first))
+            .push(AppPaths.customerNewAddress);
+        await tester.pumpAndSettle();
+        await confirmPoint(tester);
+        await tester.enterText(byKey('field-street'), 'Navoiy');
+        await tester.enterText(byKey('field-house'), '5A');
+        await tapAndSettle(tester, byKey('address-save'));
+
+        final Finder refusal = byKey('address-outside-area');
+        expect(refusal, findsOneWidget);
+        final double buttonTop = tester.getTopLeft(byKey('address-save')).dy;
+        expect(tester.getTopLeft(refusal).dy, lessThan(buttonTop));
+        expect(
+          tester
+              .getBottomLeft(
+                find.ancestor(
+                  of: refusal,
+                  matching: find.byType(SingleChildScrollView),
+                ),
+              )
+              .dy,
+          lessThanOrEqualTo(buttonTop),
+          reason: 'the refusal scrolls in its own box above the button',
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
+
     testWidgets('removing an address asks first', (WidgetTester tester) async {
       await openAddresses(tester);
 
@@ -364,6 +791,7 @@ void main() {
       );
       await tester.enterText(byKey('point-latitude'), '41.33');
       await tester.enterText(byKey('point-longitude'), '69.28');
+      await tapAndSettle(tester, byKey('address-point-confirm'));
       await tester.enterText(byKey('field-street'), 'Navoiy');
       await tester.enterText(byKey('field-house'), '5A');
       await tapAndSettle(tester, byKey('address-save'));
@@ -385,13 +813,14 @@ void main() {
 
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
-      expect(byKey('address-new'), findsOneWidget);
+      expect(byKey('address-save'), findsOneWidget, reason: 'nothing moves');
+      expect(byKey('address-new'), findsNothing);
 
       addresses.hold!.complete();
       await tester.pumpAndSettle();
       expect(addresses.saved, hasLength(1));
-      expect(byKey('address-new'), findsOneWidget, reason: 'still the list');
-      expect(find.text(l10n(tester).addressSaved), findsNothing);
+      expect(byKey('address-new'), findsOneWidget, reason: 'the list');
+      expect(find.text(l10n(tester).addressSaved), findsOneWidget);
       expect(
         find.text('Navoiy, 5A'),
         findsOneWidget,
@@ -410,6 +839,9 @@ void main() {
 
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
+      expect(byKey('address-point-confirm'), findsOneWidget);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
       expect(find.text(l10n(tester).errorNetwork), findsNothing);
 
       addresses.removeFailure = const NetworkFailure();
@@ -418,6 +850,8 @@ void main() {
       expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
 
       await tapAndSettle(tester, byKey('address-new'));
+      await confirmPoint(tester);
+      expect(byKey('address-save'), findsOneWidget);
       expect(inForm(find.text(l10n(tester).errorNetwork)), findsNothing);
     });
 
@@ -466,8 +900,9 @@ void main() {
       );
       await tapAndSettle(tester, byKey('profile-addresses'));
       await tapAndSettle(tester, byKey('address-new'));
+      await confirmPoint(tester);
       await tester.scrollUntilVisible(
-        byKey('address-save'),
+        byKey('field-delivery_note'),
         200,
         scrollable: find
             .descendant(
@@ -495,7 +930,7 @@ void main() {
         addresses: addresses,
         overrides: [
           profileRepositoryProvider.overrideWithValue(profile),
-          mapPickerProvider.overrideWithValue(_fakeMap),
+          addressMapProvider.overrideWithValue(FakeAddressMap()),
         ],
       ),
     );
@@ -526,6 +961,10 @@ void main() {
       await tapAndSettle(tester, byKey('address-new'));
       await tester.enterText(byKey('point-latitude'), latitude);
       await tester.enterText(byKey('point-longitude'), longitude);
+      await tapAndSettle(tester, byKey('address-point-confirm'));
+      if (byKey('field-street').evaluate().isEmpty) {
+        return;
+      }
       await tester.enterText(byKey('field-street'), 'Navoiy');
       await tester.enterText(byKey('field-house'), '5A');
       await tapAndSettle(tester, byKey('address-save'));
@@ -559,6 +998,7 @@ void main() {
       await typePoint(tester, '95.5', '');
 
       expect(addresses.saved, isEmpty);
+      expect(byKey('field-street'), findsNothing, reason: 'still the point');
       expect(find.text(l10n(tester).addressLatitudeInvalid), findsOneWidget);
       expect(find.text(l10n(tester).fieldRequired), findsOneWidget);
     });
