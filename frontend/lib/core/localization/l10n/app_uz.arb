@@ -1770,5 +1770,31 @@
   "productSaved": "Savat yangilandi",
   "productAlreadyInCart": "Bu mahsulot savatda bor — o'zgartirib, saqlashingiz mumkin",
   "quantitySheetTitle": "Miqdor",
-  "quantitySheetDone": "Tayyor"
+  "quantitySheetDone": "Tayyor",
+  "cartUnitPrice": "{unit} uchun ≈ {price}",
+  "@cartUnitPrice": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "cartUnitPriceExact": "{unit} uchun {price}",
+  "@cartUnitPriceExact": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "cartRemoveTitle": "Savatdan olib tashlansinmi?",
+  "cartRemoveConfirm": "Olib tashlash",
+  "cartEmptyTitle": "Savat hozircha bo'sh",
+  "cartEmptyText": "Katalogdan mahsulot qo'shing — yig'uvchi ularni bozordan oladi, kuryer olib keladi."
 }

@@ -4813,6 +4813,42 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Tayyor'**
   String get quantitySheetDone;
+
+  /// No description provided for @cartUnitPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'{unit} uchun ≈ {price}'**
+  String cartUnitPrice(String unit, String price);
+
+  /// No description provided for @cartUnitPriceExact.
+  ///
+  /// In uz, this message translates to:
+  /// **'{unit} uchun {price}'**
+  String cartUnitPriceExact(String unit, String price);
+
+  /// No description provided for @cartRemoveTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatdan olib tashlansinmi?'**
+  String get cartRemoveTitle;
+
+  /// No description provided for @cartRemoveConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib tashlash'**
+  String get cartRemoveConfirm;
+
+  /// No description provided for @cartEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savat hozircha bo\'sh'**
+  String get cartEmptyTitle;
+
+  /// No description provided for @cartEmptyText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Katalogdan mahsulot qo\'shing — yig\'uvchi ularni bozordan oladi, kuryer olib keladi.'**
+  String get cartEmptyText;
 }
 
 class _AppLocalizationsDelegate

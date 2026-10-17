@@ -2739,4 +2739,27 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get quantitySheetDone => 'Tayyor';
+
+  @override
+  String cartUnitPrice(String unit, String price) {
+    return '$unit uchun ≈ $price';
+  }
+
+  @override
+  String cartUnitPriceExact(String unit, String price) {
+    return '$unit uchun $price';
+  }
+
+  @override
+  String get cartRemoveTitle => 'Savatdan olib tashlansinmi?';
+
+  @override
+  String get cartRemoveConfirm => 'Olib tashlash';
+
+  @override
+  String get cartEmptyTitle => 'Savat hozircha bo\'sh';
+
+  @override
+  String get cartEmptyText =>
+      'Katalogdan mahsulot qo\'shing — yig\'uvchi ularni bozordan oladi, kuryer olib keladi.';
 }

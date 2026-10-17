@@ -1728,5 +1728,31 @@
   "productSaved": "Корзина обновлена",
   "productAlreadyInCart": "Этот товар уже в корзине — можно изменить и сохранить",
   "quantitySheetTitle": "Количество",
-  "quantitySheetDone": "Готово"
+  "quantitySheetDone": "Готово",
+  "cartUnitPrice": "≈ {price} за {unit}",
+  "@cartUnitPrice": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "cartUnitPriceExact": "{price} за {unit}",
+  "@cartUnitPriceExact": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "cartRemoveTitle": "Убрать из корзины?",
+  "cartRemoveConfirm": "Убрать",
+  "cartEmptyTitle": "Корзина пока пуста",
+  "cartEmptyText": "Добавьте товары из каталога — сборщик купит их на рынке, курьер привезёт."
 }

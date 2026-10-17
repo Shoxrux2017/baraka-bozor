@@ -191,9 +191,21 @@ void main() {
     );
   });
 
-  testWidgets('an empty cart leads to the orders', (WidgetTester tester) async {
+  testWidgets('an empty cart leads to the catalog, and the orders are a tab', (
+    WidgetTester tester,
+  ) async {
     await open(tester, at: '/customer/cart');
-    await tapAndSettle(tester, byKey('cart-open-orders'));
+    expect(byKey('cart-open-orders'), findsNothing);
+    await tapAndSettle(tester, byKey('cart-to-catalog'));
+    expect(
+      GoRouter.of(anywhere(tester))
+          .routerDelegate
+          .currentConfiguration
+          .last
+          .matchedLocation,
+      AppPaths.customer,
+    );
+    await tapAndSettle(tester, byKey('open-orders'));
     expect(byKey('orders-list'), findsOneWidget);
   });
 

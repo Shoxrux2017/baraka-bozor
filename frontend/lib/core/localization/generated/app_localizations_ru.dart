@@ -2765,4 +2765,27 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get quantitySheetDone => 'Готово';
+
+  @override
+  String cartUnitPrice(String unit, String price) {
+    return '≈ $price за $unit';
+  }
+
+  @override
+  String cartUnitPriceExact(String unit, String price) {
+    return '$price за $unit';
+  }
+
+  @override
+  String get cartRemoveTitle => 'Убрать из корзины?';
+
+  @override
+  String get cartRemoveConfirm => 'Убрать';
+
+  @override
+  String get cartEmptyTitle => 'Корзина пока пуста';
+
+  @override
+  String get cartEmptyText =>
+      'Добавьте товары из каталога — сборщик купит их на рынке, курьер привезёт.';
 }

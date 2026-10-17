@@ -163,14 +163,3 @@ class CartLineController extends CartMutation {
 final NotifierProviderFamily<CartLineController, MutationState, String>
 cartLineProvider = NotifierProvider.autoDispose
     .family<CartLineController, MutationState, String>(CartLineController.new);
-
-/// The cart screen's removals.
-class CartListActions extends CartMutation {
-  Future<Cart?> remove(String lineId) =>
-      perform(() => carts.remove(lineId), reload: showCart);
-}
-
-final NotifierProvider<CartListActions, MutationState> cartListActionsProvider =
-    NotifierProvider.autoDispose<CartListActions, MutationState>(
-      CartListActions.new,
-    );
