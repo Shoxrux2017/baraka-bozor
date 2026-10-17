@@ -60,9 +60,10 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   /// The latest search sent; an older answer is not heard.
   int _searchId = 0;
 
-  /// Counts every move of the pin, the Customer's or ours; an answer sent
-  /// before the latest move is not heard.
-  int _moves = 0;
+  /// Counts the Customer's touches on the map; an answer sent before the
+  /// latest touch is not heard. The map's own camera reports are not touches:
+  /// Android sends them too when its permission windows cover the screen.
+  int _touches = 0;
 
   @override
   void dispose() {
@@ -73,13 +74,11 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
 
   /// The Customer moved the map.
   void _moved(GeoPoint point) {
-    _moves++;
     setState(() => _point = point);
   }
 
   /// An answer moves the map.
   void _moveTo(GeoPoint point) {
-    _moves++;
     _point = point;
     _mover.moveTo(point);
   }
@@ -90,7 +89,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
       return;
     }
     final int id = ++_searchId;
-    final int moves = _moves;
+    final int touches = _touches;
     setState(() {
       _words = query;
       _searching = true;
@@ -107,7 +106,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
     }
     setState(() {
       _searching = false;
-      if (moves != _moves) {
+      if (touches != _touches) {
         return;
       }
       if (failed) {
@@ -132,7 +131,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   }
 
   Future<void> _whereAmI() async {
-    final int moves = _moves;
+    final int touches = _touches;
     setState(() => _locating = true);
     final GeoPoint? here = await ref.read(deviceLocationProvider).current();
     if (!mounted) {
@@ -145,7 +144,7 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
           content: Text(AppLocalizations.of(context).addressLocationFailed),
         ),
       );
-    } else if (moves == _moves) {
+    } else if (touches == _touches) {
       setState(() => _moveTo(here));
     }
   }
@@ -192,11 +191,15 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        map.picker(
-          initial: widget.initial,
-          mover: _mover,
-          enabled: true,
-          onMoved: _moved,
+        Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) => _touches++,
+          child: map.picker(
+            initial: widget.initial,
+            mover: _mover,
+            enabled: true,
+            onMoved: _moved,
+          ),
         ),
         Positioned(left: 16, right: 16, top: 14, child: _searchField(l10n)),
         Positioned(

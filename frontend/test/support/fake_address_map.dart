@@ -16,35 +16,43 @@ class FakeAddressMap implements AddressMap {
   @override
   final bool movable;
 
+  ValueChanged<GeoPoint>? _onMoved;
+
+  /// Reports a move the way a camera event does: no finger on the map.
+  void emitMove(GeoPoint point) => _onMoved!(point);
+
   @override
   Widget picker({
     required GeoPoint initial,
     required PointMapMover mover,
     required bool enabled,
     required ValueChanged<GeoPoint> onMoved,
-  }) => ListenableBuilder(
-    listenable: mover,
-    builder: (BuildContext context, Widget? child) => Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        Text(
-          '${initial.latitude},${initial.longitude}',
-          key: const ValueKey<String>('fake-map-initial'),
-        ),
-        TextButton(
-          key: const ValueKey<String>('fake-map-move'),
-          onPressed: enabled ? () => onMoved(fakeDoor) : null,
-          child: const Text('move'),
-        ),
-        Text(
-          mover.target == null
-              ? ''
-              : '${mover.target!.latitude},${mover.target!.longitude}',
-          key: const ValueKey<String>('fake-map-target'),
-        ),
-      ],
-    ),
-  );
+  }) {
+    _onMoved = onMoved;
+    return ListenableBuilder(
+      listenable: mover,
+      builder: (BuildContext context, Widget? child) => Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Text(
+            '${initial.latitude},${initial.longitude}',
+            key: const ValueKey<String>('fake-map-initial'),
+          ),
+          TextButton(
+            key: const ValueKey<String>('fake-map-move'),
+            onPressed: enabled ? () => onMoved(fakeDoor) : null,
+            child: const Text('move'),
+          ),
+          Text(
+            mover.target == null
+                ? ''
+                : '${mover.target!.latitude},${mover.target!.longitude}',
+            key: const ValueKey<String>('fake-map-target'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget preview({required GeoPoint point}) => Text(
