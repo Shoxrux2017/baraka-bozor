@@ -1336,9 +1336,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get cartEmpty => 'Savat bo\'sh';
-
-  @override
   String get cartAdded => 'Savatga qo\'shildi';
 
   @override
@@ -1374,9 +1371,6 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get cartUnavailableHint =>
       'Sotuvda yo\'q mahsulotlarni olib tashlang — ular bilan buyurtma berib bo\'lmaydi';
-
-  @override
-  String get cartRemoveLine => 'Savatdan olib tashlash';
 
   @override
   String get cartSaving => 'Saqlanmoqda';

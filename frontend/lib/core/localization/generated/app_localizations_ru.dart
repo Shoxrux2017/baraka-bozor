@@ -1349,9 +1349,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get cartEmpty => 'Корзина пуста';
-
-  @override
   String get cartAdded => 'Добавлено в корзину';
 
   @override
@@ -1387,9 +1384,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get cartUnavailableHint =>
       'Уберите товары, которых нет в продаже, — с ними заказ не оформить';
-
-  @override
-  String get cartRemoveLine => 'Убрать из корзины';
 
   @override
   String get cartSaving => 'Сохраняем';

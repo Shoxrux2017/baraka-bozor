@@ -20,7 +20,7 @@ class CartFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final int? total = cart.estimatedTotalUzs;
+    final int? total = cart.availableCount > 0 ? cart.estimatedTotalUzs : null;
     final int? minimum = cart.minimumOrderUzs;
     final String? why = cart.hasUnavailable
         ? l10n.cartWhyUnavailable

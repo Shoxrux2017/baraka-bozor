@@ -97,12 +97,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     padding: const EdgeInsets.only(top: 16),
                     children: <Widget>[
                       for (final CartLine line in cart.lines)
+                        // The key sits on the list's own child, so a line that
+                        // leaves does not hand its State to the next one.
                         Padding(
+                          key: ValueKey<String>(line.id),
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: CartLineTile(
-                            key: ValueKey<String>(line.id),
-                            line: line,
-                          ),
+                          child: CartLineTile(line: line),
                         ),
                       if (cart.hasUnavailable)
                         const Padding(

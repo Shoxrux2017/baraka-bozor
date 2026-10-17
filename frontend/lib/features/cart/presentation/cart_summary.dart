@@ -22,9 +22,11 @@ class CartSummary extends StatelessWidget {
     String sum(int amount) => MoneyFormat.uzs(amount, language);
     String estimate(int amount) => l10n.cartLineEstimate(sum(amount));
 
-    final int? delivery = cart.deliveryFeeUzs;
-    final int? fee = cart.serviceFeeUzs;
-    final int? total = cart.estimatedTotalUzs;
+    // With nothing left to buy, the fees alone are not an amount to pay.
+    final bool anySold = cart.availableCount > 0;
+    final int? delivery = anySold ? cart.deliveryFeeUzs : null;
+    final int? fee = anySold ? cart.serviceFeeUzs : null;
+    final int? total = anySold ? cart.estimatedTotalUzs : null;
 
     return DecoratedBox(
       decoration: const BoxDecoration(

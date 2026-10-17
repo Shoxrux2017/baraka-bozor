@@ -19,6 +19,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - A blocked Customer account would also stop that person's staff sign-in on the phone (verify refuses before the step). Latent: no API blocks a Customer today.
 - Wave 3 walkthrough compiled, not run, after the staff sign-in change - run it before Wave 4 closes.
 - The kit home's header (mode bar, address and cart, search) scrolls inside 60% of the screen height above the keyboard; with two sessions at 320×640 and text ×2 it takes about that much and the sections below get a strip of about 150 px (they scroll). Only at that extreme size.
+- Stage 4a: the cart's footer is the screen's bottom bar, so a snackbar rises above the button; the lines, the notice, the row, the amounts and the address scroll above it. At 320×640 with text ×2 a single large line leaves little room above the footer, and the rest scrolls.
 
 ## Part 1 history (design 4a, `DL-74`, `DL-75`)
 
@@ -34,7 +35,6 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 
 ## Review findings not acted on
 
-- Stage 4a: the cart's footer is the screen's bottom bar, so a snackbar rises above the button; the lines, the notice, the row, the amounts and the address scroll above it. At 320×640 with text ×2 a single large line leaves little room above the footer, and the rest scrolls. Ruling: by design, kept.
 - Card layout follow-up (`DL-81`), review P3: `ceilToDouble()` in `kitCardExtent` may add 1 px of slack on rare float products. Ruling: no functional effect, kept. (The TalkBack node and the picture corner were fixed in stage 3.)
 - The picture may lie under the heart's 40 px tap box by a few px; the heart is on top and takes those taps. Ruling: no visible or functional effect, kept.
 - Stage 3 branch review, latent: the product screen's `_form.currentState!` is reached only in the frame where the signed-in account changes, when the router removes the route anyway. Ruling: not reachable in use, kept.

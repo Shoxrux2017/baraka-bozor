@@ -659,6 +659,68 @@ void main() {
       expect(cart.patches.single.quantity, '2.25');
     });
 
+    testWidgets('confirming the same amount sends no change', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(tester, at: '/customer/cart');
+
+      await tapAndSettle(tester, byKey('line-qty-$tomatoLine'));
+      await tapAndSettle(tester, byKey('quantity-done'));
+
+      expect(cart.patches, isEmpty);
+      expect(byKey('line-quantity'), findsNothing, reason: 'the sheet closed');
+    });
+
+    testWidgets('a remove sheet stays attached when an earlier line leaves', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          id: tomatoLine,
+          productId: tomatoProduct,
+          available: false,
+        ),
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '1',
+          priceMode: 'fixed',
+          price: 4000,
+          total: 4000,
+        ),
+      ]);
+      await open(tester, at: '/customer/cart');
+
+      final Completer<void> hold = Completer<void>();
+      cart.hold = hold;
+      await tester.tap(byKey('remove-line-$tomatoLine'));
+      await tester.pump();
+      await tester.tap(byKey('line-minus-$breadLine'));
+      await tester.pumpAndSettle();
+      expect(byKey('remove-confirm'), findsOneWidget);
+
+      cart
+        ..hold = null
+        ..answer = cartOf(<Map<String, Object?>>[
+          cartLineJson(
+            id: breadLine,
+            productId: breadProduct,
+            unit: 'piece',
+            quantity: '1',
+            priceMode: 'fixed',
+            price: 4000,
+            total: 4000,
+          ),
+        ]);
+      hold.complete();
+      await tester.pumpAndSettle();
+      await tapAndSettle(tester, byKey('remove-confirm'));
+
+      expect(cart.calls, contains('remove:$breadLine'));
+    });
+
     testWidgets('an available line opens its product', (
       WidgetTester tester,
     ) async {
@@ -719,7 +781,7 @@ void main() {
       ]);
       await open(tester, at: '/customer/cart');
       const ApiRefusal gone = ApiRefusal(
-        ApiError(status: 404, code: 'not_found'),
+        ApiError(status: 404, code: 'resource_not_found'),
       );
 
       cart
@@ -1004,6 +1066,31 @@ void main() {
         l10n(tester).cartWhyUnavailable,
       );
       expect(checkoutActive(tester), isFalse);
+    });
+
+    testWidgets('a cart with nothing sold shows no fees and no total', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(
+        <Map<String, Object?>>[cartLineJson(available: false)],
+        serviceFee: 5000,
+        deliveryFee: 10000,
+        total: 15000,
+      );
+      await open(tester, at: '/customer/cart');
+
+      expect(byKey('cart-delivery'), findsNothing);
+      expect(byKey('cart-service-fee'), findsNothing);
+      expect(byKey('cart-total'), findsNothing);
+      expect(
+        find.descendant(
+          of: byKey('go-to-checkout'),
+          matching: find.textContaining('≈'),
+        ),
+        findsNothing,
+      );
+      expect(checkoutActive(tester), isFalse);
+      expect(byKey('cart-why'), findsOneWidget);
     });
 
     testWidgets('Добавьте к заказу leaves out what is in the cart', (
