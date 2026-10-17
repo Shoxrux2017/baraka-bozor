@@ -137,6 +137,30 @@ void main() {
     );
   });
 
+  testWidgets('the sheet is white with a rounded top and a title line', (
+    WidgetTester tester,
+  ) async {
+    await openSheet(tester);
+
+    final BottomSheet sheet = tester.widget<BottomSheet>(
+      find.byType(BottomSheet),
+    );
+    expect(sheet.backgroundColor, Colors.white);
+    expect(
+      sheet.shape,
+      const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+    );
+    expect(
+      find.descendant(
+        of: byKey('delivery-address-sheet'),
+        matching: find.byType(Divider),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('choosing a card closes the sheet', (WidgetTester tester) async {
     await openSheet(tester);
     await tester.tap(byKey('delivery-address-a-work'));

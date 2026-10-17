@@ -134,6 +134,11 @@ Future<void> showDeliveryAddressSheet(BuildContext context) =>
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
+      useSafeArea: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       builder: (BuildContext sheet) => _DeliveryAddressSheet(
         router: GoRouter.of(context),
         container: ProviderScope.containerOf(context),
@@ -201,6 +206,7 @@ class _DeliveryAddressSheet extends ConsumerWidget {
               ),
             ],
           ),
+          const Divider(height: 15, thickness: 1, color: KitColors.line),
           FailureMessage(actions.failure),
           RadioGroup<String>(
             groupValue: current.value?.id,

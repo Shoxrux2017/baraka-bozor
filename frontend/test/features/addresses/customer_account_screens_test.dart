@@ -448,6 +448,25 @@ void main() {
       expect(draft.street, 'Amir Temur');
     });
 
+    testWidgets('the form and the map step use the kit app bar on white', (
+      WidgetTester tester,
+    ) async {
+      await openAddresses(tester);
+      await tapAndSettle(tester, byKey('address-new'));
+      for (int step = 0; step < 2; step++) {
+        final AppBar bar = tester.widget<AppBar>(find.byType(AppBar).last);
+        expect(bar.centerTitle, isTrue);
+        expect(bar.backgroundColor, Colors.white);
+        expect(
+          tester.widget<Scaffold>(find.byType(Scaffold).last).backgroundColor,
+          Colors.white,
+        );
+        if (step == 0) {
+          await confirmPoint(tester);
+        }
+      }
+    });
+
     testWidgets('back walks the steps', (WidgetTester tester) async {
       await openAddresses(tester);
 

@@ -9,6 +9,7 @@ import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/kit_app_bar.dart';
 import '../application/addresses_controllers.dart';
 import '../domain/addresses.dart';
 import 'address_label_chips.dart';
@@ -166,7 +167,8 @@ class _Plain extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context).addressEdit)),
+      backgroundColor: Colors.white,
+      appBar: kitAppBar(title: AppLocalizations.of(context).addressEdit),
       body: SafeArea(child: UnderActiveMode(child: child)),
     );
   }
@@ -361,7 +363,8 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
           !change.isBusy && (_isNew ? onPoint && !_backToDetails : !onPoint),
       onPopInvokedWithResult: (bool didPop, Object? _) => _back(didPop),
       child: Scaffold(
-        appBar: AppBar(title: Text(title)),
+        backgroundColor: Colors.white,
+        appBar: kitAppBar(title: title),
         body: UnderActiveMode(
           child: onPoint
               ? AddressPointStep(

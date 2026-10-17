@@ -450,8 +450,8 @@ class _AddressCard extends ConsumerWidget {
                 child: OutlinedButton.icon(
                   key: const ValueKey<String>('courier-copy-address'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: KitColors.primaryDark,
-                    side: const BorderSide(color: KitColors.primary),
+                    foregroundColor: KitColors.ink,
+                    side: const BorderSide(color: KitColors.line),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),

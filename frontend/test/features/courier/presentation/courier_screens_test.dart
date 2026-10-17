@@ -7,6 +7,7 @@ import 'package:baraka_bozor/core/localization/order_labels.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/courier/data/courier_orders_api.dart';
@@ -317,6 +318,15 @@ void main() {
         at: AppPaths.courierOrder(courierOrderB),
         device: const Locale('ru'),
       );
+
+      final ButtonStyle copyStyle = tester
+          .widget<OutlinedButton>(byKey('courier-copy-address'))
+          .style!;
+      expect(
+        copyStyle.foregroundColor!.resolve(<WidgetState>{}),
+        KitColors.ink,
+      );
+      expect(copyStyle.side!.resolve(<WidgetState>{})!.color, KitColors.line);
 
       await tapAndSettle(tester, byKey('courier-copy-address'));
       expect(copied, 'Чиланзар, 9-й квартал, 14, кв. 5');
