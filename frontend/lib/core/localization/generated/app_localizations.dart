@@ -1403,7 +1403,7 @@ abstract class AppLocalizations {
   /// No description provided for @deliveryAddressSheetTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Qayerga yetkazamiz?'**
+  /// **'Yetkazish manzili'**
   String get deliveryAddressSheetTitle;
 
   /// No description provided for @catalogSearchClear.
@@ -1735,6 +1735,30 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Manzil saqlandi'**
   String get addressSaved;
+
+  /// No description provided for @addressAddNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi manzil qo\'shish'**
+  String get addressAddNew;
+
+  /// No description provided for @addressMenuEdit.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zgartirish'**
+  String get addressMenuEdit;
+
+  /// No description provided for @addressLandmarkLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mo\'ljal: {landmark}'**
+  String addressLandmarkLine(String landmark);
+
+  /// No description provided for @addressApartmentShort.
+  ///
+  /// In uz, this message translates to:
+  /// **'{apartment}-xonadon'**
+  String addressApartmentShort(String apartment);
 
   /// No description provided for @addressRemove.
   ///

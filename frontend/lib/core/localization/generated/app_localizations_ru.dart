@@ -705,7 +705,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get deliveryAddressRetry => 'Адрес не загрузился — повторить';
 
   @override
-  String get deliveryAddressSheetTitle => 'Куда доставить?';
+  String get deliveryAddressSheetTitle => 'Адрес доставки';
 
   @override
   String get catalogSearchClear => 'Очистить';
@@ -884,6 +884,22 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get addressSaved => 'Адрес сохранён';
+
+  @override
+  String get addressAddNew => 'Добавить новый адрес';
+
+  @override
+  String get addressMenuEdit => 'Изменить';
+
+  @override
+  String addressLandmarkLine(String landmark) {
+    return 'Ориентир: $landmark';
+  }
+
+  @override
+  String addressApartmentShort(String apartment) {
+    return 'кв. $apartment';
+  }
 
   @override
   String get addressRemove => 'Удалить';

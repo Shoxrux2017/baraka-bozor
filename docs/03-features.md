@@ -28,7 +28,7 @@ View and edit `full_name` and `preferred_language` (`uz` or `ru`). Checkout requ
 
 ## 4. Delivery Addresses
 
-Create, list, edit and deactivate own addresses. Required: a point on the map inside the service area, street, house. Optional: label, apartment, landmark, note for the Courier. The point is set on a Google map, or found from the address typed in words and checked by the Customer; the words fill the street (`DL-84` item 2, `DL-86`). The backend stores coordinates and text only and checks the service-area circle. Where the map is shown, the Customer can also open the point in Yandex Maps, and the app's "About" section links to the Yandex Maps terms, as the free MapKit terms require (`DL-36`). The Customer's home names the delivery address above its search; the choice is kept on the device per account, and checkout starts from it (`DL-74`, `DL-75`).
+Create, list, edit and deactivate own addresses. Required: a point on the map inside the service area, street, house. Optional: label, apartment, landmark, note for the Courier. The point is set on a Google map, or found from the address typed in words and checked by the Customer; the words fill the street (`DL-84` item 2, `DL-86`). The backend stores coordinates and text only and checks the service-area circle. The Google logo on the map is never covered (`DL-86` item 2). The Customer's home names the delivery address above its search; the choice is kept on the device per account, and checkout starts from it (`DL-74`, `DL-75`).
 
 ## 5. Catalog
 

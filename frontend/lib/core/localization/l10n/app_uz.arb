@@ -290,7 +290,7 @@
   "homeSeeAll": "Barchasi",
   "deliveryAddressAdd": "Yetkazish manzilini qo'shing",
   "deliveryAddressRetry": "Manzil yuklanmadi — qayta urinish",
-  "deliveryAddressSheetTitle": "Qayerga yetkazamiz?",
+  "deliveryAddressSheetTitle": "Yetkazish manzili",
   "catalogSearchClear": "Tozalash",
   "catalogCategoriesTitle": "Bo'limlar",
   "catalogNoProducts": "Bu yerda hozircha mahsulot yo'q",
@@ -366,6 +366,24 @@
     }
   },
   "addressSaved": "Manzil saqlandi",
+  "addressAddNew": "Yangi manzil qo'shish",
+  "addressMenuEdit": "O'zgartirish",
+  "addressLandmarkLine": "Mo'ljal: {landmark}",
+  "@addressLandmarkLine": {
+    "placeholders": {
+      "landmark": {
+        "type": "String"
+      }
+    }
+  },
+  "addressApartmentShort": "{apartment}-xonadon",
+  "@addressApartmentShort": {
+    "placeholders": {
+      "apartment": {
+        "type": "String"
+      }
+    }
+  },
   "addressRemove": "O'chirish",
   "addressRemoveConfirm": "Bu manzil o'chirilsinmi?",
   "errorConfigurationIncomplete": "Xizmat hali to'liq sozlanmagan. Keyinroq urinib ko'ring",

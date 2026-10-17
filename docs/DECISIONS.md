@@ -1278,3 +1278,5 @@ The Owner approved the drawing `kit/04-korzina-adres.dc.html`.
 3. **The map step** (drawings 22, 22б): the pin in the centre, the address in words above, and "где я". A typed address moves the map; nothing found, or a lookup that cannot answer, leaves the pin to the Customer. Either way the words are kept and offered to the form, so the Courier still reads them. Only the latest search's answer moves the map, and none once the Customer has moved it.
 
 4. **A new address is two steps** on one screen (drawings 22 and 22а): the point, then the details under a still preview with "Изменить точку". An edit opens on the details. Back walks the steps. The label is chosen from Дом, Работа or Своё, and stored as the word, since the label is the Customer's own text.
+
+5. **The delivery-address sheet** (drawings 21, 21а): a card per address with its label, its full line and its landmark, and a menu to edit or delete it. A deletion asks first and keeps the sheet open; deleting the chosen address falls back to the newest (`DL-75`). The cart's address card shows the apartment too.

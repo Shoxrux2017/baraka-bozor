@@ -707,7 +707,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get deliveryAddressRetry => 'Manzil yuklanmadi — qayta urinish';
 
   @override
-  String get deliveryAddressSheetTitle => 'Qayerga yetkazamiz?';
+  String get deliveryAddressSheetTitle => 'Yetkazish manzili';
 
   @override
   String get catalogSearchClear => 'Tozalash';
@@ -888,6 +888,22 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get addressSaved => 'Manzil saqlandi';
+
+  @override
+  String get addressAddNew => 'Yangi manzil qo\'shish';
+
+  @override
+  String get addressMenuEdit => 'O\'zgartirish';
+
+  @override
+  String addressLandmarkLine(String landmark) {
+    return 'Mo\'ljal: $landmark';
+  }
+
+  @override
+  String addressApartmentShort(String apartment) {
+    return '$apartment-xonadon';
+  }
 
   @override
   String get addressRemove => 'O\'chirish';

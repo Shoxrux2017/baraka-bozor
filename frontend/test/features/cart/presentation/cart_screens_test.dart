@@ -1250,6 +1250,7 @@ void main() {
     testWidgets('the address card shows and changes the delivery address', (
       WidgetTester tester,
     ) async {
+      addresses.rows = <Address>[address(apartment: '5')];
       cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
       await open(tester, at: '/customer/cart');
       await tester.ensureVisible(byKey('cart-address'));
@@ -1265,7 +1266,7 @@ void main() {
       expect(
         find.descendant(
           of: byKey('cart-address'),
-          matching: find.text('Amir Temur, 12'),
+          matching: find.text('Amir Temur, 12, 5-xonadon'),
         ),
         findsOneWidget,
       );

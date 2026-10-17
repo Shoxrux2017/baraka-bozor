@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/formatting/address_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../addresses/application/addresses_controllers.dart';
@@ -26,7 +27,14 @@ class CartAddressCard extends ConsumerWidget {
     ) = switch (ref.watch(deliveryAddressProvider)) {
       AsyncData<Address?>(value: final Address address) => (
         _delivery(l10n, address.label ?? address.streetLine),
-        address.label == null ? null : address.streetLine,
+        address.label == null
+            ? addressApartmentPart(l10n, address.apartment)
+            : addressFullLine(
+                l10n,
+                street: address.street,
+                house: address.house,
+                apartment: address.apartment,
+              ),
         l10n.editButton,
         () => showDeliveryAddressSheet(context),
       ),
