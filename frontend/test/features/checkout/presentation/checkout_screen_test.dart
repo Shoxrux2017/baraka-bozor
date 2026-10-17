@@ -9,26 +9,20 @@ import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
-import 'package:baraka_bozor/features/addresses/presentation/map/map_picker.dart';
+import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../support/app_harness.dart';
+import '../../../support/fake_address_map.dart';
 import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_checkout_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/fake_customer_repositories.dart';
 import '../../../support/in_memory_stores.dart';
-
-/// A map that only shows where the pin starts.
-Widget _fakeMap({
-  required GeoPoint initial,
-  required bool enabled,
-  required ValueChanged<GeoPoint> onMoved,
-}) => Text('${initial.latitude},${initial.longitude}');
 
 /// The checkout of `docs/09` sections 18 and 19 through the real router,
 /// cart and checkout screens, with the repositories faked.
@@ -101,7 +95,7 @@ void main() {
         orders: orders,
         preferences: preferences,
         device: device,
-        overrides: [mapPickerProvider.overrideWithValue(_fakeMap)],
+        overrides: [addressMapProvider.overrideWithValue(FakeAddressMap())],
       ),
     );
     await tester.pumpAndSettle();

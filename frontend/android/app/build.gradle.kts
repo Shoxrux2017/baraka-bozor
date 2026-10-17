@@ -9,7 +9,7 @@ plugins {
 /**
  * The values given to `flutter build` or `flutter run` with `--dart-define`,
  * which Flutter passes to Gradle base64-encoded and comma-separated. Read here
- * for the one native consumer, the MapKit key (`DL-33`).
+ * for the one native consumer, the Google Maps key (`DL-86` (2)).
  */
 val dartDefines: Map<String, String> =
     (project.findProperty("dart-defines") as String?)
@@ -37,8 +37,8 @@ android {
         applicationId = "uz.barakabozor.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        // Android 8.0, API 26: Yandex MapKit needs it, and the Owner chose it
-        // as the oldest Android the app supports (`DL-33` (10)).
+        // Android 8.0, API 26: the Owner chose it as the oldest Android the
+        // app supports (`DL-33` (10)).
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
@@ -49,17 +49,8 @@ android {
         versionName = flutter.versionName
 
         // Never committed: the key reaches the build from the command line
-        // only. The value is escaped as a Java string literal.
-        val mapKitKey = dartDefines["YANDEX_MAPKIT_API_KEY"] ?: ""
-        buildConfigField(
-            "String",
-            "YANDEX_MAPKIT_API_KEY",
-            "\"" + mapKitKey.replace("\\", "\\\\").replace("\"", "\\\"") + "\"",
-        )
-    }
-
-    buildFeatures {
-        buildConfig = true
+        // only, and the manifest takes it as a placeholder.
+        manifestPlaceholders["googleMapsApiKey"] = dartDefines["GOOGLE_MAPS_API_KEY"] ?: ""
     }
 
     buildTypes {
@@ -79,13 +70,4 @@ kotlin {
 
 flutter {
     source = "../.."
-}
-
-/** The MapKit variant the yandex_mapkit plugin is built with (gradle.properties). */
-val mapKitVariant = (project.findProperty("yandexMapkit.variant") as String?) ?: "lite"
-
-dependencies {
-    // The version the yandex_mapkit plugin itself uses, in its variant; the
-    // application needs it too, to hand the SDK its key in MainApplication.
-    implementation("com.yandex.android:maps.mobile:4.39.1-$mapKitVariant")
 }

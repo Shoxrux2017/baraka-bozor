@@ -10,7 +10,7 @@ import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/addresses_controllers.dart';
 import '../domain/addresses.dart';
-import 'map/map_picker.dart';
+import 'map/address_map.dart';
 
 /// The Customer's addresses (`docs/09-api-contracts.md` section 13): the
 /// list, a new one, an edit, and removal after a confirmation.
@@ -193,6 +193,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
     text: widget.address?.deliveryNote ?? '',
   );
   late GeoPoint _point = widget.address?.point ?? defaultMapCentre;
+  final PointMapMover _mover = PointMapMover();
 
   /// The point of the last save, so a refusal of the area is shown only
   /// while the pin is still where it was refused.
@@ -210,6 +211,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
     ]) {
       controller.dispose();
     }
+    _mover.dispose();
     super.dispose();
   }
 
@@ -264,7 +266,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final MutationState change = ref.watch(addressFormControllerProvider);
-    final MapPickerBuilder picker = ref.watch(mapPickerProvider);
+    final AddressMap map = ref.watch(addressMapProvider);
 
     Widget field(
       String key,
@@ -302,11 +304,26 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
         key: const ValueKey<String>('address-form'),
         padding: const EdgeInsets.all(16),
         children: <Widget>[
-          picker(
-            initial: _point,
-            enabled: !change.isBusy,
-            onMoved: (GeoPoint point) => setState(() => _point = point),
-          ),
+          if (map.movable) ...<Widget>[
+            // Said only where there is a map to move.
+            Text(l10n.addressMapHint),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 280,
+              child: map.picker(
+                initial: _point,
+                mover: _mover,
+                enabled: !change.isBusy,
+                onMoved: (GeoPoint point) => setState(() => _point = point),
+              ),
+            ),
+          ] else
+            map.picker(
+              initial: _point,
+              mover: _mover,
+              enabled: !change.isBusy,
+              onMoved: (GeoPoint point) => setState(() => _point = point),
+            ),
           const SizedBox(height: 16),
           field('street', _street, l10n.addressStreet, 160, required: true),
           field('house', _house, l10n.addressHouse, 40, required: true),

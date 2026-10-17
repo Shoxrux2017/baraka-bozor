@@ -23,10 +23,10 @@ PHPUnit, Laravel Pint, Larastan (PHPStan level 5)
 Flutter / Dart, Riverpod, GoRouter, Dio, flutter_secure_storage, Material 3
 package:web for the panel's image file dialog (DL-28)
 url_launcher for calls and the phone's map app from staff screens (DL-54 (16), DL-69)
-Yandex MapKit for the address picker
+Google Maps (`google_maps_flutter`) for the address picker; a typed address is looked up through the backend
 ```
 
-Targets: **Android** 8.0 (API 26) and newer — the Owner's choice, since Yandex MapKit needs it (`DL-33` (10)) — and the **web panel** from the first client wave; **iOS** once a Mac and an Apple developer account exist (iOS code is written throughout). No Windows or Linux desktop build.
+Targets: **Android** 8.0 (API 26) and newer — the Owner's choice (`DL-33` (10)) — and the **web panel** from the first client wave; **iOS** once a Mac and an Apple developer account exist (iOS code is written throughout). No Windows or Linux desktop build.
 
 ## 3. Repository Baseline
 
@@ -104,7 +104,7 @@ Relational catalog with paired language columns. Server-side PostgreSQL search o
 
 ## 11. Address and Map
 
-The backend stores coordinates and text and validates the service-area circle by great-circle distance from the configured centre. The client uses Yandex MapKit for the picker. The backend looks up a typed address through the Google Geocoding API with its own key (`GOOGLE_MAPS_GEOCODING_KEY`), bounded to the service area's box, and answers only the point; it stores and logs neither the query nor Google's answer, which the Geocoding terms allow to be cached for at most 30 days. The key reaches the Android build from the gitignored `frontend/.env.mapkit` through `--dart-define-from-file`; a build without it takes the point as coordinates (`DL-33` (4)) and never starts MapKit. A key Yandex refuses aborts the app a few seconds after launch, since MapKit starts with the app; before the map returns, MapKit must start only when the map is opened (`DL-53` (1)). The free MapKit terms bind the client (`DL-36`): the map stays on the Customer's address form, with an "Open in Maps" button and the Yandex logo left uncovered, the app's "About" section links to the Yandex Maps terms, and no Yandex search or geocoder result is stored with an address. Whether the free tier suits the service at all is an open question for the Owner.
+The backend stores coordinates and text and validates the service-area circle by great-circle distance from the configured centre. The client uses Google Maps for the picker. The backend looks up a typed address through the Google Geocoding API with its own key (`GOOGLE_MAPS_GEOCODING_KEY`), bounded to the service area's box, and answers only the point; it stores and logs neither the query nor Google's answer, which the Geocoding terms allow to be cached for at most 30 days. The client's Google Maps key (Maps SDK for Android) reaches the Android build from the gitignored `frontend/.env.maps` through `--dart-define-from-file`. A build without the key, the web and iOS take the point as coordinates until the iOS key is wired on the first Mac build, since an iOS map without a key aborts (`DL-86` (2)). Google's SDK starts only when a map is shown. The Google logo is never covered. "Где я" reads the device's position only when the Customer taps it, and only moves the camera; the position is sent only with the point the Customer confirms.
 
 ## 12. Order Aggregate
 

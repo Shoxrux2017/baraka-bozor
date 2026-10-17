@@ -10,7 +10,7 @@ import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
-import 'package:baraka_bozor/features/addresses/presentation/map/map_picker.dart';
+import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,30 +20,10 @@ import 'package:baraka_bozor/features/profile/domain/profile.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 
 import '../../support/app_harness.dart';
+import '../../support/fake_address_map.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_customer_repositories.dart';
 import '../../support/in_memory_stores.dart';
-
-const GeoPoint _door = GeoPoint(latitude: '41.320000', longitude: '69.250000');
-
-/// A map whose pin moves to [_door] when its button is tapped.
-Widget _fakeMap({
-  required GeoPoint initial,
-  required bool enabled,
-  required ValueChanged<GeoPoint> onMoved,
-}) => Column(
-  children: <Widget>[
-    Text(
-      '${initial.latitude},${initial.longitude}',
-      key: const ValueKey<String>('fake-map-initial'),
-    ),
-    TextButton(
-      key: const ValueKey<String>('fake-map-move'),
-      onPressed: () => onMoved(_door),
-      child: const Text('move'),
-    ),
-  ],
-);
 
 /// The Customer's profile and addresses (W1-13) through the real router,
 /// session and screens.
@@ -85,7 +65,7 @@ void main() {
         preferences: preferences,
         overrides: [
           profileRepositoryProvider.overrideWithValue(profile),
-          if (fakeMap) mapPickerProvider.overrideWithValue(_fakeMap),
+          if (fakeMap) addressMapProvider.overrideWithValue(FakeAddressMap()),
         ],
       ),
     );
@@ -220,7 +200,7 @@ void main() {
 
       final (String? id, AddressDraft draft) = addresses.saved.single;
       expect(id, isNull);
-      expect(draft.point, _door);
+      expect(draft.point, fakeDoor);
       expect(draft.street, 'Navoiy');
       expect(draft.label, isNull);
       expect(draft.deliveryNote, 'Domofon 12');
@@ -495,7 +475,7 @@ void main() {
         addresses: addresses,
         overrides: [
           profileRepositoryProvider.overrideWithValue(profile),
-          mapPickerProvider.overrideWithValue(_fakeMap),
+          addressMapProvider.overrideWithValue(FakeAddressMap()),
         ],
       ),
     );
