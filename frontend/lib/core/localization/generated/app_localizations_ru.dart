@@ -762,9 +762,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressEdit => 'Изменить адрес';
 
   @override
-  String get addressLabel => 'Название, например, Дом или Работа';
-
-  @override
   String get addressStreet => 'Улица';
 
   @override
@@ -778,6 +775,42 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get addressDeliveryNote => 'Комментарий для курьера';
+
+  @override
+  String get addressFieldStreet => 'Улица, массив или квартал';
+
+  @override
+  String get addressFieldApartment => 'Квартира или офис';
+
+  @override
+  String get addressLandmarkHint => 'Например: напротив школы № 64';
+
+  @override
+  String get addressFieldNote => 'Комментарий курьеру';
+
+  @override
+  String get addressNoteHint => 'Подъезд, этаж, код домофона';
+
+  @override
+  String get addressLabelTitle => 'Как назвать адрес';
+
+  @override
+  String get addressLabelHome => 'Дом';
+
+  @override
+  String get addressLabelWork => 'Работа';
+
+  @override
+  String get addressLabelCustom => 'Своё';
+
+  @override
+  String get addressLabelName => 'Название';
+
+  @override
+  String get addressChangePoint => 'Изменить точку';
+
+  @override
+  String get addressSaveButton => 'Сохранить адрес';
 
   @override
   String get addressMapHint =>

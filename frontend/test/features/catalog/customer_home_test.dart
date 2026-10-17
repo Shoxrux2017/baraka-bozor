@@ -388,6 +388,8 @@ void main() {
   });
 
   Future<void> saveNewAddress(WidgetTester tester) async {
+    await tester.tap(byKey('address-point-confirm'));
+    await tester.pumpAndSettle();
     await tester.enterText(byKey('field-street'), 'Dacha');
     await tester.enterText(byKey('field-house'), '9');
     await tester.scrollUntilVisible(

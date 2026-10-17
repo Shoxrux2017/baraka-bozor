@@ -764,9 +764,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get addressEdit => 'Manzilni tahrirlash';
 
   @override
-  String get addressLabel => 'Nomi, masalan, Uy yoki Ish';
-
-  @override
   String get addressStreet => 'Ko\'cha';
 
   @override
@@ -780,6 +777,42 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get addressDeliveryNote => 'Kuryer uchun izoh';
+
+  @override
+  String get addressFieldStreet => 'Ko\'cha, massiv yoki mavze';
+
+  @override
+  String get addressFieldApartment => 'Xonadon yoki ofis';
+
+  @override
+  String get addressLandmarkHint => 'Masalan: 64-maktab qarshisida';
+
+  @override
+  String get addressFieldNote => 'Kuryerga izoh';
+
+  @override
+  String get addressNoteHint => 'Podyezd, qavat, domofon kodi';
+
+  @override
+  String get addressLabelTitle => 'Manzil nomi';
+
+  @override
+  String get addressLabelHome => 'Uy';
+
+  @override
+  String get addressLabelWork => 'Ish';
+
+  @override
+  String get addressLabelCustom => 'Boshqa';
+
+  @override
+  String get addressLabelName => 'Nomi';
+
+  @override
+  String get addressChangePoint => 'Nuqtani o\'zgartirish';
+
+  @override
+  String get addressSaveButton => 'Manzilni saqlash';
 
   @override
   String get addressMapHint =>

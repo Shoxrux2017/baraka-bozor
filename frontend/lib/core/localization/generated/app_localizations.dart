@@ -1508,12 +1508,6 @@ abstract class AppLocalizations {
   /// **'Manzilni tahrirlash'**
   String get addressEdit;
 
-  /// No description provided for @addressLabel.
-  ///
-  /// In uz, this message translates to:
-  /// **'Nomi, masalan, Uy yoki Ish'**
-  String get addressLabel;
-
   /// No description provided for @addressStreet.
   ///
   /// In uz, this message translates to:
@@ -1543,6 +1537,78 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Kuryer uchun izoh'**
   String get addressDeliveryNote;
+
+  /// No description provided for @addressFieldStreet.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'cha, massiv yoki mavze'**
+  String get addressFieldStreet;
+
+  /// No description provided for @addressFieldApartment.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xonadon yoki ofis'**
+  String get addressFieldApartment;
+
+  /// No description provided for @addressLandmarkHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Masalan: 64-maktab qarshisida'**
+  String get addressLandmarkHint;
+
+  /// No description provided for @addressFieldNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryerga izoh'**
+  String get addressFieldNote;
+
+  /// No description provided for @addressNoteHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Podyezd, qavat, domofon kodi'**
+  String get addressNoteHint;
+
+  /// No description provided for @addressLabelTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzil nomi'**
+  String get addressLabelTitle;
+
+  /// No description provided for @addressLabelHome.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uy'**
+  String get addressLabelHome;
+
+  /// No description provided for @addressLabelWork.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ish'**
+  String get addressLabelWork;
+
+  /// No description provided for @addressLabelCustom.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa'**
+  String get addressLabelCustom;
+
+  /// No description provided for @addressLabelName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nomi'**
+  String get addressLabelName;
+
+  /// No description provided for @addressChangePoint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nuqtani o\'zgartirish'**
+  String get addressChangePoint;
+
+  /// No description provided for @addressSaveButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzilni saqlash'**
+  String get addressSaveButton;
 
   /// No description provided for @addressMapHint.
   ///

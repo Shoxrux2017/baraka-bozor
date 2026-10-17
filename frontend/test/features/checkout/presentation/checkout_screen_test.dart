@@ -421,6 +421,7 @@ void main() {
         expect(selected(tester), 'a-2');
 
         await tapAndSettle(tester, byKey('checkout-add-address'));
+        await tapAndSettle(tester, byKey('address-point-confirm'));
         await tester.enterText(byKey('field-street'), 'Dacha');
         await tester.enterText(byKey('field-house'), '9');
         await tapAndSettle(tester, byKey('address-save'));
