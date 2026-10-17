@@ -37,10 +37,6 @@ class AddressPointStep extends ConsumerStatefulWidget {
 
 enum _Search { start, found, notFound, unavailable }
 
-// The drawing's orange box; the kit palette has no warning colour.
-const Color _warningFill = Color(0xFFFFF4E5);
-const Color _warningLine = Color(0xFFF5B66B);
-
 class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   static const int _shortest = 3;
 
@@ -195,7 +191,6 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
           enabled: true,
           onMoved: _moved,
         ),
-        const IgnorePointer(child: _Pin()),
         Positioned(left: 16, right: 16, top: 14, child: _searchField(l10n)),
         Positioned(
           left: 16,
@@ -298,10 +293,12 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
     final Widget? box = switch (_search) {
       _Search.notFound => _Notice(
         'address-search-not-found',
+        Icons.travel_explore,
         l10n.addressSearchNotFound,
       ),
       _Search.unavailable => _Notice(
         'address-search-unavailable',
+        Icons.cloud_off,
         l10n.addressSearchUnavailable,
       ),
       _ => null,
@@ -349,14 +346,28 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
                             ),
                           ),
                       if (_words != null) ...<Widget>[
-                        const SizedBox(height: 8),
-                        Text(
-                          l10n.addressWordsKept,
+                        const SizedBox(height: 10),
+                        Row(
                           key: const ValueKey<String>('address-words-kept'),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: KitColors.muted,
-                          ),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            const Icon(
+                              Icons.check_circle,
+                              size: 16,
+                              color: KitColors.primaryDark,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                l10n.addressWordsKept,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: KitColors.primaryDark,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
@@ -391,37 +402,6 @@ class _AddressPointStepState extends ConsumerState<AddressPointStep> {
   }
 }
 
-/// The pin in the centre of the map; its tip is on the map's centre.
-class _Pin extends StatelessWidget {
-  const _Pin();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Stack(
-      alignment: Alignment.center,
-      children: <Widget>[
-        DecoratedBox(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: <BoxShadow>[
-              BoxShadow(color: Color(0x4D000000), blurRadius: 4),
-            ],
-          ),
-          child: SizedBox(width: 8, height: 3),
-        ),
-        Padding(
-          padding: EdgeInsets.only(bottom: 48),
-          child: Icon(
-            Icons.location_on,
-            size: 48,
-            color: KitColors.primaryDark,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _Hint extends StatelessWidget {
   const _Hint(this.text);
 
@@ -446,11 +426,12 @@ class _Hint extends StatelessWidget {
   }
 }
 
-/// The drawing's orange box: the search could not place the address.
+/// The drawing's amber box: the search could not place the address.
 class _Notice extends StatelessWidget {
-  const _Notice(this.keyName, this.text);
+  const _Notice(this.keyName, this.icon, this.text);
 
   final String keyName;
+  final IconData icon;
   final String text;
 
   @override
@@ -458,15 +439,27 @@ class _Notice extends StatelessWidget {
     return DecoratedBox(
       key: ValueKey<String>(keyName),
       decoration: BoxDecoration(
-        color: _warningFill,
-        border: Border.all(color: _warningLine),
-        borderRadius: BorderRadius.circular(12),
+        color: KitColors.warningWash,
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Text(
-          text,
-          style: const TextStyle(fontSize: 13, color: KitColors.ink),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(icon, size: 20, color: KitColors.warning),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 1.5,
+                  color: KitColors.ink2,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

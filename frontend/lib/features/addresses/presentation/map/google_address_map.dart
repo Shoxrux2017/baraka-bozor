@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../../../../core/theme/kit_colors.dart';
 import '../../domain/addresses.dart';
 import 'address_map.dart';
 
@@ -34,16 +35,34 @@ final class GoogleAddressMap implements AddressMap {
 LatLng _latLng(GeoPoint point) =>
     LatLng(point.latitudeDegrees, point.longitudeDegrees);
 
-/// The pin's tip marks the point, so the icon sits above the centre; a drag
-/// that starts on it moves the map.
+/// The drawing's pin: its tip marks the point, so the icon sits above the
+/// centre, with a small shadow under the tip. A drag that starts on it moves
+/// the map.
 class _CentrePin extends StatelessWidget {
-  const _CentrePin();
+  const _CentrePin({required this.size});
+
+  final double size;
 
   @override
-  Widget build(BuildContext context) => const IgnorePointer(
-    child: Padding(
-      padding: EdgeInsets.only(bottom: 40),
-      child: Icon(Icons.location_pin, size: 48),
+  Widget build(BuildContext context) => IgnorePointer(
+    child: Stack(
+      alignment: Alignment.center,
+      children: <Widget>[
+        const SizedBox(
+          width: 14,
+          height: 6,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Color(0x40151D16),
+              borderRadius: BorderRadius.all(Radius.elliptical(14, 6)),
+            ),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.only(bottom: size),
+          child: Icon(Icons.location_on, size: size, color: KitColors.primary),
+        ),
+      ],
     ),
   );
 }
@@ -186,7 +205,7 @@ class _GooglePickerState extends State<_GooglePicker> {
               }
             },
           ),
-          const _CentrePin(),
+          const _CentrePin(size: 48),
         ],
       ),
     );
@@ -222,7 +241,7 @@ class _GooglePreview extends StatelessWidget {
             scrollGesturesEnabled: false,
             zoomGesturesEnabled: false,
           ),
-          const _CentrePin(),
+          const _CentrePin(size: 36),
         ],
       ),
     );

@@ -34,4 +34,10 @@ abstract final class KitColors {
 
   /// Errors and destructive actions.
   static const Color danger = Color(0xFFF04438);
+
+  /// Warnings: the icon of a notice that asks for the Customer's own action.
+  static const Color warning = Color(0xFFE8A317);
+
+  /// Faint amber wash behind a warning notice.
+  static const Color warningWash = Color(0xFFFFF6E5);
 }

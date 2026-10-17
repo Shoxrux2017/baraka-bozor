@@ -98,6 +98,14 @@ void main() {
     expect(confirmed.single.words, isNull);
   });
 
+  testWidgets('the step draws no pin of its own: the map owns it', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+
+    expect(find.byIcon(Icons.location_on), findsNothing);
+  });
+
   testWidgets('a typed address moves the map and is kept', (
     WidgetTester tester,
   ) async {
