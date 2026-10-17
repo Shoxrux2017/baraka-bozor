@@ -7,7 +7,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 | 1 | Вход: splash, phone, code, name, staff password (`DL-77`) | Merged (PR #88) |
 | 2 | Главная | Merged (PR #89, #90, #91, #92) |
 | 3 | Поиск и товар | Merged (PR #93) |
-| 4 | Корзина и адрес | Merged (PR #94, #NN) |
+| 4 | Корзина и адрес | Merged (PR #94, #95) |
 | 5 | Оформление | Planned |
 | 6 | Заказы | Planned |
 | 7 | Профиль | Planned |
