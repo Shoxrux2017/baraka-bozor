@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Orders\Http\Resources;
 
 use App\Modules\Catalog\ProductImages;
+use App\Modules\Orders\CartCharges;
 use App\Modules\Orders\CartLine;
 use App\Modules\Orders\CartView;
 use App\Modules\Orders\QuantityPolicy;
@@ -23,7 +24,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 final class CartResource extends JsonResource
 {
-    public function __construct(CartView $view)
+    public function __construct(CartView $view, private readonly CartCharges $charges)
     {
         parent::__construct($view);
     }
@@ -40,6 +41,12 @@ final class CartResource extends JsonResource
             'items' => array_map($this->line(...), $view->lines),
             'item_count' => count($view->lines),
             'estimated_subtotal_uzs' => $view->estimatedSubtotalUzs,
+            'service_fee_uzs' => $this->charges->serviceFeeUzs,
+            'service_fee_kind' => $this->charges->serviceFeeKind,
+            'delivery_fee_uzs' => $this->charges->deliveryFeeUzs,
+            'estimated_total_uzs' => $this->charges->estimatedTotalUzs,
+            'minimum_order_uzs' => $this->charges->minimumOrderUzs,
+            'minimum_order_shortfall_uzs' => $this->charges->minimumOrderShortfallUzs,
         ];
     }
 

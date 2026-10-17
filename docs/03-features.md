@@ -44,7 +44,7 @@ Every product is an estimate since `DL-78`; `fixed` survives only on lines place
 
 ## 8. Cart
 
-One active cart per Customer, created on first access. A product appears at most once; the Customer changes quantity, note and substitution rule, removes items, and sees current customer prices. The cart is not history.
+One active cart per Customer, created on first access. A product appears at most once; the Customer changes quantity, note and substitution rule, removes items, and sees current customer prices, the service and delivery fees, the estimated total and what is missing to the minimum order. The cart is not history.
 
 ## 9. Checkout Preview
 
