@@ -10,6 +10,8 @@ class _FakeGeolocator extends Fake implements GeolocatorPlatform {
   LocationPermission permission = LocationPermission.whileInUse;
   LocationPermission afterRequest = LocationPermission.whileInUse;
   Completer<Position>? pending;
+  Exception? positionError;
+  Exception? requestError;
   int requests = 0;
 
   @override
@@ -21,12 +23,17 @@ class _FakeGeolocator extends Fake implements GeolocatorPlatform {
   @override
   Future<LocationPermission> requestPermission() async {
     requests++;
+    if (requestError != null) {
+      throw requestError!;
+    }
     return afterRequest;
   }
 
   @override
   Future<Position> getCurrentPosition({LocationSettings? locationSettings}) =>
-      pending?.future ?? Future<Position>.value(_position);
+      positionError != null
+      ? Future<Position>.error(positionError!)
+      : pending?.future ?? Future<Position>.value(_position);
 }
 
 final Position _position = Position(
@@ -83,6 +90,21 @@ void main() {
 
     expect(await location.current(), isNull);
     expect(platform.requests, 0);
+  });
+
+  test('services switched off during the reading give null', () async {
+    platform.positionError = const LocationServiceDisabledException();
+
+    expect(await location.current(), isNull);
+  });
+
+  test('a permission request already in progress gives null', () async {
+    platform.permission = LocationPermission.denied;
+    platform.requestError = const PermissionRequestInProgressException(
+      'in progress',
+    );
+
+    expect(await location.current(), isNull);
   });
 
   testWidgets('a reading over ten seconds gives null', (

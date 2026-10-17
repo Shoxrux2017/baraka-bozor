@@ -48,6 +48,49 @@ class _CentrePin extends StatelessWidget {
   );
 }
 
+/// Tells the application's own camera moves from the Customer's, so the
+/// app's move never rounds a stored point (`DL-23` (3)). The plugin's
+/// `animateCamera` completes when the call is dispatched, not when the
+/// animation ends, so the start of the move is what is classified.
+class CameraMoveClassifier {
+  CameraMoveClassifier(GeoPoint initial) : _centre = initial;
+
+  GeoPoint _centre;
+  bool _appMoveExpected = false;
+  bool _customerMove = false;
+
+  /// Whether the camera should be animated to [target]; false when it is
+  /// already there, since no camera move would follow.
+  bool appMoveRequested(GeoPoint target) {
+    if (target == _centre) {
+      return false;
+    }
+    _appMoveExpected = true;
+    return true;
+  }
+
+  /// A camera move started: the Customer's unless the app asked for it.
+  void moveStarted() {
+    _customerMove = !_appMoveExpected;
+    _appMoveExpected = false;
+  }
+
+  /// The camera is at [latitude], [longitude].
+  void moved(double latitude, double longitude) {
+    _centre = GeoPoint.fromDegrees(latitude, longitude);
+  }
+
+  /// The camera came to rest: the point to report, or `null` when the move
+  /// was not the Customer's.
+  GeoPoint? idle() {
+    if (!_customerMove) {
+      return null;
+    }
+    _customerMove = false;
+    return _centre;
+  }
+}
+
 /// The map with a pin fixed at its centre: the Customer moves the map until
 /// the pin stands on the door, and the point under the pin is read back when
 /// the map comes to rest.
@@ -70,12 +113,7 @@ class _GooglePicker extends StatefulWidget {
 
 class _GooglePickerState extends State<_GooglePicker> {
   GoogleMapController? _controller;
-  LatLng? _centre;
-
-  /// A move the application asked for is running: it is not the Customer's,
-  /// so it never rounds a stored point (`DL-23` (3)).
-  bool _appMoving = false;
-  bool _customerMoving = false;
+  late final CameraMoveClassifier _moves = CameraMoveClassifier(widget.initial);
 
   @override
   void initState() {
@@ -101,17 +139,14 @@ class _GooglePickerState extends State<_GooglePicker> {
   Future<void> _moverMoved() async {
     final GeoPoint? target = widget.mover.target;
     final GoogleMapController? controller = _controller;
-    if (target == null || controller == null) {
+    if (target == null ||
+        controller == null ||
+        !_moves.appMoveRequested(target)) {
       return;
     }
-    _appMoving = true;
-    try {
-      await controller.animateCamera(
-        CameraUpdate.newLatLngZoom(_latLng(target), 17),
-      );
-    } finally {
-      _appMoving = false;
-    }
+    await controller.animateCamera(
+      CameraUpdate.newLatLngZoom(_latLng(target), 17),
+    );
   }
 
   @override
@@ -139,16 +174,15 @@ class _GooglePickerState extends State<_GooglePicker> {
             },
             onMapCreated: (GoogleMapController controller) =>
                 _controller = controller,
-            onCameraMoveStarted: () => _customerMoving = !_appMoving,
-            onCameraMove: (CameraPosition position) =>
-                _centre = position.target,
+            onCameraMoveStarted: _moves.moveStarted,
+            onCameraMove: (CameraPosition position) => _moves.moved(
+              position.target.latitude,
+              position.target.longitude,
+            ),
             onCameraIdle: () {
-              final LatLng? centre = _centre;
-              if (_customerMoving && centre != null) {
-                _customerMoving = false;
-                widget.onMoved(
-                  GeoPoint.fromDegrees(centre.latitude, centre.longitude),
-                );
+              final GeoPoint? point = _moves.idle();
+              if (point != null) {
+                widget.onMoved(point);
               }
             },
           ),

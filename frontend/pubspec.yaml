@@ -21,8 +21,8 @@ dependencies:
   intl: ^0.20.3
   web: ^1.1.1
   url_launcher: ^6.3.2
-  google_maps_flutter: 2.18.2
-  geolocator: 14.1.1
+  google_maps_flutter: ^2.18.2
+  geolocator: ^14.1.1
 
 dev_dependencies:
   flutter_test:

@@ -44,6 +44,18 @@ final class GeolocatorDeviceLocation implements DeviceLocation {
       return null;
     } on PlatformException {
       return null;
+    } on LocationServiceDisabledException {
+      return null;
+    } on PermissionDeniedException {
+      return null;
+    } on PermissionRequestInProgressException {
+      return null;
+    } on PermissionDefinitionsNotFoundException {
+      return null;
+    } on ActivityMissingException {
+      return null;
+    } on PositionUpdateException {
+      return null;
     }
   }
 }
