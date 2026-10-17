@@ -285,6 +285,43 @@ void main() {
     expect(confirmed.single.point, fakeDoor);
   });
 
+  testWidgets('a camera report while the location is read still moves the '
+      'map', (WidgetTester tester) async {
+    final FakeAddressMap map = FakeAddressMap();
+    location.hold = true;
+    await open(tester, map: map);
+    await tester.tap(byKey('address-my-location'));
+    await tester.pump();
+
+    map.emitMove(fakeDoor);
+    await tester.pump();
+    location.release(found);
+    await tester.pump();
+
+    expect(target(tester), '41.299512,69.240146');
+    await confirm(tester);
+    expect(confirmed.single.point, found);
+  });
+
+  testWidgets('a camera report while a search runs still moves the map', (
+    WidgetTester tester,
+  ) async {
+    final FakeAddressMap map = FakeAddressMap();
+    search.held.add('Navoiy 5');
+    await open(tester, map: map);
+    await type(tester, 'Navoiy 5');
+
+    map.emitMove(fakeDoor);
+    await tester.pump();
+    search.release('Navoiy 5', found);
+    await tester.pump();
+
+    expect(target(tester), '41.299512,69.240146');
+    await confirm(tester);
+    expect(confirmed.single.point, found);
+    expect(confirmed.single.words, 'Navoiy 5');
+  });
+
   testWidgets('a refused location says so and leaves the map', (
     WidgetTester tester,
   ) async {
