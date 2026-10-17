@@ -693,14 +693,6 @@
   "cartIncrease": "Ko'paytirish",
   "cartNote": "Yig'uvchi uchun izoh",
   "cartSubstitution": "Mahsulot bo'lmasa",
-  "cartSubtotal": "Taxminiy jami: {amount}",
-  "@cartSubtotal": {
-    "placeholders": {
-      "amount": {
-        "type": "String"
-      }
-    }
-  },
   "cartLineEstimate": "≈ {amount}",
   "@cartLineEstimate": {
     "placeholders": {
@@ -1796,5 +1788,44 @@
   "cartRemoveTitle": "Savatdan olib tashlansinmi?",
   "cartRemoveConfirm": "Olib tashlash",
   "cartEmptyTitle": "Savat hozircha bo'sh",
-  "cartEmptyText": "Katalogdan mahsulot qo'shing — yig'uvchi ularni bozordan oladi, kuryer olib keladi."
+  "cartEmptyText": "Katalogdan mahsulot qo'shing — yig'uvchi ularni bozordan oladi, kuryer olib keladi.",
+  "cartGoods": "Mahsulotlar ({count})",
+  "@cartGoods": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cartDelivery": "Yetkazib berish",
+  "cartServiceFee": "Xizmat haqi",
+  "cartTotal": "Jami",
+  "cartEstimateNote": "Summa taxminiy. Yakuniy summani xariddan keyin bozor narxlari bo'yicha hisoblaymiz; narx ruxsat etilganidan oshsa — sizdan so'raymiz.",
+  "cartMinimumShort": "Minimal buyurtmagacha {amount} yetmayapti",
+  "@cartMinimumShort": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartMinimumRule": "Mahsulotlarning minimal summasi — {amount}, yetkazib berish va xizmat haqisiz",
+  "@cartMinimumRule": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartWhyUnavailable": "Avval sotuvda yo'q mahsulotlarni olib tashlang",
+  "cartWhyMinimum": "Minimal buyurtma — {amount}",
+  "@cartWhyMinimum": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartAddMoreTitle": "Buyurtmaga qo'shing",
+  "cartDeliveryTo": "Yetkazish:"
 }

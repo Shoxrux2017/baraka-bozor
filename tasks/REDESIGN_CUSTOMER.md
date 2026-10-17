@@ -6,8 +6,8 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 |---|---|---|
 | 1 | Вход: splash, phone, code, name, staff password (`DL-77`) | Merged (PR #88) |
 | 2 | Главная | Merged (PR #89, #90, #91, #92) |
-| 3 | Поиск и товар | In Progress |
-| 4 | Корзина | Planned |
+| 3 | Поиск и товар | Merged (PR #93) |
+| 4 | Корзина и адрес | In Progress (4a cart; 4b address, Google map, courier) |
 | 5 | Оформление | Planned |
 | 6 | Заказы | Planned |
 | 7 | Профиль | Planned |
@@ -34,6 +34,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 
 ## Review findings not acted on
 
+- Stage 4a: the cart's footer is the screen's bottom bar, so a snackbar rises above the button; the lines, the notice, the row, the amounts and the address scroll above it. At 320×640 with text ×2 a single large line leaves little room above the footer, and the rest scrolls. Ruling: by design, kept.
 - Card layout follow-up (`DL-81`), review P3: `ceilToDouble()` in `kitCardExtent` may add 1 px of slack on rare float products. Ruling: no functional effect, kept. (The TalkBack node and the picture corner were fixed in stage 3.)
 - The picture may lie under the heart's 40 px tap box by a few px; the heart is on top and takes those taps. Ruling: no visible or functional effect, kept.
 - Stage 3 branch review, latent: the product screen's `_form.currentState!` is reached only in the frame where the signed-in account changes, when the router removes the route anyway. Ruling: not reachable in use, kept.

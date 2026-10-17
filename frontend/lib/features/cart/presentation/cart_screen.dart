@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/formatting/money_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
-import '../../../core/localization/interface_language.dart';
 import '../../../core/orders/unconfirmed_order.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/customer_account.dart';
@@ -12,15 +10,21 @@ import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
+import '../../catalog/presentation/recommended_row.dart';
 import '../application/cart_controllers.dart';
 import '../domain/cart.dart';
+import 'cart_address_card.dart';
+import 'cart_footer.dart';
 import 'cart_line_tile.dart';
+import 'cart_minimum_notice.dart';
+import 'cart_summary.dart';
 
 /// The Customer's cart (`docs/09` section 17): every line with its quantity,
 /// current price and estimate, stepped in place, a line no longer sold marked
-/// and removable only, and the estimate of the subtotal as the server
-/// computed it (`DL-37` (19), (20)). A line opens its product, where its rule
-/// and note are changed.
+/// and removable only, what is missing to the minimum order, the recommended
+/// products not yet in it, the amounts and the delivery address as the server
+/// computed them (`DL-37` (19), (20)). A line opens its product, where its
+/// rule and note are changed.
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
@@ -53,10 +57,19 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<Cart> cart = ref.watch(currentCartProvider);
 
+    // The footer is the Scaffold's own bottom bar, so a notice rises above it
+    // instead of covering the button.
+    final Cart? loaded = cart.hasError ? null : cart.value;
+    final bool hasFooter = loaded != null && loaded.lines.isNotEmpty;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: kitAppBar(title: l10n.cartTitle),
+      bottomNavigationBar: hasFooter
+          ? SafeArea(top: false, child: CartFooter(cart: loaded))
+          : null,
       body: SafeArea(
+        bottom: !hasFooter,
         child: Column(
           children: <Widget>[
             const ActiveModeBar(),
@@ -81,44 +94,34 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   }
                   return ListView(
                     key: const ValueKey<String>('cart-lines'),
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.only(top: 16),
                     children: <Widget>[
                       for (final CartLine line in cart.lines)
-                        CartLineTile(
-                          key: ValueKey<String>(line.id),
-                          line: line,
-                        ),
-                      if (cart.lines.any((CartLine line) => !line.isAvailable))
-                        const _UnavailableHint(),
-                      const SizedBox(height: 16),
-                      Text(
-                        l10n.cartSubtotal(
-                          MoneyFormat.uzs(
-                            cart.estimatedSubtotalUzs,
-                            interfaceLanguage(context),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: CartLineTile(
+                            key: ValueKey<String>(line.id),
+                            line: line,
                           ),
                         ),
-                        key: const ValueKey<String>('cart-subtotal'),
-                        style: Theme.of(context).textTheme.titleMedium,
+                      if (cart.hasUnavailable)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: _UnavailableHint(),
+                        ),
+                      CartMinimumNotice(cart: cart),
+                      RecommendedRow(
+                        title: l10n.cartAddMoreTitle,
+                        excludedProductIds: <String>{
+                          for (final CartLine line in cart.lines)
+                            line.productId,
+                        },
+                        showAll: false,
+                        rowKey: 'cart-add-more',
                       ),
-                      const SizedBox(height: 16),
-                      // A line no longer sold must go first; the server
-                      // would refuse it (`docs/09` section 18).
-                      FilledButton(
-                        key: const ValueKey<String>('go-to-checkout'),
-                        onPressed:
-                            cart.lines.every(
-                              (CartLine line) => line.isAvailable,
-                            )
-                            ? () {
-                                // The "added" notices stay behind, queued
-                                // ones too.
-                                ScaffoldMessenger.of(context).clearSnackBars();
-                                context.push(AppPaths.customerCheckout);
-                              }
-                            : null,
-                        child: Text(l10n.checkoutGo),
-                      ),
+                      const SizedBox(height: 8),
+                      CartSummary(cart: cart),
+                      const CartAddressCard(),
                     ],
                   );
                 },

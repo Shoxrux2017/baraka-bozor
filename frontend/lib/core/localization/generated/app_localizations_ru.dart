@@ -1377,11 +1377,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get cartSubstitution => 'Если товара нет';
 
   @override
-  String cartSubtotal(String amount) {
-    return 'Ориентировочно итого: $amount';
-  }
-
-  @override
   String cartLineEstimate(String amount) {
     return '≈ $amount';
   }
@@ -2788,4 +2783,47 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get cartEmptyText =>
       'Добавьте товары из каталога — сборщик купит их на рынке, курьер привезёт.';
+
+  @override
+  String cartGoods(int count) {
+    return 'Товары ($count)';
+  }
+
+  @override
+  String get cartDelivery => 'Доставка';
+
+  @override
+  String get cartServiceFee => 'Сервисный сбор';
+
+  @override
+  String get cartTotal => 'Итого';
+
+  @override
+  String get cartEstimateNote =>
+      'Сумма ориентировочная. Итог считаем по ценам рынка после покупки; если цена выйдет выше допустимого — спросим вас.';
+
+  @override
+  String cartMinimumShort(String amount) {
+    return 'До минимального заказа не хватает $amount';
+  }
+
+  @override
+  String cartMinimumRule(String amount) {
+    return 'Минимальная сумма товаров — $amount, без доставки и сбора';
+  }
+
+  @override
+  String get cartWhyUnavailable =>
+      'Сначала уберите товары, которых нет в продаже';
+
+  @override
+  String cartWhyMinimum(String amount) {
+    return 'Минимальный заказ — $amount';
+  }
+
+  @override
+  String get cartAddMoreTitle => 'Добавьте к заказу';
+
+  @override
+  String get cartDeliveryTo => 'Доставка:';
 }

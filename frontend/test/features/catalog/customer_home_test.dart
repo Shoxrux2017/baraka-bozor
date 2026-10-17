@@ -169,6 +169,19 @@ void main() {
     );
   });
 
+  testWidgets('the home\'s recommended row keeps its title and "all"', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.drag(byKey('home-body'), const Offset(0, -2000));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n(tester).recommendedTitle), findsOneWidget);
+    expect(byKey('recommended-row'), findsOneWidget);
+    expect(byKey('open-recommended'), findsOneWidget);
+    expect(find.text(l10n(tester).homeSeeAll), findsWidgets);
+  });
+
   testWidgets(
     'the sections come in order: address and cart, search, categories, '
     'recommended',

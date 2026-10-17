@@ -693,14 +693,6 @@
   "cartIncrease": "Увеличить",
   "cartNote": "Комментарий для сборщика",
   "cartSubstitution": "Если товара нет",
-  "cartSubtotal": "Ориентировочно итого: {amount}",
-  "@cartSubtotal": {
-    "placeholders": {
-      "amount": {
-        "type": "String"
-      }
-    }
-  },
   "cartLineEstimate": "≈ {amount}",
   "@cartLineEstimate": {
     "placeholders": {
@@ -1754,5 +1746,44 @@
   "cartRemoveTitle": "Убрать из корзины?",
   "cartRemoveConfirm": "Убрать",
   "cartEmptyTitle": "Корзина пока пуста",
-  "cartEmptyText": "Добавьте товары из каталога — сборщик купит их на рынке, курьер привезёт."
+  "cartEmptyText": "Добавьте товары из каталога — сборщик купит их на рынке, курьер привезёт.",
+  "cartGoods": "Товары ({count})",
+  "@cartGoods": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cartDelivery": "Доставка",
+  "cartServiceFee": "Сервисный сбор",
+  "cartTotal": "Итого",
+  "cartEstimateNote": "Сумма ориентировочная. Итог считаем по ценам рынка после покупки; если цена выйдет выше допустимого — спросим вас.",
+  "cartMinimumShort": "До минимального заказа не хватает {amount}",
+  "@cartMinimumShort": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartMinimumRule": "Минимальная сумма товаров — {amount}, без доставки и сбора",
+  "@cartMinimumRule": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartWhyUnavailable": "Сначала уберите товары, которых нет в продаже",
+  "cartWhyMinimum": "Минимальный заказ — {amount}",
+  "@cartWhyMinimum": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "cartAddMoreTitle": "Добавьте к заказу",
+  "cartDeliveryTo": "Доставка:"
 }
