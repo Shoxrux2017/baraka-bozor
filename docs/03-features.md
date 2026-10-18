@@ -119,6 +119,8 @@ Push through FCM behind an abstraction: Customer `order_accepted`, `approval_req
 
 Own order history with snapshots. Reorder adds the original products at current prices and availability to the active cart, skips duplicates, reports unavailable products, never creates an order by itself.
 
+The Customer rates a delivered order once, within seven days of its delivery: 1 to 5 stars, at 1 to 3 stars with reasons (not fresh, wrong weight, late, rude), and an optional comment. A rating never changes the order; a low one waits for an Operator's review (`BR-RATE-001`…`003`).
+
 ## 25. Business Settings
 
 Markup percentage, service fee mode and value, delivery fee, minimum order amount, tolerance percentage, working hours, service-area centre and radius, delivery delay threshold; provider enablement per provider. Edited by Admin on one screen. Test phone numbers and provider credentials are server configuration, not settings.

@@ -12,11 +12,13 @@ use App\Models\User;
 use App\Modules\Orders\Actions\CancelOrder;
 use App\Modules\Orders\Actions\CreateOrder;
 use App\Modules\Orders\Actions\EditOrderItems;
+use App\Modules\Orders\Actions\RateOrder;
 use App\Modules\Orders\CustomerOrders;
 use App\Modules\Orders\Http\Requests\CancelOrderRequest;
 use App\Modules\Orders\Http\Requests\CreateOrderRequest;
 use App\Modules\Orders\Http\Requests\EditOrderItemsRequest;
 use App\Modules\Orders\Http\Requests\ListCustomerOrdersRequest;
+use App\Modules\Orders\Http\Requests\RateOrderRequest;
 use App\Modules\Orders\Http\Resources\CustomerOrderResource;
 use App\Modules\Orders\Http\Resources\CustomerOrderSummaryResource;
 use App\Modules\Orders\OrderLineSums;
@@ -26,10 +28,11 @@ use Illuminate\Http\Request;
 
 /**
  * `POST /customer/orders`, `GET /customer/orders`, `GET /customer/orders/{order}`,
- * `PUT /customer/orders/{order}/items` and `POST /customer/orders/{order}/cancel`
- * (`docs/09` sections 19 to 22). Own orders only; a creation and its replay
+ * `PUT /customer/orders/{order}/items`, `POST /customer/orders/{order}/cancel`
+ * and `POST /customer/orders/{order}/rating` (`docs/09` sections 19 to 22 and 59).
+ * Own orders only; a creation and its replay
  * both answer `201` with the order (`DL-39` (1)); an edit and a cancellation
- * answer `200` with the order.
+ * answer `200` with the order, and a rating `201`, or `200` when repeated.
  */
 final class CustomerOrderController extends Controller
 {
@@ -38,7 +41,7 @@ final class CustomerOrderController extends Controller
         $orders = CustomerOrders::withPictureKey(CustomerOrders::withPendingApprovalCount(OrderLineSums::add(
             CustomerOrders::inState(CustomerOrders::own($this->customer($request)), $request->state())
         )))
-            ->with('currentCourierAssignment.courier')
+            ->with(['currentCourierAssignment.courier', 'rating'])
             ->orderByDesc('created_at')
             ->orderByDesc('order_number')
             ->paginate($request->perPage(), ['*'], 'page', $request->page());
@@ -52,7 +55,7 @@ final class CustomerOrderController extends Controller
     public function show(Request $request, string $order): CustomerOrderResource
     {
         return new CustomerOrderResource(ScopedLookup::firstOrNotFound(
-            CustomerOrders::own($this->customer($request))->with(['items.product.image', 'currentShopperAssignment', 'currentCourierAssignment.courier', 'approvals', 'livePayment', 'latestCancellationRequest'])->whereKey($order)
+            CustomerOrders::own($this->customer($request))->with(['items.product.image', 'currentShopperAssignment', 'currentCourierAssignment.courier', 'approvals', 'livePayment', 'latestCancellationRequest', 'rating'])->whereKey($order)
         ));
     }
 
@@ -64,7 +67,7 @@ final class CustomerOrderController extends Controller
             RequireIdempotencyKey::of($request),
         );
 
-        return (new CustomerOrderResource($order->load(['items.product.image', 'currentShopperAssignment', 'currentCourierAssignment.courier', 'approvals', 'livePayment', 'latestCancellationRequest'])))
+        return (new CustomerOrderResource($order->load(['items.product.image', 'currentShopperAssignment', 'currentCourierAssignment.courier', 'approvals', 'livePayment', 'latestCancellationRequest', 'rating'])))
             ->response()
             ->setStatusCode(201);
     }
@@ -90,9 +93,18 @@ final class CustomerOrderController extends Controller
         ));
     }
 
+    public function rate(RateOrderRequest $request, string $order, RateOrder $rate): JsonResponse
+    {
+        $rated = $rate->rate($this->customer($request), $order, $request->stars(), $request->reasons(), $request->comment());
+
+        return $this->resource($rated['order'])
+            ->response()
+            ->setStatusCode($rated['created'] ? 201 : 200);
+    }
+
     private function resource(Order $order): CustomerOrderResource
     {
-        return new CustomerOrderResource($order->load(['items.product.image', 'currentShopperAssignment', 'currentCourierAssignment.courier', 'approvals', 'livePayment', 'latestCancellationRequest']));
+        return new CustomerOrderResource($order->load(['items.product.image', 'currentShopperAssignment', 'currentCourierAssignment.courier', 'approvals', 'livePayment', 'latestCancellationRequest', 'rating']));
     }
 
     private function customer(Request $request): User

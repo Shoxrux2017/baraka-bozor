@@ -207,3 +207,7 @@ From the Shopper or Courier interface the person opens Customer mode; the app re
 ## 35. Security Across Flows
 
 Customer: own resources only. Shopper and Courier: current assignments only. Operator and Admin: explicit capabilities. Current backend state under lock wins over a stale client. Direct UUIDs never bypass scope.
+
+## 36. Rating
+
+After delivery the Customer opens the completed order and rates it with 1 to 5 stars; at 1 to 3 stars the app offers the reasons (not fresh, wrong weight, late, rude) and a comment, at 4 or 5 only the comment. The backend stores one rating per order while seven days have not passed since completion. Sending the same rating again changes nothing and answers the order; a different rating after the first, a rating of an order that was not delivered, and one past the window are refused, and the order shows what was stored. The order itself is untouched.

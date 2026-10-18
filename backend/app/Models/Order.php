@@ -246,6 +246,17 @@ class Order extends Model
     }
 
     /**
+     * The Customer's rating of the delivered order, if there is one
+     * (`BR-RATE-001`).
+     *
+     * @return HasOne<OrderRating, $this>
+     */
+    public function rating(): HasOne
+    {
+        return $this->hasOne(OrderRating::class);
+    }
+
+    /**
      * Every payment of the order, a cancelled online obligation included; the
      * database allows one that is not cancelled (`payments_order_live_unique`).
      *

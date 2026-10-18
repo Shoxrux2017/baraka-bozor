@@ -323,3 +323,11 @@ Deferred past the pilot. When built: orders created by `created_at`; completed b
 # 22. Traceability
 
 Preserve explainable history for order lifecycle, edits, assignments, approvals, price corrections, cancellations, payments and attempts, provider events, refunds and delivery failures. No path bypasses this history.
+
+# 23. Ratings
+
+**BR-RATE-001** — A completed order has at most one rating, given by its Customer within seven days of its completion; the order is never changed by it.
+
+**BR-RATE-002** — A rating is 1 to 5 stars; reasons are given only at 1 to 3 stars, each at most once.
+
+**BR-RATE-003** — A rating of 1 to 3 stars waits for an Operator's review.

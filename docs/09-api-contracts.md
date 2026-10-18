@@ -146,11 +146,12 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
 
 ## 20. Orders
 
-`GET /customer/orders`, `GET /customer/orders/{order}`. Own orders only; another Customer's order is the scope-safe `404`. The list is newest first and answers a summary per order — `id, order_number, status, payment_method, item_count, pending_approval_count, total_uzs, total_kind, address{street, house}, courier_phone, image_url, created_at` (`state=current|past` filters the list: `past` is `completed` and `cancelled`, `current` every other status, another value `422`; `image_url` is the current picture of the earliest line whose product has one, else `null`, `DL-91` (1); `courier_phone` is the Courier's phone while the order is `on_the_way`, else `null`, `DL-91` (2); `pending_approval_count`, the pending approvals not past their expiry, from Wave 3, `DL-54` (8)) — and the detail answers the order resource (`DL-42`):
+`GET /customer/orders`, `GET /customer/orders/{order}`. Own orders only; another Customer's order is the scope-safe `404`. The list is newest first and answers a summary per order — `id, order_number, status, payment_method, item_count, pending_approval_count, total_uzs, total_kind, address{street, house}, courier_phone, image_url, created_at` (`state=current|past` filters the list: `past` is `completed` and `cancelled`, `current` every other status, another value `422`; `image_url` is the current picture of the earliest line whose product has one, else `null`, `DL-91` (1); `courier_phone` is the Courier's phone while the order is `on_the_way`, else `null`, `DL-91` (2); `rating_stars` is the stars of the order's rating, else `null`, and `can_rate` whether it can still be rated, `DL-91` (4); `pending_approval_count`, the pending approvals not past their expiry, from Wave 3, `DL-54` (8)) — and the detail answers the order resource (`DL-42`):
 
 ```json
 {"id":"...","order_number":1042,"status":"shopping","payment_method":"cash",
  "pending_approval_count":1,"can_edit":false,"can_cancel_directly":false,"can_request_cancellation":true,"cancellation_request":null,
+ "rating":null,"can_rate":false,
  "items":[...],"totals":{"merchandise_subtotal_uzs":225000,"service_fee_uzs":11250,"delivery_fee_uzs":15000,"total_uzs":251250,"total_kind":"estimate"},
  "address":{...},"courier":null,"support_phone":null,"delivery_time_note":"...","payment":null,"refunds":[],"timestamps":{...}}
 ```
@@ -158,6 +159,8 @@ Search matches `name_uz` and `name_ru` as a substring, ignoring letter case, rea
 An item carries `id, product_id, name_uz, name_ru, image_url, unit_code, price_mode, quantity` (ordered; `image_url` is the product's current picture, else `null`, never a snapshot, `DL-91` (1)), `customer_note, substitution_policy, status, customer_unit_price_uzs, line_total_uzs` (the snapshotted price times the ordered quantity until the line is bought, then the stored total, `0` when removed), `billable_quantity` (`null` until bought or removed), `removed_reason_code`, `billable_unit_price_uzs` (what the Customer pays for one unit once the line is bought, else `null`; never the price paid at the market), and `replacement` (`{name_uz, name_ru}` of the replacement authorized or bought, else `null`; `null` for a removed line and while the line waits on a substitution question, open or expired) and `pending_approval` (the line's open question, `{id, type, proposed_customer_unit_price_uzs, proposed_quantity, replacement{name_uz, name_ru, customer_unit_price_uzs}|null, request_note, expires_at}`, else `null`) (`DL-57` (4), (6), `DL-59` (2)); removed lines are listed with their status. The order also carries `cancellation_reason_code`. `pending_approval_count` counts the open questions, those past their expiry left out (`DL-59` (2)). `can_request_cancellation` is `true` from `shopping` through `delivery_assigned` while no request is pending, and `cancellation_request` is the order's latest request, `{id, status, reason, created_at, resolved_at}`, or `null` — its status `pending`, `approved`, `rejected`, or `closed` when the order ended otherwise first; the Operator's note is not the Customer's (`DL-65` (5)). Until Wave 5, `refunds` is empty. `courier` is `{first_name, phone}` — the first word of the Courier's name, `null` when the name is empty — only while the order is `on_the_way`, else `null`; `support_phone` is the business setting, `null` while unset, whatever the status (`DL-91` (2)).
 
 `payment` is `null` until one is made, then `{method, status, amount_uzs, paid_at}`: the cash the Courier took at the door, `paid` (`DL-64` (4)); `refunds` stays `[]` until Wave 5.
+
+`rating` is `null` until the Customer rates, then `{stars, reasons, comment, created_at}`; `can_rate` is true for a `completed` order with no rating whose completion was at most seven days ago (Section 59).
 
 ## 21. Edit Order
 
@@ -319,7 +322,7 @@ Create order, customer approval decision, cancel order, record purchase, complet
 
 ## 49. Natural Repeats
 
-Accept an accepted assignment, start a started one, deliver a completed one from the same assignment, block a blocked account, activate an active account, an order edit that changes nothing, assign the current Shopper again, cancel a cancelled order, the same decision on a decided cancellation request, the same automatic replacement again, a price correction to the current price: current resource, no duplicate history. A replay of completion or delivered, and a repeat of not-delivered, reach the order through the caller's assignment the action ended, while it is the order's latest of its kind (`DL-54` (3)).
+Accept an accepted assignment, start a started one, deliver a completed one from the same assignment, block a blocked account, activate an active account, an order edit that changes nothing, assign the current Shopper again, cancel a cancelled order, rate an order again with the same stars, reasons and comment, the same decision on a decided cancellation request, the same automatic replacement again, a price correction to the current price: current resource, no duplicate history. A replay of completion or delivered, and a repeat of not-delivered, reach the order through the caller's assignment the action ended, while it is the order's latest of its kind (`DL-54` (3)).
 
 ## 50. Concurrency
 
@@ -341,7 +344,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 54. Order, Shopping, Approval
 
-`order_state_conflict`, `order_cancellation_not_allowed`, `cancellation_already_pending`, `staff_not_active`, `shopper_not_assigned` (not answered, `DL-63` (4)), `shopping_not_active`, `item_already_resolved`, `replacement_unit_mismatch`, `substitution_not_allowed`, `customer_approval_required`, `approval_not_needed`, `shopping_incomplete`, `approval_not_pending`, `approval_not_expired`, `approval_expired`, `approval_already_resolved`, `cancellation_request_already_decided`.
+`order_state_conflict`, `order_cancellation_not_allowed`, `cancellation_already_pending`, `staff_not_active`, `shopper_not_assigned` (not answered, `DL-63` (4)), `shopping_not_active`, `item_already_resolved`, `replacement_unit_mismatch`, `substitution_not_allowed`, `customer_approval_required`, `approval_not_needed`, `shopping_incomplete`, `approval_not_pending`, `approval_not_expired`, `approval_expired`, `approval_already_resolved`, `cancellation_request_already_decided`, `order_not_rateable`, `order_already_rated`, `rating_window_closed`.
 
 ## 55. Payment and Refund
 
@@ -368,3 +371,11 @@ A Customer session only (`DL-79` (5), `BR-CAT-007`).
 `DELETE /customer/favorites/{product}` (no body) removes the Customer's own favourite and answers `204` for any well-formed product id, whatever the product, so it tells nothing about it.
 
 Both routes refuse any body field with `422 validation_failed`. Another Customer's favourites are never listed or touched.
+
+# Ratings
+
+## 59. Order Rating
+
+`POST /customer/orders/{order}/rating` `{"stars":2,"reasons":["not_fresh"],"comment":"..."}` — a Customer session; `stars` is an integer from 1 to 5 (a string or a number outside it is `422` on `stars`), `reasons` and `comment` are optional. `reasons` are taken from `not_fresh`, `wrong_weight`, `late`, `rude`, each at most once, and only at 1 to 3 stars (`422` on `reasons`); `comment` is trimmed, at most 500 characters, and an empty one is stored as `null` (`DL-91` (4)). Any other field is `422`. Throttled to 30 calls a minute.
+
+Own orders only; another Customer's order is the scope-safe `404`. Decided under the order's lock, in this order: an order that is not `completed` is `409 order_not_rateable`; one already rated answers `200` with the order when the body is the same (stars, reasons as a set, trimmed comment), else `409 order_already_rated`; a rating more than seven days after `completed_at` is `409 rating_window_closed` (exactly seven days is still open). Otherwise the rating is stored and the answer is `201` with the order (Section 20), `rating` filled and `can_rate` false. The call carries no `Idempotency-Key`: the identical repeat is the natural retry (Section 49). A rating never changes the order.

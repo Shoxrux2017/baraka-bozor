@@ -14,6 +14,7 @@ use App\Modules\Catalog\ProductImages;
 use App\Modules\Orders\ApprovalExpiry;
 use App\Modules\Orders\CourierContact;
 use App\Modules\Orders\OrderPermissions;
+use App\Modules\Orders\OrderRatings;
 use App\Modules\Orders\OrderTotals;
 use App\Modules\Orders\QuantityPolicy;
 use App\Modules\Orders\ShopperLine;
@@ -27,11 +28,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * `DL-37` (10) defines them, the address it goes to, the delivery wish, what
  * the Customer may do with it now, its open questions (`DL-59` (2)), and its
  * instants, and the payment once made: the cash the Courier took at the door
- * (`DL-64` (4)). Refunds arrive with Wave 5; until then the list is empty.
+ * (`DL-64` (4)), and the Customer's rating of it with whether it can still be
+ * rated (`DL-91` (4)). Refunds arrive with Wave 5; until then the list is empty.
  *
  * Expects `items.product.image`, `currentShopperAssignment`,
  * `currentCourierAssignment.courier`, `approvals`, `livePayment` and
- * `latestCancellationRequest` loaded.
+ * `latestCancellationRequest` and `rating` loaded.
  *
  * @property-read Order $resource
  */
@@ -74,6 +76,13 @@ final class CustomerOrderResource extends JsonResource
                 'created_at' => self::instant($order->latestCancellationRequest->created_at),
                 'resolved_at' => self::instant($order->latestCancellationRequest->resolved_at),
             ],
+            'rating' => $order->rating === null ? null : [
+                'stars' => $order->rating->stars,
+                'reasons' => $order->rating->reasons,
+                'comment' => $order->rating->comment,
+                'created_at' => self::instant($order->rating->created_at),
+            ],
+            'can_rate' => OrderRatings::canRate($order, $now),
             'items' => $items->map(fn (OrderItem $item): array => $this->item($item, $order, $now))->all(),
             'totals' => [
                 'merchandise_subtotal_uzs' => $totals->merchandiseSubtotalUzs,

@@ -21,7 +21,7 @@ business_settings           payment_provider_settings
 orders                      order_items              order_history
 order_shopper_assignments   order_courier_assignments
 customer_approvals          order_item_price_corrections
-order_cancellation_requests
+order_cancellation_requests   order_ratings
 payments                    payment_attempts         provider_events
 refunds
 push_devices                notification_deliveries
@@ -212,3 +212,7 @@ Markets, cities, sellers, warehouses, inventory, promotions, bonuses, subscripti
 ## 32. `customer_favorites` (migrated)
 
 `id, customer_id → users (restrict), product_id → products (restrict), created_at`. Unique `(customer_id, product_id)`; index `(customer_id, created_at desc, id desc)` serves the list, newest first. At most 500 rows per Customer, held by the application under a lock on the Customer's row (`DL-79` (5)).
+
+## 33. `order_ratings`
+
+`id, order_id → orders (unique, restrict), customer_id → users (restrict), stars smallint, reasons jsonb not null default '[]', comment varchar(500)?, reviewed_by_user_id → users (restrict)?, reviewed_at timestamptz?, timestamps`. `stars` from 1 to 5 (`order_ratings_stars_check`); `reasons` a JSON array (`order_ratings_reasons_type_check`) that is empty above 3 stars (`order_ratings_reasons_check`, `BR-RATE-002`); `reviewed_by_user_id` and `reviewed_at` are both set or both null (`order_ratings_reviewed_check`, `BR-RATE-003`). One rating per order (`BR-RATE-001`); the window of seven days is the application's (`DL-91` (4)).

@@ -47,6 +47,11 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Custome
         Route::post('orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])
             ->middleware(RequireIdempotencyKey::class)
             ->name('customer.orders.cancel');
+        // The identical repeat is the retry (docs/09 section 49), so the
+        // call takes no idempotency key.
+        Route::post('orders/{order}/rating', [CustomerOrderController::class, 'rate'])
+            ->middleware('throttle:30,1')
+            ->name('customer.orders.rating.store');
         Route::post('orders/{order}/reorder', [ReorderController::class, 'store'])
             ->middleware(RequireIdempotencyKey::class)
             ->name('customer.orders.reorder');
