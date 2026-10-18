@@ -94,6 +94,43 @@ final class IdempotencyStoreTest extends TestCase
         $this->assertSame(1, Cart::query()->count());
     }
 
+    public function test_an_answer_is_stored_and_replayed(): void
+    {
+        $key = (string) Str::uuid();
+        $calls = 0;
+        $perform = function () use (&$calls): array {
+            $calls++;
+
+            return ['n' => 1];
+        };
+        $hash = $this->hash();
+
+        $this->assertSame(['n' => 1], $this->store->runAnswer($this->customer->id, 'orders.reorder', $key, $hash, $perform));
+        $this->assertSame(['n' => 1], $this->store->runAnswer($this->customer->id, 'orders.reorder', $key, $hash, $perform));
+        $this->assertSame(1, $calls);
+
+        $row = IdempotencyKey::query()->sole();
+        $this->assertSame(IdempotencyState::Completed, $row->state);
+        $this->assertSame(['n' => 1], $row->response);
+        $this->assertNull($row->resource_id);
+
+        $this->assertRefusedWith('idempotency_key_reused', fn () => $this->store->runAnswer($this->customer->id, 'orders.reorder', $key, $this->hash('b'), $perform));
+        $this->assertSame(1, $calls);
+    }
+
+    public function test_a_failing_answer_leaves_no_key(): void
+    {
+        $this->assertRefusedWith('business_conflict', fn () => $this->store->runAnswer(
+            $this->customer->id,
+            'orders.reorder',
+            (string) Str::uuid(),
+            $this->hash(),
+            static fn (): array => throw ApiException::conflict('business_conflict'),
+        ));
+
+        $this->assertSame(0, IdempotencyKey::query()->count());
+    }
+
     public function test_the_same_key_with_another_request_is_a_key_reused(): void
     {
         $key = (string) Str::uuid();

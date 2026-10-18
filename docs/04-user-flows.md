@@ -198,7 +198,7 @@ Admin creates a staff account with name, phone and role. The backend validates t
 
 ## 33. Reorder
 
-The Customer opens a past order and taps reorder. The backend takes the originally ordered products, adds the active ones missing from the current cart at current prices, reports duplicates skipped and products unavailable, and the Customer proceeds through the normal checkout.
+The Customer opens an order of their own, whatever its status, and taps reorder. The backend takes its lines except those the Customer removed in an edit, adds the products missing from the current cart with the ordered quantity, note and rule at current prices, reports the duplicates skipped, the products unavailable (hidden, archived or in another unit now) and the lines that no longer fit the cart's 100, and the Customer proceeds through the normal checkout. A retry with the same key answers the first answer (`DL-91` item 3).
 
 ## 34. Customer Mode for Staff
 

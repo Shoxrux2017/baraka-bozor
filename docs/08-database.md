@@ -189,7 +189,7 @@ Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per or
 
 ## 27. `idempotency_keys`
 
-`id, actor_user_id, operation varchar(80), idempotency_key uuid, request_hash char(64) (lower-case hex), state (processing|completed), attempt_token uuid, lease_expires_at, resource_type?, resource_id?, created_at, completed_at?`. A completed key names its resource. Index `completed_at` for pruning. `attempt_token` is renewed by every `begin` and takeover; completion and a failed attempt's delete act only on a `processing` row with their own token (`DL-37` (5), `DL-39`). Unique `(actor_user_id, operation, idempotency_key)`. Completed rows may be pruned after 30 days.
+`id, actor_user_id, operation varchar(80), idempotency_key uuid, request_hash char(64) (lower-case hex), state (processing|completed), attempt_token uuid, lease_expires_at, resource_type?, resource_id?, response jsonb?, created_at, completed_at?`. A completed key names its resource or holds a `response`, the stored answer of an operation that produces no single resource, such as a reorder, which a replay returns unchanged (`DL-91` item 3). Index `completed_at` for pruning. `attempt_token` is renewed by every `begin` and takeover; completion and a failed attempt's delete act only on a `processing` row with their own token (`DL-37` (5), `DL-39`). Unique `(actor_user_id, operation, idempotency_key)`. Completed rows may be pruned after 30 days.
 
 ## 28. Deletion Strategy
 

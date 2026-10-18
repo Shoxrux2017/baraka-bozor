@@ -183,7 +183,7 @@ Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54
 
 ## 26. Reorder
 
-`POST /customer/orders/{order}/reorder` with `Idempotency-Key` → `{"added_items":[...],"skipped_existing_items":[...],"unavailable_items":[...]}`. Never creates an order.
+`POST /customer/orders/{order}/reorder` with `Idempotency-Key`, no body (a field is `422`) → `200` `{"data":{"added_items":[{"product_id","name_uz","name_ru","quantity"}],"skipped_existing_items":[{"product_id","name_uz","name_ru"}],"unavailable_items":[{...}],"cart_full_items":[{...}]}}`. Any own order may be repeated, whatever its status; another Customer's order is the scope-safe `404`. Lines are taken in line order, except those the Customer removed in an edit; the names are the order line's snapshots and `quantity` is in the cart's format (`"2.000"` for a kg, `"3"` for a piece). A product the Customer may no longer see, or whose unit changed since, is `unavailable_items`; one already in the cart is `skipped_existing_items` and keeps its line; one that would pass the cart's 100 lines is `cart_full_items`. Added lines carry the order line's quantity, note and rule, at today's prices. Never creates an order (`DL-91` item 3).
 
 ## 27. Push Devices
 
@@ -315,7 +315,7 @@ One route set per provider exactly as its official documentation requires; nothi
 
 ## 48. Required `Idempotency-Key`
 
-Create order, customer approval decision, cancel order, record purchase, complete shopping, initiate payment attempt, courier delivered, reorder. Scope `(actor, operation, key)` plus a request hash over the operation, the route parameters and the body, so one key used on two orders is `idempotency_key_reused` (`DL-37` (5)). Same key and hash → same result; same key inside the processing lease → `409 idempotency_in_progress`; different hash → `409 idempotency_key_reused`; missing → `400 idempotency_key_required`; a key that is not a UUID → `422 validation_failed` on `Idempotency-Key`. A replay answers the resource as it is now, with the status of the original success (`DL-39`).
+Create order, customer approval decision, cancel order, record purchase, complete shopping, initiate payment attempt, courier delivered, reorder. Scope `(actor, operation, key)` plus a request hash over the operation, the route parameters and the body, so one key used on two orders is `idempotency_key_reused` (`DL-37` (5)). Same key and hash → same result; same key inside the processing lease → `409 idempotency_in_progress`; different hash → `409 idempotency_key_reused`; missing → `400 idempotency_key_required`; a key that is not a UUID → `422 validation_failed` on `Idempotency-Key`. A replay answers the resource as it is now, with the status of the original success (`DL-39`); a reorder has no resource, so its replay answers the answer stored on the key (`DL-91` item 3).
 
 ## 49. Natural Repeats
 

@@ -302,6 +302,8 @@ Customer: `order_accepted`, `approval_required`, `payment_required`, `courier_st
 
 **BR-HIST-004** — Reorder never creates an order.
 
+**BR-HIST-005** — A product already in the cart keeps its line; one that would exceed the cart's 100 lines is reported, not added.
+
 # 20. Figures
 
 Deferred past the pilot. When built: orders created by `created_at`; completed by `completed_at`; cancelled by `cancelled_at`; gross sales = sum of `final_total_uzs` of completed orders; service revenue = sum of `final_service_fee_uzs`; markup revenue = sum over purchased lines of `line_total − half_up(actual_market_price × billable_quantity)` where the actual price is known; average order value; average fulfilment time; popular products by completed orders containing the fulfilled product, quantities per unit; staff activity per member: shopping runs and deliveries completed, average duration.

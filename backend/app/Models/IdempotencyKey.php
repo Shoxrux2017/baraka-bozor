@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $lease_expires_at
  * @property string|null $resource_type
  * @property string|null $resource_id
+ * @property array<array-key, mixed>|null $response
  * @property Carbon $created_at
  * @property Carbon|null $completed_at
  */
@@ -47,6 +48,7 @@ class IdempotencyKey extends Model
             'state' => IdempotencyState::class,
             'lease_expires_at' => 'datetime',
             'completed_at' => 'datetime',
+            'response' => 'array',
         ];
     }
 }
