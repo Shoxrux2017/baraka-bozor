@@ -38,6 +38,7 @@ final class BusinessSettings {
     required this.serviceCentreLongitude,
     required this.serviceRadiusKm,
     required this.deliveryDelayThresholdMinutes,
+    required this.supportPhone,
     required this.updatedAt,
   });
 
@@ -57,6 +58,9 @@ final class BusinessSettings {
   final String? serviceCentreLongitude;
   final String? serviceRadiusKm;
   final int deliveryDelayThresholdMinutes;
+
+  /// `+998` and nine digits, or `null` when none is set.
+  final String? supportPhone;
   final DateTime updatedAt;
 }
 
@@ -78,6 +82,7 @@ final class BusinessSettingsDraft {
     required this.serviceCentreLongitude,
     required this.serviceRadiusKm,
     required this.deliveryDelayThresholdMinutes,
+    required this.supportPhone,
   });
 
   /// The draft of settings nobody has edited: what the form started from.
@@ -96,6 +101,7 @@ final class BusinessSettingsDraft {
         serviceCentreLongitude: settings.serviceCentreLongitude,
         serviceRadiusKm: settings.serviceRadiusKm,
         deliveryDelayThresholdMinutes: settings.deliveryDelayThresholdMinutes,
+        supportPhone: settings.supportPhone,
       );
 
   final String markupPercent;
@@ -111,6 +117,7 @@ final class BusinessSettingsDraft {
   final String? serviceCentreLongitude;
   final String? serviceRadiusKm;
   final int deliveryDelayThresholdMinutes;
+  final String? supportPhone;
 
   List<Object?> get _values => <Object?>[
     markupPercent,
@@ -126,6 +133,7 @@ final class BusinessSettingsDraft {
     serviceCentreLongitude,
     serviceRadiusKm,
     deliveryDelayThresholdMinutes,
+    supportPhone,
   ];
 
   @override

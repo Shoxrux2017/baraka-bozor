@@ -1877,5 +1877,34 @@
     }
   },
   "cartAddMoreTitle": "Добавьте к заказу",
-  "cartDeliveryTo": "Доставка:"
+  "cartDeliveryTo": "Доставка:",
+  "settingsSupportPhone": "Телефон поддержки",
+  "settingsSupportPhoneHint": "+998 и 9 цифр; пусто — кнопку не показываем",
+  "fieldSupportPhone": "Введите номер: +998 и 9 цифр",
+  "attentionLowRating": "Низкая оценка",
+  "ratingTitle": "Оценка клиента",
+  "ratingStars": "Оценка: {count} из 5",
+  "@ratingStars": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ratingReasonNotFresh": "Несвежее",
+  "ratingReasonWrongWeight": "Не тот вес",
+  "ratingReasonLate": "Опоздал",
+  "ratingReasonRude": "Невежливо",
+  "ratingReview": "Связались с клиентом",
+  "ratingReviewed": "Разобрано: {name}, {time}",
+  "@ratingReviewed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -661,3 +661,96 @@ String? _tooLong(AppLocalizations l10n, String text) =>
     trimLikeServer(text).runes.length > _noteMax
     ? l10n.fieldTooLong(_noteMax)
     : null;
+
+/// The Customer's rating of the order — stars, reasons and comment — with
+/// the way to mark it dealt with until somebody did, and then who did and
+/// when (`docs/09` sections 59 and 60, `DL-91`).
+class RatingDetails extends ConsumerWidget {
+  const RatingDetails({required this.order, required this.rating, super.key});
+
+  final BoardOrder order;
+  final OrderRating rating;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final Color starColor = Theme.of(context).colorScheme.primary;
+    final MutationState change = ref.watch(orderActionProvider(order.id));
+    final bool busy = change.isBusy || _reloading(ref, order);
+    final DateTime? reviewedAt = rating.reviewedAt;
+    final PersonRef? reviewedBy = rating.reviewedBy;
+    final String? comment = rating.comment;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Semantics(
+          label: l10n.ratingStars(rating.stars),
+          excludeSemantics: true,
+          child: Row(
+            key: const ValueKey<String>('rating-stars'),
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              for (int star = 1; star <= 5; star++)
+                Icon(
+                  star <= rating.stars ? Icons.star : Icons.star_border,
+                  color: starColor,
+                ),
+            ],
+          ),
+        ),
+        if (rating.reasons.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: <Widget>[
+                for (final RatingReason reason in rating.reasons)
+                  Chip(label: Text(_reasonLabel(l10n, reason))),
+              ],
+            ),
+          ),
+        if (comment != null)
+          Padding(padding: const EdgeInsets.only(top: 8), child: Text(comment)),
+        if (reviewedAt != null && reviewedBy != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              l10n.ratingReviewed(
+                nameOf(l10n, reviewedBy),
+                TashkentTime.format(reviewedAt),
+              ),
+              key: const ValueKey<String>('rating-reviewed'),
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: FilledButton.icon(
+                key: const ValueKey<String>('rating-review'),
+                icon: const Icon(Icons.phone_callback_outlined),
+                label: Text(l10n.ratingReview),
+                onPressed: busy
+                    ? null
+                    : () => ref
+                          .read(orderActionProvider(order.id).notifier)
+                          .reviewRating(),
+              ),
+            ),
+          ),
+        FailureMessage(change.failure),
+      ],
+    );
+  }
+
+  static String _reasonLabel(AppLocalizations l10n, RatingReason reason) =>
+      switch (reason) {
+        RatingReason.notFresh => l10n.ratingReasonNotFresh,
+        RatingReason.wrongWeight => l10n.ratingReasonWrongWeight,
+        RatingReason.late => l10n.ratingReasonLate,
+        RatingReason.rude => l10n.ratingReasonRude,
+      };
+}

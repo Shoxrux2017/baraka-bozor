@@ -3005,4 +3005,45 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get cartDeliveryTo => 'Доставка:';
+
+  @override
+  String get settingsSupportPhone => 'Телефон поддержки';
+
+  @override
+  String get settingsSupportPhoneHint =>
+      '+998 и 9 цифр; пусто — кнопку не показываем';
+
+  @override
+  String get fieldSupportPhone => 'Введите номер: +998 и 9 цифр';
+
+  @override
+  String get attentionLowRating => 'Низкая оценка';
+
+  @override
+  String get ratingTitle => 'Оценка клиента';
+
+  @override
+  String ratingStars(int count) {
+    return 'Оценка: $count из 5';
+  }
+
+  @override
+  String get ratingReasonNotFresh => 'Несвежее';
+
+  @override
+  String get ratingReasonWrongWeight => 'Не тот вес';
+
+  @override
+  String get ratingReasonLate => 'Опоздал';
+
+  @override
+  String get ratingReasonRude => 'Невежливо';
+
+  @override
+  String get ratingReview => 'Связались с клиентом';
+
+  @override
+  String ratingReviewed(String name, String time) {
+    return 'Разобрано: $name, $time';
+  }
 }

@@ -2973,4 +2973,45 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get cartDeliveryTo => 'Yetkazish:';
+
+  @override
+  String get settingsSupportPhone => 'Qo\'llab-quvvatlash telefoni';
+
+  @override
+  String get settingsSupportPhoneHint =>
+      '+998 va 9 raqam; bo\'sh bo\'lsa tugma ko\'rinmaydi';
+
+  @override
+  String get fieldSupportPhone => 'Raqamni kiriting: +998 va 9 raqam';
+
+  @override
+  String get attentionLowRating => 'Past baho';
+
+  @override
+  String get ratingTitle => 'Mijoz bahosi';
+
+  @override
+  String ratingStars(int count) {
+    return 'Baho: 5 dan $count';
+  }
+
+  @override
+  String get ratingReasonNotFresh => 'Yangi emas';
+
+  @override
+  String get ratingReasonWrongWeight => 'Og\'irligi noto\'g\'ri';
+
+  @override
+  String get ratingReasonLate => 'Kechikdi';
+
+  @override
+  String get ratingReasonRude => 'Qo\'pol';
+
+  @override
+  String get ratingReview => 'Mijoz bilan bog\'lanildi';
+
+  @override
+  String ratingReviewed(String name, String time) {
+    return 'Ko\'rib chiqildi: $name, $time';
+  }
 }

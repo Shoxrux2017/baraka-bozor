@@ -61,6 +61,10 @@ abstract interface class OperationsRepository {
   /// Cancels [orderId] after its delivery failed.
   Future<BoardOrder> cancelAfterFailedDelivery(String orderId, String? note);
 
+  /// Marks the low rating of [orderId] as dealt with (the Customer was
+  /// contacted).
+  Future<BoardOrder> reviewRating(String orderId);
+
   /// Corrects the price paid per unit of the bought line [itemId]; the
   /// Admin's only (`DL-66`).
   Future<BoardOrder> correctPrice(

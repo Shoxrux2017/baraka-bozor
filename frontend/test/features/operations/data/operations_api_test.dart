@@ -113,6 +113,61 @@ void main() {
       }
     });
 
+    test('a low_rating attention item is read as its own type', () {
+      expect(
+        OperationsApi.parseAttention(<String, Object?>{
+          ...attentionJson(),
+          'type': 'low_rating',
+        }).type,
+        AttentionType.lowRating,
+      );
+    });
+
+    test('the rating of an order, its unknown reasons left out', () {
+      expect(OperationsApi.parseOrder(orderJson()).rating, isNull);
+
+      final OrderRating open = OperationsApi.parseOrder(
+        orderJson(
+          rating: ratingJson(
+            reasons: <Object?>['not_fresh', 'a_later_reason', 'rude'],
+          ),
+        ),
+      ).rating!;
+      expect(open.stars, 2);
+      expect(open.reasons, <RatingReason>[
+        RatingReason.notFresh,
+        RatingReason.rude,
+      ]);
+      expect(open.comment, 'Kartoshka eski edi');
+      expect(open.createdAt, DateTime.utc(2026, 9, 27, 10));
+      expect(open.reviewedBy, isNull);
+      expect(open.reviewedAt, isNull);
+
+      final OrderRating reviewed = OperationsApi.parseOrder(
+        orderJson(rating: ratingJson(comment: null, reviewed: true)),
+      ).rating!;
+      expect(reviewed.comment, isNull);
+      expect(reviewed.reviewedBy?.fullName, 'Olim');
+      expect(reviewed.reviewedAt, DateTime.utc(2026, 9, 27, 11));
+
+      for (final Map<String, Object?> broken in <Map<String, Object?>>[
+        ratingJson(stars: 0),
+        ratingJson(stars: 6),
+        <String, Object?>{...ratingJson(), 'reasons': 'not_fresh'},
+        <String, Object?>{
+          ...ratingJson(),
+          'reviewed_at': '2026-09-27T11:00:00Z',
+        },
+        <String, Object?>{...ratingJson()}..remove('stars'),
+      ]) {
+        expect(
+          () => OperationsApi.parseOrder(orderJson(rating: broken)),
+          throwsFormatException,
+          reason: '$broken',
+        );
+      }
+    });
+
     test('an attention item and a Shopper of the picker', () {
       final AttentionItem item = OperationsApi.parseAttention(attentionJson());
       expect(item.type, AttentionType.selfOrder);
@@ -805,6 +860,31 @@ void main() {
         };
       });
       repository = OperationsRepositoryImpl(OperationsApi(dioWith(adapter)));
+    });
+
+    test('the review of a rating posts without a body', () async {
+      orderAnswer = orderJson(rating: ratingJson(reviewed: true));
+
+      final BoardOrder order = await repository.reviewRating(orderA);
+
+      final RequestOptions request = adapter.requests.single;
+      expect(request.method, 'POST');
+      expect(request.path, '/operations/orders/$orderA/rating/review');
+      expect(request.data, isNull);
+      expect(order.rating?.isReviewed, isTrue);
+
+      // An answer that does not show the review, or is about another order,
+      // is malformed.
+      orderAnswer = orderJson(rating: ratingJson());
+      await expectLater(
+        repository.reviewRating(orderA),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+      orderAnswer = orderJson(id: orderB, rating: ratingJson(reviewed: true));
+      await expectLater(
+        repository.reviewRating(orderA),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
     });
 
     test(

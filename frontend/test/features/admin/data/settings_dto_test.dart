@@ -24,6 +24,7 @@ void main() {
       expect(settings.serviceCentreLongitude, '69.240562');
       expect(settings.serviceRadiusKm, '5.00');
       expect(settings.deliveryDelayThresholdMinutes, 30);
+      expect(settings.supportPhone, '+998712000000');
       expect(settings.updatedAt, DateTime.utc(2026, 9, 26, 5));
     });
 
@@ -48,6 +49,13 @@ void main() {
       expect(settings.deliveryFeeUzs, isNull);
       expect(settings.opensAt, isNull);
       expect(settings.serviceRadiusKm, isNull);
+      expect(
+        SettingsDto.parseBusinessSettings(<String, dynamic>{
+          ...businessJson(),
+          'support_phone': null,
+        }).supportPhone,
+        isNull,
+      );
     });
 
     test('refuse a payload that breaks the contract', () {
@@ -97,6 +105,7 @@ void main() {
         int? fixed = 5000,
         String? percent,
         String? opensAt = '09:00',
+        String? supportPhone = '+998712000000',
       }) => BusinessSettingsDraft(
         markupPercent: markup,
         serviceFeeMode: mode,
@@ -111,6 +120,7 @@ void main() {
         serviceCentreLongitude: '69.240562',
         serviceRadiusKm: '5.00',
         deliveryDelayThresholdMinutes: 30,
+        supportPhone: supportPhone,
       );
 
       expect(
@@ -136,6 +146,24 @@ void main() {
         SettingsDto.businessSettingsBody(edit(opensAt: null), base),
         <String, Object?>{'opens_at': null},
       );
+      expect(
+        SettingsDto.businessSettingsBody(
+          edit(supportPhone: '+998712000001'),
+          base,
+        ),
+        <String, Object?>{'support_phone': '+998712000001'},
+      );
+      expect(
+        SettingsDto.businessSettingsBody(edit(supportPhone: null), base),
+        <String, Object?>{'support_phone': null},
+      );
+      expect(
+        SettingsDto.businessSettingsBody(
+          edit(),
+          base,
+        ).containsKey('support_phone'),
+        isFalse,
+      );
     });
 
     test(
@@ -143,6 +171,7 @@ void main() {
       () {
         for (final Map<String, dynamic> json in <Map<String, dynamic>>[
           <String, dynamic>{...businessJson(), 'opens_at': '09:00:00'},
+          <String, dynamic>{...businessJson(), 'support_phone': '998712000000'},
           <String, dynamic>{...businessJson(), 'markup_percent': '15.001'},
           <String, dynamic>{...businessJson(), 'service_radius_km': 'five'},
           <String, dynamic>{

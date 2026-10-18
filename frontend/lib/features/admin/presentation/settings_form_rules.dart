@@ -13,6 +13,7 @@ enum SettingsFieldProblem {
   minutes,
   pairIncomplete,
   sameTime,
+  supportPhone,
 }
 
 /// The pure checks behind every field of the settings form. Each takes the
@@ -25,6 +26,7 @@ abstract final class SettingsFormRules {
   static final RegExp _latitude = RegExp(r'^-?\d{1,2}(\.\d{1,6})?$');
   static final RegExp _longitude = RegExp(r'^-?\d{1,3}(\.\d{1,6})?$');
   static final RegExp _radius = RegExp(r'^\d{1,4}(\.\d{1,2})?$');
+  static final RegExp _phone = RegExp(r'^\+998[0-9]{9}$');
   static final RegExp _groupSpaces = RegExp(r'[\s\u00A0]');
 
   static const int maxUzs = 1000000000;
@@ -98,6 +100,15 @@ abstract final class SettingsFormRules {
     return minutes != null && minutes >= 1 && minutes <= maxMinutes
         ? null
         : SettingsFieldProblem.minutes;
+  }
+
+  /// The support phone: `+998` and nine digits, or empty for "not set".
+  static SettingsFieldProblem? supportPhone(String text) {
+    final String value = text.trim();
+    if (value.isEmpty) {
+      return null;
+    }
+    return _phone.hasMatch(value) ? null : SettingsFieldProblem.supportPhone;
   }
 
   /// Working hours and the centre come in pairs: the problem belongs to the

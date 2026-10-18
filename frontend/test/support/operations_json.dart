@@ -336,6 +336,7 @@ Map<String, Object?> orderJson({
   String paymentMethod = 'cash',
   List<Object?>? history,
   String? cancellationReason,
+  Map<String, Object?>? rating,
 }) => <String, Object?>{
   'id': id,
   'order_number': 1001,
@@ -374,6 +375,7 @@ Map<String, Object?> orderJson({
   'refunds': <Object?>[],
   'history': history ?? <Object?>[historyJson()],
   'cancellation_reason_code': cancellationReason,
+  'rating': rating,
   'timestamps': <String, Object?>{
     'created_at': '2026-09-27T07:00:00Z',
     'shopping_started_at': null,
@@ -383,4 +385,22 @@ Map<String, Object?> orderJson({
     'completed_at': null,
     'cancelled_at': status == 'cancelled' ? '2026-09-27T08:00:00Z' : null,
   },
+};
+
+/// The Customer's rating of a delivered order as `docs/09` section 59 gives
+/// it, by default not yet reviewed.
+Map<String, Object?> ratingJson({
+  int stars = 2,
+  List<Object?> reasons = const <Object?>['not_fresh'],
+  String? comment = 'Kartoshka eski edi',
+  bool reviewed = false,
+}) => <String, Object?>{
+  'stars': stars,
+  'reasons': reasons,
+  'comment': comment,
+  'created_at': '2026-09-27T10:00:00Z',
+  'reviewed_by': reviewed
+      ? <String, Object?>{'id': operatorId, 'full_name': 'Olim'}
+      : null,
+  'reviewed_at': reviewed ? '2026-09-27T11:00:00Z' : null,
 };
