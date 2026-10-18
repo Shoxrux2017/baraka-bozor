@@ -6,6 +6,7 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
@@ -294,6 +295,25 @@ void main() {
 
     await tapAndSettle(tester, byKey('checkout-to-home'));
     expect(top(tester), AppPaths.customer);
+  });
+
+  testWidgets('the placed window\'s buttons are kit buttons', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await order(tester);
+
+    final OutlinedButton home = tester.widget<OutlinedButton>(
+      byKey('checkout-to-home'),
+    );
+    expect(
+      home.style!.shape!.resolve(<WidgetState>{}),
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    );
+    expect(
+      home.style!.foregroundColor!.resolve(<WidgetState>{}),
+      KitColors.ink,
+    );
   });
 
   testWidgets('the placed order opens over the catalog, not the checkout', (

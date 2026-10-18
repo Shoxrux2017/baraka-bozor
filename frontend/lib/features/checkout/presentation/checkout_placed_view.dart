@@ -131,10 +131,21 @@ class CheckoutPlacedView extends StatelessWidget {
                           const SizedBox(height: 24),
                           SizedBox(
                             width: double.infinity,
-                            height: 54,
                             child: FilledButton(
                               key: const ValueKey<String>(
                                 'checkout-open-order',
+                              ),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: KitColors.primary,
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size.fromHeight(54),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               onPressed: () {
                                 final GoRouter router = GoRouter.of(context)
@@ -147,9 +158,20 @@ class CheckoutPlacedView extends StatelessWidget {
                           const SizedBox(height: 12),
                           SizedBox(
                             width: double.infinity,
-                            height: 54,
                             child: OutlinedButton(
                               key: const ValueKey<String>('checkout-to-home'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: KitColors.ink,
+                                side: const BorderSide(color: KitColors.line),
+                                minimumSize: const Size.fromHeight(54),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               onPressed: () => context.go(AppPaths.customer),
                               child: Text(l10n.checkoutToHome),
                             ),
