@@ -13,6 +13,7 @@ use App\Modules\Auth\Models\LoginChallenge;
 use App\Modules\Auth\Models\StaffLoginStep;
 use App\Modules\Auth\StaffAccounts;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -33,11 +34,19 @@ use Illuminate\Support\Str;
  */
 final class VerifyCustomerLoginCode
 {
+    public function __construct(private readonly RateLimiter $limiter) {}
+
     public function __invoke(string $phone, #[\SensitiveParameter] string $code): VerifiedLogin
     {
+        // First, before the challenge is read: a locked phone tells nothing
+        // about its code, not even the right one (`DL-88`).
+        $lockKey = LoginCodePolicy::lockKey($phone);
+        if ($this->limiter->tooManyAttempts($lockKey, 1)) {
+            throw ApiException::tooManyRequests('code_locked', $this->limiter->availableIn($lockKey));
+        }
+
         /** @var ApiException|null $refusal */
         $refusal = null;
-
         // A refusal is thrown only after the transaction has committed: the
         // failed-attempt count and the consumption of the code must persist,
         // and an exception escaping the closure would roll them back.
@@ -52,6 +61,12 @@ final class VerifyCustomerLoginCode
         });
 
         if ($refusal !== null) {
+            // The third wrong code locks the phone, now that the count is
+            // committed.
+            if ($refusal->apiCode() === 'code_locked') {
+                $this->limiter->hit($lockKey, LoginCodePolicy::LOCK_SECONDS);
+            }
+
             throw $refusal;
         }
 
@@ -83,6 +98,12 @@ final class VerifyCustomerLoginCode
 
         if (! Hash::check($code, $challenge->code_hash)) {
             $challenge->forceFill(['failed_attempts' => $challenge->failed_attempts + 1])->save();
+
+            // The attempt that reaches the limit is answered as the lock; the
+            // lock itself is taken after the commit.
+            if ($challenge->failed_attempts >= LoginCodePolicy::MAX_FAILED_ATTEMPTS) {
+                throw ApiException::tooManyRequests('code_locked', LoginCodePolicy::LOCK_SECONDS);
+            }
 
             throw ApiException::unauthenticated('code_invalid');
         }

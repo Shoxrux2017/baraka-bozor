@@ -26,9 +26,11 @@ use Illuminate\Support\Facades\Log;
  * The counters are incremented before anything else happens and the new count
  * is what decides, so a burst of parallel requests cannot all slip under a
  * limit, and a delivery that fails still costs its slot: retrying a failing
- * provider is bounded like everything else (`DL-11`). Three counters: sixty
- * seconds between sends and five sends per hour per phone, plus ten requests
- * per minute per address so one source cannot pump codes at many phones.
+ * provider is bounded like everything else (`DL-11`). A resend needs no wait
+ * (`DL-87`); the limits are five sends per hour per phone and ten requests per
+ * minute per address, so one source cannot pump codes at many phones. A phone
+ * locked by three wrong codes is refused with `code_locked` before any slot is
+ * taken, because a new code would end the lock early.
  *
  * A configured test phone gets a challenge for the fixed test code and no
  * delivery at all; the counters apply to it like to any other phone.
@@ -48,7 +50,14 @@ final class RequestCustomerLoginCode
         // Broadest first: a request refused on the address alone charges the
         // phone nothing, so one noisy source cannot use up a phone's window.
         $this->reserve("login-code:ip:{$ip}", self::IP_REQUESTS_PER_MINUTE, 60, 'rate_limited');
-        $this->reserve("login-code:resend:{$phone}", 1, LoginCodePolicy::RESEND_SECONDS, 'code_resend_too_soon');
+
+        // A locked phone gets no new code: a resend would end the lock early.
+        // Checked before the hour slot, so a refused request costs nothing.
+        $lockKey = LoginCodePolicy::lockKey($phone);
+        if ($this->limiter->tooManyAttempts($lockKey, 1)) {
+            throw ApiException::tooManyRequests('code_locked', $this->limiter->availableIn($lockKey));
+        }
+
         $this->reserve("login-code:hour:{$phone}", LoginCodePolicy::SENDS_PER_HOUR, LoginCodePolicy::HOUR_SECONDS, 'rate_limited');
 
         $testCode = $this->testPhones->codeFor($phone);
@@ -77,7 +86,7 @@ final class RequestCustomerLoginCode
         return new RequestedLoginCode(
             channel: $channel,
             expiresInSeconds: LoginCodePolicy::LIFETIME_SECONDS,
-            resendAvailableInSeconds: LoginCodePolicy::RESEND_SECONDS,
+            resendAvailableInSeconds: 0,
         );
     }
 

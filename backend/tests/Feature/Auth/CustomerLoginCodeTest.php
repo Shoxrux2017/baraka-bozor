@@ -36,7 +36,7 @@ final class CustomerLoginCodeTest extends TestCase
         $response->assertOk()->assertExactJson(['data' => [
             'channel' => 'fake',
             'expires_in_seconds' => 300,
-            'resend_available_in_seconds' => 60,
+            'resend_available_in_seconds' => 0,
         ]]);
 
         $code = $this->sink()->codeFor(self::PHONE);
@@ -120,19 +120,94 @@ final class CustomerLoginCodeTest extends TestCase
         $this->assertSame(2, User::query()->where('phone', self::PHONE)->count());
     }
 
-    public function test_a_wrong_code_is_counted_and_the_sixth_attempt_is_exhausted_even_when_right(): void
+    public function test_two_wrong_codes_are_only_invalid(): void
     {
         $this->request(self::PHONE);
         $code = $this->codeFor(self::PHONE);
-        $wrong = $code === '111111' ? '222222' : '111111';
+        $wrong = $this->wrongCode($code);
 
-        for ($attempt = 1; $attempt <= 5; $attempt++) {
-            $this->assertRefused($this->verify(self::PHONE, $wrong), 'code_invalid');
-        }
+        $this->assertRefused($this->verify(self::PHONE, $wrong), 'code_invalid');
+        $this->assertRefused($this->verify(self::PHONE, $wrong), 'code_invalid');
 
-        $this->assertSame(5, LoginChallenge::query()->sole()->failed_attempts);
-        $this->assertRefused($this->verify(self::PHONE, $code), 'code_attempts_exhausted');
+        $this->assertSame(2, LoginChallenge::query()->sole()->failed_attempts);
+        $this->verify(self::PHONE, $code)->assertOk();
+    }
+
+    public function test_the_third_wrong_code_locks_the_phone(): void
+    {
+        $this->request(self::PHONE);
+        $code = $this->codeFor(self::PHONE);
+        $wrong = $this->wrongCode($code);
+
+        $this->verify(self::PHONE, $wrong);
+        $this->verify(self::PHONE, $wrong);
+        $third = $this->verify(self::PHONE, $wrong);
+
+        $third->assertStatus(429)->assertJsonPath('code', 'code_locked')->assertHeader('Retry-After', '60');
+        $this->assertSame(3, LoginChallenge::query()->sole()->failed_attempts);
+        $this->assertStringNotContainsString($code, (string) $third->getContent());
         $this->assertSame(0, User::query()->count(), 'no account was created');
+    }
+
+    public function test_a_locked_phone_gets_no_new_code(): void
+    {
+        $this->lockPhone(self::PHONE);
+
+        $refused = $this->request(self::PHONE);
+
+        $refused->assertStatus(429)->assertJsonPath('code', 'code_locked');
+        $retryAfter = (int) $refused->headers->get('Retry-After');
+        $this->assertGreaterThanOrEqual(1, $retryAfter);
+        $this->assertLessThanOrEqual(60, $retryAfter);
+        $this->assertSame(1, LoginChallenge::query()->count(), 'no second challenge was created');
+    }
+
+    public function test_a_locked_phone_cannot_verify_even_the_right_code(): void
+    {
+        $code = $this->lockPhone(self::PHONE);
+
+        $this->verify(self::PHONE, $code)
+            ->assertStatus(429)
+            ->assertJsonPath('code', 'code_locked')
+            ->assertHeader('Retry-After');
+        $this->assertSame(0, User::query()->count(), 'no account was created');
+    }
+
+    public function test_after_the_lock_only_a_new_code_opens(): void
+    {
+        $oldCode = $this->lockPhone(self::PHONE);
+
+        $this->travel(61)->seconds();
+
+        $this->assertRefused($this->verify(self::PHONE, $oldCode), 'code_attempts_exhausted');
+
+        $this->request(self::PHONE)->assertOk();
+        $newCode = $this->codeFor(self::PHONE);
+        $wrong = $this->wrongCode($newCode);
+
+        $this->assertRefused($this->verify(self::PHONE, $wrong), 'code_invalid');
+        $this->assertRefused($this->verify(self::PHONE, $wrong), 'code_invalid');
+        $this->verify(self::PHONE, $newCode)->assertOk();
+    }
+
+    public function test_a_test_phone_locks_like_any_other(): void
+    {
+        $this->configureTestPhone();
+        $this->request(self::TEST_PHONE)->assertOk();
+
+        $this->verify(self::TEST_PHONE, '111111');
+        $this->verify(self::TEST_PHONE, '111111');
+        $this->verify(self::TEST_PHONE, '111111')->assertStatus(429)->assertJsonPath('code', 'code_locked');
+
+        $this->verify(self::TEST_PHONE, self::TEST_CODE)->assertStatus(429)->assertJsonPath('code', 'code_locked');
+        $this->request(self::TEST_PHONE)->assertStatus(429)->assertJsonPath('code', 'code_locked');
+    }
+
+    public function test_the_lock_of_one_phone_leaves_another_alone(): void
+    {
+        $this->lockPhone(self::PHONE);
+
+        $this->request('+998907777777')->assertOk();
     }
 
     public function test_an_expired_code_is_refused_as_expired(): void
@@ -156,7 +231,6 @@ final class CustomerLoginCodeTest extends TestCase
         $this->request(self::PHONE);
         $first = LoginChallenge::query()->sole();
 
-        $this->travel(61)->seconds();
         $this->request(self::PHONE)->assertOk();
 
         // The earlier challenge is closed in the database, not merely
@@ -181,7 +255,12 @@ final class CustomerLoginCodeTest extends TestCase
         $this->request(self::PHONE)->assertStatus(503);
 
         // Retrying a failing provider is bounded like any other send.
-        $this->request(self::PHONE)->assertStatus(429)->assertJsonPath('code', 'code_resend_too_soon');
+        $this->request(self::PHONE)->assertStatus(503);
+        $this->request(self::PHONE)->assertStatus(503);
+        $this->request(self::PHONE)->assertStatus(503);
+        $this->request(self::PHONE)->assertStatus(503);
+
+        $this->request(self::PHONE)->assertStatus(429)->assertJsonPath('code', 'rate_limited');
     }
 
     public function test_ten_requests_per_address_per_minute(): void
@@ -204,24 +283,25 @@ final class CustomerLoginCodeTest extends TestCase
             ->assertOk();
     }
 
-    public function test_a_resend_inside_sixty_seconds_is_refused(): void
+    public function test_a_resend_is_sent_at_once(): void
     {
-        $this->request(self::PHONE)->assertOk();
+        $this->request(self::PHONE)->assertOk()->assertJsonPath('data.resend_available_in_seconds', 0);
+        $first = $this->codeFor(self::PHONE);
 
-        $refused = $this->request(self::PHONE);
-        $refused->assertStatus(429)->assertJsonPath('code', 'code_resend_too_soon')->assertHeader('Retry-After');
+        $this->request(self::PHONE)->assertOk()->assertJsonPath('data.resend_available_in_seconds', 0);
+        $second = $this->codeFor(self::PHONE);
 
-        $this->assertSame(1, LoginChallenge::query()->count(), 'no second challenge was created');
-
-        $this->travel(61)->seconds();
-        $this->request(self::PHONE)->assertOk();
+        $this->assertSame(1, LoginChallenge::query()->openFor(self::PHONE)->count());
+        if ($first !== $second) {
+            $this->assertRefused($this->verify(self::PHONE, $first), 'code_invalid');
+        }
+        $this->verify(self::PHONE, $second)->assertOk();
     }
 
-    public function test_five_sends_per_phone_per_hour(): void
+    public function test_the_hour_limit_stays(): void
     {
         for ($send = 1; $send <= 5; $send++) {
             $this->request(self::PHONE)->assertOk();
-            $this->travel(61)->seconds();
         }
 
         $this->request(self::PHONE)->assertStatus(429)->assertJsonPath('code', 'rate_limited');
@@ -305,6 +385,27 @@ final class CustomerLoginCodeTest extends TestCase
         config(['login_codes.test_phones' => [self::TEST_PHONE], 'login_codes.test_code' => self::TEST_CODE]);
 
         $this->app->forgetInstance(TestPhones::class);
+    }
+
+    /**
+     * Requests a code and enters three wrong ones; returns the real code.
+     */
+    private function lockPhone(string $phone): string
+    {
+        $this->request($phone)->assertOk();
+        $code = $this->codeFor($phone);
+        $wrong = $this->wrongCode($code);
+
+        $this->verify($phone, $wrong);
+        $this->verify($phone, $wrong);
+        $this->verify($phone, $wrong)->assertStatus(429);
+
+        return $code;
+    }
+
+    private function wrongCode(string $code): string
+    {
+        return $code === '111111' ? '222222' : '111111';
     }
 
     private function request(string $phone): TestResponse

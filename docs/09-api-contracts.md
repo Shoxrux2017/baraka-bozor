@@ -42,13 +42,13 @@ Mutation endpoints reject unknown fields with `validation_failed`; an endpoint t
 
 `POST /auth/customer/code/request` `{"phone":"+998901234567"}`
 
-Phone: E.164 `+998` plus nine digits. Policy: six digits, five-minute lifetime, five failed verifications, sixty seconds between sends, five sends per phone per hour. The response never discloses whether an account exists:
+Phone: E.164 `+998` plus nine digits. Policy: six digits, five-minute lifetime, three failed verifications lock the phone for sixty seconds, no wait between sends, five sends per phone per hour. The response never discloses whether an account exists:
 
 ```json
-{"data":{"channel":"telegram","expires_in_seconds":300,"resend_available_in_seconds":60}}
+{"data":{"channel":"telegram","expires_in_seconds":300,"resend_available_in_seconds":0}}
 ```
 
-`channel` ∈ `telegram, sms, fake, test`. `fake` is what the development gateway reports; `test` means a configured test phone that needs no delivery. The client shows channel-specific text for `telegram` and `sms` and a generic "code sent" otherwise. Codes: `code_resend_too_soon`, `rate_limited`, `provider_unavailable`, `validation_failed`.
+`channel` ∈ `telegram, sms, fake, test`. `fake` is what the development gateway reports; `test` means a configured test phone that needs no delivery. The client shows channel-specific text for `telegram` and `sms` and a generic "code sent" otherwise. Codes: `code_locked` (`429`, `Retry-After`), `rate_limited`, `provider_unavailable`, `validation_failed`.
 
 ## 7. Verify Customer Login Code
 
@@ -60,7 +60,7 @@ Resolves the active Customer account or creates one when none is active, then is
 {"data":{"token":"...","user":{"id":"...","role":"customer","phone":"+998901234567","full_name":null,"status":"active","must_change_password":false,"preferred_language":"uz"},"staff_step":null}}
 ```
 
-`staff_step` is `null`, or `{"token":"<64 characters>","expires_at":"2026-10-15T09:05:00Z"}` when the phone also holds an active or blocked Shopper or Courier account (`DL-77`). Codes: `code_invalid`, `code_expired`, `code_attempts_exhausted`, `account_blocked` (evaluated only after the code is valid, `401`). Never issues a staff session; for a phone that also holds a Shopper or Courier account it returns a single-use `staff_step` (5 minutes, 5 wrong passwords) for `POST /auth/staff/step`, and a new verification closes the earlier open step. A configured test phone accepts the configured fixed code.
+`staff_step` is `null`, or `{"token":"<64 characters>","expires_at":"2026-10-15T09:05:00Z"}` when the phone also holds an active or blocked Shopper or Courier account (`DL-77`). Codes: `code_invalid`, `code_expired`, `code_attempts_exhausted`, `account_blocked` (evaluated only after the code is valid, `401`). Never issues a staff session; for a phone that also holds a Shopper or Courier account it returns a single-use `staff_step` (5 minutes, 5 wrong passwords) for `POST /auth/staff/step`, and a new verification closes the earlier open step. A configured test phone accepts the configured fixed code. The third wrong code answers `429 code_locked` with `Retry-After: 60` and locks the phone; while locked, verify and request answer `code_locked` with the seconds left (`DL-87`).
 
 ## 8. Staff Login
 
@@ -333,7 +333,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 52. Auth
 
-`invalid_credentials`, `account_blocked`, `password_change_required`, `code_invalid`, `code_expired`, `code_attempts_exhausted`, `code_resend_too_soon`, `staff_code_required` (`403`), `staff_step_invalid`, `staff_step_expired`.
+`invalid_credentials`, `account_blocked`, `password_change_required`, `code_invalid`, `code_expired`, `code_attempts_exhausted`, `code_locked` (`429`), `staff_code_required` (`403`), `staff_step_invalid`, `staff_step_expired`.
 
 ## 53. Catalog, Cart, Checkout, Editing
 

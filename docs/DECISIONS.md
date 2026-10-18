@@ -1284,3 +1284,11 @@ The Owner approved the drawing `kit/04-korzina-adres.dc.html`.
 6. **The Courier's address** (drawing 22в, `DL-84` item 3): a card with the full line, the landmark and the note, then "Открыть в Яндексе" and "Скопировать адрес". The first opens Yandex Navigator with a route to the pin and, when the Navigator is missing, the same route on Yandex Maps, the app or the browser. The Navigator is called without the signature its documentation describes for version 2.40 and later; if it refuses such calls on a Courier's phone, the app is registered with Yandex and the server signs the link. The copy is the line as shown. The `geo:` link of `DL-54` (16) is replaced.
 
 7. **Only a touch counts as the Customer's move** (found on the walk): a search answer or a location read is dropped only when the Customer touched the map after asking; the map's own camera reports — which Android also sends while its permission and location windows cover the screen, or when the keyboard resizes the map — no longer count, so "Где я" moves the map after the Customer allows the location.
+
+## DL-87 — Login code: three attempts, instant resend, a 60-second lock (2026-10-18, Owner)
+
+A code may be entered wrong twice with no pause and may be re-sent at once. The third wrong entry locks the phone for 60 seconds with a countdown, during which neither a code nor a new code is accepted. Then a new code gives three attempts again. The limit of five sends per phone per hour stays, because every send costs money. This supersedes the sixty seconds between sends and the five attempts of `docs/09` §6.
+
+## DL-88 — How the lock is kept and shown (2026-10-18, agent)
+
+The lock lives in the cache rate limiter, where the send limits already live, under one key per phone. It is checked before the challenge is read, so a locked phone tells nothing about its code. Both verify and request answer `429 code_locked` with `Retry-After`, the seconds left. The client counts down from that header, so leaving and returning to the screen shows the real remainder. The old code stays exhausted after the lock; only a new code opens.

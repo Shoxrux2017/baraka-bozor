@@ -15,9 +15,9 @@ final class LoginCodePolicy
 
     public const LIFETIME_SECONDS = 300;
 
-    public const MAX_FAILED_ATTEMPTS = 5;
+    public const MAX_FAILED_ATTEMPTS = 3;
 
-    public const RESEND_SECONDS = 60;
+    public const LOCK_SECONDS = 60;
 
     public const SENDS_PER_HOUR = 5;
 
@@ -35,6 +35,15 @@ final class LoginCodePolicy
      * same way and for the same reason.
      */
     public const PHONE_PATTERN = '/^\+998[0-9]{9}\z/';
+
+    /**
+     * The rate-limiter key holding the lock of a phone after its third wrong
+     * code (`DL-87`, `DL-88`).
+     */
+    public static function lockKey(string $phone): string
+    {
+        return "login-code:lock:{$phone}";
+    }
 
     public static function isWellFormed(#[\SensitiveParameter] string $code): bool
     {
