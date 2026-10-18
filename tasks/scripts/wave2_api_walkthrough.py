@@ -57,6 +57,7 @@ if SHOPPER_PHONE not in TEST_PHONES:
 
 
 def call(method, path, token=None, body=None, key=None):
+    global RETRY_AFTER
     headers = {"Accept": "application/json"}
     data = None
     if token:
@@ -72,7 +73,6 @@ def call(method, path, token=None, body=None, key=None):
             text = response.read().decode()
             return response.status, (json.loads(text) if text else None)
     except urllib.error.HTTPError as error:
-        global RETRY_AFTER
         RETRY_AFTER = int(error.headers.get("Retry-After", "1"))
         text = error.read().decode()
         return error.code, (json.loads(text) if text else None)
@@ -94,7 +94,9 @@ RETRY_AFTER = 1
 def request_code(phone):
     """Asks for a login code; a lock or the send limit is waited out once (Retry-After)."""
     status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
-    if status == 429 and code(answer) in ("code_locked", "rate_limited"):
+    # Only the lock and the per-address minute pass by waiting; the hourly limit
+    # does not, and the verify after it then fails as itself.
+    if status == 429 and code(answer) in ("code_locked", "rate_limited") and RETRY_AFTER <= 61:
         time.sleep(RETRY_AFTER + 1)
         status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
     return status, answer
