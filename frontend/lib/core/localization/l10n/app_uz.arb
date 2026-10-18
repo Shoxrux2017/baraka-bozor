@@ -755,7 +755,7 @@
   "errorCartItemAlreadyExists": "Bu mahsulot allaqachon savatda",
   "errorCartFull": "Savatda ko'pi bilan 100 ta mahsulot bo'lishi mumkin",
   "errorProductUnavailable": "Bu mahsulot hozir sotuvda yo'q",
-  "checkoutTitle": "Buyurtmani rasmiylashtirish",
+  "checkoutTitle": "Rasmiylashtirish",
   "checkoutGo": "Rasmiylashtirish",
   "checkoutAddress": "Yetkazish manzili",
   "checkoutNoAddress": "Hali manzil yo'q",
@@ -775,7 +775,7 @@
       }
     }
   },
-  "checkoutPlaced": "Buyurtma №{number} qabul qilindi",
+  "checkoutPlaced": "Buyurtma № {number} rasmiylashtirildi",
   "@checkoutPlaced": {
     "placeholders": {
       "number": {
@@ -806,7 +806,7 @@
   "errorPaymentMethodUnavailable": "Bu to'lov usuli hozir mavjud emas",
   "errorCheckoutStale": "Hisob eskirgan edi va yangilandi. Ko'rib chiqib, qayta tasdiqlang",
   "errorOrderInProgress": "Buyurtma hali yuborilmoqda. Biroz kutib, qayta tasdiqlang",
-  "checkoutUnconfirmed": "Buyurtma qabul qilingani aniqlanmadi. «Buyurtmani tasdiqlash»ni yana bosing — u ikki marta qabul qilinmaydi",
+  "checkoutUnconfirmed": "Buyurtma qabul qilingani aniqlanmadi. «Buyurtma berish»ni yana bosing — u ikki marta qabul qilinmaydi",
   "cartUnconfirmedOrder": "Oxirgi buyurtmangiz qabul qilingani aniqlanmadi",
   "cartCheckUnconfirmed": "Tekshirish",
   "errorInProgress": "So'rov hali bajarilmoqda. Biroz kutib, qayta urinib ko'ring",
@@ -818,6 +818,75 @@
       }
     }
   },
+  "checkoutWhere": "Qayerga yetkazamiz",
+  "checkoutWishLabel": "Yetkazib berish bo'yicha istak",
+  "checkoutWishHint": "Masalan: 18:00 dan keyin, oldindan qo'ng'iroq qiling",
+  "paymentCashTitle": "Kuryerga naqd pul",
+  "paymentCashHint": "Qabul qilganda, aniq summani yig'ishdan keyin ko'rsatamiz",
+  "paymentOnlineTitle": "Onlayn: Payme yoki Click",
+  "checkoutSoon": "Tez orada",
+  "checkoutItems": "Mahsulotlar · {count}",
+  "@checkoutItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkoutOrder": "Buyurtma berish",
+  "checkoutClosedBanner": "Hozir biz yopiqmiz. Buyurtmani hozir qabul qilamiz, yig'ib, soat {time} da ochilgandan keyin yetkazib beramiz.",
+  "@checkoutClosedBanner": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "checkoutRecounted": "Rasmiylashtirayotganingizda buyurtma qayta hisoblandi. Summani tekshiring va «Buyurtma berish»ni yana bosing.",
+  "checkoutGoneTitle": "{count, plural, one{Mahsulot tugadi} other{Mahsulotlar tugadi}}",
+  "@checkoutGoneTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkoutGoneText": "{count, plural, one{Rasmiylashtirayotganingizda bozorda mahsulot tugadi:} other{Rasmiylashtirayotganingizda bozorda mahsulotlar tugadi:}}",
+  "@checkoutGoneText": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkoutGoneHint": "{count, plural, one{Uni savatdan olib tashlang — qolganini odatdagidek rasmiylashtiramiz.} other{Ularni savatdan olib tashlang — qolganini odatdagidek rasmiylashtiramiz.}}",
+  "@checkoutGoneHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "checkoutGoneAction": "Savatga",
+  "checkoutPlacedCash": "Yig'uvchi hammasini bozordan sotib oladi. Aniq summani yig'ishdan keyin buyurtmada ko'rsatamiz — uni kuryerga naqd berasiz.",
+  "checkoutPlacedCashFinal": "Yig'uvchi hammasini bozordan sotib oladi. Kuryerga naqd to'lanadi: {amount}.",
+  "@checkoutPlacedCashFinal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "checkoutPlacedOpensAt": "Ochilgandan keyin — soat {time} da yig'ishni boshlaymiz.",
+  "@checkoutPlacedOpensAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "checkoutOrderStatus": "Buyurtma holati",
+  "checkoutToHome": "Bosh sahifaga",
   "myOrders": "Buyurtmalarim",
   "myOrdersEmpty": "Hali buyurtma yo'q",
   "customerStatusNew": "Qabul qilindi",

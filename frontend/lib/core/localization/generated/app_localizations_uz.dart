@@ -1480,7 +1480,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get errorProductUnavailable => 'Bu mahsulot hozir sotuvda yo\'q';
 
   @override
-  String get checkoutTitle => 'Buyurtmani rasmiylashtirish';
+  String get checkoutTitle => 'Rasmiylashtirish';
 
   @override
   String get checkoutGo => 'Rasmiylashtirish';
@@ -1524,7 +1524,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String checkoutPlaced(String number) {
-    return 'Buyurtma №$number qabul qilindi';
+    return 'Buyurtma № $number rasmiylashtirildi';
   }
 
   @override
@@ -1577,7 +1577,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get checkoutUnconfirmed =>
-      'Buyurtma qabul qilingani aniqlanmadi. «Buyurtmani tasdiqlash»ni yana bosing — u ikki marta qabul qilinmaydi';
+      'Buyurtma qabul qilingani aniqlanmadi. «Buyurtma berish»ni yana bosing — u ikki marta qabul qilinmaydi';
 
   @override
   String get cartUnconfirmedOrder =>
@@ -1594,6 +1594,102 @@ class AppLocalizationsUz extends AppLocalizations {
   String checkoutPlacedCancelled(String number) {
     return 'Buyurtma №$number bekor qilingan';
   }
+
+  @override
+  String get checkoutWhere => 'Qayerga yetkazamiz';
+
+  @override
+  String get checkoutWishLabel => 'Yetkazib berish bo\'yicha istak';
+
+  @override
+  String get checkoutWishHint =>
+      'Masalan: 18:00 dan keyin, oldindan qo\'ng\'iroq qiling';
+
+  @override
+  String get paymentCashTitle => 'Kuryerga naqd pul';
+
+  @override
+  String get paymentCashHint =>
+      'Qabul qilganda, aniq summani yig\'ishdan keyin ko\'rsatamiz';
+
+  @override
+  String get paymentOnlineTitle => 'Onlayn: Payme yoki Click';
+
+  @override
+  String get checkoutSoon => 'Tez orada';
+
+  @override
+  String checkoutItems(int count) {
+    return 'Mahsulotlar · $count';
+  }
+
+  @override
+  String get checkoutOrder => 'Buyurtma berish';
+
+  @override
+  String checkoutClosedBanner(String time) {
+    return 'Hozir biz yopiqmiz. Buyurtmani hozir qabul qilamiz, yig\'ib, soat $time da ochilgandan keyin yetkazib beramiz.';
+  }
+
+  @override
+  String get checkoutRecounted =>
+      'Rasmiylashtirayotganingizda buyurtma qayta hisoblandi. Summani tekshiring va «Buyurtma berish»ni yana bosing.';
+
+  @override
+  String checkoutGoneTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Mahsulotlar tugadi',
+      one: 'Mahsulot tugadi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String checkoutGoneText(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Rasmiylashtirayotganingizda bozorda mahsulotlar tugadi:',
+      one: 'Rasmiylashtirayotganingizda bozorda mahsulot tugadi:',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String checkoutGoneHint(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ularni savatdan olib tashlang — qolganini odatdagidek rasmiylashtiramiz.',
+      one: 'Uni savatdan olib tashlang — qolganini odatdagidek rasmiylashtiramiz.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get checkoutGoneAction => 'Savatga';
+
+  @override
+  String get checkoutPlacedCash =>
+      'Yig\'uvchi hammasini bozordan sotib oladi. Aniq summani yig\'ishdan keyin buyurtmada ko\'rsatamiz — uni kuryerga naqd berasiz.';
+
+  @override
+  String checkoutPlacedCashFinal(String amount) {
+    return 'Yig\'uvchi hammasini bozordan sotib oladi. Kuryerga naqd to\'lanadi: $amount.';
+  }
+
+  @override
+  String checkoutPlacedOpensAt(String time) {
+    return 'Ochilgandan keyin — soat $time da yig\'ishni boshlaymiz.';
+  }
+
+  @override
+  String get checkoutOrderStatus => 'Buyurtma holati';
+
+  @override
+  String get checkoutToHome => 'Bosh sahifaga';
 
   @override
   String get myOrders => 'Buyurtmalarim';
