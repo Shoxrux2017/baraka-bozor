@@ -56,6 +56,7 @@ final class IdempotencyKeysTableTest extends TestCase
             'lease_expires_at' => ['timestamp with time zone', false],
             'resource_type' => ['character varying', true, 40],
             'resource_id' => ['uuid', true],
+            'response' => ['jsonb', true],
             'created_at' => ['timestamp with time zone', false],
             'completed_at' => ['timestamp with time zone', true],
         ]);
@@ -97,6 +98,13 @@ final class IdempotencyKeysTableTest extends TestCase
             'resource_id' => (string) Str::uuid(),
         ]));
         $this->assertSame(1, DB::table(self::TABLE)->count());
+
+        DB::table(self::TABLE)->insert($this->row([
+            'state' => 'completed',
+            'completed_at' => now(),
+            'response' => '{"added_items":[]}',
+        ]));
+        $this->assertSame(2, DB::table(self::TABLE)->count(), 'DL-91 (3): a completed key may hold a response instead of a resource.');
     }
 
     public function test_the_hash_is_a_sha256_hex_digest_and_the_state_is_known(): void
