@@ -114,6 +114,7 @@ class SummaryAmountRow extends StatelessWidget {
     required this.value,
     this.emphasised = false,
     this.replaced,
+    super.key,
   });
 
   final String valueKey;
