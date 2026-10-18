@@ -35,7 +35,9 @@ final class CustomerOrderController extends Controller
 {
     public function index(ListCustomerOrdersRequest $request): JsonResponse
     {
-        $orders = CustomerOrders::withPendingApprovalCount(OrderLineSums::add(CustomerOrders::own($this->customer($request))))
+        $orders = CustomerOrders::withPictureKey(CustomerOrders::withPendingApprovalCount(OrderLineSums::add(
+            CustomerOrders::inState(CustomerOrders::own($this->customer($request)), $request->state())
+        )))
             ->orderByDesc('created_at')
             ->orderByDesc('order_number')
             ->paginate($request->perPage(), ['*'], 'page', $request->page());
@@ -49,7 +51,7 @@ final class CustomerOrderController extends Controller
     public function show(Request $request, string $order): CustomerOrderResource
     {
         return new CustomerOrderResource(ScopedLookup::firstOrNotFound(
-            CustomerOrders::own($this->customer($request))->with(['items', 'currentShopperAssignment', 'approvals', 'livePayment', 'latestCancellationRequest'])->whereKey($order)
+            CustomerOrders::own($this->customer($request))->with(['items.product.image', 'currentShopperAssignment', 'approvals', 'livePayment', 'latestCancellationRequest'])->whereKey($order)
         ));
     }
 
@@ -61,7 +63,7 @@ final class CustomerOrderController extends Controller
             RequireIdempotencyKey::of($request),
         );
 
-        return (new CustomerOrderResource($order->load(['items', 'currentShopperAssignment', 'approvals', 'livePayment', 'latestCancellationRequest'])))
+        return (new CustomerOrderResource($order->load(['items.product.image', 'currentShopperAssignment', 'approvals', 'livePayment', 'latestCancellationRequest'])))
             ->response()
             ->setStatusCode(201);
     }
@@ -89,7 +91,7 @@ final class CustomerOrderController extends Controller
 
     private function resource(Order $order): CustomerOrderResource
     {
-        return new CustomerOrderResource($order->load(['items', 'currentShopperAssignment', 'approvals', 'livePayment', 'latestCancellationRequest']));
+        return new CustomerOrderResource($order->load(['items.product.image', 'currentShopperAssignment', 'approvals', 'livePayment', 'latestCancellationRequest']));
     }
 
     private function customer(Request $request): User

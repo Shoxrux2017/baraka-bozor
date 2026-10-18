@@ -9,6 +9,7 @@ use App\Models\Enums\ApprovalType;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Modules\Catalog\ProductImages;
 use App\Modules\Orders\ApprovalExpiry;
 use App\Modules\Orders\OrderPermissions;
 use App\Modules\Orders\OrderTotals;
@@ -26,7 +27,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * instants, and the payment once made: the cash the Courier took at the door
  * (`DL-64` (4)). Refunds arrive with Wave 5; until then the list is empty.
  *
- * Expects `items`, `currentShopperAssignment`, `approvals`, `livePayment` and
+ * Expects `items.product.image`, `currentShopperAssignment`, `approvals`, `livePayment` and
  * `latestCancellationRequest` loaded.
  *
  * @property-read Order $resource
@@ -122,6 +123,8 @@ final class CustomerOrderResource extends JsonResource
             'product_id' => $item->product_id,
             'name_uz' => $item->product_name_uz_snapshot,
             'name_ru' => $item->product_name_ru_snapshot,
+            // The product's picture now, not a snapshot (DL-91 (1)).
+            'image_url' => ProductImages::url($item->product?->image),
             'unit_code' => $item->unit_code_snapshot->value,
             'price_mode' => $item->price_mode_snapshot->value,
             'quantity' => QuantityPolicy::format($item->unit_code_snapshot, $item->ordered_quantity),

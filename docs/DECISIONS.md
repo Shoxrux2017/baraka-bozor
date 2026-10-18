@@ -1314,3 +1314,16 @@ For the Customer's checkout this entry supersedes `DL-50` (2) (an explicit "Ра
 5. **"Заказ оформлен" replaces the screen;** back goes home.
 
 6. **Online stays visible and inactive with "Скоро" until Wave 5** (`docs/06` section 2, `DL-37` (3)). Promo codes, discounts and an in-app card form are not drawn (promotions post-MVP, `docs/01` section 20); a saved-card question goes to the Owner with Wave 5.
+
+## DL-90 — Orders, kit stage 6 (2026-10-18, Owner)
+
+Answers to the questions of kit stage 6 (`kit/06-zakazy.dc.html`, approved the same day).
+
+1. **Rating.** After delivery the Customer rates the whole order — freshness, weight and delivery together, not the Courier alone — with 1 to 5 stars and an optional comment. At 1 to 3 stars the Customer may also pick reasons: "Несвежее", "Не тот вес", "Опоздал", "Невежливо". Operators and Admins see the rating on the order in the panel. A rating of 1 to 3 enters the Operator's attention list, and the Operator calls the Customer. Tips wait for card payments (Wave 5).
+2. **Calls.** While a Courier takes the order to the Customer, the order shows "Позвонить курьеру" with the Courier's number; once the order is delivered the number is gone. Every current order shows "Позвонить в поддержку" with the company's number, which the Admin sets in the settings; without a number the button is hidden. Masked numbers through a telephony provider are for later.
+3. **No notifications list.** The kit's notifications screen is not built: the order page shows the status, and Wave 4's pushes notify. While a Shopper's question waits for the Customer, the home shows "Сборщик ждёт вашего ответа" with "Ответить".
+4. **No chat.** Interview 7.3 stands; the kit's chat screen is dropped.
+
+## DL-91 — Orders server and panel, kit stage 6a (2026-10-18, agent)
+
+1. **The list splits and shows where and what.** `GET /customer/orders` takes `state=current|past`: past is `completed` and `cancelled`, current every other status, so each tab pages on its own. A row carries the address snapshot's street and house and a picture: the current picture of the earliest line (by creation, then id) whose product has one, `null` when none has. Detail lines carry their product's current picture too. A picture is decoration, not history: it is the product's picture now, never a snapshot, and changes when the Admin replaces it.
