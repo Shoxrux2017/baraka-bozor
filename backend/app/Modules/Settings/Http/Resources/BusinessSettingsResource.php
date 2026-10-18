@@ -38,6 +38,7 @@ final class BusinessSettingsResource extends JsonResource
             'service_centre_longitude' => $settings->service_centre_longitude,
             'service_radius_km' => $settings->service_radius_km,
             'delivery_delay_threshold_minutes' => $settings->delivery_delay_threshold_minutes,
+            'support_phone' => $settings->support_phone,
             'updated_at' => $settings->updated_at->toIso8601ZuluString(),
         ];
     }

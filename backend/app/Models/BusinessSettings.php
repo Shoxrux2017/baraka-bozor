@@ -33,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $service_centre_longitude
  * @property string|null $service_radius_km
  * @property int $delivery_delay_threshold_minutes
+ * @property string|null $support_phone
  * @property string|null $updated_by_user_id
  * @property Carbon $created_at
  * @property Carbon $updated_at

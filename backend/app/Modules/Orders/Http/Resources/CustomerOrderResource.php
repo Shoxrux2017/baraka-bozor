@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Http\Resources;
 
+use App\Models\BusinessSettings;
 use App\Models\CustomerApproval;
 use App\Models\Enums\ApprovalType;
 use App\Models\Enums\OrderItemStatus;
@@ -11,6 +12,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Modules\Catalog\ProductImages;
 use App\Modules\Orders\ApprovalExpiry;
+use App\Modules\Orders\CourierContact;
 use App\Modules\Orders\OrderPermissions;
 use App\Modules\Orders\OrderTotals;
 use App\Modules\Orders\QuantityPolicy;
@@ -27,7 +29,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * instants, and the payment once made: the cash the Courier took at the door
  * (`DL-64` (4)). Refunds arrive with Wave 5; until then the list is empty.
  *
- * Expects `items.product.image`, `currentShopperAssignment`, `approvals`, `livePayment` and
+ * Expects `items.product.image`, `currentShopperAssignment`,
+ * `currentCourierAssignment.courier`, `approvals`, `livePayment` and
  * `latestCancellationRequest` loaded.
  *
  * @property-read Order $resource
@@ -88,6 +91,9 @@ final class CustomerOrderResource extends JsonResource
                 'landmark' => $order->landmark_snapshot,
                 'delivery_note' => $order->delivery_note_snapshot,
             ],
+            // Only while the order is on the way (DL-91 (2)).
+            'courier' => CourierContact::of($order),
+            'support_phone' => BusinessSettings::current()->support_phone,
             'cancellation_reason_code' => $order->cancellation_reason_code?->value,
             // The payment made, once there is one (DL-64 (4)).
             'payment' => $order->livePayment === null ? null : [

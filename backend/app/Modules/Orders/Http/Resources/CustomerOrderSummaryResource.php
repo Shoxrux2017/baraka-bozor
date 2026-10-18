@@ -6,6 +6,7 @@ namespace App\Modules\Orders\Http\Resources;
 
 use App\Models\Order;
 use App\Modules\Catalog\ProductImages;
+use App\Modules\Orders\CourierContact;
 use App\Modules\Orders\OrderLineSums;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -17,8 +18,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * street and house it goes to and a picture (`DL-91` (1)). The detail carries
  * the rest.
  *
- * Expects the sums of `OrderLineSums::add` and `picture_storage_key` of
- * `CustomerOrders::withPictureKey`.
+ * Expects the sums of `OrderLineSums::add`, `picture_storage_key` of
+ * `CustomerOrders::withPictureKey` and `currentCourierAssignment.courier`
+ * loaded; the Courier's phone shows only while the order is on the way
+ * (`DL-91` (2)).
  *
  * @property-read Order $resource
  */
@@ -47,6 +50,7 @@ final class CustomerOrderSummaryResource extends JsonResource
             'total_uzs' => $totals->totalUzs,
             'total_kind' => $totals->kind,
             'address' => ['street' => $order->street_snapshot, 'house' => $order->house_snapshot],
+            'courier_phone' => CourierContact::of($order)['phone'] ?? null,
             'image_url' => ProductImages::urlOfKey($order->getAttribute('picture_storage_key')),
             'created_at' => $order->created_at->toIso8601ZuluString(),
         ];

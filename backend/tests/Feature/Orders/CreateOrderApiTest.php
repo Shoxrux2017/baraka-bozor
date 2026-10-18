@@ -89,7 +89,7 @@ final class CreateOrderApiTest extends TestCase
 
         $this->assertSame([
             'id', 'order_number', 'status', 'payment_method', 'delivery_time_note', 'pending_approval_count', 'can_edit',
-            'can_cancel_directly', 'can_request_cancellation', 'cancellation_request', 'items', 'totals', 'address', 'cancellation_reason_code',
+            'can_cancel_directly', 'can_request_cancellation', 'cancellation_request', 'items', 'totals', 'address', 'courier', 'support_phone', 'cancellation_reason_code',
             'payment', 'refunds', 'timestamps',
         ], array_keys($data));
         $this->assertGreaterThanOrEqual(1001, $data['order_number']);
@@ -300,7 +300,7 @@ final class CreateOrderApiTest extends TestCase
         $list = $this->asCustomer()->getJson(self::ORDERS)->assertOk();
         $this->assertSame([$second, $first], array_column($list->json('data'), 'id'), 'Newest first.');
         $this->assertSame(
-            ['id', 'order_number', 'status', 'payment_method', 'item_count', 'pending_approval_count', 'total_uzs', 'total_kind', 'address', 'image_url', 'created_at'],
+            ['id', 'order_number', 'status', 'payment_method', 'item_count', 'pending_approval_count', 'total_uzs', 'total_kind', 'address', 'courier_phone', 'image_url', 'created_at'],
             array_keys($list->json('data.0'))
         );
         $this->assertSame(1, $list->json('data.0.item_count'));

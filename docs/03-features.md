@@ -105,6 +105,8 @@ Before shopping starts: the Customer cancels directly. After shopping starts and
 
 Accept, start (`on_the_way`, delay snapshot), delivered with cash received for cash orders, or not delivered with a reason. Delay past the threshold is derived attention.
 
+While the order is `on_the_way` the Customer sees the Courier's first name and phone on the order and in the list, and may call; in no other status is the Courier shown. A support phone, set by Admin in the business settings, is shown on current orders whatever their status (`DL-91` (2)).
+
 ## 22. Operator and Admin Panel
 
 Web panel. Order board with filters and the summary strip; attention list (approvals the Customer has not answered for ten minutes, expired approvals, unpaid online orders, outstanding refunds, delayed Couriers, failed deliveries, cancellation requests, self-orders, blocked assignees; `DL-54` (13)); assignment; cancellation decisions; switch to cash; refund tracking; Admin-only catalog, staff, settings and provider enablement; audited price correction.

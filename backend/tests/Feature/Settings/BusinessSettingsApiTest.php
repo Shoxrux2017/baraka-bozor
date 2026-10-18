@@ -7,7 +7,9 @@ namespace Tests\Feature\Settings;
 use App\Models\BusinessSettings;
 use App\Models\Enums\Role;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -28,7 +30,7 @@ final class BusinessSettingsApiTest extends TestCase
             'markup_percent', 'service_fee_mode', 'service_fee_fixed_uzs', 'service_fee_percent',
             'delivery_fee_uzs', 'minimum_order_uzs', 'price_tolerance_percent', 'opens_at', 'closes_at',
             'service_centre_latitude', 'service_centre_longitude', 'service_radius_km',
-            'delivery_delay_threshold_minutes', 'updated_at',
+            'delivery_delay_threshold_minutes', 'support_phone', 'updated_at',
         ], array_keys($response->json('data')), 'Exactly the settings, nothing internal such as the id or the last editor.');
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $response->json('data.updated_at'));
 
@@ -47,6 +49,7 @@ final class BusinessSettingsApiTest extends TestCase
                 'service_centre_longitude' => null,
                 'service_radius_km' => null,
                 'delivery_delay_threshold_minutes' => 60,
+                'support_phone' => null,
             ]]);
     }
 
@@ -117,6 +120,7 @@ final class BusinessSettingsApiTest extends TestCase
             'service_centre_longitude' => ['181', '69,24'],
             'service_radius_km' => ['0', '-1', '12.345', 12],
             'delivery_delay_threshold_minutes' => [0, 1441, '60', null],
+            'support_phone' => ['998712000000', '+99871200000', '+9987120000000', 998712000000],
         ];
 
         foreach ($cases as $field => $values) {
@@ -200,6 +204,29 @@ final class BusinessSettingsApiTest extends TestCase
         $this->asAdmin()->patchJson(self::URL, ['opens_at' => null, 'closes_at' => null])
             ->assertOk()
             ->assertJsonPath('data.opens_at', null);
+    }
+
+    public function test_the_support_phone_is_set_and_cleared(): void
+    {
+        $this->asAdmin()->patchJson(self::URL, ['support_phone' => '+998712000000'])
+            ->assertOk()
+            ->assertJsonPath('data.support_phone', '+998712000000');
+
+        $this->asAdmin()->getJson(self::URL)->assertJsonPath('data.support_phone', '+998712000000');
+
+        $this->asAdmin()->patchJson(self::URL, ['support_phone' => null])
+            ->assertOk()
+            ->assertJsonPath('data.support_phone', null);
+    }
+
+    public function test_the_database_refuses_a_malformed_support_phone(): void
+    {
+        try {
+            DB::table('business_settings')->where('id', BusinessSettings::SINGLETON_ID)->update(['support_phone' => '12345']);
+            $this->fail('The check did not refuse the number.');
+        } catch (QueryException $e) {
+            $this->assertStringContainsString('business_settings_support_phone_check', $e->getMessage());
+        }
     }
 
     private function asAdmin(?User $admin = null): self
