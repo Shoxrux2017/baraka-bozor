@@ -88,6 +88,16 @@ final class OrderRatingsTableTest extends TestCase
         $this->assertSame(1, DB::table(self::TABLE)->count());
     }
 
+    public function test_reasons_are_a_json_array(): void
+    {
+        $this->assertRejectedBy(
+            self::TABLE,
+            'order_ratings_reasons_type_check',
+            $this->row(['stars' => 2, 'reasons' => '{}']),
+            'The reasons are a list, not an object.'
+        );
+    }
+
     public function test_an_order_has_one_rating(): void
     {
         DB::table(self::TABLE)->insert($this->row());

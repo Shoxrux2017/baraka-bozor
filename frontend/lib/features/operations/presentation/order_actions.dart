@@ -662,6 +662,9 @@ String? _tooLong(AppLocalizations l10n, String text) =>
     ? l10n.fieldTooLong(_noteMax)
     : null;
 
+/// Only 1 to 3 stars lead to a call to the Customer (`DL-90` item 1).
+const int _lowRatingMaxStars = 3;
+
 /// The Customer's rating of the order — stars, reasons and comment — with
 /// the way to mark it dealt with until somebody did, and then who did and
 /// when (`docs/09` sections 59 and 60, `DL-91`).
@@ -724,7 +727,7 @@ class RatingDetails extends ConsumerWidget {
               key: const ValueKey<String>('rating-reviewed'),
             ),
           )
-        else
+        else if (rating.stars <= _lowRatingMaxStars)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Align(

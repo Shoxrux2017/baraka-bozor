@@ -699,6 +699,35 @@ void main() {
       expect(find.textContaining('Разобрано: Olim, '), findsOneWidget);
     });
 
+    testWidgets('a 5-star rating nobody reviewed has no review button', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        status: 'completed',
+        items: <Object?>[bought()],
+        rating: ratingJson(stars: 5, reasons: const <Object?>[], comment: null),
+      );
+      await openOrder(tester, device: const Locale('ru'));
+
+      expect(filledStars(tester), 5);
+      expect(byKey('rating-review'), findsNothing);
+      expect(byKey('rating-reviewed'), findsNothing);
+    });
+
+    testWidgets('a 3-star rating nobody reviewed has the review button', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        status: 'completed',
+        items: <Object?>[bought()],
+        rating: ratingJson(stars: 3),
+      );
+      await openOrder(tester, device: const Locale('ru'));
+
+      expect(filledStars(tester), 3);
+      expect(byKey('rating-review'), findsOneWidget);
+    });
+
     testWidgets('a reviewed rating has no button', (WidgetTester tester) async {
       operations.details[orderA] = order(
         status: 'completed',

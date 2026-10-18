@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Orders;
 
 use App\Models\Enums\ApprovalStatus;
+use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
@@ -62,7 +63,9 @@ final class CustomerOrders
 
     /**
      * Adds `picture_storage_key`: the current picture of the earliest line
-     * (by creation, then id) whose product has one, `null` when none has
+     * (by creation, then id) whose product has one, a line that is not removed
+     * before a removed one — so an order whose every line is removed still
+     * shows its earliest picture — and `null` when no product has one
      * (`DL-91` (1)).
      *
      * @param  Builder<Order>  $orders
@@ -74,6 +77,7 @@ final class CustomerOrders
             ->join('product_images', 'product_images.product_id', '=', 'order_items.product_id')
             ->select('product_images.storage_key')
             ->whereColumn('order_items.order_id', 'orders.id')
+            ->orderByRaw('order_items.status = ?', [OrderItemStatus::Removed->value])
             ->orderBy('order_items.created_at')
             ->orderBy('order_items.id')
             ->limit(1)]);

@@ -39,6 +39,21 @@ final class CustomerOrderContactsApiTest extends TestCase
         $this->assertNull($rows[$completed->id]['courier_phone']);
     }
 
+    public function test_no_courier_is_shown_after_a_failed_delivery_or_a_cancellation(): void
+    {
+        $customer = User::factory()->customer()->create();
+        $failed = $this->named(Order::factory()->deliveryFailed()->create(['customer_id' => $customer->id]), phone: '+998901112255');
+        $cancelled = $this->named(Order::factory()->deliveryFailed()->cancelled()->create(['customer_id' => $customer->id]), phone: '+998901112266');
+
+        foreach ([$failed, $cancelled] as $order) {
+            $this->as($customer)->getJson("/api/v1/customer/orders/{$order->id}")->assertOk()->assertJsonPath('data.courier', null);
+        }
+
+        $rows = collect($this->as($customer)->getJson('/api/v1/customer/orders')->assertOk()->json('data'))->keyBy('id');
+        $this->assertNull($rows[$failed->id]['courier_phone']);
+        $this->assertNull($rows[$cancelled->id]['courier_phone']);
+    }
+
     public function test_a_courier_without_a_name_is_shown_by_phone(): void
     {
         $order = Order::factory()->onTheWay()->create();

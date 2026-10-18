@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Orders;
 
+use App\Models\Enums\ItemRemovedReason;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -69,6 +70,22 @@ final class CustomerOrdersListApiTest extends TestCase
         $this->assertNull($byId[$bare->id]['image_url']);
     }
 
+    public function test_a_row_prefers_a_line_that_is_not_removed(): void
+    {
+        $order = Order::factory()->create();
+        $this->line($order, 'products/tomato.webp', now()->subMinutes(2), ItemRemovedReason::CustomerRemoved);
+        $this->line($order, 'products/bread.webp', now()->subMinute());
+
+        $allRemoved = Order::factory()->cancelled()->create(['customer_id' => $order->customer_id, 'created_at' => now()->subHour()]);
+        $this->line($allRemoved, 'products/second.webp', now()->subMinute(), ItemRemovedReason::OrderCancelled);
+        $this->line($allRemoved, 'products/first.webp', now()->subMinutes(2), ItemRemovedReason::OrderCancelled);
+
+        $byId = array_column($this->as($order->customer)->getJson('/api/v1/customer/orders')->assertOk()->json('data'), null, 'id');
+
+        $this->assertStringEndsWith('products/bread.webp', $byId[$order->id]['image_url']);
+        $this->assertStringEndsWith('products/first.webp', $byId[$allRemoved->id]['image_url']);
+    }
+
     public function test_detail_lines_carry_their_product_picture(): void
     {
         $order = Order::factory()->create();
@@ -94,7 +111,7 @@ final class CustomerOrdersListApiTest extends TestCase
         }
     }
 
-    private function line(Order $order, ?string $key, \DateTimeInterface $at): OrderItem
+    private function line(Order $order, ?string $key, \DateTimeInterface $at, ?ItemRemovedReason $removed = null): OrderItem
     {
         $product = Product::factory()->create();
 
@@ -102,7 +119,10 @@ final class CustomerOrdersListApiTest extends TestCase
             ProductImage::factory()->create(['product_id' => $product->id, 'storage_key' => $key]);
         }
 
-        return OrderItem::factory()->create(['order_id' => $order->id, 'product_id' => $product->id, 'created_at' => $at]);
+        $factory = OrderItem::factory();
+
+        return ($removed === null ? $factory : $factory->removed($removed))
+            ->create(['order_id' => $order->id, 'product_id' => $product->id, 'created_at' => $at]);
     }
 
     private function as(User $user): self

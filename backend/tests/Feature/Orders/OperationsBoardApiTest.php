@@ -257,6 +257,18 @@ final class OperationsBoardApiTest extends TestCase
         $this->assertNotContains($high->order_id, array_column($items, 'order_id'));
     }
 
+    public function test_the_edge_of_a_low_rating_is_three_stars(): void
+    {
+        $three = OrderRating::factory()->low(3)->create();
+        $four = OrderRating::factory()->create(['stars' => 4]);
+
+        $ids = array_column($this->as($this->operator)->getJson('/api/v1/operations/attention')->assertOk()->json('data'), 'order_id');
+
+        $this->assertSame([$three->order_id], $ids);
+        $this->assertNotContains($four->order_id, $ids);
+        $this->assertIds([$three->order_id], ['attention' => 'low_rating']);
+    }
+
     private function selfOrder(CarbonInterface $assignedAt): Order
     {
         $order = Order::factory()->create();

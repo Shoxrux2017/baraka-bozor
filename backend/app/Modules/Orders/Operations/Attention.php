@@ -326,12 +326,19 @@ final class Attention
     private static function lowRatingItems(): array
     {
         $orders = self::narrow(Order::query(), self::LOW_RATING)
-            ->with(['rating', 'shopperAssignments.shopper', 'courierAssignments.courier'])
+            ->with([
+                'rating' => static fn (Relation $rating) => $rating
+                    ->where('stars', '<=', OrderRatings::LOW_MAX_STARS)
+                    ->whereNull('reviewed_at'),
+                'shopperAssignments.shopper',
+                'courierAssignments.courier',
+            ])
             ->get();
 
         return $orders->map(static function (Order $order): ?array {
-            // Read in a statement of its own: a rating reviewed in between
-            // needs nothing any more.
+            // The rating is loaded in a statement of its own, narrowed to the
+            // attention condition: one reviewed between the narrow query and
+            // this load is not there any more and needs nothing.
             if ($order->rating === null) {
                 return null;
             }

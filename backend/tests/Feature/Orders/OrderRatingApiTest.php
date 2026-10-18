@@ -101,6 +101,7 @@ final class OrderRatingApiTest extends TestCase
         $this->rate($order, ['stars' => 4, 'reasons' => ['late']])->assertStatus(422)->assertJsonValidationErrors('reasons');
         $this->rate($order, ['stars' => 2, 'reasons' => ['bad']])->assertStatus(422)->assertJsonValidationErrors('reasons.0');
         $this->rate($order, ['stars' => 2, 'reasons' => ['late', 'late']])->assertStatus(422)->assertJsonValidationErrors('reasons.0');
+        $this->rate($order, ['stars' => 2, 'reasons' => ['x' => 'late']])->assertStatus(422)->assertJsonValidationErrors('reasons');
         $this->rate($order, ['stars' => 2, 'comment' => str_repeat('я', 501)])->assertStatus(422)->assertJsonValidationErrors('comment');
         $this->rate($order, ['stars' => 2, 'extra' => 1])->assertStatus(422);
         $this->assertSame(0, DB::table('order_ratings')->count());

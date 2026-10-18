@@ -28,7 +28,7 @@ final class RateOrderRequest extends StrictFormRequest
                     $fail('The stars must be an integer from 1 to 5.');
                 }
             }],
-            'reasons' => ['sometimes', 'nullable', 'array', function (string $attribute, mixed $value, Closure $fail): void {
+            'reasons' => ['sometimes', 'nullable', 'array', 'list', function (string $attribute, mixed $value, Closure $fail): void {
                 $stars = $this->input('stars');
 
                 if (is_array($value) && $value !== [] && is_int($stars) && $stars > OrderRatings::LOW_MAX_STARS) {

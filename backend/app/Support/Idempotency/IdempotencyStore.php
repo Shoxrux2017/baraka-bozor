@@ -24,8 +24,9 @@ use Throwable;
  *   in its own short transaction; the operation runs in a second transaction,
  *   which also marks the key `completed` with the resource it produced, so a
  *   completed key never exists without its effect;
- * - the same key and hash, completed: the resource is loaded and returned as
- *   it is now — the same logical result, not a stored response;
+ * - the same key and hash, completed: a key that names a resource replays
+ *   the resource as it is now — the same logical result; a key completed by
+ *   `runAnswer()` replays the answer it stored, unchanged;
  * - the same key and hash, still processing inside its lease:
  *   `409 idempotency_in_progress`;
  * - the same key and hash, processing past its lease: the attempt died, so
