@@ -6,6 +6,7 @@ import 'package:baraka_bozor/features/catalog/application/catalog_controllers.da
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:baraka_bozor/features/checkout/application/checkout_controllers.dart';
 import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
+import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:baraka_bozor/core/platform/map_links.dart';
 import 'package:baraka_bozor/core/platform/phone_calls.dart';
 import 'package:baraka_bozor/features/courier/application/courier_orders_controllers.dart';
@@ -40,6 +41,7 @@ Widget appUnderTest({
   FakeFavoritesRepository? favorites,
   FakeCheckoutRepository? checkout,
   FakeAddressesRepository? addresses,
+  FakeProfileRepository? profile,
   FakeCustomerOrdersRepository? orders,
   FakeShopperOrdersRepository? shopper,
   FakeCourierOrdersRepository? courier,
@@ -78,6 +80,7 @@ Widget appUnderTest({
       addressesRepositoryProvider.overrideWithValue(
         addresses ?? FakeAddressesRepository(),
       ),
+      if (profile != null) profileRepositoryProvider.overrideWithValue(profile),
       customerOrdersRepositoryProvider.overrideWithValue(
         orders ?? FakeCustomerOrdersRepository(),
       ),

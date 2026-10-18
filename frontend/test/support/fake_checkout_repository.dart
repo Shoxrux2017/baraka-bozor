@@ -16,24 +16,32 @@ Map<String, Object?> previewJson({
   bool outside = false,
   String? opensAt = '08:00',
   String token = 'token-1',
+  int lineTotal = 27600,
+  int total = 47600,
+  int deliveryFee = 15000,
+  int serviceFee = 5000,
+  int merchandiseSubtotal = 27600,
+  List<Map<String, Object?>>? lines,
 }) => <String, Object?>{
-  'lines': <Object?>[
-    <String, Object?>{
-      'cart_item_id': tomatoLine,
-      'product_id': tomatoProduct,
-      'name_uz': 'Pomidor',
-      'name_ru': 'Помидоры',
-      'unit_code': 'kg',
-      'quantity': '1.500',
-      'price_mode': 'estimate',
-      'customer_unit_price_uzs': 18400,
-      'line_total_uzs': 27600,
-    },
-  ],
-  'merchandise_subtotal_uzs': 27600,
-  'service_fee_uzs': 5000,
-  'delivery_fee_uzs': 15000,
-  'total_uzs': 47600,
+  'lines':
+      lines ??
+      <Object?>[
+        <String, Object?>{
+          'cart_item_id': tomatoLine,
+          'product_id': tomatoProduct,
+          'name_uz': 'Pomidor',
+          'name_ru': 'Помидоры',
+          'unit_code': 'kg',
+          'quantity': '1.500',
+          'price_mode': 'estimate',
+          'customer_unit_price_uzs': 18400,
+          'line_total_uzs': lineTotal,
+        },
+      ],
+  'merchandise_subtotal_uzs': merchandiseSubtotal,
+  'service_fee_uzs': serviceFee,
+  'delivery_fee_uzs': deliveryFee,
+  'total_uzs': total,
   'total_kind': totalKind,
   'payment_method': paymentMethod,
   'delivery_time_note': note,
@@ -76,6 +84,10 @@ class FakeCheckoutRepository implements CheckoutRepository {
   /// When set, a preview — and only a preview — waits for it.
   Completer<void>? previewHold;
 
+  /// When not empty, the next preview answers its first entry (with that
+  /// call's token) instead of the default.
+  final List<Map<String, Object?>> queuedPreviews = <Map<String, Object?>>[];
+
   @override
   Future<CheckoutPreview> preview(CheckoutRequest request) async {
     previews.add(request);
@@ -85,6 +97,12 @@ class FakeCheckoutRepository implements CheckoutRepository {
     if (failure != null) {
       previewFailure = null;
       throw failure;
+    }
+    if (queuedPreviews.isNotEmpty) {
+      return CheckoutApi.parsePreview(
+        queuedPreviews.removeAt(0)
+          ..['checkout_token'] = 'token-${previews.length}',
+      );
     }
     return CheckoutApi.parsePreview(
       previewJson(

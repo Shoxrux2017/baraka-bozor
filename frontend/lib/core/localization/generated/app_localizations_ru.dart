@@ -1493,19 +1493,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get errorProductUnavailable => 'Этого товара сейчас нет в продаже';
 
   @override
-  String get checkoutTitle => 'Оформление заказа';
+  String get checkoutTitle => 'Оформление';
 
   @override
   String get checkoutGo => 'Оформить';
 
   @override
   String get checkoutAddress => 'Адрес доставки';
-
-  @override
-  String get checkoutNoAddress => 'Адресов пока нет';
-
-  @override
-  String get checkoutAddAddress => 'Добавить адрес';
 
   @override
   String get checkoutPayment => 'Способ оплаты';
@@ -1515,13 +1509,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Пока можно оплатить только наличными';
 
   @override
-  String get checkoutCalculate => 'Рассчитать';
-
-  @override
   String get checkoutCalculating => 'Рассчитываем';
-
-  @override
-  String get checkoutConfirm => 'Подтвердить заказ';
 
   @override
   String get checkoutPlacing => 'Отправляем заказ';
@@ -1531,17 +1519,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Есть товары с ориентировочной ценой: итог станет известен, когда сборщик их купит';
 
   @override
-  String checkoutClosedUntil(String time) {
-    return 'Сейчас нерабочее время. Заказ начнут собирать с $time';
-  }
-
-  @override
   String checkoutPlaced(String number) {
-    return 'Заказ №$number принят';
+    return 'Заказ № $number оформлен';
   }
-
-  @override
-  String get checkoutBackToCatalog => 'Вернуться в каталог';
 
   @override
   String get checkoutOpenProfile => 'Указать имя';
@@ -1588,7 +1568,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get checkoutUnconfirmed =>
-      'Не удалось узнать, принят ли заказ. Нажмите «Подтвердить заказ» ещё раз — дважды он не оформится';
+      'Не удалось узнать, принят ли заказ. Нажмите «Заказать» ещё раз — дважды он не оформится';
 
   @override
   String get cartUnconfirmedOrder =>
@@ -1605,6 +1585,107 @@ class AppLocalizationsRu extends AppLocalizations {
   String checkoutPlacedCancelled(String number) {
     return 'Заказ №$number отменён';
   }
+
+  @override
+  String get checkoutWhere => 'Куда привезти';
+
+  @override
+  String get checkoutWishLabel => 'Пожелание к доставке';
+
+  @override
+  String get checkoutWishHint => 'Например: после 18:00, позвонить заранее';
+
+  @override
+  String get paymentCashTitle => 'Наличными курьеру';
+
+  @override
+  String get paymentCashHint =>
+      'При получении, точную сумму покажем после сборки';
+
+  @override
+  String get paymentOnlineTitle => 'Онлайн: Payme или Click';
+
+  @override
+  String get checkoutSoon => 'Скоро';
+
+  @override
+  String checkoutItems(int count) {
+    return 'Товары · $count';
+  }
+
+  @override
+  String get checkoutOrder => 'Заказать';
+
+  @override
+  String checkoutClosedBanner(String time) {
+    return 'Сейчас мы закрыты. Заказ примем сейчас, а соберём и привезём после открытия — в $time.';
+  }
+
+  @override
+  String get checkoutRecounted =>
+      'Пока вы оформляли, заказ пересчитали. Проверьте итог и нажмите «Заказать» ещё раз.';
+
+  @override
+  String checkoutGoneTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Товары закончились',
+      many: 'Товары закончились',
+      few: 'Товары закончились',
+      one: 'Товар закончился',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String checkoutGoneText(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Пока вы оформляли, на рынке закончились товары:',
+      many: 'Пока вы оформляли, на рынке закончились товары:',
+      few: 'Пока вы оформляли, на рынке закончились товары:',
+      one: 'Пока вы оформляли, на рынке закончился товар:',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String checkoutGoneHint(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Уберите их в корзине — остальное оформим как обычно.',
+      many: 'Уберите их в корзине — остальное оформим как обычно.',
+      few: 'Уберите их в корзине — остальное оформим как обычно.',
+      one: 'Уберите его в корзине — остальное оформим как обычно.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get checkoutGoneAction => 'В корзину';
+
+  @override
+  String get checkoutPlacedCash =>
+      'Сборщик купит всё на рынке. Точную сумму покажем в заказе после сборки — её вы отдадите курьеру наличными.';
+
+  @override
+  String checkoutPlacedCashFinal(String amount) {
+    return 'Сборщик купит всё на рынке. К оплате курьеру наличными: $amount.';
+  }
+
+  @override
+  String checkoutPlacedOpensAt(String time) {
+    return 'Начнём собирать после открытия — в $time.';
+  }
+
+  @override
+  String get checkoutOrderStatus => 'Статус заказа';
+
+  @override
+  String get checkoutToHome => 'На главную';
 
   @override
   String get myOrders => 'Мои заказы';

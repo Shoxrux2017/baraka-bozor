@@ -2,37 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/catalog/catalog_values.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/formatting/server_text.dart';
 import '../../../core/localization/app_language.dart';
-import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/orders/order_values.dart';
-import '../../../core/orders/quantity_rules.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/state/mutation_state.dart';
+import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
-import '../../../core/widgets/list_widgets.dart';
+import '../../../core/widgets/kit_app_bar.dart';
 import '../../addresses/application/addresses_controllers.dart';
 import '../../addresses/application/delivery_address.dart';
 import '../../addresses/domain/addresses.dart';
 import '../../addresses/presentation/delivery_address_widgets.dart';
+import '../../cart/application/cart_controllers.dart';
+import '../../cart/domain/cart.dart';
+import '../../profile/application/profile_controllers.dart';
+import '../../profile/domain/profile.dart';
 import '../application/checkout_controllers.dart';
 import '../domain/checkout.dart';
+import 'checkout_placed_view.dart';
+import 'checkout_sections.dart';
 
-/// The checkout (`docs/09` sections 18 and 19, `tasks/WAVE_2.md` W2-13):
-/// an active address — or a way to add one — cash, with online shown as not
-/// yet available, the delivery wish, then the server's preview of the lines,
-/// fees and total and its kind, and the confirmation. What the preview was
-/// asked for cannot change while it or the confirmation runs, and a change
-/// afterwards drops it, so a confirmation is always of what the Customer
-/// sees. A confirmation whose outcome is unknown locks the checkout until
-/// the same confirmation, sent again, answers for sure (`DL-50`).
+/// The checkout (`docs/09` sections 18 and 19, drawings 25 to 25в): where it
+/// goes, the delivery wish, cash, the goods and the amounts. The figures come
+/// when the screen opens and after every change of address, and one tap on
+/// "Заказать" places the order the Customer has seen: a wish typed since is
+/// previewed first, and figures that came out different are shown again and
+/// wait for another tap. A confirmation whose outcome is unknown locks the
+/// checkout until the same confirmation, sent again, answers for sure
+/// (`DL-50`).
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
 
@@ -43,19 +47,44 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
   late final TextEditingController _note;
+  final List<ProviderSubscription<dynamic>> _subscriptions =
+      <ProviderSubscription<dynamic>>[];
   String? _addressId;
   PlacedOrder? _placed;
 
-  /// Counts the Customer's changes, so an answer to what they no longer
-  /// ask is not shown.
+  /// When collecting starts, if the order was placed outside the hours.
+  String? _placedOpensAt;
+
+  /// The held address was chosen or restored: from now on only the Customer
+  /// changes it.
+  bool _adopted = false;
+
+  /// The first frame passed: providers may be changed from now on.
+  bool _started = false;
+
+  /// An address changed while a preview ran: ask again when it is over.
+  bool _previewAgain = false;
+
+  /// An address was chosen that the loaded list does not hold yet.
+  bool _previewWhenListed = false;
+
+  /// A tap on "Заказать" is being served.
+  bool _ordering = false;
+
+  /// Previews this screen is waiting for: a run that ends while there is
+  /// none came from a screen that was left.
+  int _ownPreviews = 0;
+
+  /// Counts the held address's changes, so figures for another address are
+  /// never shown.
   int _revision = 0;
 
-  /// The confirmation the last placement failure belongs to.
-  String? _failedKey;
+  /// The preview on screen: kept while the next one runs.
+  CheckoutPreview? _shown;
 
-  /// The key of the preview a stale confirmation brought, while its note
-  /// stands.
-  String? _refreshedKey;
+  /// The total the Customer saw before the figures were recounted.
+  int? _replacedTotal;
+  ApiFailure? _failure;
 
   @override
   void initState() {
@@ -67,17 +96,54 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ? prepared
         : null;
     _addressId = sent?.request.addressId;
+    _adopted = sent != null;
+    _shown = sent?.preview;
     _note = TextEditingController(text: sent?.request.deliveryTimeNote ?? '');
+
+    final String? account = ref.read(customerAccountProvider);
+    if (account != null) {
+      _subscriptions.add(
+        ref.listenManual<AsyncValue<String?>>(
+          deliveryAddressChoiceProvider(account),
+          (AsyncValue<String?>? _, AsyncValue<String?> next) {
+            final String? id = next.value;
+            if (id != null && _adopted) {
+              _pick(id);
+            }
+          },
+        ),
+      );
+    }
+    _subscriptions
+      ..add(
+        ref.listenManual<MutationState>(
+          checkoutPreviewProvider,
+          _foreignRunEnded,
+        ),
+      )
+      ..add(
+        ref.listenManual<MutationState>(placeOrderProvider, _foreignRunEnded),
+      );
+    _subscriptions.add(
+      ref.listenManual<AsyncValue<List<Address>>>(
+        addressesProvider,
+        (AsyncValue<List<Address>>? _, AsyncValue<List<Address>> next) =>
+            _addressesChanged(next),
+      ),
+    );
     if (_addressId == null) {
       _adoptDeliveryAddress();
     }
-    if (prepared != null && sent == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ref.read(preparedCheckoutProvider.notifier).clear();
-        }
-      });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _begin());
+  }
+
+  @override
+  void dispose() {
+    for (final ProviderSubscription<dynamic> subscription in _subscriptions) {
+      subscription.close();
     }
+    _note.dispose();
+    super.dispose();
   }
 
   /// Starts from the home's delivery address (`DL-75`) once, as if the
@@ -94,71 +160,268 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         }
         subscription?.close();
         if (mounted && _addressId == null) {
-          setState(() => _addressId = delivery.id);
+          _adoptAddress(delivery.id);
         }
       },
       fireImmediately: true,
     );
     if (_addressId != null) {
       subscription.close();
+    } else {
+      _subscriptions.add(subscription);
     }
   }
 
-  @override
-  void dispose() {
-    _note.dispose();
-    super.dispose();
-  }
-
-  /// What changed since the preview is not what the token confirms.
-  void _changed() {
-    _revision++;
-    ref.read(preparedCheckoutProvider.notifier).clear();
-  }
-
-  CheckoutRequest? _request(String? address) {
-    if (address == null || !_form.currentState!.validate()) {
-      return null;
-    }
-    final String note = trimLikeServer(_note.text);
-    return CheckoutRequest(
-      addressId: address,
-      paymentMethod: PaymentMethod.cash,
-      deliveryTimeNote: note.isEmpty ? null : note,
-    );
-  }
-
-  /// An address added here is the delivery address and the selected one.
-  Future<void> _addAddress() async {
-    final Address? added = await addDeliveryAddress(
-      router: GoRouter.of(context),
-      container: ProviderScope.containerOf(context),
-    );
-    if (added != null && mounted) {
-      setState(() => _addressId = added.id);
-      _changed();
+  /// A preview or a placement of a screen that was left ended: the figures
+  /// this screen waited for are asked for now.
+  void _foreignRunEnded(MutationState? previous, MutationState next) {
+    if (mounted &&
+        _started &&
+        _previewAgain &&
+        _ownPreviews == 0 &&
+        !_ordering &&
+        (previous?.isBusy ?? false) &&
+        !next.isBusy) {
+      _previewAgain = false;
+      _autoPreview();
     }
   }
 
-  Future<void> _calculate(Address address) async {
-    final CheckoutRequest? request = _request(address.id);
-    if (request == null) {
+  void _begin() {
+    if (!mounted) {
       return;
     }
-    final int revision = _revision;
-    await ref
-        .read(checkoutPreviewProvider.notifier)
-        .preview(request, addressLine: address.streetLine);
-    if (mounted && revision != _revision) {
+    _started = true;
+    final PreparedCheckout? prepared = ref.read(preparedCheckoutProvider);
+    if (prepared != null && !prepared.sent) {
       ref.read(preparedCheckoutProvider.notifier).clear();
+    }
+    if (!_sent && _addressId != null) {
+      _autoPreview();
     }
   }
 
-  Future<void> _confirm(PreparedCheckout prepared) async {
+  bool get _sent => ref.read(preparedCheckoutProvider)?.sent ?? false;
+
+  Address? _heldAddress() => ref
+      .read(addressesProvider)
+      .value
+      ?.where((Address a) => a.id == _addressId)
+      .firstOrNull;
+
+  bool _wishValid() =>
+      trimLikeServer(_note.text).runes.length <=
+      CheckoutRequest.deliveryTimeNoteMax;
+
+  CheckoutRequest _requestFor(String addressId) {
+    final String wish = trimLikeServer(_note.text);
+    return CheckoutRequest(
+      addressId: addressId,
+      paymentMethod: PaymentMethod.cash,
+      deliveryTimeNote: wish.isEmpty ? null : wish,
+    );
+  }
+
+  /// The Customer picked an address, in the sheet or by adding one.
+  void _pick(String id) {
+    if (id == _addressId || _sent || _ordering) {
+      return;
+    }
+    _adoptAddress(id);
+  }
+
+  void _adoptAddress(String id) {
+    _revision++;
     setState(() {
-      _failedKey = null;
-      _refreshedKey = null;
+      _addressId = id;
+      _adopted = true;
+      _shown = null;
+      _replacedTotal = null;
+      _failure = null;
     });
+    if (_started) {
+      ref.read(preparedCheckoutProvider.notifier).clear();
+      _autoPreview();
+    }
+  }
+
+  /// The held address is no longer among the Customer's: its figures go, and
+  /// no other address is taken in its place.
+  void _addressesChanged(AsyncValue<List<Address>> next) {
+    final List<Address>? list = next.value;
+    if (list == null || next.isLoading || _addressId == null || !_started) {
+      return;
+    }
+    final bool listed = list.any((Address a) => a.id == _addressId);
+    if (!listed) {
+      // A confirmation that was sent is sent as it was, whatever the list
+      // holds now (`DL-50` (4)).
+      _previewWhenListed = false;
+      if (_sent) {
+        return;
+      }
+      _revision++;
+      ref.read(preparedCheckoutProvider.notifier).clear();
+      setState(() {
+        _shown = null;
+        _replacedTotal = null;
+      });
+    } else if (_previewWhenListed) {
+      _previewWhenListed = false;
+      _autoPreview();
+    }
+  }
+
+  /// The figures for the held address, without a tap.
+  Future<void> _autoPreview() async {
+    if (_sent || !_wishValid()) {
+      return;
+    }
+    final Address? held = _heldAddress();
+    if (held == null) {
+      _previewWhenListed = true;
+      return;
+    }
+    if (ref.read(checkoutPreviewProvider).isBusy ||
+        ref.read(placeOrderProvider).isBusy) {
+      _previewAgain = true;
+      return;
+    }
+    await _preview(_requestFor(held.id), held.streetLine);
+    if (mounted && _previewAgain) {
+      _previewAgain = false;
+      await _autoPreview();
+    }
+  }
+
+  /// Asks for a preview; the prepared checkout when it came and is still
+  /// what the Customer holds.
+  Future<PreparedCheckout?> _preview(
+    CheckoutRequest request,
+    String addressLine,
+  ) async {
+    final int revision = _revision;
+    setState(() => _failure = null);
+    _ownPreviews++;
+    try {
+      await ref
+          .read(checkoutPreviewProvider.notifier)
+          .preview(request, addressLine: addressLine);
+    } finally {
+      _ownPreviews--;
+    }
+    if (!mounted) {
+      return null;
+    }
+    if (revision != _revision) {
+      ref.read(preparedCheckoutProvider.notifier).clear();
+      return null;
+    }
+    final ApiFailure? failure = ref.read(checkoutPreviewProvider).failure;
+    final PreparedCheckout? prepared = ref.read(preparedCheckoutProvider);
+    if (failure != null) {
+      _refuse(failure);
+      return null;
+    }
+    if (prepared == null) {
+      return null;
+    }
+    setState(() => _shown = prepared.preview);
+    return prepared;
+  }
+
+  /// A refusal in the footer — or, for products gone from sale, the sheet.
+  void _refuse(ApiFailure failure) {
+    if (failure is ApiRefusal &&
+        failure.code == 'product_unavailable' &&
+        _showGone(failure)) {
+      setState(() => _failure = null);
+      return;
+    }
+    setState(() => _failure = failure);
+  }
+
+  bool _showGone(ApiRefusal refusal) {
+    final Object? ids = refusal.error.details['product_ids'];
+    final Set<String> gone = ids is List<Object?>
+        ? ids.whereType<String>().toSet()
+        : const <String>{};
+    final List<CartLine> lines = <CartLine>[
+      ...?ref
+          .read(currentCartProvider)
+          .value
+          ?.lines
+          .where((CartLine l) => gone.contains(l.productId)),
+    ];
+    if (lines.isEmpty) {
+      return false;
+    }
+    showCheckoutGoneSheet(
+      context,
+      lines: lines,
+      onToCart: () {
+        if (mounted) {
+          context.pop();
+        }
+      },
+    );
+    return true;
+  }
+
+  Future<void> _order() async {
+    if (_ordering || _placed != null) {
+      return;
+    }
+    _ordering = true;
+    try {
+      await _orderOnce();
+    } finally {
+      _ordering = false;
+    }
+  }
+
+  Future<void> _orderOnce() async {
+    final PreparedCheckout? prepared = ref.read(preparedCheckoutProvider);
+    if (prepared != null && prepared.sent) {
+      await _place(prepared);
+      return;
+    }
+    final Address? held = _heldAddress();
+    if (held == null ||
+        !(_form.currentState?.validate() ?? true) ||
+        !_wishValid()) {
+      return;
+    }
+    final CheckoutRequest request = _requestFor(held.id);
+    setState(() {
+      _replacedTotal = null;
+      _failure = null;
+    });
+    // Only what the Customer has seen is placed: not a token made for
+    // another request, and not figures that never reached the screen.
+    if (prepared != null &&
+        prepared.request == request &&
+        identical(prepared.preview, _shown)) {
+      await _place(prepared);
+      return;
+    }
+    final CheckoutPreview? shown = _shown;
+    final PreparedCheckout? fresh = await _preview(request, held.streetLine);
+    if (fresh == null || !mounted || shown == null) {
+      return;
+    }
+    if (fresh.preview.sameOfferAs(shown)) {
+      await _place(fresh);
+    } else {
+      setState(() => _replacedTotal = shown.totalUzs);
+    }
+  }
+
+  Future<void> _place(
+    PreparedCheckout prepared, {
+    bool retryStale = true,
+  }) async {
+    setState(() => _failure = null);
     final PlacedOrder? order = await ref
         .read(placeOrderProvider.notifier)
         .place(prepared);
@@ -166,24 +429,58 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
     if (order != null) {
-      setState(() => _placed = order);
+      setState(() {
+        _placed = order;
+        _placedOpensAt = prepared.preview.outsideWorkingHours
+            ? prepared.preview.opensAt
+            : null;
+      });
       return;
     }
-    setState(() => _failedKey = prepared.idempotencyKey);
     final ApiFailure? failure = ref.read(placeOrderProvider).failure;
-    if (failure is ApiRefusal && failure.code == 'checkout_snapshot_stale') {
-      // A new preview — and with it a new key — of the same checkout, which
-      // could not change meanwhile.
-      await ref
-          .read(checkoutPreviewProvider.notifier)
-          .preview(prepared.request, addressLine: prepared.addressLine);
-      if (!mounted) {
+    if (failure == null) {
+      return;
+    }
+    // A refused confirmation is spent; one whose outcome is unknown stays.
+    ref.read(preparedCheckoutProvider.notifier).clear();
+    if (retryStale &&
+        failure is ApiRefusal &&
+        failure.code == 'checkout_snapshot_stale') {
+      final CheckoutPreview? before = _shown;
+      final PreparedCheckout? fresh = await _preview(
+        prepared.request,
+        prepared.addressLine,
+      );
+      if (fresh == null || !mounted || before == null) {
         return;
       }
-      final PreparedCheckout? fresh = ref.read(preparedCheckoutProvider);
-      if (fresh != null) {
-        setState(() => _refreshedKey = fresh.idempotencyKey);
+      if (fresh.preview.sameOfferAs(before)) {
+        await _place(fresh, retryStale: false);
+      } else {
+        setState(() => _replacedTotal = before.totalUzs);
       }
+      return;
+    }
+    _refuse(failure);
+  }
+
+  /// The address sheet closed: the stored choice may differ from the held
+  /// address without having changed (a tap on the marked one does not notify),
+  /// and then the Customer's pick is adopted.
+  Future<void> _changeAddress() async {
+    await showDeliveryAddressSheet(context);
+    final String? account = ref.read(customerAccountProvider);
+    if (!mounted || account == null) {
+      return;
+    }
+    final String? choice = ref
+        .read(deliveryAddressChoiceProvider(account))
+        .value;
+    final bool listed =
+        ref.read(addressesProvider).value?.any((Address a) => a.id == choice) ??
+        false;
+    if (choice != null && listed) {
+      _pick(choice);
     }
   }
 
@@ -191,155 +488,150 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final PlacedOrder? placed = _placed;
+    if (placed != null) {
+      return CheckoutPlacedView(order: placed, opensAt: _placedOpensAt);
+    }
+    final AsyncValue<List<Address>> addresses = ref.watch(addressesProvider);
+    final bool busyPreview = ref.watch(checkoutPreviewProvider).isBusy;
+    final bool busyPlace = ref.watch(placeOrderProvider).isBusy;
+    final PreparedCheckout? prepared = ref.watch(preparedCheckoutProvider);
+    final Cart? cart = ref.watch(currentCartProvider).value;
+    final CustomerProfile? profile = ref.watch(profileControllerProvider).value;
+
+    final List<Address>? list = addresses.value;
+    final Address? held = list
+        ?.where((Address a) => a.id == _addressId)
+        .firstOrNull;
+    final bool sent = prepared?.sent ?? false;
+    // Gone only once the loaded list is final: not while it reloads, and not
+    // before an address just picked is listed. A confirmation that was sent
+    // keeps its address (`DL-50` (4)).
+    final bool gone =
+        _addressId != null &&
+        list != null &&
+        held == null &&
+        !sent &&
+        !addresses.isLoading &&
+        !_previewWhenListed;
+    final bool busy = busyPreview || busyPlace;
+    final bool locked = busy || sent;
+    final CheckoutPreview? shown = gone ? null : _shown;
+    final String? opensAt = shown?.opensAt;
+
+    final VoidCallback? onChange = locked
+        ? null
+        : addresses.hasError
+        ? () => ref.invalidate(addressesProvider)
+        : list == null
+        ? null
+        : list.isEmpty
+        ? () => addDeliveryAddress(
+            router: GoRouter.of(context),
+            container: ProviderScope.containerOf(context),
+          )
+        : _changeAddress;
+
+    final ApiFailure? failure = gone ? null : _failure;
+    final List<Widget> notes = <Widget>[
+      if (failure != null) CheckoutRefusal(failure),
+      if (sent && !busyPlace)
+        Semantics(
+          liveRegion: true,
+          child: Text(
+            l10n.checkoutUnconfirmed,
+            key: const ValueKey<String>('checkout-unconfirmed'),
+            style: const TextStyle(fontSize: 13, color: KitColors.danger),
+          ),
+        ),
+    ];
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.checkoutTitle)),
+      backgroundColor: Colors.white,
+      appBar: kitAppBar(title: l10n.checkoutTitle),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: CheckoutFooter(
+          totalUzs: shown?.totalUzs,
+          estimate: shown?.totalKind != TotalKind.finalTotal,
+          busy: busy,
+          busyLabel: busyPlace
+              ? l10n.checkoutPlacing
+              : l10n.checkoutCalculating,
+          onOrder: sent || (!gone && held != null) ? _order : null,
+          message: notes.isEmpty
+              ? null
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: notes,
+                ),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: <Widget>[
             const ActiveModeBar(),
             Expanded(
-              child: placed != null
-                  ? _Placed(order: placed)
-                  : Form(key: _form, child: _checkout(context, l10n)),
+              child: Form(
+                key: _form,
+                child: ListView(
+                  key: const ValueKey<String>('checkout'),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                  children: <Widget>[
+                    if (shown != null &&
+                        shown.outsideWorkingHours &&
+                        opensAt != null) ...<Widget>[
+                      CheckoutClosedBanner(opensAt: opensAt),
+                      const SizedBox(height: 16),
+                    ],
+                    _Heading(l10n.checkoutWhere),
+                    const SizedBox(height: 12),
+                    CheckoutDeliveryCard(
+                      address: held,
+                      gone: gone,
+                      sentAddressLine: sent && held == null
+                          ? prepared?.addressLine
+                          : null,
+                      recipient: profile,
+                      onChange: onChange,
+                    ),
+                    const SizedBox(height: 12),
+                    CheckoutWishField(
+                      controller: _note,
+                      enabled: !locked,
+                      onChanged: (String _) {
+                        if (_replacedTotal != null) {
+                          setState(() => _replacedTotal = null);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    _Heading(l10n.checkoutPayment),
+                    const SizedBox(height: 12),
+                    const CheckoutPaymentCards(),
+                    if (shown != null) ...<Widget>[
+                      const SizedBox(height: 24),
+                      CheckoutItemsStrip(
+                        lines: shown.lines,
+                        imageByCartItem: <String, String?>{
+                          for (final CartLine line
+                              in cart?.lines ?? const <CartLine>[])
+                            line.id: line.imageUrl,
+                        },
+                        onChange: () => context.pop(),
+                      ),
+                      const SizedBox(height: 16),
+                      CheckoutAmounts(
+                        preview: shown,
+                        replacedTotalUzs: _replacedTotal,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _checkout(BuildContext context, AppLocalizations l10n) {
-    final AsyncValue<List<Address>> addresses = ref.watch(addressesProvider);
-    final MutationState previewing = ref.watch(checkoutPreviewProvider);
-    final MutationState placing = ref.watch(placeOrderProvider);
-    final PreparedCheckout? prepared = ref.watch(preparedCheckoutProvider);
-    final bool busy = previewing.isBusy || placing.isBusy;
-    // A confirmation whose outcome is unknown: only it may go again.
-    final bool unconfirmed = prepared?.sent ?? false;
-    final bool locked = busy || unconfirmed;
-    final List<Address> list = addresses.value ?? const <Address>[];
-    final Address? address = list
-        .where((Address a) => a.id == _addressId)
-        .firstOrNull;
-
-    return ListView(
-      key: const ValueKey<String>('checkout'),
-      padding: const EdgeInsets.all(16),
-      children: <Widget>[
-        _Heading(l10n.checkoutAddress),
-        addresses.when(
-          skipLoadingOnRefresh: !addresses.hasError,
-          data: (List<Address> list) => _Addresses(
-            addresses: list,
-            selected: address?.id,
-            enabled: !locked,
-            onSelected: (String id) {
-              setState(() => _addressId = id);
-              _changed();
-              final String? account = ref.read(customerAccountProvider);
-              if (account != null) {
-                ref
-                    .read(deliveryAddressChoiceProvider(account).notifier)
-                    .choose(id);
-              }
-            },
-          ),
-          error: (Object error, StackTrace _) => LoadFailure(
-            error: error,
-            onRetry: () => ref.invalidate(addressesProvider),
-          ),
-          loading: () => const LinearProgressIndicator(),
-        ),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: TextButton.icon(
-            key: const ValueKey<String>('checkout-add-address'),
-            icon: const Icon(Icons.add_location_alt_outlined),
-            label: Text(l10n.checkoutAddAddress),
-            onPressed: locked ? null : _addAddress,
-          ),
-        ),
-        const SizedBox(height: 16),
-        _Heading(l10n.checkoutPayment),
-        RadioGroup<PaymentMethod>(
-          groupValue: PaymentMethod.cash,
-          onChanged: (PaymentMethod? _) {},
-          child: Column(
-            children: <Widget>[
-              RadioListTile<PaymentMethod>(
-                key: const ValueKey<String>('pay-cash'),
-                value: PaymentMethod.cash,
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.paymentCash),
-              ),
-              RadioListTile<PaymentMethod>(
-                key: const ValueKey<String>('pay-online'),
-                value: PaymentMethod.online,
-                enabled: false,
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.paymentOnline),
-                subtitle: Text(l10n.checkoutOnlineUnavailable),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          key: const ValueKey<String>('checkout-delivery-wish'),
-          controller: _note,
-          enabled: !locked,
-          minLines: 1,
-          maxLines: 3,
-          decoration: InputDecoration(
-            labelText: l10n.orderSectionDeliveryWish,
-            border: const OutlineInputBorder(),
-          ),
-          onChanged: (String _) => _changed(),
-          validator: (String? text) =>
-              trimLikeServer(text ?? '').runes.length >
-                  CheckoutRequest.deliveryTimeNoteMax
-              ? l10n.fieldTooLong(CheckoutRequest.deliveryTimeNoteMax)
-              : null,
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton(
-          key: const ValueKey<String>('checkout-calculate'),
-          onPressed: locked || address == null
-              ? null
-              : () => _calculate(address),
-          child: previewing.isBusy
-              ? _Busy(label: l10n.checkoutCalculating)
-              : Text(l10n.checkoutCalculate),
-        ),
-        CheckoutRefusal(previewing.failure),
-        if (prepared != null) ...<Widget>[
-          const SizedBox(height: 16),
-          _Preview(prepared: prepared),
-          if (_refreshedKey != null && _refreshedKey == prepared.idempotencyKey)
-            _Note(
-              l10n.errorCheckoutStale,
-              key: const ValueKey<String>('checkout-refreshed'),
-            ),
-          if (unconfirmed && !placing.isBusy)
-            _Note(
-              l10n.checkoutUnconfirmed,
-              key: const ValueKey<String>('checkout-unconfirmed'),
-            ),
-          const SizedBox(height: 16),
-          FilledButton(
-            key: const ValueKey<String>('checkout-confirm'),
-            onPressed: busy ? null : () => _confirm(prepared),
-            child: placing.isBusy
-                ? _Busy(label: l10n.checkoutPlacing)
-                : Text(l10n.checkoutConfirm),
-          ),
-        ],
-        // A placement's failure stands only under the confirmation it
-        // belongs to.
-        if (_failedKey != null && _failedKey == prepared?.idempotencyKey)
-          CheckoutRefusal(placing.failure),
-      ],
     );
   }
 }
@@ -352,253 +644,15 @@ class _Heading extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     header: true,
-    child: Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-    ),
-  );
-}
-
-/// A notice about the checkout's state, announced when it appears.
-class _Note extends StatelessWidget {
-  const _Note(this.text, {super.key});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    liveRegion: true,
-    child: Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Text(
-        text,
-        style: TextStyle(color: Theme.of(context).colorScheme.error),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: KitColors.ink,
       ),
     ),
   );
-}
-
-class _Busy extends StatelessWidget {
-  const _Busy({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => SizedBox.square(
-    dimension: 18,
-    child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: label),
-  );
-}
-
-/// The Customer's active addresses to deliver to.
-class _Addresses extends StatelessWidget {
-  const _Addresses({
-    required this.addresses,
-    required this.selected,
-    required this.enabled,
-    required this.onSelected,
-  });
-
-  final List<Address> addresses;
-  final String? selected;
-  final bool enabled;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    if (addresses.isEmpty) {
-      return Text(
-        l10n.checkoutNoAddress,
-        key: const ValueKey<String>('checkout-no-address'),
-      );
-    }
-    return RadioGroup<String>(
-      groupValue: selected,
-      onChanged: (String? id) {
-        if (id != null) {
-          onSelected(id);
-        }
-      },
-      child: Column(
-        children: <Widget>[
-          for (final Address address in addresses)
-            RadioListTile<String>(
-              key: ValueKey<String>('checkout-address-${address.id}'),
-              value: address.id,
-              enabled: enabled,
-              contentPadding: EdgeInsets.zero,
-              title: Text(address.label ?? address.streetLine),
-              subtitle: address.label == null ? null : Text(address.streetLine),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The server's preview: where and when it goes, every line at its price,
-/// the fees, the total and its kind, and when the order starts being
-/// collected outside the hours.
-class _Preview extends StatelessWidget {
-  const _Preview({required this.prepared});
-
-  final PreparedCheckout prepared;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = interfaceLanguage(context);
-    final CheckoutPreview preview = prepared.preview;
-    final String? opensAt = preview.opensAt;
-    final String? wish = prepared.request.deliveryTimeNote;
-
-    Widget line(String label, String amount, {Key? key, bool strong = false}) {
-      final TextStyle? style = strong
-          ? const TextStyle(fontWeight: FontWeight.bold)
-          : null;
-      return Row(
-        key: key,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Expanded(child: Text(label, style: style)),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(amount, style: style, textAlign: TextAlign.end),
-          ),
-        ],
-      );
-    }
-
-    return Card(
-      key: const ValueKey<String>('checkout-preview'),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
-              '${l10n.checkoutAddress}: ${prepared.addressLine}',
-              key: const ValueKey<String>('checkout-preview-address'),
-            ),
-            if (wish != null)
-              Text(
-                '${l10n.orderSectionDeliveryWish}: $wish',
-                key: const ValueKey<String>('checkout-preview-wish'),
-              ),
-            const Divider(),
-            for (final PreviewLine item in preview.lines)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: line(
-                  '${item.name(language)} · '
-                  '${QuantityRules.display(item.quantity)} '
-                  '${CatalogLabels.unit(l10n, item.unit)}',
-                  item.priceMode == PriceMode.estimate
-                      ? l10n.cartLineEstimate(
-                          MoneyFormat.uzs(item.lineTotalUzs, language),
-                        )
-                      : MoneyFormat.uzs(item.lineTotalUzs, language),
-                ),
-              ),
-            const Divider(),
-            line(
-              l10n.totalsMerchandise,
-              MoneyFormat.uzs(preview.merchandiseSubtotalUzs, language),
-            ),
-            line(
-              l10n.totalsServiceFee,
-              MoneyFormat.uzs(preview.serviceFeeUzs, language),
-            ),
-            line(
-              l10n.totalsDeliveryFee,
-              MoneyFormat.uzs(preview.deliveryFeeUzs, language),
-            ),
-            const Divider(),
-            line(
-              l10n.totalsTotal,
-              '${MoneyFormat.uzs(preview.totalUzs, language)} · '
-              '${preview.totalKind == TotalKind.estimate ? l10n.totalKindEstimate : l10n.totalKindFinal}',
-              key: const ValueKey<String>('checkout-total'),
-              strong: true,
-            ),
-            if (preview.totalKind == TotalKind.estimate)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(l10n.checkoutEstimateExplain),
-              ),
-            if (preview.outsideWorkingHours && opensAt != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  l10n.checkoutClosedUntil(opensAt),
-                  key: const ValueKey<String>('checkout-closed'),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The placed order: its number and what is due, and the way back.
-class _Placed extends StatelessWidget {
-  const _Placed({required this.order});
-
-  final PlacedOrder order;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = interfaceLanguage(context);
-    final int? total = order.totalUzs;
-
-    return ListView(
-      key: const ValueKey<String>('checkout-placed'),
-      padding: const EdgeInsets.all(24),
-      children: <Widget>[
-        Icon(
-          Icons.check_circle_outline,
-          size: 64,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(height: 16),
-        // A replay answers the order as it is now: cancelled meanwhile, it
-        // is said so.
-        Text(
-          total == null
-              ? l10n.checkoutPlacedCancelled('${order.orderNumber}')
-              : l10n.checkoutPlaced('${order.orderNumber}'),
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          total == null
-              ? l10n.totalNothingDue
-              : '${MoneyFormat.uzs(total, language)} · '
-                    '${order.totalKind == TotalKind.estimate ? l10n.totalKindEstimate : l10n.totalKindFinal}',
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        FilledButton(
-          key: const ValueKey<String>('checkout-open-order'),
-          onPressed: () {
-            final GoRouter router = GoRouter.of(context)..go(AppPaths.customer);
-            router.push(AppPaths.customerOrder(order.id));
-          },
-          child: Text(l10n.orderOpen),
-        ),
-        const SizedBox(height: 8),
-        OutlinedButton(
-          key: const ValueKey<String>('checkout-back-to-catalog'),
-          onPressed: () => context.go(AppPaths.customer),
-          child: Text(l10n.checkoutBackToCatalog),
-        ),
-      ],
-    );
-  }
 }
 
 /// A checkout refusal in words, with the values its `details` carry — the
@@ -654,19 +708,16 @@ class CheckoutRefusal extends StatelessWidget {
     }
     return Semantics(
       liveRegion: true,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              text,
-              key: const ValueKey<String>('failure-message'),
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-            ?action,
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            text,
+            key: const ValueKey<String>('failure-message'),
+            style: const TextStyle(fontSize: 13, color: KitColors.danger),
+          ),
+          ?action,
+        ],
       ),
     );
   }

@@ -2783,7 +2783,7 @@ abstract class AppLocalizations {
   /// No description provided for @checkoutTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtmani rasmiylashtirish'**
+  /// **'Rasmiylashtirish'**
   String get checkoutTitle;
 
   /// No description provided for @checkoutGo.
@@ -2798,18 +2798,6 @@ abstract class AppLocalizations {
   /// **'Yetkazish manzili'**
   String get checkoutAddress;
 
-  /// No description provided for @checkoutNoAddress.
-  ///
-  /// In uz, this message translates to:
-  /// **'Hali manzil yo\'q'**
-  String get checkoutNoAddress;
-
-  /// No description provided for @checkoutAddAddress.
-  ///
-  /// In uz, this message translates to:
-  /// **'Manzil qo\'shish'**
-  String get checkoutAddAddress;
-
   /// No description provided for @checkoutPayment.
   ///
   /// In uz, this message translates to:
@@ -2822,23 +2810,11 @@ abstract class AppLocalizations {
   /// **'Hozircha faqat naqd pul bilan to\'lash mumkin'**
   String get checkoutOnlineUnavailable;
 
-  /// No description provided for @checkoutCalculate.
-  ///
-  /// In uz, this message translates to:
-  /// **'Hisoblash'**
-  String get checkoutCalculate;
-
   /// No description provided for @checkoutCalculating.
   ///
   /// In uz, this message translates to:
   /// **'Hisoblanmoqda'**
   String get checkoutCalculating;
-
-  /// No description provided for @checkoutConfirm.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtmani tasdiqlash'**
-  String get checkoutConfirm;
 
   /// No description provided for @checkoutPlacing.
   ///
@@ -2852,23 +2828,11 @@ abstract class AppLocalizations {
   /// **'Narxi taxminiy mahsulotlar bor: yakuniy summa yig\'uvchi ularni sotib olgach aniqlanadi'**
   String get checkoutEstimateExplain;
 
-  /// No description provided for @checkoutClosedUntil.
-  ///
-  /// In uz, this message translates to:
-  /// **'Hozir ish vaqti emas. Buyurtma {time} dan yig\'ila boshlaydi'**
-  String checkoutClosedUntil(String time);
-
   /// No description provided for @checkoutPlaced.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma №{number} qabul qilindi'**
+  /// **'Buyurtma № {number} rasmiylashtirildi'**
   String checkoutPlaced(String number);
-
-  /// No description provided for @checkoutBackToCatalog.
-  ///
-  /// In uz, this message translates to:
-  /// **'Katalogga qaytish'**
-  String get checkoutBackToCatalog;
 
   /// No description provided for @checkoutOpenProfile.
   ///
@@ -2945,7 +2909,7 @@ abstract class AppLocalizations {
   /// No description provided for @checkoutUnconfirmed.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma qabul qilingani aniqlanmadi. «Buyurtmani tasdiqlash»ni yana bosing — u ikki marta qabul qilinmaydi'**
+  /// **'Buyurtma qabul qilingani aniqlanmadi. «Buyurtma berish»ni yana bosing — u ikki marta qabul qilinmaydi'**
   String get checkoutUnconfirmed;
 
   /// No description provided for @cartUnconfirmedOrder.
@@ -2971,6 +2935,126 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtma №{number} bekor qilingan'**
   String checkoutPlacedCancelled(String number);
+
+  /// No description provided for @checkoutWhere.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qayerga yetkazamiz'**
+  String get checkoutWhere;
+
+  /// No description provided for @checkoutWishLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berish bo\'yicha istak'**
+  String get checkoutWishLabel;
+
+  /// No description provided for @checkoutWishHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Masalan: 18:00 dan keyin, oldindan qo\'ng\'iroq qiling'**
+  String get checkoutWishHint;
+
+  /// No description provided for @paymentCashTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryerga naqd pul'**
+  String get paymentCashTitle;
+
+  /// No description provided for @paymentCashHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qilganda, aniq summani yig\'ishdan keyin ko\'rsatamiz'**
+  String get paymentCashHint;
+
+  /// No description provided for @paymentOnlineTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Onlayn: Payme yoki Click'**
+  String get paymentOnlineTitle;
+
+  /// No description provided for @checkoutSoon.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tez orada'**
+  String get checkoutSoon;
+
+  /// No description provided for @checkoutItems.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotlar · {count}'**
+  String checkoutItems(int count);
+
+  /// No description provided for @checkoutOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma berish'**
+  String get checkoutOrder;
+
+  /// No description provided for @checkoutClosedBanner.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir biz yopiqmiz. Buyurtmani hozir qabul qilamiz, yig\'ib, soat {time} da ochilgandan keyin yetkazib beramiz.'**
+  String checkoutClosedBanner(String time);
+
+  /// No description provided for @checkoutRecounted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rasmiylashtirayotganingizda buyurtma qayta hisoblandi. Summani tekshiring va «Buyurtma berish»ni yana bosing.'**
+  String get checkoutRecounted;
+
+  /// No description provided for @checkoutGoneTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count, plural, one{Mahsulot tugadi} other{Mahsulotlar tugadi}}'**
+  String checkoutGoneTitle(int count);
+
+  /// No description provided for @checkoutGoneText.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count, plural, one{Rasmiylashtirayotganingizda bozorda mahsulot tugadi:} other{Rasmiylashtirayotganingizda bozorda mahsulotlar tugadi:}}'**
+  String checkoutGoneText(int count);
+
+  /// No description provided for @checkoutGoneHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count, plural, one{Uni savatdan olib tashlang — qolganini odatdagidek rasmiylashtiramiz.} other{Ularni savatdan olib tashlang — qolganini odatdagidek rasmiylashtiramiz.}}'**
+  String checkoutGoneHint(int count);
+
+  /// No description provided for @checkoutGoneAction.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga'**
+  String get checkoutGoneAction;
+
+  /// No description provided for @checkoutPlacedCash.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi hammasini bozordan sotib oladi. Aniq summani yig\'ishdan keyin buyurtmada ko\'rsatamiz — uni kuryerga naqd berasiz.'**
+  String get checkoutPlacedCash;
+
+  /// No description provided for @checkoutPlacedCashFinal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi hammasini bozordan sotib oladi. Kuryerga naqd to\'lanadi: {amount}.'**
+  String checkoutPlacedCashFinal(String amount);
+
+  /// No description provided for @checkoutPlacedOpensAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ochilgandan keyin — soat {time} da yig\'ishni boshlaymiz.'**
+  String checkoutPlacedOpensAt(String time);
+
+  /// No description provided for @checkoutOrderStatus.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma holati'**
+  String get checkoutOrderStatus;
+
+  /// No description provided for @checkoutToHome.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bosh sahifaga'**
+  String get checkoutToHome;
 
   /// No description provided for @myOrders.
   ///

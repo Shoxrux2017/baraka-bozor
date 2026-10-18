@@ -37,19 +37,19 @@ class CartSummary extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            _AmountRow(
+            SummaryAmountRow(
               valueKey: 'cart-subtotal',
               label: l10n.cartGoods(cart.availableCount),
               value: estimate(cart.estimatedSubtotalUzs),
             ),
             if (delivery != null)
-              _AmountRow(
+              SummaryAmountRow(
                 valueKey: 'cart-delivery',
                 label: l10n.cartDelivery,
                 value: sum(delivery),
               ),
             if (fee != null)
-              _AmountRow(
+              SummaryAmountRow(
                 valueKey: 'cart-service-fee',
                 label: l10n.cartServiceFee,
                 value: cart.serviceFeeIsEstimate ? estimate(fee) : sum(fee),
@@ -59,7 +59,7 @@ class CartSummary extends StatelessWidget {
                 padding: EdgeInsets.symmetric(vertical: 6),
                 child: Divider(height: 1, thickness: 1, color: KitColors.line),
               ),
-              _AmountRow(
+              SummaryAmountRow(
                 valueKey: 'cart-total',
                 label: l10n.cartTotal,
                 value: estimate(total),
@@ -67,31 +67,7 @@ class CartSummary extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 8),
-            Row(
-              key: const ValueKey<String>('cart-estimate-note'),
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const Padding(
-                  padding: EdgeInsets.only(top: 1),
-                  child: Icon(
-                    Icons.info_outline,
-                    size: 16,
-                    color: KitColors.muted,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    l10n.cartEstimateNote,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      height: 1.35,
-                      color: KitColors.muted,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            const EstimateNote(key: ValueKey<String>('cart-estimate-note')),
           ],
         ),
       ),
@@ -99,18 +75,53 @@ class CartSummary extends StatelessWidget {
   }
 }
 
-class _AmountRow extends StatelessWidget {
-  const _AmountRow({
+/// "The sum is an estimate" with its info icon, under the amounts.
+class EstimateNote extends StatelessWidget {
+  const EstimateNote({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const Padding(
+          padding: EdgeInsets.only(top: 1),
+          child: Icon(Icons.info_outline, size: 16, color: KitColors.muted),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            l10n.cartEstimateNote,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.35,
+              color: KitColors.muted,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One line of amounts: a label and a figure. [replaced] is an earlier
+/// figure shown struck through before the current one.
+class SummaryAmountRow extends StatelessWidget {
+  const SummaryAmountRow({
     required this.valueKey,
     required this.label,
     required this.value,
     this.emphasised = false,
+    this.replaced,
+    super.key,
   });
 
   final String valueKey;
   final String label;
   final String value;
   final bool emphasised;
+  final String? replaced;
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +132,15 @@ class _AmountRow extends StatelessWidget {
             color: KitColors.ink,
           )
         : const TextStyle(fontSize: 14, color: KitColors.ink2);
+    final Text valueText = Text(
+      value,
+      key: ValueKey<String>(valueKey),
+      textAlign: TextAlign.end,
+      style: style.copyWith(
+        color: KitColors.ink,
+        fontWeight: emphasised ? FontWeight.w700 : FontWeight.w600,
+      ),
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -129,15 +149,26 @@ class _AmountRow extends StatelessWidget {
           Expanded(child: Text(label, style: style)),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              value,
-              key: ValueKey<String>(valueKey),
-              textAlign: TextAlign.end,
-              style: style.copyWith(
-                color: KitColors.ink,
-                fontWeight: emphasised ? FontWeight.w700 : FontWeight.w600,
-              ),
-            ),
+            child: replaced == null
+                ? valueText
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      Flexible(
+                        child: Text(
+                          replaced!,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: KitColors.muted,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(child: valueText),
+                    ],
+                  ),
           ),
         ],
       ),

@@ -16,6 +16,16 @@ final class CheckoutRequest {
   final String addressId;
   final PaymentMethod paymentMethod;
   final String? deliveryTimeNote;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CheckoutRequest &&
+      other.addressId == addressId &&
+      other.paymentMethod == paymentMethod &&
+      other.deliveryTimeNote == deliveryTimeNote;
+
+  @override
+  int get hashCode => Object.hash(addressId, paymentMethod, deliveryTimeNote);
 }
 
 /// One line of the preview, at the price the order would take.
@@ -84,6 +94,31 @@ final class CheckoutPreview {
   final String? opensAt;
   final String token;
   final DateTime tokenExpiresAt;
+
+  /// Both previews promise the same order: the lines, the figures, the kind
+  /// of total and the working-hours state. The token, its expiry and the
+  /// wish are not part of the promise.
+  bool sameOfferAs(CheckoutPreview other) {
+    if (lines.length != other.lines.length) {
+      return false;
+    }
+    for (int i = 0; i < lines.length; i++) {
+      final PreviewLine a = lines[i];
+      final PreviewLine b = other.lines[i];
+      if (a.cartItemId != b.cartItemId ||
+          a.quantity != b.quantity ||
+          a.lineTotalUzs != b.lineTotalUzs) {
+        return false;
+      }
+    }
+    return merchandiseSubtotalUzs == other.merchandiseSubtotalUzs &&
+        serviceFeeUzs == other.serviceFeeUzs &&
+        deliveryFeeUzs == other.deliveryFeeUzs &&
+        totalUzs == other.totalUzs &&
+        totalKind == other.totalKind &&
+        outsideWorkingHours == other.outsideWorkingHours &&
+        opensAt == other.opensAt;
+  }
 }
 
 /// A preview ready to confirm, with the key its confirmation is sent under.
