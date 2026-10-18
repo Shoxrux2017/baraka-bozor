@@ -12,7 +12,7 @@ its code are read from `backend/.env` (`WALKTHROUGH_STAFF_PASSWORD`, the first
 of `LOGIN_CODE_TEST_PHONES`, `LOGIN_CODE_TEST_CODE`); variables of the same
 names in the environment take precedence. Image URLs are built from
 `APP_URL`, which must be `http://localhost:8000` for the run. Rerunning
-within a minute waits out the code resend limit.
+more than five times an hour hits the send limit.
 
 Admin configures the business, the catalog with an image, and a Shopper;
 the Customer keeps a name, saves an address inside and one outside the
@@ -90,7 +90,7 @@ RETRY_AFTER = 1
 
 
 def request_code(phone):
-    """Asks for a login code; a lock or the send limit is waited out once (Retry-After)."""
+    """Asks for a login code; a lock or the per-address minute (Retry-After <= 61 s) is waited out once; the hourly limit is not."""
     status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
     # Only the lock and the per-address minute pass by waiting; the hourly limit
     # does not, and the verify after it then fails as itself.
@@ -102,7 +102,8 @@ def request_code(phone):
 
 def staff_with_code(phone, password):
     """Shopper and Courier sign in with the login code, then the password (DL-77)."""
-    # A lock or the hourly limit is waited out once, by its Retry-After.
+    # A lock or the per-address minute (Retry-After <= 61 s) is waited out once;
+    # the hourly limit is not.
     status, answer = request_code(phone)
     status, answer = call("POST", "/auth/customer/code/verify", body={"phone": phone, "code": TEST_CODE})
     if status != 200:

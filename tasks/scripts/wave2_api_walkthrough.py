@@ -9,7 +9,7 @@ Needs the stack served as `docker/README.md` says, the staff accounts of
 (+998 90 000 00 02, also a test phone) orders in Customer mode. The staff
 password, the test phones and their code are read from `backend/.env`;
 variables of the same names in the environment take precedence. Rerunning
-within a minute waits out the code resend limit.
+more than five times an hour hits the send limit.
 
 The Admin completes the settings and the catalog; the Customer fills a cart,
 is refused below the minimum and with online payment, orders with cash
@@ -92,7 +92,7 @@ RETRY_AFTER = 1
 
 
 def request_code(phone):
-    """Asks for a login code; a lock or the send limit is waited out once (Retry-After)."""
+    """Asks for a login code; a lock or the per-address minute (Retry-After <= 61 s) is waited out once; the hourly limit is not."""
     status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
     # Only the lock and the per-address minute pass by waiting; the hourly limit
     # does not, and the verify after it then fails as itself.
@@ -108,7 +108,8 @@ def staff(phone):
 
 
 def customer_sign_in(phone, name):
-    # A lock or the hourly limit is waited out once, by its Retry-After.
+    # A lock or the per-address minute (Retry-After <= 61 s) is waited out once;
+    # the hourly limit is not.
     status, answer = request_code(phone)
     status, answer = call("POST", "/auth/customer/code/verify", body={"phone": phone, "code": TEST_CODE})
     token = answer["data"]["token"] if status == 200 else None

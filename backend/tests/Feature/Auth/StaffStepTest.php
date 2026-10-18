@@ -28,8 +28,6 @@ final class StaffStepTest extends TestCase
 
     private const PASSWORD = 'correct horse battery staple';
 
-    private bool $verified = false;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -251,13 +249,6 @@ final class StaffStepTest extends TestCase
 
     private function verifyPhone(): TestResponse
     {
-        // A resend inside sixty seconds is refused, so every further
-        // verification in one test starts a minute later.
-        if ($this->verified) {
-            $this->travel(61)->seconds();
-        }
-        $this->verified = true;
-
         $this->postJson('/api/v1/auth/customer/code/request', ['phone' => self::PHONE])->assertOk();
         $code = $this->app->make(FakeCodeSink::class)->codeFor(self::PHONE);
         $this->assertNotNull($code);

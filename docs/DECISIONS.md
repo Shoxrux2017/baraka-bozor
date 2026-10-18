@@ -1292,3 +1292,9 @@ A code may be entered wrong twice with no pause and may be re-sent at once. The 
 ## DL-88 — How the lock is kept and shown (2026-10-18, agent)
 
 The lock lives in the cache rate limiter, where the send limits already live, under one key per phone. It is checked before the challenge is read, so a locked phone tells nothing about its code. Both verify and request answer `429 code_locked` with `Retry-After`, the seconds left. The client counts down from that header, so leaving and returning to the screen shows the real remainder. The old code stays exhausted after the lock; only a new code opens.
+
+1. **A race answers `code_attempts_exhausted`:** a verify that races the third wrong code may find the challenge already spent and answer `401 code_attempts_exhausted` instead of `429 code_locked`; it gives no extra guess and opens nothing, so no further code is added.
+2. **Entry and confirm stay off until a new code arrives:** from the lock through its end the code field and the confirm button are off, because after a lock the current code is always spent; a successful resend turns them back on.
+3. **The lock is announced twice, no more:** once when it starts and once when it ends, and its ticking text is not a live region, so a screen reader does not read every second.
+4. **The lock binds only to the typed phone:** the phone screen blocks the button only while the number typed is the locked one; any other number is free.
+5. **Changing the phone keeps the lock:** the lock and its timer run on, so the phone screen shows the seconds left for the same number without a request.

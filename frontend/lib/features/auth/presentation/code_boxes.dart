@@ -21,12 +21,16 @@ class CodeBoxes extends StatefulWidget {
     required this.controller,
     required this.invalidMessage,
     this.onSubmitted,
+    this.enabled = true,
     super.key,
   });
 
   final TextEditingController controller;
   final String invalidMessage;
   final VoidCallback? onSubmitted;
+
+  /// Off while the phone is locked: nothing can be typed or submitted.
+  final bool enabled;
 
   @override
   State<CodeBoxes> createState() => _CodeBoxesState();
@@ -122,6 +126,7 @@ class _CodeBoxesState extends State<CodeBoxes> {
                             key: const ValueKey<String>('code-field'),
                             controller: widget.controller,
                             focusNode: _focus,
+                            enabled: widget.enabled,
                             autofocus: true,
                             keyboardType: TextInputType.number,
                             textInputAction: TextInputAction.done,

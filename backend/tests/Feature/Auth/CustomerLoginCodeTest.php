@@ -162,6 +162,49 @@ final class CustomerLoginCodeTest extends TestCase
         $this->assertSame(1, LoginChallenge::query()->count(), 'no second challenge was created');
     }
 
+    public function test_a_refusal_during_the_lock_costs_the_address_slot_but_not_the_hour_slot(): void
+    {
+        $this->lockPhone(self::PHONE);
+
+        $refusedByLock = 0;
+        do {
+            $response = $this->request(self::PHONE);
+            $response->assertStatus(429);
+            if ($response->json('code') === 'code_locked') {
+                $refusedByLock++;
+            }
+        } while ($response->json('code') === 'code_locked' && $refusedByLock < 20);
+
+        $this->assertSame('rate_limited', $response->json('code'), 'refusals use up the address slots');
+        $this->assertGreaterThan(0, $refusedByLock);
+
+        $this->travel(61)->seconds();
+
+        // One send was spent before the lock; the refusals took no hour slot,
+        // so four more sends still go through and the fifth is limited.
+        for ($send = 1; $send <= 4; $send++) {
+            $this->request(self::PHONE)->assertOk();
+        }
+        $this->request(self::PHONE)->assertStatus(429)->assertJsonPath('code', 'rate_limited');
+    }
+
+    public function test_the_lock_refusal_reports_what_is_left_of_the_lock(): void
+    {
+        $this->lockPhone(self::PHONE);
+
+        $this->travel(25)->seconds();
+
+        $refused = $this->request(self::PHONE);
+        $refused->assertStatus(429)->assertJsonPath('code', 'code_locked');
+        $retryAfter = (int) $refused->headers->get('Retry-After');
+        $this->assertGreaterThanOrEqual(34, $retryAfter);
+        $this->assertLessThanOrEqual(35, $retryAfter);
+
+        $verifyRefused = $this->verify(self::PHONE, '111111');
+        $verifyRefused->assertStatus(429)->assertJsonPath('code', 'code_locked');
+        $this->assertLessThanOrEqual(35, (int) $verifyRefused->headers->get('Retry-After'));
+    }
+
     public function test_a_locked_phone_cannot_verify_even_the_right_code(): void
     {
         $code = $this->lockPhone(self::PHONE);

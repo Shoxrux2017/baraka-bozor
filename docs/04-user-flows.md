@@ -21,7 +21,7 @@ Customer login → catalog → cart → checkout preview → order
 1. The user enters an Uzbekistan mobile number and confirms it.
 2. The backend normalizes it, creates a login challenge, and sends the code through the code-delivery gateway: Telegram when the number has a Telegram account, otherwise SMS. The response says which channel was used and when a resend is allowed. It never says whether an account exists.
 3. The user enters the code.
-4. The backend verifies the challenge. An invalid, expired or exhausted code fails with its own code and stops.
+4. The backend verifies the challenge. An invalid, expired or exhausted code fails with its own code and stops. The third wrong code locks the phone for sixty seconds with a countdown; during it neither a code nor a new code is accepted, and afterwards only a new code opens (`DL-87`).
 5. The active Customer account for the phone is resolved, or created when none is active. A blocked Customer account is refused with `account_blocked`.
 6. A Customer token is issued, with `staff_step` when the phone also holds a Shopper or Courier account (section 3); the app bootstraps identity through `/auth/me`.
 7. A Customer without a name gives one on the name step and sees a welcome; then the home opens.

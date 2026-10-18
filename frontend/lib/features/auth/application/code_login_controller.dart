@@ -45,6 +45,10 @@ final class CodeLoginState {
 
   bool get locked => lockedSeconds > 0;
 
+  /// Entering a code and confirming are off from the lock until a new code
+  /// arrives: after three wrong codes the current one is spent for good.
+  bool get entryOpen => !locked && !lockOver;
+
   bool get canResend => hasCode && resendInSeconds == 0 && !locked && !busy;
 
   CodeLoginState copyWith({
@@ -116,11 +120,11 @@ class CodeLoginController extends Notifier<CodeLoginState> {
   /// on, so this flow is over and its state is cleared.
   Future<bool> verify(String code) async {
     final String? phone = state.phone;
-    if (phone == null || state.busy) {
+    if (phone == null || state.busy || !state.entryOpen) {
       return false;
     }
     final int generation = ++_generation;
-    state = state.copyWith(busy: true, lockOver: false, clearFailure: true);
+    state = state.copyWith(busy: true, clearFailure: true);
 
     try {
       await _session.verifyCustomerCode(phone: phone, code: code);
@@ -140,12 +144,20 @@ class CodeLoginController extends Notifier<CodeLoginState> {
     return true;
   }
 
-  /// Back to the phone entry, with the phone kept for editing. The lock is
-  /// dropped here; the server tells what is left of it on the next request.
+  /// Back to the phone entry, with the phone kept for editing. A running lock
+  /// is kept with its timer: the phone screen binds it to the number it was
+  /// taken for, so any other number stays free.
   void changePhone() {
     _generation++;
-    _countdown?.cancel();
-    state = CodeLoginState(phone: state.phone);
+    state = CodeLoginState(
+      phone: state.phone,
+      lockedSeconds: state.lockedSeconds,
+    );
+    if (state.locked) {
+      _runCountdown();
+    } else {
+      _countdown?.cancel();
+    }
   }
 
   /// Abandons the flow entirely.
@@ -165,7 +177,7 @@ class CodeLoginController extends Notifier<CodeLoginState> {
 
     final int generation = ++_generation;
     if (resend) {
-      state = state.copyWith(busy: true, lockOver: false, clearFailure: true);
+      state = state.copyWith(busy: true, clearFailure: true);
     } else {
       _countdown?.cancel();
       state = CodeLoginState(phone: phone, busy: true);
@@ -176,7 +188,11 @@ class CodeLoginController extends Notifier<CodeLoginState> {
       if (!_current(generation)) {
         return false;
       }
-      state = state.copyWith(requested: requested, busy: false);
+      state = state.copyWith(
+        requested: requested,
+        lockOver: false,
+        busy: false,
+      );
       _startCountdown(requested.resendAvailableInSeconds);
       return true;
     } on ApiFailure catch (failure) {
@@ -206,6 +222,7 @@ class CodeLoginController extends Notifier<CodeLoginState> {
         lockedSeconds: retryAfter == null || retryAfter <= 0
             ? _defaultLockSeconds
             : retryAfter,
+        lockOver: false,
         clearFailure: true,
       );
       _runCountdown();

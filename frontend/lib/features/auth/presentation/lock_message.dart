@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 
+import '../../../core/formatting/countdown_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
-import 'code_entry.dart';
 
 /// The sentence of a locked phone: three wrong codes, and how long until a
 /// new one may be asked for. Renders nothing while [lockedSeconds] is zero.
 ///
 /// The ticking text is plain text, not a live region, so a screen reader does
-/// not read it again every second; the lock is announced once, when it starts.
+/// not read it again every second; the lock is announced once when it
+/// starts and once when it ends ([lockOver] turning on).
 class LockMessage extends StatefulWidget {
-  const LockMessage({required this.lockedSeconds, super.key});
+  const LockMessage({
+    required this.lockedSeconds,
+    this.lockOver = false,
+    super.key,
+  });
 
   final int lockedSeconds;
+
+  /// The lock has just run out; announced once, nothing is drawn for it here.
+  final bool lockOver;
 
   @override
   State<LockMessage> createState() => _LockMessageState();
@@ -26,6 +34,13 @@ class _LockMessageState extends State<LockMessage> {
       SemanticsService.sendAnnouncement(
         View.of(context),
         _sentence(context),
+        Directionality.of(context),
+      );
+    }
+    if (!oldWidget.lockOver && widget.lockOver) {
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        AppLocalizations.of(context).codeLockOver,
         Directionality.of(context),
       );
     }

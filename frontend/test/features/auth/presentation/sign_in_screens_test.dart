@@ -112,6 +112,21 @@ void main() {
       expect(find.byKey(key('lock-message')), findsOneWidget);
       await tester.pump(const Duration(seconds: 59));
     },
+    'code, lock over': (WidgetTester tester, String language) async {
+      repository.verifyFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'code_locked'),
+        retryAfterSeconds: 59,
+      );
+      await open(tester, language);
+      await toCodeScreen(tester);
+      await tester.enterText(find.byKey(key('code-field')), '000000');
+      await tapKey(tester, 'verify-button');
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 59));
+      await tester.pump();
+      expect(find.byKey(key('lock-over-message')), findsOneWidget);
+      expect(find.byKey(key('lock-message')), findsNothing);
+    },
     'phone, locked': (WidgetTester tester, String language) async {
       repository.requestFailure = ApiRefusal(
         const ApiError(status: 429, code: 'code_locked'),

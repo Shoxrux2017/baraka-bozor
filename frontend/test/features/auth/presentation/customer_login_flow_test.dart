@@ -277,8 +277,48 @@ void main() {
       await tester.pump(const Duration(seconds: 59));
       expect(lockMessage, findsNothing);
       expect(find.text(l10n(tester).codeLockOver), findsOneWidget);
-      expect(tester.widget<FilledButton>(verifyButton).onPressed, isNotNull);
+      expect(
+        tester.widget<FilledButton>(verifyButton).onPressed,
+        isNull,
+        reason: 'the spent code is not confirmed again',
+      );
+      expect(tester.widget<TextField>(codeField).enabled, isFalse);
       expect(tester.widget<TextButton>(resendButton).onPressed, isNotNull);
+
+      await tester.tap(resendButton);
+      await tester.pumpAndSettle();
+      expect(find.text(l10n(tester).codeLockOver), findsNothing);
+      expect(tester.widget<TextField>(codeField).enabled, isTrue);
+      expect(tester.widget<FilledButton>(verifyButton).onPressed, isNotNull);
+    },
+  );
+
+  testWidgets(
+    'during the lock the code field is off: typing and the keyboard action send no verify',
+    (WidgetTester tester) async {
+      repository.verifyFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'code_locked'),
+        retryAfterSeconds: 60,
+      );
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+      await tester.enterText(codeField, '000000');
+      await tester.tap(verifyButton);
+      await tester.pumpAndSettle();
+      int verifyCalls() => repository.calls
+          .where((String call) => call.startsWith('verify:'))
+          .length;
+      expect(verifyCalls(), 1);
+
+      expect(tester.widget<TextField>(codeField).enabled, isFalse);
+      expect(tester.testTextInput.isVisible, isFalse);
+      await tester.tap(codeField, warnIfMissed: false);
+      await tester.pump();
+      expect(tester.testTextInput.isVisible, isFalse);
+      expect(tester.widget<TextField>(codeField).controller?.text, isEmpty);
+      expect(verifyCalls(), 1);
+
+      await tester.pump(const Duration(seconds: 60));
     },
   );
 
@@ -300,6 +340,29 @@ void main() {
 
     await tester.pump(const Duration(seconds: 42));
     expect(lockMessage, findsNothing);
+    expect(tester.widget<FilledButton>(continueButton).onPressed, isNotNull);
+  });
+
+  testWidgets('the end of a lock on the phone screen is announced once', (
+    WidgetTester tester,
+  ) async {
+    repository.requestFailure = ApiRefusal(
+      const ApiError(status: 429, code: 'code_locked'),
+      retryAfterSeconds: 3,
+    );
+    await openApp(tester);
+    await requestCode(tester, '901234567');
+    tester.takeAnnouncements();
+
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(
+      tester
+          .takeAnnouncements()
+          .map((CapturedAccessibilityAnnouncement a) => a.message)
+          .toList(),
+      <String>[l10n(tester).codeLockOver],
+    );
     expect(tester.widget<FilledButton>(continueButton).onPressed, isNotNull);
   });
 
@@ -359,11 +422,16 @@ void main() {
       expect(announced.single.message, l10n(tester).codeLocked('1:00'));
 
       await tester.pump(const Duration(seconds: 55));
+      final List<String> atTheEnd = tester
+          .takeAnnouncements()
+          .map((CapturedAccessibilityAnnouncement a) => a.message)
+          .toList();
+      expect(atTheEnd, <String>[l10n(tester).codeLockOver]);
     },
   );
 
   testWidgets(
-    'the phone screen shows the seconds left, not a fresh minute, after leaving a locked code screen',
+    'the phone screen keeps the lock running and shows the seconds left after leaving a locked code screen',
     (WidgetTester tester) async {
       repository.verifyFailure = ApiRefusal(
         const ApiError(status: 429, code: 'code_locked'),
@@ -378,16 +446,21 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey<String>('change-phone-link')));
       await tester.pumpAndSettle();
-      repository.requestFailure = ApiRefusal(
-        const ApiError(status: 429, code: 'code_locked'),
-        retryAfterSeconds: 35,
-      );
-      await tester.tap(continueButton);
-      await tester.pumpAndSettle();
-      await tester.tap(confirmSend);
-      await tester.pumpAndSettle();
 
       expect(find.text(l10n(tester).codeLocked('0:35')), findsOneWidget);
+      expect(tester.widget<FilledButton>(continueButton).onPressed, isNull);
+      final int requests = repository.calls
+          .where((String call) => call.startsWith('request:'))
+          .length;
+      expect(requests, 1, reason: 'no second request is needed to learn it');
+
+      await tester.enterText(phoneField, '931112233');
+      await tester.pump();
+      expect(lockMessage, findsNothing);
+      expect(tester.widget<FilledButton>(continueButton).onPressed, isNotNull);
+
+      await tester.enterText(phoneField, '901234567');
+      await tester.pump();
       await tester.pump(const Duration(seconds: 35));
     },
   );

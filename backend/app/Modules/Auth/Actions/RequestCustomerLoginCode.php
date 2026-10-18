@@ -29,8 +29,9 @@ use Illuminate\Support\Facades\Log;
  * provider is bounded like everything else (`DL-11`). A resend needs no wait
  * (`DL-87`); the limits are five sends per hour per phone and ten requests per
  * minute per address, so one source cannot pump codes at many phones. A phone
- * locked by three wrong codes is refused with `code_locked` before any slot is
- * taken, because a new code would end the lock early.
+ * locked by three wrong codes is refused with `code_locked` before the phone's
+ * hour slot is taken (the address slot is already counted), because a new code
+ * would end the lock early.
  *
  * A configured test phone gets a challenge for the fixed test code and no
  * delivery at all; the counters apply to it like to any other phone.
@@ -52,7 +53,8 @@ final class RequestCustomerLoginCode
         $this->reserve("login-code:ip:{$ip}", self::IP_REQUESTS_PER_MINUTE, 60, 'rate_limited');
 
         // A locked phone gets no new code: a resend would end the lock early.
-        // Checked before the hour slot, so a refused request costs nothing.
+        // Checked before the hour slot, so a refused request costs the phone
+        // no send; it has already counted against the address.
         $lockKey = LoginCodePolicy::lockKey($phone);
         if ($this->limiter->tooManyAttempts($lockKey, 1)) {
             throw ApiException::tooManyRequests('code_locked', $this->limiter->availableIn($lockKey));

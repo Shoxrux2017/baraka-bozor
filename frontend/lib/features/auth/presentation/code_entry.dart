@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/formatting/countdown_format.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
@@ -43,6 +44,9 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
   }
 
   Future<void> _verify() async {
+    if (!widget.state.entryOpen) {
+      return;
+    }
     if (!(_form.currentState?.validate() ?? false)) {
       return;
     }
@@ -68,9 +72,13 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
             controller: _code,
             invalidMessage: l10n.codeInvalidFormat,
             onSubmitted: _verify,
+            enabled: state.entryOpen,
           ),
           FailureMessage(state.failure),
-          LockMessage(lockedSeconds: state.lockedSeconds),
+          LockMessage(
+            lockedSeconds: state.lockedSeconds,
+            lockOver: state.lockOver,
+          ),
           if (state.lockOver)
             Padding(
               padding: const EdgeInsets.only(top: 12),
@@ -82,7 +90,7 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
           const SizedBox(height: 28),
           FilledButton(
             key: const ValueKey<String>('verify-button'),
-            onPressed: state.busy || state.locked ? null : _verify,
+            onPressed: state.busy || !state.entryOpen ? null : _verify,
             child: Text(l10n.verifyButton),
           ),
           const SizedBox(height: 8),
@@ -108,12 +116,6 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
       ),
     );
   }
-}
-
-/// Seconds as `m:ss`, the way the resend countdown reads.
-String formatCountdown(int seconds) {
-  final int clamped = seconds < 0 ? 0 : seconds;
-  return '${clamped ~/ 60}:${(clamped % 60).toString().padLeft(2, '0')}';
 }
 
 /// Where the code went, in one line: the Telegram text names the channel and

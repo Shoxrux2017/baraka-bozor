@@ -105,11 +105,14 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                 builder: (BuildContext context, Widget? _) {
                   final bool locked =
                       state.locked && PhoneField.phoneOf(_phone) == state.phone;
+                  final bool sameNumber =
+                      PhoneField.phoneOf(_phone) == state.phone;
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
                       LockMessage(
                         lockedSeconds: locked ? state.lockedSeconds : 0,
+                        lockOver: sameNumber && state.lockOver,
                       ),
                       const SizedBox(height: 20),
                       FilledButton(

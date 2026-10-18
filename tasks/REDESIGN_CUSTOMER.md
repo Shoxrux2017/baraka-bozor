@@ -45,3 +45,4 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - Stage 3 branch review, latent: the product screen's `_form.currentState!` is reached only in the frame where the signed-in account changes, when the router removes the route anyway. Ruling: not reachable in use, kept.
 - Stage 3 re-review, P3: while an add is in flight the header's heart stays tappable. Ruling: independent of the add, harmless, kept.
 - Stage 3 branch review: a query typed by account A and left on screen when A signs out is remembered under A, as `DL-83` item 1 specifies; the device store is not wiped on sign-out. Ruling: by design, kept.
+- Login lock (`DL-87`, `DL-88`), review P3: the countdown subtracts per tick, so it runs long while the app is suspended (iOS). Ruling: Android keeps Dart timers running and the server stays authoritative; fix with an injectable time source when iOS ships.
