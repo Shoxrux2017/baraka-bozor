@@ -98,12 +98,28 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                 onSubmitted: (String _) => _submit(),
               ),
               FailureMessage(state.failure),
-              LockMessage(state),
-              const SizedBox(height: 20),
-              FilledButton(
-                key: const ValueKey<String>('continue-button'),
-                onPressed: state.busy || state.locked ? null : _submit,
-                child: Text(l10n.getCodeButton),
+              // The lock belongs to one phone: it holds only while that number
+              // is the one typed.
+              ListenableBuilder(
+                listenable: _phone,
+                builder: (BuildContext context, Widget? _) {
+                  final bool locked =
+                      state.locked && PhoneField.phoneOf(_phone) == state.phone;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      LockMessage(
+                        lockedSeconds: locked ? state.lockedSeconds : 0,
+                      ),
+                      const SizedBox(height: 20),
+                      FilledButton(
+                        key: const ValueKey<String>('continue-button'),
+                        onPressed: state.busy || locked ? null : _submit,
+                        child: Text(l10n.getCodeButton),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 20),
               Row(

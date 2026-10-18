@@ -70,7 +70,7 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
             onSubmitted: _verify,
           ),
           FailureMessage(state.failure),
-          LockMessage(state),
+          LockMessage(lockedSeconds: state.lockedSeconds),
           if (state.lockOver)
             Padding(
               padding: const EdgeInsets.only(top: 12),

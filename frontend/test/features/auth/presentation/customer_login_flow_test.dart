@@ -9,6 +9,7 @@ import 'package:baraka_bozor/core/theme/app_theme.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -301,6 +302,65 @@ void main() {
     expect(lockMessage, findsNothing);
     expect(tester.widget<FilledButton>(continueButton).onPressed, isNotNull);
   });
+
+  testWidgets(
+    'the lock binds only its own phone: another number is free, the locked one waits',
+    (WidgetTester tester) async {
+      repository.requestFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'code_locked'),
+        retryAfterSeconds: 42,
+      );
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+      expect(tester.widget<FilledButton>(continueButton).onPressed, isNull);
+
+      await tester.enterText(phoneField, '931112233');
+      await tester.pump();
+      expect(lockMessage, findsNothing);
+      expect(tester.widget<FilledButton>(continueButton).onPressed, isNotNull);
+
+      await tester.enterText(phoneField, '901234567');
+      await tester.pump();
+      expect(find.text(l10n(tester).codeLocked('0:42')), findsOneWidget);
+      expect(tester.widget<FilledButton>(continueButton).onPressed, isNull);
+
+      await tester.pump(const Duration(seconds: 42));
+    },
+  );
+
+  testWidgets(
+    'the lock is announced once, and its ticking text is not a live region',
+    (WidgetTester tester) async {
+      repository.verifyFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'code_locked'),
+        retryAfterSeconds: 60,
+      );
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+      await tester.enterText(codeField, '000000');
+      await tester.tap(verifyButton);
+      await tester.pumpAndSettle();
+
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await tester.pump(const Duration(seconds: 5));
+      final SemanticsNode node = tester.getSemantics(lockMessage);
+      expect(node.getSemanticsData().flagsCollection.isLiveRegion, isFalse);
+      handle.dispose();
+
+      final List<CapturedAccessibilityAnnouncement> announced = tester
+          .takeAnnouncements()
+          .where(
+            (CapturedAccessibilityAnnouncement a) => a.message.startsWith(
+              l10n(tester).codeLocked('').substring(0, 10),
+            ),
+          )
+          .toList();
+      expect(announced, hasLength(1));
+      expect(announced.single.message, l10n(tester).codeLocked('1:00'));
+
+      await tester.pump(const Duration(seconds: 55));
+    },
+  );
 
   testWidgets(
     'the phone screen shows the seconds left, not a fresh minute, after leaving a locked code screen',
