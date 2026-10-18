@@ -109,7 +109,7 @@ While the order is `on_the_way` the Customer sees the Courier's first name and p
 
 ## 22. Operator and Admin Panel
 
-Web panel. Order board with filters and the summary strip; attention list (approvals the Customer has not answered for ten minutes, expired approvals, unpaid online orders, outstanding refunds, delayed Couriers, failed deliveries, cancellation requests, self-orders, blocked assignees; `DL-54` (13)); assignment; cancellation decisions; switch to cash; refund tracking; Admin-only catalog, staff, settings and provider enablement; audited price correction.
+Web panel. Order board with filters and the summary strip; attention list (approvals the Customer has not answered for ten minutes, expired approvals, unpaid online orders, outstanding refunds, delayed Couriers, failed deliveries, cancellation requests, self-orders, blocked assignees; `DL-54` (13); ratings of 1 to 3 stars until reviewed, `DL-91` (5)); assignment; cancellation decisions; switch to cash; refund tracking; Admin-only catalog, staff, settings and provider enablement; audited price correction.
 
 ## 23. Notifications
 

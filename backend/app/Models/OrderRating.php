@@ -68,4 +68,12 @@ class OrderRating extends Model
     {
         return $this->belongsTo(User::class, 'customer_id');
     }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function reviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by_user_id');
+    }
 }

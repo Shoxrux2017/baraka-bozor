@@ -31,7 +31,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * Expects `items`, `history.actor`, `shopperAssignments.shopper`,
  * `shopperAssignments.assignedBy`, `courierAssignments.courier`,
  * `courierAssignments.assignedBy`, `livePayment.recordedBy`, the cancellation
- * requests' people and the approvals' people loaded.
+ * requests' people and the approvals' people, and `rating.reviewedBy` loaded.
  *
  * @property-read Order $resource
  */
@@ -192,6 +192,17 @@ final class BoardOrderResource extends JsonResource
                     'created_at' => self::instant($entry->created_at),
                 ]
             )->all(),
+            'rating' => $order->rating === null ? null : [
+                'stars' => $order->rating->stars,
+                'reasons' => $order->rating->reasons,
+                'comment' => $order->rating->comment,
+                'created_at' => self::instant($order->rating->created_at),
+                'reviewed_by' => $order->rating->reviewedBy === null ? null : [
+                    'id' => $order->rating->reviewedBy->id,
+                    'full_name' => $order->rating->reviewedBy->full_name,
+                ],
+                'reviewed_at' => self::instant($order->rating->reviewed_at),
+            ],
             'cancellation_reason_code' => $order->cancellation_reason_code?->value,
             'timestamps' => [
                 'created_at' => self::instant($order->created_at),

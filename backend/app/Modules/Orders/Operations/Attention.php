@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\OrderCourierAssignment;
 use App\Models\OrderShopperAssignment;
 use App\Models\User;
+use App\Modules\Orders\OrderRatings;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -48,6 +49,10 @@ use Illuminate\Support\Facades\DB;
  * - `approval_expired` — a question expired and no Operator has removed its
  *   line yet (`BR-APP-007`), a pending one past its expiry included, as every
  *   read shows it (`DL-54` (8)), since the earliest `expires_at`.
+ * - `low_rating` — a rating of one to three stars that no Operator or Admin
+ *   has reviewed (`BR-RATE-003`, `DL-91` (5)), since it was given. It is the
+ *   only type that looks at a finished order, for a rated order is
+ *   `completed`; the item names the order's latest Shopper and Courier.
  *
  * Each other type arrives with the task that creates its state. An item names
  * the Shopper and the Courier concerned, each `null` when none is.
@@ -70,6 +75,8 @@ final class Attention
 
     public const CANCELLATION_REQUEST = 'cancellation_request';
 
+    public const LOW_RATING = 'low_rating';
+
     /** @var list<string> */
     public const TYPES = [
         self::APPROVAL_PENDING,
@@ -77,6 +84,7 @@ final class Attention
         self::CANCELLATION_REQUEST,
         self::COURIER_DELAYED,
         self::DELIVERY_FAILED,
+        self::LOW_RATING,
         self::SELF_ORDER,
         self::STAFF_BLOCKED,
     ];
@@ -111,6 +119,9 @@ final class Attention
                 $approval->selectRaw('1')->from('customer_approvals')->whereColumn('customer_approvals.order_id', 'orders.id'),
                 now(),
             )),
+            self::LOW_RATING => $orders->whereHas('rating', static fn (Builder $rating) => $rating
+                ->where('stars', '<=', OrderRatings::LOW_MAX_STARS)
+                ->whereNull('reviewed_at')),
             default => $orders->whereRaw('false'),
         };
     }
@@ -142,6 +153,7 @@ final class Attention
             ...self::courierDelayedItems(),
             ...self::deliveryFailedItems(),
             ...self::cancellationRequestItems(),
+            ...self::lowRatingItems(),
             ...self::approvalItems(self::APPROVAL_PENDING, $now),
             ...self::approvalItems(self::APPROVAL_EXPIRED, $now),
         ];
@@ -304,6 +316,35 @@ final class Attention
                 'since' => $request->created_at->toIso8601ZuluString(),
                 'shopper' => $shopper === null ? null : self::person($shopper),
                 'courier' => $courier === null ? null : self::person($courier),
+            ];
+        })->filter()->values()->all();
+    }
+
+    /**
+     * @return list<Item>
+     */
+    private static function lowRatingItems(): array
+    {
+        $orders = self::narrow(Order::query(), self::LOW_RATING)
+            ->with(['rating', 'shopperAssignments.shopper', 'courierAssignments.courier'])
+            ->get();
+
+        return $orders->map(static function (Order $order): ?array {
+            // Read in a statement of its own: a rating reviewed in between
+            // needs nothing any more.
+            if ($order->rating === null) {
+                return null;
+            }
+            $shopper = self::latest($order->shopperAssignments);
+            $courier = self::latest($order->courierAssignments);
+
+            return [
+                'type' => self::LOW_RATING,
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'since' => $order->rating->created_at->toIso8601ZuluString(),
+                'shopper' => $shopper === null ? null : self::person($shopper->shopper),
+                'courier' => $courier === null ? null : self::person($courier->courier),
             ];
         })->filter()->values()->all();
     }
