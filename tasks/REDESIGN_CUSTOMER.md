@@ -9,7 +9,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 | 3 | Поиск и товар | Merged (PR #93) |
 | 4 | Корзина и адрес | Merged (PR #94, #95) |
 | 5 | Оформление | Merged (PR #98) |
-| 6 | Заказы | In Progress (6a server and panel, 6b screens) |
+| 6 | Заказы | In Progress (6a server and panel: PR #99; 6b screens) |
 | 7 | Профиль | Planned |
 
 ## Risks
@@ -48,3 +48,4 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - Stage 3 branch review: a query typed by account A and left on screen when A signs out is remembered under A, as `DL-83` item 1 specifies; the device store is not wiped on sign-out. Ruling: by design, kept.
 - Login lock (`DL-87`, `DL-88`), review P3: the countdown subtracts per tick, so it runs long while the app is suspended (iOS). Ruling: Android keeps Dart timers running and the server stays authoritative; fix with an injectable time source when iOS ships.
 - Login lock re-review, P3: on the phone screen, typing another number and then the locked one back after the lock has ended may announce "Запросите новый код" a second time. Ruling: it takes deliberate editing, says nothing false, kept.
+- Stage 6a re-review, out of scope: `ReorderRaceTest` deletes its committed rows in `tearDown` and swallows a `QueryException`, so a table added later that references orders could leave rows behind unseen. Ruling: matches the other race tests' cleanup; revisit if a race test leaves rows.
