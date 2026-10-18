@@ -8,7 +8,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 | 2 | Главная | Merged (PR #89, #90, #91, #92) |
 | 3 | Поиск и товар | Merged (PR #93) |
 | 4 | Корзина и адрес | Merged (PR #94, #95) |
-| 5 | Оформление | Planned |
+| 5 | Оформление | In review |
 | 6 | Заказы | Planned |
 | 7 | Профиль | Planned |
 
@@ -25,6 +25,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - Stage 4b, the Play signing SHA-1 is added to the app's key at the first Play upload.
 - Stage 4b, the Owner sets the Geocoding API daily quota (300 requests a day) and a $1 budget alert in Google Cloud, so the lookup stays within Google's free 10 000 a month (`DL-86` item 1).
 - Stage 4b, the Courier's Navigator link is called without the signature Yandex describes for version 2.40 and later; if a Courier's phone refuses it, the app is registered with Yandex and the server signs the link (`DL-86` item 6).
+- Stage 5, the checkout shows the service fee without "≈" (drawing 25); the preview carries no fee kind. A `service_fee_kind` in the checkout preview would let it match the cart's "≈" for a percentage fee.
 
 ## Part 1 history (design 4a, `DL-74`, `DL-75`)
 

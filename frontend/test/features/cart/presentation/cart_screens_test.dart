@@ -85,6 +85,7 @@ void main() {
         catalog: catalog,
         cart: cart,
         addresses: addresses,
+        profile: FakeProfileRepository(),
         device: device,
       ),
     );

@@ -10,6 +10,8 @@ CheckoutPreview preview({
   int lineTotal = 27600,
   int total = 47600,
   int deliveryFee = 15000,
+  int serviceFee = 5000,
+  int merchandiseSubtotal = 27600,
   String totalKind = 'estimate',
   bool outside = false,
   String? opensAt = '08:00',
@@ -20,6 +22,8 @@ CheckoutPreview preview({
     lineTotal: lineTotal,
     total: total,
     deliveryFee: deliveryFee,
+    serviceFee: serviceFee,
+    merchandiseSubtotal: merchandiseSubtotal,
     totalKind: totalKind,
     outside: outside,
     opensAt: opensAt,
@@ -84,6 +88,8 @@ void main() {
 
     expect(base.sameOfferAs(preview(lineTotal: 27700)), isFalse);
     expect(base.sameOfferAs(preview(deliveryFee: 16000)), isFalse);
+    expect(base.sameOfferAs(preview(serviceFee: 6000)), isFalse);
+    expect(base.sameOfferAs(preview(merchandiseSubtotal: 27700)), isFalse);
     expect(base.sameOfferAs(preview(total: 47700)), isFalse);
     expect(base.sameOfferAs(preview(totalKind: 'final')), isFalse);
     expect(base.sameOfferAs(preview(outside: true)), isFalse);
@@ -102,7 +108,14 @@ void main() {
       lines: <Map<String, Object?>>[line(quantity: '2.000')],
     );
 
+    final CheckoutPreview swapped = preview(
+      lines: <Map<String, Object?>>[
+        line(id: '0192f0a0-0000-7000-8000-0000000000a9'),
+      ],
+    );
+
     expect(one.sameOfferAs(two), isFalse);
+    expect(one.sameOfferAs(swapped), isFalse, reason: 'another product');
     expect(one.sameOfferAs(moreQuantity), isFalse);
     expect(
       one.sameOfferAs(preview(lines: <Map<String, Object?>>[line()])),

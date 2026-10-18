@@ -19,6 +19,8 @@ Map<String, Object?> previewJson({
   int lineTotal = 27600,
   int total = 47600,
   int deliveryFee = 15000,
+  int serviceFee = 5000,
+  int merchandiseSubtotal = 27600,
   List<Map<String, Object?>>? lines,
 }) => <String, Object?>{
   'lines':
@@ -36,8 +38,8 @@ Map<String, Object?> previewJson({
           'line_total_uzs': lineTotal,
         },
       ],
-  'merchandise_subtotal_uzs': 27600,
-  'service_fee_uzs': 5000,
+  'merchandise_subtotal_uzs': merchandiseSubtotal,
+  'service_fee_uzs': serviceFee,
   'delivery_fee_uzs': deliveryFee,
   'total_uzs': total,
   'total_kind': totalKind,

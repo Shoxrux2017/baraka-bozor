@@ -336,6 +336,14 @@ void main() {
     expect(find.text('11 / 160'), findsOneWidget);
   });
 
+  String estimate99(Locale language, int amount) =>
+      lookupAppLocalizations(language).cartLineEstimate(
+        MoneyFormat.uzs(
+          amount,
+          language.languageCode == 'uz' ? AppLanguage.uz : AppLanguage.ru,
+        ),
+      );
+
   for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets(
       'the sections hold at the extremes (${language.languageCode})',
@@ -356,32 +364,34 @@ void main() {
                 children: <Widget>[
                   Expanded(
                     child: Form(
-                      child: ListView(
+                      child: SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        children: <Widget>[
-                          const CheckoutClosedBanner(opensAt: '08:00'),
-                          CheckoutDeliveryCard(
-                            address: address(street: 'x' * 60),
-                            gone: false,
-                            recipient: aziz,
-                            onChange: () {},
-                          ),
-                          CheckoutWishField(
-                            controller: wish,
-                            enabled: true,
-                            onChanged: (String _) {},
-                          ),
-                          const CheckoutPaymentCards(),
-                          CheckoutItemsStrip(
-                            lines: preview.lines,
-                            imageByCartItem: const <String, String?>{},
-                            onChange: () {},
-                          ),
-                          CheckoutAmounts(
-                            preview: preview,
-                            replacedTotalUzs: 88888888,
-                          ),
-                        ],
+                        child: Column(
+                          children: <Widget>[
+                            const CheckoutClosedBanner(opensAt: '08:00'),
+                            CheckoutDeliveryCard(
+                              address: address(street: 'x' * 60),
+                              gone: false,
+                              recipient: aziz,
+                              onChange: () {},
+                            ),
+                            CheckoutWishField(
+                              controller: wish,
+                              enabled: true,
+                              onChanged: (String _) {},
+                            ),
+                            const CheckoutPaymentCards(),
+                            CheckoutItemsStrip(
+                              lines: preview.lines,
+                              imageByCartItem: const <String, String?>{},
+                              onChange: () {},
+                            ),
+                            CheckoutAmounts(
+                              preview: preview,
+                              replacedTotalUzs: 88888888,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -401,6 +411,18 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
+        // A scrolling Column builds every section: all of them were laid out.
+        expect(byKey('pay-cash'), findsOneWidget);
+        expect(byKey('pay-online'), findsOneWidget);
+        expect(find.byType(ProductImage), findsNWidgets(4));
+        expect(byKey('checkout-items-more'), findsOneWidget);
+        expect(find.text('+8'), findsOneWidget);
+        expect(byKey('checkout-total'), findsOneWidget);
+        expect(
+          find.text(estimate99(language, 88888888)),
+          findsOneWidget,
+          reason: 'the struck total',
+        );
       },
     );
   }

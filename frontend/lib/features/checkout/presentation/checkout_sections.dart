@@ -51,7 +51,8 @@ class _IconWell extends StatelessWidget {
   );
 }
 
-/// A small "Изменить" text button, scaled down where the text is large.
+/// A small "Изменить" text button: the label scales down where the text is
+/// large, the button — and so its tap target — does not.
 class _EditButton extends StatelessWidget {
   const _EditButton({required this.buttonKey, required this.onPressed});
 
@@ -61,15 +62,15 @@ class _EditButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ConstrainedBox(
     constraints: const BoxConstraints(maxWidth: 120),
-    child: FittedBox(
-      fit: BoxFit.scaleDown,
-      child: TextButton(
-        key: ValueKey<String>(buttonKey),
-        style: TextButton.styleFrom(
-          foregroundColor: KitColors.primaryDark,
-          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-        onPressed: onPressed,
+    child: TextButton(
+      key: ValueKey<String>(buttonKey),
+      style: TextButton.styleFrom(
+        foregroundColor: KitColors.primaryDark,
+        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+      ),
+      onPressed: onPressed,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
         child: Text(AppLocalizations.of(context).editButton),
       ),
     ),
@@ -149,10 +150,15 @@ class CheckoutDeliveryCard extends StatelessWidget {
     required this.gone,
     required this.recipient,
     required this.onChange,
+    this.sentAddressLine,
     super.key,
   });
 
   final Address? address;
+
+  /// The address line of a confirmation that was sent, shown when its address
+  /// is no longer among the Customer's.
+  final String? sentAddressLine;
   final bool gone;
   final CustomerProfile? recipient;
   final VoidCallback? onChange;
@@ -165,6 +171,9 @@ class CheckoutDeliveryCard extends StatelessWidget {
     final String? detail;
     if (gone) {
       title = l10n.errorAddressGone;
+      detail = null;
+    } else if (held == null && sentAddressLine != null) {
+      title = sentAddressLine!;
       detail = null;
     } else if (held == null) {
       title = l10n.deliveryAddressAdd;
@@ -618,7 +627,9 @@ class CheckoutAmounts extends StatelessWidget {
           label: l10n.cartTotal,
           value: figure(preview.totalUzs),
           emphasised: true,
-          replaced: replaced == null ? null : figure(replaced),
+          replaced: replaced == null || replaced == preview.totalUzs
+              ? null
+              : figure(replaced),
         ),
         const SizedBox(height: 8),
         const EstimateNote(),
@@ -671,7 +682,18 @@ class CheckoutFooter extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             if (note != null)
-              Padding(padding: const EdgeInsets.only(bottom: 8), child: note),
+              // A long message scrolls: the button below always stays in reach.
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.25,
+                ),
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: note,
+                  ),
+                ),
+              ),
             FilledButton(
               key: const ValueKey<String>('checkout-confirm'),
               style: FilledButton.styleFrom(

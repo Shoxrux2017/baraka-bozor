@@ -1301,11 +1301,13 @@ The lock lives in the cache rate limiter, where the send limits already live, un
 
 ## DL-89 — The checkout, kit stage 5 (2026-10-18, agent)
 
+For the Customer's checkout this entry supersedes `DL-50` (2) (an explicit "Рассчитать" preview; any change drops it; the preview shows every line at its price), (5) (a stale figure "says so" before a second tap) and (6) (the old placed view with "what is due" and the way back to the catalog); `DL-50` (4), the lock of an unknown outcome, stands.
+
 1. **The checkout previews when it opens and after the Customer changes the address.** The address is the Customer's explicit choice; a removed address is never replaced by another.
 
 2. **A wish typed after a preview is previewed before placing.** A token is placed only when its request equals the current inputs.
 
-3. **Same offer means the same lines** (cart item, quantity, line total), amounts, total kind, hours flag and opening time. An unchanged re-preview, after a wish change or a stale token, is placed without a second tap. A changed one shows "заказ пересчитали" with the old total struck through and waits for the tap.
+3. **Same offer means the same lines** (cart item, quantity, line total), amounts, total kind, hours flag and opening time. An unchanged re-preview, after a wish change or a stale token, is placed without a second tap. A changed one shows "заказ пересчитали" (with the old total struck through when the total differs) and waits for the tap.
 
 4. **Refusals show above the button.** `product_unavailable` opens a sheet naming the products from the cart, with the way back.
 

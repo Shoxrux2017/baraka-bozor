@@ -6,6 +6,7 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
@@ -887,6 +888,43 @@ void main() {
     expect(find.text(l10n(tester).totalNothingDue), findsOneWidget);
   });
 
+  testWidgets(
+    'a replay of an order cancelled meanwhile never promises collection',
+    (WidgetTester tester) async {
+      checkout.outsideHours = true;
+      await open(tester);
+      checkout.placedAnswer = placedJson()
+        ..['totals'] = <String, Object?>{
+          'merchandise_subtotal_uzs': null,
+          'service_fee_uzs': null,
+          'delivery_fee_uzs': null,
+          'total_uzs': null,
+          'total_kind': 'none',
+        };
+
+      await order(tester);
+
+      expect(
+        find.text(l10n(tester).checkoutPlacedCancelled('1001')),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n(tester).checkoutPlacedOpensAt('08:00')),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('the placed window keeps the active-mode bar on top', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await order(tester);
+
+    expect(byKey('checkout-placed'), findsOneWidget);
+    expect(find.byType(ActiveModeBar), findsOneWidget);
+  });
+
   testWidgets('leaving while a stale confirmation previews again is safe', (
     WidgetTester tester,
   ) async {
@@ -928,6 +966,185 @@ void main() {
       greaterThan(before),
     );
   });
+
+  testWidgets(
+    'leaving during the opening preview and coming back shows the figures before anything is placed',
+    (WidgetTester tester) async {
+      final Completer<void> hold = Completer<void>();
+      checkout.previewHold = hold;
+      await open(tester, settle: false);
+      GoRouter.of(anywhere(tester)).pop();
+      await tester.pumpAndSettle();
+
+      checkout.previewHold = null;
+      await tester.tap(byKey('go-to-checkout'));
+      await tester.pump();
+      await tester.pump();
+      expect(byKey('checkout-total'), findsNothing);
+
+      hold.complete();
+      await tester.pumpAndSettle();
+
+      expect(checkout.placements, isEmpty);
+      expect(byKey('checkout-total'), findsOneWidget, reason: 'shown first');
+      expect(checkout.previews, hasLength(2), reason: 'its own preview');
+
+      await order(tester);
+      expect(checkout.placements.single.$1, 'token-2');
+      expect(checkout.previews, hasLength(2));
+    },
+  );
+
+  testWidgets(
+    'an unknown outcome whose address was removed can still be confirmed',
+    (WidgetTester tester) async {
+      await open(tester);
+      checkout.placeFailure = const NetworkFailure();
+      await order(tester);
+      expect(byKey('checkout-unconfirmed'), findsOneWidget);
+
+      addresses.rows = <Address>[
+        address(id: 'a-2', label: 'Ish', street: 'Navoiy', house: '5'),
+      ];
+      ProviderScope.containerOf(anywhere(tester)).invalidate(addressesProvider);
+      await tester.pumpAndSettle();
+
+      expect(orderActive(tester), isTrue);
+      expect(byKey('checkout-total'), findsOneWidget, reason: 'as it was sent');
+      expect(inCard(l10n(tester).errorAddressGone), findsNothing);
+      expect(
+        inCard('Amir Temur, 12'),
+        findsOneWidget,
+        reason: 'as it was sent',
+      );
+
+      await order(tester);
+      expect(checkout.placements, hasLength(2));
+      expect(checkout.placements[1], checkout.placements[0]);
+      expect(find.text(l10n(tester).checkoutPlaced('1001')), findsOneWidget);
+    },
+  );
+
+  testWidgets('an address picked but not listed yet is not called gone', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    final ProviderContainer container = ProviderScope.containerOf(
+      anywhere(tester),
+    );
+    addresses.rows = <Address>[
+      ...addresses.rows,
+      address(id: 'a-3', label: 'Dacha', street: 'Bog', house: '1'),
+    ];
+    addresses.loadHold = Completer<void>();
+    container.invalidate(addressesProvider);
+    await container
+        .read(deliveryAddressChoiceProvider('c').notifier)
+        .choose('a-3');
+    await tester.pump();
+    await tester.pump();
+
+    expect(inCard(l10n(tester).errorAddressGone), findsNothing);
+
+    addresses.loadHold!.complete();
+    addresses.loadHold = null;
+    await tester.pumpAndSettle();
+    expect(inCard('Dacha'), findsOneWidget);
+    expect(checkout.previews.last.addressId, 'a-3');
+  });
+
+  testWidgets(
+    'a recount that changes only the hours does not strike the total',
+    (WidgetTester tester) async {
+      await open(tester);
+      final AppLocalizations words = l10n(tester);
+      checkout.queuedPreviews.add(previewJson(outside: true));
+      checkout.placeFailure = const ApiRefusal(
+        ApiError(status: 409, code: 'checkout_snapshot_stale'),
+      );
+
+      await order(tester);
+
+      expect(checkout.placements, hasLength(1));
+      expect(byKey('checkout-refreshed'), findsOneWidget);
+      expect(byKey('checkout-closed'), findsOneWidget);
+      expect(
+        find.text(
+          words.cartLineEstimate(MoneyFormat.uzs(47600, AppLanguage.uz)),
+        ),
+        findsNWidgets(2),
+        reason: 'the total on the screen and in the footer, none struck',
+      );
+    },
+  );
+
+  testWidgets('after a recount a failing tap shows itself, not the recount', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    checkout.queuedPreviews.add(previewJson(total: 48600));
+    checkout.placeFailure = const ApiRefusal(
+      ApiError(status: 409, code: 'checkout_snapshot_stale'),
+    );
+    await order(tester);
+    expect(byKey('checkout-refreshed'), findsOneWidget);
+
+    checkout.placeFailure = const NetworkFailure();
+    await order(tester);
+
+    expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+    expect(byKey('checkout-refreshed'), findsNothing);
+  });
+
+  testWidgets('another address picked drops the figures until its preview', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    expect(byKey('checkout-total'), findsOneWidget);
+    final Completer<void> hold = Completer<void>();
+    checkout.previewHold = hold;
+
+    await tapAndSettle(tester, byKey('checkout-address-change'));
+    await tester.tap(byKey('delivery-address-a-2'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(byKey('checkout-total'), findsNothing);
+    expect(checkout.previews.last.addressId, 'a-2');
+    checkout.previewHold = null;
+    hold.complete();
+    await tester.pumpAndSettle();
+    expect(byKey('checkout-total'), findsOneWidget);
+  });
+
+  testWidgets(
+    'tapping the marked address after the home moved on is adopted when the sheet closes',
+    (WidgetTester tester) async {
+      await open(tester);
+      checkout.placeFailure = const NetworkFailure();
+      await order(tester);
+      GoRouter.of(anywhere(tester)).pop();
+      await tester.pumpAndSettle();
+      // The home's choice moved meanwhile; the sent checkout keeps a-1.
+      await ProviderScope.containerOf(anywhere(tester))
+          .read(deliveryAddressChoiceProvider('c').notifier)
+          .choose('a-2');
+      await tapAndSettle(tester, byKey('cart-check-unconfirmed'));
+      expect(inCard('Uy'), findsOneWidget);
+
+      // The replay is refused: the checkout is free, still on a-1.
+      checkout.placeFailure = const ApiRefusal(
+        ApiError(status: 409, code: 'cart_empty'),
+      );
+      await order(tester);
+      expect(inCard('Uy'), findsOneWidget);
+
+      await pick(tester, 'a-2');
+
+      expect(inCard('Ish'), findsOneWidget);
+      expect(checkout.previews.last.addressId, 'a-2');
+    },
+  );
 
   for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
     const Size phone = Size(320, 640);
@@ -1000,6 +1217,64 @@ void main() {
 
         expect(byKey('checkout-placed'), findsOneWidget);
         expect(tester.takeException(), isNull);
+      },
+    );
+
+    for (final (String name, ApiFailure failure) in <(String, ApiFailure)>[
+      (
+        'a server error',
+        const ApiRefusal(ApiError(status: 500, code: 'server_error')),
+      ),
+      (
+        'an order still being sent',
+        const ApiRefusal(
+          ApiError(status: 409, code: 'idempotency_in_progress'),
+        ),
+      ),
+      ('a lost answer', const NetworkFailure()),
+    ]) {
+      testWidgets(
+        'the footer after $name keeps "Заказать" in reach at large text (${language.languageCode})',
+        (WidgetTester tester) async {
+          await open(tester, size: phone, textScale: 2, device: language);
+          checkout.placeFailure = failure;
+          await order(tester);
+
+          expect(byKey('checkout-unconfirmed'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          expect(byKey('checkout-confirm').hitTestable(), findsOneWidget);
+        },
+      );
+    }
+
+    testWidgets(
+      'a product gone, not named, keeps "Заказать" in reach at large text (${language.languageCode})',
+      (WidgetTester tester) async {
+        checkout.previewFailure = const ApiRefusal(
+          ApiError(status: 409, code: 'product_unavailable'),
+        );
+        await open(tester, size: phone, textScale: 2, device: language);
+
+        expect(byKey('checkout-back-to-cart'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        expect(byKey('checkout-confirm').hitTestable(), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the change buttons keep a 48 px target at large text (${language.languageCode})',
+      (WidgetTester tester) async {
+        await open(tester, size: phone, textScale: 2, device: language);
+
+        // As drawn on the screen, after any scaling of the button.
+        final Offset topLeft = tester.getTopLeft(
+          byKey('checkout-address-change'),
+        );
+        final Offset bottomRight = tester.getBottomRight(
+          byKey('checkout-address-change'),
+        );
+        expect(bottomRight.dy - topLeft.dy, greaterThanOrEqualTo(48));
+        expect(bottomRight.dx - topLeft.dx, greaterThanOrEqualTo(48));
       },
     );
   }

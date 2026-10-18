@@ -11,6 +11,7 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/customer_account.dart';
+import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
@@ -70,6 +71,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   /// A tap on "Заказать" is being served.
   bool _ordering = false;
 
+  /// Previews this screen is waiting for: a run that ends while there is
+  /// none came from a screen that was left.
+  int _ownPreviews = 0;
+
   /// Counts the held address's changes, so figures for another address are
   /// never shown.
   int _revision = 0;
@@ -109,6 +114,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ),
       );
     }
+    _subscriptions
+      ..add(
+        ref.listenManual<MutationState>(
+          checkoutPreviewProvider,
+          _foreignRunEnded,
+        ),
+      )
+      ..add(
+        ref.listenManual<MutationState>(placeOrderProvider, _foreignRunEnded),
+      );
     _subscriptions.add(
       ref.listenManual<AsyncValue<List<Address>>>(
         addressesProvider,
@@ -154,6 +169,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       subscription.close();
     } else {
       _subscriptions.add(subscription);
+    }
+  }
+
+  /// A preview or a placement of a screen that was left ended: the figures
+  /// this screen waited for are asked for now.
+  void _foreignRunEnded(MutationState? previous, MutationState next) {
+    if (mounted &&
+        _started &&
+        _previewAgain &&
+        _ownPreviews == 0 &&
+        !_ordering &&
+        (previous?.isBusy ?? false) &&
+        !next.isBusy) {
+      _previewAgain = false;
+      _autoPreview();
     }
   }
 
@@ -224,6 +254,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
     final bool listed = list.any((Address a) => a.id == _addressId);
     if (!listed) {
+      // A confirmation that was sent is sent as it was, whatever the list
+      // holds now (`DL-50` (4)).
+      _previewWhenListed = false;
+      if (_sent) {
+        return;
+      }
       _revision++;
       ref.read(preparedCheckoutProvider.notifier).clear();
       setState(() {
@@ -266,9 +302,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   ) async {
     final int revision = _revision;
     setState(() => _failure = null);
-    await ref
-        .read(checkoutPreviewProvider.notifier)
-        .preview(request, addressLine: addressLine);
+    _ownPreviews++;
+    try {
+      await ref
+          .read(checkoutPreviewProvider.notifier)
+          .preview(request, addressLine: addressLine);
+    } finally {
+      _ownPreviews--;
+    }
     if (!mounted) {
       return null;
     }
@@ -356,9 +397,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       _replacedTotal = null;
       _failure = null;
     });
-    // Only what the Customer has seen is placed: a token made for another
-    // request is not.
-    if (prepared != null && prepared.request == request) {
+    // Only what the Customer has seen is placed: not a token made for
+    // another request, and not figures that never reached the screen.
+    if (prepared != null &&
+        prepared.request == request &&
+        identical(prepared.preview, _shown)) {
       await _place(prepared);
       return;
     }
@@ -403,12 +446,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (retryStale &&
         failure is ApiRefusal &&
         failure.code == 'checkout_snapshot_stale') {
-      final CheckoutPreview before = _shown ?? prepared.preview;
+      final CheckoutPreview? before = _shown;
       final PreparedCheckout? fresh = await _preview(
         prepared.request,
         prepared.addressLine,
       );
-      if (fresh == null || !mounted) {
+      if (fresh == null || !mounted || before == null) {
         return;
       }
       if (fresh.preview.sameOfferAs(before)) {
@@ -419,6 +462,26 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
     _refuse(failure);
+  }
+
+  /// The address sheet closed: the stored choice may differ from the held
+  /// address without having changed (a tap on the marked one does not notify),
+  /// and then the Customer's pick is adopted.
+  Future<void> _changeAddress() async {
+    await showDeliveryAddressSheet(context);
+    final String? account = ref.read(customerAccountProvider);
+    if (!mounted || account == null) {
+      return;
+    }
+    final String? choice = ref
+        .read(deliveryAddressChoiceProvider(account))
+        .value;
+    final bool listed =
+        ref.read(addressesProvider).value?.any((Address a) => a.id == choice) ??
+        false;
+    if (choice != null && listed) {
+      _pick(choice);
+    }
   }
 
   @override
@@ -439,8 +502,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final Address? held = list
         ?.where((Address a) => a.id == _addressId)
         .firstOrNull;
-    final bool gone = _addressId != null && list != null && held == null;
     final bool sent = prepared?.sent ?? false;
+    // Gone only once the loaded list is final: not while it reloads, and not
+    // before an address just picked is listed. A confirmation that was sent
+    // keeps its address (`DL-50` (4)).
+    final bool gone =
+        _addressId != null &&
+        list != null &&
+        held == null &&
+        !sent &&
+        !addresses.isLoading &&
+        !_previewWhenListed;
     final bool busy = busyPreview || busyPlace;
     final bool locked = busy || sent;
     final CheckoutPreview? shown = gone ? null : _shown;
@@ -457,7 +529,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             router: GoRouter.of(context),
             container: ProviderScope.containerOf(context),
           )
-        : () => showDeliveryAddressSheet(context);
+        : _changeAddress;
 
     final ApiFailure? failure = gone ? null : _failure;
     final List<Widget> notes = <Widget>[
@@ -485,7 +557,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           busyLabel: busyPlace
               ? l10n.checkoutPlacing
               : l10n.checkoutCalculating,
-          onOrder: !gone && (sent || held != null) ? _order : null,
+          onOrder: sent || (!gone && held != null) ? _order : null,
           message: notes.isEmpty
               ? null
               : Column(
@@ -516,6 +588,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     CheckoutDeliveryCard(
                       address: held,
                       gone: gone,
+                      sentAddressLine: sent && held == null
+                          ? prepared?.addressLine
+                          : null,
                       recipient: profile,
                       onChange: onChange,
                     ),
