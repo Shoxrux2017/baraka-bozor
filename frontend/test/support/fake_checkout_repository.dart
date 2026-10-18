@@ -82,6 +82,10 @@ class FakeCheckoutRepository implements CheckoutRepository {
   /// When set, a preview — and only a preview — waits for it.
   Completer<void>? previewHold;
 
+  /// When not empty, the next preview answers its first entry (with that
+  /// call's token) instead of the default.
+  final List<Map<String, Object?>> queuedPreviews = <Map<String, Object?>>[];
+
   @override
   Future<CheckoutPreview> preview(CheckoutRequest request) async {
     previews.add(request);
@@ -91,6 +95,12 @@ class FakeCheckoutRepository implements CheckoutRepository {
     if (failure != null) {
       previewFailure = null;
       throw failure;
+    }
+    if (queuedPreviews.isNotEmpty) {
+      return CheckoutApi.parsePreview(
+        queuedPreviews.removeAt(0)
+          ..['checkout_token'] = 'token-${previews.length}',
+      );
     }
     return CheckoutApi.parsePreview(
       previewJson(
