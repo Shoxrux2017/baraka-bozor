@@ -196,7 +196,7 @@ void main() {
     expect(checkout.placements.single.$1, 'token-2');
     expect(find.text(words.checkoutPlaced('1001')), findsOneWidget);
     expect(cart.calls.length, greaterThan(cartLoads), reason: 'cart reloaded');
-    await tapAndSettle(tester, byKey('checkout-back-to-catalog'));
+    await tapAndSettle(tester, byKey('checkout-to-home'));
     expect(byKey('catalog-search'), findsOneWidget);
   });
 
@@ -246,6 +246,53 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('the placed window names the order and says how to pay', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await order(tester);
+
+    expect(find.text(l10n(tester).checkoutPlaced('1001')), findsOneWidget);
+    expect(find.text(l10n(tester).checkoutPlacedCash), findsOneWidget);
+    expect(byKey('checkout-open-order'), findsOneWidget);
+    expect(
+      find.text(l10n(tester).checkoutPlacedOpensAt('08:00')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('outside the hours it says when collecting starts', (
+    WidgetTester tester,
+  ) async {
+    checkout.outsideHours = true;
+    await open(tester);
+    await order(tester);
+
+    expect(
+      find.text(l10n(tester).checkoutPlacedOpensAt('08:00')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('back from the placed window goes home', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await order(tester);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(top(tester), AppPaths.customer);
+  });
+
+  testWidgets('"На главную" goes home', (WidgetTester tester) async {
+    await open(tester);
+    await order(tester);
+
+    await tapAndSettle(tester, byKey('checkout-to-home'));
+    expect(top(tester), AppPaths.customer);
   });
 
   testWidgets('the placed order opens over the catalog, not the checkout', (

@@ -61,11 +61,11 @@ The Customer browses categories, searches (both languages), sees unit, price mod
 
 ## 7. Checkout Preview
 
-1. The Customer opens checkout with a non-empty cart, picks an own active address (preselected: the delivery address chosen on the home, `DL-75`), picks `cash` or `online`, and may type a delivery wish.
+1. The Customer opens checkout with a non-empty cart; the preview is asked for when checkout opens and after an address change. The address is an own active one (preselected: the delivery address chosen on the home, `DL-75`); payment is `cash` or `online`, and the Customer may type a delivery wish.
 2. The backend checks name, address and service area, product availability and prices, quantities, minimum order amount, settings completeness, and provider enablement for `online`.
 3. It returns lines, subtotal, service fee, delivery fee and total, marked `final` (only fixed items, which no new cart has since `DL-78`) or `estimate` (any estimate item), plus a working-hours note when the order will be collected after opening.
 4. It returns a signed five-minute checkout token bound to the current state.
-5. The Customer confirms.
+5. The Customer confirms. Confirming previews again a changed wish or a stale token, and places an unchanged offer without asking again (`DL-89`).
 
 If anything changed, order creation refuses: a check of the preview that now fails answers its own code — a product gone is `product_unavailable`, naming it — and any other change, an expired token or an address since removed is `checkout_snapshot_stale`; the Customer previews again (`DL-42`).
 

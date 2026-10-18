@@ -2798,18 +2798,6 @@ abstract class AppLocalizations {
   /// **'Yetkazish manzili'**
   String get checkoutAddress;
 
-  /// No description provided for @checkoutNoAddress.
-  ///
-  /// In uz, this message translates to:
-  /// **'Hali manzil yo\'q'**
-  String get checkoutNoAddress;
-
-  /// No description provided for @checkoutAddAddress.
-  ///
-  /// In uz, this message translates to:
-  /// **'Manzil qo\'shish'**
-  String get checkoutAddAddress;
-
   /// No description provided for @checkoutPayment.
   ///
   /// In uz, this message translates to:
@@ -2822,23 +2810,11 @@ abstract class AppLocalizations {
   /// **'Hozircha faqat naqd pul bilan to\'lash mumkin'**
   String get checkoutOnlineUnavailable;
 
-  /// No description provided for @checkoutCalculate.
-  ///
-  /// In uz, this message translates to:
-  /// **'Hisoblash'**
-  String get checkoutCalculate;
-
   /// No description provided for @checkoutCalculating.
   ///
   /// In uz, this message translates to:
   /// **'Hisoblanmoqda'**
   String get checkoutCalculating;
-
-  /// No description provided for @checkoutConfirm.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtmani tasdiqlash'**
-  String get checkoutConfirm;
 
   /// No description provided for @checkoutPlacing.
   ///
@@ -2852,23 +2828,11 @@ abstract class AppLocalizations {
   /// **'Narxi taxminiy mahsulotlar bor: yakuniy summa yig\'uvchi ularni sotib olgach aniqlanadi'**
   String get checkoutEstimateExplain;
 
-  /// No description provided for @checkoutClosedUntil.
-  ///
-  /// In uz, this message translates to:
-  /// **'Hozir ish vaqti emas. Buyurtma {time} dan yig\'ila boshlaydi'**
-  String checkoutClosedUntil(String time);
-
   /// No description provided for @checkoutPlaced.
   ///
   /// In uz, this message translates to:
   /// **'Buyurtma № {number} rasmiylashtirildi'**
   String checkoutPlaced(String number);
-
-  /// No description provided for @checkoutBackToCatalog.
-  ///
-  /// In uz, this message translates to:
-  /// **'Katalogga qaytish'**
-  String get checkoutBackToCatalog;
 
   /// No description provided for @checkoutOpenProfile.
   ///

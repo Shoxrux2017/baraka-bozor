@@ -1298,3 +1298,17 @@ The lock lives in the cache rate limiter, where the send limits already live, un
 3. **The lock is announced twice, no more:** once when it starts and once when it ends, and its ticking text is not a live region, so a screen reader does not read every second.
 4. **The lock binds only to the typed phone:** the phone screen blocks the button only while the number typed is the locked one; any other number is free.
 5. **Changing the phone keeps the lock:** the lock and its timer run on, so the phone screen shows the seconds left for the same number without a request.
+
+## DL-89 — The checkout, kit stage 5 (2026-10-18, agent)
+
+1. **The checkout previews when it opens and after the Customer changes the address.** The address is the Customer's explicit choice; a removed address is never replaced by another.
+
+2. **A wish typed after a preview is previewed before placing.** A token is placed only when its request equals the current inputs.
+
+3. **Same offer means the same lines** (cart item, quantity, line total), amounts, total kind, hours flag and opening time. An unchanged re-preview, after a wish change or a stale token, is placed without a second tap. A changed one shows "заказ пересчитали" with the old total struck through and waits for the tap.
+
+4. **Refusals show above the button.** `product_unavailable` opens a sheet naming the products from the cart, with the way back.
+
+5. **"Заказ оформлен" replaces the screen;** back goes home.
+
+6. **Online stays visible and inactive with "Скоро" until Wave 5** (`docs/06` section 2, `DL-37` (3)). Promo codes, discounts and an in-app card form are not drawn (promotions post-MVP, `docs/01` section 20); a saved-card question goes to the Owner with Wave 5.

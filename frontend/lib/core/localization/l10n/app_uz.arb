@@ -758,23 +758,11 @@
   "checkoutTitle": "Rasmiylashtirish",
   "checkoutGo": "Rasmiylashtirish",
   "checkoutAddress": "Yetkazish manzili",
-  "checkoutNoAddress": "Hali manzil yo'q",
-  "checkoutAddAddress": "Manzil qo'shish",
   "checkoutPayment": "To'lov usuli",
   "checkoutOnlineUnavailable": "Hozircha faqat naqd pul bilan to'lash mumkin",
-  "checkoutCalculate": "Hisoblash",
   "checkoutCalculating": "Hisoblanmoqda",
-  "checkoutConfirm": "Buyurtmani tasdiqlash",
   "checkoutPlacing": "Buyurtma yuborilmoqda",
   "checkoutEstimateExplain": "Narxi taxminiy mahsulotlar bor: yakuniy summa yig'uvchi ularni sotib olgach aniqlanadi",
-  "checkoutClosedUntil": "Hozir ish vaqti emas. Buyurtma {time} dan yig'ila boshlaydi",
-  "@checkoutClosedUntil": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "checkoutPlaced": "Buyurtma № {number} rasmiylashtirildi",
   "@checkoutPlaced": {
     "placeholders": {
@@ -783,7 +771,6 @@
       }
     }
   },
-  "checkoutBackToCatalog": "Katalogga qaytish",
   "checkoutOpenProfile": "Ismni kiritish",
   "checkoutBackToCart": "Savatga qaytish",
   "errorProfileIncomplete": "Buyurtma berish uchun profilga ismingizni kiriting",

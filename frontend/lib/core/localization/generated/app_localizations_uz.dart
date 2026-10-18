@@ -1489,12 +1489,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get checkoutAddress => 'Yetkazish manzili';
 
   @override
-  String get checkoutNoAddress => 'Hali manzil yo\'q';
-
-  @override
-  String get checkoutAddAddress => 'Manzil qo\'shish';
-
-  @override
   String get checkoutPayment => 'To\'lov usuli';
 
   @override
@@ -1502,13 +1496,7 @@ class AppLocalizationsUz extends AppLocalizations {
       'Hozircha faqat naqd pul bilan to\'lash mumkin';
 
   @override
-  String get checkoutCalculate => 'Hisoblash';
-
-  @override
   String get checkoutCalculating => 'Hisoblanmoqda';
-
-  @override
-  String get checkoutConfirm => 'Buyurtmani tasdiqlash';
 
   @override
   String get checkoutPlacing => 'Buyurtma yuborilmoqda';
@@ -1518,17 +1506,9 @@ class AppLocalizationsUz extends AppLocalizations {
       'Narxi taxminiy mahsulotlar bor: yakuniy summa yig\'uvchi ularni sotib olgach aniqlanadi';
 
   @override
-  String checkoutClosedUntil(String time) {
-    return 'Hozir ish vaqti emas. Buyurtma $time dan yig\'ila boshlaydi';
-  }
-
-  @override
   String checkoutPlaced(String number) {
     return 'Buyurtma № $number rasmiylashtirildi';
   }
-
-  @override
-  String get checkoutBackToCatalog => 'Katalogga qaytish';
 
   @override
   String get checkoutOpenProfile => 'Ismni kiritish';

@@ -1502,12 +1502,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get checkoutAddress => 'Адрес доставки';
 
   @override
-  String get checkoutNoAddress => 'Адресов пока нет';
-
-  @override
-  String get checkoutAddAddress => 'Добавить адрес';
-
-  @override
   String get checkoutPayment => 'Способ оплаты';
 
   @override
@@ -1515,13 +1509,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Пока можно оплатить только наличными';
 
   @override
-  String get checkoutCalculate => 'Рассчитать';
-
-  @override
   String get checkoutCalculating => 'Рассчитываем';
-
-  @override
-  String get checkoutConfirm => 'Подтвердить заказ';
 
   @override
   String get checkoutPlacing => 'Отправляем заказ';
@@ -1531,17 +1519,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Есть товары с ориентировочной ценой: итог станет известен, когда сборщик их купит';
 
   @override
-  String checkoutClosedUntil(String time) {
-    return 'Сейчас нерабочее время. Заказ начнут собирать с $time';
-  }
-
-  @override
   String checkoutPlaced(String number) {
     return 'Заказ № $number оформлен';
   }
-
-  @override
-  String get checkoutBackToCatalog => 'Вернуться в каталог';
 
   @override
   String get checkoutOpenProfile => 'Указать имя';

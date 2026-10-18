@@ -25,6 +25,7 @@ import '../../profile/application/profile_controllers.dart';
 import '../../profile/domain/profile.dart';
 import '../application/checkout_controllers.dart';
 import '../domain/checkout.dart';
+import 'checkout_placed_view.dart';
 import 'checkout_sections.dart';
 
 /// The checkout (`docs/09` sections 18 and 19, drawings 25 to 25в): where it
@@ -49,6 +50,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       <ProviderSubscription<dynamic>>[];
   String? _addressId;
   PlacedOrder? _placed;
+
+  /// When collecting starts, if the order was placed outside the hours.
+  String? _placedOpensAt;
 
   /// The held address was chosen or restored: from now on only the Customer
   /// changes it.
@@ -382,7 +386,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
     if (order != null) {
-      setState(() => _placed = order);
+      setState(() {
+        _placed = order;
+        _placedOpensAt = prepared.preview.outsideWorkingHours
+            ? prepared.preview.opensAt
+            : null;
+      });
       return;
     }
     final ApiFailure? failure = ref.read(placeOrderProvider).failure;
@@ -416,6 +425,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final PlacedOrder? placed = _placed;
+    if (placed != null) {
+      return CheckoutPlacedView(order: placed, opensAt: _placedOpensAt);
+    }
     final AsyncValue<List<Address>> addresses = ref.watch(addressesProvider);
     final bool busyPreview = ref.watch(checkoutPreviewProvider).isBusy;
     final bool busyPlace = ref.watch(placeOrderProvider).isBusy;
@@ -464,88 +476,83 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: kitAppBar(title: l10n.checkoutTitle),
-      bottomNavigationBar: placed != null
-          ? null
-          : SafeArea(
-              top: false,
-              child: CheckoutFooter(
-                totalUzs: shown?.totalUzs,
-                estimate: shown?.totalKind != TotalKind.finalTotal,
-                busy: busy,
-                busyLabel: busyPlace
-                    ? l10n.checkoutPlacing
-                    : l10n.checkoutCalculating,
-                onOrder: !gone && (sent || held != null) ? _order : null,
-                message: notes.isEmpty
-                    ? null
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: notes,
-                      ),
-              ),
-            ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: CheckoutFooter(
+          totalUzs: shown?.totalUzs,
+          estimate: shown?.totalKind != TotalKind.finalTotal,
+          busy: busy,
+          busyLabel: busyPlace
+              ? l10n.checkoutPlacing
+              : l10n.checkoutCalculating,
+          onOrder: !gone && (sent || held != null) ? _order : null,
+          message: notes.isEmpty
+              ? null
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: notes,
+                ),
+        ),
+      ),
       body: SafeArea(
-        bottom: placed != null,
         child: Column(
           children: <Widget>[
             const ActiveModeBar(),
             Expanded(
-              child: placed != null
-                  ? _Placed(order: placed)
-                  : Form(
-                      key: _form,
-                      child: ListView(
-                        key: const ValueKey<String>('checkout'),
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                        children: <Widget>[
-                          if (shown != null &&
-                              shown.outsideWorkingHours &&
-                              opensAt != null) ...<Widget>[
-                            CheckoutClosedBanner(opensAt: opensAt),
-                            const SizedBox(height: 16),
-                          ],
-                          _Heading(l10n.checkoutWhere),
-                          const SizedBox(height: 12),
-                          CheckoutDeliveryCard(
-                            address: held,
-                            gone: gone,
-                            recipient: profile,
-                            onChange: onChange,
-                          ),
-                          const SizedBox(height: 12),
-                          CheckoutWishField(
-                            controller: _note,
-                            enabled: !locked,
-                            onChanged: (String _) {
-                              if (_replacedTotal != null) {
-                                setState(() => _replacedTotal = null);
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 24),
-                          _Heading(l10n.checkoutPayment),
-                          const SizedBox(height: 12),
-                          const CheckoutPaymentCards(),
-                          if (shown != null) ...<Widget>[
-                            const SizedBox(height: 24),
-                            CheckoutItemsStrip(
-                              lines: shown.lines,
-                              imageByCartItem: <String, String?>{
-                                for (final CartLine line
-                                    in cart?.lines ?? const <CartLine>[])
-                                  line.id: line.imageUrl,
-                              },
-                              onChange: () => context.pop(),
-                            ),
-                            const SizedBox(height: 16),
-                            CheckoutAmounts(
-                              preview: shown,
-                              replacedTotalUzs: _replacedTotal,
-                            ),
-                          ],
-                        ],
-                      ),
+              child: Form(
+                key: _form,
+                child: ListView(
+                  key: const ValueKey<String>('checkout'),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                  children: <Widget>[
+                    if (shown != null &&
+                        shown.outsideWorkingHours &&
+                        opensAt != null) ...<Widget>[
+                      CheckoutClosedBanner(opensAt: opensAt),
+                      const SizedBox(height: 16),
+                    ],
+                    _Heading(l10n.checkoutWhere),
+                    const SizedBox(height: 12),
+                    CheckoutDeliveryCard(
+                      address: held,
+                      gone: gone,
+                      recipient: profile,
+                      onChange: onChange,
                     ),
+                    const SizedBox(height: 12),
+                    CheckoutWishField(
+                      controller: _note,
+                      enabled: !locked,
+                      onChanged: (String _) {
+                        if (_replacedTotal != null) {
+                          setState(() => _replacedTotal = null);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    _Heading(l10n.checkoutPayment),
+                    const SizedBox(height: 12),
+                    const CheckoutPaymentCards(),
+                    if (shown != null) ...<Widget>[
+                      const SizedBox(height: 24),
+                      CheckoutItemsStrip(
+                        lines: shown.lines,
+                        imageByCartItem: <String, String?>{
+                          for (final CartLine line
+                              in cart?.lines ?? const <CartLine>[])
+                            line.id: line.imageUrl,
+                        },
+                        onChange: () => context.pop(),
+                      ),
+                      const SizedBox(height: 16),
+                      CheckoutAmounts(
+                        preview: shown,
+                        replacedTotalUzs: _replacedTotal,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -571,65 +578,6 @@ class _Heading extends StatelessWidget {
       ),
     ),
   );
-}
-
-/// The placed order: its number and what is due, and the way back.
-class _Placed extends StatelessWidget {
-  const _Placed({required this.order});
-
-  final PlacedOrder order;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = interfaceLanguage(context);
-    final int? total = order.totalUzs;
-
-    return ListView(
-      key: const ValueKey<String>('checkout-placed'),
-      padding: const EdgeInsets.all(24),
-      children: <Widget>[
-        Icon(
-          Icons.check_circle_outline,
-          size: 64,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(height: 16),
-        // A replay answers the order as it is now: cancelled meanwhile, it
-        // is said so.
-        Text(
-          total == null
-              ? l10n.checkoutPlacedCancelled('${order.orderNumber}')
-              : l10n.checkoutPlaced('${order.orderNumber}'),
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          total == null
-              ? l10n.totalNothingDue
-              : '${MoneyFormat.uzs(total, language)} · '
-                    '${order.totalKind == TotalKind.estimate ? l10n.totalKindEstimate : l10n.totalKindFinal}',
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        FilledButton(
-          key: const ValueKey<String>('checkout-open-order'),
-          onPressed: () {
-            final GoRouter router = GoRouter.of(context)..go(AppPaths.customer);
-            router.push(AppPaths.customerOrder(order.id));
-          },
-          child: Text(l10n.orderOpen),
-        ),
-        const SizedBox(height: 8),
-        OutlinedButton(
-          key: const ValueKey<String>('checkout-back-to-catalog'),
-          onPressed: () => context.go(AppPaths.customer),
-          child: Text(l10n.checkoutBackToCatalog),
-        ),
-      ],
-    );
-  }
 }
 
 /// A checkout refusal in words, with the values its `details` carry — the
