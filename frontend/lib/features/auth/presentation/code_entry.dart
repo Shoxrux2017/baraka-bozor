@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/formatting/countdown_format.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
@@ -8,6 +9,7 @@ import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/code_login_controller.dart';
 import 'code_boxes.dart';
+import 'lock_message.dart';
 
 /// Steps 3 and 4 of `docs/04-user-flows.md` section 2: the code itself, the
 /// verify button and a resend once the server allows one.
@@ -28,12 +30,23 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
   final TextEditingController _code = TextEditingController();
 
   @override
+  void didUpdateWidget(CodeEntry oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.state.locked && !oldWidget.state.locked) {
+      _code.clear();
+    }
+  }
+
+  @override
   void dispose() {
     _code.dispose();
     super.dispose();
   }
 
   Future<void> _verify() async {
+    if (!widget.state.entryOpen) {
+      return;
+    }
     if (!(_form.currentState?.validate() ?? false)) {
       return;
     }
@@ -59,12 +72,25 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
             controller: _code,
             invalidMessage: l10n.codeInvalidFormat,
             onSubmitted: _verify,
+            enabled: state.entryOpen,
           ),
           FailureMessage(state.failure),
+          LockMessage(
+            lockedSeconds: state.lockedSeconds,
+            lockOver: state.lockOver,
+          ),
+          if (state.lockOver)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                l10n.codeLockOver,
+                key: const ValueKey<String>('lock-over-message'),
+              ),
+            ),
           const SizedBox(height: 28),
           FilledButton(
             key: const ValueKey<String>('verify-button'),
-            onPressed: state.busy ? null : _verify,
+            onPressed: state.busy || !state.entryOpen ? null : _verify,
             child: Text(l10n.verifyButton),
           ),
           const SizedBox(height: 8),
@@ -90,12 +116,6 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
       ),
     );
   }
-}
-
-/// Seconds as `m:ss`, the way the resend countdown reads.
-String formatCountdown(int seconds) {
-  final int clamped = seconds < 0 ? 0 : seconds;
-  return '${clamped ~/ 60}:${(clamped % 60).toString().padLeft(2, '0')}';
 }
 
 /// Where the code went, in one line: the Telegram text names the channel and

@@ -151,13 +151,13 @@ void main() {
       final ProviderContainer c = container();
       await c.read(sessionControllerProvider.future);
       await controller(c).requestCode('+998901234567');
-      repository.requestFailure = refusal(429, 'code_resend_too_soon');
+      repository.requestFailure = refusal(429, 'rate_limited');
 
       expect(await controller(c).resend(), isFalse);
 
       expect(state(c).hasCode, isTrue);
       expect(state(c).phone, '+998901234567');
-      expect(state(c).failure?.code, 'code_resend_too_soon');
+      expect(state(c).failure?.code, 'rate_limited');
       expect(state(c).busy, isFalse);
     },
   );
@@ -197,57 +197,224 @@ void main() {
     expect(reported, hasLength(1));
   });
 
-  test(
-    'a refused resend keeps the code already on its way and shows why',
-    () async {
+  test('a resend refused by the lock keeps the code screen and counts the lock down', () async {
+    final ProviderContainer c = container();
+    await c.read(sessionControllerProvider.future);
+    await controller(c).requestCode('+998901234567');
+    repository.requestFailure = ApiRefusal(
+      const ApiError(status: 429, code: 'code_locked'),
+      retryAfterSeconds: 42,
+    );
+
+    expect(await controller(c).resend(), isFalse);
+
+    expect(state(c).hasCode, isTrue, reason: 'the code screen stays');
+    expect(state(c).lockedSeconds, 42);
+    expect(state(c).failure, isNull, reason: 'the lock has its own sentence');
+    expect(state(c).canResend, isFalse);
+    expect(state(c).busy, isFalse);
+  });
+
+  test('a new request starts clean: nothing of an earlier flow shows while it runs', () async {
+    final ProviderContainer c = container();
+    await c.read(sessionControllerProvider.future);
+    await controller(c).requestCode('+998901111111');
+    expect(state(c).hasCode, isTrue);
+
+    repository.holdAnswers = Completer<void>();
+    final Future<bool> pending = controller(c).requestCode('+998902222222');
+
+    expect(state(c).hasCode, isFalse, reason: 'the old code is not shown');
+    expect(state(c).phone, '+998902222222');
+    expect(state(c).busy, isTrue);
+
+    repository.holdAnswers!.complete();
+    expect(await pending, isTrue);
+    expect(state(c).hasCode, isTrue);
+  });
+
+  test('an error the application cannot explain re-enables the screen and is reported', () async {
+    final List<FlutterErrorDetails> reported = <FlutterErrorDetails>[];
+    final FlutterExceptionHandler? previous = FlutterError.onError;
+    FlutterError.onError = reported.add;
+    addTearDown(() => FlutterError.onError = previous);
+    final ProviderContainer c = container();
+    await c.read(sessionControllerProvider.future);
+    await controller(c).requestCode('+998901234567');
+
+    // The fake has no verify answer configured, so it throws a plain error.
+    expect(await controller(c).verify('482913'), isFalse);
+
+    expect(state(c).busy, isFalse);
+    expect(state(c).failure, isA<UnexpectedFailure>());
+    expect(reported, hasLength(1));
+  });
+
+  testWidgets('a resend can be sent at once', (WidgetTester tester) async {
+    repository.requestResult = const RequestedCode(
+      channel: 'telegram',
+      expiresInSeconds: 300,
+      resendAvailableInSeconds: 0,
+    );
+    final ProviderContainer c = container();
+    await c.read(sessionControllerProvider.future);
+
+    await controller(c).requestCode('+998901234567');
+
+    expect(state(c).canResend, isTrue);
+    expect(state(c).locked, isFalse);
+    expect(await controller(c).resend(), isTrue);
+    expect(
+      repository.calls.where((String call) => call.startsWith('request:')),
+      hasLength(2),
+    );
+  });
+
+  testWidgets(
+    'code_locked from verify locks for the header seconds and counts down',
+    (WidgetTester tester) async {
       final ProviderContainer c = container();
       await c.read(sessionControllerProvider.future);
       await controller(c).requestCode('+998901234567');
-      repository.requestFailure = refusal(429, 'code_resend_too_soon');
+      repository.verifyFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'code_locked'),
+        retryAfterSeconds: 60,
+      );
 
-      expect(await controller(c).resend(), isFalse);
+      expect(await controller(c).verify('000000'), isFalse);
 
-      expect(state(c).hasCode, isTrue);
-      expect(state(c).phone, '+998901234567');
-      expect(state(c).failure?.code, 'code_resend_too_soon');
+      expect(state(c).locked, isTrue);
+      expect(state(c).lockedSeconds, 60);
+      expect(state(c).canResend, isFalse);
+      expect(state(c).failure, isNull, reason: 'shown as the lock sentence');
       expect(state(c).busy, isFalse);
+
+      await tester.pump(const Duration(seconds: 59));
+      expect(state(c).lockedSeconds, 1);
+      expect(state(c).canResend, isFalse);
+      expect(state(c).lockOver, isFalse);
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(state(c).locked, isFalse);
+      expect(state(c).lockOver, isTrue);
+      expect(state(c).canResend, isTrue);
     },
   );
 
-  test('a new request starts clean: nothing of an earlier flow shows while it runs', () async {
-    final ProviderContainer c = container();
-    await c.read(sessionControllerProvider.future);
-    await controller(c).requestCode('+998901111111');
-    expect(state(c).hasCode, isTrue);
-
-    repository.holdAnswers = Completer<void>();
-    final Future<bool> pending = controller(c).requestCode('+998902222222');
-
-    expect(state(c).hasCode, isFalse, reason: 'the old code is not shown');
-    expect(state(c).phone, '+998902222222');
-    expect(state(c).busy, isTrue);
-
-    repository.holdAnswers!.complete();
-    expect(await pending, isTrue);
-    expect(state(c).hasCode, isTrue);
-  });
-
-  test('an error the application cannot explain re-enables the screen and is reported', () async {
-    final List<FlutterErrorDetails> reported = <FlutterErrorDetails>[];
-    final FlutterExceptionHandler? previous = FlutterError.onError;
-    FlutterError.onError = reported.add;
-    addTearDown(() => FlutterError.onError = previous);
+  testWidgets('code_locked without a header locks for 60', (
+    WidgetTester tester,
+  ) async {
     final ProviderContainer c = container();
     await c.read(sessionControllerProvider.future);
     await controller(c).requestCode('+998901234567');
+    repository.verifyFailure = refusal(429, 'code_locked');
 
-    // The fake has no verify answer configured, so it throws a plain error.
-    expect(await controller(c).verify('482913'), isFalse);
+    await controller(c).verify('000000');
 
-    expect(state(c).busy, isFalse);
-    expect(state(c).failure, isA<UnexpectedFailure>());
-    expect(reported, hasLength(1));
+    expect(state(c).lockedSeconds, 60);
+    await tester.pump(const Duration(seconds: 60));
   });
+
+  testWidgets('code_locked from request on the phone screen locks too', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer c = container();
+    await c.read(sessionControllerProvider.future);
+    repository.requestFailure = ApiRefusal(
+      const ApiError(status: 429, code: 'code_locked'),
+      retryAfterSeconds: 37,
+    );
+
+    expect(await controller(c).requestCode('+998901234567'), isFalse);
+
+    expect(state(c).hasCode, isFalse);
+    expect(state(c).phone, '+998901234567');
+    expect(state(c).lockedSeconds, 37);
+    expect(state(c).failure, isNull);
+    await tester.pump(const Duration(seconds: 37));
+    expect(state(c).locked, isFalse);
+  });
+
+  testWidgets('changing the phone keeps the lock and its timer', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer c = container();
+    await c.read(sessionControllerProvider.future);
+    await controller(c).requestCode('+998901234567');
+    repository.verifyFailure = ApiRefusal(
+      const ApiError(status: 429, code: 'code_locked'),
+      retryAfterSeconds: 60,
+    );
+    await controller(c).verify('000000');
+    await tester.pump(const Duration(seconds: 25));
+
+    controller(c).changePhone();
+
+    expect(state(c).locked, isTrue);
+    expect(state(c).lockedSeconds, 35);
+    expect(state(c).phone, '+998901234567');
+    expect(state(c).hasCode, isFalse);
+    await tester.pump(const Duration(seconds: 35));
+    expect(state(c).locked, isFalse);
+    expect(state(c).lockOver, isTrue, reason: 'the timer kept running');
+  });
+
+  testWidgets(
+    'a code_locked answer that arrives after changePhone does not lock',
+    (WidgetTester tester) async {
+      final ProviderContainer c = container();
+      await c.read(sessionControllerProvider.future);
+      await controller(c).requestCode('+998901234567');
+      repository.verifyFailure = refusal(429, 'code_locked');
+      repository.holdAnswers = Completer<void>();
+      final Future<bool> pending = controller(c).verify('000000');
+
+      controller(c).changePhone();
+      repository.holdAnswers!.complete();
+      expect(await pending, isFalse);
+
+      expect(state(c).locked, isFalse);
+      expect(state(c).phone, '+998901234567');
+      expect(state(c).busy, isFalse);
+      await tester.pump(const Duration(seconds: 61));
+      expect(state(c).locked, isFalse);
+    },
+  );
+
+  testWidgets(
+    'a locked phone verifies nothing, and after the lock only a new code opens',
+    (WidgetTester tester) async {
+      final ProviderContainer c = container();
+      await c.read(sessionControllerProvider.future);
+      await controller(c).requestCode('+998901234567');
+      repository.verifyFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'code_locked'),
+        retryAfterSeconds: 60,
+      );
+      await controller(c).verify('000000');
+      int verifyCalls() => repository.calls
+          .where((String call) => call.startsWith('verify:'))
+          .length;
+      expect(verifyCalls(), 1);
+
+      expect(await controller(c).verify('482913'), isFalse);
+      expect(verifyCalls(), 1, reason: 'refused while locked');
+
+      await tester.pump(const Duration(seconds: 60));
+      expect(state(c).lockOver, isTrue);
+      expect(state(c).entryOpen, isFalse);
+      expect(await controller(c).verify('482913'), isFalse);
+      expect(
+        verifyCalls(),
+        1,
+        reason: 'the spent code stays off after the lock',
+      );
+
+      expect(await controller(c).resend(), isTrue);
+      expect(state(c).lockOver, isFalse);
+      expect(state(c).entryOpen, isTrue);
+    },
+  );
 
   test('a network failure on verify is shown, not swallowed', () async {
     repository.verifyFailure = const NetworkFailure();

@@ -9,7 +9,7 @@ Needs the stack served as `docker/README.md` says, the staff accounts of
 (+998 90 000 00 02, also a test phone) orders in Customer mode. The staff
 password, the test phones and their code are read from `backend/.env`;
 variables of the same names in the environment take precedence. Rerunning
-within a minute waits out the code resend limit.
+more than five times an hour hits the send limit.
 
 The Admin completes the settings and the catalog; the Customer fills a cart,
 is refused below the minimum and with online payment, orders with cash
@@ -57,6 +57,7 @@ if SHOPPER_PHONE not in TEST_PHONES:
 
 
 def call(method, path, token=None, body=None, key=None):
+    global RETRY_AFTER
     headers = {"Accept": "application/json"}
     data = None
     if token:
@@ -72,6 +73,7 @@ def call(method, path, token=None, body=None, key=None):
             text = response.read().decode()
             return response.status, (json.loads(text) if text else None)
     except urllib.error.HTTPError as error:
+        RETRY_AFTER = int(error.headers.get("Retry-After", "1"))
         text = error.read().decode()
         return error.code, (json.loads(text) if text else None)
 
@@ -86,18 +88,29 @@ def code(answer):
     return answer and answer.get("code")
 
 
+RETRY_AFTER = 1
+
+
+def request_code(phone):
+    """Asks for a login code; a lock or the per-address minute (Retry-After <= 61 s) is waited out once; the hourly limit is not."""
+    status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
+    # Only the lock and the per-address minute pass by waiting; the hourly limit
+    # does not, and the verify after it then fails as itself.
+    if status == 429 and code(answer) in ("code_locked", "rate_limited") and RETRY_AFTER <= 61:
+        time.sleep(RETRY_AFTER + 1)
+        status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
+    return status, answer
+
+
 def staff(phone):
     status, answer = call("POST", "/auth/staff/login", body={"phone": phone, "password": STAFF_PASSWORD})
     return status, answer
 
 
 def customer_sign_in(phone, name):
-    status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
-    # A resend within the minute waits it out; the hourly limit does not pass
-    # by waiting, and the sign-in below then fails as itself.
-    if code(answer) == "code_resend_too_soon":
-        time.sleep(61)
-        status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
+    # A lock or the per-address minute (Retry-After <= 61 s) is waited out once;
+    # the hourly limit is not.
+    status, answer = request_code(phone)
     status, answer = call("POST", "/auth/customer/code/verify", body={"phone": phone, "code": TEST_CODE})
     token = answer["data"]["token"] if status == 200 else None
     if token:

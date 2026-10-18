@@ -28,6 +28,15 @@
       }
     }
   },
+  "codeLocked": "Код введён неверно 3 раза. Новый код можно запросить через {time}",
+  "@codeLocked": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "codeLockOver": "Запросите новый код",
   "changePhone": "Изменить номер",
   "codeSentToPhone": "Отправили код в Telegram на {phone}",
   "@codeSentToPhone": {
@@ -79,7 +88,7 @@
   "errorCodeInvalid": "Неверный код",
   "errorCodeExpired": "Срок действия кода истёк. Запросите новый",
   "errorCodeAttemptsExhausted": "Попытки закончились. Запросите новый код",
-  "errorCodeResendTooSoon": "Подождите немного перед повторной отправкой кода",
+  "errorCodeLocked": "Слишком много неверных попыток. Подождите немного",
   "errorRateLimited": "Слишком много попыток. Подождите немного",
   "errorProviderUnavailable": "Сервис временно недоступен. Попробуйте позже",
   "errorServiceUnavailable": "Идут технические работы. Попробуйте позже",

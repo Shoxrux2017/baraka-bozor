@@ -57,6 +57,14 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String codeLocked(String time) {
+    return 'Код введён неверно 3 раза. Новый код можно запросить через $time';
+  }
+
+  @override
+  String get codeLockOver => 'Запросите новый код';
+
+  @override
   String get changePhone => 'Изменить номер';
 
   @override
@@ -196,8 +204,8 @@ class AppLocalizationsRu extends AppLocalizations {
       'Попытки закончились. Запросите новый код';
 
   @override
-  String get errorCodeResendTooSoon =>
-      'Подождите немного перед повторной отправкой кода';
+  String get errorCodeLocked =>
+      'Слишком много неверных попыток. Подождите немного';
 
   @override
   String get errorRateLimited => 'Слишком много попыток. Подождите немного';

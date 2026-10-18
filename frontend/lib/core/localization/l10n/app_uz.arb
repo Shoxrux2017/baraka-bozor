@@ -28,6 +28,15 @@
       }
     }
   },
+  "codeLocked": "Kod 3 marta noto'g'ri kiritildi. Yangi kodni {time} dan keyin so'rash mumkin",
+  "@codeLocked": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "codeLockOver": "Yangi kod so'rang",
   "changePhone": "Raqamni o'zgartirish",
   "codeSentToPhone": "Kodni Telegramga yubordik: {phone}",
   "@codeSentToPhone": {
@@ -79,7 +88,7 @@
   "errorCodeInvalid": "Kod noto'g'ri",
   "errorCodeExpired": "Kod muddati tugadi. Yangi kod so'rang",
   "errorCodeAttemptsExhausted": "Urinishlar soni tugadi. Yangi kod so'rang",
-  "errorCodeResendTooSoon": "Kodni qayta yuborishdan oldin biroz kuting",
+  "errorCodeLocked": "Juda ko'p noto'g'ri urinish. Biroz kuting",
   "errorRateLimited": "Urinishlar juda ko'p. Biroz kutib turing",
   "errorProviderUnavailable": "Xizmat vaqtincha ishlamayapti. Keyinroq urinib ko'ring",
   "errorServiceUnavailable": "Texnik ishlar olib borilmoqda. Keyinroq urinib ko'ring",

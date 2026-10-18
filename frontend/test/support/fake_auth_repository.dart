@@ -47,7 +47,7 @@ class FakeAuthRepository implements AuthRepository {
   RequestedCode requestResult = const RequestedCode(
     channel: 'fake',
     expiresInSeconds: 300,
-    resendAvailableInSeconds: 60,
+    resendAvailableInSeconds: 0,
   );
   ApiFailure? requestFailure;
   ApiFailure? changePasswordFailure;

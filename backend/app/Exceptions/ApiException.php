@@ -113,7 +113,7 @@ final class ApiException extends RuntimeException implements ShouldntReport
     }
 
     /**
-     * A `429` refusal with a specific code, such as `code_resend_too_soon`.
+     * A `429` refusal with a specific code, such as `code_locked`.
      */
     public static function tooManyRequests(string $apiCode, int $retryAfterSeconds, string $message = ''): self
     {

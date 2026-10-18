@@ -10,6 +10,7 @@ import '../../../core/widgets/failure_message.dart';
 import '../application/code_login_controller.dart';
 import 'auth_scaffold.dart';
 import 'confirm_phone_dialog.dart';
+import 'lock_message.dart';
 import 'phone_field.dart';
 
 /// Step 1 of `docs/04-user-flows.md` section 2 (screen 02 of
@@ -97,11 +98,31 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                 onSubmitted: (String _) => _submit(),
               ),
               FailureMessage(state.failure),
-              const SizedBox(height: 20),
-              FilledButton(
-                key: const ValueKey<String>('continue-button'),
-                onPressed: state.busy ? null : _submit,
-                child: Text(l10n.getCodeButton),
+              // The lock belongs to one phone: it holds only while that number
+              // is the one typed.
+              ListenableBuilder(
+                listenable: _phone,
+                builder: (BuildContext context, Widget? _) {
+                  final bool locked =
+                      state.locked && PhoneField.phoneOf(_phone) == state.phone;
+                  final bool sameNumber =
+                      PhoneField.phoneOf(_phone) == state.phone;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      LockMessage(
+                        lockedSeconds: locked ? state.lockedSeconds : 0,
+                        lockOver: sameNumber && state.lockOver,
+                      ),
+                      const SizedBox(height: 20),
+                      FilledButton(
+                        key: const ValueKey<String>('continue-button'),
+                        onPressed: state.busy || locked ? null : _submit,
+                        child: Text(l10n.getCodeButton),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 20),
               Row(

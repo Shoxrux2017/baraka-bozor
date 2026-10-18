@@ -12,7 +12,7 @@ its code are read from `backend/.env` (`WALKTHROUGH_STAFF_PASSWORD`, the first
 of `LOGIN_CODE_TEST_PHONES`, `LOGIN_CODE_TEST_CODE`); variables of the same
 names in the environment take precedence. Image URLs are built from
 `APP_URL`, which must be `http://localhost:8000` for the run. Rerunning
-within a minute waits out the code resend limit.
+more than five times an hour hits the send limit.
 
 Admin configures the business, the catalog with an image, and a Shopper;
 the Customer keeps a name, saves an address inside and one outside the
@@ -60,6 +60,7 @@ if SHOPPER_POOL_PHONE not in local_setting("LOGIN_CODE_TEST_PHONES").split(","):
 
 
 def call(method, path, token=None, body=None, raw=None, content_type=None):
+    global RETRY_AFTER
     headers = {"Accept": "application/json"}
     data = None
     if token:
@@ -76,6 +77,7 @@ def call(method, path, token=None, body=None, raw=None, content_type=None):
             text = response.read().decode()
             return response.status, (json.loads(text) if text else None)
     except urllib.error.HTTPError as error:
+        RETRY_AFTER = int(error.headers.get("Retry-After", "1"))
         text = error.read().decode()
         return error.code, (json.loads(text) if text else None)
 
@@ -84,14 +86,25 @@ def code(answer):
     return answer and answer.get("code")
 
 
+RETRY_AFTER = 1
+
+
+def request_code(phone):
+    """Asks for a login code; a lock or the per-address minute (Retry-After <= 61 s) is waited out once; the hourly limit is not."""
+    status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
+    # Only the lock and the per-address minute pass by waiting; the hourly limit
+    # does not, and the verify after it then fails as itself.
+    if status == 429 and code(answer) in ("code_locked", "rate_limited") and RETRY_AFTER <= 61:
+        time.sleep(RETRY_AFTER + 1)
+        status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
+    return status, answer
+
+
 def staff_with_code(phone, password):
     """Shopper and Courier sign in with the login code, then the password (DL-77)."""
-    status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
-    # A resend within the minute waits it out; the hourly limit does not pass
-    # by waiting, and the verify below then fails as itself.
-    if code(answer) == "code_resend_too_soon":
-        time.sleep(61)
-        status, answer = call("POST", "/auth/customer/code/request", body={"phone": phone})
+    # A lock or the per-address minute (Retry-After <= 61 s) is waited out once;
+    # the hourly limit is not.
+    status, answer = request_code(phone)
     status, answer = call("POST", "/auth/customer/code/verify", body={"phone": phone, "code": TEST_CODE})
     if status != 200:
         sys.exit(f"the login code of {phone} was refused: {status} {code(answer)}; "
@@ -237,10 +250,7 @@ status, answer = call("GET", "/admin/staff?role=shopper", admin)
 check("The staff list filters by role", status == 200 and all(m["role"] == "shopper" for m in answer["data"]), f"{status}")
 
 # --- Customer ------------------------------------------------------------
-status, answer = call("POST", "/auth/customer/code/request", body={"phone": TEST_PHONE})
-if status == 429 or (answer and answer.get("code") == "code_resend_too_soon"):
-    time.sleep(61)
-    status, answer = call("POST", "/auth/customer/code/request", body={"phone": TEST_PHONE})
+status, answer = request_code(TEST_PHONE)
 check("The Customer asks for a code", status == 200 and answer["data"]["channel"] == "test", f"{status}")
 status, answer = call("POST", "/auth/customer/code/verify", body={"phone": TEST_PHONE, "code": TEST_CODE})
 check("The Customer signs in", status == 200 and answer["data"]["user"]["role"] == "customer", f"{status}")

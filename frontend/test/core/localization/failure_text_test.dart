@@ -26,8 +26,7 @@ void main() {
           'code_expired': (AppLocalizations l) => l.errorCodeExpired,
           'code_attempts_exhausted': (AppLocalizations l) =>
               l.errorCodeAttemptsExhausted,
-          'code_resend_too_soon': (AppLocalizations l) =>
-              l.errorCodeResendTooSoon,
+          'code_locked': (AppLocalizations l) => l.errorCodeLocked,
           'rate_limited': (AppLocalizations l) => l.errorRateLimited,
           'validation_failed': (AppLocalizations l) => l.errorValidationFailed,
           'forbidden': (AppLocalizations l) => l.errorForbidden,
