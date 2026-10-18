@@ -105,9 +105,11 @@ Before shopping starts: the Customer cancels directly. After shopping starts and
 
 Accept, start (`on_the_way`, delay snapshot), delivered with cash received for cash orders, or not delivered with a reason. Delay past the threshold is derived attention.
 
+While the order is `on_the_way` the Customer sees the Courier's first name and phone on the order and in the list, and may call; in no other status is the Courier shown. A support phone, set by Admin in the business settings, is shown on current orders whatever their status (`DL-91` (2)).
+
 ## 22. Operator and Admin Panel
 
-Web panel. Order board with filters and the summary strip; attention list (approvals the Customer has not answered for ten minutes, expired approvals, unpaid online orders, outstanding refunds, delayed Couriers, failed deliveries, cancellation requests, self-orders, blocked assignees; `DL-54` (13)); assignment; cancellation decisions; switch to cash; refund tracking; Admin-only catalog, staff, settings and provider enablement; audited price correction.
+Web panel. Order board with filters and the summary strip; attention list (approvals the Customer has not answered for ten minutes, expired approvals, unpaid online orders, outstanding refunds, delayed Couriers, failed deliveries, cancellation requests, self-orders, blocked assignees; `DL-54` (13); ratings of 1 to 3 stars until reviewed, `DL-91` (5)); assignment; cancellation decisions; switch to cash; refund tracking; Admin-only catalog, staff, settings and provider enablement; audited price correction.
 
 ## 23. Notifications
 
@@ -116,6 +118,8 @@ Push through FCM behind an abstraction: Customer `order_accepted`, `approval_req
 ## 24. History and Reorder
 
 Own order history with snapshots. Reorder adds the original products at current prices and availability to the active cart, skips duplicates, reports unavailable products, never creates an order by itself.
+
+The Customer rates a delivered order once, within seven days of its delivery: 1 to 5 stars, at 1 to 3 stars with reasons (not fresh, wrong weight, late, rude), and an optional comment. A rating never changes the order; a low one waits for an Operator's review (`BR-RATE-001`…`003`).
 
 ## 25. Business Settings
 

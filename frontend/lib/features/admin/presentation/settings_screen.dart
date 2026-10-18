@@ -90,6 +90,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   late final TextEditingController _longitude;
   late final TextEditingController _radius;
   late final TextEditingController _delay;
+  late final TextEditingController _supportPhone;
   late ServiceFeeMode _mode;
 
   /// The fields the server refused in the last save, by API name. Each is
@@ -117,6 +118,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     _delay = TextEditingController(
       text: s.deliveryDelayThresholdMinutes.toString(),
     );
+    _supportPhone = TextEditingController(text: s.supportPhone ?? '');
     _mode = s.serviceFeeMode;
   }
 
@@ -135,6 +137,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
       _longitude,
       _radius,
       _delay,
+      _supportPhone,
     ]) {
       controller.dispose();
     }
@@ -162,6 +165,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
       serviceCentreLongitude: SettingsFormRules.optional(_longitude.text),
       serviceRadiusKm: SettingsFormRules.optional(_radius.text),
       deliveryDelayThresholdMinutes: int.parse(_delay.text.trim()),
+      supportPhone: SettingsFormRules.optional(_supportPhone.text),
     );
   }
 
@@ -408,6 +412,15 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             SettingsFormRules.minutes,
             keyboard: TextInputType.number,
           ),
+          field(
+            'support_phone',
+            _supportPhone,
+            l10n.settingsSupportPhone,
+            SettingsFormRules.supportPhone,
+            hint: '+998712000000',
+            helper: l10n.settingsSupportPhoneHint,
+            keyboard: TextInputType.phone,
+          ),
           Text(
             l10n.settingsUpdatedAt(
               TashkentTime.format(widget.settings.updatedAt),
@@ -452,6 +465,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     SettingsFieldProblem.minutes => l10n.fieldMinutes,
     SettingsFieldProblem.pairIncomplete => l10n.fieldPairIncomplete,
     SettingsFieldProblem.sameTime => l10n.fieldSameTime,
+    SettingsFieldProblem.supportPhone => l10n.fieldSupportPhone,
   };
 }
 

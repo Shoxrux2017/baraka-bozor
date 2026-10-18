@@ -162,4 +162,23 @@ void main() {
     expect(SettingsFormRules.optional('  09:00 '), '09:00');
     expect(SettingsFormRules.optional('   '), isNull);
   });
+
+  test('the support phone is empty, or +998 and nine digits', () {
+    expect(SettingsFormRules.supportPhone(''), ok);
+    expect(SettingsFormRules.supportPhone('  '), ok);
+    expect(SettingsFormRules.supportPhone('+998712000000'), ok);
+    for (final String value in <String>[
+      '998712000000',
+      '+99871200000',
+      '+9987120000000',
+      '+998 71 200 00 00',
+      'abc',
+    ]) {
+      expect(
+        SettingsFormRules.supportPhone(value),
+        SettingsFieldProblem.supportPhone,
+        reason: value,
+      );
+    }
+  });
 }

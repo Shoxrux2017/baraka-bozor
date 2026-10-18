@@ -108,6 +108,7 @@ void main() {
             serviceCentreLongitude: null,
             serviceRadiusKm: null,
             deliveryDelayThresholdMinutes: 30,
+            supportPhone: null,
           ),
           settings(),
         );
@@ -156,6 +157,7 @@ void main() {
             serviceCentreLongitude: null,
             serviceRadiusKm: null,
             deliveryDelayThresholdMinutes: 30,
+            supportPhone: null,
           ),
           settings(),
         );

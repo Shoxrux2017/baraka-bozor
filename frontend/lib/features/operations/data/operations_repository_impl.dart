@@ -78,6 +78,10 @@ class OperationsRepositoryImpl implements OperationsRepository {
       guardApiCall(() => _api.cancelAfterFailedDelivery(orderId, note));
 
   @override
+  Future<BoardOrder> reviewRating(String orderId) =>
+      guardApiCall(() => _api.reviewRating(orderId));
+
+  @override
   Future<BoardOrder> correctPrice(
     String orderId,
     String itemId,

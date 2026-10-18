@@ -212,6 +212,20 @@ class OperationsApi {
     return order;
   }
 
+  /// `POST /operations/orders/{order}/rating/review` (`docs/09` section 60):
+  /// the Customer was contacted about the low rating. No body.
+  Future<BoardOrder> reviewRating(String orderId) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '/operations/orders/${Uri.encodeComponent(orderId)}/rating/review',
+      options: _staff,
+    );
+    final BoardOrder order = _answerFor(response, orderId);
+    if (order.rating?.isReviewed != true) {
+      throw const FormatException('the answer does not show the review');
+    }
+    return order;
+  }
+
   /// The order an action on [orderId] answers, which must be that order.
   static BoardOrder _answerFor(Response<dynamic> response, String orderId) {
     final BoardOrder order = parseOrder(ApiEnvelope.unwrap(response.data));
@@ -570,7 +584,41 @@ class OperationsApi {
       createdAt: timestamps.instant('created_at'),
       completedAt: timestamps.nullableInstant('completed_at'),
       cancelledAt: timestamps.nullableInstant('cancelled_at'),
+      rating: json.member('rating') == null
+          ? null
+          : _rating(json.member('rating')),
     );
+  }
+
+  static OrderRating _rating(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'rating');
+    final int stars = json.integer('stars');
+    if (stars < 1 || stars > 5) {
+      throw FormatException('stars is not 1 to 5: $stars');
+    }
+    final Object? codes = json.member('reasons');
+    if (codes is! List<dynamic> || !codes.every((Object? c) => c is String)) {
+      throw const FormatException('reasons is not a list of strings');
+    }
+    final Object? reviewedBy = json.member('reviewed_by');
+    final OrderRating rating = OrderRating(
+      stars: stars,
+      // A reason this client does not know yet is left out, not refused.
+      reasons: <RatingReason>[
+        for (final Object? code in codes)
+          ?RatingReason.tryParse(code! as String),
+      ],
+      comment: json.nullableString('comment'),
+      createdAt: json.instant('created_at'),
+      reviewedBy: reviewedBy == null
+          ? null
+          : _person(reviewedBy, 'reviewed_by'),
+      reviewedAt: json.nullableInstant('reviewed_at'),
+    );
+    if ((rating.reviewedBy == null) != (rating.reviewedAt == null)) {
+      throw const FormatException('a review without its reviewer or instant');
+    }
+    return rating;
   }
 
   static BoardItem _item(Object? raw) {

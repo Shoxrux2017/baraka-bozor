@@ -174,6 +174,13 @@ class _Order extends StatelessWidget {
           title: l10n.orderSectionPayment,
           children: <Widget>[PaymentDetails(order: order)],
         ),
+        if (order.rating != null)
+          _Section(
+            title: l10n.ratingTitle,
+            children: <Widget>[
+              RatingDetails(order: order, rating: order.rating!),
+            ],
+          ),
         _Section(
           title: l10n.orderSectionCancellationRequests,
           children: <Widget>[

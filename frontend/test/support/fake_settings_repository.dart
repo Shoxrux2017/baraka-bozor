@@ -20,6 +20,7 @@ BusinessSettings settings({
   String? serviceCentreLongitude = '69.240562',
   String? serviceRadiusKm = '5.00',
   int deliveryDelayThresholdMinutes = 30,
+  String? supportPhone = '+998712000000',
   DateTime? updatedAt,
 }) {
   return BusinessSettings(
@@ -36,6 +37,7 @@ BusinessSettings settings({
     serviceCentreLongitude: serviceCentreLongitude,
     serviceRadiusKm: serviceRadiusKm,
     deliveryDelayThresholdMinutes: deliveryDelayThresholdMinutes,
+    supportPhone: supportPhone,
     updatedAt: updatedAt ?? DateTime.utc(2026, 9, 26, 5),
   );
 }
@@ -153,6 +155,7 @@ class FakeSettingsRepository implements SettingsRepository {
     serviceCentreLongitude: draft.serviceCentreLongitude,
     serviceRadiusKm: draft.serviceRadiusKm,
     deliveryDelayThresholdMinutes: draft.deliveryDelayThresholdMinutes,
+    supportPhone: draft.supportPhone,
     updatedAt: DateTime.utc(2026, 9, 26, 6),
   );
 }

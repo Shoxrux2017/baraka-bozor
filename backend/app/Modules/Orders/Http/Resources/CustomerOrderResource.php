@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Orders\Http\Resources;
 
+use App\Models\BusinessSettings;
 use App\Models\CustomerApproval;
 use App\Models\Enums\ApprovalType;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Modules\Catalog\ProductImages;
 use App\Modules\Orders\ApprovalExpiry;
+use App\Modules\Orders\CourierContact;
 use App\Modules\Orders\OrderPermissions;
+use App\Modules\Orders\OrderRatings;
 use App\Modules\Orders\OrderTotals;
 use App\Modules\Orders\QuantityPolicy;
 use App\Modules\Orders\ShopperLine;
@@ -24,10 +28,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * `DL-37` (10) defines them, the address it goes to, the delivery wish, what
  * the Customer may do with it now, its open questions (`DL-59` (2)), and its
  * instants, and the payment once made: the cash the Courier took at the door
- * (`DL-64` (4)). Refunds arrive with Wave 5; until then the list is empty.
+ * (`DL-64` (4)), and the Customer's rating of it with whether it can still be
+ * rated (`DL-91` (4)). Refunds arrive with Wave 5; until then the list is empty.
  *
- * Expects `items`, `currentShopperAssignment`, `approvals`, `livePayment` and
- * `latestCancellationRequest` loaded.
+ * Expects `items.product.image`, `currentShopperAssignment`,
+ * `currentCourierAssignment.courier`, `approvals`, `livePayment` and
+ * `latestCancellationRequest` and `rating` loaded.
  *
  * @property-read Order $resource
  */
@@ -70,6 +76,13 @@ final class CustomerOrderResource extends JsonResource
                 'created_at' => self::instant($order->latestCancellationRequest->created_at),
                 'resolved_at' => self::instant($order->latestCancellationRequest->resolved_at),
             ],
+            'rating' => $order->rating === null ? null : [
+                'stars' => $order->rating->stars,
+                'reasons' => $order->rating->reasons,
+                'comment' => $order->rating->comment,
+                'created_at' => self::instant($order->rating->created_at),
+            ],
+            'can_rate' => OrderRatings::canRate($order, $now),
             'items' => $items->map(fn (OrderItem $item): array => $this->item($item, $order, $now))->all(),
             'totals' => [
                 'merchandise_subtotal_uzs' => $totals->merchandiseSubtotalUzs,
@@ -87,6 +100,9 @@ final class CustomerOrderResource extends JsonResource
                 'landmark' => $order->landmark_snapshot,
                 'delivery_note' => $order->delivery_note_snapshot,
             ],
+            // Only while the order is on the way (DL-91 (2)).
+            'courier' => CourierContact::of($order),
+            'support_phone' => BusinessSettings::current()->support_phone,
             'cancellation_reason_code' => $order->cancellation_reason_code?->value,
             // The payment made, once there is one (DL-64 (4)).
             'payment' => $order->livePayment === null ? null : [
@@ -122,6 +138,8 @@ final class CustomerOrderResource extends JsonResource
             'product_id' => $item->product_id,
             'name_uz' => $item->product_name_uz_snapshot,
             'name_ru' => $item->product_name_ru_snapshot,
+            // The product's picture now, not a snapshot (DL-91 (1)).
+            'image_url' => ProductImages::url($item->product?->image),
             'unit_code' => $item->unit_code_snapshot->value,
             'price_mode' => $item->price_mode_snapshot->value,
             'quantity' => QuantityPolicy::format($item->unit_code_snapshot, $item->ordered_quantity),

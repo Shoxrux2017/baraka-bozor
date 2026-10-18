@@ -178,6 +178,34 @@ void main() {
     },
   );
 
+  for (final (Locale, String) language in const <(Locale, String)>[
+    (Locale('uz'), 'Past baho'),
+    (Locale('ru'), 'Низкая оценка'),
+  ]) {
+    testWidgets('a low_rating attention item reads as a low rating', (
+      WidgetTester tester,
+    ) async {
+      operations.attentionAnswer = <AttentionItem>[
+        OperationsApi.parseAttention(<String, Object?>{
+          ...attentionJson(),
+          'type': 'low_rating',
+          'shopper': null,
+        }),
+      ];
+
+      await open(tester, device: language.$1);
+
+      expect(l10n(tester).attentionLowRating, language.$2);
+      expect(
+        find.descendant(
+          of: byKey('attention-low_rating-$orderA'),
+          matching: find.textContaining(language.$2),
+        ),
+        findsOneWidget,
+      );
+    });
+  }
+
   testWidgets(
     'a row names its Courier and the Customer\'s open questions, in a table and a card',
     (WidgetTester tester) async {

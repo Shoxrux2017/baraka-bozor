@@ -5167,6 +5167,78 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Yetkazish:'**
   String get cartDeliveryTo;
+
+  /// No description provided for @settingsSupportPhone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'llab-quvvatlash telefoni'**
+  String get settingsSupportPhone;
+
+  /// No description provided for @settingsSupportPhoneHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'+998 va 9 raqam; bo\'sh bo\'lsa tugma ko\'rinmaydi'**
+  String get settingsSupportPhoneHint;
+
+  /// No description provided for @fieldSupportPhone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqamni kiriting: +998 va 9 raqam'**
+  String get fieldSupportPhone;
+
+  /// No description provided for @attentionLowRating.
+  ///
+  /// In uz, this message translates to:
+  /// **'Past baho'**
+  String get attentionLowRating;
+
+  /// No description provided for @ratingTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz bahosi'**
+  String get ratingTitle;
+
+  /// No description provided for @ratingStars.
+  ///
+  /// In uz, this message translates to:
+  /// **'Baho: 5 dan {count}'**
+  String ratingStars(int count);
+
+  /// No description provided for @ratingReasonNotFresh.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi emas'**
+  String get ratingReasonNotFresh;
+
+  /// No description provided for @ratingReasonWrongWeight.
+  ///
+  /// In uz, this message translates to:
+  /// **'Og\'irligi noto\'g\'ri'**
+  String get ratingReasonWrongWeight;
+
+  /// No description provided for @ratingReasonLate.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kechikdi'**
+  String get ratingReasonLate;
+
+  /// No description provided for @ratingReasonRude.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'pol'**
+  String get ratingReasonRude;
+
+  /// No description provided for @ratingReview.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz bilan bog\'lanildi'**
+  String get ratingReview;
+
+  /// No description provided for @ratingReviewed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'rib chiqildi: {name}, {time}'**
+  String ratingReviewed(String name, String time);
 }
 
 class _AppLocalizationsDelegate

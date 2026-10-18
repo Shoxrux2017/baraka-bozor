@@ -48,6 +48,7 @@ final class BusinessSettingsTableTest extends TestCase
             'service_centre_longitude' => ['numeric', true],
             'service_radius_km' => ['numeric', true],
             'delivery_delay_threshold_minutes' => ['integer', false],
+            'support_phone' => ['character varying', true],
             'updated_by_user_id' => ['uuid', true],
             'created_at' => ['timestamp with time zone', false],
             'updated_at' => ['timestamp with time zone', false],
@@ -86,7 +87,7 @@ final class BusinessSettingsTableTest extends TestCase
         foreach ([
             'service_fee_fixed_uzs', 'service_fee_percent', 'delivery_fee_uzs', 'minimum_order_uzs',
             'opens_at', 'closes_at', 'service_centre_latitude', 'service_centre_longitude',
-            'service_radius_km', 'updated_by_user_id',
+            'service_radius_km', 'support_phone', 'updated_by_user_id',
         ] as $unset) {
             $this->assertNull($row->{$unset}, "{$unset} starts unset until Admin configures it (BR-SET-002).");
         }

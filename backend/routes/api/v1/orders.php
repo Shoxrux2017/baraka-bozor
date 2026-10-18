@@ -10,6 +10,7 @@ use App\Modules\Orders\Http\Controllers\CartController;
 use App\Modules\Orders\Http\Controllers\CheckoutController;
 use App\Modules\Orders\Http\Controllers\CustomerApprovalController;
 use App\Modules\Orders\Http\Controllers\CustomerOrderController;
+use App\Modules\Orders\Http\Controllers\ReorderController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -46,6 +47,14 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Custome
         Route::post('orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])
             ->middleware(RequireIdempotencyKey::class)
             ->name('customer.orders.cancel');
+        // The identical repeat is the retry (docs/09 section 49), so the
+        // call takes no idempotency key.
+        Route::post('orders/{order}/rating', [CustomerOrderController::class, 'rate'])
+            ->middleware('throttle:30,1')
+            ->name('customer.orders.rating.store');
+        Route::post('orders/{order}/reorder', [ReorderController::class, 'store'])
+            ->middleware(RequireIdempotencyKey::class)
+            ->name('customer.orders.reorder');
 
         Route::get('approvals', [CustomerApprovalController::class, 'index'])->name('customer.approvals.index');
         Route::get('approvals/{approval}', [CustomerApprovalController::class, 'show'])->name('customer.approvals.show');

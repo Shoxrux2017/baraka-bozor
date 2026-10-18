@@ -7,6 +7,7 @@ namespace App\Modules\Settings\Http\Requests;
 use App\Http\Requests\Concerns\RefusesEmptyPatch;
 use App\Http\Requests\StrictFormRequest;
 use App\Models\Enums\ServiceFeeMode;
+use App\Modules\Auth\LoginCodePolicy;
 use Illuminate\Validation\Rule;
 
 /**
@@ -55,6 +56,7 @@ final class UpdateBusinessSettingsRequest extends StrictFormRequest
                 'sometimes', 'nullable', 'string', 'regex:/^\d{1,4}(\.\d{1,2})?\z/', 'numeric', 'gt:0',
             ],
             'delivery_delay_threshold_minutes' => ['sometimes', 'required', 'integer:strict', 'min:1', 'max:1440'],
+            'support_phone' => ['sometimes', 'nullable', 'string', 'regex:'.LoginCodePolicy::PHONE_PATTERN],
         ];
     }
 }

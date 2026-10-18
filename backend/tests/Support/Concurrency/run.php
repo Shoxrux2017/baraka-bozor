@@ -30,6 +30,7 @@ use App\Modules\Orders\Actions\DecideCancellationRequest;
 use App\Modules\Orders\Actions\EditOrderItems;
 use App\Modules\Orders\Actions\MarkItemUnavailable;
 use App\Modules\Orders\Actions\RecordPurchase;
+use App\Modules\Orders\Actions\ReorderOrder;
 use App\Modules\Orders\Actions\StartDelivery;
 use App\Modules\Orders\Actions\StartShopping;
 use Illuminate\Contracts\Console\Kernel;
@@ -121,6 +122,13 @@ try {
                 $arguments[2],
                 null,
             )->id,
+        ],
+        'customer.reorder' => [
+            'answer' => $app->make(ReorderOrder::class)->reorder(
+                User::query()->findOrFail($arguments[0]),
+                $arguments[1],
+                $arguments[2],
+            ),
         ],
         'customer.decide' => [
             'approval_id' => $app->make(DecideApproval::class)->decide(

@@ -89,8 +89,8 @@ class FakeOperationsRepository implements OperationsRepository {
   /// Every action on an order asked for, as
   /// `remove-expired:<order>:<approval>:<note>`,
   /// `decide:<order>:<request>:<decision>:<note>`,
-  /// `cancel-failed:<order>:<note>` or
-  /// `correct:<order>:<item>:<price>:<reason>`.
+  /// `cancel-failed:<order>:<note>`,
+  /// `correct:<order>:<item>:<price>:<reason>` or `review-rating:<order>`.
   final List<String> actions = <String>[];
 
   /// The order each action answers, which also becomes the order's detail
@@ -228,6 +228,10 @@ class FakeOperationsRepository implements OperationsRepository {
   @override
   Future<BoardOrder> cancelAfterFailedDelivery(String orderId, String? note) =>
       _act(orderId, 'cancel-failed:$orderId:$note');
+
+  @override
+  Future<BoardOrder> reviewRating(String orderId) =>
+      _act(orderId, 'review-rating:$orderId');
 
   @override
   Future<BoardOrder> correctPrice(

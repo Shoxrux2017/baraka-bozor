@@ -302,6 +302,8 @@ Customer: `order_accepted`, `approval_required`, `payment_required`, `courier_st
 
 **BR-HIST-004** — Reorder never creates an order.
 
+**BR-HIST-005** — A product already in the cart keeps its line; one that would exceed the cart's 100 lines is reported, not added.
+
 # 20. Figures
 
 Deferred past the pilot. When built: orders created by `created_at`; completed by `completed_at`; cancelled by `cancelled_at`; gross sales = sum of `final_total_uzs` of completed orders; service revenue = sum of `final_service_fee_uzs`; markup revenue = sum over purchased lines of `line_total − half_up(actual_market_price × billable_quantity)` where the actual price is known; average order value; average fulfilment time; popular products by completed orders containing the fulfilled product, quantities per unit; staff activity per member: shopping runs and deliveries completed, average duration.
@@ -321,3 +323,11 @@ Deferred past the pilot. When built: orders created by `created_at`; completed b
 # 22. Traceability
 
 Preserve explainable history for order lifecycle, edits, assignments, approvals, price corrections, cancellations, payments and attempts, provider events, refunds and delivery failures. No path bypasses this history.
+
+# 23. Ratings
+
+**BR-RATE-001** — A completed order has at most one rating, given by its Customer within seven days of its completion; the order is never changed by it.
+
+**BR-RATE-002** — A rating is 1 to 5 stars; reasons are given only at 1 to 3 stars, each at most once.
+
+**BR-RATE-003** — A rating of 1 to 3 stars waits for an Operator's review.

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Orders;
 
 use App\Models\Enums\ApprovalStatus;
+use App\Models\Enums\OrderItemStatus;
+use App\Models\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,5 +41,45 @@ final class CustomerOrders
             ->whereColumn('customer_approvals.order_id', 'orders.id')
             ->where('customer_approvals.status', ApprovalStatus::Pending->value)
             ->where('customer_approvals.expires_at', '>', now())]);
+    }
+
+    /**
+     * The `current` tab is every status but `completed` and `cancelled`, the
+     * `past` tab those two; no state leaves the list whole (`DL-91` (1)).
+     *
+     * @param  Builder<Order>  $orders
+     * @return Builder<Order>
+     */
+    public static function inState(Builder $orders, ?string $state): Builder
+    {
+        $past = [OrderStatus::Completed->value, OrderStatus::Cancelled->value];
+
+        return match ($state) {
+            'current' => $orders->whereNotIn('status', $past),
+            'past' => $orders->whereIn('status', $past),
+            default => $orders,
+        };
+    }
+
+    /**
+     * Adds `picture_storage_key`: the current picture of the earliest line
+     * (by creation, then id) whose product has one, a line that is not removed
+     * before a removed one — so an order whose every line is removed still
+     * shows its earliest picture — and `null` when no product has one
+     * (`DL-91` (1)).
+     *
+     * @param  Builder<Order>  $orders
+     * @return Builder<Order>
+     */
+    public static function withPictureKey(Builder $orders): Builder
+    {
+        return $orders->addSelect(['picture_storage_key' => static fn (QueryBuilder $pictures) => $pictures->from('order_items')
+            ->join('product_images', 'product_images.product_id', '=', 'order_items.product_id')
+            ->select('product_images.storage_key')
+            ->whereColumn('order_items.order_id', 'orders.id')
+            ->orderByRaw('order_items.status = ?', [OrderItemStatus::Removed->value])
+            ->orderBy('order_items.created_at')
+            ->orderBy('order_items.id')
+            ->limit(1)]);
     }
 }

@@ -14,6 +14,7 @@ Map<String, dynamic> businessJson() => <String, dynamic>{
   'service_centre_longitude': '69.240562',
   'service_radius_km': '5.00',
   'delivery_delay_threshold_minutes': 30,
+  'support_phone': '+998712000000',
   'updated_at': '2026-09-26T05:00:00Z',
 };
 

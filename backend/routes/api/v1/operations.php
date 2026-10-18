@@ -53,6 +53,8 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Operato
             ->name('operations.cancellation-requests.decision');
         Route::post('orders/{order}/cancel', [OperationsOrderController::class, 'cancel'])
             ->name('operations.orders.cancel');
+        Route::post('orders/{order}/rating/review', [OperationsOrderController::class, 'reviewRating'])
+            ->name('operations.orders.rating.review');
     });
 
 // The Admin's correction of a price paid, which no Operator makes (docs/02

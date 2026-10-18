@@ -9,6 +9,7 @@ abstract final class SettingsDto {
   static final RegExp _latitude = RegExp(r'^-?\d{1,2}(\.\d{1,6})?$');
   static final RegExp _longitude = RegExp(r'^-?\d{1,3}(\.\d{1,6})?$');
   static final RegExp _radius = RegExp(r'^\d{1,4}(\.\d{1,2})?$');
+  static final RegExp _phone = RegExp(r'^\+998[0-9]{9}$');
 
   /// The settings, their values in the shapes the contract gives them and
   /// its invariants holding: the value of the fee mode not chosen is `null`,
@@ -65,6 +66,11 @@ abstract final class SettingsDto {
       deliveryDelayThresholdMinutes: json.integer(
         'delivery_delay_threshold_minutes',
       ),
+      supportPhone: _shapedOrNull(
+        json.nullableString('support_phone'),
+        _phone,
+        'support_phone',
+      ),
       updatedAt: json.instant('updated_at'),
     );
 
@@ -120,6 +126,7 @@ abstract final class SettingsDto {
       'service_centre_longitude': draft.serviceCentreLongitude,
       'service_radius_km': draft.serviceRadiusKm,
       'delivery_delay_threshold_minutes': draft.deliveryDelayThresholdMinutes,
+      'support_phone': draft.supportPhone,
     };
   }
 

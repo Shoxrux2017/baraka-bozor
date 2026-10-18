@@ -196,6 +196,7 @@ enum AttentionType {
   cancellationRequest('cancellation_request'),
   staffBlocked('staff_blocked'),
   selfOrder('self_order'),
+  lowRating('low_rating'),
 
   /// A type this client does not know yet: a later wave's, shown in general
   /// words rather than refusing the whole list (`DL-54` (21), `DL-60`).
@@ -243,6 +244,50 @@ final class AttentionItem {
   final PersonRef? courier;
 }
 
+/// Why a Customer gave a low rating (`docs/09` section 59).
+enum RatingReason {
+  notFresh('not_fresh'),
+  wrongWeight('wrong_weight'),
+  late('late'),
+  rude('rude');
+
+  const RatingReason(this.code);
+
+  final String code;
+
+  static RatingReason? tryParse(String code) {
+    for (final RatingReason reason in values) {
+      if (reason.code == code) {
+        return reason;
+      }
+    }
+    return null;
+  }
+}
+
+/// The Customer's rating of a delivered order and, once an Operator or an
+/// Admin has dealt with it, who did and when (`docs/09` sections 59 and 60).
+final class OrderRating {
+  const OrderRating({
+    required this.stars,
+    required this.reasons,
+    required this.comment,
+    required this.createdAt,
+    required this.reviewedBy,
+    required this.reviewedAt,
+  });
+
+  /// 1 to 5.
+  final int stars;
+  final List<RatingReason> reasons;
+  final String? comment;
+  final DateTime createdAt;
+  final PersonRef? reviewedBy;
+  final DateTime? reviewedAt;
+
+  bool get isReviewed => reviewedAt != null;
+}
+
 /// An order as the Operator and the Admin see it (`docs/09` section 38).
 final class BoardOrder {
   const BoardOrder({
@@ -265,6 +310,7 @@ final class BoardOrder {
     required this.createdAt,
     required this.completedAt,
     required this.cancelledAt,
+    required this.rating,
   });
 
   final String id;
@@ -298,6 +344,10 @@ final class BoardOrder {
   final DateTime createdAt;
   final DateTime? completedAt;
   final DateTime? cancelledAt;
+
+  /// The Customer's rating of the delivered order, `null` until given
+  /// (`DL-91`).
+  final OrderRating? rating;
 
   /// The Shopper assignment that has not ended, if any.
   ShopperAssignment? get currentAssignment {

@@ -12,6 +12,7 @@ use App\Models\Enums\Role;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\OrderItem;
+use App\Models\OrderRating;
 use App\Models\OrderShopperAssignment;
 use App\Models\Product;
 use App\Models\User;
@@ -230,6 +231,42 @@ final class OperationsBoardApiTest extends TestCase
         $this->assertSame([], $this->as($this->operator)->getJson('/api/v1/operations/attention')->json('data'));
         $this->assertIds([], ['attention' => 'self_order']);
         $this->as($this->operator)->getJson('/api/v1/operations/summary')->assertJsonPath('data.attention_count', 0);
+    }
+
+    public function test_a_low_rating_enters_the_attention_list_until_reviewed(): void
+    {
+        $low = OrderRating::factory()->low(2)->create();
+        $reviewed = OrderRating::factory()->low(3)->create(['reviewed_by_user_id' => $this->operator->id, 'reviewed_at' => now()]);
+        $high = OrderRating::factory()->create(['stars' => 5]);
+        $order = Order::query()->findOrFail($low->order_id);
+
+        $items = $this->as($this->operator)->getJson('/api/v1/operations/attention')->assertOk()->json('data');
+
+        $this->assertCount(1, $items);
+        $this->assertSame('low_rating', $items[0]['type']);
+        $this->assertSame($order->id, $items[0]['order_id']);
+        $this->assertSame($order->order_number, $items[0]['order_number']);
+        $this->assertSame($low->created_at->toIso8601ZuluString(), $items[0]['since']);
+        $shopper = $order->shopperAssignments()->latest('assigned_at')->firstOrFail()->shopper;
+        $courier = $order->courierAssignments()->latest('assigned_at')->firstOrFail()->courier;
+        $this->assertSame(['id' => $shopper->id, 'full_name' => $shopper->full_name], $items[0]['shopper']);
+        $this->assertSame(['id' => $courier->id, 'full_name' => $courier->full_name], $items[0]['courier']);
+        $this->as($this->operator)->getJson('/api/v1/operations/summary')->assertJsonPath('data.attention_count', 1);
+        $this->assertIds([$order->id], ['attention' => 'low_rating']);
+        $this->assertNotContains($reviewed->order_id, array_column($items, 'order_id'));
+        $this->assertNotContains($high->order_id, array_column($items, 'order_id'));
+    }
+
+    public function test_the_edge_of_a_low_rating_is_three_stars(): void
+    {
+        $three = OrderRating::factory()->low(3)->create();
+        $four = OrderRating::factory()->create(['stars' => 4]);
+
+        $ids = array_column($this->as($this->operator)->getJson('/api/v1/operations/attention')->assertOk()->json('data'), 'order_id');
+
+        $this->assertSame([$three->order_id], $ids);
+        $this->assertNotContains($four->order_id, $ids);
+        $this->assertIds([$three->order_id], ['attention' => 'low_rating']);
     }
 
     private function selfOrder(CarbonInterface $assignedAt): Order

@@ -251,6 +251,9 @@ class OrderActionController extends AccountMutation {
   Future<BoardOrder?> cancelAfterFailedDelivery(String? note) =>
       _act(() => _operations.cancelAfterFailedDelivery(orderId, note));
 
+  Future<BoardOrder?> reviewRating() =>
+      _act(() => _operations.reviewRating(orderId));
+
   Future<BoardOrder?> correctPrice(
     String itemId,
     int actualMarketPriceUzs,

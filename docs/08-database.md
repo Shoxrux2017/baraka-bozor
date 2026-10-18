@@ -21,7 +21,7 @@ business_settings           payment_provider_settings
 orders                      order_items              order_history
 order_shopper_assignments   order_courier_assignments
 customer_approvals          order_item_price_corrections
-order_cancellation_requests
+order_cancellation_requests   order_ratings
 payments                    payment_attempts         provider_events
 refunds
 push_devices                notification_deliveries
@@ -70,7 +70,7 @@ The customer price is computed, never stored on the product: `half_up(market_pri
 
 ## 11. `business_settings` (migrated)
 
-Singleton `id = 1`: `markup_percent ≥ 0, service_fee_mode (fixed|percentage), service_fee_fixed_uzs?, service_fee_percent?, delivery_fee_uzs?, minimum_order_uzs?, price_tolerance_percent (default 15), opens_at time?, closes_at time?, service_centre_latitude?, service_centre_longitude?, service_radius_km?, delivery_delay_threshold_minutes (default 60), updated_by_user_id?, timestamps`. Checks: the singleton `id = 1`; every amount, percentage and the tolerance non-negative; `service_radius_km numeric(6,2) > 0`; `delivery_delay_threshold_minutes > 0`; the centre within coordinate ranges; `opens_at` and `closes_at` both set or both null; the cross-field check on the service-fee mode. Nullable fields stay null until Admin configures them; checkout is blocked while any needed value is null. The cross-field check: in `fixed` mode `service_fee_percent` is null, in `percentage` mode `service_fee_fixed_uzs` is null, so the value of the inactive mode can never linger. The row `id = 1` is inserted by the migration with the documented defaults (`DL-17`).
+Singleton `id = 1`: `markup_percent ≥ 0, service_fee_mode (fixed|percentage), service_fee_fixed_uzs?, service_fee_percent?, delivery_fee_uzs?, minimum_order_uzs?, price_tolerance_percent (default 15), opens_at time?, closes_at time?, service_centre_latitude?, service_centre_longitude?, service_radius_km?, delivery_delay_threshold_minutes (default 60), support_phone varchar(13)?, updated_by_user_id?, timestamps`. Checks: the singleton `id = 1`; every amount, percentage and the tolerance non-negative; `service_radius_km numeric(6,2) > 0`; `delivery_delay_threshold_minutes > 0`; the centre within coordinate ranges; `support_phone` null or `+998` and nine digits (`business_settings_support_phone_check`, `DL-91` (2)); `opens_at` and `closes_at` both set or both null; the cross-field check on the service-fee mode. Nullable fields stay null until Admin configures them; checkout is blocked while any needed value is null. The cross-field check: in `fixed` mode `service_fee_percent` is null, in `percentage` mode `service_fee_fixed_uzs` is null, so the value of the inactive mode can never linger. The row `id = 1` is inserted by the migration with the documented defaults (`DL-17`).
 
 ## 12. `payment_provider_settings` (migrated)
 
@@ -189,7 +189,7 @@ Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per or
 
 ## 27. `idempotency_keys`
 
-`id, actor_user_id, operation varchar(80), idempotency_key uuid, request_hash char(64) (lower-case hex), state (processing|completed), attempt_token uuid, lease_expires_at, resource_type?, resource_id?, created_at, completed_at?`. A completed key names its resource. Index `completed_at` for pruning. `attempt_token` is renewed by every `begin` and takeover; completion and a failed attempt's delete act only on a `processing` row with their own token (`DL-37` (5), `DL-39`). Unique `(actor_user_id, operation, idempotency_key)`. Completed rows may be pruned after 30 days.
+`id, actor_user_id, operation varchar(80), idempotency_key uuid, request_hash char(64) (lower-case hex), state (processing|completed), attempt_token uuid, lease_expires_at, resource_type?, resource_id?, response jsonb?, created_at, completed_at?`. A completed key names its resource or holds a `response`, the stored answer of an operation that produces no single resource, such as a reorder, which a replay returns unchanged (`DL-91` item 3). Index `completed_at` for pruning. `attempt_token` is renewed by every `begin` and takeover; completion and a failed attempt's delete act only on a `processing` row with their own token (`DL-37` (5), `DL-39`). Unique `(actor_user_id, operation, idempotency_key)`. Completed rows may be pruned after 30 days.
 
 ## 28. Deletion Strategy
 
@@ -212,3 +212,7 @@ Markets, cities, sellers, warehouses, inventory, promotions, bonuses, subscripti
 ## 32. `customer_favorites` (migrated)
 
 `id, customer_id → users (restrict), product_id → products (restrict), created_at`. Unique `(customer_id, product_id)`; index `(customer_id, created_at desc, id desc)` serves the list, newest first. At most 500 rows per Customer, held by the application under a lock on the Customer's row (`DL-79` (5)).
+
+## 33. `order_ratings`
+
+`id, order_id → orders (unique, restrict), customer_id → users (restrict), stars smallint, reasons jsonb not null default '[]', comment varchar(500)?, reviewed_by_user_id → users (restrict)?, reviewed_at timestamptz?, timestamps`. `stars` from 1 to 5 (`order_ratings_stars_check`); `reasons` a JSON array (`order_ratings_reasons_type_check`) that is empty above 3 stars (`order_ratings_reasons_check`, `BR-RATE-002`); `reviewed_by_user_id` and `reviewed_at` are both set or both null (`order_ratings_reviewed_check`, `BR-RATE-003`). One rating per order (`BR-RATE-001`); the window of seven days is the application's (`DL-91` (4)).

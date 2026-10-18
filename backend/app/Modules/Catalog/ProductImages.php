@@ -37,6 +37,11 @@ final class ProductImages
 
     public static function url(?ProductImage $image): ?string
     {
-        return $image === null ? null : Storage::disk(self::DISK)->url($image->storage_key);
+        return self::urlOfKey($image?->storage_key);
+    }
+
+    public static function urlOfKey(?string $storageKey): ?string
+    {
+        return $storageKey === null ? null : Storage::disk(self::DISK)->url($storageKey);
     }
 }

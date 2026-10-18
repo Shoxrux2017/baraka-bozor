@@ -1314,3 +1314,25 @@ For the Customer's checkout this entry supersedes `DL-50` (2) (an explicit "Ра
 5. **"Заказ оформлен" replaces the screen;** back goes home.
 
 6. **Online stays visible and inactive with "Скоро" until Wave 5** (`docs/06` section 2, `DL-37` (3)). Promo codes, discounts and an in-app card form are not drawn (promotions post-MVP, `docs/01` section 20); a saved-card question goes to the Owner with Wave 5.
+
+## DL-90 — Orders, kit stage 6 (2026-10-18, Owner)
+
+Answers to the questions of kit stage 6 (`kit/06-zakazy.dc.html`, approved the same day).
+
+1. **Rating.** After delivery the Customer rates the whole order — freshness, weight and delivery together, not the Courier alone — with 1 to 5 stars and an optional comment. At 1 to 3 stars the Customer may also pick reasons: "Несвежее", "Не тот вес", "Опоздал", "Невежливо". Operators and Admins see the rating on the order in the panel. A rating of 1 to 3 enters the Operator's attention list, and the Operator calls the Customer. Tips wait for card payments (Wave 5).
+2. **Calls.** While a Courier takes the order to the Customer, the order shows "Позвонить курьеру" with the Courier's number; once the order is delivered the number is gone. Every current order shows "Позвонить в поддержку" with the company's number, which the Admin sets in the settings; without a number the button is hidden. Masked numbers through a telephony provider are for later.
+3. **No notifications list.** The kit's notifications screen is not built: the order page shows the status, and Wave 4's pushes notify. While a Shopper's question waits for the Customer, the home shows "Сборщик ждёт вашего ответа" with "Ответить".
+4. **No chat.** Interview 7.3 stands; the kit's chat screen is dropped.
+
+## DL-91 — Orders server and panel, kit stage 6a (2026-10-18, agent)
+
+1. **The list splits and shows where and what.** `GET /customer/orders` takes `state=current|past`: past is `completed` and `cancelled`, current every other status, so each tab pages on its own. A row carries the address snapshot's street and house and a picture: the current picture of the earliest line (by creation, then id) whose product has one, a line that is not removed before a removed one (so an order whose every line is removed, a cancelled order, still shows its earliest picture), `null` when none has. Detail lines carry their product's current picture too. A picture is decoration, not history: it is the product's picture now, never a snapshot, and changes when the Admin replaces it.
+
+2. **Calls.** The Customer sees the Courier — the first word of the name and the phone — on the list row and the order only while the order is `on_the_way`, the status the Courier's start sets and delivery or failure ends; the Courier's own call already shows the number, so no wider exposure follows. The support phone is a business setting, `+998` and nine digits like every phone here, unset by default; the Customer's order answers it whatever the status, and the client shows it on current orders.
+
+3. **Reorder.** It copies every line of the order except those the Customer removed in an edit, in line order, with the ordered quantity, note and rule, at today's prices; a product the Customer may no longer see, or whose unit changed since, is unavailable; a product already in the cart is skipped and keeps its line; lines past the cart's 100 are reported as not added. Any own order may be repeated, whatever its status. The answer is stored on the idempotency key (`response`), so a replay answers what the first call did; this closes the Wave 2 risk row on reorder's answer. It refines `DL-38` (6) and `DL-39` (1) for operations whose result is an answer, not one resource: a completed key then holds the stored answer instead of naming a resource.
+
+4. **The rating.** One per order, for a `completed` order, within seven days of its completion; the window keeps a rating about this delivery, not a later complaint. Reasons are allowed only at 1 to 3 stars, each at most once; the comment is trimmed, at most 500 characters, and an empty one is none. A retry is the identical body, answered `200` with the order like any natural repeat (`docs/09` section 49), so the call needs no idempotency key; a different body on a rated order is `409 order_already_rated`. A rating never changes the order: its status, lines, totals and history stay.
+
+5. **The Operator's side of a low rating.** A rating of 1 to 3 is an attention item, `low_rating`, since the rating was given, whatever the order's status — the only type that looks at finished orders. It stays until an Operator or Admin marks the rating reviewed after calling the Customer; the review records who and when, once, and a repeat answers the same. A Manager does not review (read-only scope). The board order shows the rating with its review.
+6. **The panel.** The settings form gains the support phone, `+998` and nine digits or empty; the attention list names `low_rating` "Низкая оценка"; the order screen shows the Customer's rating — stars, reasons, comment — with "Связались с клиентом" until it is reviewed, then who reviewed it and when.

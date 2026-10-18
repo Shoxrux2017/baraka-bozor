@@ -113,6 +113,7 @@ void main() {
       expect(textOf(tester, field('opens_at')), '09:00');
       expect(textOf(tester, field('service_centre_latitude')), '41.311081');
       expect(textOf(tester, field('delivery_delay_threshold_minutes')), '30');
+      expect(textOf(tester, field('support_phone')), '+998712000000');
       expect(field('service_fee_percent'), findsNothing);
       expect(
         find.byKey(const ValueKey<String>('settings-updated-at')),
@@ -166,6 +167,30 @@ void main() {
     expect(find.text(l10n(tester).fieldPairIncomplete), findsNWidgets(2));
     expect(find.text(l10n(tester).fieldMinutes), findsOneWidget);
     expect(repository.saved, isEmpty);
+  });
+
+  testWidgets('a malformed support phone is refused and nothing is sent', (
+    WidgetTester tester,
+  ) async {
+    await openSettings(tester);
+
+    await tester.enterText(field('support_phone'), '998712000000');
+    await submit(tester);
+
+    expect(find.text(l10n(tester).fieldSupportPhone), findsOneWidget);
+    expect(repository.saved, isEmpty);
+  });
+
+  testWidgets('a cleared support phone is sent as null', (
+    WidgetTester tester,
+  ) async {
+    await openSettings(tester);
+
+    await tester.enterText(field('support_phone'), '');
+    await submit(tester);
+
+    expect(repository.saved.single.supportPhone, isNull);
+    expect(textOf(tester, field('support_phone')), '');
   });
 
   testWidgets('a saved change is shown as the server stored it', (

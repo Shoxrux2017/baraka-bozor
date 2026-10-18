@@ -799,6 +799,7 @@ class _AttentionListState extends ConsumerState<_AttentionList> {
         AttentionType.deliveryFailed => l10n.attentionDeliveryFailed,
         AttentionType.cancellationRequest => l10n.attentionCancellationRequest,
         AttentionType.staffBlocked => l10n.attentionStaffBlocked,
+        AttentionType.lowRating => l10n.attentionLowRating,
         AttentionType.other => l10n.attentionOther,
       };
 }

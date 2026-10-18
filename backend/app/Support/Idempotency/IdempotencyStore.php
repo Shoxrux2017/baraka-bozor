@@ -24,8 +24,9 @@ use Throwable;
  *   in its own short transaction; the operation runs in a second transaction,
  *   which also marks the key `completed` with the resource it produced, so a
  *   completed key never exists without its effect;
- * - the same key and hash, completed: the resource is loaded and returned as
- *   it is now — the same logical result, not a stored response;
+ * - the same key and hash, completed: a key that names a resource replays
+ *   the resource as it is now — the same logical result; a key completed by
+ *   `runAnswer()` replays the answer it stored, unchanged;
  * - the same key and hash, still processing inside its lease:
  *   `409 idempotency_in_progress`;
  * - the same key and hash, processing past its lease: the attempt died, so
@@ -81,7 +82,7 @@ final class IdempotencyStore
         $begun = $this->begin($actorId, $operation, $key, $requestHash);
 
         if ($begun instanceof Replay) {
-            return $replay($begun->resourceId);
+            return $replay($begun->resourceId ?? throw new LogicException('A completed key names its resource.'));
         }
 
         try {
@@ -97,6 +98,41 @@ final class IdempotencyStore
             } catch (Throwable $abandonFailure) {
                 // The key then waits out its lease; the caller still learns
                 // why the operation failed, not why the clean-up did.
+                report($abandonFailure);
+            }
+
+            throw $failure;
+        }
+    }
+
+    /**
+     * Like `run()`, for an operation whose result is an answer, not one
+     * resource: `$perform` runs in the transaction that completes the key with
+     * the answer as its `response`, and a replay returns that stored answer
+     * unchanged, whatever has changed since (`DL-91` item 3).
+     *
+     * @param  Closure(): array<array-key, mixed>  $perform
+     * @return array<array-key, mixed>
+     */
+    public function runAnswer(string $actorId, string $operation, string $key, string $requestHash, Closure $perform): array
+    {
+        $begun = $this->begin($actorId, $operation, $key, $requestHash);
+
+        if ($begun instanceof Replay) {
+            return $begun->answer ?? throw new LogicException('A completed key holds an answer.');
+        }
+
+        try {
+            return DB::transaction(function () use ($begun, $perform): array {
+                $answer = $perform();
+                $this->completeWithAnswer($begun, $answer);
+
+                return $answer;
+            });
+        } catch (Throwable $failure) {
+            try {
+                $this->abandon($begun);
+            } catch (Throwable $abandonFailure) {
                 report($abandonFailure);
             }
 
@@ -149,7 +185,11 @@ final class IdempotencyStore
             }
 
             if ($existing->state === IdempotencyState::Completed) {
-                return new Replay($existing->resource_id ?? throw new LogicException('A completed key names its resource.'));
+                if ($existing->resource_id === null && $existing->response === null) {
+                    throw new LogicException('A completed key names its resource or holds its answer.');
+                }
+
+                return new Replay($existing->resource_id, $existing->response);
             }
 
             if ($existing->lease_expires_at->isFuture()) {
@@ -181,6 +221,29 @@ final class IdempotencyStore
                 'state' => IdempotencyState::Completed->value,
                 'resource_type' => $resource->getTable(),
                 'resource_id' => (string) $resource->getKey(),
+                'completed_at' => now(),
+            ]);
+
+        if ($completed !== 1) {
+            throw ApiException::conflict('idempotency_in_progress');
+        }
+    }
+
+    /**
+     * Marks the key completed with the answer, under the same ownership rule
+     * as `complete()`.
+     *
+     * @param  array<array-key, mixed>  $answer
+     */
+    public function completeWithAnswer(Attempt $attempt, array $answer): void
+    {
+        $completed = IdempotencyKey::query()
+            ->whereKey($attempt->id)
+            ->where('state', IdempotencyState::Processing->value)
+            ->where('attempt_token', $attempt->attemptToken)
+            ->update([
+                'state' => IdempotencyState::Completed->value,
+                'response' => json_encode($answer, JSON_THROW_ON_ERROR),
                 'completed_at' => now(),
             ]);
 

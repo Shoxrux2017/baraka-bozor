@@ -6,11 +6,13 @@ namespace App\Modules\Orders\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Pagination\PaginatedResponse;
+use App\Http\Requests\EmptyBodyRequest;
 use App\Models\Order;
 use App\Models\User;
 use App\Modules\Orders\Actions\AssignCourier;
 use App\Modules\Orders\Actions\AssignShopper;
 use App\Modules\Orders\Actions\CancelFailedDelivery;
+use App\Modules\Orders\Actions\ReviewOrderRating;
 use App\Modules\Orders\Http\Requests\AssignCourierRequest;
 use App\Modules\Orders\Http\Requests\AssignShopperRequest;
 use App\Modules\Orders\Http\Requests\ListBoardOrdersRequest;
@@ -33,8 +35,9 @@ use Illuminate\Pagination\LengthAwarePaginator;
  * `GET /operations/summary`, `GET /operations/attention`, and the
  * assignments of section 39: `POST|PUT /operations/orders/{order}/shopper-assignment`
  * and `.../courier-assignment`, and the cancellation of section 41,
- * `POST /operations/orders/{order}/cancel`, answering the order as the board
- * shows it.
+ * `POST /operations/orders/{order}/cancel`, and the review of a low rating of
+ * section 60, `POST /operations/orders/{order}/rating/review`, answering the
+ * order as the board shows it.
  * Every order is in scope for both roles; the route admits exactly them.
  */
 final class OperationsOrderController extends Controller
@@ -99,6 +102,11 @@ final class OperationsOrderController extends Controller
         return self::detail($cancel->cancel($this->staff($request), $order, $request->note()));
     }
 
+    public function reviewRating(EmptyBodyRequest $request, string $order, ReviewOrderRating $review): BoardOrderResource
+    {
+        return self::detail($review->review($this->staff($request), $order));
+    }
+
     public function summary(): JsonResponse
     {
         $summary = BoardSummary::at(now());
@@ -141,6 +149,7 @@ final class OperationsOrderController extends Controller
             'approvals.item',
             'approvals.requestedBy',
             'approvals.resolvedBy',
+            'rating.reviewedBy',
         ]));
     }
 

@@ -409,7 +409,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 | Carried from Wave 2: a build whose MapKit key Yandex refuses aborts at launch (`DL-53` (1)). Before the map returns, MapKit must start only when the map is opened | Open, before the map returns |
 | Carried from Wave 2: in Customer mode a Shopper's or Courier's app bar holds six actions, and the title shortens on a phone. The areas of W3-15 and W3-18 must not repeat it; the Shopper's area keeps two, the language and one menu (`DL-69` (5)), and the Courier's does the same (`DL-72` (1)); Customer mode's own app bar remains | Open for Wave 4 (P3) |
 | Carried from Wave 2: the MapKit key and the free tier's fitness (`DL-36`) | Open, Owner |
-| Carried from Wave 2, for Wave 4: CORS in production, device pruning, the push token change stream, reorder's stored answer | Open for Wave 4 |
+| Carried from Wave 2, for Wave 4: CORS in production, device pruning, the push token change stream, reorder's stored answer (closed by `DL-91` item 3) | Open for Wave 4 |
 | Carried from Wave 2, for Wave 5: a payment attempt's outcome is not guarded by the idempotency key, and Paynet and xazna have no adapters | Open for Wave 5 |
 | Carried from Wave 2: iOS needs a Mac, which also brings the Apple Maps link (`DL-54` (16)); browser tests run in CI only | Open until a Mac exists and the local runner works |
 | Until W3-17, the merged app labels a bought line with its ordered price beside the bought total, for example 18 400 a kg next to a total billed at 19 550. W3-17 shows the price to pay and the replacement (`DL-57` (4)) | Closed by W3-17 (`DL-71` (1)) |

@@ -58,6 +58,7 @@ void main() {
         serviceCentreLongitude: '69.240562',
         serviceRadiusKm: '5.00',
         deliveryDelayThresholdMinutes: 30,
+        supportPhone: '+998712000000',
       ),
       base,
     );
@@ -102,6 +103,7 @@ void main() {
           serviceCentreLongitude: '69.240562',
           serviceRadiusKm: '5.00',
           deliveryDelayThresholdMinutes: 30,
+          supportPhone: '+998712000000',
         ),
         base,
       ),

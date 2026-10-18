@@ -1933,5 +1933,34 @@
     }
   },
   "cartAddMoreTitle": "Buyurtmaga qo'shing",
-  "cartDeliveryTo": "Yetkazish:"
+  "cartDeliveryTo": "Yetkazish:",
+  "settingsSupportPhone": "Qo'llab-quvvatlash telefoni",
+  "settingsSupportPhoneHint": "+998 va 9 raqam; bo'sh bo'lsa tugma ko'rinmaydi",
+  "fieldSupportPhone": "Raqamni kiriting: +998 va 9 raqam",
+  "attentionLowRating": "Past baho",
+  "ratingTitle": "Mijoz bahosi",
+  "ratingStars": "Baho: 5 dan {count}",
+  "@ratingStars": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ratingReasonNotFresh": "Yangi emas",
+  "ratingReasonWrongWeight": "Og'irligi noto'g'ri",
+  "ratingReasonLate": "Kechikdi",
+  "ratingReasonRude": "Qo'pol",
+  "ratingReview": "Mijoz bilan bog'lanildi",
+  "ratingReviewed": "Ko'rib chiqildi: {name}, {time}",
+  "@ratingReviewed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  }
 }
