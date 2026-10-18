@@ -182,6 +182,18 @@ abstract class AppLocalizations {
   /// **'{time} dan so\'ng qayta yuborish'**
   String resendIn(String time);
 
+  /// No description provided for @codeLocked.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod 3 marta noto\'g\'ri kiritildi. Yangi kodni {time} dan keyin so\'rash mumkin'**
+  String codeLocked(String time);
+
+  /// No description provided for @codeLockOver.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi kod so\'rang'**
+  String get codeLockOver;
+
   /// No description provided for @changePhone.
   ///
   /// In uz, this message translates to:
@@ -446,11 +458,11 @@ abstract class AppLocalizations {
   /// **'Urinishlar soni tugadi. Yangi kod so\'rang'**
   String get errorCodeAttemptsExhausted;
 
-  /// No description provided for @errorCodeResendTooSoon.
+  /// No description provided for @errorCodeLocked.
   ///
   /// In uz, this message translates to:
-  /// **'Kodni qayta yuborishdan oldin biroz kuting'**
-  String get errorCodeResendTooSoon;
+  /// **'Juda ko\'p noto\'g\'ri urinish. Biroz kuting'**
+  String get errorCodeLocked;
 
   /// No description provided for @errorRateLimited.
   ///

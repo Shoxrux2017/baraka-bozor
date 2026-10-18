@@ -10,6 +10,7 @@ import '../../../core/widgets/failure_message.dart';
 import '../application/code_login_controller.dart';
 import 'auth_scaffold.dart';
 import 'confirm_phone_dialog.dart';
+import 'lock_message.dart';
 import 'phone_field.dart';
 
 /// Step 1 of `docs/04-user-flows.md` section 2 (screen 02 of
@@ -97,10 +98,11 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
                 onSubmitted: (String _) => _submit(),
               ),
               FailureMessage(state.failure),
+              LockMessage(state),
               const SizedBox(height: 20),
               FilledButton(
                 key: const ValueKey<String>('continue-button'),
-                onPressed: state.busy ? null : _submit,
+                onPressed: state.busy || state.locked ? null : _submit,
                 child: Text(l10n.getCodeButton),
               ),
               const SizedBox(height: 20),

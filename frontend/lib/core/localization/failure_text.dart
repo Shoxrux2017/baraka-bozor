@@ -33,7 +33,7 @@ String _refusalText(AppLocalizations l10n, String code, int status) {
     'code_invalid' => l10n.errorCodeInvalid,
     'code_expired' => l10n.errorCodeExpired,
     'code_attempts_exhausted' => l10n.errorCodeAttemptsExhausted,
-    'code_resend_too_soon' => l10n.errorCodeResendTooSoon,
+    'code_locked' => l10n.errorCodeLocked,
     'rate_limited' => l10n.errorRateLimited,
     'validation_failed' => l10n.errorValidationFailed,
     'forbidden' => l10n.errorForbidden,

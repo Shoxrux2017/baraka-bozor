@@ -57,6 +57,14 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String codeLocked(String time) {
+    return 'Kod 3 marta noto\'g\'ri kiritildi. Yangi kodni $time dan keyin so\'rash mumkin';
+  }
+
+  @override
+  String get codeLockOver => 'Yangi kod so\'rang';
+
+  @override
   String get changePhone => 'Raqamni o\'zgartirish';
 
   @override
@@ -196,8 +204,7 @@ class AppLocalizationsUz extends AppLocalizations {
       'Urinishlar soni tugadi. Yangi kod so\'rang';
 
   @override
-  String get errorCodeResendTooSoon =>
-      'Kodni qayta yuborishdan oldin biroz kuting';
+  String get errorCodeLocked => 'Juda ko\'p noto\'g\'ri urinish. Biroz kuting';
 
   @override
   String get errorRateLimited => 'Urinishlar juda ko\'p. Biroz kutib turing';

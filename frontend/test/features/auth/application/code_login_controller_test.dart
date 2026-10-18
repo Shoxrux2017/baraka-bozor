@@ -151,13 +151,13 @@ void main() {
       final ProviderContainer c = container();
       await c.read(sessionControllerProvider.future);
       await controller(c).requestCode('+998901234567');
-      repository.requestFailure = refusal(429, 'code_resend_too_soon');
+      repository.requestFailure = refusal(429, 'rate_limited');
 
       expect(await controller(c).resend(), isFalse);
 
       expect(state(c).hasCode, isTrue);
       expect(state(c).phone, '+998901234567');
-      expect(state(c).failure?.code, 'code_resend_too_soon');
+      expect(state(c).failure?.code, 'rate_limited');
       expect(state(c).busy, isFalse);
     },
   );
@@ -203,13 +203,17 @@ void main() {
       final ProviderContainer c = container();
       await c.read(sessionControllerProvider.future);
       await controller(c).requestCode('+998901234567');
-      repository.requestFailure = refusal(429, 'code_resend_too_soon');
+      repository.requestFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'code_locked'),
+        retryAfterSeconds: 42,
+      );
 
       expect(await controller(c).resend(), isFalse);
 
-      expect(state(c).hasCode, isTrue);
-      expect(state(c).phone, '+998901234567');
-      expect(state(c).failure?.code, 'code_resend_too_soon');
+      expect(state(c).hasCode, isTrue, reason: 'the code screen stays');
+      expect(state(c).lockedSeconds, 42);
+      expect(state(c).failure, isNull, reason: 'the lock has its own sentence');
+      expect(state(c).canResend, isFalse);
       expect(state(c).busy, isFalse);
     },
   );
@@ -247,6 +251,108 @@ void main() {
     expect(state(c).busy, isFalse);
     expect(state(c).failure, isA<UnexpectedFailure>());
     expect(reported, hasLength(1));
+  });
+
+  testWidgets('a resend can be sent at once', (WidgetTester tester) async {
+    repository.requestResult = const RequestedCode(
+      channel: 'telegram',
+      expiresInSeconds: 300,
+      resendAvailableInSeconds: 0,
+    );
+    final ProviderContainer c = container();
+    await c.read(sessionControllerProvider.future);
+
+    await controller(c).requestCode('+998901234567');
+
+    expect(state(c).canResend, isTrue);
+    expect(state(c).locked, isFalse);
+    expect(await controller(c).resend(), isTrue);
+    expect(
+      repository.calls.where((String call) => call.startsWith('request:')),
+      hasLength(2),
+    );
+  });
+
+  testWidgets(
+    'code_locked from verify locks for the header seconds and counts down',
+    (WidgetTester tester) async {
+      final ProviderContainer c = container();
+      await c.read(sessionControllerProvider.future);
+      await controller(c).requestCode('+998901234567');
+      repository.verifyFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'code_locked'),
+        retryAfterSeconds: 60,
+      );
+
+      expect(await controller(c).verify('000000'), isFalse);
+
+      expect(state(c).locked, isTrue);
+      expect(state(c).lockedSeconds, 60);
+      expect(state(c).canResend, isFalse);
+      expect(state(c).failure, isNull, reason: 'shown as the lock sentence');
+      expect(state(c).busy, isFalse);
+
+      await tester.pump(const Duration(seconds: 59));
+      expect(state(c).lockedSeconds, 1);
+      expect(state(c).canResend, isFalse);
+      expect(state(c).lockOver, isFalse);
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(state(c).locked, isFalse);
+      expect(state(c).lockOver, isTrue);
+      expect(state(c).canResend, isTrue);
+    },
+  );
+
+  testWidgets('code_locked without a header locks for 60', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer c = container();
+    await c.read(sessionControllerProvider.future);
+    await controller(c).requestCode('+998901234567');
+    repository.verifyFailure = refusal(429, 'code_locked');
+
+    await controller(c).verify('000000');
+
+    expect(state(c).lockedSeconds, 60);
+    await tester.pump(const Duration(seconds: 60));
+  });
+
+  testWidgets('code_locked from request on the phone screen locks too', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer c = container();
+    await c.read(sessionControllerProvider.future);
+    repository.requestFailure = ApiRefusal(
+      const ApiError(status: 429, code: 'code_locked'),
+      retryAfterSeconds: 37,
+    );
+
+    expect(await controller(c).requestCode('+998901234567'), isFalse);
+
+    expect(state(c).hasCode, isFalse);
+    expect(state(c).phone, '+998901234567');
+    expect(state(c).lockedSeconds, 37);
+    expect(state(c).failure, isNull);
+    await tester.pump(const Duration(seconds: 37));
+    expect(state(c).locked, isFalse);
+  });
+
+  testWidgets('changing the phone clears the lock', (
+    WidgetTester tester,
+  ) async {
+    final ProviderContainer c = container();
+    await c.read(sessionControllerProvider.future);
+    await controller(c).requestCode('+998901234567');
+    repository.verifyFailure = refusal(429, 'code_locked');
+    await controller(c).verify('000000');
+
+    controller(c).changePhone();
+
+    expect(state(c).locked, isFalse);
+    expect(state(c).phone, '+998901234567');
+    await tester.pump(const Duration(seconds: 61));
+    expect(state(c).locked, isFalse);
   });
 
   test('a network failure on verify is shown, not swallowed', () async {

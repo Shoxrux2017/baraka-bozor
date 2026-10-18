@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
+import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/app_theme.dart';
@@ -34,6 +35,7 @@ void main() {
     const ValueKey<String>('resend-button'),
   );
   final Finder failure = find.byKey(const ValueKey<String>('failure-message'));
+  final Finder lockMessage = find.byKey(const ValueKey<String>('lock-message'));
   final Finder confirmSend = find.byKey(
     const ValueKey<String>('confirm-phone-send'),
   );
@@ -227,6 +229,108 @@ void main() {
     // Leave no timer behind.
     await tester.pump(const Duration(seconds: 45));
   });
+
+  testWidgets('a resend is open at once when the server sets no wait', (
+    WidgetTester tester,
+  ) async {
+    repository.requestResult = const RequestedCode(
+      channel: 'telegram',
+      expiresInSeconds: 300,
+      resendAvailableInSeconds: 0,
+    );
+    await openApp(tester);
+    await requestCode(tester, '901234567');
+
+    expect(find.text(l10n(tester).resendCode), findsOneWidget);
+    expect(tester.widget<TextButton>(resendButton).onPressed, isNotNull);
+  });
+
+  testWidgets(
+    'three wrong codes lock the screen: the sentence counts down, the boxes empty, the buttons wait, then a new code is asked for',
+    (WidgetTester tester) async {
+      repository.requestResult = const RequestedCode(
+        channel: 'telegram',
+        expiresInSeconds: 300,
+        resendAvailableInSeconds: 0,
+      );
+      repository.verifyFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'code_locked'),
+        retryAfterSeconds: 60,
+      );
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+
+      await tester.enterText(codeField, '000000');
+      await tester.tap(verifyButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n(tester).codeLocked('1:00')), findsOneWidget);
+      expect(failure, findsNothing, reason: 'the lock is not printed twice');
+      expect(tester.widget<TextField>(codeField).controller?.text, isEmpty);
+      expect(tester.widget<FilledButton>(verifyButton).onPressed, isNull);
+      expect(tester.widget<TextButton>(resendButton).onPressed, isNull);
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text(l10n(tester).codeLocked('0:59')), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 59));
+      expect(lockMessage, findsNothing);
+      expect(find.text(l10n(tester).codeLockOver), findsOneWidget);
+      expect(tester.widget<FilledButton>(verifyButton).onPressed, isNotNull);
+      expect(tester.widget<TextButton>(resendButton).onPressed, isNotNull);
+    },
+  );
+
+  testWidgets('the phone screen refuses a locked phone with the seconds left', (
+    WidgetTester tester,
+  ) async {
+    repository.requestFailure = ApiRefusal(
+      const ApiError(status: 429, code: 'code_locked'),
+      retryAfterSeconds: 42,
+    );
+    await openApp(tester);
+
+    await requestCode(tester, '901234567');
+
+    expect(find.text(l10n(tester).codeLocked('0:42')), findsOneWidget);
+    expect(failure, findsNothing);
+    expect(codeField, findsNothing);
+    expect(tester.widget<FilledButton>(continueButton).onPressed, isNull);
+
+    await tester.pump(const Duration(seconds: 42));
+    expect(lockMessage, findsNothing);
+    expect(tester.widget<FilledButton>(continueButton).onPressed, isNotNull);
+  });
+
+  testWidgets(
+    'the phone screen shows the seconds left, not a fresh minute, after leaving a locked code screen',
+    (WidgetTester tester) async {
+      repository.verifyFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'code_locked'),
+        retryAfterSeconds: 60,
+      );
+      await openApp(tester);
+      await requestCode(tester, '901234567');
+      await tester.enterText(codeField, '000000');
+      await tester.tap(verifyButton);
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 25));
+
+      await tester.tap(find.byKey(const ValueKey<String>('change-phone-link')));
+      await tester.pumpAndSettle();
+      repository.requestFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'code_locked'),
+        retryAfterSeconds: 35,
+      );
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+      await tester.tap(confirmSend);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n(tester).codeLocked('0:35')), findsOneWidget);
+      await tester.pump(const Duration(seconds: 35));
+    },
+  );
 
   testWidgets(
     'the code screen names SMS, and says only that a code was sent for the other channels',

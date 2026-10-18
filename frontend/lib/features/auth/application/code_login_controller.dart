@@ -16,6 +16,8 @@ final class CodeLoginState {
     this.phone,
     this.requested,
     this.resendInSeconds = 0,
+    this.lockedSeconds = 0,
+    this.lockOver = false,
     this.busy = false,
     this.failure,
   });
@@ -28,18 +30,29 @@ final class CodeLoginState {
   /// Seconds until the server accepts another send; counts down to zero.
   final int resendInSeconds;
 
+  /// Seconds the phone stays locked after three wrong codes; counts down to
+  /// zero. While it runs nothing can be verified or requested.
+  final int lockedSeconds;
+
+  /// The lock has just run out: the old code is spent and a new one is due.
+  final bool lockOver;
+
   final bool busy;
 
   final ApiFailure? failure;
 
   bool get hasCode => requested != null;
 
-  bool get canResend => hasCode && resendInSeconds == 0 && !busy;
+  bool get locked => lockedSeconds > 0;
+
+  bool get canResend => hasCode && resendInSeconds == 0 && !locked && !busy;
 
   CodeLoginState copyWith({
     String? phone,
     RequestedCode? requested,
     int? resendInSeconds,
+    int? lockedSeconds,
+    bool? lockOver,
     bool? busy,
     ApiFailure? failure,
     bool clearFailure = false,
@@ -48,6 +61,8 @@ final class CodeLoginState {
       phone: phone ?? this.phone,
       requested: requested ?? this.requested,
       resendInSeconds: resendInSeconds ?? this.resendInSeconds,
+      lockedSeconds: lockedSeconds ?? this.lockedSeconds,
+      lockOver: lockOver ?? this.lockOver,
       busy: busy ?? this.busy,
       failure: clearFailure ? null : (failure ?? this.failure),
     );
@@ -64,6 +79,9 @@ final class CodeLoginState {
 /// another phone, the other mode — survives into it; a resend keeps the
 /// code it repeats. Whatever a call throws, the screen is usable afterwards.
 class CodeLoginController extends Notifier<CodeLoginState> {
+  /// The lock when the server's answer carries no `Retry-After`.
+  static const int _defaultLockSeconds = 60;
+
   int _generation = 0;
   Timer? _countdown;
 
@@ -102,7 +120,7 @@ class CodeLoginController extends Notifier<CodeLoginState> {
       return false;
     }
     final int generation = ++_generation;
-    state = state.copyWith(busy: true, clearFailure: true);
+    state = state.copyWith(busy: true, lockOver: false, clearFailure: true);
 
     try {
       await _session.verifyCustomerCode(phone: phone, code: code);
@@ -122,7 +140,8 @@ class CodeLoginController extends Notifier<CodeLoginState> {
     return true;
   }
 
-  /// Back to the phone entry, with the phone kept for editing.
+  /// Back to the phone entry, with the phone kept for editing. The lock is
+  /// dropped here; the server tells what is left of it on the next request.
   void changePhone() {
     _generation++;
     _countdown?.cancel();
@@ -146,7 +165,7 @@ class CodeLoginController extends Notifier<CodeLoginState> {
 
     final int generation = ++_generation;
     if (resend) {
-      state = state.copyWith(busy: true, clearFailure: true);
+      state = state.copyWith(busy: true, lockOver: false, clearFailure: true);
     } else {
       _countdown?.cancel();
       state = CodeLoginState(phone: phone, busy: true);
@@ -175,21 +194,46 @@ class CodeLoginController extends Notifier<CodeLoginState> {
   bool _current(int generation) => generation == _generation && ref.mounted;
 
   void _fail(int generation, ApiFailure failure) {
-    if (_current(generation)) {
-      state = state.copyWith(busy: false, failure: failure);
+    if (!_current(generation)) {
+      return;
     }
+    if (failure is ApiRefusal && failure.code == 'code_locked') {
+      // The lock has its own sentence; it is not left as a failure for the
+      // screens to print a second time.
+      final int? retryAfter = failure.retryAfterSeconds;
+      state = state.copyWith(
+        busy: false,
+        lockedSeconds: retryAfter == null || retryAfter <= 0
+            ? _defaultLockSeconds
+            : retryAfter,
+        clearFailure: true,
+      );
+      _runCountdown();
+      return;
+    }
+    state = state.copyWith(busy: false, failure: failure);
   }
 
   void _startCountdown(int seconds) {
-    _countdown?.cancel();
     state = state.copyWith(resendInSeconds: seconds < 0 ? 0 : seconds);
-    if (seconds <= 0) {
+    _runCountdown();
+  }
+
+  /// One timer counts the resend wait and the lock down together.
+  void _runCountdown() {
+    _countdown?.cancel();
+    if (state.resendInSeconds <= 0 && state.lockedSeconds <= 0) {
       return;
     }
     _countdown = Timer.periodic(const Duration(seconds: 1), (Timer timer) {
-      final int left = state.resendInSeconds - 1;
-      state = state.copyWith(resendInSeconds: left < 0 ? 0 : left);
-      if (left <= 0) {
+      final int resend = state.resendInSeconds - 1;
+      final int lock = state.lockedSeconds - 1;
+      state = state.copyWith(
+        resendInSeconds: resend < 0 ? 0 : resend,
+        lockedSeconds: lock < 0 ? 0 : lock,
+        lockOver: state.lockOver || (state.lockedSeconds > 0 && lock <= 0),
+      );
+      if (state.resendInSeconds == 0 && state.lockedSeconds == 0) {
         timer.cancel();
       }
     });

@@ -99,6 +99,29 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 61));
     },
+    'code, locked': (WidgetTester tester, String language) async {
+      repository.verifyFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'code_locked'),
+        retryAfterSeconds: 59,
+      );
+      await open(tester, language);
+      await toCodeScreen(tester);
+      await tester.enterText(find.byKey(key('code-field')), '000000');
+      await tapKey(tester, 'verify-button');
+      await tester.pumpAndSettle();
+      expect(find.byKey(key('lock-message')), findsOneWidget);
+      await tester.pump(const Duration(seconds: 59));
+    },
+    'phone, locked': (WidgetTester tester, String language) async {
+      repository.requestFailure = ApiRefusal(
+        const ApiError(status: 429, code: 'code_locked'),
+        retryAfterSeconds: 59,
+      );
+      await open(tester, language);
+      await toCodeScreen(tester);
+      expect(find.byKey(key('lock-message')), findsOneWidget);
+      await tester.pump(const Duration(seconds: 59));
+    },
     'name': (WidgetTester tester, String language) async {
       tokens.tokens[SessionSlot.customer] = 'c';
       repository.identities[SessionSlot.customer] = user(
