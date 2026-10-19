@@ -2724,8 +2724,33 @@ class AppLocalizationsUz extends AppLocalizations {
   String get codeComesInTelegram => 'Kod Telegramga keladi';
 
   @override
-  String get termsLine =>
-      'Davom etib, siz foydalanish shartlariga rozilik bildirasiz';
+  String legalEdition(String date) {
+    return 'Tahrir: $date';
+  }
+
+  @override
+  String get legalNotPublishedYet => 'Hujjat hali e\'lon qilinmagan.';
+
+  @override
+  String consentAll(String terms, String privacy) {
+    return 'Davom etib, siz $terms va ${privacy}ni qabul qilasiz';
+  }
+
+  @override
+  String consentTermsOnly(String terms) {
+    return 'Davom etib, siz ${terms}ni qabul qilasiz';
+  }
+
+  @override
+  String consentPrivacyOnly(String privacy) {
+    return 'Davom etib, siz ${privacy}ni qabul qilasiz';
+  }
+
+  @override
+  String get consentTermsLink => 'Foydalanish shartlari';
+
+  @override
+  String get consentPrivacyLink => 'Maxfiylik siyosati';
 
   @override
   String get confirmPhoneTitle => 'Raqamni tekshiring';

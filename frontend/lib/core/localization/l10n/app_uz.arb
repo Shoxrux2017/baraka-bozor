@@ -1758,7 +1758,44 @@
   "errorCashAmountMismatch": "Summa olinishi kerak bo'lgan summaga mos emas.",
   "getCodeButton": "Kod olish",
   "codeComesInTelegram": "Kod Telegramga keladi",
-  "termsLine": "Davom etib, siz foydalanish shartlariga rozilik bildirasiz",
+  "legalEdition": "Tahrir: {date}",
+  "@legalEdition": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "legalNotPublishedYet": "Hujjat hali e'lon qilinmagan.",
+  "consentAll": "Davom etib, siz {terms} va {privacy}ni qabul qilasiz",
+  "@consentAll": {
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      },
+      "privacy": {
+        "type": "String"
+      }
+    }
+  },
+  "consentTermsOnly": "Davom etib, siz {terms}ni qabul qilasiz",
+  "@consentTermsOnly": {
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      }
+    }
+  },
+  "consentPrivacyOnly": "Davom etib, siz {privacy}ni qabul qilasiz",
+  "@consentPrivacyOnly": {
+    "placeholders": {
+      "privacy": {
+        "type": "String"
+      }
+    }
+  },
+  "consentTermsLink": "Foydalanish shartlari",
+  "consentPrivacyLink": "Maxfiylik siyosati",
   "confirmPhoneTitle": "Raqamni tekshiring",
   "confirmPhoneBody": "Unga Telegramda kod yuboramiz",
   "editButton": "O'zgartirish",

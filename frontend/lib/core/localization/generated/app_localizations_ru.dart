@@ -2752,8 +2752,33 @@ class AppLocalizationsRu extends AppLocalizations {
   String get codeComesInTelegram => 'Код придёт в Telegram';
 
   @override
-  String get termsLine =>
-      'Продолжая, вы соглашаетесь с условиями использования';
+  String legalEdition(String date) {
+    return 'Редакция от $date';
+  }
+
+  @override
+  String get legalNotPublishedYet => 'Документ пока не опубликован.';
+
+  @override
+  String consentAll(String terms, String privacy) {
+    return 'Продолжая, вы принимаете $terms и $privacy';
+  }
+
+  @override
+  String consentTermsOnly(String terms) {
+    return 'Продолжая, вы принимаете $terms';
+  }
+
+  @override
+  String consentPrivacyOnly(String privacy) {
+    return 'Продолжая, вы принимаете $privacy';
+  }
+
+  @override
+  String get consentTermsLink => 'Условия использования';
+
+  @override
+  String get consentPrivacyLink => 'Политику конфиденциальности';
 
   @override
   String get confirmPhoneTitle => 'Проверьте номер';

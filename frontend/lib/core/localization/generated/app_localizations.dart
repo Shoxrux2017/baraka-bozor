@@ -4754,11 +4754,47 @@ abstract class AppLocalizations {
   /// **'Kod Telegramga keladi'**
   String get codeComesInTelegram;
 
-  /// No description provided for @termsLine.
+  /// No description provided for @legalEdition.
   ///
   /// In uz, this message translates to:
-  /// **'Davom etib, siz foydalanish shartlariga rozilik bildirasiz'**
-  String get termsLine;
+  /// **'Tahrir: {date}'**
+  String legalEdition(String date);
+
+  /// No description provided for @legalNotPublishedYet.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjat hali e\'lon qilinmagan.'**
+  String get legalNotPublishedYet;
+
+  /// No description provided for @consentAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davom etib, siz {terms} va {privacy}ni qabul qilasiz'**
+  String consentAll(String terms, String privacy);
+
+  /// No description provided for @consentTermsOnly.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davom etib, siz {terms}ni qabul qilasiz'**
+  String consentTermsOnly(String terms);
+
+  /// No description provided for @consentPrivacyOnly.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davom etib, siz {privacy}ni qabul qilasiz'**
+  String consentPrivacyOnly(String privacy);
+
+  /// No description provided for @consentTermsLink.
+  ///
+  /// In uz, this message translates to:
+  /// **'Foydalanish shartlari'**
+  String get consentTermsLink;
+
+  /// No description provided for @consentPrivacyLink.
+  ///
+  /// In uz, this message translates to:
+  /// **'Maxfiylik siyosati'**
+  String get consentPrivacyLink;
 
   /// No description provided for @confirmPhoneTitle.
   ///

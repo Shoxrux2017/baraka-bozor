@@ -14,6 +14,7 @@ import '../features/courier/presentation/courier_routes.dart';
 import '../features/favorites/presentation/favorites_routes.dart';
 import '../features/operations/presentation/operations_routes.dart';
 import '../features/orders/presentation/orders_routes.dart';
+import '../features/legal/presentation/legal_routes.dart';
 import '../features/profile/presentation/profile_routes.dart';
 import '../features/shells/presentation/shells_routes.dart';
 import '../features/shopper/presentation/shopper_routes.dart';
@@ -36,6 +37,7 @@ final List<FeatureRoutes> featureRouteFragments = <FeatureRoutes>[
   catalogRoutes,
   favoritesRoutes,
   profileRoutes,
+  legalRoutes,
   addressesRoutes,
   cartRoutes,
   checkoutRoutes,

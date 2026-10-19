@@ -1,4 +1,5 @@
 import '../../features/auth/domain/app_user.dart';
+import '../legal/legal_document_kind.dart';
 
 /// The fixed entry points of the route table: the areas of
 /// `docs/07-architecture.md` section 29 and the screens the client passes
@@ -14,6 +15,20 @@ abstract final class AppPaths {
   static const String customerName = '/auth/name';
   static const String unreachable = '/auth/unreachable';
   static const String wrongSurface = '/auth/wrong-surface';
+
+  // The documents the sign-in screen links to before any session; the
+  // profile opens the same screens.
+  static const String legalTerms = '/legal/terms';
+  static const String legalPrivacy = '/legal/privacy';
+
+  static String legal(LegalDocumentKind kind) => switch (kind) {
+    LegalDocumentKind.terms => legalTerms,
+    LegalDocumentKind.privacy => legalPrivacy,
+  };
+
+  /// The pages of the mobile app open signed out and, once the session's own
+  /// gates pass, signed in: whoever reads them keeps their place.
+  static const Set<String> openPages = <String>{legalTerms, legalPrivacy};
 
   static const String customer = '/customer';
   static const String shopper = '/shopper';

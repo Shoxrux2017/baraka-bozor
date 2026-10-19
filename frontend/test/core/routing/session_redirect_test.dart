@@ -1,3 +1,4 @@
+import 'package:baraka_bozor/core/legal/legal_document_kind.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/routing/session_redirect.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
@@ -133,6 +134,68 @@ void main() {
         );
       },
     );
+  });
+
+  group('open pages', () {
+    const List<String> documents = <String>[
+      AppPaths.legalTerms,
+      AppPaths.legalPrivacy,
+    ];
+
+    test('the documents are open pages', () {
+      expect(AppPaths.openPages, containsAll(documents));
+      expect(AppPaths.legal(LegalDocumentKind.terms), AppPaths.legalTerms);
+      expect(AppPaths.legal(LegalDocumentKind.privacy), AppPaths.legalPrivacy);
+    });
+
+    test('they pass signed out on mobile, and the web goes to its sign-in', () {
+      for (final String page in documents) {
+        expect(redirect(signedOut, page), isNull, reason: page);
+        expect(
+          redirect(signedOut, page, surface: Surface.web),
+          AppPaths.auth,
+          reason: '$page on the web',
+        );
+      }
+    });
+
+    test('they pass for a named Customer on mobile', () {
+      for (final String page in documents) {
+        expect(
+          redirect(signedIn(customer: named()), page),
+          isNull,
+          reason: page,
+        );
+      }
+    });
+
+    test('the other gates still come first', () {
+      for (final String page in documents) {
+        expect(
+          redirect(signedIn(customer: user(id: 'c', fullName: null)), page),
+          AppPaths.customerName,
+          reason: '$page without a name',
+        );
+        expect(
+          redirect(
+            signedIn(staff: user(role: UserRole.admin)),
+            page,
+            surface: Surface.mobile,
+          ),
+          AppPaths.wrongSurface,
+          reason: '$page on the wrong surface',
+        );
+      }
+      expect(
+        redirect(
+          signedIn(
+            staff: user(role: UserRole.courier, mustChangePassword: true),
+          ),
+          AppPaths.legalTerms,
+        ),
+        AppPaths.changePassword,
+      );
+    });
   });
 
   group('unreachable', () {

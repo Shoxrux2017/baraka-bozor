@@ -7,6 +7,7 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../legal/presentation/consent_line.dart';
 import '../application/code_login_controller.dart';
 import 'auth_scaffold.dart';
 import 'confirm_phone_dialog.dart';
@@ -76,15 +77,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     return AuthScaffold(
       title: l10n.customerLoginTitle,
       subtitle: l10n.customerLoginIntro,
-      footer: Text(
-        l10n.termsLine,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontSize: 11,
-          height: 1.55,
-          color: KitColors.muted,
-        ),
-      ),
+      footer: const ConsentLine(),
       child: Form(
         key: _form,
         child: AutofillGroup(
