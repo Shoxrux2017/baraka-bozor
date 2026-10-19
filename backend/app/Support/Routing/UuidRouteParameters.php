@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support\Routing;
 
+use App\Models\Enums\Language;
+use App\Models\Enums\LegalDocumentKind;
 use App\Models\Enums\PaymentProvider;
 use BackedEnum;
 use Illuminate\Routing\Router;
@@ -49,6 +51,8 @@ final class UuidRouteParameters
      */
     public const ENUMS = [
         'provider' => PaymentProvider::class,
+        'kind' => LegalDocumentKind::class,
+        'language' => Language::class,
     ];
 
     public static function register(Router $router): void

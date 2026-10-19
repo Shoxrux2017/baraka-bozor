@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\Enums\LegalDocumentKind;
 use App\Modules\Legal\Http\Controllers\LegalDocumentController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +18,5 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('throttle:60,1')->prefix('legal')->group(function (): void {
     Route::get('/', [LegalDocumentController::class, 'index'])->name('legal.index');
     Route::get('{kind}', [LegalDocumentController::class, 'show'])
-        ->whereIn('kind', array_column(LegalDocumentKind::cases(), 'value'))
         ->name('legal.show');
 });

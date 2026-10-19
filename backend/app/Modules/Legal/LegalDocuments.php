@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Legal;
 
+use App\Models\Enums\Language;
 use App\Models\Enums\LegalDocumentKind;
 use App\Models\LegalDocument;
 
@@ -13,7 +14,7 @@ use App\Models\LegalDocument;
 final class LegalDocuments
 {
     /** @var list<string> */
-    public const LANGUAGES = ['uz', 'ru'];
+    public const LANGUAGES = [Language::Uz->value, Language::Ru->value];
 
     /**
      * The newest row of the kind and language; its body may be null.

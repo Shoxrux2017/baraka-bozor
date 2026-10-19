@@ -2,12 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Models\Enums\LegalDocumentKind;
 use App\Models\Enums\Role;
 use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Auth\Http\Middleware\RequireRole;
 use App\Modules\Legal\Http\Controllers\AdminLegalDocumentController;
-use App\Modules\Legal\LegalDocuments;
 use App\Modules\Settings\Http\Controllers\BusinessSettingsController;
 use App\Modules\Settings\Http\Controllers\PaymentProviderSettingsController;
 use Illuminate\Support\Facades\Route;
@@ -48,7 +46,5 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Admin)]
     ->group(function (): void {
         Route::get('/', [AdminLegalDocumentController::class, 'index'])->name('admin.legal-documents.index');
         Route::put('{kind}/{language}', [AdminLegalDocumentController::class, 'update'])
-            ->whereIn('kind', array_column(LegalDocumentKind::cases(), 'value'))
-            ->whereIn('language', LegalDocuments::LANGUAGES)
             ->name('admin.legal-documents.update');
     });
