@@ -195,7 +195,7 @@ class ReorderController extends OrderMutation {
     final String key = _key ??= newIdempotencyKey();
     final ReorderResult? result = await perform(
       () => orders.reorder(orderId, key),
-      reload: (_) {},
+      reload: (_) => ref.invalidate(cartProvider),
     );
     if (!_uncertain(ref.mounted ? state.failure : null)) {
       _key = null;

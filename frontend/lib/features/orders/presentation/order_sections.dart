@@ -460,15 +460,19 @@ class OrderLineRow extends StatelessWidget {
           const SizedBox(width: 8),
           Flexible(
             flex: 2,
-            child: Text(
-              amount,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: removed ? KitColors.muted : KitColors.ink,
+            child: Align(
+              alignment: AlignmentDirectional.topEnd,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  amount,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: removed ? KitColors.muted : KitColors.ink,
+                  ),
+                ),
               ),
             ),
           ),
@@ -560,7 +564,9 @@ class OrderAmounts extends StatelessWidget {
       children: <Widget>[
         SummaryAmountRow(
           valueKey: 'order-goods',
-          label: l10n.cartGoods(shownLines(order).length),
+          label: l10n.cartGoods(
+            order.lines.where((CustomerOrderLine line) => !line.removed).length,
+          ),
           value: approx(order.merchandiseSubtotalUzs),
         ),
         SummaryAmountRow(
@@ -705,12 +711,14 @@ class OrderInfoSection extends ConsumerWidget {
         order.status != OrderStatus.completed &&
         order.status != OrderStatus.cancelled;
 
-    final OrderInfoRow paymentRow;
+    final OrderInfoRow? paymentRow;
     if (payment != null && paidAt != null) {
       paymentRow = OrderInfoRow(
         key: const ValueKey<String>('order-payment'),
         icon: Icons.payments,
-        title: l10n.orderPaidCash,
+        title: payment.method == PaymentMethod.online
+            ? l10n.orderPaidOnline
+            : l10n.orderPaidCash,
         subtitle: l10n.orderPaidWhen(
           MoneyFormat.uzs(payment.amountUzs, language),
           orderAtLower(l10n, paidAt, now),
@@ -723,6 +731,10 @@ class OrderInfoSection extends ConsumerWidget {
         title: l10n.orderToPayAmount(MoneyFormat.uzs(total, language)),
         subtitle: l10n.orderCashOnDelivery,
       );
+    } else if (order.status == OrderStatus.cancelled ||
+        order.totalKind == TotalKind.none) {
+      // Nothing is due, and the amounts say so; no promise of cash.
+      paymentRow = null;
     } else {
       paymentRow = OrderInfoRow(
         key: const ValueKey<String>('order-payment'),
@@ -733,7 +745,7 @@ class OrderInfoSection extends ConsumerWidget {
     }
 
     final List<Widget> rows = <Widget>[
-      paymentRow,
+      ?paymentRow,
       OrderInfoRow(
         key: const ValueKey<String>('order-address'),
         icon: Icons.home,
@@ -1126,9 +1138,7 @@ class OrderFooter extends StatelessWidget {
                     child: Text(
                       l10n.orderCancellationNeedsReason,
                       key: const ValueKey<String>('order-cancel-needs-reason'),
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
+                      style: const TextStyle(color: KitColors.danger),
                     ),
                   )
                 else

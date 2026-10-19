@@ -16,6 +16,7 @@ import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/fake_shopper_orders_repository.dart';
 import '../../../support/in_memory_stores.dart';
+import '../../../support/paragraphs.dart';
 
 const String _phone = '+998901112233';
 
@@ -323,6 +324,33 @@ void main() {
       );
     });
 
+    testWidgets('only an estimate price carries "≈"', (
+      WidgetTester tester,
+    ) async {
+      await show(
+        tester,
+        customerOrderJson(
+          lines: <Object?>[
+            orderLineJson(),
+            orderLineJson(
+              id: lineBread,
+              productId: productBread,
+              unit: 'piece',
+              quantity: '2',
+            ),
+          ],
+        ),
+      );
+
+      expect(find.text(ru().cartLineEstimate(m(27600))), findsOneWidget);
+      expect(find.text(m(8000)), findsOneWidget);
+      expect(
+        find.text('2 шт. · ${m(4000)} / шт.'),
+        findsOneWidget,
+        reason: 'a fixed price per unit has no "≈"',
+      );
+    });
+
     testWidgets('a bought line reads on once shopping is over', (
       WidgetTester tester,
     ) async {
@@ -436,6 +464,35 @@ void main() {
       expect(find.text(ru().cartEstimateNote), findsNothing);
     });
 
+    testWidgets('the goods count leaves the removed lines out', (
+      WidgetTester tester,
+    ) async {
+      await show(
+        tester,
+        customerOrderJson(
+          lines: <Object?>[
+            orderLineJson(),
+            orderLineJson(
+              id: lineBread,
+              productId: productBread,
+              unit: 'piece',
+              quantity: '2',
+            ),
+            orderLineJson(
+              id: lineMilk,
+              productId: productMilk,
+              unit: 'piece',
+              status: 'removed',
+              removedReason: 'unavailable',
+            ),
+          ],
+        ),
+      );
+
+      expect(find.text('Товары (2)'), findsOneWidget);
+      expect(find.text('Товары · 3'), findsOneWidget);
+    });
+
     testWidgets('nothing due reads "К оплате нет"', (
       WidgetTester tester,
     ) async {
@@ -494,6 +551,35 @@ void main() {
       );
       expect(find.text('Оплачено наличными'), findsOneWidget);
       expect(find.text('${m(48463)}, сегодня в 13:30'), findsOneWidget);
+
+      await show(
+        tester,
+        customerOrderJson(
+          status: 'completed',
+          changeable: false,
+          payment: <String, Object?>{
+            'method': 'online',
+            'status': 'paid',
+            'amount_uzs': 48463,
+            'paid_at': '2026-09-28T08:30:00Z',
+          },
+        ),
+      );
+      expect(find.text(ru().orderPaidOnline), findsOneWidget);
+      expect(find.text(ru().orderPaidCash), findsNothing);
+      expect(
+        lookupAppLocalizations(const Locale('uz')).orderPaidOnline,
+        isNot(lookupAppLocalizations(const Locale('uz')).orderPaidCash),
+      );
+
+      await show(
+        tester,
+        customerOrderJson(status: 'cancelled', changeable: false),
+      );
+      expect(byKey('order-payment'), findsNothing);
+      expect(find.text(ru().paymentCashTitle), findsNothing);
+      expect(find.text(ru().paymentCashHint), findsNothing);
+      expect(find.text(ru().orderNothingDue), findsOneWidget);
     });
 
     testWidgets('the address, its landmark and the wish', (
@@ -739,6 +825,58 @@ void main() {
       expect(find.text('Не отменять'), findsOneWidget);
     });
   });
+
+  for (final (Size size, double scale) in <(Size, double)>[
+    (const Size(320, 640), 2),
+    (const Size(360, 800), 1.3),
+  ]) {
+    testWidgets('a line amount stays one whole line at $size x$scale', (
+      WidgetTester tester,
+    ) async {
+      await loadMontserrat();
+      await show(
+        tester,
+        customerOrderJson(
+          status: 'shopping',
+          changeable: false,
+          lines: <Object?>[
+            orderLineJson(),
+            orderLineJson(
+              id: lineBread,
+              productId: productBread,
+              quantity: '1.500',
+              status: 'purchased',
+              patch: <String, Object?>{
+                'billable_unit_price_uzs': 18975,
+                'line_total_uzs': 28463,
+              },
+            ),
+          ],
+        ),
+        size: Size(size.width, 3000),
+        textScale: scale,
+      );
+
+      for (final (String id, String text) in <(String, String)>[
+        (lineTomato, ru().cartLineEstimate(m(27600))),
+        (lineBread, m(28463)),
+      ]) {
+        final Finder row = byKey('order-line-$id');
+        final Finder amount = find.descendant(
+          of: row,
+          matching: find.text(text),
+        );
+        expect(amount, findsOneWidget, reason: text);
+        expect(cutParagraphs(tester, amount), isEmpty);
+        expect(linesOf(paragraphsIn(tester, amount).single), 1, reason: text);
+        final Rect inside = tester.getRect(row);
+        final Rect rect = tester.getRect(amount);
+        expect(rect.left, greaterThanOrEqualTo(inside.left), reason: text);
+        expect(rect.right, lessThanOrEqualTo(inside.right), reason: text);
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets(

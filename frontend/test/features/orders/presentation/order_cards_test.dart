@@ -1,12 +1,14 @@
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
+import 'package:baraka_bozor/core/localization/order_labels.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_cards.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,6 +18,7 @@ import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/fake_shopper_orders_repository.dart';
 import '../../../support/in_memory_stores.dart';
+import '../../../support/paragraphs.dart';
 
 const String _orderTwo = '0192f0a0-0000-7000-8000-00000000c002';
 
@@ -438,4 +441,128 @@ void main() {
       },
     );
   }
+
+  for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+    testWidgets(
+      'every status chip reads whole on one line at 375 (${device.languageCode})',
+      (WidgetTester tester) async {
+        await loadMontserrat();
+        orders.summaries = <Map<String, Object?>>[
+          for (final OrderStatus status in OrderStatus.values)
+            orderSummaryJson(
+              id: '0192f0a0-0000-7000-8000-00000000d0${status.index.toString().padLeft(2, '0')}',
+              status: status.code,
+            ),
+        ];
+        await open(tester, size: const Size(375, 3000), device: device);
+        final AppLocalizations words = lookupAppLocalizations(device);
+        final Set<String> seen = <String>{};
+
+        void check() {
+          final Finder chips = find.byType(OrderStatusChip);
+          for (int i = 0; i < chips.evaluate().length; i++) {
+            final Finder chip = chips.at(i);
+            final OrderStatus status = tester
+                .widget<OrderStatusChip>(chip)
+                .status;
+            final List<RenderParagraph> text = paragraphsIn(tester, chip);
+            expect(cutParagraphs(tester, chip), isEmpty);
+            expect(linesOf(text.single), 1, reason: status.name);
+            seen.add(OrderLabels.customerStatus(words, status));
+          }
+        }
+
+        check();
+        await tapAndSettle(tester, byKey('orders-tab-past'));
+        check();
+        expect(seen, hasLength(OrderStatus.values.length));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final (Size size, double scale) in <(Size, double)>[
+    (const Size(320, 640), 2),
+    (const Size(360, 800), 1.3),
+  ]) {
+    testWidgets('the card total stays one whole line at $size x$scale', (
+      WidgetTester tester,
+    ) async {
+      await loadMontserrat();
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(totalUzs: 27600, status: 'shopping'),
+        orderSummaryJson(
+          id: _orderTwo,
+          status: 'completed',
+          totalUzs: 28463,
+          totalKind: 'final',
+        ),
+      ];
+      await open(tester, size: size, textScale: scale);
+      final AppLocalizations words = ru();
+
+      Future<void> expectWhole(String text, String card) async {
+        final Finder amount = find.text(text);
+        expect(amount, findsOneWidget);
+        expect(cutParagraphs(tester, amount), isEmpty);
+        expect(linesOf(paragraphsIn(tester, amount).single), 1);
+        final Rect inside = tester.getRect(byKey(card));
+        final Rect rect = tester.getRect(amount);
+        expect(rect.left, greaterThanOrEqualTo(inside.left));
+        expect(rect.right, lessThanOrEqualTo(inside.right));
+      }
+
+      await expectWhole(
+        words.cartLineEstimate(MoneyFormat.uzs(27600, AppLanguage.ru)),
+        'order-$orderOne',
+      );
+      await tapAndSettle(tester, byKey('orders-tab-past'));
+      await expectWhole(
+        MoneyFormat.uzs(28463, AppLanguage.ru),
+        'order-$_orderTwo',
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('shown stars read as a rating, not as an action', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(id: _orderTwo, status: 'completed', ratingStars: 4),
+    ];
+    await open(tester);
+    await tapAndSettle(tester, byKey('orders-tab-past'));
+
+    final SemanticsNode stars = tester.getSemantics(
+      byKey('order-stars-$_orderTwo'),
+    );
+    expect(stars.label, contains(ru().ratedStarsLabel(4)));
+    expect(stars.label, isNot(contains(ru().rateStarsLabel(4))));
+    handle.dispose();
+  });
+
+  testWidgets(
+    'on a narrow phone the rate boxes keep their size and the button goes under',
+    (WidgetTester tester) async {
+      await loadMontserrat();
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(status: 'completed', canRate: true),
+      ];
+      await open(tester, size: const Size(320, 640));
+      await tapAndSettle(tester, byKey('orders-tab-past'));
+
+      double bottom = 0;
+      for (int stars = 1; stars <= 5; stars++) {
+        final Rect box = tester.getRect(byKey('order-rate-$orderOne-$stars'));
+        expect(box.width, greaterThanOrEqualTo(34), reason: '$stars wide');
+        expect(box.height, greaterThanOrEqualTo(30), reason: '$stars high');
+        bottom = box.bottom;
+      }
+      final Rect repeat = tester.getRect(byKey('order-repeat-$orderOne'));
+      expect(repeat.top, greaterThanOrEqualTo(bottom));
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

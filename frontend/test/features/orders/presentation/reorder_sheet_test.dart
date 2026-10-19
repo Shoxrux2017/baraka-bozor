@@ -32,8 +32,8 @@ Map<String, Object?> _item(
 };
 
 /// "Повторить" and what it says, through the real router and screens, with
-/// the repositories faked. The button is not on a screen yet, so it is
-/// shown over the home in a dialog.
+/// the repositories faked. The button is shown on its own over the home in a
+/// dialog, apart from the cards and the order page that carry it.
 void main() {
   late InMemoryTokenStore tokens;
   late FakeAuthRepository auth;

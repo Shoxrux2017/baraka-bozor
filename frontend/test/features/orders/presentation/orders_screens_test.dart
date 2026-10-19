@@ -8,6 +8,7 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 import 'package:flutter/material.dart';
@@ -374,6 +375,10 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(l10n(tester).errorValidationFailed), findsNothing);
+      expect(
+        tester.widget<Text>(byKey('order-cancel-needs-reason')).style?.color,
+        KitColors.danger,
+      );
     });
   });
 
@@ -785,6 +790,84 @@ void main() {
       },
     );
 
+    testWidgets('only an estimate price carries "≈" in the editor', (
+      WidgetTester tester,
+    ) async {
+      orders.rows = <Map<String, Object?>>[
+        customerOrderJson(
+          lines: <Object?>[
+            orderLineJson(),
+            orderLineJson(
+              id: lineBread,
+              productId: productBread,
+              unit: 'piece',
+              quantity: '2',
+            ),
+          ],
+        ),
+      ];
+      await open(
+        tester,
+        at: AppPaths.customerOrderEdit(orderOne),
+        device: const Locale('ru'),
+      );
+
+      final AppLocalizations words = l10n(tester);
+      String sum(int amount) => MoneyFormat.uzs(amount, AppLanguage.ru);
+      Finder inLine(String id, String text) => find.descendant(
+        of: byKey('edit-line-$id'),
+        matching: find.text(text),
+      );
+      expect(
+        inLine(
+          lineTomato,
+          words.cartLineEstimate(
+            words.catalogPricePerUnit(sum(18400), words.unitKg),
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        inLine(lineTomato, words.cartLineEstimate(sum(27600))),
+        findsOneWidget,
+      );
+      expect(
+        inLine(
+          lineBread,
+          words.catalogPricePerUnit(sum(4000), words.unitPiece),
+        ),
+        findsOneWidget,
+      );
+      expect(inLine(lineBread, sum(8000)), findsOneWidget);
+    });
+
+    testWidgets('a line without a quantity leaves the goods unsummed', (
+      WidgetTester tester,
+    ) async {
+      orders.rows = <Map<String, Object?>>[
+        customerOrderJson(
+          lines: <Object?>[
+            orderLineJson(),
+            // A piece line holding half a piece: no quantity the unit takes.
+            orderLineJson(
+              id: lineBread,
+              productId: productBread,
+              unit: 'piece',
+              quantity: '1.500',
+            ),
+          ],
+        ),
+      ];
+      await open(
+        tester,
+        at: AppPaths.customerOrderEdit(orderOne),
+        device: const Locale('ru'),
+      );
+
+      expect(tester.widget<Text>(byKey('edit-goods')).data, '—');
+      expect(find.text('Товары (2)'), findsOneWidget);
+    });
+
     testWidgets('a line shows its own price per unit and the rule and note', (
       WidgetTester tester,
     ) async {
@@ -884,7 +967,7 @@ void main() {
         await open(
           tester,
           at: AppPaths.customerOrder(orderOne),
-          size: const Size(360, 800),
+          size: const Size(320, 640),
           textScale: 2,
           device: language,
         );

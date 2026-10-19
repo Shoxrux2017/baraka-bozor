@@ -314,7 +314,6 @@
       }
     }
   },
-  "catalogEstimateNote": "narx taxminiy",
   "catalogEstimateExplain": "Yakuniy narx yig'uvchi bozorda haqiqatda to'lagan narxdan hisoblanadi. U taxminiy narxdan belgilangan chegaradan ko'proq oshsa, xarid qilishdan oldin sizdan rozilik so'raymiz.",
   "catalogLoadMore": "Yana yuklash",
   "homeNavHome": "Bosh sahifa",
@@ -1554,8 +1553,6 @@
   "orderRequestCancelReason": "Sabab",
   "errorApprovalExpired": "Savolga javob berish vaqti o'tgan.",
   "questionRejectRemoves": "Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.",
-  "removedYouRejected": "siz rad etdingiz",
-  "removedYouRemoved": "siz olib tashladingiz",
   "questionDropsReplacement": "Rozi bo'lsangiz, o'rniga boshqasi emas, buyurtma qilingan mahsulotning o'zi olinadi.",
   "decisionSending": "Javob yuborilmoqda",
   "courierOrdersEmpty": "Hozircha sizga yetkazish tayinlanmagan. Tayinlangan yetkazish shu yerda paydo bo'ladi.",
@@ -2055,6 +2052,14 @@
       }
     }
   },
+  "ratedStarsLabel": "Baho: 5 dan {stars}",
+  "@ratedStarsLabel": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
   "orderStateAccepted": "Buyurtma qabul qilindi",
   "orderStateAcceptedHint": "Tez orada yig'uvchi bozordan xarid qilishni boshlaydi",
   "orderStateShopping": "Bozordan xarid qilyapmiz",
@@ -2121,6 +2126,7 @@
   "orderToPayLabel": "To'lov",
   "orderNothingDue": "yo'q",
   "orderPaidCash": "Naqd to'landi",
+  "orderPaidOnline": "Onlayn to'landi",
   "orderPaidWhen": "{amount}, {when}",
   "@orderPaidWhen": {
     "placeholders": {

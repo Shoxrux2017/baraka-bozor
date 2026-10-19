@@ -1442,12 +1442,6 @@ abstract class AppLocalizations {
   /// **'{price} / {unit}'**
   String catalogPricePerUnit(String price, String unit);
 
-  /// No description provided for @catalogEstimateNote.
-  ///
-  /// In uz, this message translates to:
-  /// **'narx taxminiy'**
-  String get catalogEstimateNote;
-
   /// No description provided for @catalogEstimateExplain.
   ///
   /// In uz, this message translates to:
@@ -4346,18 +4340,6 @@ abstract class AppLocalizations {
   /// **'Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.'**
   String get questionRejectRemoves;
 
-  /// No description provided for @removedYouRejected.
-  ///
-  /// In uz, this message translates to:
-  /// **'siz rad etdingiz'**
-  String get removedYouRejected;
-
-  /// No description provided for @removedYouRemoved.
-  ///
-  /// In uz, this message translates to:
-  /// **'siz olib tashladingiz'**
-  String get removedYouRemoved;
-
   /// No description provided for @questionDropsReplacement.
   ///
   /// In uz, this message translates to:
@@ -5396,6 +5378,12 @@ abstract class AppLocalizations {
   /// **'5 dan {stars} ga baholash'**
   String rateStarsLabel(int stars);
 
+  /// No description provided for @ratedStarsLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Baho: 5 dan {stars}'**
+  String ratedStarsLabel(int stars);
+
   /// No description provided for @orderStateAccepted.
   ///
   /// In uz, this message translates to:
@@ -5563,6 +5551,12 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Naqd to\'landi'**
   String get orderPaidCash;
+
+  /// No description provided for @orderPaidOnline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Onlayn to\'landi'**
+  String get orderPaidOnline;
 
   /// No description provided for @orderPaidWhen.
   ///

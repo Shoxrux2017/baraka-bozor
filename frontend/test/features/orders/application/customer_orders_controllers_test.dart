@@ -317,4 +317,35 @@ void main() {
 
     expect(loads(), loaded + 1);
   });
+
+  test('an uncertain reorder loads the cart again and keeps its key', () async {
+    final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository();
+    final FakeCartRepository cart = FakeCartRepository();
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        customerAccountProvider.overrideWith((Ref ref) => 'customer-a'),
+        customerOrdersRepositoryProvider.overrideWithValue(orders),
+        cartRepositoryProvider.overrideWithValue(cart),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.listen(cartProvider('customer-a'), (_, _) {});
+    container.listen(reorderProvider(orderOne), (_, _) {});
+    await container.read(cartProvider('customer-a').future);
+    int loads() => cart.calls.where((String c) => c == 'cart').length;
+    final int loaded = loads();
+
+    orders.reorderFailure = const NetworkFailure();
+    await container.read(reorderProvider(orderOne).notifier).reorder();
+    await container.read(cartProvider('customer-a').future);
+
+    expect(loads(), loaded + 1, reason: 'the cart is not left as it was');
+    orders.reorderFailure = null;
+    await container.read(reorderProvider(orderOne).notifier).reorder();
+    expect(
+      orders.reorders.map(((String, String) r) => r.$2).toSet(),
+      hasLength(1),
+      reason: 'the retry sends the same key',
+    );
+  });
 }

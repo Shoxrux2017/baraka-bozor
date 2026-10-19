@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -261,6 +262,17 @@ void main() {
       findsOneWidget,
     );
     expect(sendActive(tester), isFalse);
+    expect(
+      tester
+          .widget<Text>(
+            find.text(
+              'Оценить заказ можно в течение 7 дней после доставки — это время прошло.',
+            ),
+          )
+          .style
+          ?.color,
+      KitColors.danger,
+    );
   });
 
   testWidgets('another failure is said above the button', (

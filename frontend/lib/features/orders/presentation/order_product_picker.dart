@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/catalog/catalog_values.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
@@ -315,9 +316,17 @@ class _PickRow extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     alignment: AlignmentDirectional.centerStart,
                     child: Text(
-                      l10n.cartLineEstimate(
-                        MoneyFormat.uzs(product.customerUnitPriceUzs, language),
-                      ),
+                      product.priceMode == PriceMode.estimate
+                          ? l10n.cartLineEstimate(
+                              MoneyFormat.uzs(
+                                product.customerUnitPriceUzs,
+                                language,
+                              ),
+                            )
+                          : MoneyFormat.uzs(
+                              product.customerUnitPriceUzs,
+                              language,
+                            ),
                       maxLines: 1,
                       style: const TextStyle(
                         fontSize: 14,

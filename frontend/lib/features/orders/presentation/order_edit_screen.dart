@@ -200,6 +200,9 @@ final class _LineDraft {
   int get unitPriceUzs =>
       line?.customerUnitPriceUzs ?? product!.customerUnitPriceUzs;
 
+  /// How the price is fixed: an estimate carries "≈", a fixed price none.
+  PriceMode get priceMode => line?.priceMode ?? product!.priceMode;
+
   /// Whether [quantity] is one the server would take.
   bool get quantityValid => QuantityRules.normalize(unit, quantity) != null;
 
@@ -502,6 +505,10 @@ class _EditorState extends ConsumerState<_Editor> {
     final MutationState saving = ref.watch(orderEditProvider(widget.order.id));
     final List<_LineDraft> kept = _kept;
     final bool full = kept.length >= orderMaxLines;
+    // A line without a quantity has no preview: no sum stands for the goods.
+    final bool countable = kept.every(
+      (_LineDraft line) => line.previewUzs != null,
+    );
     final int goods = kept.fold<int>(
       0,
       (int sum, _LineDraft line) => sum + (line.previewUzs ?? 0),
@@ -587,9 +594,11 @@ class _EditorState extends ConsumerState<_Editor> {
                             SummaryAmountRow(
                               valueKey: 'edit-goods',
                               label: l10n.cartGoods(kept.length),
-                              value: l10n.cartLineEstimate(
-                                MoneyFormat.uzs(goods, language),
-                              ),
+                              value: countable
+                                  ? l10n.cartLineEstimate(
+                                      MoneyFormat.uzs(goods, language),
+                                    )
+                                  : '—',
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -719,6 +728,25 @@ class _InfoBox extends StatelessWidget {
 /// One line of the editor (drawing 29и): picture, name, the price of a unit,
 /// the rule and the note when set, and the line's preview with its stepper.
 /// A line taken out is greyed and offers to come back.
+/// [amount] with "≈" when the line's price is an estimate, as it stands
+/// when the price is fixed.
+String _estimated(AppLocalizations l10n, _LineDraft draft, String amount) =>
+    draft.priceMode == PriceMode.estimate
+    ? l10n.cartLineEstimate(amount)
+    : amount;
+
+/// The line's price per unit, with "≈" only for an estimate price.
+String _perUnit(
+  AppLocalizations l10n,
+  AppLanguage language,
+  _LineDraft draft,
+  String unit,
+) => _estimated(
+  l10n,
+  draft,
+  l10n.catalogPricePerUnit(MoneyFormat.uzs(draft.unitPriceUzs, language), unit),
+);
+
 class _EditLine extends StatelessWidget {
   const _EditLine({
     required this.draft,
@@ -815,12 +843,7 @@ class _EditLine extends StatelessWidget {
         if (!removed) ...<Widget>[
           const SizedBox(height: 2),
           Text(
-            l10n.cartLineEstimate(
-              l10n.catalogPricePerUnit(
-                MoneyFormat.uzs(draft.unitPriceUzs, language),
-                unit,
-              ),
-            ),
+            _perUnit(l10n, language, draft, unit),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 12, color: KitColors.muted),
@@ -887,7 +910,9 @@ class _EditLine extends StatelessWidget {
                       : FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            l10n.cartLineEstimate(
+                            _estimated(
+                              l10n,
+                              draft,
                               MoneyFormat.uzs(preview, language),
                             ),
                             key: ValueKey<String>('edit-sum-${draft.key}'),

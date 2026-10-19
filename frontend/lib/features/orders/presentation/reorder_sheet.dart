@@ -7,6 +7,7 @@ import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/failure_text.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
+import '../../../core/network/api_failure.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/product_image.dart';
@@ -35,7 +36,7 @@ Future<void> repeatOrder(
     await showReorderSheet(context, result: result, orderNumber: orderNumber);
     return;
   }
-  final failure = ref.read(reorderProvider(orderId)).failure;
+  final ApiFailure? failure = ref.read(reorderProvider(orderId)).failure;
   final String? text = failure == null
       ? null
       : failureText(AppLocalizations.of(context), failure);

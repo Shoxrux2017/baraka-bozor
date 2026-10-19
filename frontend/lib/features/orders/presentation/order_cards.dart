@@ -62,8 +62,6 @@ class OrderStatusChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Text(
           OrderLabels.customerStatus(AppLocalizations.of(context), status),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
@@ -233,19 +231,17 @@ class _RateRow extends StatelessWidget {
         ],
       );
     }
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: left == null
-              ? const SizedBox.shrink()
-              : Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: FittedBox(fit: BoxFit.scaleDown, child: left),
-                ),
-        ),
-        const SizedBox(width: 8),
-        repeat,
-      ],
+    if (left == null) {
+      return Align(alignment: AlignmentDirectional.centerEnd, child: repeat);
+    }
+    // The boxes keep their 34x30; when they and the button do not share a
+    // line, the button goes under them.
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
+      children: <Widget>[left, repeat],
     );
   }
 }
@@ -308,56 +304,60 @@ class _Top extends StatelessWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     const TextStyle small = TextStyle(fontSize: 12, color: KitColors.muted);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: KitColors.card,
-            borderRadius: BorderRadius.circular(14),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints box) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: KitColors.card,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: SizedBox.square(
+              dimension: 56,
+              child: Center(child: ProductImage(url: order.imageUrl, size: 48)),
+            ),
           ),
-          child: SizedBox.square(
-            dimension: 56,
-            child: Center(child: ProductImage(url: order.imageUrl, size: 48)),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                l10n.customerOrderTitle(order.orderNumber),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: KitColors.ink,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  l10n.customerOrderTitle(order.orderNumber),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: KitColors.ink,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '${order.street}, ${order.house}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: small,
-              ),
-              Text(
-                l10n.orderItemCount(order.itemCount),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: small,
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  '${order.street}, ${order.house}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: small,
+                ),
+                Text(
+                  l10n.orderItemCount(order.itemCount),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: small,
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 110),
-          child: OrderStatusChip(status: order.status),
-        ),
-      ],
+          const SizedBox(width: 8),
+          // The status keeps its words whole: it takes the room it needs up to
+          // half the row, and wraps inside that when the text is large.
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: box.maxWidth / 2),
+            child: OrderStatusChip(status: order.status),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -392,13 +392,19 @@ class _Bottom extends ConsumerWidget {
         ),
         const SizedBox(width: 8),
         Flexible(
-          child: Text(
-            amount,
-            textAlign: TextAlign.end,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: KitColors.ink,
+          child: Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                amount,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: KitColors.ink,
+                ),
+              ),
             ),
           ),
         ),
@@ -538,7 +544,7 @@ class _RatedStars extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: AppLocalizations.of(context).rateStarsLabel(stars),
+      label: AppLocalizations.of(context).ratedStarsLabel(stars),
       excludeSemantics: true,
       child: Row(
         key: ValueKey<String>('order-stars-${order.id}'),

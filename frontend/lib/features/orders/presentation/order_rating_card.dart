@@ -128,7 +128,7 @@ class RatedOrderCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Semantics(
-            label: l10n.rateStarsLabel(rating.stars),
+            label: l10n.ratedStarsLabel(rating.stars),
             excludeSemantics: true,
             child: Row(
               mainAxisSize: MainAxisSize.min,

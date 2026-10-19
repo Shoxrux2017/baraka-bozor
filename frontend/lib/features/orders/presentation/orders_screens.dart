@@ -517,7 +517,20 @@ class _QuestionBlock extends ConsumerWidget {
               language: language,
             )
           else if (line.questionExpired)
-            OrderQuestionExpired(line: line),
+            OrderQuestionExpired(line: line)
+          else if (refusal != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                line.name(language),
+                key: ValueKey<String>('question-refusal-name-${line.id}'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: KitColors.ink2,
+                ),
+              ),
+            ),
           FailureMessage(refusal),
         ],
       ),

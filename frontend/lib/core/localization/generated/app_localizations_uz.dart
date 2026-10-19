@@ -731,9 +731,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get catalogEstimateNote => 'narx taxminiy';
-
-  @override
   String get catalogEstimateExplain =>
       'Yakuniy narx yig\'uvchi bozorda haqiqatda to\'lagan narxdan hisoblanadi. U taxminiy narxdan belgilangan chegaradan ko\'proq oshsa, xarid qilishdan oldin sizdan rozilik so\'raymiz.';
 
@@ -2467,12 +2464,6 @@ class AppLocalizationsUz extends AppLocalizations {
       'Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.';
 
   @override
-  String get removedYouRejected => 'siz rad etdingiz';
-
-  @override
-  String get removedYouRemoved => 'siz olib tashladingiz';
-
-  @override
   String get questionDropsReplacement =>
       'Rozi bo\'lsangiz, o\'rniga boshqasi emas, buyurtma qilingan mahsulotning o\'zi olinadi.';
 
@@ -3141,6 +3132,11 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String ratedStarsLabel(int stars) {
+    return 'Baho: 5 dan $stars';
+  }
+
+  @override
   String get orderStateAccepted => 'Buyurtma qabul qilindi';
 
   @override
@@ -3236,6 +3232,9 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get orderPaidCash => 'Naqd to\'landi';
+
+  @override
+  String get orderPaidOnline => 'Onlayn to\'landi';
 
   @override
   String orderPaidWhen(String amount, String when) {

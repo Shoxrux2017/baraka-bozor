@@ -6,9 +6,7 @@ import 'package:baraka_bozor/core/formatting/order_dates.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/catalog_labels.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
-import 'package:baraka_bozor/core/localization/order_labels.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
-import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/orders/quantity_rules.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
@@ -181,16 +179,6 @@ void main() {
       expect(
         uz.questionPriceKit('B', 'C'),
         isNot(ru.questionPriceKit('B', 'C')),
-      );
-      expect(
-        OrderLabels.customerRemovedReason(
-          ru,
-          ItemRemovedReason.customerRejected,
-        ),
-        isNot(
-          OrderLabels.removedReason(ru, ItemRemovedReason.customerRejected),
-        ),
-        reason: 'the Customer reads about their own refusal',
       );
     });
 
@@ -520,6 +508,13 @@ void main() {
       );
       expect(byKey('question-$approvalOne'), findsNothing);
       expect(byKey('question-expired-$lineTomato'), findsNothing);
+      final Finder name = byKey('question-refusal-name-$lineTomato');
+      expect(tester.widget<Text>(name).data, 'Pomidor');
+      expect(
+        tester.getTopLeft(name).dy,
+        lessThan(tester.getTopLeft(byKey('failure-message')).dy),
+        reason: 'the product is named above its refusal',
+      );
     });
 
     testWidgets('a refusal is not said under a question asked since', (

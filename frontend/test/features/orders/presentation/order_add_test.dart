@@ -557,16 +557,15 @@ void main() {
       ),
       findsOneWidget,
     );
-    // The milk's price now, 12 000, not the tomato's 18 400.
+    // The milk's price now, 12 000, not the tomato's 18 400, and a fixed
+    // price has no "≈".
     expect(
       find.descendant(
         of: added,
         matching: find.text(
-          words.cartLineEstimate(
-            words.catalogPricePerUnit(
-              MoneyFormat.uzs(12000, AppLanguage.ru),
-              words.unitPiece,
-            ),
+          words.catalogPricePerUnit(
+            MoneyFormat.uzs(12000, AppLanguage.ru),
+            words.unitPiece,
           ),
         ),
       ),
@@ -575,9 +574,7 @@ void main() {
     expect(
       find.descendant(
         of: added,
-        matching: find.text(
-          words.cartLineEstimate(MoneyFormat.uzs(12000, AppLanguage.ru)),
-        ),
+        matching: find.text(MoneyFormat.uzs(12000, AppLanguage.ru)),
       ),
       findsOneWidget,
     );
@@ -585,8 +582,41 @@ void main() {
     expect(
       find.descendant(
         of: added,
+        matching: find.text(MoneyFormat.uzs(24000, AppLanguage.ru)),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the picker shows "≈" only on an estimate price', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, device: const Locale('ru'));
+    await tapAndSettle(tester, byKey('edit-add-product'));
+    await tapAndSettle(tester, byKey('pick-category-c-1'));
+
+    final AppLocalizations words = l10n(tester);
+    expect(
+      find.descendant(
+        of: byKey('product-$productMilk'),
+        matching: find.text(MoneyFormat.uzs(12000, AppLanguage.ru)),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: byKey('product-$productMilk'),
         matching: find.text(
-          words.cartLineEstimate(MoneyFormat.uzs(24000, AppLanguage.ru)),
+          words.cartLineEstimate(MoneyFormat.uzs(12000, AppLanguage.ru)),
+        ),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: byKey('product-${productTomato.toUpperCase()}'),
+        matching: find.text(
+          words.cartLineEstimate(MoneyFormat.uzs(18400, AppLanguage.ru)),
         ),
       ),
       findsOneWidget,

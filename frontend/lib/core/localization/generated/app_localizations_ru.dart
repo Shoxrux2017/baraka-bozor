@@ -730,9 +730,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get catalogEstimateNote => 'цена ориентировочная';
-
-  @override
   String get catalogEstimateExplain =>
       'Итоговая цена рассчитывается от цены, которую сборщик фактически заплатит на рынке. Если она превысит ориентировочную больше допустимого, мы спросим вашего согласия до покупки.';
 
@@ -2497,12 +2494,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Если откажетесь, этот товар уберут из заказа.';
 
   @override
-  String get removedYouRejected => 'вы отказались';
-
-  @override
-  String get removedYouRemoved => 'вы убрали';
-
-  @override
   String get questionDropsReplacement =>
       'Если согласитесь, купят заказанный товар, а не замену.';
 
@@ -3184,6 +3175,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String ratedStarsLabel(int stars) {
+    return 'Оценка: $stars из 5';
+  }
+
+  @override
   String get orderStateAccepted => 'Заказ принят';
 
   @override
@@ -3278,6 +3274,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get orderPaidCash => 'Оплачено наличными';
+
+  @override
+  String get orderPaidOnline => 'Оплачено онлайн';
 
   @override
   String orderPaidWhen(String amount, String when) {

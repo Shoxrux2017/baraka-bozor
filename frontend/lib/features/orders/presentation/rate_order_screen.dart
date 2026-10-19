@@ -345,9 +345,7 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
                     liveRegion: true,
                     child: Text(
                       l10n.rateWindowClosed,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
+                      style: const TextStyle(color: KitColors.danger),
                     ),
                   ),
                 )

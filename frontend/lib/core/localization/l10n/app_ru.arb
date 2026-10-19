@@ -314,7 +314,6 @@
       }
     }
   },
-  "catalogEstimateNote": "цена ориентировочная",
   "catalogEstimateExplain": "Итоговая цена рассчитывается от цены, которую сборщик фактически заплатит на рынке. Если она превысит ориентировочную больше допустимого, мы спросим вашего согласия до покупки.",
   "catalogLoadMore": "Загрузить ещё",
   "homeNavHome": "Главная",
@@ -1533,8 +1532,6 @@
   "orderRequestCancelReason": "Причина",
   "errorApprovalExpired": "Время ответа на вопрос истекло.",
   "questionRejectRemoves": "Если откажетесь, этот товар уберут из заказа.",
-  "removedYouRejected": "вы отказались",
-  "removedYouRemoved": "вы убрали",
   "questionDropsReplacement": "Если согласитесь, купят заказанный товар, а не замену.",
   "decisionSending": "Отправляем ответ",
   "courierOrdersEmpty": "Пока вам не назначено доставок. Назначенная доставка появится здесь.",
@@ -1907,6 +1904,7 @@
   "ordersEmptyAction": "За покупками",
   "ordersPastEmpty": "Здесь будут доставленные и отменённые заказы",
   "rateStarsLabel": "Оценить на {stars} из 5",
+  "ratedStarsLabel": "Оценка: {stars} из 5",
   "orderStateAccepted": "Заказ принят",
   "orderStateAcceptedHint": "Скоро сборщик начнёт покупать на базаре",
   "orderStateShopping": "Покупаем на базаре",
@@ -1935,6 +1933,7 @@
   "orderToPayLabel": "К оплате",
   "orderNothingDue": "нет",
   "orderPaidCash": "Оплачено наличными",
+  "orderPaidOnline": "Оплачено онлайн",
   "orderPaidWhen": "{amount}, {when}",
   "orderToPayAmount": "К оплате {amount}",
   "orderCashOnDelivery": "Наличными курьеру при получении",
