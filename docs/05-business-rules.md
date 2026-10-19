@@ -46,7 +46,7 @@
 
 **BR-ROLE-012** — A login code has a purpose, sign-in or account deletion; a code of one purpose never serves the other. Both share the phone's send window, attempt limit and lock.
 
-**BR-ROLE-013** — A Customer may delete their own account with a deletion code while no order of theirs is unfinished. Deletion erases the account's personal data and frees the phone; orders, payments and history stay without the name, phone, address and free texts.
+**BR-ROLE-013** — A Customer may delete their own account with a deletion code while no order of theirs is unfinished. Deletion erases the account's personal data and frees the phone; orders, payments and history stay without the name, phone, address and free texts. A blocked account is not erased: erasing it would free the phone and let the block be escaped (`BR-ROLE-010`).
 
 # 3. Catalog
 

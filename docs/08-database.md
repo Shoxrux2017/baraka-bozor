@@ -25,14 +25,14 @@ order_cancellation_requests   order_ratings
 payments                    payment_attempts         provider_events
 refunds
 push_devices                notification_deliveries
-idempotency_keys
+idempotency_keys            legal_documents
 ```
 
 Framework: `personal_access_tokens`, `cache`, `jobs`, `failed_jobs`, `job_batches`, `migrations`.
 
 ## 3. `users` (migrated)
 
-`id, role, phone?, full_name?, password?, status, must_change_password, password_changed_at?, last_login_at?, terms_accepted_at?, blocked_at?, deleted_at?, deleted_by_user_id? → users, created_by_user_id?, timestamps`, plus **`preferred_language varchar(2) NOT NULL DEFAULT 'uz'`** (`CHECK IN ('uz','ru')`, added by a Wave 0 migration).
+`id, role, phone?, full_name?, password?, status, must_change_password, password_changed_at?, last_login_at?, terms_accepted_at?, blocked_at?, deleted_at?, deleted_by_user_id? → users, created_by_user_id?, timestamps`, plus **`preferred_language varchar(2) NOT NULL DEFAULT 'uz'`** (`CHECK IN ('uz','ru')`, added by a Wave 0 migration). `terms_accepted_at` is the moment of the Customer's latest verified sign-in made while at least one legal document (terms or privacy, in either language) is published; while none is, sign-in leaves it as it was, because consent names an edition and none exists (`DL-94` item 3).
 
 Checks: role in the six values; status `active|blocked|deleted`; phone `^\+998[0-9]{9}$`, and null only when the status is `deleted` (`BR-ROLE-013`, `DL-94` item 4); `deleted_at` is set exactly when the status is `deleted`, and `deleted_by_user_id` only then; Customer has null password and no gate; Staff has a password; blocked implies `blocked_at`. Two partial unique indexes: `(phone) WHERE status='active' AND role='customer'` and `(phone) WHERE status='active' AND role<>'customer'`. Index `(role,status)`, `lower(full_name)`.
 

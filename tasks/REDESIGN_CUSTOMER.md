@@ -26,6 +26,9 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - Stage 4b, the Owner sets the Geocoding API daily quota (300 requests a day) and a $1 budget alert in Google Cloud, so the lookup stays within Google's free 10 000 a month (`DL-86` item 1).
 - Stage 4b, the Courier's Navigator link is called without the signature Yandex describes for version 2.40 and later; if a Courier's phone refuses it, the app is registered with Yandex and the server signs the link (`DL-86` item 6).
 - Stage 5, the checkout shows the service fee without "≈" (drawing 25); the preview carries no fee kind. A `service_fee_kind` in the checkout preview would let it match the cart's "≈" for a percentage fee.
+- Stage 7, in-flight Customer writes racing the erasure: a profile, address, favourite or cart request, or a sign-in, that passed the auth check before the erasure committed can still write to the deleted row. Ruling: the app cannot send them while the delete confirmation is open, so it is left; fix later by locking the user row in those writes.
+- Stage 7, the code delivery message names no purpose. Ruling: the Wave 4 gateway task must word the deletion code differently from a login code.
+- Stage 7, Owner question pending: erasure of a blocked Customer. Ruling: until the Owner answers, a blocked account is not erased (`409 account_blocked`, `DL-94` item 5), because erasing it would free the phone and let the block be escaped.
 
 ## Part 1 history (design 4a, `DL-74`, `DL-75`)
 

@@ -52,7 +52,7 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Admin)]
 
 /*
 |--------------------------------------------------------------------------
-| Customer search and erasure — docs/09-api-contracts.md Sections 66 and 67
+| Customer search and erasure â€” docs/09-api-contracts.md Sections 66 and 67
 |--------------------------------------------------------------------------
 |
 | Admin only: an Operator or Manager does not erase accounts (DL-94 item 5).
