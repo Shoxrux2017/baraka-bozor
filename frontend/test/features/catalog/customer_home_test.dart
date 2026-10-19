@@ -112,7 +112,9 @@ void main() {
     await tester.tap(byKey('open-orders'));
     await tester.pumpAndSettle();
     expect(find.byType(CatalogHomeScreen), findsNothing);
-    await tester.tap(find.byType(BackButton));
+    // The orders tab has no back arrow of its own: the system back leaves it.
+    expect(find.byType(BackButton), findsNothing);
+    await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.byType(CatalogHomeScreen), findsOneWidget);
     await tester.tap(byKey('open-profile'));

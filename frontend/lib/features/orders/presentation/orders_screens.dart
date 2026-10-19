@@ -20,11 +20,14 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/customer_tab_bar.dart';
+import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/periodic_refresh.dart';
 import '../application/customer_orders_controllers.dart';
 import '../domain/customer_orders.dart';
+import 'order_cards.dart';
 
 /// A total with its kind (`DL-37` (10)), or that nothing is due.
 String orderTotalText(
@@ -40,103 +43,248 @@ String orderTotalText(
     '${MoneyFormat.uzs(totalUzs ?? 0, language)} · ${l10n.totalKindFinal}',
 };
 
-/// The Customer's orders, newest first (`docs/09` section 20); an order
-/// with a question waiting for their answer says so.
-class OrdersScreen extends ConsumerWidget {
+/// The Customer's orders, newest first, in two tabs: the ones in hand and the
+/// ones that ended (`docs/09` section 20, `DL-92` item 3). An order with a
+/// question waiting for their answer says so, and the tab in hand is kept
+/// current while shown.
+class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
+}
+
+class _OrdersScreenState extends ConsumerState<OrdersScreen> {
+  OrdersTab _tab = OrdersTab.current;
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = interfaceLanguage(context);
     final AsyncValue<Paged<OrderSummary>> page = ref.watch(
-      customerOrdersProvider(OrdersTab.current),
+      customerOrdersProvider(_tab),
     );
+    final bool refreshing =
+        _tab == OrdersTab.current &&
+        page.hasValue &&
+        !page.hasError &&
+        !page.isLoading;
 
     return CustomerTabScope(
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.myOrders)),
+        backgroundColor: Colors.white,
+        appBar: kitAppBar(
+          title: l10n.myOrders,
+          automaticallyImplyLeading: false,
+        ),
         bottomNavigationBar: const CustomerTabBar(current: CustomerTab.orders),
         body: SafeArea(
           child: Column(
             children: <Widget>[
               const ActiveModeBar(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                child: _TabSwitch(
+                  tab: _tab,
+                  onTab: (OrdersTab tab) => setState(() => _tab = tab),
+                ),
+              ),
               Expanded(
-                child: page.when(
-                  skipLoadingOnReload: false,
-                  skipLoadingOnRefresh: !page.hasError,
-                  data: (Paged<OrderSummary> page) => page.items.isEmpty
-                      ? Center(
-                          key: const ValueKey<String>('orders-empty'),
-                          child: Text(l10n.myOrdersEmpty),
-                        )
-                      : ListView(
-                          key: const ValueKey<String>('orders-list'),
-                          padding: const EdgeInsets.all(16),
-                          children: <Widget>[
-                            for (final OrderSummary order in page.items)
-                              Card(
-                                child: ListTile(
-                                  key: ValueKey<String>('order-${order.id}'),
-                                  title: Text(
-                                    '${l10n.boardOrderNumber('${order.orderNumber}')} · '
-                                    '${OrderLabels.customerStatus(l10n, order.status)}',
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: <Widget>[
-                                      Text(
-                                        '${TashkentTime.format(order.createdAt)}\n'
-                                        '${orderTotalText(l10n, language, order.totalUzs, order.totalKind)} · '
-                                        '${l10n.boardItemCount(order.itemCount)}',
-                                      ),
-                                      if (order.pendingApprovalCount > 0)
-                                        Text(
-                                          l10n.ordersNeedAnswer,
-                                          key: ValueKey<String>(
-                                            'order-waiting-${order.id}',
-                                          ),
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .error,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  onTap: () => context.push(
-                                    AppPaths.customerOrder(order.id),
-                                  ),
+                child: PeriodicRefresh(
+                  interval: const Duration(seconds: 30),
+                  active: refreshing,
+                  onRefresh: () =>
+                      ref.invalidate(customerOrdersProvider(OrdersTab.current)),
+                  child: page.when(
+                    skipLoadingOnReload: false,
+                    skipLoadingOnRefresh: !page.hasError,
+                    data: (Paged<OrderSummary> page) => page.items.isEmpty
+                        ? _Empty(tab: _tab)
+                        : ListView(
+                            key: const ValueKey<String>('orders-list'),
+                            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                            children: <Widget>[
+                              for (final OrderSummary order in page.items)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: _tab == OrdersTab.current
+                                      ? CurrentOrderCard(order: order)
+                                      : PastOrderCard(order: order),
                                 ),
+                              PaginationBar(
+                                page: page,
+                                onPage: ref
+                                    .read(ordersPageProvider(_tab).notifier)
+                                    .goToPage,
                               ),
-                            PaginationBar(
-                              page: page,
-                              onPage: ref
-                                  .read(
-                                    ordersPageProvider(OrdersTab.current)
-                                        .notifier,
-                                  )
-                                  .goToPage,
-                            ),
-                          ],
-                        ),
-                  error: (Object error, StackTrace _) => Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: LoadFailure(
-                      error: error,
-                      onRetry: () => ref.invalidate(
-                        customerOrdersProvider(OrdersTab.current),
+                            ],
+                          ),
+                    error: (Object error, StackTrace _) => Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: LoadFailure(
+                        error: error,
+                        onRetry: () =>
+                            ref.invalidate(customerOrdersProvider(_tab)),
                       ),
                     ),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
                   ),
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The two tabs as one segmented control; the chosen one is green.
+class _TabSwitch extends StatelessWidget {
+  const _TabSwitch({required this.tab, required this.onTab});
+
+  final OrdersTab tab;
+  final ValueChanged<OrdersTab> onTab;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    Widget segment(OrdersTab value, String key, String label) {
+      final bool chosen = tab == value;
+      return Expanded(
+        child: Semantics(
+          button: true,
+          selected: chosen,
+          excludeSemantics: true,
+          label: label,
+          child: Material(
+            key: ValueKey<String>(key),
+            color: chosen ? KitColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () => onTab(value),
+              child: Center(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: chosen ? Colors.white : KitColors.muted,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: KitColors.field,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: SizedBox(
+        height: 48,
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            children: <Widget>[
+              segment(
+                OrdersTab.current,
+                'orders-tab-current',
+                l10n.ordersTabCurrent,
+              ),
+              const SizedBox(width: 4),
+              segment(OrdersTab.past, 'orders-tab-past', l10n.ordersTabPast),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A tab with no orders: the way to the first one, or what will be here.
+class _Empty extends StatelessWidget {
+  const _Empty({required this.tab});
+
+  final OrdersTab tab;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool current = tab == OrdersTab.current;
+
+    return Center(
+      key: const ValueKey<String>('orders-empty'),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                color: KitColors.primaryWash,
+                shape: BoxShape.circle,
+              ),
+              child: SizedBox.square(
+                dimension: 96,
+                child: Icon(
+                  Icons.receipt_long,
+                  size: 44,
+                  color: KitColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              current ? l10n.myOrdersEmpty : l10n.ordersPastEmpty,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: KitColors.ink,
+              ),
+            ),
+            if (current) ...<Widget>[
+              const SizedBox(height: 8),
+              Text(
+                l10n.ordersEmptyHint,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: KitColors.muted,
+                ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                key: const ValueKey<String>('orders-empty-shop'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: KitColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(0, 54),
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                onPressed: () => context.go(AppPaths.customer),
+                child: Text(
+                  l10n.ordersEmptyAction,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

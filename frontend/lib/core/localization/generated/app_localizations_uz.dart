@@ -3111,4 +3111,54 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get questionAnswer => 'Javob berish';
+
+  @override
+  String get ordersTabCurrent => 'Joriy';
+
+  @override
+  String get ordersTabPast => 'O\'tgan';
+
+  @override
+  String customerOrderTitle(int number) {
+    return 'Buyurtma № $number';
+  }
+
+  @override
+  String orderItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ta mahsulot',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String orderCardQuestion(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Yig\'uvchi $count ta mahsulot haqida so\'ramoqda',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get callCourier => 'Kuryerga qo\'ng\'iroq qilish';
+
+  @override
+  String get ordersEmptyHint =>
+      'Savatni to\'ldiring — yig\'uvchi hammasini bozordan oladi, kuryer esa olib keladi.';
+
+  @override
+  String get ordersEmptyAction => 'Xaridga';
+
+  @override
+  String get ordersPastEmpty =>
+      'Bu yerda yetkazilgan va bekor qilingan buyurtmalar bo\'ladi';
+
+  @override
+  String rateStarsLabel(int stars) {
+    return '5 dan $stars ga baholash';
+  }
 }

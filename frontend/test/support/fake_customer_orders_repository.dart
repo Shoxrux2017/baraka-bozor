@@ -192,21 +192,27 @@ Map<String, Object?> orderSummaryJson({
   String? imageUrl,
   int? ratingStars,
   bool canRate = false,
+  int itemCount = 2,
+  String street = 'Amir Temur',
+  String house = '12',
+  int? totalUzs,
+  String totalKind = 'estimate',
+  String createdAt = '2026-09-28T07:00:00Z',
 }) => <String, Object?>{
   'id': id,
   'order_number': number,
   'status': status,
   'payment_method': 'cash',
-  'item_count': 2,
+  'item_count': itemCount,
   'pending_approval_count': waiting,
-  'total_uzs': status == 'cancelled' ? null : 55600,
-  'total_kind': status == 'cancelled' ? 'none' : 'estimate',
-  'address': <String, Object?>{'street': 'Amir Temur', 'house': '12'},
+  'total_uzs': status == 'cancelled' ? null : (totalUzs ?? 55600),
+  'total_kind': status == 'cancelled' ? 'none' : totalKind,
+  'address': <String, Object?>{'street': street, 'house': house},
   'courier_phone': courierPhone,
   'image_url': imageUrl,
   'rating_stars': ratingStars,
   'can_rate': canRate,
-  'created_at': '2026-09-28T07:00:00Z',
+  'created_at': createdAt,
 };
 
 /// The Customer's orders in memory. A change answers with [answer] when set
@@ -272,23 +278,36 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
     return order(id);
   }
 
+  /// When set, the list shows these summaries (as `orderSummaryJson` builds
+  /// them) instead of one per row, still split by tab.
+  List<Map<String, Object?>>? summaries;
+
+  static bool _isPast(String status) =>
+      status == 'completed' || status == 'cancelled';
+
   @override
   Future<Paged<OrderSummary>> orders(OrdersTab tab, int page) async {
     loads.add('orders:${tab.code}:$page');
-    return Paged<OrderSummary>(
-      items: <OrderSummary>[
-        for (final Map<String, Object?> row in rows)
-          CustomerOrdersApi.parseSummary(
+    final List<Map<String, Object?>> all =
+        summaries ??
+        <Map<String, Object?>>[
+          for (final Map<String, Object?> row in rows)
             orderSummaryJson(
               id: row['id']! as String,
               status: row['status']! as String,
               waiting: row['pending_approval_count']! as int,
             ),
-          ),
-      ],
+        ];
+    final List<OrderSummary> items = <OrderSummary>[
+      for (final Map<String, Object?> json in all)
+        if (_isPast(json['status']! as String) == (tab == OrdersTab.past))
+          CustomerOrdersApi.parseSummary(json),
+    ];
+    return Paged<OrderSummary>(
+      items: items,
       page: page,
       perPage: 20,
-      total: rows.length,
+      total: items.length,
       lastPage: 1,
     );
   }

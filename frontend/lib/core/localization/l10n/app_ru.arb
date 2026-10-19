@@ -1927,5 +1927,15 @@
   "reorderSending": "Добавляем в корзину",
   "questionBannerTitle": "Сборщик ждёт вашего ответа",
   "questionBannerOrder": "Заказ № {number} · ответьте до {time}",
-  "questionAnswer": "Ответить"
+  "questionAnswer": "Ответить",
+  "ordersTabCurrent": "Текущие",
+  "ordersTabPast": "Прошлые",
+  "customerOrderTitle": "Заказ № {number}",
+  "orderItemCount": "{count, plural, one{{count} товар} few{{count} товара} many{{count} товаров} other{{count} товара}}",
+  "orderCardQuestion": "{count, plural, one{Сборщик спрашивает про {count} товар} few{Сборщик спрашивает про {count} товара} many{Сборщик спрашивает про {count} товаров} other{Сборщик спрашивает про {count} товара}}",
+  "callCourier": "Позвонить курьеру",
+  "ordersEmptyHint": "Соберите корзину — сборщик купит всё на базаре, а курьер привезёт.",
+  "ordersEmptyAction": "За покупками",
+  "ordersPastEmpty": "Здесь будут доставленные и отменённые заказы",
+  "rateStarsLabel": "Оценить на {stars} из 5"
 }

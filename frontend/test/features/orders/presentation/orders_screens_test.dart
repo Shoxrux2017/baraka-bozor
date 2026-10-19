@@ -165,7 +165,8 @@ void main() {
     await open(tester);
     await tapAndSettle(tester, byKey('open-orders'));
 
-    expect(find.textContaining(l10n(tester).customerStatusNew), findsOneWidget);
+    expect(find.text(l10n(tester).customerStatusNew), findsOneWidget);
+    expect(find.text(l10n(tester).customerOrderTitle(1001)), findsOneWidget);
     await tapAndSettle(tester, byKey('order-$orderOne'));
 
     expect(byKey('order-status'), findsOneWidget);

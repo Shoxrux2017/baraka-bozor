@@ -880,7 +880,7 @@ void main() {
 
     expect(byKey('order-waiting-$orderOne'), findsOneWidget);
     expect(byKey('order-waiting-$orderTwo'), findsNothing);
-    expect(find.text(l10n(tester).ordersNeedAnswer), findsOneWidget);
+    expect(find.text(l10n(tester).orderCardQuestion(1)), findsOneWidget);
   });
 
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {

@@ -5365,6 +5365,66 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Javob berish'**
   String get questionAnswer;
+
+  /// No description provided for @ordersTabCurrent.
+  ///
+  /// In uz, this message translates to:
+  /// **'Joriy'**
+  String get ordersTabCurrent;
+
+  /// No description provided for @ordersTabPast.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'tgan'**
+  String get ordersTabPast;
+
+  /// No description provided for @customerOrderTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number}'**
+  String customerOrderTitle(int number);
+
+  /// No description provided for @orderItemCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count, plural, other{{count} ta mahsulot}}'**
+  String orderItemCount(int count);
+
+  /// No description provided for @orderCardQuestion.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count, plural, other{Yig\'uvchi {count} ta mahsulot haqida so\'ramoqda}}'**
+  String orderCardQuestion(int count);
+
+  /// No description provided for @callCourier.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryerga qo\'ng\'iroq qilish'**
+  String get callCourier;
+
+  /// No description provided for @ordersEmptyHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatni to\'ldiring — yig\'uvchi hammasini bozordan oladi, kuryer esa olib keladi.'**
+  String get ordersEmptyHint;
+
+  /// No description provided for @ordersEmptyAction.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaridga'**
+  String get ordersEmptyAction;
+
+  /// No description provided for @ordersPastEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu yerda yetkazilgan va bekor qilingan buyurtmalar bo\'ladi'**
+  String get ordersPastEmpty;
+
+  /// No description provided for @rateStarsLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'5 dan {stars} ga baholash'**
+  String rateStarsLabel(int stars);
 }
 
 class _AppLocalizationsDelegate

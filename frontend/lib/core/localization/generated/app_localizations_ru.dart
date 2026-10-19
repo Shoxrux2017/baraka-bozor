@@ -3147,4 +3147,59 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get questionAnswer => 'Ответить';
+
+  @override
+  String get ordersTabCurrent => 'Текущие';
+
+  @override
+  String get ordersTabPast => 'Прошлые';
+
+  @override
+  String customerOrderTitle(int number) {
+    return 'Заказ № $number';
+  }
+
+  @override
+  String orderItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count товара',
+      many: '$count товаров',
+      few: '$count товара',
+      one: '$count товар',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String orderCardQuestion(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Сборщик спрашивает про $count товара',
+      many: 'Сборщик спрашивает про $count товаров',
+      few: 'Сборщик спрашивает про $count товара',
+      one: 'Сборщик спрашивает про $count товар',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get callCourier => 'Позвонить курьеру';
+
+  @override
+  String get ordersEmptyHint =>
+      'Соберите корзину — сборщик купит всё на базаре, а курьер привезёт.';
+
+  @override
+  String get ordersEmptyAction => 'За покупками';
+
+  @override
+  String get ordersPastEmpty => 'Здесь будут доставленные и отменённые заказы';
+
+  @override
+  String rateStarsLabel(int stars) {
+    return 'Оценить на $stars из 5';
+  }
 }
