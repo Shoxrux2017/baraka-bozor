@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Enums\LegalDocumentKind;
+use App\Models\Enums\Role;
 use App\Models\User;
 use App\Modules\Auth\Actions\RequestCustomerLoginCode;
 use App\Modules\Auth\LoginCodeCheck;
 use App\Modules\Auth\LoginCodeRefused;
 use App\Modules\Auth\Models\LoginChallenge;
 use App\Modules\Auth\TestPhones;
+use App\Modules\Legal\Actions\PublishLegalDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Testing\TestResponse;
@@ -117,12 +120,26 @@ final class LoginCodePurposeTest extends TestCase
             ->assertJsonPath('code', 'code_locked');
     }
 
+    public function test_without_a_published_document_the_consent_time_stays_empty(): void
+    {
+        $admin = User::factory()->role(Role::Admin)->create();
+        app(PublishLegalDocument::class)->publish($admin, LegalDocumentKind::Terms, 'uz', null);
+
+        $this->requestCode(LoginChallenge::PURPOSE_CUSTOMER_LOGIN);
+        $this->verifyLogin()->assertOk();
+
+        $this->assertNull(User::query()->where('phone', self::PHONE)->sole()->terms_accepted_at);
+    }
+
     public function test_verifying_records_the_consent_time(): void
     {
         $first = Carbon::parse('2026-10-19 10:00:00');
         Carbon::setTestNow($first);
 
         try {
+            $admin = User::factory()->role(Role::Admin)->create();
+            app(PublishLegalDocument::class)->publish($admin, LegalDocumentKind::Privacy, 'ru', 'Text');
+
             $this->requestCode(LoginChallenge::PURPOSE_CUSTOMER_LOGIN);
             $this->verifyLogin()->assertOk();
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Auth\Actions;
 
 use App\Exceptions\ApiException;
+use App\Models\Enums\LegalDocumentKind;
 use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Models\User;
@@ -14,6 +15,7 @@ use App\Modules\Auth\LoginCodeRefused;
 use App\Modules\Auth\Models\LoginChallenge;
 use App\Modules\Auth\Models\StaffLoginStep;
 use App\Modules\Auth\StaffAccounts;
+use App\Modules\Legal\LegalDocuments;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -34,7 +36,10 @@ use Illuminate\Support\Str;
  */
 final class VerifyCustomerLoginCode
 {
-    public function __construct(private readonly LoginCodeCheck $check) {}
+    public function __construct(
+        private readonly LoginCodeCheck $check,
+        private readonly LegalDocuments $documents,
+    ) {}
 
     public function __invoke(string $phone, #[\SensitiveParameter] string $code): VerifiedLogin
     {
@@ -55,11 +60,31 @@ final class VerifyCustomerLoginCode
     {
         $customer = $this->resolveCustomer($phone);
 
-        $customer->forceFill(['last_login_at' => now(), 'terms_accepted_at' => now()])->save();
+        $customer->last_login_at = now();
+
+        // Consent names an edition, so it is recorded only when one is published.
+        if ($this->anyDocumentPublished()) {
+            $customer->terms_accepted_at = now();
+        }
+
+        $customer->save();
 
         $session = new IssuedSession($customer->createToken('customer')->plainTextToken, $customer);
 
         return $this->withStaffStep($session, $phone);
+    }
+
+    private function anyDocumentPublished(): bool
+    {
+        foreach ([LegalDocumentKind::Terms, LegalDocumentKind::Privacy] as $kind) {
+            foreach (LegalDocuments::LANGUAGES as $language) {
+                if ($this->documents->published($kind, $language) !== null) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

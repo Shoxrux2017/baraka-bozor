@@ -101,6 +101,20 @@ final class AdminCustomersApiTest extends TestCase
         $this->assertSame(UserStatus::Active, User::query()->findOrFail($busy->id)->status);
     }
 
+    public function test_a_blocked_customer_is_not_erased(): void
+    {
+        $blocked = User::factory()->customer()->blocked()->create(['phone' => self::PHONE, 'full_name' => 'Blocked One']);
+
+        $this->as($this->admin)->postJson('/api/v1/admin/customers/'.$blocked->id.'/erase')
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'account_blocked');
+
+        $kept = User::query()->findOrFail($blocked->id);
+        $this->assertSame(UserStatus::Blocked, $kept->status);
+        $this->assertSame(self::PHONE, $kept->phone);
+        $this->assertSame('Blocked One', $kept->full_name);
+    }
+
     public function test_only_admins(): void
     {
         $customer = User::factory()->customer()->create();

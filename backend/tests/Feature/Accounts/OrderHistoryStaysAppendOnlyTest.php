@@ -8,6 +8,8 @@ use App\Models\Enums\HistoryActorType;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Order;
 use App\Models\OrderHistory;
+use App\Models\User;
+use App\Modules\Accounts\Actions\EraseCustomer;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -44,9 +46,21 @@ final class OrderHistoryStaysAppendOnlyTest extends TestCase
         $this->assertNull(OrderHistory::query()->findOrFail($row->id)->note);
     }
 
-    private function row(): OrderHistory
+    public function test_the_erasure_flag_does_not_outlive_the_erasure_in_a_caller_transaction(): void
     {
-        $order = Order::factory()->create();
+        $row = $this->row(true);
+        $customer = User::query()->findOrFail($row->actor_user_id);
+
+        DB::transaction(function () use ($row, $customer): void {
+            (new EraseCustomer)->erase($customer, $customer);
+
+            $this->assertRefused(fn () => DB::table('order_history')->where('id', $row->id)->update(['note' => 'late']));
+        });
+    }
+
+    private function row(bool $finished = false): OrderHistory
+    {
+        $order = $finished ? Order::factory()->completed()->create() : Order::factory()->create();
         $history = new OrderHistory;
         $history->forceFill([
             'order_id' => $order->id,

@@ -34,7 +34,7 @@ final class EraseCustomer
     private const NOTE_KEYS = ['delivery_time_note', 'customer_note'];
 
     /**
-     * @throws ApiException `account_has_unfinished_orders` (409), or not found
+     * @throws ApiException `account_has_unfinished_orders` or `account_blocked` (409), or not found
      *                      for an account that is not an erasable Customer
      */
     public function erase(User $customer, User $actor): void
@@ -46,6 +46,12 @@ final class EraseCustomer
 
             if ($locked === null || $locked->role !== Role::Customer || $locked->status === UserStatus::Deleted) {
                 throw ApiException::notFound();
+            }
+
+            // Erasing a blocked account would free its phone and let the block
+            // be escaped with one sign-in code (`BR-ROLE-010`).
+            if ($locked->status === UserStatus::Blocked) {
+                throw ApiException::conflict('account_blocked');
             }
 
             $unfinished = UnfinishedOrders::oldest($locked);
@@ -107,6 +113,9 @@ final class EraseCustomer
 
         $this->stripEditNotes($customer);
 
+        // The flag is transaction-local, but the caller's transaction may go on.
+        DB::statement("select set_config('app.customer_erasure', 'off', true)");
+
         $customer->forceFill([
             'status' => UserStatus::Deleted,
             'phone' => null,
@@ -153,6 +162,9 @@ final class EraseCustomer
 
         foreach ($value as $key => $item) {
             if (is_string($key) && in_array($key, self::NOTE_KEYS, true)) {
+                // The key stays: the panel reads it to tell that a note changed.
+                $kept[$key] = is_array($item) ? array_map(static fn (): mixed => null, $item) : null;
+
                 continue;
             }
 

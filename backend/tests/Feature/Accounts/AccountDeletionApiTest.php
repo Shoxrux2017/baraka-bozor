@@ -129,11 +129,16 @@ final class AccountDeletionApiTest extends TestCase
         $this->assertSame('1.000', $details['removed'][0]['quantity']);
         $this->assertSame('3.000', $details['changed'][0]['after']['quantity']);
         $this->assertSame('1.000', $details['changed'][0]['before']['quantity']);
-        $this->assertSame(
-            [], array_filter(array_keys($details['added'][0] + $details['removed'][0] + $details['changed'][0]['after']), fn ($key) => $key === 'customer_note')
-        );
-        $this->assertArrayNotHasKey('delivery_time_note', $details);
-        $this->assertStringNotContainsString('morning', json_encode($details, JSON_THROW_ON_ERROR));
+        // The keys stay (the panel reads them), their values go.
+        foreach ([$details['added'][0], $details['removed'][0], $details['changed'][0]['before'], $details['changed'][0]['after']] as $line) {
+            $this->assertArrayHasKey('customer_note', $line);
+            $this->assertNull($line['customer_note']);
+        }
+        $this->assertEquals(['before' => null, 'after' => null], $details['delivery_time_note']);
+        $encoded = json_encode($details, JSON_THROW_ON_ERROR);
+        foreach (['morning', 'evening', '"a"', '"b"', '"c"', '"d"'] as $text) {
+            $this->assertStringNotContainsString($text, $encoded);
+        }
 
         $this->assertNull(OrderHistory::query()->findOrFail($edit->id)->note);
         $this->assertNull(OrderHistory::query()->findOrFail($cancelNote->id)->note);
@@ -241,6 +246,25 @@ final class AccountDeletionApiTest extends TestCase
         $this->assertSame(UserStatus::Active, User::query()->findOrFail($customer->id)->status);
         $this->flushHeaders();
         $this->postJson('/api/v1/auth/customer/code/request', ['phone' => self::PHONE])->assertStatus(429)->assertJsonPath('code', 'code_locked');
+    }
+
+    public function test_an_expired_code_and_an_exhausted_code_answer_422(): void
+    {
+        $customer = $this->customer();
+        $token = $customer->createToken('customer')->plainTextToken;
+        $challenge = fn (array $state) => LoginChallenge::query()->forceCreate($state + [
+            'phone' => self::PHONE, 'purpose' => LoginChallenge::PURPOSE_ACCOUNT_DELETION, 'code_hash' => bcrypt(self::CODE),
+            'failed_attempts' => 0, 'channel' => 'test', 'expires_at' => now()->addMinutes(5), 'created_at' => now(),
+        ]);
+
+        $challenge(['expires_at' => now()->subMinute()]);
+        $this->deleteWith($token, self::CODE)->assertStatus(422)->assertJsonPath('code', 'code_expired');
+
+        LoginChallenge::query()->delete();
+        $challenge(['failed_attempts' => 3]);
+        $this->deleteWith($token, self::CODE)->assertStatus(422)->assertJsonPath('code', 'code_attempts_exhausted');
+
+        $this->assertSame(UserStatus::Active, User::query()->findOrFail($customer->id)->status);
     }
 
     public function test_a_sign_in_code_never_deletes_an_account(): void
