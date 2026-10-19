@@ -62,6 +62,8 @@
              what the Courier's tests observe; they set it off where they mean to. -->
         <env name="DELIVERY_HANDOFF_POINT" value="true" force="true"/>
         <server name="DELIVERY_HANDOFF_POINT" value="true"/>
+        <!-- A fixed 32-byte test secret for the phone fingerprints (DL-96 item 1). -->
+        <env name="PHONE_FINGERPRINT_KEY" value="base64:78lo+bOkGf2ZMcw7OubDlcCyulmLiKLfK1j9o6RXzKY="/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

@@ -132,6 +132,46 @@ final class AdminCustomersApiTest extends TestCase
         $this->assertSame($customers, User::query()->where('role', Role::Customer->value)->count());
     }
 
+    public function test_a_blocked_number_stays_blocked_after_the_fingerprint_key_rotates(): void
+    {
+        $keyA = 'base64:'.base64_encode(str_repeat('a', 32));
+        $keyB = 'base64:'.base64_encode(str_repeat('b', 32));
+        config([
+            'login_codes.test_phones' => [self::PHONE],
+            'login_codes.test_code' => '000000',
+            'accounts.phone_fingerprint.key' => $keyA,
+        ]);
+        $this->app->forgetInstance(TestPhones::class);
+        $blocked = User::factory()->customer()->blocked()->create(['phone' => self::PHONE]);
+        $this->as($this->admin)->postJson('/api/v1/admin/customers/'.$blocked->id.'/erase')->assertStatus(204);
+
+        config(['accounts.phone_fingerprint.key' => $keyB, 'accounts.phone_fingerprint.previous_keys' => [$keyA]]);
+
+        $customers = User::query()->where('role', Role::Customer->value)->count();
+        $this->flushHeaders();
+        $this->postJson('/api/v1/auth/customer/code/request', ['phone' => self::PHONE])->assertSuccessful();
+        $this->postJson('/api/v1/auth/customer/code/verify', ['phone' => self::PHONE, 'code' => '000000'])
+            ->assertStatus(401)
+            ->assertJsonPath('code', 'account_blocked');
+        $this->assertSame($customers, User::query()->where('role', Role::Customer->value)->count());
+    }
+
+    public function test_a_malformed_fingerprint_key_refuses_the_sign_up(): void
+    {
+        config([
+            'login_codes.test_phones' => [self::PHONE],
+            'login_codes.test_code' => '000000',
+            'accounts.phone_fingerprint.key' => 'base64:c2hvcnQ=',
+        ]);
+        $this->app->forgetInstance(TestPhones::class);
+
+        $customers = User::query()->where('role', Role::Customer->value)->count();
+        $this->postJson('/api/v1/auth/customer/code/request', ['phone' => self::PHONE])->assertSuccessful();
+        $this->postJson('/api/v1/auth/customer/code/verify', ['phone' => self::PHONE, 'code' => '000000'])
+            ->assertStatus(500);
+        $this->assertSame($customers, User::query()->where('role', Role::Customer->value)->count());
+    }
+
     public function test_a_blocked_customer_with_an_unfinished_order_is_refused(): void
     {
         $blocked = User::factory()->customer()->blocked()->create(['phone' => self::PHONE, 'full_name' => 'Blocked One']);
