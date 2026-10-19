@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
+import 'account_deleted_screen.dart';
+import 'delete_account_screen.dart';
 import 'edit_profile_screen.dart';
 import 'profile_screen.dart';
 
@@ -22,7 +24,19 @@ final FeatureRoutes profileRoutes = FeatureRoutes(
           builder: (BuildContext context, GoRouterState state) =>
               const EditProfileScreen(),
         ),
+        GoRoute(
+          path: 'delete',
+          name: 'customer-delete-account',
+          builder: (BuildContext context, GoRouterState state) =>
+              const DeleteAccountScreen(),
+        ),
       ],
+    ),
+    GoRoute(
+      path: AppPaths.accountDeleted,
+      name: 'account-deleted',
+      builder: (BuildContext context, GoRouterState state) =>
+          const AccountDeletedScreen(),
     ),
   ],
 );

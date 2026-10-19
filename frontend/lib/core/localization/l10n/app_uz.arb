@@ -2285,5 +2285,31 @@
   "ratedTitle": "Sizning bahoingiz",
   "ratedThanksLow": "Rahmat! Operator vaziyatni aniqlash uchun siz bilan bog'lanadi.",
   "ratedThanks": "Baho uchun rahmat!",
-  "rateWindowClosed": "Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o'tdi."
+  "rateWindowClosed": "Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o'tdi.",
+  "deleteAccountTitle": "Akkauntni o'chirasizmi?",
+  "deleteErasedHeading": "O'chiriladi",
+  "deleteErasedName": "Ism va telefon raqami",
+  "deleteErasedAddresses": "Manzillar",
+  "deleteErasedFavorites": "Sevimlilar va savat",
+  "deleteKeptHeading": "Qoladi",
+  "deleteKeptOrders": "Buyurtmalar tarixi — ism va telefonsiz, hisob uchun",
+  "deleteNote": "Akkauntni qaytarib bo'lmaydi. Bu raqam bilan yana kirish mumkin — yangi xaridor sifatida.",
+  "deleteConfirm": "O'chirish",
+  "deleteBlockedTitle": "Hozir o'chirib bo'lmaydi",
+  "deleteBlockedBody": "№ {number} buyurtma hali tugallanmagan. Akkauntni buyurtma yetkazilgan yoki bekor qilingandan keyin o'chirish mumkin.",
+  "@deleteBlockedBody": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "understoodButton": "Tushunarli",
+  "toOrderButton": "Buyurtmaga",
+  "deleteCodeTitle": "Akkauntni o'chirish",
+  "deleteCodeHeading": "O'chirishni tasdiqlang",
+  "profileDeleteAccount": "Akkauntni o'chirish",
+  "deletedTitle": "Akkaunt o'chirildi",
+  "deletedBody": "Ma'lumotlaringiz o'chirildi.\nBiz bilan bo'lganingiz uchun rahmat.",
+  "doneButton": "Tayyor"
 }

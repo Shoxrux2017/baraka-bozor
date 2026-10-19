@@ -3527,4 +3527,65 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get rateWindowClosed =>
       'Оценить заказ можно в течение 7 дней после доставки — это время прошло.';
+
+  @override
+  String get deleteAccountTitle => 'Удалить аккаунт?';
+
+  @override
+  String get deleteErasedHeading => 'Сотрём';
+
+  @override
+  String get deleteErasedName => 'Имя и номер телефона';
+
+  @override
+  String get deleteErasedAddresses => 'Адреса';
+
+  @override
+  String get deleteErasedFavorites => 'Избранное и корзину';
+
+  @override
+  String get deleteKeptHeading => 'Останется';
+
+  @override
+  String get deleteKeptOrders =>
+      'История заказов — без имени и телефона, для учёта';
+
+  @override
+  String get deleteNote =>
+      'Вернуть аккаунт нельзя. С этим номером можно войти снова — как новый покупатель.';
+
+  @override
+  String get deleteConfirm => 'Удалить';
+
+  @override
+  String get deleteBlockedTitle => 'Сейчас удалить нельзя';
+
+  @override
+  String deleteBlockedBody(int number) {
+    return 'Заказ № $number ещё не завершён. Удалить аккаунт можно после доставки или отмены заказа.';
+  }
+
+  @override
+  String get understoodButton => 'Понятно';
+
+  @override
+  String get toOrderButton => 'К заказу';
+
+  @override
+  String get deleteCodeTitle => 'Удаление аккаунта';
+
+  @override
+  String get deleteCodeHeading => 'Подтвердите удаление';
+
+  @override
+  String get profileDeleteAccount => 'Удалить аккаунт';
+
+  @override
+  String get deletedTitle => 'Аккаунт удалён';
+
+  @override
+  String get deletedBody => 'Ваши данные стёрты.\nСпасибо, что были с нами.';
+
+  @override
+  String get doneButton => 'Готово';
 }

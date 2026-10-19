@@ -5995,6 +5995,120 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o\'tdi.'**
   String get rateWindowClosed;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntni o\'chirasizmi?'**
+  String get deleteAccountTitle;
+
+  /// No description provided for @deleteErasedHeading.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chiriladi'**
+  String get deleteErasedHeading;
+
+  /// No description provided for @deleteErasedName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism va telefon raqami'**
+  String get deleteErasedName;
+
+  /// No description provided for @deleteErasedAddresses.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzillar'**
+  String get deleteErasedAddresses;
+
+  /// No description provided for @deleteErasedFavorites.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilar va savat'**
+  String get deleteErasedFavorites;
+
+  /// No description provided for @deleteKeptHeading.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qoladi'**
+  String get deleteKeptHeading;
+
+  /// No description provided for @deleteKeptOrders.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar tarixi — ism va telefonsiz, hisob uchun'**
+  String get deleteKeptOrders;
+
+  /// No description provided for @deleteNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntni qaytarib bo\'lmaydi. Bu raqam bilan yana kirish mumkin — yangi xaridor sifatida.'**
+  String get deleteNote;
+
+  /// No description provided for @deleteConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chirish'**
+  String get deleteConfirm;
+
+  /// No description provided for @deleteBlockedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir o\'chirib bo\'lmaydi'**
+  String get deleteBlockedTitle;
+
+  /// No description provided for @deleteBlockedBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'№ {number} buyurtma hali tugallanmagan. Akkauntni buyurtma yetkazilgan yoki bekor qilingandan keyin o\'chirish mumkin.'**
+  String deleteBlockedBody(int number);
+
+  /// No description provided for @understoodButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tushunarli'**
+  String get understoodButton;
+
+  /// No description provided for @toOrderButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmaga'**
+  String get toOrderButton;
+
+  /// No description provided for @deleteCodeTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntni o\'chirish'**
+  String get deleteCodeTitle;
+
+  /// No description provided for @deleteCodeHeading.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chirishni tasdiqlang'**
+  String get deleteCodeHeading;
+
+  /// No description provided for @profileDeleteAccount.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntni o\'chirish'**
+  String get profileDeleteAccount;
+
+  /// No description provided for @deletedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkaunt o\'chirildi'**
+  String get deletedTitle;
+
+  /// No description provided for @deletedBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ma\'lumotlaringiz o\'chirildi.\nBiz bilan bo\'lganingiz uchun rahmat.'**
+  String get deletedBody;
+
+  /// No description provided for @doneButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor'**
+  String get doneButton;
 }
 
 class _AppLocalizationsDelegate

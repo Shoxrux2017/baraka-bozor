@@ -169,6 +169,15 @@ void main() {
       }
     });
 
+    test('the deleted-account page passes signed out and signed in', () {
+      expect(AppPaths.openPages, contains(AppPaths.accountDeleted));
+      expect(redirect(signedOut, AppPaths.accountDeleted), isNull);
+      expect(
+        redirect(signedIn(customer: named()), AppPaths.accountDeleted),
+        isNull,
+      );
+    });
+
     test('the other gates still come first', () {
       for (final String page in documents) {
         expect(

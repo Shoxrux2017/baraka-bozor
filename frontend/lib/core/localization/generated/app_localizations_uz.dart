@@ -3489,4 +3489,66 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get rateWindowClosed =>
       'Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o\'tdi.';
+
+  @override
+  String get deleteAccountTitle => 'Akkauntni o\'chirasizmi?';
+
+  @override
+  String get deleteErasedHeading => 'O\'chiriladi';
+
+  @override
+  String get deleteErasedName => 'Ism va telefon raqami';
+
+  @override
+  String get deleteErasedAddresses => 'Manzillar';
+
+  @override
+  String get deleteErasedFavorites => 'Sevimlilar va savat';
+
+  @override
+  String get deleteKeptHeading => 'Qoladi';
+
+  @override
+  String get deleteKeptOrders =>
+      'Buyurtmalar tarixi — ism va telefonsiz, hisob uchun';
+
+  @override
+  String get deleteNote =>
+      'Akkauntni qaytarib bo\'lmaydi. Bu raqam bilan yana kirish mumkin — yangi xaridor sifatida.';
+
+  @override
+  String get deleteConfirm => 'O\'chirish';
+
+  @override
+  String get deleteBlockedTitle => 'Hozir o\'chirib bo\'lmaydi';
+
+  @override
+  String deleteBlockedBody(int number) {
+    return '№ $number buyurtma hali tugallanmagan. Akkauntni buyurtma yetkazilgan yoki bekor qilingandan keyin o\'chirish mumkin.';
+  }
+
+  @override
+  String get understoodButton => 'Tushunarli';
+
+  @override
+  String get toOrderButton => 'Buyurtmaga';
+
+  @override
+  String get deleteCodeTitle => 'Akkauntni o\'chirish';
+
+  @override
+  String get deleteCodeHeading => 'O\'chirishni tasdiqlang';
+
+  @override
+  String get profileDeleteAccount => 'Akkauntni o\'chirish';
+
+  @override
+  String get deletedTitle => 'Akkaunt o\'chirildi';
+
+  @override
+  String get deletedBody =>
+      'Ma\'lumotlaringiz o\'chirildi.\nBiz bilan bo\'lganingiz uchun rahmat.';
+
+  @override
+  String get doneButton => 'Tayyor';
 }

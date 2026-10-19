@@ -121,12 +121,24 @@ class _CodeEntryState extends ConsumerState<CodeEntry> {
 /// Where the code went, in one line: the Telegram text names the channel and
 /// the phone; SMS says so; any other channel (the development and test-phone
 /// ones) says only that a code was sent to the phone.
-String codeSentText(AppLocalizations l10n, CodeLoginState state) {
-  final String phone = formatPhone(state.phone ?? '');
-  return switch (RequestedCodeChannel.of(state.requested?.channel)) {
-    RequestedCodeChannel.telegram => l10n.codeSentToPhone(phone),
-    RequestedCodeChannel.sms => '${l10n.codeSentSms}\n$phone',
-    RequestedCodeChannel.other => l10n.codeSentOnPhone(phone),
+String codeSentText(AppLocalizations l10n, CodeLoginState state) =>
+    codeSentLine(
+      l10n,
+      phone: state.phone ?? '',
+      channel: state.requested?.channel,
+    );
+
+/// The same line for any code sent to [phone] over [channel].
+String codeSentLine(
+  AppLocalizations l10n, {
+  required String phone,
+  required String? channel,
+}) {
+  final String formatted = formatPhone(phone);
+  return switch (RequestedCodeChannel.of(channel)) {
+    RequestedCodeChannel.telegram => l10n.codeSentToPhone(formatted),
+    RequestedCodeChannel.sms => '${l10n.codeSentSms}\n$formatted',
+    RequestedCodeChannel.other => l10n.codeSentOnPhone(formatted),
   };
 }
 
