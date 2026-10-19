@@ -390,6 +390,8 @@ Own orders only; another Customer's order is the scope-safe `404`. Decided under
 
 `GET /legal?language=uz|ru` — public, no token, throttled to 60 calls a minute. Answers `{"data":{"terms":{"language":"ru","updated_at":"..."}|null,"privacy":{...}|null}}`: for each document the published text in the asked language, or else in the other one (`language` says which); `null` when neither is published, so the app hides the row (`DL-93` (1)). `language` absent is `uz`; any other value is `422 validation_failed`.
 
+Web pages for the store listing (not the JSON API; no session, no cookie, throttled to 60 calls a minute): `GET /legal/terms`, `GET /legal/privacy` and `GET /account-deletion`, each with `?lang=uz|ru` (absent or another value is `uz`), answering `text/html; charset=utf-8`. A document page shows the text of this Section's rule (language fallback included) with its edition date in Tashkent time; a document unpublished in both languages answers `404` with a page saying so. `/account-deletion` explains deleting the account in the app and, when the Admin set a support phone, by calling it (`DL-94` item 2).
+
 ## 62. Legal Document
 
 `GET /legal/{kind}?language=uz|ru` — public, same throttle and `language` rule; `kind` is `terms` or `privacy`, any other is `404`. Answers `{"data":{"kind","language","updated_at","blocks":[{"type":"heading|paragraph|item","text":"..."}]}}` with the language fallback of Section 61; `updated_at` is the date of the edition. Neither language published is `404 resource_not_found`. The text of a block is literal: the server never emits HTML and the client renders it as plain text (`DL-94` (1)).
