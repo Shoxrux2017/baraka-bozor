@@ -42,6 +42,12 @@ final class LegalPageTexts
         return $language === 'ru' ? 'Редакция от' : 'Tahrir:';
     }
 
+    /** `+998712000000` is shown as `+998 71 200 00 00`; any other shape is shown as stored. */
+    private static function readablePhone(string $phone): string
+    {
+        return preg_replace('/^(\+998)(\d{2})(\d{3})(\d{2})(\d{2})$/', '$1 $2 $3 $4 $5', $phone) ?? $phone;
+    }
+
     public static function notPublished(string $language): string
     {
         return $language === 'ru' ? 'Документ ещё не опубликован.' : "Hujjat hali e'lon qilinmagan.";
@@ -55,6 +61,8 @@ final class LegalPageTexts
      */
     public static function deletion(string $language, ?string $supportPhone): array
     {
+        $supportPhone = $supportPhone === null ? null : self::readablePhone($supportPhone);
+
         if ($language === 'ru') {
             return [
                 'title' => 'Удаление аккаунта BarakaBozor',

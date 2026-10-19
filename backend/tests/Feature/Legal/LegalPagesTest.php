@@ -65,7 +65,8 @@ final class LegalPagesTest extends TestCase
             ->update(['support_phone' => '+998712000000']);
 
         $this->get('/account-deletion?lang=ru')->assertOk()
-            ->assertSee('+998712000000', false)
+            ->assertSee('+998 71 200 00 00', false)
+            ->assertDontSee('+998712000000', false)
             ->assertSee('Удалим в течение 7 дней.', false)
             ->assertSee('Удаление аккаунта BarakaBozor', false)
             ->assertSee('/legal/privacy?lang=ru', false);
@@ -74,7 +75,7 @@ final class LegalPagesTest extends TestCase
             ->update(['support_phone' => null]);
 
         $this->get('/account-deletion?lang=ru')->assertOk()
-            ->assertDontSee('+998712000000', false)
+            ->assertDontSee('+998 71 200 00 00', false)
             ->assertDontSee('Удалим в течение 7 дней.', false)
             ->assertSee('В приложении: Профиль', false);
 

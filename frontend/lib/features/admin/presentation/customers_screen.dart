@@ -57,6 +57,10 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
           ),
           FilledButton(
             key: const ValueKey<String>('customer-erase-confirm'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(l10n.customerEraseConfirm),
           ),
@@ -202,6 +206,9 @@ class _CustomerCard extends StatelessWidget {
             const SizedBox(height: 12),
             OutlinedButton(
               key: ValueKey<String>('customer-erase-${customer.id}'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
               onPressed: unfinished != null || customer.isBlocked || busy
                   ? null
                   : onErase,

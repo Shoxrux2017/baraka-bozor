@@ -163,6 +163,30 @@ void main() {
     expect(find.text('Аккаунт удалён'), findsOneWidget);
   });
 
+  testWidgets('the erase actions use the error colour', (
+    WidgetTester tester,
+  ) async {
+    await openCustomers(tester);
+    await search(tester, phone);
+    final ColorScheme scheme = Theme.of(
+      tester.element(byKey('customer-erase-$idA')),
+    ).colorScheme;
+
+    final ButtonStyle? card = tester
+        .widget<OutlinedButton>(byKey('customer-erase-$idA'))
+        .style;
+    expect(card?.foregroundColor?.resolve(<WidgetState>{}), scheme.error);
+
+    await tester.tap(byKey('customer-erase-$idA'));
+    await tester.pumpAndSettle();
+
+    final ButtonStyle? confirm = tester
+        .widget<FilledButton>(byKey('customer-erase-confirm'))
+        .style;
+    expect(confirm?.backgroundColor?.resolve(<WidgetState>{}), scheme.error);
+    expect(confirm?.foregroundColor?.resolve(<WidgetState>{}), scheme.onError);
+  });
+
   testWidgets('cancelling the question sends nothing', (
     WidgetTester tester,
   ) async {
