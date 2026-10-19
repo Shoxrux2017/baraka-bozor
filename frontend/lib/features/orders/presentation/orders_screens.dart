@@ -50,7 +50,7 @@ class OrdersScreen extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
     final AsyncValue<Paged<OrderSummary>> page = ref.watch(
-      customerOrdersProvider,
+      customerOrdersProvider(OrdersTab.current),
     );
 
     return CustomerTabScope(
@@ -114,7 +114,10 @@ class OrdersScreen extends ConsumerWidget {
                             PaginationBar(
                               page: page,
                               onPage: ref
-                                  .read(ordersPageProvider.notifier)
+                                  .read(
+                                    ordersPageProvider(OrdersTab.current)
+                                        .notifier,
+                                  )
                                   .goToPage,
                             ),
                           ],
@@ -123,7 +126,9 @@ class OrdersScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(16),
                     child: LoadFailure(
                       error: error,
-                      onRetry: () => ref.invalidate(customerOrdersProvider),
+                      onRetry: () => ref.invalidate(
+                        customerOrdersProvider(OrdersTab.current),
+                      ),
                     ),
                   ),
                   loading: () =>

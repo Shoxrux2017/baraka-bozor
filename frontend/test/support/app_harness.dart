@@ -7,6 +7,7 @@ import 'package:baraka_bozor/features/favorites/application/favorites_controller
 import 'package:baraka_bozor/features/checkout/application/checkout_controllers.dart';
 import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
+import 'package:baraka_bozor/core/platform/clock.dart';
 import 'package:baraka_bozor/core/platform/map_links.dart';
 import 'package:baraka_bozor/core/platform/phone_calls.dart';
 import 'package:baraka_bozor/features/courier/application/courier_orders_controllers.dart';
@@ -50,6 +51,7 @@ Widget appUnderTest({
   InMemoryPreferenceStore? preferences,
   Surface surface = Surface.mobile,
   Locale device = const Locale('uz'),
+  DateTime Function()? clock,
   List<Override> overrides = const <Override>[],
 }) {
   return ProviderScope(
@@ -92,6 +94,7 @@ Widget appUnderTest({
       ),
       phoneCallsProvider.overrideWithValue(phoneCalls ?? FakePhoneCalls()),
       mapLinksProvider.overrideWithValue(maps ?? FakeMapLinks()),
+      if (clock != null) clockProvider.overrideWithValue(clock),
       ...overrides,
     ],
     child: const BarakaBozorApp(),

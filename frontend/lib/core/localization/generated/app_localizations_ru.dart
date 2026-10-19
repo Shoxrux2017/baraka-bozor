@@ -3046,4 +3046,45 @@ class AppLocalizationsRu extends AppLocalizations {
   String ratingReviewed(String name, String time) {
     return 'Разобрано: $name, $time';
   }
+
+  @override
+  String get dayToday => 'Сегодня';
+
+  @override
+  String get dayYesterday => 'Вчера';
+
+  @override
+  String dayDate(String day, String month) {
+    return '$day $month';
+  }
+
+  @override
+  String monthShort(String month) {
+    String _temp0 = intl.Intl.selectLogic(month, {
+      'm1': 'янв',
+      'm2': 'фев',
+      'm3': 'мар',
+      'm4': 'апр',
+      'm5': 'мая',
+      'm6': 'июн',
+      'm7': 'июл',
+      'm8': 'авг',
+      'm9': 'сен',
+      'm10': 'окт',
+      'm11': 'ноя',
+      'm12': 'дек',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String orderWhen(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
+  String orderAt(String day, String time) {
+    return '$day в $time';
+  }
 }

@@ -21,10 +21,10 @@ class CustomerOrdersApi {
 
   static final Options _customer = RequestSlot.of(SessionSlot.customer);
 
-  Future<Paged<OrderSummary>> orders(int page) async {
+  Future<Paged<OrderSummary>> orders(OrdersTab tab, int page) async {
     final Response<dynamic> response = await _dio.get<dynamic>(
       '/customer/orders',
-      queryParameters: <String, Object>{'page': page},
+      queryParameters: <String, Object>{'state': tab.code, 'page': page},
       options: _customer,
     );
     final Paged<OrderSummary> orders = Paged.parse(response.data, parseSummary);
@@ -124,6 +124,159 @@ class CustomerOrdersApi {
     return approval;
   }
 
+  Future<ReorderResult> reorder(String orderId, String idempotencyKey) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '${_path(orderId)}/reorder',
+      options: _customer.copyWith(
+        headers: <String, Object?>{'Idempotency-Key': idempotencyKey},
+      ),
+    );
+    return parseReorder(ApiEnvelope.unwrap(response.data));
+  }
+
+  /// What a reorder did to the cart.
+  static ReorderResult parseReorder(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'reorder');
+    return ReorderResult(
+      added: _reorderItems(json, 'added_items', withQuantity: true),
+      skipped: _reorderItems(json, 'skipped_existing_items'),
+      unavailable: _reorderItems(json, 'unavailable_items'),
+      cartFull: _reorderItems(json, 'cart_full_items'),
+    );
+  }
+
+  Future<CustomerOrder> rate(
+    String orderId,
+    int stars,
+    List<RatingReason> reasons,
+    String? comment,
+  ) async {
+    final Response<dynamic> response = await _dio.post<dynamic>(
+      '${_path(orderId)}/rating',
+      data: <String, Object?>{
+        'stars': stars,
+        if (reasons.isNotEmpty)
+          'reasons': <String>[
+            for (final RatingReason reason in reasons) reason.code,
+          ],
+        'comment': ?comment,
+      },
+      options: _customer,
+    );
+    final CustomerOrder order = _theOrder(response, orderId);
+    if (order.rating?.stars != stars) {
+      throw const FormatException('the order does not show the rating');
+    }
+    return order;
+  }
+
+  Future<List<PendingQuestion>> pendingQuestions() async {
+    final Response<dynamic> response = await _dio.get<dynamic>(
+      '/customer/approvals',
+      queryParameters: <String, Object>{'status': 'pending', 'page': 1},
+      options: _customer,
+    );
+    return Paged.parse(response.data, _pendingQuestion).items;
+  }
+
+  static PendingQuestion _pendingQuestion(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'approval');
+    return PendingQuestion(
+      approvalId: json.uuid('id'),
+      orderId: json.uuid('order_id'),
+      orderNumber: _number(json),
+      expiresAt: json.instant('expires_at'),
+    );
+  }
+
+  static List<ReorderItem> _reorderItems(
+    JsonFields json,
+    String key, {
+    bool withQuantity = false,
+  }) {
+    final Object? raw = json.member(key);
+    if (raw is! List<dynamic>) {
+      throw FormatException('$key is not a list');
+    }
+    return <ReorderItem>[
+      for (final Object? row in raw)
+        _reorderItem(JsonFields.of(row, key), withQuantity),
+    ];
+  }
+
+  static ReorderItem _reorderItem(JsonFields json, bool withQuantity) {
+    final String? quantity = withQuantity ? json.string('quantity') : null;
+    if (quantity != null &&
+        (!_quantity.hasMatch(quantity) ||
+            QuantityRules.thousandths(quantity) == 0)) {
+      throw FormatException('quantity is not in its form: $quantity');
+    }
+    return ReorderItem(
+      productId: json.uuid('product_id'),
+      nameUz: json.string('name_uz'),
+      nameRu: json.string('name_ru'),
+      quantity: quantity,
+    );
+  }
+
+  static final RegExp _phone = RegExp(r'^\+998\d{9}$');
+
+  static String? _nullablePhone(JsonFields json, String key) {
+    final String? phone = json.nullableString(key);
+    if (phone != null && !_phone.hasMatch(phone)) {
+      throw FormatException('$key is not a phone: $phone');
+    }
+    return phone;
+  }
+
+  static int? _nullableStars(JsonFields json, String key) {
+    final int? stars = json.nullableInteger(key);
+    if (stars != null && (stars < 1 || stars > 5)) {
+      throw FormatException('$key is not 1 to 5: $stars');
+    }
+    return stars;
+  }
+
+  static OrderCourier? _courier(Object? raw) {
+    if (raw == null) {
+      return null;
+    }
+    final JsonFields json = JsonFields.of(raw, 'courier');
+    final String phone = json.string('phone');
+    if (!_phone.hasMatch(phone)) {
+      throw FormatException('phone is not a phone: $phone');
+    }
+    return OrderCourier(
+      firstName: json.nullableString('first_name'),
+      phone: phone,
+    );
+  }
+
+  static CustomerRating? _rating(Object? raw) {
+    if (raw == null) {
+      return null;
+    }
+    final JsonFields json = JsonFields.of(raw, 'rating');
+    final int stars = json.integer('stars');
+    if (stars < 1 || stars > 5) {
+      throw FormatException('stars is not 1 to 5: $stars');
+    }
+    final Object? codes = json.member('reasons');
+    if (codes is! List<dynamic> || !codes.every((Object? c) => c is String)) {
+      throw const FormatException('reasons is not a list of strings');
+    }
+    return CustomerRating(
+      stars: stars,
+      // A reason this client does not know yet is left out, not refused.
+      reasons: <RatingReason>[
+        for (final Object? code in codes)
+          ?RatingReason.tryParse(code! as String),
+      ],
+      comment: json.nullableString('comment'),
+      createdAt: json.instant('created_at'),
+    );
+  }
+
   static String _path(String id) =>
       '/customer/orders/${Uri.encodeComponent(id)}';
 
@@ -165,6 +318,7 @@ class CustomerOrdersApi {
   /// One order of the list.
   static OrderSummary parseSummary(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'order summary');
+    final JsonFields address = JsonFields.of(json.member('address'), 'address');
     final OrderSummary summary = OrderSummary(
       id: json.uuid('id'),
       orderNumber: _number(json),
@@ -175,6 +329,12 @@ class CustomerOrdersApi {
       totalUzs: _nullableAmount(json, 'total_uzs'),
       totalKind: json.choice('total_kind', TotalKind.tryParse),
       createdAt: json.instant('created_at'),
+      street: address.string('street'),
+      house: address.string('house'),
+      courierPhone: _nullablePhone(json, 'courier_phone'),
+      imageUrl: json.nullableString('image_url'),
+      ratingStars: _nullableStars(json, 'rating_stars'),
+      canRate: json.boolean('can_rate'),
     );
     if ((summary.totalUzs == null) != (summary.totalKind == TotalKind.none)) {
       throw const FormatException('a total is null exactly when none is due');
@@ -234,6 +394,14 @@ class CustomerOrdersApi {
       cancellationRequest: request == null ? null : _request(request),
       payment: payment == null ? null : _payment(payment),
       createdAt: timestamps.instant('created_at'),
+      courier: _courier(json.member('courier')),
+      supportPhone: _nullablePhone(json, 'support_phone'),
+      rating: _rating(json.member('rating')),
+      canRate: json.boolean('can_rate'),
+      shoppingStartedAt: timestamps.nullableInstant('shopping_started_at'),
+      onTheWayAt: timestamps.nullableInstant('on_the_way_at'),
+      completedAt: timestamps.nullableInstant('completed_at'),
+      cancelledAt: timestamps.nullableInstant('cancelled_at'),
     );
     final bool none = order.totalKind == TotalKind.none;
     for (final int? amount in <int?>[
@@ -403,6 +571,7 @@ class CustomerOrdersApi {
       billableUnitPriceUzs: _nullableAmount(json, 'billable_unit_price_uzs'),
       replacement: _names(json.member('replacement'), 'replacement'),
       question: question == null ? null : _question(question),
+      imageUrl: json.nullableString('image_url'),
     );
     final bool open =
         line.status == OrderItemStatus.pending ||
@@ -430,8 +599,8 @@ class CustomerOrdersRepositoryImpl implements CustomerOrdersRepository {
   final CustomerOrdersApi _api;
 
   @override
-  Future<Paged<OrderSummary>> orders(int page) =>
-      guardApiCall(() => _api.orders(page));
+  Future<Paged<OrderSummary>> orders(OrdersTab tab, int page) =>
+      guardApiCall(() => _api.orders(tab, page));
 
   @override
   Future<CustomerOrder> order(String id) => guardApiCall(() => _api.order(id));
@@ -459,4 +628,20 @@ class CustomerOrdersRepositoryImpl implements CustomerOrdersRepository {
     String? reason,
     String idempotencyKey,
   ) => guardApiCall(() => _api.cancel(id, reason, idempotencyKey));
+
+  @override
+  Future<ReorderResult> reorder(String orderId, String idempotencyKey) =>
+      guardApiCall(() => _api.reorder(orderId, idempotencyKey));
+
+  @override
+  Future<CustomerOrder> rate(
+    String orderId,
+    int stars,
+    List<RatingReason> reasons,
+    String? comment,
+  ) => guardApiCall(() => _api.rate(orderId, stars, reasons, comment));
+
+  @override
+  Future<List<PendingQuestion>> pendingQuestions() =>
+      guardApiCall(_api.pendingQuestions);
 }

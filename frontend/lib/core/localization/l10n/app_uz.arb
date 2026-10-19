@@ -1962,5 +1962,48 @@
         "type": "String"
       }
     }
+  },
+  "dayToday": "Bugun",
+  "dayYesterday": "Kecha",
+  "dayDate": "{day}-{month}",
+  "@dayDate": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthShort": "{month, select, m1{yan} m2{fev} m3{mar} m4{apr} m5{may} m6{iyn} m7{iyl} m8{avg} m9{sen} m10{okt} m11{noy} m12{dek} other{}}",
+  "@monthShort": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "orderWhen": "{day}, {time}",
+  "@orderWhen": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAt": "{day}, soat {time}",
+  "@orderAt": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
   }
 }

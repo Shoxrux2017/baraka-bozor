@@ -3014,4 +3014,45 @@ class AppLocalizationsUz extends AppLocalizations {
   String ratingReviewed(String name, String time) {
     return 'Ko\'rib chiqildi: $name, $time';
   }
+
+  @override
+  String get dayToday => 'Bugun';
+
+  @override
+  String get dayYesterday => 'Kecha';
+
+  @override
+  String dayDate(String day, String month) {
+    return '$day-$month';
+  }
+
+  @override
+  String monthShort(String month) {
+    String _temp0 = intl.Intl.selectLogic(month, {
+      'm1': 'yan',
+      'm2': 'fev',
+      'm3': 'mar',
+      'm4': 'apr',
+      'm5': 'may',
+      'm6': 'iyn',
+      'm7': 'iyl',
+      'm8': 'avg',
+      'm9': 'sen',
+      'm10': 'okt',
+      'm11': 'noy',
+      'm12': 'dek',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String orderWhen(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
+  String orderAt(String day, String time) {
+    return '$day, soat $time';
+  }
 }

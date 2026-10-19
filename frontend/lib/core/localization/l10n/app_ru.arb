@@ -1906,5 +1906,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "dayToday": "Сегодня",
+  "dayYesterday": "Вчера",
+  "dayDate": "{day} {month}",
+  "monthShort": "{month, select, m1{янв} m2{фев} m3{мар} m4{апр} m5{мая} m6{июн} m7{июл} m8{авг} m9{сен} m10{окт} m11{ноя} m12{дек} other{}}",
+  "orderWhen": "{day}, {time}",
+  "orderAt": "{day} в {time}"
 }

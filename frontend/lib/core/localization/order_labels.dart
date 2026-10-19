@@ -152,4 +152,13 @@ abstract final class OrderLabels {
     CancellationReason.deliveryFailed => l10n.cancelDeliveryFailed,
     CancellationReason.system => l10n.cancelSystem,
   };
+
+  /// Why a Customer gave a low rating (`docs/09` section 59).
+  static String ratingReason(AppLocalizations l10n, RatingReason reason) =>
+      switch (reason) {
+        RatingReason.notFresh => l10n.ratingReasonNotFresh,
+        RatingReason.wrongWeight => l10n.ratingReasonWrongWeight,
+        RatingReason.late => l10n.ratingReasonLate,
+        RatingReason.rude => l10n.ratingReasonRude,
+      };
 }

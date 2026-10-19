@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/network/idempotency_key.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
+import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
 import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 
 /// A container with the cancel of [orderOne] kept alive, as its screen keeps
@@ -183,14 +185,136 @@ void main() {
     );
     addTearDown(container.dispose);
     final ProviderSubscription<Object?> list = container.listen(
-      customerOrdersProvider,
+      customerOrdersProvider(OrdersTab.current),
       (_, _) {},
     );
-    container.read(ordersPageProvider.notifier).goToPage(2);
-    expect(container.read(ordersPageProvider), 2);
+    container.read(ordersPageProvider(OrdersTab.current).notifier).goToPage(2);
+    expect(container.read(ordersPageProvider(OrdersTab.current)), 2);
 
     list.close();
     await container.pump();
-    expect(container.read(ordersPageProvider), 1);
+    expect(container.read(ordersPageProvider(OrdersTab.current)), 1);
+  });
+
+  test('the tabs page on their own', () async {
+    final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository();
+    final ProviderContainer container = _container(orders);
+    addTearDown(container.dispose);
+    for (final OrdersTab tab in OrdersTab.values) {
+      container.listen(customerOrdersProvider(tab), (_, _) {});
+    }
+    await container.read(customerOrdersProvider(OrdersTab.past).future);
+    container.read(ordersPageProvider(OrdersTab.past).notifier).goToPage(2);
+    await container.read(customerOrdersProvider(OrdersTab.past).future);
+
+    expect(container.read(ordersPageProvider(OrdersTab.past)), 2);
+    expect(container.read(ordersPageProvider(OrdersTab.current)), 1);
+    expect(
+      orders.loads.where((String load) => load.startsWith('orders:')),
+      unorderedEquals(<String>[
+        'orders:past:1',
+        'orders:current:1',
+        'orders:past:2',
+      ]),
+    );
+  });
+
+  Map<String, Object?> pending(String id, String expiresAt) =>
+      <String, Object?>{
+        'id': id,
+        'order_id': orderOne,
+        'order_number': 1001,
+        'expires_at': expiresAt,
+      };
+
+  test('the banner question is the one expiring first', () async {
+    final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository()
+      ..pendingRows = <Map<String, Object?>>[
+        pending(approvalOne, '2026-09-28T09:00:00Z'),
+        pending('0192f0a0-0000-7000-8000-00000000c032', '2026-09-28T08:00:00Z'),
+      ];
+    final ProviderContainer container = _container(orders);
+    addTearDown(container.dispose);
+    container.listen(pendingQuestionProvider, (_, _) {});
+
+    final PendingQuestion? first = await container.read(
+      pendingQuestionProvider.future,
+    );
+    expect(first!.approvalId, '0192f0a0-0000-7000-8000-00000000c032');
+
+    orders.pendingRows = <Map<String, Object?>>[];
+    container.invalidate(pendingQuestionProvider);
+    expect(await container.read(pendingQuestionProvider.future), isNull);
+  });
+
+  test('a decision reloads the banner question', () async {
+    final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository()
+      ..pendingRows = <Map<String, Object?>>[
+        pending(approvalOne, '2026-09-28T09:00:00Z'),
+      ];
+    final ProviderContainer container = _container(orders);
+    addTearDown(container.dispose);
+    container.listen(pendingQuestionProvider, (_, _) {});
+    final OrderLineRef line = (orderId: orderOne, lineId: lineTomato);
+    container.listen(approvalDecisionProvider(line), (_, _) {});
+    expect(await container.read(pendingQuestionProvider.future), isNotNull);
+
+    orders.pendingRows = <Map<String, Object?>>[];
+    await container
+        .read(approvalDecisionProvider(line).notifier)
+        .decide(approvalOne, ApprovalDecision.approve);
+
+    expect(await container.read(pendingQuestionProvider.future), isNull);
+    expect(
+      orders.loads.where((String load) => load == 'pending'),
+      hasLength(2),
+    );
+  });
+
+  test('a reorder keeps its key until a sure answer', () async {
+    final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository();
+    final ProviderContainer container = _container(orders);
+    addTearDown(container.dispose);
+    container.listen(reorderProvider(orderOne), (_, _) {});
+    final ReorderController reordering = container.read(
+      reorderProvider(orderOne).notifier,
+    );
+
+    Future<String> attempt(ApiFailure? failure) async {
+      orders.reorderFailure = failure;
+      await reordering.reorder();
+      return orders.reorders.last.$2;
+    }
+
+    final String first = await attempt(const NetworkFailure());
+    expect(await attempt(null), first, reason: 'the retry sends the same key');
+    final String next = await attempt(
+      const ApiRefusal(ApiError(status: 409, code: 'order_state_conflict')),
+    );
+    expect(next, isNot(first), reason: 'a sure answer ends the attempt');
+    expect(await attempt(null), isNot(next), reason: 'a refusal is final');
+  });
+
+  test('a reorder reloads the cart', () async {
+    final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository();
+    final FakeCartRepository cart = FakeCartRepository();
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        customerAccountProvider.overrideWith((Ref ref) => 'customer-a'),
+        customerOrdersRepositoryProvider.overrideWithValue(orders),
+        cartRepositoryProvider.overrideWithValue(cart),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.listen(cartProvider('customer-a'), (_, _) {});
+    container.listen(reorderProvider(orderOne), (_, _) {});
+    await container.read(cartProvider('customer-a').future);
+    int loads() => cart.calls.where((String c) => c == 'cart').length;
+    final int loaded = loads();
+
+    await container.read(reorderProvider(orderOne).notifier).reorder();
+    await container.read(cartProvider('customer-a').future);
+
+    expect(loads(), loaded + 1);
   });
 }

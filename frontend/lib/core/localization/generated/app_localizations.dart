@@ -5239,6 +5239,42 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Ko\'rib chiqildi: {name}, {time}'**
   String ratingReviewed(String name, String time);
+
+  /// No description provided for @dayToday.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bugun'**
+  String get dayToday;
+
+  /// No description provided for @dayYesterday.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kecha'**
+  String get dayYesterday;
+
+  /// No description provided for @dayDate.
+  ///
+  /// In uz, this message translates to:
+  /// **'{day}-{month}'**
+  String dayDate(String day, String month);
+
+  /// No description provided for @monthShort.
+  ///
+  /// In uz, this message translates to:
+  /// **'{month, select, m1{yan} m2{fev} m3{mar} m4{apr} m5{may} m6{iyn} m7{iyl} m8{avg} m9{sen} m10{okt} m11{noy} m12{dek} other{}}'**
+  String monthShort(String month);
+
+  /// No description provided for @orderWhen.
+  ///
+  /// In uz, this message translates to:
+  /// **'{day}, {time}'**
+  String orderWhen(String day, String time);
+
+  /// No description provided for @orderAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'{day}, soat {time}'**
+  String orderAt(String day, String time);
 }
 
 class _AppLocalizationsDelegate

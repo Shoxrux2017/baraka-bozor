@@ -1336,3 +1336,7 @@ Answers to the questions of kit stage 6 (`kit/06-zakazy.dc.html`, approved the s
 
 5. **The Operator's side of a low rating.** A rating of 1 to 3 is an attention item, `low_rating`, since the rating was given, whatever the order's status — the only type that looks at finished orders. It stays until an Operator or Admin marks the rating reviewed after calling the Customer; the review records who and when, once, and a repeat answers the same. A Manager does not review (read-only scope). The board order shows the rating with its review.
 6. **The panel.** The settings form gains the support phone, `+998` and nine digits or empty; the attention list names `low_rating` "Низкая оценка"; the order screen shows the Customer's rating — stars, reasons, comment — with "Связались с клиентом" until it is reviewed, then who reviewed it and when.
+
+## DL-92 — The Customer's order screens, kit stage 6b (2026-10-19, agent)
+
+1. **Data.** Each tab of the orders pages on its own (`state=current|past`). Dates read as the business does, in Tashkent: "Сегодня", "Вчера", a day and month this year, the full date otherwise; "today" comes from one clock the tests set. The rating reasons are one enum shared by the panel and the Customer.
