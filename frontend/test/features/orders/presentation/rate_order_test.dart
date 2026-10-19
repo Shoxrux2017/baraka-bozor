@@ -213,6 +213,24 @@ void main() {
     expect(find.text('Спасибо за оценку!'), findsOneWidget);
   });
 
+  testWidgets('a chosen reason shows a check mark, an unchosen one none', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, rate: AppPaths.customerOrderRate(orderOne, stars: 2));
+    Finder check(String key) =>
+        find.descendant(of: byKey(key), matching: find.byIcon(Icons.check));
+
+    expect(check('rate-reason-not_fresh'), findsNothing);
+    await tapAndSettle(tester, byKey('rate-reason-not_fresh'));
+
+    expect(check('rate-reason-not_fresh'), findsOneWidget);
+    expect(check('rate-reason-late'), findsNothing);
+    expect(
+      tester.widget<Icon>(check('rate-reason-not_fresh')).color,
+      KitColors.primaryDark,
+    );
+  });
+
   testWidgets('raising to 4 drops the reasons', (WidgetTester tester) async {
     await open(tester, rate: AppPaths.customerOrderRate(orderOne, stars: 2));
 

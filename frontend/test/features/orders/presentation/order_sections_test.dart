@@ -2,6 +2,7 @@ import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/formatting/phone_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
+import 'package:baraka_bozor/core/localization/order_labels.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
@@ -824,6 +825,55 @@ void main() {
       expect(find.text('Отправить'), findsOneWidget);
       expect(find.text('Не отменять'), findsOneWidget);
     });
+  });
+
+  testWidgets('only an open line shows its substitution rule and note', (
+    WidgetTester tester,
+  ) async {
+    const Map<String, Object?> rule = <String, Object?>{
+      'substitution_policy': 'contact_before_substitution',
+    };
+    await show(
+      tester,
+      customerOrderJson(
+        status: 'shopping',
+        changeable: false,
+        lines: <Object?>[
+          orderLineJson(note: 'Спелые', patch: rule),
+          orderLineJson(
+            id: lineBread,
+            productId: productBread,
+            status: 'purchased',
+            note: 'Свежий',
+            patch: rule,
+          ),
+          orderLineJson(
+            id: lineMilk,
+            productId: productMilk,
+            status: 'removed',
+            removedReason: 'approval_expired',
+            note: 'Тёплое',
+            patch: rule,
+          ),
+        ],
+      ),
+    );
+    Finder inLine(String id, String text) =>
+        find.descendant(of: byKey('order-line-$id'), matching: find.text(text));
+    final String ask = OrderLabels.substitution(
+      ru(),
+      SubstitutionPolicy.contactBefore,
+    );
+
+    expect(inLine(lineTomato, ask), findsOneWidget);
+    expect(inLine(lineTomato, '«Спелые»'), findsOneWidget);
+    for (final (String id, String note) in <(String, String)>[
+      (lineBread, '«Свежий»'),
+      (lineMilk, '«Тёплое»'),
+    ]) {
+      expect(inLine(id, ask), findsNothing, reason: id);
+      expect(inLine(id, note), findsNothing, reason: id);
+    }
   });
 
   for (final (Size size, double scale) in <(Size, double)>[

@@ -201,6 +201,19 @@ void main() {
     },
   );
 
+  testWidgets('a card with no lines left shows no item count', (
+    WidgetTester tester,
+  ) async {
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(status: 'cancelled', itemCount: 0),
+    ];
+    await open(tester);
+    await tapAndSettle(tester, byKey('orders-tab-past'));
+
+    expect(find.text('Заказ № 1001'), findsOneWidget);
+    expect(find.textContaining('товар'), findsNothing);
+  });
+
   testWidgets('a waiting question shows the strip', (
     WidgetTester tester,
   ) async {

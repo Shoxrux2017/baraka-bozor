@@ -399,6 +399,10 @@ class OrderLineRow extends StatelessWidget {
     const TextStyle small = TextStyle(fontSize: 12, color: KitColors.muted);
     final ProductNames? replacement = line.replacement;
     final String? note = line.customerNote;
+    // The rule and the note matter while the line may still change.
+    final bool open =
+        line.status == OrderItemStatus.pending ||
+        line.status == OrderItemStatus.awaitingCustomer;
     Widget picture = ProductImage(url: line.imageUrl, size: 40);
     if (removed) {
       picture = Opacity(
@@ -448,12 +452,13 @@ class OrderLineRow extends StatelessWidget {
                     key: ValueKey<String>('order-line-replacement-${line.id}'),
                     style: small,
                   ),
-                if (line.substitutionPolicy != SubstitutionPolicy.allowSimilar)
+                if (open &&
+                    line.substitutionPolicy != SubstitutionPolicy.allowSimilar)
                   Text(
                     OrderLabels.substitution(l10n, line.substitutionPolicy),
                     style: small,
                   ),
-                if (note != null) Text('«$note»', style: small),
+                if (open && note != null) Text('«$note»', style: small),
               ],
             ),
           ),

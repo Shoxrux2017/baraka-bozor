@@ -340,12 +340,13 @@ class _Top extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: small,
                 ),
-                Text(
-                  l10n.orderItemCount(order.itemCount),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: small,
-                ),
+                if (order.itemCount > 0)
+                  Text(
+                    l10n.orderItemCount(order.itemCount),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: small,
+                  ),
               ],
             ),
           ),

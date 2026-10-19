@@ -725,9 +725,6 @@ class _InfoBox extends StatelessWidget {
   }
 }
 
-/// One line of the editor (drawing 29и): picture, name, the price of a unit,
-/// the rule and the note when set, and the line's preview with its stepper.
-/// A line taken out is greyed and offers to come back.
 /// [amount] with "≈" when the line's price is an estimate, as it stands
 /// when the price is fixed.
 String _estimated(AppLocalizations l10n, _LineDraft draft, String amount) =>
@@ -747,6 +744,9 @@ String _perUnit(
   l10n.catalogPricePerUnit(MoneyFormat.uzs(draft.unitPriceUzs, language), unit),
 );
 
+/// One line of the editor (drawing 29и): picture, name, the price of a unit,
+/// the rule and the note when set, and the line's preview with its stepper.
+/// A line taken out is greyed and offers to come back.
 class _EditLine extends StatelessWidget {
   const _EditLine({
     required this.draft,

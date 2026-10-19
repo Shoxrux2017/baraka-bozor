@@ -265,7 +265,24 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
                       for (final RatingReason reason in RatingReason.values)
                         FilterChip(
                           key: ValueKey<String>('rate-reason-${reason.code}'),
-                          label: Text(OrderLabels.ratingReason(l10n, reason)),
+                          label: _reasons.contains(reason)
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    const Icon(
+                                      Icons.check,
+                                      size: 16,
+                                      color: KitColors.primaryDark,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        OrderLabels.ratingReason(l10n, reason),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Text(OrderLabels.ratingReason(l10n, reason)),
                           selected: _reasons.contains(reason),
                           showCheckmark: false,
                           selectedColor: KitColors.primaryWash,
