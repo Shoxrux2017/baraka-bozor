@@ -8,7 +8,9 @@ use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Models\Order;
 use App\Models\User;
+use App\Modules\Auth\TestPhones;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -101,18 +103,58 @@ final class AdminCustomersApiTest extends TestCase
         $this->assertSame(UserStatus::Active, User::query()->findOrFail($busy->id)->status);
     }
 
-    public function test_a_blocked_customer_is_not_erased(): void
+    public function test_a_blocked_customer_is_erased_and_the_phone_stays_blocked(): void
+    {
+        config(['login_codes.test_phones' => [self::PHONE], 'login_codes.test_code' => '000000']);
+        $this->app->forgetInstance(TestPhones::class);
+        $blocked = User::factory()->customer()->blocked()->create(['phone' => self::PHONE, 'full_name' => 'Blocked One']);
+
+        $this->as($this->admin)->postJson('/api/v1/admin/customers/'.$blocked->id.'/erase')->assertStatus(204);
+
+        $erased = User::query()->findOrFail($blocked->id);
+        $this->assertSame(UserStatus::Deleted, $erased->status);
+        $this->assertNull($erased->phone);
+
+        $rows = DB::table('blocked_phone_fingerprints')->get();
+        $this->assertCount(1, $rows);
+        $this->assertSame($blocked->id, $rows[0]->erased_user_id);
+        $this->assertSame($this->admin->id, $rows[0]->created_by_user_id);
+        foreach ((array) $rows[0] as $value) {
+            $this->assertNotSame(self::PHONE, $value);
+        }
+
+        $customers = User::query()->where('role', Role::Customer->value)->count();
+        $this->flushHeaders();
+        $this->postJson('/api/v1/auth/customer/code/request', ['phone' => self::PHONE])->assertSuccessful();
+        $this->postJson('/api/v1/auth/customer/code/verify', ['phone' => self::PHONE, 'code' => '000000'])
+            ->assertStatus(401)
+            ->assertJsonPath('code', 'account_blocked');
+        $this->assertSame($customers, User::query()->where('role', Role::Customer->value)->count());
+    }
+
+    public function test_a_blocked_customer_with_an_unfinished_order_is_refused(): void
     {
         $blocked = User::factory()->customer()->blocked()->create(['phone' => self::PHONE, 'full_name' => 'Blocked One']);
+        $order = Order::factory()->shopping()->create(['customer_id' => $blocked->id]);
 
         $this->as($this->admin)->postJson('/api/v1/admin/customers/'.$blocked->id.'/erase')
             ->assertStatus(409)
-            ->assertJsonPath('code', 'account_blocked');
+            ->assertJsonPath('code', 'account_has_unfinished_orders')
+            ->assertJsonPath('details.order_id', $order->id);
 
         $kept = User::query()->findOrFail($blocked->id);
         $this->assertSame(UserStatus::Blocked, $kept->status);
         $this->assertSame(self::PHONE, $kept->phone);
-        $this->assertSame('Blocked One', $kept->full_name);
+        $this->assertSame(0, DB::table('blocked_phone_fingerprints')->count());
+    }
+
+    public function test_erasing_an_active_customer_blocks_nothing(): void
+    {
+        $active = User::factory()->customer()->create(['phone' => self::PHONE]);
+
+        $this->as($this->admin)->postJson('/api/v1/admin/customers/'.$active->id.'/erase')->assertStatus(204);
+
+        $this->assertSame(0, DB::table('blocked_phone_fingerprints')->count());
     }
 
     public function test_only_admins(): void

@@ -647,7 +647,8 @@ class AppLocalizationsUz extends AppLocalizations {
   String get customerErase => 'Akkauntni o\'chirish';
 
   @override
-  String get customerEraseBlocked => 'Bloklangan — o\'chirib bo\'lmaydi';
+  String get customerEraseBlockedNote =>
+      'Akkaunt bloklangan: raqam qora ro\'yxatda qoladi, u bilan qayta ro\'yxatdan o\'tib bo\'lmaydi.';
 
   @override
   String get customerEraseTitle => 'Xaridor akkauntini o\'chirasizmi?';

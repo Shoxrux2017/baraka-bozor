@@ -280,7 +280,7 @@
     }
   },
   "customerErase": "Akkauntni o'chirish",
-  "customerEraseBlocked": "Bloklangan — o'chirib bo'lmaydi",
+  "customerEraseBlockedNote": "Akkaunt bloklangan: raqam qora ro'yxatda qoladi, u bilan qayta ro'yxatdan o'tib bo'lmaydi.",
   "customerEraseTitle": "Xaridor akkauntini o'chirasizmi?",
   "customerEraseBody": "Ism, raqam, manzillar, sevimlilar va savat o'chiriladi. Buyurtmalar tarixi ism va telefonsiz qoladi.",
   "customerEraseConfirm": "O'chirish",

@@ -49,7 +49,17 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
       context: context,
       builder: (BuildContext context) => AlertDialog(
         title: Text(l10n.customerEraseTitle),
-        content: Text(l10n.customerEraseBody),
+        content: customer.isBlocked
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(l10n.customerEraseBody),
+                  const SizedBox(height: 12),
+                  Text(l10n.customerEraseBlockedNote),
+                ],
+              )
+            : Text(l10n.customerEraseBody),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -202,16 +212,14 @@ class _CustomerCard extends StatelessWidget {
             Text(l10n.customerOrders(customer.orderCount)),
             if (unfinished != null)
               Text(l10n.customerUnfinished('${unfinished.number}')),
-            if (customer.isBlocked) Text(l10n.customerEraseBlocked),
+            if (customer.isBlocked) Text(l10n.customerEraseBlockedNote),
             const SizedBox(height: 12),
             OutlinedButton(
               key: ValueKey<String>('customer-erase-${customer.id}'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.error,
               ),
-              onPressed: unfinished != null || customer.isBlocked || busy
-                  ? null
-                  : onErase,
+              onPressed: unfinished != null || busy ? null : onErase,
               child: Text(l10n.customerErase),
             ),
           ],

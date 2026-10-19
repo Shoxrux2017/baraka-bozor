@@ -645,7 +645,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get customerErase => 'Удалить аккаунт';
 
   @override
-  String get customerEraseBlocked => 'Заблокирован — удалить нельзя';
+  String get customerEraseBlockedNote =>
+      'Аккаунт заблокирован: номер останется в чёрном списке, зарегистрироваться с ним снова будет нельзя.';
 
   @override
   String get customerEraseTitle => 'Удалить аккаунт покупателя?';

@@ -1375,3 +1375,11 @@ Answers to the questions of kit stage 7 (`kit/07-profil.dc.html`, approved the s
 6. **The panel's documents page.** Four texts — two documents in two languages — each with its own "Опубликовать", the publication date and author, and a confirmation before an empty save takes a document down. The format hint sits under each field.
 
 7. **The panel's customers page.** The Admin types the number the caller rang from and sees the Customer accounts on it; "Удалить аккаунт" is disabled while an order is unfinished or the account is blocked (with a hint) and asks with the same lists the Customer sees. An erased order on the board says "Данные покупателя удалены" instead of a name, phone and address.
+
+## DL-95 — Erasing a blocked Customer (2026-10-19, Owner)
+
+Answer to the question `DL-94` item 5 left open. An Admin erases a blocked Customer's account like any other: the name, the addresses and the rest are erased as `DL-94` item 4 lists. Of the phone only a one-way fingerprint stays, on a block list: the number cannot be recovered from it, and with it the system refuses a new sign-up from that number, so a block cannot be escaped by deleting the account. The privacy policy says so in one line. This supersedes the refusal of a blocked account in `DL-94` item 5.
+
+## DL-96 — The Customer's profile screens, kit stage 7b (2026-10-19, agent)
+
+1. **The fingerprint.** HMAC-SHA256 of the E.164 phone under a key derived from the application key for this one purpose (`phone-fingerprint/v1`), as checkout derives its keys (`DL-41` (7)). Uzbek mobile numbers are few enough to try them all, so a plain hash would give the number back; without the application key a copy of the database does not. The block list outlives any key, so a rotated key moves to `APP_PREVIOUS_KEYS` and fingerprints made under it keep matching, while new ones use the current key. Only a new Customer account is refused — at verify, after the code is valid, with the same `401 account_blocked` a blocked account gets; an account that already holds the phone is untouched. The profile answers the support phone, so the profile tab shows it without an order (`DL-90` item 2).

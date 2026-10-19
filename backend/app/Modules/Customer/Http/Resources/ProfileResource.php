@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Customer\Http\Resources;
 
+use App\Models\BusinessSettings;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -26,6 +27,7 @@ final class ProfileResource extends JsonResource
             'phone' => $this->resource->phone,
             'full_name' => $this->resource->full_name,
             'preferred_language' => $this->resource->preferred_language,
+            'support_phone' => BusinessSettings::current()->support_phone,
         ];
     }
 }

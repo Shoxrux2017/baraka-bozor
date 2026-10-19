@@ -223,3 +223,7 @@ Markets, cities, sellers, warehouses, inventory, promotions, bonuses, subscripti
 ## 34. `legal_documents`
 
 `id, kind varchar(16), language char(2), body text?, created_by_user_id → users (restrict), created_at timestamptz, edition bigint generated always as identity (unique)`. `edition` orders the editions (a clock can tie, a sequence cannot); `created_at` is the edition date shown everywhere. `kind` is `terms` or `privacy` (`legal_documents_kind_check`), `language` is `uz` or `ru` (`legal_documents_language_check`); index `(kind, language, created_at)`. Append-only (`DL-94` (1)): a row is never updated or deleted, the newest row of a kind and language is in force, and a null `body` means the document is not published.
+
+## 35. `blocked_phone_fingerprints`
+
+`fingerprint char(64) primary key` (check `^[0-9a-f]{64}$`), `erased_user_id → users (restrict)`, `created_by_user_id → users (restrict)`, `created_at timestamptz`. The block list of `DL-95`: the HMAC-SHA256 fingerprint (`DL-96` item 1) of the phone of a blocked Customer whose account an Admin erased. There is no phone column, ever; a row is inserted with the erasure and never updated.

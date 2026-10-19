@@ -10,7 +10,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 | 4 | Корзина и адрес | Merged (PR #94, #95) |
 | 5 | Оформление | Merged (PR #98) |
 | 6 | Заказы | Merged (PR #99, #100) |
-| 7 | Профиль | In Progress (7a server and panel, 7b screens) |
+| 7 | Профиль | In Progress (7a merged PR #101, 7b screens) |
 
 ## Risks
 
@@ -28,7 +28,8 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - Stage 5, the checkout shows the service fee without "≈" (drawing 25); the preview carries no fee kind. A `service_fee_kind` in the checkout preview would let it match the cart's "≈" for a percentage fee.
 - Stage 7, in-flight Customer writes racing the erasure: a profile, address, favourite or cart request, or a sign-in, that passed the auth check before the erasure committed can still write to the deleted row. Ruling: the app cannot send them while the delete confirmation is open, so it is left; fix later by locking the user row in those writes.
 - Stage 7, the code delivery message names no purpose. Ruling: the Wave 4 gateway task must word the deletion code differently from a login code.
-- Stage 7, Owner question pending: erasure of a blocked Customer. Ruling: until the Owner answers, a blocked account is not erased (`409 account_blocked`, `DL-94` item 5), because erasing it would free the phone and let the block be escaped.
+- Stage 7, erasure of a blocked Customer. Ruling: the Owner decided (`DL-95`): an Admin erases it like any other account and a one-way fingerprint of its phone stays on a block list, so the number cannot sign up again.
+- Stage 7b, a blocked number that the operator later gives to someone else stays refused; lifting a fingerprint needs an Admin tool that does not exist yet.
 
 ## Part 1 history (design 4a, `DL-74`, `DL-75`)
 
