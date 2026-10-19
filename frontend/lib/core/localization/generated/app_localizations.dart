@@ -1628,6 +1628,36 @@ abstract class AppLocalizations {
   /// **'Ism saqlandi'**
   String get profileSaved;
 
+  /// No description provided for @profileEditTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profilni tahrirlash'**
+  String get profileEditTitle;
+
+  /// No description provided for @profileNameLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism'**
+  String get profileNameLabel;
+
+  /// No description provided for @profilePhoneLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefon raqami'**
+  String get profilePhoneLabel;
+
+  /// No description provided for @profilePhoneLocked.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqam — ilovaga kirishingiz, uni o\'zgartirib bo\'lmaydi.'**
+  String get profilePhoneLocked;
+
+  /// No description provided for @profileNameRequired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismni kiriting — usiz buyurtma berib bo\'lmaydi.'**
+  String get profileNameRequired;
+
   /// No description provided for @addressesTitle.
   ///
   /// In uz, this message translates to:

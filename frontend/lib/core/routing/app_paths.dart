@@ -40,6 +40,7 @@ abstract final class AppPaths {
   // Inside the Customer area, where more than one feature links: the
   // catalog's home opens the profile, the profile the addresses.
   static const String customerProfile = '$customer/profile';
+  static const String customerEditProfile = '$customerProfile/edit';
   static const String customerAddresses = '$customer/addresses';
   // The tab bar opens the favourites from every Customer tab.
   static const String customerFavorites = '$customer/favorites';

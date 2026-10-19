@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
+import 'edit_profile_screen.dart';
 import 'profile_screen.dart';
 
 /// The Customer's profile, opened from the catalog's app bar.
@@ -14,6 +15,14 @@ final FeatureRoutes profileRoutes = FeatureRoutes(
       name: 'customer-profile',
       builder: (BuildContext context, GoRouterState state) =>
           const ProfileScreen(),
+      routes: <RouteBase>[
+        GoRoute(
+          path: 'edit',
+          name: 'customer-edit-profile',
+          builder: (BuildContext context, GoRouterState state) =>
+              const EditProfileScreen(),
+        ),
+      ],
     ),
   ],
 );

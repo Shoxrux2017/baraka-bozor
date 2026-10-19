@@ -835,6 +835,23 @@ class AppLocalizationsUz extends AppLocalizations {
   String get profileSaved => 'Ism saqlandi';
 
   @override
+  String get profileEditTitle => 'Profilni tahrirlash';
+
+  @override
+  String get profileNameLabel => 'Ism';
+
+  @override
+  String get profilePhoneLabel => 'Telefon raqami';
+
+  @override
+  String get profilePhoneLocked =>
+      'Raqam — ilovaga kirishingiz, uni o\'zgartirib bo\'lmaydi.';
+
+  @override
+  String get profileNameRequired =>
+      'Ismni kiriting — usiz buyurtma berib bo\'lmaydi.';
+
+  @override
   String get addressesTitle => 'Manzillarim';
 
   @override

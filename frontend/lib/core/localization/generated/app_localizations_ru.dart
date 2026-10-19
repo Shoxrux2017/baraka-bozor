@@ -833,6 +833,22 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileSaved => 'Имя сохранено';
 
   @override
+  String get profileEditTitle => 'Редактирование профиля';
+
+  @override
+  String get profileNameLabel => 'Имя';
+
+  @override
+  String get profilePhoneLabel => 'Номер телефона';
+
+  @override
+  String get profilePhoneLocked =>
+      'Номер — ваш вход в приложение, его не меняют.';
+
+  @override
+  String get profileNameRequired => 'Введите имя — без него заказ не оформить.';
+
+  @override
   String get addressesTitle => 'Мои адреса';
 
   @override
