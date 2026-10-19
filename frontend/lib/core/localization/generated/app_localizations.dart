@@ -3116,11 +3116,35 @@ abstract class AppLocalizations {
   /// **'O\'zgartirish'**
   String get orderEdit;
 
-  /// No description provided for @orderEditTitle.
+  /// No description provided for @orderEditKitTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtmani o\'zgartirish'**
-  String get orderEditTitle;
+  /// **'Buyurtma № {number} ni o\'zgartirish'**
+  String orderEditKitTitle(int number);
+
+  /// No description provided for @orderEditInfo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi xarid qilishni boshlamaguncha o\'zgartirish mumkin. Buyurtmadagi mahsulotlarning narxi o\'zgarmaydi.'**
+  String get orderEditInfo;
+
+  /// No description provided for @orderEditNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi'**
+  String get orderEditNew;
+
+  /// No description provided for @orderEditRecount.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish, yig\'im va jamini saqlagandan keyin qayta hisoblaymiz'**
+  String get orderEditRecount;
+
+  /// No description provided for @orderPickInOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmada'**
+  String get orderPickInOrder;
 
   /// No description provided for @orderEditRemoveLine.
   ///
@@ -3163,12 +3187,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtmaga qo\'shish'**
   String get orderAddTitle;
-
-  /// No description provided for @orderAddedLine.
-  ///
-  /// In uz, this message translates to:
-  /// **'Qo\'shilmoqda, joriy narxda'**
-  String get orderAddedLine;
 
   /// No description provided for @orderAddAlreadyIn.
   ///

@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
+import 'package:baraka_bozor/core/formatting/money_format.dart';
+import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
@@ -143,6 +145,13 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Takes a line out of the editor: its options sheet, then the remove
+  /// button in it.
+  Future<void> removeLine(WidgetTester tester, String key) async {
+    await tapAndSettle(tester, byKey('edit-options-$key'));
+    await tapAndSettle(tester, byKey('edit-remove-$key'));
+  }
+
   Future<void> addMilk(WidgetTester tester) async {
     await tapAndSettle(tester, byKey('edit-add-product'));
     await tapAndSettle(tester, byKey('pick-category-c-1'));
@@ -165,14 +174,12 @@ void main() {
       expect(
         find.descendant(
           of: added,
-          matching: find.text(l10n(tester).orderAddedLine),
+          matching: find.text(l10n(tester).orderEditNew),
         ),
         findsOneWidget,
       );
-      await tester.enterText(
-        find.descendant(of: added, matching: byKey('line-quantity')).first,
-        '3',
-      );
+      await tapAndSettle(tester, byKey('line-plus-added-$productMilk'));
+      await tapAndSettle(tester, byKey('line-plus-added-$productMilk'));
       orders.answer = customerOrderJson(
         lines: <Object?>[
           orderLineJson(),
@@ -216,14 +223,8 @@ void main() {
     WidgetTester tester,
   ) async {
     await open(tester);
-    await tapAndSettle(tester, byKey('edit-remove-$lineTomato'));
-    expect(
-      find.descendant(
-        of: byKey('edit-line-$lineTomato'),
-        matching: byKey('line-quantity'),
-      ),
-      findsNothing,
-    );
+    await removeLine(tester, lineTomato);
+    expect(byKey('line-plus-$lineTomato'), findsNothing);
 
     await tapAndSettle(tester, byKey('edit-add-product'));
     await search(tester, 'pom');
@@ -239,10 +240,7 @@ void main() {
       findsNothing,
     );
     expect(
-      find.descendant(
-        of: byKey('edit-line-$lineTomato'),
-        matching: byKey('line-quantity'),
-      ),
+      byKey('line-plus-$lineTomato'),
       findsOneWidget,
       reason: 'the line is kept again',
     );
@@ -253,7 +251,7 @@ void main() {
   ) async {
     await open(tester);
     await addMilk(tester);
-    await tapAndSettle(tester, byKey('edit-remove-added-$productMilk'));
+    await removeLine(tester, 'added-$productMilk');
     expect(byKey('edit-line-added-$productMilk'), findsNothing);
 
     await tapAndSettle(tester, byKey('edit-save'));
@@ -286,19 +284,12 @@ void main() {
     expect(top(tester), AppPaths.customerOrderEdit(orderOne));
 
     // A save the form stops sends nothing, and the marks stay.
-    final Finder tomato = find
-        .descendant(
-          of: byKey('edit-line-$lineTomato'),
-          matching: byKey('line-quantity'),
-        )
-        .first;
-    await tester.enterText(tomato, '');
+    await tester.enterText(byKey('edit-delivery-wish'), 'a' * 161);
     await tapAndSettle(tester, byKey('edit-save'));
     expect(orders.edits, hasLength(1));
     expect(byKey('edit-unavailable-added-$productMilk'), findsOneWidget);
-    await tester.enterText(tomato, '1,5');
 
-    await tapAndSettle(tester, byKey('edit-remove-added-$productMilk'));
+    await removeLine(tester, 'added-$productMilk');
     orders.answer = customerOrderJson(note: 'Ertalab');
     await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
     await tapAndSettle(tester, byKey('edit-save'));
@@ -344,7 +335,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await lose(tester);
-      await tapAndSettle(tester, byKey('edit-remove-added-$productMilk'));
+      await removeLine(tester, 'added-$productMilk');
       orders.answer = customerOrderJson();
       await tapAndSettle(tester, byKey('edit-save'));
 
@@ -380,7 +371,7 @@ void main() {
           ),
         ];
       await tapAndSettle(tester, byKey('edit-save'));
-      await tapAndSettle(tester, byKey('edit-remove-added-$productMilk'));
+      await removeLine(tester, 'added-$productMilk');
       orders.answer = customerOrderJson();
       await tester.tap(byKey('edit-save'));
       await tester.pump();
@@ -411,7 +402,7 @@ void main() {
     'a line kept again after its removal was made is shown as added, and sent',
     (WidgetTester tester) async {
       await open(tester);
-      await tapAndSettle(tester, byKey('edit-remove-$lineTomato'));
+      await removeLine(tester, lineTomato);
       await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
       orders
         ..failure = const NetworkFailure()
@@ -435,6 +426,13 @@ void main() {
       await tapAndSettle(tester, byKey('edit-save'));
       expect(byKey('edit-adds-$lineTomato'), findsNothing);
 
+      expect(
+        find.descendant(
+          of: byKey('edit-remove-$lineTomato'),
+          matching: find.text(l10n(tester).orderEditKeepLine),
+        ),
+        findsOneWidget,
+      );
       await tapAndSettle(tester, byKey('edit-remove-$lineTomato'));
       expect(byKey('edit-adds-$lineTomato'), findsOneWidget);
       orders.answer = customerOrderJson(note: 'Ertalab');
@@ -489,50 +487,172 @@ void main() {
     );
   });
 
-  testWidgets('a line to correct out of sight stops the save and is shown', (
+  testWidgets(
+    'a note over 300 is refused in the sheet, and the old one is sent',
+    (WidgetTester tester) async {
+      await open(tester, size: const Size(360, 500));
+      await tapAndSettle(tester, byKey('edit-options-$lineTomato'));
+      await tester.enterText(byKey('line-note'), 'a' * 301);
+      await tapAndSettle(tester, byKey('edit-options-done'));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text(l10n(tester).fieldTooLong(300)), findsOneWidget);
+      expect(byKey('edit-options-done'), findsOneWidget, reason: 'stays open');
+
+      // Closing it any other way leaves the note as it was.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(byKey('edit-options-done'), findsNothing);
+      await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
+      orders.answer = customerOrderJson(note: 'Ertalab');
+      await tapAndSettle(tester, byKey('edit-save'));
+
+      expect(orders.edits.single.$2.first.customerNote, isNull);
+    },
+  );
+
+  testWidgets('a line whose quantity the unit no longer takes is set anew', (
     WidgetTester tester,
   ) async {
-    await open(tester, size: const Size(360, 500));
-    await tester.enterText(
-      find
-          .descendant(
-            of: byKey('edit-line-$lineTomato'),
-            matching: byKey('line-quantity'),
-          )
-          .first,
-      'abc',
-    );
-    await tester.enterText(byKey('edit-delivery-wish'), 'Ertalab');
-    await tester.scrollUntilVisible(
-      byKey('edit-save'),
-      300,
-      scrollable: editorScroll(),
-    );
-    expect(tester.getRect(byKey('edit-line-$lineTomato')).bottom, lessThan(0));
+    // 1,5 pieces: the product has become a whole unit.
+    orders.rows = <Map<String, Object?>>[
+      customerOrderJson(
+        lines: <Object?>[
+          orderLineJson(unit: 'piece', quantity: '1.500'),
+          orderLineJson(
+            id: lineBread,
+            productId: productBread,
+            unit: 'piece',
+            quantity: '2',
+          ),
+        ],
+      ),
+    ];
+    await open(tester);
 
-    await tester.tap(byKey('edit-save'));
-    await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('edit-save'));
 
     expect(tester.takeException(), isNull);
     expect(orders.edits, isEmpty);
-    expect(find.text(l10n(tester).cartQuantityFraction), findsOneWidget);
-    final Finder field = find
-        .descendant(
-          of: byKey('edit-line-$lineTomato'),
-          matching: byKey('line-quantity'),
-        )
-        .first;
-    expect(tester.getRect(field).top, greaterThanOrEqualTo(0));
-    expect(tester.getRect(field).bottom, lessThanOrEqualTo(500));
+    expect(byKey('quantity-done'), findsOneWidget, reason: 'asked anew');
+    await tester.enterText(byKey('line-quantity'), '2');
+    await tapAndSettle(tester, byKey('quantity-done'));
+    orders.answer = customerOrderJson();
+    await tapAndSettle(tester, byKey('edit-save'));
+    expect(orders.edits.single.$2.first.quantity, '2');
+  });
+
+  testWidgets('an added product is tagged "Новый" and priced now', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, device: const Locale('ru'));
+    await addMilk(tester);
+
+    final AppLocalizations words = l10n(tester);
+    final Finder added = byKey('edit-line-added-$productMilk');
     expect(
-      tester
-          .widget<EditableText>(
-            find.descendant(of: field, matching: find.byType(EditableText)),
-          )
-          .focusNode
-          .hasFocus,
-      isTrue,
+      find.descendant(
+        of: byKey('edit-adds-added-$productMilk'),
+        matching: find.text('Новый'),
+      ),
+      findsOneWidget,
     );
+    // The milk's price now, 12 000, not the tomato's 18 400.
+    expect(
+      find.descendant(
+        of: added,
+        matching: find.text(
+          words.cartLineEstimate(
+            words.catalogPricePerUnit(
+              MoneyFormat.uzs(12000, AppLanguage.ru),
+              words.unitPiece,
+            ),
+          ),
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: added,
+        matching: find.text(
+          words.cartLineEstimate(MoneyFormat.uzs(12000, AppLanguage.ru)),
+        ),
+      ),
+      findsOneWidget,
+    );
+    await tapAndSettle(tester, byKey('line-plus-added-$productMilk'));
+    expect(
+      find.descendant(
+        of: added,
+        matching: find.text(
+          words.cartLineEstimate(MoneyFormat.uzs(24000, AppLanguage.ru)),
+        ),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the picker marks products already in the order', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, device: const Locale('ru'));
+    await tapAndSettle(tester, byKey('edit-add-product'));
+    await tapAndSettle(tester, byKey('pick-category-c-1'));
+
+    final String tomato = productTomato.toUpperCase();
+    expect(byKey('pick-in-order-$tomato'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: byKey('pick-in-order-$tomato'),
+        matching: find.text('В заказе'),
+      ),
+      findsOneWidget,
+    );
+    expect(byKey('pick-$tomato'), findsNothing);
+    expect(byKey('pick-$productMilk'), findsOneWidget);
+    expect(byKey('pick-in-order-$productMilk'), findsNothing);
+
+    await tapAndSettle(tester, byKey('pick-in-order-$tomato'));
+    expect(top(tester), AppPaths.customerOrderEdit(orderOne));
+    expect(find.text(l10n(tester).orderAddAlreadyIn), findsOneWidget);
+  });
+
+  testWidgets('the plus in the picker adds the product', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tapAndSettle(tester, byKey('edit-add-product'));
+    await tapAndSettle(tester, byKey('pick-category-c-1'));
+    await tapAndSettle(tester, byKey('pick-$productMilk'));
+
+    expect(top(tester), AppPaths.customerOrderEdit(orderOne));
+    expect(byKey('edit-line-added-$productMilk'), findsOneWidget);
+  });
+
+  testWidgets('a line taken out in the editor is not marked in the picker', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await removeLine(tester, lineTomato);
+    await tapAndSettle(tester, byKey('edit-add-product'));
+    await tapAndSettle(tester, byKey('pick-category-c-1'));
+
+    expect(byKey('pick-${productTomato.toUpperCase()}'), findsOneWidget);
+    expect(find.byIcon(Icons.check), findsNothing);
+  });
+
+  testWidgets('a picker opened alone marks the order\'s own products', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, at: AppPaths.customerOrderAdd(orderOne), alone: true);
+    await tapAndSettle(tester, byKey('pick-category-c-1'));
+
+    expect(
+      byKey('pick-in-order-${productTomato.toUpperCase()}'),
+      findsOneWidget,
+    );
+    expect(byKey('pick-$productMilk'), findsOneWidget);
   });
 
   testWidgets('an order holds at most 100 lines', (WidgetTester tester) async {
@@ -569,17 +689,7 @@ void main() {
     );
     expect(find.text(l10n(tester).orderAddFull(100)), findsOneWidget);
 
-    await tester.scrollUntilVisible(
-      byKey('edit-remove-${id(1, 99)}'),
-      -300,
-      scrollable: find
-          .descendant(
-            of: byKey('order-editor'),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tapAndSettle(tester, byKey('edit-remove-${id(1, 99)}'));
+    await removeLine(tester, id(1, 99));
     expect(
       tester.widget<OutlinedButton>(byKey('edit-add-product')).onPressed,
       isNotNull,
@@ -678,17 +788,60 @@ void main() {
     testWidgets(
       'the picker and an added line fit a phone with large text (${language.languageCode})',
       (WidgetTester tester) async {
+        String id(int i) => '0192f0a0-0000-7000-8000-00000000c10$i';
+        orders.rows = <Map<String, Object?>>[
+          customerOrderJson(
+            note: 'a' * 160,
+            lines: <Object?>[
+              orderLineJson(note: 'b' * 300),
+              orderLineJson(
+                id: lineBread,
+                productId: productBread,
+                unit: 'piece',
+                quantity: '9999',
+              ),
+              orderLineJson(id: id(1), productId: id(2), quantity: '1234.500'),
+              orderLineJson(
+                id: id(3),
+                productId: id(4),
+                unit: 'piece',
+                quantity: '1',
+                patch: <String, Object?>{'customer_unit_price_uzs': 99999999},
+              ),
+            ],
+          ),
+        ];
+        catalog.productRows.add(
+          catalogProduct(
+            id: '0192f0a0-0000-7000-8000-00000000c030',
+            nameUz: 'Juda uzun nomli mahsulot ' * 3,
+            nameRu: 'Очень длинное название товара ' * 3,
+            customerUnitPriceUzs: 99999999,
+          ),
+        );
         await open(
           tester,
-          size: const Size(360, 800),
+          size: const Size(320, 640),
           textScale: 2,
           device: language,
         );
+        expect(tester.takeException(), isNull);
         await tapAndSettle(tester, byKey('edit-add-product'));
         await tapAndSettle(tester, byKey('pick-category-c-1'));
+        expect(
+          find.byWidgetPredicate(
+            (Widget w) =>
+                w is InkWell &&
+                w.key is ValueKey<String> &&
+                (w.key! as ValueKey<String>).value.startsWith('product-'),
+          ),
+          findsNWidgets(3),
+        );
         expect(tester.takeException(), isNull);
         await tapAndSettle(tester, byKey('product-$productMilk'));
         expect(byKey('edit-line-added-$productMilk'), findsOneWidget);
+        await tester.enterText(byKey('edit-delivery-wish'), 'c' * 160);
+        await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
       },
     );

@@ -1701,7 +1701,23 @@ class AppLocalizationsUz extends AppLocalizations {
   String get orderEdit => 'O\'zgartirish';
 
   @override
-  String get orderEditTitle => 'Buyurtmani o\'zgartirish';
+  String orderEditKitTitle(int number) {
+    return 'Buyurtma № $number ni o\'zgartirish';
+  }
+
+  @override
+  String get orderEditInfo =>
+      'Yig\'uvchi xarid qilishni boshlamaguncha o\'zgartirish mumkin. Buyurtmadagi mahsulotlarning narxi o\'zgarmaydi.';
+
+  @override
+  String get orderEditNew => 'Yangi';
+
+  @override
+  String get orderEditRecount =>
+      'Yetkazish, yig\'im va jamini saqlagandan keyin qayta hisoblaymiz';
+
+  @override
+  String get orderPickInOrder => 'Buyurtmada';
 
   @override
   String get orderEditRemoveLine => 'Buyurtmadan olib tashlash';
@@ -1724,9 +1740,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get orderAddTitle => 'Buyurtmaga qo\'shish';
-
-  @override
-  String get orderAddedLine => 'Qo\'shilmoqda, joriy narxda';
 
   @override
   String get orderAddAlreadyIn =>

@@ -884,7 +884,18 @@
   "customerStatusCompleted": "Yetkazildi",
   "customerStatusCancelled": "Bekor qilindi",
   "orderEdit": "O'zgartirish",
-  "orderEditTitle": "Buyurtmani o'zgartirish",
+  "orderEditKitTitle": "Buyurtma № {number} ni o'zgartirish",
+  "@orderEditKitTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditInfo": "Yig'uvchi xarid qilishni boshlamaguncha o'zgartirish mumkin. Buyurtmadagi mahsulotlarning narxi o'zgarmaydi.",
+  "orderEditNew": "Yangi",
+  "orderEditRecount": "Yetkazish, yig'im va jamini saqlagandan keyin qayta hisoblaymiz",
+  "orderPickInOrder": "Buyurtmada",
   "orderEditRemoveLine": "Buyurtmadan olib tashlash",
   "orderEditKeepLine": "Qaytarish",
   "orderEditAtLeastOne": "Buyurtmada kamida bitta mahsulot qolishi kerak",
@@ -892,7 +903,6 @@
   "orderEditClosed": "Bu buyurtmani endi o'zgartirib bo'lmaydi",
   "orderAddProduct": "Mahsulot qo'shish",
   "orderAddTitle": "Buyurtmaga qo'shish",
-  "orderAddedLine": "Qo'shilmoqda, joriy narxda",
   "orderAddAlreadyIn": "Bu mahsulot buyurtmada bor, uni o'zgartirishingiz mumkin",
   "orderAddFull": "Buyurtmada ko'pi bilan {count} ta mahsulot bo'lishi mumkin",
   "@orderAddFull": {

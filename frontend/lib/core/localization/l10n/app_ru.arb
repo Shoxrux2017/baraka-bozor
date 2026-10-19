@@ -870,7 +870,18 @@
   "customerStatusCompleted": "Доставлен",
   "customerStatusCancelled": "Отменён",
   "orderEdit": "Изменить",
-  "orderEditTitle": "Изменение заказа",
+  "orderEditKitTitle": "Изменить заказ № {number}",
+  "@orderEditKitTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditInfo": "Менять можно, пока сборщик не начал покупать. У товаров, что уже в заказе, цена остаётся прежней.",
+  "orderEditNew": "Новый",
+  "orderEditRecount": "Доставку, сбор и итог пересчитаем после сохранения",
+  "orderPickInOrder": "В заказе",
   "orderEditRemoveLine": "Убрать из заказа",
   "orderEditKeepLine": "Вернуть",
   "orderEditAtLeastOne": "В заказе должен остаться хотя бы один товар",
@@ -878,7 +889,6 @@
   "orderEditClosed": "Этот заказ уже нельзя изменить",
   "orderAddProduct": "Добавить товар",
   "orderAddTitle": "Добавить в заказ",
-  "orderAddedLine": "Добавляется, по текущей цене",
   "orderAddAlreadyIn": "Этот товар уже в заказе — его можно изменить",
   "orderAddFull": "В заказе может быть не больше {count} товаров",
   "orderCancelReason": "Причина (необязательно)",

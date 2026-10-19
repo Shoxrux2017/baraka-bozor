@@ -1,62 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../core/catalog/catalog_values.dart';
-import '../../../core/formatting/money_format.dart';
-import '../../../core/localization/app_language.dart';
-import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
-import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/failure_message.dart';
-import '../../../core/widgets/product_image.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
-import 'catalog_paths.dart';
-
-/// A product's price as the Customer reads it: the customer price per unit,
-/// and for an estimate the words that say so (`BR-PRICE-003`).
-class PriceLine extends StatelessWidget {
-  const PriceLine({required this.product, this.style, super.key});
-
-  final CatalogProduct product;
-  final TextStyle? style;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final String price = l10n.catalogPricePerUnit(
-      MoneyFormat.uzs(product.customerUnitPriceUzs, interfaceLanguage(context)),
-      CatalogLabels.unit(l10n, product.unitCode),
-    );
-
-    return Wrap(
-      spacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: <Widget>[
-        Text(price, style: style),
-        if (product.priceMode == PriceMode.estimate)
-          Text(
-            l10n.catalogEstimateNote,
-            key: const ValueKey<String>('estimate-note'),
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(fontStyle: FontStyle.italic),
-          ),
-      ],
-    );
-  }
-}
 
 /// A product list that loads its next page when its end comes into view,
 /// with the state of that last page at the bottom: loading, a failure with a
-/// retry, or nothing at the end. A tap opens the product, or picks it with
-/// [onPick] when the list is shown to choose one.
+/// retry, or nothing at the end. Each product is a row [itemBuilder] makes.
 class ProductList extends ConsumerWidget {
-  const ProductList({required this.query, this.onPick, super.key});
+  const ProductList({
+    required this.query,
+    required this.itemBuilder,
+    super.key,
+  });
 
   final ProductListQuery query;
-  final ValueChanged<CatalogProduct>? onPick;
+  final Widget Function(BuildContext context, CatalogProduct product)
+  itemBuilder;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -87,7 +50,7 @@ class ProductList extends ConsumerWidget {
           itemCount: state.items.length + (state.hasMore ? 1 : 0),
           itemBuilder: (BuildContext context, int index) {
             if (index < state.items.length) {
-              return ProductTile(product: state.items[index], onPick: onPick);
+              return itemBuilder(context, state.items[index]);
             }
             return ProductListEnd(query: query, state: state);
           },
@@ -159,29 +122,6 @@ class ProductListEnd extends ConsumerWidget {
     return const Padding(
       padding: EdgeInsets.all(16),
       child: Center(child: CircularProgressIndicator()),
-    );
-  }
-}
-
-class ProductTile extends StatelessWidget {
-  const ProductTile({required this.product, this.onPick, super.key});
-
-  final CatalogProduct product;
-  final ValueChanged<CatalogProduct>? onPick;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLanguage language = interfaceLanguage(context);
-
-    return ListTile(
-      key: ValueKey<String>('product-${product.id}'),
-      leading: ProductImage(url: product.imageUrl, size: 56),
-      title: Text(product.name(language)),
-      subtitle: PriceLine(product: product),
-      onTap: switch (onPick) {
-        final ValueChanged<CatalogProduct> pick => () => pick(product),
-        null => () => context.push(CatalogPaths.product(product.id)),
-      },
     );
   }
 }

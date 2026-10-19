@@ -84,6 +84,8 @@ Rules `allow_similar_substitution`, `contact_before_substitution`, `remove_if_un
 
 Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pending`, `approved`, `rejected`, `expired`, and `cancelled` for an approval whose order is cancelled (`DL-54` (8)). Ten minutes: Operator attention. Thirty minutes: expired. Approve applies the persisted proposal and returns the item to `pending` for the Shopper to record the purchase; reject removes the item; an expired approval can only be resolved by an Operator or Admin removing the item.
 
+The Customer answers on the order page, where the open questions stand together above the lines, each with its own buttons (`DL-92` (5)). While a question waits, the home shows a banner for the one that expires first; it is a pointer to the order page (`DL-92` (2)).
+
 ## 17. Final Amount
 
 Each purchased item: billable unit price × billable quantity, rounded half-up to 1 UZS. Merchandise subtotal is the sum of rounded lines. Service fee: fixed, or the percentage of the subtotal rounded half-up. Total = subtotal + service fee + delivery fee. Computed once at shopping completion and again after an Admin price correction while the order is unpaid and before the Courier sets off (`DL-54` (18)).
@@ -117,9 +119,11 @@ Push through FCM behind an abstraction: Customer `order_accepted`, `approval_req
 
 ## 24. History and Reorder
 
-Own order history with snapshots. Reorder adds the original products at current prices and availability to the active cart, skips duplicates, reports unavailable products, never creates an order by itself.
+Own order history with snapshots. "Мои заказы" has two tabs, "Текущие" and "Прошлые", each loaded on its own (`DL-92` (1), (3)). Reorder adds the original products at current prices and availability to the active cart, skips duplicates, reports unavailable products, never creates an order by itself; "Повторить" shows what was added and what was not in a result sheet (`DL-92` (2)).
 
-The Customer rates a delivered order once, within seven days of its delivery: 1 to 5 stars, at 1 to 3 stars with reasons (not fresh, wrong weight, late, rude), and an optional comment. A rating never changes the order; a low one waits for an Operator's review (`BR-RATE-001`…`003`).
+The Customer rates a delivered order once, within seven days of its delivery: 1 to 5 stars, at 1 to 3 stars with reasons (not fresh, wrong weight, late, rude), and an optional comment. The stars are tapped on the delivered order or on its card in the past tab, and open the one rating screen (`DL-92` (6)). A rating never changes the order; a low one waits for an Operator's review (`BR-RATE-001`…`003`).
+
+The Customer edits a placed order while shopping has not started: quantities by the cart's stepper or exactly, the note and the rule in a sheet, products taken out or added from the catalog, and the delivery wish. The editor previews the goods only; delivery, the fee and the total are recounted on saving (`DL-92` (7)).
 
 ## 25. Business Settings
 

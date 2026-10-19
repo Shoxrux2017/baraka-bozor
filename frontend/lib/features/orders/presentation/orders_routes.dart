@@ -43,9 +43,15 @@ final FeatureRoutes ordersRoutes = FeatureRoutes(
     GoRoute(
       path: AppPaths.customerOrderAddPattern,
       name: 'customer-order-add',
+      // The products the editor keeps come along, to mark them; opened by
+      // its address alone, the picker reads them from the order.
       builder: (BuildContext context, GoRouterState state) =>
           OrderProductPickerScreen(
             orderId: state.pathParameters['order']!.toLowerCase(),
+            productIds: switch (state.extra) {
+              final Set<String> ids => ids,
+              _ => null,
+            },
           ),
     ),
     GoRoute(

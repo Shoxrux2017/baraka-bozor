@@ -6,7 +6,8 @@ import '../../../core/theme/kit_colors.dart';
 /// The stepper of a cart line (drawing 19): a minus, the quantity — which
 /// opens the exact-amount sheet — and a plus, in a green outline. While
 /// [busy] its change runs all three are inactive; while the line cannot be
-/// stepped, the minus and the plus are.
+/// stepped, the minus and the plus are. With [atMinimum] the minus is a bin
+/// (the order's editor, where the last step takes the line out).
 class CartLineStepper extends StatelessWidget {
   const CartLineStepper({
     required this.id,
@@ -16,6 +17,7 @@ class CartLineStepper extends StatelessWidget {
     required this.onMinus,
     required this.onPlus,
     required this.onQuantity,
+    this.atMinimum = false,
     super.key,
   });
 
@@ -26,6 +28,7 @@ class CartLineStepper extends StatelessWidget {
   final VoidCallback onMinus;
   final VoidCallback onPlus;
   final VoidCallback onQuantity;
+  final bool atMinimum;
 
   static const double width = 116;
   static const double height = 36;
@@ -60,8 +63,8 @@ class CartLineStepper extends StatelessWidget {
         children: <Widget>[
           _button(
             ValueKey<String>('line-minus-$id'),
-            Icons.remove,
-            l10n.cartStepMinus,
+            atMinimum ? Icons.delete_outline : Icons.remove,
+            atMinimum ? l10n.orderEditRemoveLine : l10n.cartStepMinus,
             onMinus,
           ),
           Expanded(

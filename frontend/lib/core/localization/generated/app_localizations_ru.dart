@@ -1717,7 +1717,23 @@ class AppLocalizationsRu extends AppLocalizations {
   String get orderEdit => 'Изменить';
 
   @override
-  String get orderEditTitle => 'Изменение заказа';
+  String orderEditKitTitle(int number) {
+    return 'Изменить заказ № $number';
+  }
+
+  @override
+  String get orderEditInfo =>
+      'Менять можно, пока сборщик не начал покупать. У товаров, что уже в заказе, цена остаётся прежней.';
+
+  @override
+  String get orderEditNew => 'Новый';
+
+  @override
+  String get orderEditRecount =>
+      'Доставку, сбор и итог пересчитаем после сохранения';
+
+  @override
+  String get orderPickInOrder => 'В заказе';
 
   @override
   String get orderEditRemoveLine => 'Убрать из заказа';
@@ -1740,9 +1756,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get orderAddTitle => 'Добавить в заказ';
-
-  @override
-  String get orderAddedLine => 'Добавляется, по текущей цене';
 
   @override
   String get orderAddAlreadyIn =>
