@@ -292,8 +292,14 @@ void main() {
     expect(byKey('order-repeat-$orderOne'), findsOneWidget);
     expect(byKey('order-progress-$orderOne'), findsNothing);
 
+    orders.rows = <Map<String, Object?>>[
+      customerOrderJson(status: 'completed', canRate: true),
+    ];
     await tapAndSettle(tester, byKey('order-rate-$orderOne-3'));
-    expect(location(tester), AppPaths.customerOrder(orderOne));
+    expect(
+      location(tester),
+      AppPaths.customerOrderRatePattern.replaceAll(':order', orderOne),
+    );
   });
 
   testWidgets('the tabs ask for their state', (WidgetTester tester) async {

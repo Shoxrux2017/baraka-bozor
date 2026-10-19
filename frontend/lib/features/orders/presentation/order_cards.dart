@@ -474,8 +474,8 @@ class _QuestionStrip extends StatelessWidget {
   }
 }
 
-/// Five boxes "N★": the Customer's way to rate a finished order. Until the
-/// rating page exists they open the order.
+/// Five boxes "N★": the Customer's way to rate a finished order. Each opens
+/// the rating screen with those stars chosen.
 class _RateBoxes extends StatelessWidget {
   const _RateBoxes({required this.order});
 
@@ -500,7 +500,9 @@ class _RateBoxes extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
-                onTap: () => context.push(AppPaths.customerOrder(order.id)),
+                onTap: () => context.push(
+                  AppPaths.customerOrderRate(order.id, stars: stars),
+                ),
                 child: SizedBox(
                   width: 34,
                   height: 30,

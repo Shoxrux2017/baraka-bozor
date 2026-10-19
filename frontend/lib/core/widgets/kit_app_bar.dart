@@ -10,15 +10,17 @@ import '../theme/kit_colors.dart';
 /// 3's tint and without a colour change when the body scrolls under it. With
 /// [search] it carries the search icon of a list's header, which opens the
 /// search screen (`DL-83`); other [actions] take its place on a screen that
-/// has its own.
+/// has its own. A [leading] widget replaces the back arrow.
 AppBar kitAppBar({
   required String title,
   bool automaticallyImplyLeading = true,
   bool search = false,
   List<Widget>? actions,
+  Widget? leading,
 }) {
   return AppBar(
     automaticallyImplyLeading: automaticallyImplyLeading,
+    leading: leading,
     backgroundColor: Colors.white,
     surfaceTintColor: Colors.transparent,
     scrolledUnderElevation: 0,

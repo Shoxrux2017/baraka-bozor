@@ -2152,5 +2152,33 @@
   "requestSheetHint": "Yig'uvchi allaqachon xarid qilmoqda. Sababini yozing — operator hal qilib, sizga xabar beradi.",
   "cancelReasonHint": "Masalan: noto'g'ri buyurtma berdim",
   "orderCancelKeepKit": "Bekor qilmaslik",
-  "requestSend": "Yuborish"
+  "requestSend": "Yuborish",
+  "rateTitle": "Buyurtmani baholash",
+  "rateQuestion": "Buyurtma № {number} sizga yoqdimi?",
+  "@rateQuestion": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "rateHint": "Hammasini baholang: mahsulotlar yangiligi, og'irligi va yetkazib berish",
+  "rateStar1": "Juda yomon",
+  "rateStar2": "Yomon",
+  "rateStar3": "O'rtacha",
+  "rateStar4": "Yaxshi",
+  "rateStar5": "A'lo!",
+  "rateWhatWrong": "Nima noto'g'ri bo'ldi?",
+  "rateComment": "Izoh (ixtiyoriy)",
+  "rateCommentHintGood": "Nima yoqdi?",
+  "rateCommentHintBad": "Nima bo'ldi?",
+  "rateOperatorWillCall": "Operator bahoni ko'radi va vaziyatni aniqlash uchun siz bilan bog'lanadi.",
+  "rateSend": "Yuborish",
+  "rateSending": "Baho yuborilmoqda",
+  "rateBlockTitle": "Buyurtma yoqdimi?",
+  "rateBlockHint": "Yangilik, og'irlik, yetkazish — 7 kun ichida baholash mumkin",
+  "ratedTitle": "Sizning bahoingiz",
+  "ratedThanksLow": "Rahmat! Operator vaziyatni aniqlash uchun siz bilan bog'lanadi.",
+  "ratedThanks": "Baho uchun rahmat!",
+  "rateWindowClosed": "Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o'tdi."
 }

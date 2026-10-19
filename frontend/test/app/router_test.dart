@@ -73,6 +73,7 @@ void main() {
         AppPaths.customerOrderPattern,
         AppPaths.customerOrderEditPattern,
         AppPaths.customerOrderAddPattern,
+        AppPaths.customerOrderRatePattern,
         AppPaths.shopper,
         AppPaths.shopperOrderPattern,
         AppPaths.shopperReplacePattern,

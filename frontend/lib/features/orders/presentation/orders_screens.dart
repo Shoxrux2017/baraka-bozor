@@ -24,6 +24,7 @@ import '../domain/customer_orders.dart';
 import 'cancel_sheet.dart';
 import 'order_cards.dart';
 import 'order_questions.dart';
+import 'order_rating_card.dart';
 import 'order_sections.dart';
 
 /// The Customer's orders, newest first, in two tabs: the ones in hand and the
@@ -430,6 +431,13 @@ class _Order extends ConsumerWidget {
         if (courier != null) ...<Widget>[
           const SizedBox(height: 16),
           CourierCard(courier: courier),
+        ],
+        if (order.canRate) ...<Widget>[
+          const SizedBox(height: 16),
+          RateOrderCard(order: order),
+        ] else if (order.rating != null) ...<Widget>[
+          const SizedBox(height: 16),
+          RatedOrderCard(rating: order.rating!),
         ],
         if (onTheWay) ...<Widget>[const SizedBox(height: 16), info],
         for (final CustomerOrderLine line in lines)

@@ -3286,4 +3286,74 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get requestSend => 'Yuborish';
+
+  @override
+  String get rateTitle => 'Buyurtmani baholash';
+
+  @override
+  String rateQuestion(int number) {
+    return 'Buyurtma № $number sizga yoqdimi?';
+  }
+
+  @override
+  String get rateHint =>
+      'Hammasini baholang: mahsulotlar yangiligi, og\'irligi va yetkazib berish';
+
+  @override
+  String get rateStar1 => 'Juda yomon';
+
+  @override
+  String get rateStar2 => 'Yomon';
+
+  @override
+  String get rateStar3 => 'O\'rtacha';
+
+  @override
+  String get rateStar4 => 'Yaxshi';
+
+  @override
+  String get rateStar5 => 'A\'lo!';
+
+  @override
+  String get rateWhatWrong => 'Nima noto\'g\'ri bo\'ldi?';
+
+  @override
+  String get rateComment => 'Izoh (ixtiyoriy)';
+
+  @override
+  String get rateCommentHintGood => 'Nima yoqdi?';
+
+  @override
+  String get rateCommentHintBad => 'Nima bo\'ldi?';
+
+  @override
+  String get rateOperatorWillCall =>
+      'Operator bahoni ko\'radi va vaziyatni aniqlash uchun siz bilan bog\'lanadi.';
+
+  @override
+  String get rateSend => 'Yuborish';
+
+  @override
+  String get rateSending => 'Baho yuborilmoqda';
+
+  @override
+  String get rateBlockTitle => 'Buyurtma yoqdimi?';
+
+  @override
+  String get rateBlockHint =>
+      'Yangilik, og\'irlik, yetkazish — 7 kun ichida baholash mumkin';
+
+  @override
+  String get ratedTitle => 'Sizning bahoingiz';
+
+  @override
+  String get ratedThanksLow =>
+      'Rahmat! Operator vaziyatni aniqlash uchun siz bilan bog\'lanadi.';
+
+  @override
+  String get ratedThanks => 'Baho uchun rahmat!';
+
+  @override
+  String get rateWindowClosed =>
+      'Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o\'tdi.';
 }

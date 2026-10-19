@@ -5653,6 +5653,132 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Yuborish'**
   String get requestSend;
+
+  /// No description provided for @rateTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani baholash'**
+  String get rateTitle;
+
+  /// No description provided for @rateQuestion.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} sizga yoqdimi?'**
+  String rateQuestion(int number);
+
+  /// No description provided for @rateHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hammasini baholang: mahsulotlar yangiligi, og\'irligi va yetkazib berish'**
+  String get rateHint;
+
+  /// No description provided for @rateStar1.
+  ///
+  /// In uz, this message translates to:
+  /// **'Juda yomon'**
+  String get rateStar1;
+
+  /// No description provided for @rateStar2.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yomon'**
+  String get rateStar2;
+
+  /// No description provided for @rateStar3.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'rtacha'**
+  String get rateStar3;
+
+  /// No description provided for @rateStar4.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yaxshi'**
+  String get rateStar4;
+
+  /// No description provided for @rateStar5.
+  ///
+  /// In uz, this message translates to:
+  /// **'A\'lo!'**
+  String get rateStar5;
+
+  /// No description provided for @rateWhatWrong.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nima noto\'g\'ri bo\'ldi?'**
+  String get rateWhatWrong;
+
+  /// No description provided for @rateComment.
+  ///
+  /// In uz, this message translates to:
+  /// **'Izoh (ixtiyoriy)'**
+  String get rateComment;
+
+  /// No description provided for @rateCommentHintGood.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nima yoqdi?'**
+  String get rateCommentHintGood;
+
+  /// No description provided for @rateCommentHintBad.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nima bo\'ldi?'**
+  String get rateCommentHintBad;
+
+  /// No description provided for @rateOperatorWillCall.
+  ///
+  /// In uz, this message translates to:
+  /// **'Operator bahoni ko\'radi va vaziyatni aniqlash uchun siz bilan bog\'lanadi.'**
+  String get rateOperatorWillCall;
+
+  /// No description provided for @rateSend.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yuborish'**
+  String get rateSend;
+
+  /// No description provided for @rateSending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Baho yuborilmoqda'**
+  String get rateSending;
+
+  /// No description provided for @rateBlockTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma yoqdimi?'**
+  String get rateBlockTitle;
+
+  /// No description provided for @rateBlockHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilik, og\'irlik, yetkazish — 7 kun ichida baholash mumkin'**
+  String get rateBlockHint;
+
+  /// No description provided for @ratedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sizning bahoingiz'**
+  String get ratedTitle;
+
+  /// No description provided for @ratedThanksLow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rahmat! Operator vaziyatni aniqlash uchun siz bilan bog\'lanadi.'**
+  String get ratedThanksLow;
+
+  /// No description provided for @ratedThanks.
+  ///
+  /// In uz, this message translates to:
+  /// **'Baho uchun rahmat!'**
+  String get ratedThanks;
+
+  /// No description provided for @rateWindowClosed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o\'tdi.'**
+  String get rateWindowClosed;
 }
 
 class _AppLocalizationsDelegate

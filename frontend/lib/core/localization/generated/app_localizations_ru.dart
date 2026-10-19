@@ -3328,4 +3328,72 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get requestSend => 'Отправить';
+
+  @override
+  String get rateTitle => 'Оценка заказа';
+
+  @override
+  String rateQuestion(int number) {
+    return 'Как вам заказ № $number?';
+  }
+
+  @override
+  String get rateHint => 'Оцените всё: свежесть продуктов, вес и доставку';
+
+  @override
+  String get rateStar1 => 'Очень плохо';
+
+  @override
+  String get rateStar2 => 'Плохо';
+
+  @override
+  String get rateStar3 => 'Нормально';
+
+  @override
+  String get rateStar4 => 'Хорошо';
+
+  @override
+  String get rateStar5 => 'Отлично!';
+
+  @override
+  String get rateWhatWrong => 'Что пошло не так?';
+
+  @override
+  String get rateComment => 'Комментарий (необязательно)';
+
+  @override
+  String get rateCommentHintGood => 'Что понравилось?';
+
+  @override
+  String get rateCommentHintBad => 'Что случилось?';
+
+  @override
+  String get rateOperatorWillCall =>
+      'Оператор увидит оценку и свяжется с вами, чтобы разобраться.';
+
+  @override
+  String get rateSend => 'Отправить';
+
+  @override
+  String get rateSending => 'Отправляем оценку';
+
+  @override
+  String get rateBlockTitle => 'Как вам заказ?';
+
+  @override
+  String get rateBlockHint => 'Свежесть, вес, доставка — оценить можно 7 дней';
+
+  @override
+  String get ratedTitle => 'Ваша оценка';
+
+  @override
+  String get ratedThanksLow =>
+      'Спасибо! Оператор свяжется с вами, чтобы разобраться.';
+
+  @override
+  String get ratedThanks => 'Спасибо за оценку!';
+
+  @override
+  String get rateWindowClosed =>
+      'Оценить заказ можно в течение 7 дней после доставки — это время прошло.';
 }
