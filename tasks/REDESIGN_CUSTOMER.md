@@ -10,7 +10,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 | 4 | Корзина и адрес | Merged (PR #94, #95) |
 | 5 | Оформление | Merged (PR #98) |
 | 6 | Заказы | Merged (PR #99, #100) |
-| 7 | Профиль | Planned |
+| 7 | Профиль | In Progress (7a server and panel, 7b screens) |
 
 ## Risks
 

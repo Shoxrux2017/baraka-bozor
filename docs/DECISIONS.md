@@ -1350,3 +1350,16 @@ Answers to the questions of kit stage 6 (`kit/06-zakazy.dc.html`, approved the s
 6. **Rating.** The stars on the delivered order and on the past card open one rating screen with those stars chosen. Reasons show at 1 to 3 stars and are dropped when the Customer raises the stars to 4 or 5, as the server refuses them there. The comment is counted and trimmed as the server keeps it, at most 500. Already rated or no longer rateable returns to the order, which loads as it is; a closed window says so on the screen.
 
 7. **The editor.** Quantities change with the cart's stepper — at the minimum the minus becomes a bin that takes the line out — or exactly through the quantity sheet; the note and the rule open in a sheet that applies only on "Сохранить". A line shows a preview of its cost, as the product screen does; the editor shows only the goods' preview and says that delivery, the fee and the total are recounted on saving: the server owns them, and a percentage fee depends on settings the client does not hold. The picker marks the products already in the order.
+
+## DL-93 — Profile, documents and account deletion, kit stage 7 (2026-10-19, Owner)
+
+Answers to the questions of kit stage 7 (`kit/07-profil.dc.html`, approved the same day).
+
+1. **Documents.** The terms of use and the privacy policy live on the server, in Uzbek and Russian. The Admin writes and changes them in the panel; the app shows them in the profile and the same text is published at a public address for Google Play. While a document is empty its row is hidden. The agent drafts the texts from these documents; a lawyer in Uzbekistan checks them before the Admin publishes them.
+2. **Consent.** The sign-in screen says that by continuing the person accepts the terms and the policy, with links to both, and the server records when the person accepted.
+3. **Account deletion.** The profile has "Удалить аккаунт". A sheet says what is erased — name, phone, addresses, favourites, cart — and what stays — the order history without name and phone, for accounting. The Customer confirms with a login code and the account is erased at once. While an order is unfinished the deletion is refused. A public page explains how to delete the account with or without the app; without it the Customer calls support and the Admin deletes the account in the panel.
+4. **Still to come from the Owner, before publication:** the company's name, tax number and address for the terms; how many years order and money records are kept (from the accountant); the lawyer's check of both texts.
+
+## DL-94 — Profile, documents and account deletion, kit stage 7 (2026-10-19, agent)
+
+1. **Documents are append-only.** Each save adds a row; the newest row of a kind and language is in force and a blank save unpublishes. Every edition a Customer may have accepted stays readable with its date, which the consent time of item 3 needs. The text format is plain: a line starting with `## ` is a heading, one starting with `- ` a list item, any other line a paragraph; the server parses it into blocks so the app, the panel and the web pages render the same thing and nothing the Admin types is ever HTML. A missing language falls back to the other one. The public API is unauthenticated and throttled at 60 requests a minute.

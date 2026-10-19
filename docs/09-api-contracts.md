@@ -383,3 +383,20 @@ Own orders only; another Customer's order is the scope-safe `404`. Decided under
 ## 60. Rating Review
 
 `POST /operations/orders/{order}/rating/review` (no body) — Operator and Admin; a Manager, like every other role, is `403`, and any body field is `422 validation_failed`. An Operator or Admin marks the order's rating reviewed after calling the Customer (`DL-91` (5)). Under the rating's lock, `reviewed_by` and `reviewed_at` are written once and the answer is `200` with the order as `GET /operations/orders/{order}` shows it, `rating` filled; a rating already reviewed is a natural repeat, answered `200` with the first reviewer and instant unchanged. An order with no rating is `409 order_not_rated`; an unknown order is `404`. The review never changes the order, and it takes a `low_rating` item off the attention list (section 38); a rating of 4 or 5 stars may be marked too and has no item.
+
+# Profile and Documents
+
+## 61. Legal Documents
+
+`GET /legal?language=uz|ru` — public, no token, throttled to 60 calls a minute. Answers `{"data":{"terms":{"language":"ru","updated_at":"..."}|null,"privacy":{...}|null}}`: for each document the published text in the asked language, or else in the other one (`language` says which); `null` when neither is published, so the app hides the row (`DL-93` (1)). `language` absent is `uz`; any other value is `422 validation_failed`.
+
+## 62. Legal Document
+
+`GET /legal/{kind}?language=uz|ru` — public, same throttle and `language` rule; `kind` is `terms` or `privacy`, any other is `404`. Answers `{"data":{"kind","language","updated_at","blocks":[{"type":"heading|paragraph|item","text":"..."}]}}` with the language fallback of Section 61; `updated_at` is the date of the edition. Neither language published is `404 resource_not_found`. The text of a block is literal: the server never emits HTML and the client renders it as plain text (`DL-94` (1)).
+
+## 63. Admin Legal Documents
+
+`GET /admin/legal-documents` — Admin only. Answers `{"data":[{"kind","language","body","updated_at","updated_by":{"id","full_name"}|null}]}`, always four entries in the order terms-uz, terms-ru, privacy-uz, privacy-ru; `body`, `updated_at` and `updated_by` are `null` while nothing is published.
+
+`PUT /admin/legal-documents/{kind}/{language}` `{"body":"..."|null}` — Admin only. `body` is required (`null` allowed), at most 50 000 characters; line endings become `
+`, the text is trimmed and a blank text is stored as `null`, which unpublishes the document. A text different from the one in force appends an edition; the same text answers `200` with the edition in force and adds nothing. Answers `200` with the entry of the list above. An unknown kind or language in the path is `404`; any other body field is `422`; every other role is `403`.

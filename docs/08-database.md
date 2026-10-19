@@ -216,3 +216,7 @@ Markets, cities, sellers, warehouses, inventory, promotions, bonuses, subscripti
 ## 33. `order_ratings`
 
 `id, order_id → orders (unique, restrict), customer_id → users (restrict), stars smallint, reasons jsonb not null default '[]', comment varchar(500)?, reviewed_by_user_id → users (restrict)?, reviewed_at timestamptz?, timestamps`. `stars` from 1 to 5 (`order_ratings_stars_check`); `reasons` a JSON array (`order_ratings_reasons_type_check`) that is empty above 3 stars (`order_ratings_reasons_check`, `BR-RATE-002`); `reviewed_by_user_id` and `reviewed_at` are both set or both null (`order_ratings_reviewed_check`, `BR-RATE-003`). One rating per order (`BR-RATE-001`); the window of seven days is the application's (`DL-91` (4)).
+
+## 34. `legal_documents`
+
+`id, kind varchar(16), language char(2), body text?, created_by_user_id → users (restrict), created_at timestamptz`. `kind` is `terms` or `privacy` (`legal_documents_kind_check`), `language` is `uz` or `ru` (`legal_documents_language_check`); index `(kind, language, created_at)`. Append-only (`DL-94` (1)): a row is never updated or deleted, the newest row of a kind and language is in force, and a null `body` means the document is not published.
