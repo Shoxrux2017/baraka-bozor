@@ -1,0 +1,15 @@
+BarakaBozor Toshkent bozorlaridan oziq-ovqat yetkazib beradi. Teruvchi buyurtmangiz bo'yicha mahsulotlarni bozordan sotib oladi, kuryer ularni uyingizga olib keladi.
+## 1. Narxlar
+Ilovadagi narxlar taxminiy (≈): bozorda narx va vazn har kuni o'zgaradi. Aniq summani xariddan keyin bilasiz — haqiqiy vazn va narx bo'yicha.
+Biz buyurtma qilganingizdan ko'p sotib olmaymiz va ortiqcha vazn uchun pul olmaymiz.
+## 2. Mahsulot qimmatroq bo'lsa, yo'q bo'lsa yoki kamroq bo'lsa
+Teruvchi ilovada sizdan so'raydi. Javob berish uchun 30 daqiqa bor. Javob bermasangiz, bu mahsulot sotib olinmaydi.
+## 3. Yetkazib berish
+Xizmat hududida va ish vaqtida yetkazib beramiz. Buyurtmaning eng kam summasi, yetkazib berish va xizmat haqi buyurtma berishdan oldin ko'rinadi.
+## 4. To'lov
+Qabul qilganda kuryerga naqd pul bilan. Karta orqali to'lov keyinroq paydo bo'ladi.
+## 5. Bekor qilish
+Teruvchi xaridni boshlamaguncha buyurtmani o'zingiz bekor qilasiz. Keyin — bekor qilish so'rovini yuboring, uni operator ko'rib chiqadi. Kuryer yo'lda bo'lganda buyurtmani bekor qilib bo'lmaydi.
+## 6. Qo'llab-quvvatlash
+Qo'llab-quvvatlash telefoni — profilda va buyurtma sahifasida.
+Sotuvchi: [kompaniya nomi], STIR [STIR], manzil: [yuridik manzil].
