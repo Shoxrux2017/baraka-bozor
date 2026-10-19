@@ -16,7 +16,8 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 
 - White text on the primary `#5AC268` has a contrast of 2.4:1, below WCAG AA. Kept as the kit's look.
 - Real Telegram delivery arrives in Wave 4. Until then only the configured test phones can sign in, staff included.
-- A blocked Customer account would also stop that person's staff sign-in on the phone (verify refuses before the step). Latent: no API blocks a Customer today.
+- A blocked Customer account would also stop that person's staff sign-in on the phone (verify refuses before the step). Latent: no API blocks a Customer today. After an erasure of a blocked Customer (`DL-95`) the lockout is permanent: no Admin tool lifts a fingerprint yet.
+- Stage 7b, the Wave 4 deployment sets `PHONE_FINGERPRINT_KEY` (base64, 32 bytes) and never removes a key from `PHONE_FINGERPRINT_PREVIOUS_KEYS`.
 - Wave 3 walkthrough compiled, not run, after the staff sign-in change - run it before Wave 4 closes.
 - The kit home's header (mode bar, address and cart, search) scrolls inside 60% of the screen height above the keyboard; with two sessions at 320×640 and text ×2 it takes about that much and the sections below get a strip of about 150 px (they scroll). Only at that extreme size.
 - Stage 4a: the cart's footer is the screen's bottom bar, so a snackbar rises above the button; the lines, the notice, the row, the amounts and the address scroll above it. At 320×640 with text ×2 a single large line leaves little room above the footer, and the rest scrolls.
