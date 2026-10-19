@@ -54,7 +54,7 @@ Phone: E.164 `+998` plus nine digits. Policy: six digits, five-minute lifetime, 
 
 `POST /auth/customer/code/verify` `{"phone":"+998901234567","code":"482913"}`
 
-Resolves the active Customer account or creates one when none is active, then issues a token:
+Resolves the active Customer account or creates one when none is active, records the moment as the account's consent to the terms and the privacy policy (`users.terms_accepted_at`, `DL-94` item 3), then issues a token:
 
 ```json
 {"data":{"token":"...","user":{"id":"...","role":"customer","phone":"+998901234567","full_name":null,"status":"active","must_change_password":false,"preferred_language":"uz"},"staff_step":null}}

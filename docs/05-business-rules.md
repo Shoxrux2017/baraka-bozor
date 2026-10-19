@@ -44,6 +44,8 @@
 
 **BR-ROLE-011** — Login codes for configured test phone numbers are the configured fixed code and are not delivered; the configuration is empty in production. No other login code is ever emitted anywhere.
 
+**BR-ROLE-012** — A login code has a purpose, sign-in or account deletion; a code of one purpose never serves the other. Both share the phone's send window, attempt limit and lock.
+
 # 3. Catalog
 
 **BR-CAT-001** — Categories and products are managed data.

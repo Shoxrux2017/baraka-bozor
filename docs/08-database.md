@@ -32,13 +32,13 @@ Framework: `personal_access_tokens`, `cache`, `jobs`, `failed_jobs`, `job_batche
 
 ## 3. `users` (migrated)
 
-`id, role, phone, full_name?, password?, status, must_change_password, password_changed_at?, last_login_at?, blocked_at?, created_by_user_id?, timestamps`, plus **`preferred_language varchar(2) NOT NULL DEFAULT 'uz'`** (`CHECK IN ('uz','ru')`, added by a Wave 0 migration).
+`id, role, phone, full_name?, password?, status, must_change_password, password_changed_at?, last_login_at?, terms_accepted_at?, blocked_at?, created_by_user_id?, timestamps`, plus **`preferred_language varchar(2) NOT NULL DEFAULT 'uz'`** (`CHECK IN ('uz','ru')`, added by a Wave 0 migration).
 
 Checks: role in the six values; status `active|blocked`; phone `^\+998[0-9]{9}$`; Customer has null password and no gate; Staff has a password; blocked implies `blocked_at`. Two partial unique indexes: `(phone) WHERE status='active' AND role='customer'` and `(phone) WHERE status='active' AND role<>'customer'`. Index `(role,status)`, `lower(full_name)`.
 
 ## 4. `customer_otp_challenges` (migrated)
 
-`id, phone, purpose (customer_login), code_hash, failed_attempts ≥ 0, expires_at, consumed_at?, invalidated_at?, created_at`, plus **`channel varchar(16)`** (`CHECK IN ('telegram','sms','fake','test')`, added by a Wave 0 migration). Index `(phone, created_at)`, `expires_at`. No plaintext code.
+`id, phone, purpose (customer_login, account_deletion; `BR-ROLE-012`), code_hash, failed_attempts ≥ 0, expires_at, consumed_at?, invalidated_at?, created_at`, plus **`channel varchar(16)`** (`CHECK IN ('telegram','sms','fake','test')`, added by a Wave 0 migration). Index `(phone, created_at)`, `expires_at`. No plaintext code.
 
 ## 5. `customer_addresses` (migrated)
 
