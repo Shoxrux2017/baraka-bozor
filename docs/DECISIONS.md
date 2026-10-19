@@ -1340,3 +1340,5 @@ Answers to the questions of kit stage 6 (`kit/06-zakazy.dc.html`, approved the s
 ## DL-92 — The Customer's order screens, kit stage 6b (2026-10-19, agent)
 
 1. **Data.** Each tab of the orders pages on its own (`state=current|past`). Dates read as the business does, in Tashkent: "Сегодня", "Вчера", a day and month this year, the full date otherwise; "today" comes from one clock the tests set. The rating reasons are one enum shared by the panel and the Customer.
+
+2. **Repeat and the banner.** "Повторить" keeps its idempotency key until an answer says for sure what happened, so a retry after a lost answer is the same request; the sheet is built from the answer, and a product kept from the cart shows the cart's quantity. The cart loads again after a sure answer. The home banner shows the pending question that expires first, from the first page of `GET /customer/approvals?status=pending`; it loads again every 30 seconds while the home is shown and after every decision, and a failed load hides it — it is a pointer, the order page is the place to answer.

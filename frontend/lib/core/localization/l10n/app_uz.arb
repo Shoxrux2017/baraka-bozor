@@ -2005,5 +2005,47 @@
         "type": "String"
       }
     }
-  }
+  },
+  "reorderTitle": "Savatga qo'shildi",
+  "reorderNothingTitle": "Hech narsa qo'shilmadi",
+  "reorderAdded": "{count, plural, other{Buyurtma № {number} dan {count} ta mahsulot — bugungi narxlarda.}}",
+  "@reorderAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "reorderSkippedTitle": "Savatda bor edi — o'zgartirmadik",
+  "reorderInCart": "Savatda {quantity}",
+  "@reorderInCart": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "reorderUnavailableTitle": "Sotuvda yo'q — qo'shilmadi",
+  "reorderCartFullTitle": "Sig'madi — savatda 100 ta mahsulot bor",
+  "reorderStay": "Qolish",
+  "reorderToCart": "Savatga",
+  "reorderRepeat": "Takrorlash",
+  "reorderRepeatOrder": "Buyurtmani takrorlash",
+  "reorderSending": "Savatga qo'shilmoqda",
+  "questionBannerTitle": "Yig'uvchi javobingizni kutmoqda",
+  "questionBannerOrder": "Buyurtma № {number} · {time} gacha javob bering",
+  "@questionBannerOrder": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "questionAnswer": "Javob berish"
 }

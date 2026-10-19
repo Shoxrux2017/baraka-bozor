@@ -5275,6 +5275,96 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'{day}, soat {time}'**
   String orderAt(String day, String time);
+
+  /// No description provided for @reorderTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga qo\'shildi'**
+  String get reorderTitle;
+
+  /// No description provided for @reorderNothingTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hech narsa qo\'shilmadi'**
+  String get reorderNothingTitle;
+
+  /// No description provided for @reorderAdded.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count, plural, other{Buyurtma № {number} dan {count} ta mahsulot — bugungi narxlarda.}}'**
+  String reorderAdded(int count, int number);
+
+  /// No description provided for @reorderSkippedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatda bor edi — o\'zgartirmadik'**
+  String get reorderSkippedTitle;
+
+  /// No description provided for @reorderInCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatda {quantity}'**
+  String reorderInCart(String quantity);
+
+  /// No description provided for @reorderUnavailableTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotuvda yo\'q — qo\'shilmadi'**
+  String get reorderUnavailableTitle;
+
+  /// No description provided for @reorderCartFullTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sig\'madi — savatda 100 ta mahsulot bor'**
+  String get reorderCartFullTitle;
+
+  /// No description provided for @reorderStay.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qolish'**
+  String get reorderStay;
+
+  /// No description provided for @reorderToCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga'**
+  String get reorderToCart;
+
+  /// No description provided for @reorderRepeat.
+  ///
+  /// In uz, this message translates to:
+  /// **'Takrorlash'**
+  String get reorderRepeat;
+
+  /// No description provided for @reorderRepeatOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani takrorlash'**
+  String get reorderRepeatOrder;
+
+  /// No description provided for @reorderSending.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga qo\'shilmoqda'**
+  String get reorderSending;
+
+  /// No description provided for @questionBannerTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi javobingizni kutmoqda'**
+  String get questionBannerTitle;
+
+  /// No description provided for @questionBannerOrder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} · {time} gacha javob bering'**
+  String questionBannerOrder(String number, String time);
+
+  /// No description provided for @questionAnswer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob berish'**
+  String get questionAnswer;
 }
 
 class _AppLocalizationsDelegate

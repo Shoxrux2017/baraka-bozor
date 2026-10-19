@@ -11,6 +11,7 @@ import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/customer_tab_bar.dart';
 import '../../addresses/presentation/delivery_address_widgets.dart';
 import '../../cart/presentation/cart_widgets.dart';
+import '../../orders/presentation/question_banner.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 import 'all_categories_screen.dart';
@@ -105,6 +106,7 @@ class CatalogHomeScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const QuestionBanner(),
         ],
       ),
     );

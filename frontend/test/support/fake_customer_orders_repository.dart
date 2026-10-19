@@ -234,6 +234,9 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   /// them.
   List<Map<String, Object?>> pendingRows = <Map<String, Object?>>[];
 
+  /// When set, the pending questions' load fails with it.
+  ApiFailure? pendingFailure;
+
   /// What a reorder answers (`added_items` and the other three lists), or
   /// an empty result when not set.
   Map<String, Object?>? reorderAnswer;
@@ -413,6 +416,10 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   @override
   Future<List<PendingQuestion>> pendingQuestions() async {
     loads.add('pending');
+    final ApiFailure? failure = pendingFailure;
+    if (failure != null) {
+      throw failure;
+    }
     return <PendingQuestion>[
       for (final Map<String, Object?> row in pendingRows)
         PendingQuestion(

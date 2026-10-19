@@ -3055,4 +3055,60 @@ class AppLocalizationsUz extends AppLocalizations {
   String orderAt(String day, String time) {
     return '$day, soat $time';
   }
+
+  @override
+  String get reorderTitle => 'Savatga qo\'shildi';
+
+  @override
+  String get reorderNothingTitle => 'Hech narsa qo\'shilmadi';
+
+  @override
+  String reorderAdded(int count, int number) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Buyurtma № $number dan $count ta mahsulot — bugungi narxlarda.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reorderSkippedTitle => 'Savatda bor edi — o\'zgartirmadik';
+
+  @override
+  String reorderInCart(String quantity) {
+    return 'Savatda $quantity';
+  }
+
+  @override
+  String get reorderUnavailableTitle => 'Sotuvda yo\'q — qo\'shilmadi';
+
+  @override
+  String get reorderCartFullTitle => 'Sig\'madi — savatda 100 ta mahsulot bor';
+
+  @override
+  String get reorderStay => 'Qolish';
+
+  @override
+  String get reorderToCart => 'Savatga';
+
+  @override
+  String get reorderRepeat => 'Takrorlash';
+
+  @override
+  String get reorderRepeatOrder => 'Buyurtmani takrorlash';
+
+  @override
+  String get reorderSending => 'Savatga qo\'shilmoqda';
+
+  @override
+  String get questionBannerTitle => 'Yig\'uvchi javobingizni kutmoqda';
+
+  @override
+  String questionBannerOrder(String number, String time) {
+    return 'Buyurtma № $number · $time gacha javob bering';
+  }
+
+  @override
+  String get questionAnswer => 'Javob berish';
 }

@@ -1912,5 +1912,20 @@
   "dayDate": "{day} {month}",
   "monthShort": "{month, select, m1{янв} m2{фев} m3{мар} m4{апр} m5{мая} m6{июн} m7{июл} m8{авг} m9{сен} m10{окт} m11{ноя} m12{дек} other{}}",
   "orderWhen": "{day}, {time}",
-  "orderAt": "{day} в {time}"
+  "orderAt": "{day} в {time}",
+  "reorderTitle": "Добавили в корзину",
+  "reorderNothingTitle": "Ничего не добавили",
+  "reorderAdded": "{count, plural, one{{count} товар из заказа № {number} — по сегодняшним ценам.} few{{count} товара из заказа № {number} — по сегодняшним ценам.} many{{count} товаров из заказа № {number} — по сегодняшним ценам.} other{{count} товара из заказа № {number} — по сегодняшним ценам.}}",
+  "reorderSkippedTitle": "Уже были в корзине — оставили как есть",
+  "reorderInCart": "В корзине {quantity}",
+  "reorderUnavailableTitle": "Нет в продаже — не добавили",
+  "reorderCartFullTitle": "Не поместились — в корзине уже 100 товаров",
+  "reorderStay": "Остаться",
+  "reorderToCart": "В корзину",
+  "reorderRepeat": "Повторить",
+  "reorderRepeatOrder": "Повторить заказ",
+  "reorderSending": "Добавляем в корзину",
+  "questionBannerTitle": "Сборщик ждёт вашего ответа",
+  "questionBannerOrder": "Заказ № {number} · ответьте до {time}",
+  "questionAnswer": "Ответить"
 }

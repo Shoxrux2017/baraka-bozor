@@ -3087,4 +3087,64 @@ class AppLocalizationsRu extends AppLocalizations {
   String orderAt(String day, String time) {
     return '$day в $time';
   }
+
+  @override
+  String get reorderTitle => 'Добавили в корзину';
+
+  @override
+  String get reorderNothingTitle => 'Ничего не добавили';
+
+  @override
+  String reorderAdded(int count, int number) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count товара из заказа № $number — по сегодняшним ценам.',
+      many: '$count товаров из заказа № $number — по сегодняшним ценам.',
+      few: '$count товара из заказа № $number — по сегодняшним ценам.',
+      one: '$count товар из заказа № $number — по сегодняшним ценам.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reorderSkippedTitle => 'Уже были в корзине — оставили как есть';
+
+  @override
+  String reorderInCart(String quantity) {
+    return 'В корзине $quantity';
+  }
+
+  @override
+  String get reorderUnavailableTitle => 'Нет в продаже — не добавили';
+
+  @override
+  String get reorderCartFullTitle =>
+      'Не поместились — в корзине уже 100 товаров';
+
+  @override
+  String get reorderStay => 'Остаться';
+
+  @override
+  String get reorderToCart => 'В корзину';
+
+  @override
+  String get reorderRepeat => 'Повторить';
+
+  @override
+  String get reorderRepeatOrder => 'Повторить заказ';
+
+  @override
+  String get reorderSending => 'Добавляем в корзину';
+
+  @override
+  String get questionBannerTitle => 'Сборщик ждёт вашего ответа';
+
+  @override
+  String questionBannerOrder(String number, String time) {
+    return 'Заказ № $number · ответьте до $time';
+  }
+
+  @override
+  String get questionAnswer => 'Ответить';
 }
