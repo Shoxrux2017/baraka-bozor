@@ -59,6 +59,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
       id: json.uuid('id'),
       phone: phone,
       fullName: json.nullableString('full_name'),
+      supportPhone: json.has('support_phone')
+          ? json.nullableString('support_phone')
+          : null,
     );
   }
 }

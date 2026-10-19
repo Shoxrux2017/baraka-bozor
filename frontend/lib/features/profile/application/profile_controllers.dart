@@ -7,12 +7,19 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/state/account_mutation.dart';
 import '../../../core/state/mutation_state.dart';
+import '../data/account_deletion_api.dart';
 import '../data/profile_api.dart';
+import '../domain/account_deletion.dart';
 import '../domain/profile.dart';
 
 final Provider<ProfileRepository> profileRepositoryProvider =
     Provider<ProfileRepository>(
       (Ref ref) => ProfileRepositoryImpl(ref.watch(apiClientProvider)),
+    );
+
+final Provider<AccountDeletionRepository> accountDeletionRepositoryProvider =
+    Provider<AccountDeletionRepository>(
+      (Ref ref) => AccountDeletionApi(ref.watch(apiClientProvider)),
     );
 
 /// The Customer's profile while the profile screen is open.

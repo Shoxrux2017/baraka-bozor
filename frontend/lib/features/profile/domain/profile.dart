@@ -4,11 +4,15 @@ final class CustomerProfile {
     required this.id,
     required this.phone,
     required this.fullName,
+    this.supportPhone,
   });
 
   final String id;
   final String phone;
   final String? fullName;
+
+  /// The support line the profile shows, or `null` while none is set.
+  final String? supportPhone;
 }
 
 /// `GET|PATCH /customer/profile` on the Customer session. The language is

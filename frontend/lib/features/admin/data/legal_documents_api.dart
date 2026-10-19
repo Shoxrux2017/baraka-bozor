@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../../core/legal/legal_document_kind.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/network/api_call.dart';
 import '../../../core/network/api_envelope.dart';
