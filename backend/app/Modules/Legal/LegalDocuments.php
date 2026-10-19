@@ -23,8 +23,7 @@ final class LegalDocuments
         return LegalDocument::query()
             ->where('kind', $kind->value)
             ->where('language', $language)
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
+            ->orderByDesc('edition')
             ->first();
     }
 

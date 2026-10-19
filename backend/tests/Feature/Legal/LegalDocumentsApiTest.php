@@ -10,6 +10,7 @@ use App\Models\LegalDocument;
 use App\Models\User;
 use App\Modules\Legal\Actions\PublishLegalDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 final class LegalDocumentsApiTest extends TestCase
@@ -69,6 +70,21 @@ final class LegalDocumentsApiTest extends TestCase
 
         $this->asAdmin($admin)->putJson(self::ADMIN_URL.'/terms/uz', ['body' => null])->assertOk();
         $this->assertSame(3, LegalDocument::query()->count());
+    }
+
+    public function test_two_saves_at_the_same_instant_keep_their_order(): void
+    {
+        Carbon::setTestNow('2026-10-19 10:00:00');
+        $admin = User::factory()->role(Role::Admin)->create();
+
+        foreach (['Bir', 'Ikki', 'Uch', 'To\'rt'] as $body) {
+            $this->asAdmin($admin)->putJson(self::ADMIN_URL.'/terms/ru', ['body' => $body])->assertOk();
+        }
+
+        $this->assertSame(4, LegalDocument::query()->count());
+        $this->assertSame('To\'rt', $this->asAdmin($admin)->getJson(self::ADMIN_URL)->json('data.1.body'));
+        $this->getJson('/api/v1/legal/terms?language=ru')->assertOk()
+            ->assertJsonPath('data.blocks.0.text', 'To\'rt');
     }
 
     public function test_the_public_api_answers_blocks_with_a_language_fallback(): void

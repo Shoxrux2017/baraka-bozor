@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Schema;
 /**
  * `legal_documents`, as `docs/08-database.md` Section 34 names it: the terms
  * of use and the privacy policy, append-only (`DL-94` item 1). The newest row
- * of a kind and language is in force; a null `body` means not published.
+ * of a kind and language (the highest `edition`) is in force; a null `body`
+ * means not published.
  */
 return new class extends Migration
 {
@@ -30,6 +31,8 @@ return new class extends Migration
                 ->restrictOnDelete();
             $table->index(['kind', 'language', 'created_at']);
         });
+
+        DB::statement('alter table legal_documents add column edition bigint generated always as identity unique');
 
         $this->check('legal_documents_kind_check', "kind in ('terms', 'privacy')");
         $this->check('legal_documents_language_check', "language in ('uz', 'ru')");
