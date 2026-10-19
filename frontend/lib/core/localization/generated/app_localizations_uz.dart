@@ -826,6 +826,24 @@ class AppLocalizationsUz extends AppLocalizations {
   String get profileTitle => 'Profil';
 
   @override
+  String get profileNoName => 'Ismingiz nima?';
+
+  @override
+  String get profileEdit => 'Profilni tahrirlash';
+
+  @override
+  String get profileSetName => 'Ismni kiritish';
+
+  @override
+  String get profileLanguage => 'Til';
+
+  @override
+  String get profileSupport => 'Qo\'llab-quvvatlash';
+
+  @override
+  String get profilePrivacy => 'Maxfiylik';
+
+  @override
   String get profileName => 'Ismingiz';
 
   @override

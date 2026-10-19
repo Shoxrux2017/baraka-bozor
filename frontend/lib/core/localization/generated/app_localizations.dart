@@ -1610,6 +1610,42 @@ abstract class AppLocalizations {
   /// **'Profil'**
   String get profileTitle;
 
+  /// No description provided for @profileNoName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismingiz nima?'**
+  String get profileNoName;
+
+  /// No description provided for @profileEdit.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profilni tahrirlash'**
+  String get profileEdit;
+
+  /// No description provided for @profileSetName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismni kiritish'**
+  String get profileSetName;
+
+  /// No description provided for @profileLanguage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Til'**
+  String get profileLanguage;
+
+  /// No description provided for @profileSupport.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'llab-quvvatlash'**
+  String get profileSupport;
+
+  /// No description provided for @profilePrivacy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Maxfiylik'**
+  String get profilePrivacy;
+
   /// No description provided for @profileName.
   ///
   /// In uz, this message translates to:

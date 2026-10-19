@@ -824,6 +824,24 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileTitle => 'Профиль';
 
   @override
+  String get profileNoName => 'Как вас зовут?';
+
+  @override
+  String get profileEdit => 'Редактировать профиль';
+
+  @override
+  String get profileSetName => 'Указать имя';
+
+  @override
+  String get profileLanguage => 'Язык';
+
+  @override
+  String get profileSupport => 'Поддержка';
+
+  @override
+  String get profilePrivacy => 'Конфиденциальность';
+
+  @override
   String get profileName => 'Ваше имя';
 
   @override
