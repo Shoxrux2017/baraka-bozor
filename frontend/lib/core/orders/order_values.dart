@@ -334,3 +334,24 @@ enum DeliveryFailureReason {
     return null;
   }
 }
+
+/// Why a Customer gave a low rating (`docs/09` section 59).
+enum RatingReason {
+  notFresh('not_fresh'),
+  wrongWeight('wrong_weight'),
+  late('late'),
+  rude('rude');
+
+  const RatingReason(this.code);
+
+  final String code;
+
+  static RatingReason? tryParse(String code) {
+    for (final RatingReason reason in values) {
+      if (reason.code == code) {
+        return reason;
+      }
+    }
+    return null;
+  }
+}

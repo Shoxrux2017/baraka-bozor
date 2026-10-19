@@ -314,7 +314,6 @@
       }
     }
   },
-  "catalogEstimateNote": "цена ориентировочная",
   "catalogEstimateExplain": "Итоговая цена рассчитывается от цены, которую сборщик фактически заплатит на рынке. Если она превысит ориентировочную больше допустимого, мы спросим вашего согласия до покупки.",
   "catalogLoadMore": "Загрузить ещё",
   "homeNavHome": "Главная",
@@ -743,12 +742,10 @@
   "errorProductUnavailable": "Этого товара сейчас нет в продаже",
   "checkoutTitle": "Оформление",
   "checkoutGo": "Оформить",
-  "checkoutAddress": "Адрес доставки",
   "checkoutPayment": "Способ оплаты",
   "checkoutOnlineUnavailable": "Пока можно оплатить только наличными",
   "checkoutCalculating": "Рассчитываем",
   "checkoutPlacing": "Отправляем заказ",
-  "checkoutEstimateExplain": "Есть товары с ориентировочной ценой: итог станет известен, когда сборщик их купит",
   "checkoutPlaced": "Заказ № {number} оформлен",
   "@checkoutPlaced": {
     "placeholders": {
@@ -872,7 +869,18 @@
   "customerStatusCompleted": "Доставлен",
   "customerStatusCancelled": "Отменён",
   "orderEdit": "Изменить",
-  "orderEditTitle": "Изменение заказа",
+  "orderEditKitTitle": "Изменить заказ № {number}",
+  "@orderEditKitTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditInfo": "Менять можно, пока сборщик не начал покупать. У товаров, что уже в заказе, цена остаётся прежней.",
+  "orderEditNew": "Новый",
+  "orderEditRecount": "Доставку, сбор и итог пересчитаем после сохранения",
+  "orderPickInOrder": "В заказе",
   "orderEditRemoveLine": "Убрать из заказа",
   "orderEditKeepLine": "Вернуть",
   "orderEditAtLeastOne": "В заказе должен остаться хотя бы один товар",
@@ -880,26 +888,13 @@
   "orderEditClosed": "Этот заказ уже нельзя изменить",
   "orderAddProduct": "Добавить товар",
   "orderAddTitle": "Добавить в заказ",
-  "orderAddedLine": "Добавляется, по текущей цене",
   "orderAddAlreadyIn": "Этот товар уже в заказе — его можно изменить",
   "orderAddFull": "В заказе может быть не больше {count} товаров",
-  "orderCancel": "Отменить заказ",
-  "orderCancelConfirm": "Отменить заказ?",
   "orderCancelReason": "Причина (необязательно)",
   "orderCancelRepeating": "Прошлый запрос остался без ответа: он повторится с той же причиной",
-  "orderCancelKeep": "Нет, оставить",
   "orderCancelling": "Отменяем",
-  "orderCancellationRequested": "Отмена запрошена: решит оператор",
   "orderCancellationNeedsReason": "Заказ уже в работе: напишите причину отмены, и решит оператор",
   "orderOpen": "Открыть заказ",
-  "orderLineRemoved": "Убрано: {reason}",
-  "@orderLineRemoved": {
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
   "errorOrderEditingLocked": "Заказ уже нельзя изменить. Заказ обновлён",
   "errorOrderCancellationNotAllowed": "Заказ уже нельзя отменить. Заказ обновлён",
   "boardColumnPeople": "Сборщик и курьер",
@@ -1440,35 +1435,6 @@
   "shopperOrderGone": "Этот заказ больше не ваш.",
   "shopperOrderCancelled": "Заказ отменён: покупать больше нечего.",
   "substituteUseBuy": "Эта замена уже разрешена. Введите цену через «Купить» — там при необходимости можно спросить клиента.",
-  "ordersNeedAnswer": "Нужен ваш ответ",
-  "orderLineBought": "Куплено: {quantity} × {price} = {total}",
-  "@orderLineBought": {
-    "placeholders": {
-      "quantity": {
-        "type": "String"
-      },
-      "price": {
-        "type": "String"
-      },
-      "total": {
-        "type": "String"
-      }
-    }
-  },
-  "questionPrice": "{name}: цена теперь {price} (при заказе была {was}). Согласны на эту цену?",
-  "@questionPrice": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "price": {
-        "type": "String"
-      },
-      "was": {
-        "type": "String"
-      }
-    }
-  },
   "questionReplacementPrice": "Замена «{name}»: цена {price}. Согласны на эту цену?",
   "@questionReplacementPrice": {
     "placeholders": {
@@ -1494,28 +1460,6 @@
       }
     }
   },
-  "questionQuantity": "{name}: есть только {proposed}, вы заказали {ordered}. Согласны на меньшее?",
-  "@questionQuantity": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "proposed": {
-        "type": "String"
-      },
-      "ordered": {
-        "type": "String"
-      }
-    }
-  },
-  "questionNote": "Комментарий сборщика: {note}",
-  "@questionNote": {
-    "placeholders": {
-      "note": {
-        "type": "String"
-      }
-    }
-  },
   "questionExpires": "Ответьте до {time}",
   "@questionExpires": {
     "placeholders": {
@@ -1526,7 +1470,52 @@
   },
   "questionApprove": "Согласиться",
   "questionReject": "Отказаться",
-  "questionExpired": "Время ответа истекло — этот товар уберут из заказа.",
+  "questionFromShopper": "Вопрос от сборщика",
+  "questionSubstitutionTitle": "Замена",
+  "questionLessTitle": "Меньше, чем заказали",
+  "questionPriceKit": "Цена сегодня {price}, при заказе была {was}. Согласны на эту цену?",
+  "@questionPriceKit": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "was": {
+        "type": "String"
+      }
+    }
+  },
+  "questionLessKit": "Есть только {proposed}, вы заказали {ordered}. Согласны на меньшее?",
+  "@questionLessKit": {
+    "placeholders": {
+      "proposed": {
+        "type": "String"
+      },
+      "ordered": {
+        "type": "String"
+      }
+    }
+  },
+  "questionInsteadOf": "вместо «{name}», {quantity}",
+  "@questionInsteadOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "questionNoteKit": "Сборщик: «{note}»",
+  "@questionNoteKit": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "questionExpiredTitle": "Время ответа истекло",
+  "questionExpiredLine": "Этот товар уберут из заказа",
   "decisionUnanswered": "Ваш ответ «{decision}» отправлен, но подтверждения нет. Если отправить снова, уйдёт тот же ответ.",
   "@decisionUnanswered": {
     "placeholders": {
@@ -1536,36 +1525,13 @@
     }
   },
   "sendAgain": "Отправить снова",
-  "orderPaid": "Оплачено: {amount}, {time}",
-  "@orderPaid": {
-    "placeholders": {
-      "amount": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "requestYours": "Ваш запрос на отмену: {reason}",
-  "@requestYours": {
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
   "requestStateApproved": "Одобрен — заказ отменён",
   "requestStateRejected": "Отклонён оператором",
   "requestStateClosed": "Закрыт — заказ завершился иначе",
   "orderRequestCancel": "Попросить отменить",
-  "orderRequestCancelTitle": "Попросить отменить заказ?",
   "orderRequestCancelReason": "Причина",
-  "orderRequestCancelExplained": "Заказ уже в работе — решит оператор.",
   "errorApprovalExpired": "Время ответа на вопрос истекло.",
   "questionRejectRemoves": "Если откажетесь, этот товар уберут из заказа.",
-  "removedYouRejected": "вы отказались",
-  "removedYouRemoved": "вы убрали",
   "questionDropsReplacement": "Если согласитесь, купят заказанный товар, а не замену.",
   "decisionSending": "Отправляем ответ",
   "courierOrdersEmpty": "Пока вам не назначено доставок. Назначенная доставка появится здесь.",
@@ -1906,5 +1872,105 @@
         "type": "String"
       }
     }
-  }
+  },
+  "dayToday": "Сегодня",
+  "dayYesterday": "Вчера",
+  "dayDate": "{day} {month}",
+  "monthShort": "{month, select, m1{янв} m2{фев} m3{мар} m4{апр} m5{мая} m6{июн} m7{июл} m8{авг} m9{сен} m10{окт} m11{ноя} m12{дек} other{}}",
+  "orderWhen": "{day}, {time}",
+  "orderAt": "{day} в {time}",
+  "reorderTitle": "Добавили в корзину",
+  "reorderNothingTitle": "Ничего не добавили",
+  "reorderAdded": "{count, plural, one{{count} товар из заказа № {number} — по сегодняшним ценам.} few{{count} товара из заказа № {number} — по сегодняшним ценам.} many{{count} товаров из заказа № {number} — по сегодняшним ценам.} other{{count} товара из заказа № {number} — по сегодняшним ценам.}}",
+  "reorderSkippedTitle": "Уже были в корзине — оставили как есть",
+  "reorderInCart": "В корзине {quantity}",
+  "reorderUnavailableTitle": "Нет в продаже — не добавили",
+  "reorderCartFullTitle": "Не поместились — в корзине уже 100 товаров",
+  "reorderStay": "Остаться",
+  "reorderToCart": "В корзину",
+  "reorderRepeat": "Повторить",
+  "reorderRepeatOrder": "Повторить заказ",
+  "reorderSending": "Добавляем в корзину",
+  "questionBannerTitle": "Сборщик ждёт вашего ответа",
+  "questionBannerOrder": "Заказ № {number} · ответьте до {time}",
+  "questionAnswer": "Ответить",
+  "ordersTabCurrent": "Текущие",
+  "ordersTabPast": "Прошлые",
+  "customerOrderTitle": "Заказ № {number}",
+  "orderItemCount": "{count, plural, one{{count} товар} few{{count} товара} many{{count} товаров} other{{count} товара}}",
+  "orderCardQuestion": "{count, plural, one{Сборщик спрашивает про {count} товар} few{Сборщик спрашивает про {count} товара} many{Сборщик спрашивает про {count} товаров} other{Сборщик спрашивает про {count} товара}}",
+  "callCourier": "Позвонить курьеру",
+  "ordersEmptyHint": "Соберите корзину — сборщик купит всё на базаре, а курьер привезёт.",
+  "ordersEmptyAction": "За покупками",
+  "ordersPastEmpty": "Здесь будут доставленные и отменённые заказы",
+  "rateStarsLabel": "Оценить на {stars} из 5",
+  "ratedStarsLabel": "Оценка: {stars} из 5",
+  "orderStateAccepted": "Заказ принят",
+  "orderStateAcceptedHint": "Скоро сборщик начнёт покупать на базаре",
+  "orderStateShopping": "Покупаем на базаре",
+  "orderStateShoppingHint": "Сборщик выбирает ваши продукты",
+  "orderStateCollected": "Заказ собран",
+  "orderStateCollectedHint": "Скоро курьер заберёт его",
+  "orderStateOnTheWay": "Курьер везёт заказ",
+  "orderStateLeftAt": "Выехал в {time}",
+  "orderStateDelivered": "Доставлен",
+  "orderStateCancelled": "Заказ отменён",
+  "orderCancelledByYou": "Вы отменили {when}",
+  "orderCancelledWhen": "Отменён {when}",
+  "orderCancelReasonQuoted": "Причина: «{reason}»",
+  "progressAccepted": "Принят",
+  "progressShopping": "Покупаем",
+  "progressDelivering": "Везём",
+  "progressDelivered": "Доставлен",
+  "orderCanStillChange": "Пока сборщик не начал, заказ можно изменить или отменить.",
+  "orderLineBoughtKit": "Куплено {quantity} × {price}",
+  "lineTagBought": "Куплено",
+  "lineTagWaiting": "Ждёт вашего ответа",
+  "lineTagUnavailable": "Не было на базаре — убрали",
+  "lineTagRejected": "Вы отказались — убрали",
+  "lineTagExpired": "Не ответили вовремя — убрали",
+  "lineTagOperator": "Убрал оператор",
+  "orderToPayLabel": "К оплате",
+  "orderNothingDue": "нет",
+  "orderPaidCash": "Оплачено наличными",
+  "orderPaidOnline": "Оплачено онлайн",
+  "orderPaidWhen": "{amount}, {when}",
+  "orderToPayAmount": "К оплате {amount}",
+  "orderCashOnDelivery": "Наличными курьеру при получении",
+  "orderAddressTitle": "Адрес доставки",
+  "supportTitle": "Поддержка",
+  "supportHint": "Если что-то пошло не так",
+  "callAction": "Позвонить",
+  "courierYours": "Ваш курьер",
+  "orderCancelShort": "Отменить",
+  "requestYouAsked": "Вы попросили отменить",
+  "requestPendingHint": "Решит оператор — мы сообщим. Пока заказ в работе.",
+  "cancelSheetTitle": "Отменить заказ № {number}?",
+  "cancelSheetHint": "Сборщик ещё не начал покупать — отменим сразу.",
+  "requestSheetTitle": "Попросить отменить?",
+  "requestSheetHint": "Сборщик уже покупает. Напишите причину — решит оператор и сообщит вам.",
+  "cancelReasonHint": "Например: заказал не то",
+  "orderCancelKeepKit": "Не отменять",
+  "requestSend": "Отправить",
+  "rateTitle": "Оценка заказа",
+  "rateQuestion": "Как вам заказ № {number}?",
+  "rateHint": "Оцените всё: свежесть продуктов, вес и доставку",
+  "rateStar1": "Очень плохо",
+  "rateStar2": "Плохо",
+  "rateStar3": "Нормально",
+  "rateStar4": "Хорошо",
+  "rateStar5": "Отлично!",
+  "rateWhatWrong": "Что пошло не так?",
+  "rateComment": "Комментарий (необязательно)",
+  "rateCommentHintGood": "Что понравилось?",
+  "rateCommentHintBad": "Что случилось?",
+  "rateOperatorWillCall": "Оператор увидит оценку и свяжется с вами, чтобы разобраться.",
+  "rateSend": "Отправить",
+  "rateSending": "Отправляем оценку",
+  "rateBlockTitle": "Как вам заказ?",
+  "rateBlockHint": "Свежесть, вес, доставка — оценить можно 7 дней",
+  "ratedTitle": "Ваша оценка",
+  "ratedThanksLow": "Спасибо! Оператор свяжется с вами, чтобы разобраться.",
+  "ratedThanks": "Спасибо за оценку!",
+  "rateWindowClosed": "Оценить заказ можно в течение 7 дней после доставки — это время прошло."
 }

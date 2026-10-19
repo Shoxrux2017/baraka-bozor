@@ -28,6 +28,7 @@ Map<String, Object?> orderLineJson({
 }) => <String, Object?>{
   'id': id,
   'product_id': productId,
+  'image_url': null,
   'name_uz': unit == 'kg' ? 'Pomidor' : 'Non',
   'name_ru': unit == 'kg' ? 'Помидоры' : 'Хлеб',
   'unit_code': unit,
@@ -93,6 +94,14 @@ Map<String, Object?> customerOrderJson({
   String? cancellationRequest,
   bool canRequestCancellation = false,
   Map<String, Object?>? payment,
+  Map<String, Object?>? courier,
+  String? supportPhone,
+  Map<String, Object?>? rating,
+  bool canRate = false,
+  String requestReason = 'Kerak emas',
+  Map<String, Object?>? totals,
+  Map<String, Object?>? address,
+  Map<String, Object?>? timestamps,
 }) {
   final bool cancelled = status == 'cancelled';
   final List<Object?> items =
@@ -121,33 +130,39 @@ Map<String, Object?> customerOrderJson({
     'can_edit': changeable,
     'can_cancel_directly': changeable,
     'can_request_cancellation': canRequestCancellation,
+    'rating': rating,
+    'can_rate': canRate,
+    'courier': courier,
+    'support_phone': supportPhone,
     'cancellation_request': cancellationRequest == null
         ? null
         : <String, Object?>{
             'id': '0192f0a0-0000-7000-8000-00000000cc01',
             'status': cancellationRequest,
-            'reason': 'Kerak emas',
+            'reason': requestReason,
             'created_at': '2026-09-28T08:00:00Z',
             'resolved_at': cancellationRequest == 'pending'
                 ? null
                 : '2026-09-28T08:30:00Z',
           },
     'items': items,
-    'totals': cancelled
-        ? <String, Object?>{
-            'merchandise_subtotal_uzs': null,
-            'service_fee_uzs': null,
-            'delivery_fee_uzs': null,
-            'total_uzs': null,
-            'total_kind': 'none',
-          }
-        : <String, Object?>{
-            'merchandise_subtotal_uzs': 35600,
-            'service_fee_uzs': 5000,
-            'delivery_fee_uzs': 15000,
-            'total_uzs': 55600,
-            'total_kind': 'estimate',
-          },
+    'totals':
+        totals ??
+        (cancelled
+            ? <String, Object?>{
+                'merchandise_subtotal_uzs': null,
+                'service_fee_uzs': null,
+                'delivery_fee_uzs': null,
+                'total_uzs': null,
+                'total_kind': 'none',
+              }
+            : <String, Object?>{
+                'merchandise_subtotal_uzs': 35600,
+                'service_fee_uzs': 5000,
+                'delivery_fee_uzs': 15000,
+                'total_uzs': 55600,
+                'total_kind': 'estimate',
+              }),
     'address': <String, Object?>{
       'latitude': '41.311081',
       'longitude': '69.240562',
@@ -156,6 +171,7 @@ Map<String, Object?> customerOrderJson({
       'apartment': '34',
       'landmark': null,
       'delivery_note': null,
+      ...?address,
     },
     'cancellation_reason_code': cancelled
         ? (cancellationReason ?? 'customer_cancelled')
@@ -170,6 +186,7 @@ Map<String, Object?> customerOrderJson({
       'on_the_way_at': null,
       'completed_at': null,
       'cancelled_at': cancelled ? '2026-09-28T08:00:00Z' : null,
+      ...?timestamps,
     },
   };
 }
@@ -179,16 +196,31 @@ Map<String, Object?> orderSummaryJson({
   int number = 1001,
   String status = 'new',
   int waiting = 0,
+  String? courierPhone,
+  String? imageUrl,
+  int? ratingStars,
+  bool canRate = false,
+  int itemCount = 2,
+  String street = 'Amir Temur',
+  String house = '12',
+  int? totalUzs,
+  String totalKind = 'estimate',
+  String createdAt = '2026-09-28T07:00:00Z',
 }) => <String, Object?>{
   'id': id,
   'order_number': number,
   'status': status,
   'payment_method': 'cash',
-  'item_count': 2,
+  'item_count': itemCount,
   'pending_approval_count': waiting,
-  'total_uzs': status == 'cancelled' ? null : 55600,
-  'total_kind': status == 'cancelled' ? 'none' : 'estimate',
-  'created_at': '2026-09-28T07:00:00Z',
+  'total_uzs': status == 'cancelled' ? null : (totalUzs ?? 55600),
+  'total_kind': status == 'cancelled' ? 'none' : totalKind,
+  'address': <String, Object?>{'street': street, 'house': house},
+  'courier_phone': courierPhone,
+  'image_url': imageUrl,
+  'rating_stars': ratingStars,
+  'can_rate': canRate,
+  'created_at': createdAt,
 };
 
 /// The Customer's orders in memory. A change answers with [answer] when set
@@ -212,6 +244,30 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
       <(String, List<OrderEditLine>, String?)>[];
   final List<(String, String?, String)> cancels = <(String, String?, String)>[];
 
+  /// The approvals list's rows (`docs/09` section 23), as the server sends
+  /// them.
+  List<Map<String, Object?>> pendingRows = <Map<String, Object?>>[];
+
+  /// When set, the pending questions' load fails with it.
+  ApiFailure? pendingFailure;
+
+  /// What a reorder answers (`added_items` and the other three lists), or
+  /// an empty result when not set.
+  Map<String, Object?>? reorderAnswer;
+
+  /// When set, the next reorder fails with it.
+  ApiFailure? reorderFailure;
+
+  /// Every reorder sent: the order and its key.
+  final List<(String, String)> reorders = <(String, String)>[];
+
+  /// Every rating sent: the order, the stars, the reason codes, the comment.
+  final List<(String, int, List<String>, String?)> ratings =
+      <(String, int, List<String>, String?)>[];
+
+  /// When set, the next rating fails with it.
+  ApiFailure? rateFailure;
+
   Future<CustomerOrder> _answer(String id) async {
     await hold?.future;
     final ApiFailure? failure = this.failure;
@@ -230,23 +286,36 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
     return order(id);
   }
 
+  /// When set, the list shows these summaries (as `orderSummaryJson` builds
+  /// them) instead of one per row, still split by tab.
+  List<Map<String, Object?>>? summaries;
+
+  static bool _isPast(String status) =>
+      status == 'completed' || status == 'cancelled';
+
   @override
-  Future<Paged<OrderSummary>> orders(int page) async {
-    loads.add('orders:$page');
-    return Paged<OrderSummary>(
-      items: <OrderSummary>[
-        for (final Map<String, Object?> row in rows)
-          CustomerOrdersApi.parseSummary(
+  Future<Paged<OrderSummary>> orders(OrdersTab tab, int page) async {
+    loads.add('orders:${tab.code}:$page');
+    final List<Map<String, Object?>> all =
+        summaries ??
+        <Map<String, Object?>>[
+          for (final Map<String, Object?> row in rows)
             orderSummaryJson(
               id: row['id']! as String,
               status: row['status']! as String,
               waiting: row['pending_approval_count']! as int,
             ),
-          ),
-      ],
+        ];
+    final List<OrderSummary> items = <OrderSummary>[
+      for (final Map<String, Object?> json in all)
+        if (_isPast(json['status']! as String) == (tab == OrdersTab.past))
+          CustomerOrdersApi.parseSummary(json),
+    ];
+    return Paged<OrderSummary>(
+      items: items,
       page: page,
       perPage: 20,
-      total: rows.length,
+      total: items.length,
       lastPage: 1,
     );
   }
@@ -327,5 +396,65 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
           ? ApprovalStatus.approved
           : ApprovalStatus.rejected,
     );
+  }
+
+  @override
+  Future<ReorderResult> reorder(String orderId, String idempotencyKey) async {
+    reorders.add((orderId, idempotencyKey));
+    await hold?.future;
+    final ApiFailure? failure = reorderFailure;
+    if (failure != null) {
+      reorderFailure = null;
+      throw failure;
+    }
+    final Map<String, Object?> answer =
+        reorderAnswer ??
+        <String, Object?>{
+          'added_items': <Object?>[],
+          'skipped_existing_items': <Object?>[],
+          'unavailable_items': <Object?>[],
+          'cart_full_items': <Object?>[],
+        };
+    return CustomerOrdersApi.parseReorder(answer);
+  }
+
+  @override
+  Future<CustomerOrder> rate(
+    String orderId,
+    int stars,
+    List<RatingReason> reasons,
+    String? comment,
+  ) async {
+    ratings.add((
+      orderId,
+      stars,
+      <String>[for (final RatingReason reason in reasons) reason.code],
+      comment,
+    ));
+    await hold?.future;
+    final ApiFailure? failure = rateFailure;
+    if (failure != null) {
+      rateFailure = null;
+      throw failure;
+    }
+    return order(orderId);
+  }
+
+  @override
+  Future<List<PendingQuestion>> pendingQuestions() async {
+    loads.add('pending');
+    final ApiFailure? failure = pendingFailure;
+    if (failure != null) {
+      throw failure;
+    }
+    return <PendingQuestion>[
+      for (final Map<String, Object?> row in pendingRows)
+        PendingQuestion(
+          approvalId: row['id']! as String,
+          orderId: row['order_id']! as String,
+          orderNumber: row['order_number']! as int,
+          expiresAt: DateTime.parse(row['expires_at']! as String),
+        ),
+    ];
   }
 }

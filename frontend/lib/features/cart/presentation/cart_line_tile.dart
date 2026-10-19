@@ -211,7 +211,7 @@ class _CartLineTileState extends ConsumerState<CartLineTile> {
         ],
         if (available &&
             line.substitutionPolicy != SubstitutionPolicy.allowSimilar)
-          _InfoRow(
+          CartInfoRow(
             key: ValueKey<String>('line-rule-${line.id}'),
             icon: line.substitutionPolicy == SubstitutionPolicy.contactBefore
                 ? Icons.call_outlined
@@ -220,7 +220,7 @@ class _CartLineTileState extends ConsumerState<CartLineTile> {
             maxLines: 1,
           ),
         if (available && note != null)
-          _InfoRow(
+          CartInfoRow(
             key: ValueKey<String>('line-note-${line.id}'),
             icon: Icons.chat_bubble_outline,
             text: note,
@@ -355,8 +355,10 @@ class _CartLineTileState extends ConsumerState<CartLineTile> {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
+/// A muted line of a row's details: a small icon and a text, as the rule
+/// and the note of a line are shown.
+class CartInfoRow extends StatelessWidget {
+  const CartInfoRow({
     required this.icon,
     required this.text,
     required this.maxLines,

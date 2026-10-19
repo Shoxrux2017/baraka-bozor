@@ -3,6 +3,17 @@ import '../../../core/localization/app_language.dart';
 import '../../../core/network/paged.dart';
 import '../../../core/orders/order_values.dart';
 
+/// The two lists of the Customer's orders (`docs/09` section 20): the
+/// orders still being worked, and the completed and cancelled ones.
+enum OrdersTab {
+  current('current'),
+  past('past');
+
+  const OrdersTab(this.code);
+
+  final String code;
+}
+
 /// One of the Customer's orders as their list shows it (`docs/09` section
 /// 20).
 final class OrderSummary {
@@ -16,6 +27,12 @@ final class OrderSummary {
     required this.totalUzs,
     required this.totalKind,
     required this.createdAt,
+    required this.street,
+    required this.house,
+    required this.courierPhone,
+    required this.imageUrl,
+    required this.ratingStars,
+    required this.canRate,
   });
 
   final String id;
@@ -32,6 +49,18 @@ final class OrderSummary {
   final int? totalUzs;
   final TotalKind totalKind;
   final DateTime createdAt;
+  final String street;
+  final String house;
+
+  /// The Courier's phone while the order is on the way, else `null`.
+  final String? courierPhone;
+
+  /// The picture of the earliest line whose product has one.
+  final String? imageUrl;
+
+  /// The stars of the order's rating, else `null`.
+  final int? ratingStars;
+  final bool canRate;
 }
 
 /// One line of the Customer's order, at the price it was placed at.
@@ -54,6 +83,7 @@ final class CustomerOrderLine {
     required this.billableUnitPriceUzs,
     required this.replacement,
     required this.question,
+    required this.imageUrl,
   });
 
   final String id;
@@ -87,6 +117,9 @@ final class CustomerOrderLine {
 
   /// The line's question waiting for the Customer's answer.
   final CustomerQuestion? question;
+
+  /// The product's current picture, else `null`.
+  final String? imageUrl;
 
   bool get removed => status == OrderItemStatus.removed;
 
@@ -241,6 +274,14 @@ final class CustomerOrder {
     required this.cancellationRequest,
     required this.payment,
     required this.createdAt,
+    required this.courier,
+    required this.supportPhone,
+    required this.rating,
+    required this.canRate,
+    required this.shoppingStartedAt,
+    required this.onTheWayAt,
+    required this.completedAt,
+    required this.cancelledAt,
   });
 
   final String id;
@@ -277,9 +318,108 @@ final class CustomerOrder {
   final CustomerPayment? payment;
   final DateTime createdAt;
 
+  /// The Courier, only while the order is on the way.
+  final OrderCourier? courier;
+
+  /// The business's phone, `null` while unset.
+  final String? supportPhone;
+
+  /// `null` until the Customer rates.
+  final CustomerRating? rating;
+
+  /// Whether the order can still be rated, as the server says.
+  final bool canRate;
+  final DateTime? shoppingStartedAt;
+  final DateTime? onTheWayAt;
+  final DateTime? completedAt;
+  final DateTime? cancelledAt;
+
   /// The lines the Customer still orders.
   List<CustomerOrderLine> get openLines =>
       lines.where((CustomerOrderLine line) => !line.removed).toList();
+}
+
+/// The Courier of an order on the way.
+final class OrderCourier {
+  const OrderCourier({required this.firstName, required this.phone});
+
+  /// The first word of the Courier's name, `null` when the name is empty.
+  final String? firstName;
+  final String phone;
+}
+
+/// The Customer's rating of a completed order (`docs/09` section 59).
+final class CustomerRating {
+  const CustomerRating({
+    required this.stars,
+    required this.reasons,
+    required this.comment,
+    required this.createdAt,
+  });
+
+  /// 1 to 5.
+  final int stars;
+  final List<RatingReason> reasons;
+  final String? comment;
+  final DateTime createdAt;
+}
+
+/// A product the reorder spoke of (`docs/09` section 26).
+final class ReorderItem {
+  const ReorderItem({
+    required this.productId,
+    required this.nameUz,
+    required this.nameRu,
+    required this.quantity,
+  });
+
+  final String productId;
+  final String nameUz;
+  final String nameRu;
+
+  /// The quantity put in the cart, a decimal string; `null` for a product
+  /// that was not added.
+  final String? quantity;
+
+  String name(AppLanguage language) =>
+      language == AppLanguage.ru ? nameRu : nameUz;
+}
+
+/// What a reorder did to the cart (`docs/09` section 26).
+final class ReorderResult {
+  const ReorderResult({
+    required this.added,
+    required this.skipped,
+    required this.unavailable,
+    required this.cartFull,
+  });
+
+  final List<ReorderItem> added;
+
+  /// Already in the cart, which keeps its line.
+  final List<ReorderItem> skipped;
+
+  /// No longer visible to the Customer, or in another unit now.
+  final List<ReorderItem> unavailable;
+
+  /// Left out because the cart would pass its lines.
+  final List<ReorderItem> cartFull;
+}
+
+/// A question waiting for the Customer's answer, as the approvals list
+/// names it (`docs/09` section 23).
+final class PendingQuestion {
+  const PendingQuestion({
+    required this.approvalId,
+    required this.orderId,
+    required this.orderNumber,
+    required this.expiresAt,
+  });
+
+  final String approvalId;
+  final String orderId;
+  final int orderNumber;
+  final DateTime expiresAt;
 }
 
 /// The most lines an edit may send (`docs/09` section 21).
@@ -304,7 +444,7 @@ final class OrderEditLine {
 /// The Customer's orders (`docs/09` sections 20 to 23), on the Customer
 /// session. Every method throws an `ApiFailure`.
 abstract interface class CustomerOrdersRepository {
-  Future<Paged<OrderSummary>> orders(int page);
+  Future<Paged<OrderSummary>> orders(OrdersTab tab, int page);
 
   Future<CustomerOrder> order(String id);
 
@@ -331,4 +471,20 @@ abstract interface class CustomerOrdersRepository {
     ApprovalDecision decision,
     String idempotencyKey,
   );
+
+  /// Puts the order's lines in the cart, under [idempotencyKey]
+  /// (`docs/09` section 26).
+  Future<ReorderResult> reorder(String orderId, String idempotencyKey);
+
+  /// Rates the completed order (`docs/09` section 59); the identical repeat
+  /// is the retry.
+  Future<CustomerOrder> rate(
+    String orderId,
+    int stars,
+    List<RatingReason> reasons,
+    String? comment,
+  );
+
+  /// The first page of the Customer's pending questions.
+  Future<List<PendingQuestion>> pendingQuestions();
 }

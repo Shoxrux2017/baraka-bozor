@@ -314,7 +314,6 @@
       }
     }
   },
-  "catalogEstimateNote": "narx taxminiy",
   "catalogEstimateExplain": "Yakuniy narx yig'uvchi bozorda haqiqatda to'lagan narxdan hisoblanadi. U taxminiy narxdan belgilangan chegaradan ko'proq oshsa, xarid qilishdan oldin sizdan rozilik so'raymiz.",
   "catalogLoadMore": "Yana yuklash",
   "homeNavHome": "Bosh sahifa",
@@ -757,12 +756,10 @@
   "errorProductUnavailable": "Bu mahsulot hozir sotuvda yo'q",
   "checkoutTitle": "Rasmiylashtirish",
   "checkoutGo": "Rasmiylashtirish",
-  "checkoutAddress": "Yetkazish manzili",
   "checkoutPayment": "To'lov usuli",
   "checkoutOnlineUnavailable": "Hozircha faqat naqd pul bilan to'lash mumkin",
   "checkoutCalculating": "Hisoblanmoqda",
   "checkoutPlacing": "Buyurtma yuborilmoqda",
-  "checkoutEstimateExplain": "Narxi taxminiy mahsulotlar bor: yakuniy summa yig'uvchi ularni sotib olgach aniqlanadi",
   "checkoutPlaced": "Buyurtma № {number} rasmiylashtirildi",
   "@checkoutPlaced": {
     "placeholders": {
@@ -886,7 +883,18 @@
   "customerStatusCompleted": "Yetkazildi",
   "customerStatusCancelled": "Bekor qilindi",
   "orderEdit": "O'zgartirish",
-  "orderEditTitle": "Buyurtmani o'zgartirish",
+  "orderEditKitTitle": "Buyurtma № {number} ni o'zgartirish",
+  "@orderEditKitTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "orderEditInfo": "Yig'uvchi xarid qilishni boshlamaguncha o'zgartirish mumkin. Buyurtmadagi mahsulotlarning narxi o'zgarmaydi.",
+  "orderEditNew": "Yangi",
+  "orderEditRecount": "Yetkazish, yig'im va jamini saqlagandan keyin qayta hisoblaymiz",
+  "orderPickInOrder": "Buyurtmada",
   "orderEditRemoveLine": "Buyurtmadan olib tashlash",
   "orderEditKeepLine": "Qaytarish",
   "orderEditAtLeastOne": "Buyurtmada kamida bitta mahsulot qolishi kerak",
@@ -894,7 +902,6 @@
   "orderEditClosed": "Bu buyurtmani endi o'zgartirib bo'lmaydi",
   "orderAddProduct": "Mahsulot qo'shish",
   "orderAddTitle": "Buyurtmaga qo'shish",
-  "orderAddedLine": "Qo'shilmoqda, joriy narxda",
   "orderAddAlreadyIn": "Bu mahsulot buyurtmada bor, uni o'zgartirishingiz mumkin",
   "orderAddFull": "Buyurtmada ko'pi bilan {count} ta mahsulot bo'lishi mumkin",
   "@orderAddFull": {
@@ -904,23 +911,11 @@
       }
     }
   },
-  "orderCancel": "Buyurtmani bekor qilish",
-  "orderCancelConfirm": "Buyurtma bekor qilinsinmi?",
   "orderCancelReason": "Sabab (ixtiyoriy)",
   "orderCancelRepeating": "Avvalgi so'rov javobsiz qoldi: u shu sabab bilan qayta yuboriladi",
-  "orderCancelKeep": "Yo'q, qoldirish",
   "orderCancelling": "Bekor qilinmoqda",
-  "orderCancellationRequested": "Bekor qilish so'raldi: operator hal qiladi",
   "orderCancellationNeedsReason": "Buyurtma allaqachon bajarilmoqda: bekor qilish sababini yozing, operator hal qiladi",
   "orderOpen": "Buyurtmani ochish",
-  "orderLineRemoved": "Olib tashlandi: {reason}",
-  "@orderLineRemoved": {
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
   "errorOrderEditingLocked": "Buyurtmani endi o'zgartirib bo'lmaydi. Buyurtma yangilandi",
   "errorOrderCancellationNotAllowed": "Buyurtmani endi bekor qilib bo'lmaydi. Buyurtma yangilandi",
   "boardColumnPeople": "Yig'uvchi va kuryer",
@@ -1461,35 +1456,6 @@
   "shopperOrderGone": "Bu buyurtma endi sizda emas.",
   "shopperOrderCancelled": "Buyurtma bekor qilindi: sotib olinadigan narsa qolmadi.",
   "substituteUseBuy": "Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo'lsa, u yerda mijozdan so'rash taklif qilinadi.",
-  "ordersNeedAnswer": "Javobingiz kerak",
-  "orderLineBought": "Olindi: {quantity} × {price} = {total}",
-  "@orderLineBought": {
-    "placeholders": {
-      "quantity": {
-        "type": "String"
-      },
-      "price": {
-        "type": "String"
-      },
-      "total": {
-        "type": "String"
-      }
-    }
-  },
-  "questionPrice": "{name}: narxi endi {price} (buyurtma paytida {was} edi). Shu narxga rozimisiz?",
-  "@questionPrice": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "price": {
-        "type": "String"
-      },
-      "was": {
-        "type": "String"
-      }
-    }
-  },
   "questionReplacementPrice": "O'rniga olinadigan «{name}»: narxi {price}. Shu narxga rozimisiz?",
   "@questionReplacementPrice": {
     "placeholders": {
@@ -1515,28 +1481,6 @@
       }
     }
   },
-  "questionQuantity": "{name}: faqat {proposed} bor, siz {ordered} buyurtma qilgansiz. Shunchasiga rozimisiz?",
-  "@questionQuantity": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "proposed": {
-        "type": "String"
-      },
-      "ordered": {
-        "type": "String"
-      }
-    }
-  },
-  "questionNote": "Yig'uvchi izohi: {note}",
-  "@questionNote": {
-    "placeholders": {
-      "note": {
-        "type": "String"
-      }
-    }
-  },
   "questionExpires": "Javob berish muddati: {time}gacha",
   "@questionExpires": {
     "placeholders": {
@@ -1547,7 +1491,52 @@
   },
   "questionApprove": "Rozi bo'lish",
   "questionReject": "Rad etish",
-  "questionExpired": "Javob berish vaqti o'tdi — bu mahsulot buyurtmadan olib tashlanadi.",
+  "questionFromShopper": "Yig'uvchidan savol",
+  "questionSubstitutionTitle": "Almashtirish",
+  "questionLessTitle": "Buyurtmadan kam",
+  "questionPriceKit": "Bugungi narx {price}, buyurtma paytida {was} edi. Shu narxga rozimisiz?",
+  "@questionPriceKit": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "was": {
+        "type": "String"
+      }
+    }
+  },
+  "questionLessKit": "Faqat {proposed} bor, siz {ordered} buyurtma qildingiz. Kamiga rozimisiz?",
+  "@questionLessKit": {
+    "placeholders": {
+      "proposed": {
+        "type": "String"
+      },
+      "ordered": {
+        "type": "String"
+      }
+    }
+  },
+  "questionInsteadOf": "«{name}» o'rniga, {quantity}",
+  "@questionInsteadOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "questionNoteKit": "Yig'uvchi: «{note}»",
+  "@questionNoteKit": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "questionExpiredTitle": "Javob vaqti tugadi",
+  "questionExpiredLine": "Bu mahsulot buyurtmadan olib tashlanadi",
   "decisionUnanswered": "«{decision}» javobingiz yuborildi, lekin tasdiq kelmadi. Qayta yuborsangiz, xuddi shu javob ketadi.",
   "@decisionUnanswered": {
     "placeholders": {
@@ -1557,36 +1546,13 @@
     }
   },
   "sendAgain": "Qayta yuborish",
-  "orderPaid": "To'landi: {amount}, {time}",
-  "@orderPaid": {
-    "placeholders": {
-      "amount": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "requestYours": "Bekor qilish so'rovingiz: {reason}",
-  "@requestYours": {
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
   "requestStateApproved": "Tasdiqlandi — buyurtma bekor qilindi",
   "requestStateRejected": "Operator rad etdi",
   "requestStateClosed": "Yopildi — buyurtma boshqacha yakunlandi",
   "orderRequestCancel": "Bekor qilishni so'rash",
-  "orderRequestCancelTitle": "Buyurtmani bekor qilishni so'raysizmi?",
   "orderRequestCancelReason": "Sabab",
-  "orderRequestCancelExplained": "Buyurtma allaqachon bajarilmoqda — operator hal qiladi.",
   "errorApprovalExpired": "Savolga javob berish vaqti o'tgan.",
   "questionRejectRemoves": "Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.",
-  "removedYouRejected": "siz rad etdingiz",
-  "removedYouRemoved": "siz olib tashladingiz",
   "questionDropsReplacement": "Rozi bo'lsangiz, o'rniga boshqasi emas, buyurtma qilingan mahsulotning o'zi olinadi.",
   "decisionSending": "Javob yuborilmoqda",
   "courierOrdersEmpty": "Hozircha sizga yetkazish tayinlanmagan. Tayinlangan yetkazish shu yerda paydo bo'ladi.",
@@ -1962,5 +1928,273 @@
         "type": "String"
       }
     }
-  }
+  },
+  "dayToday": "Bugun",
+  "dayYesterday": "Kecha",
+  "dayDate": "{day}-{month}",
+  "@dayDate": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "monthShort": "{month, select, m1{yan} m2{fev} m3{mar} m4{apr} m5{may} m6{iyn} m7{iyl} m8{avg} m9{sen} m10{okt} m11{noy} m12{dek} other{}}",
+  "@monthShort": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "orderWhen": "{day}, {time}",
+  "@orderWhen": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAt": "{day}, soat {time}",
+  "@orderAt": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "reorderTitle": "Savatga qo'shildi",
+  "reorderNothingTitle": "Hech narsa qo'shilmadi",
+  "reorderAdded": "{count, plural, other{Buyurtma № {number} dan {count} ta mahsulot — bugungi narxlarda.}}",
+  "@reorderAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "reorderSkippedTitle": "Savatda bor edi — o'zgartirmadik",
+  "reorderInCart": "Savatda {quantity}",
+  "@reorderInCart": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "reorderUnavailableTitle": "Sotuvda yo'q — qo'shilmadi",
+  "reorderCartFullTitle": "Sig'madi — savatda 100 ta mahsulot bor",
+  "reorderStay": "Qolish",
+  "reorderToCart": "Savatga",
+  "reorderRepeat": "Takrorlash",
+  "reorderRepeatOrder": "Buyurtmani takrorlash",
+  "reorderSending": "Savatga qo'shilmoqda",
+  "questionBannerTitle": "Yig'uvchi javobingizni kutmoqda",
+  "questionBannerOrder": "Buyurtma № {number} · {time} gacha javob bering",
+  "@questionBannerOrder": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "questionAnswer": "Javob berish",
+  "ordersTabCurrent": "Joriy",
+  "ordersTabPast": "O'tgan",
+  "customerOrderTitle": "Buyurtma № {number}",
+  "@customerOrderTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "orderItemCount": "{count, plural, other{{count} ta mahsulot}}",
+  "@orderItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderCardQuestion": "{count, plural, other{Yig'uvchi {count} ta mahsulot haqida so'ramoqda}}",
+  "@orderCardQuestion": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "callCourier": "Kuryerga qo'ng'iroq qilish",
+  "ordersEmptyHint": "Savatni to'ldiring — yig'uvchi hammasini bozordan oladi, kuryer esa olib keladi.",
+  "ordersEmptyAction": "Xaridga",
+  "ordersPastEmpty": "Bu yerda yetkazilgan va bekor qilingan buyurtmalar bo'ladi",
+  "rateStarsLabel": "5 dan {stars} ga baholash",
+  "@rateStarsLabel": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "ratedStarsLabel": "Baho: 5 dan {stars}",
+  "@ratedStarsLabel": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "orderStateAccepted": "Buyurtma qabul qilindi",
+  "orderStateAcceptedHint": "Tez orada yig'uvchi bozordan xarid qilishni boshlaydi",
+  "orderStateShopping": "Bozordan xarid qilyapmiz",
+  "orderStateShoppingHint": "Yig'uvchi mahsulotlaringizni tanlayapti",
+  "orderStateCollected": "Buyurtma yig'ildi",
+  "orderStateCollectedHint": "Tez orada kuryer olib ketadi",
+  "orderStateOnTheWay": "Kuryer buyurtmani olib kelmoqda",
+  "orderStateLeftAt": "Soat {time} da yo'lga chiqdi",
+  "@orderStateLeftAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderStateDelivered": "Yetkazildi",
+  "orderStateCancelled": "Buyurtma bekor qilindi",
+  "orderCancelledByYou": "Siz bekor qildingiz: {when}",
+  "@orderCancelledByYou": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "orderCancelledWhen": "Bekor qilindi: {when}",
+  "@orderCancelledWhen": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "orderCancelReasonQuoted": "Sabab: «{reason}»",
+  "@orderCancelReasonQuoted": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "progressAccepted": "Qabul qilindi",
+  "progressShopping": "Xarid",
+  "progressDelivering": "Yo'lda",
+  "progressDelivered": "Yetkazildi",
+  "orderCanStillChange": "Yig'uvchi boshlamaguncha buyurtmani o'zgartirish yoki bekor qilish mumkin.",
+  "orderLineBoughtKit": "Sotib olindi: {quantity} × {price}",
+  "@orderLineBoughtKit": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "lineTagBought": "Sotib olindi",
+  "lineTagWaiting": "Javobingizni kutmoqda",
+  "lineTagUnavailable": "Bozorda yo'q edi — olib tashlandi",
+  "lineTagRejected": "Siz rad etdingiz — olib tashlandi",
+  "lineTagExpired": "Vaqtida javob berilmadi — olib tashlandi",
+  "lineTagOperator": "Operator olib tashladi",
+  "orderToPayLabel": "To'lov",
+  "orderNothingDue": "yo'q",
+  "orderPaidCash": "Naqd to'landi",
+  "orderPaidOnline": "Onlayn to'landi",
+  "orderPaidWhen": "{amount}, {when}",
+  "@orderPaidWhen": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "orderToPayAmount": "To'lov: {amount}",
+  "@orderToPayAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "orderCashOnDelivery": "Qabul qilganda kuryerga naqd",
+  "orderAddressTitle": "Yetkazish manzili",
+  "supportTitle": "Qo'llab-quvvatlash",
+  "supportHint": "Agar biror narsa noto'g'ri ketsa",
+  "callAction": "Qo'ng'iroq",
+  "courierYours": "Sizning kuryeringiz",
+  "orderCancelShort": "Bekor qilish",
+  "requestYouAsked": "Siz bekor qilishni so'radingiz",
+  "requestPendingHint": "Operator hal qiladi — sizga xabar beramiz. Hozircha buyurtma ishda.",
+  "cancelSheetTitle": "Buyurtma № {number} bekor qilinsinmi?",
+  "@cancelSheetTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "cancelSheetHint": "Yig'uvchi hali xarid qilishni boshlamadi — darhol bekor qilamiz.",
+  "requestSheetTitle": "Bekor qilishni so'raysizmi?",
+  "requestSheetHint": "Yig'uvchi allaqachon xarid qilmoqda. Sababini yozing — operator hal qilib, sizga xabar beradi.",
+  "cancelReasonHint": "Masalan: noto'g'ri buyurtma berdim",
+  "orderCancelKeepKit": "Bekor qilmaslik",
+  "requestSend": "Yuborish",
+  "rateTitle": "Buyurtmani baholash",
+  "rateQuestion": "Buyurtma № {number} sizga yoqdimi?",
+  "@rateQuestion": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "rateHint": "Hammasini baholang: mahsulotlar yangiligi, og'irligi va yetkazib berish",
+  "rateStar1": "Juda yomon",
+  "rateStar2": "Yomon",
+  "rateStar3": "O'rtacha",
+  "rateStar4": "Yaxshi",
+  "rateStar5": "A'lo!",
+  "rateWhatWrong": "Nima noto'g'ri bo'ldi?",
+  "rateComment": "Izoh (ixtiyoriy)",
+  "rateCommentHintGood": "Nima yoqdi?",
+  "rateCommentHintBad": "Nima bo'ldi?",
+  "rateOperatorWillCall": "Operator bahoni ko'radi va vaziyatni aniqlash uchun siz bilan bog'lanadi.",
+  "rateSend": "Yuborish",
+  "rateSending": "Baho yuborilmoqda",
+  "rateBlockTitle": "Buyurtma yoqdimi?",
+  "rateBlockHint": "Yangilik, og'irlik, yetkazish — 7 kun ichida baholash mumkin",
+  "ratedTitle": "Sizning bahoingiz",
+  "ratedThanksLow": "Rahmat! Operator vaziyatni aniqlash uchun siz bilan bog'lanadi.",
+  "ratedThanks": "Baho uchun rahmat!",
+  "rateWindowClosed": "Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o'tdi."
 }

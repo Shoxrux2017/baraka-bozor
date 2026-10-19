@@ -198,7 +198,7 @@ Admin creates a staff account with name, phone and role. The backend validates t
 
 ## 33. Reorder
 
-The Customer opens an order of their own, whatever its status, and taps reorder. The backend takes its lines except those the Customer removed in an edit, adds the products missing from the current cart with the ordered quantity, note and rule at current prices, reports the duplicates skipped, the products unavailable (hidden, archived or in another unit now) and the lines that no longer fit the cart's 100, and the Customer proceeds through the normal checkout. A retry with the same key answers the first answer (`DL-91` item 3).
+The Customer opens an order of their own, whatever its status, and taps reorder. The backend takes its lines except those the Customer removed in an edit, adds the products missing from the current cart with the ordered quantity, note and rule at current prices, reports the duplicates skipped, the products unavailable (hidden, archived or in another unit now) and the lines that no longer fit the cart's 100, and the Customer proceeds through the normal checkout. A retry with the same key answers the first answer (`DL-91` item 3). After the answer the app opens a sheet that lists what was added, what was already in the cart, what is unavailable and what did not fit, and leads to the cart (`DL-92` (2)).
 
 ## 34. Customer Mode for Staff
 
@@ -210,6 +210,6 @@ Customer: own resources only. Shopper and Courier: current assignments only. Ope
 
 ## 36. Rating
 
-After delivery the Customer opens the completed order and rates it with 1 to 5 stars; at 1 to 3 stars the app offers the reasons (not fresh, wrong weight, late, rude) and a comment, at 4 or 5 only the comment. The backend stores one rating per order while seven days have not passed since completion. Sending the same rating again changes nothing and answers the order; a different rating after the first, a rating of an order that was not delivered, and one past the window are refused, and the order shows what was stored. The order itself is untouched.
+After delivery the Customer rates the order from its page or from its card in the past tab: tapping a star opens the rating screen with that many chosen (`DL-92` (6)). On it the Customer rates with 1 to 5 stars; at 1 to 3 stars the app offers the reasons (not fresh, wrong weight, late, rude) and a comment, at 4 or 5 only the comment. The backend stores one rating per order while seven days have not passed since completion. Sending the same rating again changes nothing and answers the order; a different rating after the first, a rating of an order that was not delivered, and one past the window are refused, and the order shows what was stored. The order itself is untouched.
 
 A rating of 1 to 3 stars becomes an attention item for the Operator, whatever the order's status. The Operator calls the Customer and marks the rating reviewed; the order then shows who reviewed it and when, and the item leaves the list. Marking it again changes nothing. A Manager only sees (`DL-91` (5)).

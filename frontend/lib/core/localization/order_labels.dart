@@ -67,19 +67,6 @@ abstract final class OrderLabels {
     ItemRemovedReason.orderCancelled => l10n.removedOrderCancelled,
   };
 
-  /// Why a line left the order, as the Customer reads it about their own.
-  static String customerRemovedReason(
-    AppLocalizations l10n,
-    ItemRemovedReason reason,
-  ) => switch (reason) {
-    ItemRemovedReason.customerRejected => l10n.removedYouRejected,
-    ItemRemovedReason.customerRemoved => l10n.removedYouRemoved,
-    ItemRemovedReason.unavailable ||
-    ItemRemovedReason.approvalExpired ||
-    ItemRemovedReason.operatorRemoved ||
-    ItemRemovedReason.orderCancelled => removedReason(l10n, reason),
-  };
-
   static String deliveryFailure(
     AppLocalizations l10n,
     DeliveryFailureReason reason,
@@ -152,4 +139,13 @@ abstract final class OrderLabels {
     CancellationReason.deliveryFailed => l10n.cancelDeliveryFailed,
     CancellationReason.system => l10n.cancelSystem,
   };
+
+  /// Why a Customer gave a low rating (`docs/09` section 59).
+  static String ratingReason(AppLocalizations l10n, RatingReason reason) =>
+      switch (reason) {
+        RatingReason.notFresh => l10n.ratingReasonNotFresh,
+        RatingReason.wrongWeight => l10n.ratingReasonWrongWeight,
+        RatingReason.late => l10n.ratingReasonLate,
+        RatingReason.rude => l10n.ratingReasonRude,
+      };
 }

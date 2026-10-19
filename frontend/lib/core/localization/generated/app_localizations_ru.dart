@@ -730,9 +730,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get catalogEstimateNote => 'цена ориентировочная';
-
-  @override
   String get catalogEstimateExplain =>
       'Итоговая цена рассчитывается от цены, которую сборщик фактически заплатит на рынке. Если она превысит ориентировочную больше допустимого, мы спросим вашего согласия до покупки.';
 
@@ -1499,9 +1496,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get checkoutGo => 'Оформить';
 
   @override
-  String get checkoutAddress => 'Адрес доставки';
-
-  @override
   String get checkoutPayment => 'Способ оплаты';
 
   @override
@@ -1513,10 +1507,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get checkoutPlacing => 'Отправляем заказ';
-
-  @override
-  String get checkoutEstimateExplain =>
-      'Есть товары с ориентировочной ценой: итог станет известен, когда сборщик их купит';
 
   @override
   String checkoutPlaced(String number) {
@@ -1724,7 +1714,23 @@ class AppLocalizationsRu extends AppLocalizations {
   String get orderEdit => 'Изменить';
 
   @override
-  String get orderEditTitle => 'Изменение заказа';
+  String orderEditKitTitle(int number) {
+    return 'Изменить заказ № $number';
+  }
+
+  @override
+  String get orderEditInfo =>
+      'Менять можно, пока сборщик не начал покупать. У товаров, что уже в заказе, цена остаётся прежней.';
+
+  @override
+  String get orderEditNew => 'Новый';
+
+  @override
+  String get orderEditRecount =>
+      'Доставку, сбор и итог пересчитаем после сохранения';
+
+  @override
+  String get orderPickInOrder => 'В заказе';
 
   @override
   String get orderEditRemoveLine => 'Убрать из заказа';
@@ -1749,9 +1755,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get orderAddTitle => 'Добавить в заказ';
 
   @override
-  String get orderAddedLine => 'Добавляется, по текущей цене';
-
-  @override
   String get orderAddAlreadyIn =>
       'Этот товар уже в заказе — его можно изменить';
 
@@ -1761,12 +1764,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get orderCancel => 'Отменить заказ';
-
-  @override
-  String get orderCancelConfirm => 'Отменить заказ?';
-
-  @override
   String get orderCancelReason => 'Причина (необязательно)';
 
   @override
@@ -1774,13 +1771,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Прошлый запрос остался без ответа: он повторится с той же причиной';
 
   @override
-  String get orderCancelKeep => 'Нет, оставить';
-
-  @override
   String get orderCancelling => 'Отменяем';
-
-  @override
-  String get orderCancellationRequested => 'Отмена запрошена: решит оператор';
 
   @override
   String get orderCancellationNeedsReason =>
@@ -1788,11 +1779,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get orderOpen => 'Открыть заказ';
-
-  @override
-  String orderLineRemoved(String reason) {
-    return 'Убрано: $reason';
-  }
 
   @override
   String get errorOrderEditingLocked =>
@@ -2422,19 +2408,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Эта замена уже разрешена. Введите цену через «Купить» — там при необходимости можно спросить клиента.';
 
   @override
-  String get ordersNeedAnswer => 'Нужен ваш ответ';
-
-  @override
-  String orderLineBought(String quantity, String price, String total) {
-    return 'Куплено: $quantity × $price = $total';
-  }
-
-  @override
-  String questionPrice(String name, String price, String was) {
-    return '$name: цена теперь $price (при заказе была $was). Согласны на эту цену?';
-  }
-
-  @override
   String questionReplacementPrice(String name, String price) {
     return 'Замена «$name»: цена $price. Согласны на эту цену?';
   }
@@ -2442,16 +2415,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String questionSubstitution(String name, String replacement, String price) {
     return '$name: нет в наличии. Замена — $replacement, $price. Согласны?';
-  }
-
-  @override
-  String questionQuantity(String name, String proposed, String ordered) {
-    return '$name: есть только $proposed, вы заказали $ordered. Согласны на меньшее?';
-  }
-
-  @override
-  String questionNote(String note) {
-    return 'Комментарий сборщика: $note';
   }
 
   @override
@@ -2466,8 +2429,39 @@ class AppLocalizationsRu extends AppLocalizations {
   String get questionReject => 'Отказаться';
 
   @override
-  String get questionExpired =>
-      'Время ответа истекло — этот товар уберут из заказа.';
+  String get questionFromShopper => 'Вопрос от сборщика';
+
+  @override
+  String get questionSubstitutionTitle => 'Замена';
+
+  @override
+  String get questionLessTitle => 'Меньше, чем заказали';
+
+  @override
+  String questionPriceKit(String price, String was) {
+    return 'Цена сегодня $price, при заказе была $was. Согласны на эту цену?';
+  }
+
+  @override
+  String questionLessKit(String proposed, String ordered) {
+    return 'Есть только $proposed, вы заказали $ordered. Согласны на меньшее?';
+  }
+
+  @override
+  String questionInsteadOf(String name, String quantity) {
+    return 'вместо «$name», $quantity';
+  }
+
+  @override
+  String questionNoteKit(String note) {
+    return 'Сборщик: «$note»';
+  }
+
+  @override
+  String get questionExpiredTitle => 'Время ответа истекло';
+
+  @override
+  String get questionExpiredLine => 'Этот товар уберут из заказа';
 
   @override
   String decisionUnanswered(String decision) {
@@ -2476,16 +2470,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get sendAgain => 'Отправить снова';
-
-  @override
-  String orderPaid(String amount, String time) {
-    return 'Оплачено: $amount, $time';
-  }
-
-  @override
-  String requestYours(String reason) {
-    return 'Ваш запрос на отмену: $reason';
-  }
 
   @override
   String get requestStateApproved => 'Одобрен — заказ отменён';
@@ -2500,14 +2484,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get orderRequestCancel => 'Попросить отменить';
 
   @override
-  String get orderRequestCancelTitle => 'Попросить отменить заказ?';
-
-  @override
   String get orderRequestCancelReason => 'Причина';
-
-  @override
-  String get orderRequestCancelExplained =>
-      'Заказ уже в работе — решит оператор.';
 
   @override
   String get errorApprovalExpired => 'Время ответа на вопрос истекло.';
@@ -2515,12 +2492,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get questionRejectRemoves =>
       'Если откажетесь, этот товар уберут из заказа.';
-
-  @override
-  String get removedYouRejected => 'вы отказались';
-
-  @override
-  String get removedYouRemoved => 'вы убрали';
 
   @override
   String get questionDropsReplacement =>
@@ -3046,4 +3017,395 @@ class AppLocalizationsRu extends AppLocalizations {
   String ratingReviewed(String name, String time) {
     return 'Разобрано: $name, $time';
   }
+
+  @override
+  String get dayToday => 'Сегодня';
+
+  @override
+  String get dayYesterday => 'Вчера';
+
+  @override
+  String dayDate(String day, String month) {
+    return '$day $month';
+  }
+
+  @override
+  String monthShort(String month) {
+    String _temp0 = intl.Intl.selectLogic(month, {
+      'm1': 'янв',
+      'm2': 'фев',
+      'm3': 'мар',
+      'm4': 'апр',
+      'm5': 'мая',
+      'm6': 'июн',
+      'm7': 'июл',
+      'm8': 'авг',
+      'm9': 'сен',
+      'm10': 'окт',
+      'm11': 'ноя',
+      'm12': 'дек',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String orderWhen(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
+  String orderAt(String day, String time) {
+    return '$day в $time';
+  }
+
+  @override
+  String get reorderTitle => 'Добавили в корзину';
+
+  @override
+  String get reorderNothingTitle => 'Ничего не добавили';
+
+  @override
+  String reorderAdded(int count, int number) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count товара из заказа № $number — по сегодняшним ценам.',
+      many: '$count товаров из заказа № $number — по сегодняшним ценам.',
+      few: '$count товара из заказа № $number — по сегодняшним ценам.',
+      one: '$count товар из заказа № $number — по сегодняшним ценам.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reorderSkippedTitle => 'Уже были в корзине — оставили как есть';
+
+  @override
+  String reorderInCart(String quantity) {
+    return 'В корзине $quantity';
+  }
+
+  @override
+  String get reorderUnavailableTitle => 'Нет в продаже — не добавили';
+
+  @override
+  String get reorderCartFullTitle =>
+      'Не поместились — в корзине уже 100 товаров';
+
+  @override
+  String get reorderStay => 'Остаться';
+
+  @override
+  String get reorderToCart => 'В корзину';
+
+  @override
+  String get reorderRepeat => 'Повторить';
+
+  @override
+  String get reorderRepeatOrder => 'Повторить заказ';
+
+  @override
+  String get reorderSending => 'Добавляем в корзину';
+
+  @override
+  String get questionBannerTitle => 'Сборщик ждёт вашего ответа';
+
+  @override
+  String questionBannerOrder(String number, String time) {
+    return 'Заказ № $number · ответьте до $time';
+  }
+
+  @override
+  String get questionAnswer => 'Ответить';
+
+  @override
+  String get ordersTabCurrent => 'Текущие';
+
+  @override
+  String get ordersTabPast => 'Прошлые';
+
+  @override
+  String customerOrderTitle(int number) {
+    return 'Заказ № $number';
+  }
+
+  @override
+  String orderItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count товара',
+      many: '$count товаров',
+      few: '$count товара',
+      one: '$count товар',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String orderCardQuestion(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Сборщик спрашивает про $count товара',
+      many: 'Сборщик спрашивает про $count товаров',
+      few: 'Сборщик спрашивает про $count товара',
+      one: 'Сборщик спрашивает про $count товар',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get callCourier => 'Позвонить курьеру';
+
+  @override
+  String get ordersEmptyHint =>
+      'Соберите корзину — сборщик купит всё на базаре, а курьер привезёт.';
+
+  @override
+  String get ordersEmptyAction => 'За покупками';
+
+  @override
+  String get ordersPastEmpty => 'Здесь будут доставленные и отменённые заказы';
+
+  @override
+  String rateStarsLabel(int stars) {
+    return 'Оценить на $stars из 5';
+  }
+
+  @override
+  String ratedStarsLabel(int stars) {
+    return 'Оценка: $stars из 5';
+  }
+
+  @override
+  String get orderStateAccepted => 'Заказ принят';
+
+  @override
+  String get orderStateAcceptedHint =>
+      'Скоро сборщик начнёт покупать на базаре';
+
+  @override
+  String get orderStateShopping => 'Покупаем на базаре';
+
+  @override
+  String get orderStateShoppingHint => 'Сборщик выбирает ваши продукты';
+
+  @override
+  String get orderStateCollected => 'Заказ собран';
+
+  @override
+  String get orderStateCollectedHint => 'Скоро курьер заберёт его';
+
+  @override
+  String get orderStateOnTheWay => 'Курьер везёт заказ';
+
+  @override
+  String orderStateLeftAt(String time) {
+    return 'Выехал в $time';
+  }
+
+  @override
+  String get orderStateDelivered => 'Доставлен';
+
+  @override
+  String get orderStateCancelled => 'Заказ отменён';
+
+  @override
+  String orderCancelledByYou(String when) {
+    return 'Вы отменили $when';
+  }
+
+  @override
+  String orderCancelledWhen(String when) {
+    return 'Отменён $when';
+  }
+
+  @override
+  String orderCancelReasonQuoted(String reason) {
+    return 'Причина: «$reason»';
+  }
+
+  @override
+  String get progressAccepted => 'Принят';
+
+  @override
+  String get progressShopping => 'Покупаем';
+
+  @override
+  String get progressDelivering => 'Везём';
+
+  @override
+  String get progressDelivered => 'Доставлен';
+
+  @override
+  String get orderCanStillChange =>
+      'Пока сборщик не начал, заказ можно изменить или отменить.';
+
+  @override
+  String orderLineBoughtKit(String quantity, String price) {
+    return 'Куплено $quantity × $price';
+  }
+
+  @override
+  String get lineTagBought => 'Куплено';
+
+  @override
+  String get lineTagWaiting => 'Ждёт вашего ответа';
+
+  @override
+  String get lineTagUnavailable => 'Не было на базаре — убрали';
+
+  @override
+  String get lineTagRejected => 'Вы отказались — убрали';
+
+  @override
+  String get lineTagExpired => 'Не ответили вовремя — убрали';
+
+  @override
+  String get lineTagOperator => 'Убрал оператор';
+
+  @override
+  String get orderToPayLabel => 'К оплате';
+
+  @override
+  String get orderNothingDue => 'нет';
+
+  @override
+  String get orderPaidCash => 'Оплачено наличными';
+
+  @override
+  String get orderPaidOnline => 'Оплачено онлайн';
+
+  @override
+  String orderPaidWhen(String amount, String when) {
+    return '$amount, $when';
+  }
+
+  @override
+  String orderToPayAmount(String amount) {
+    return 'К оплате $amount';
+  }
+
+  @override
+  String get orderCashOnDelivery => 'Наличными курьеру при получении';
+
+  @override
+  String get orderAddressTitle => 'Адрес доставки';
+
+  @override
+  String get supportTitle => 'Поддержка';
+
+  @override
+  String get supportHint => 'Если что-то пошло не так';
+
+  @override
+  String get callAction => 'Позвонить';
+
+  @override
+  String get courierYours => 'Ваш курьер';
+
+  @override
+  String get orderCancelShort => 'Отменить';
+
+  @override
+  String get requestYouAsked => 'Вы попросили отменить';
+
+  @override
+  String get requestPendingHint =>
+      'Решит оператор — мы сообщим. Пока заказ в работе.';
+
+  @override
+  String cancelSheetTitle(int number) {
+    return 'Отменить заказ № $number?';
+  }
+
+  @override
+  String get cancelSheetHint =>
+      'Сборщик ещё не начал покупать — отменим сразу.';
+
+  @override
+  String get requestSheetTitle => 'Попросить отменить?';
+
+  @override
+  String get requestSheetHint =>
+      'Сборщик уже покупает. Напишите причину — решит оператор и сообщит вам.';
+
+  @override
+  String get cancelReasonHint => 'Например: заказал не то';
+
+  @override
+  String get orderCancelKeepKit => 'Не отменять';
+
+  @override
+  String get requestSend => 'Отправить';
+
+  @override
+  String get rateTitle => 'Оценка заказа';
+
+  @override
+  String rateQuestion(int number) {
+    return 'Как вам заказ № $number?';
+  }
+
+  @override
+  String get rateHint => 'Оцените всё: свежесть продуктов, вес и доставку';
+
+  @override
+  String get rateStar1 => 'Очень плохо';
+
+  @override
+  String get rateStar2 => 'Плохо';
+
+  @override
+  String get rateStar3 => 'Нормально';
+
+  @override
+  String get rateStar4 => 'Хорошо';
+
+  @override
+  String get rateStar5 => 'Отлично!';
+
+  @override
+  String get rateWhatWrong => 'Что пошло не так?';
+
+  @override
+  String get rateComment => 'Комментарий (необязательно)';
+
+  @override
+  String get rateCommentHintGood => 'Что понравилось?';
+
+  @override
+  String get rateCommentHintBad => 'Что случилось?';
+
+  @override
+  String get rateOperatorWillCall =>
+      'Оператор увидит оценку и свяжется с вами, чтобы разобраться.';
+
+  @override
+  String get rateSend => 'Отправить';
+
+  @override
+  String get rateSending => 'Отправляем оценку';
+
+  @override
+  String get rateBlockTitle => 'Как вам заказ?';
+
+  @override
+  String get rateBlockHint => 'Свежесть, вес, доставка — оценить можно 7 дней';
+
+  @override
+  String get ratedTitle => 'Ваша оценка';
+
+  @override
+  String get ratedThanksLow =>
+      'Спасибо! Оператор свяжется с вами, чтобы разобраться.';
+
+  @override
+  String get ratedThanks => 'Спасибо за оценку!';
+
+  @override
+  String get rateWindowClosed =>
+      'Оценить заказ можно в течение 7 дней после доставки — это время прошло.';
 }

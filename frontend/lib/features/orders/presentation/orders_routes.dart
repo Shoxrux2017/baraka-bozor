@@ -7,6 +7,7 @@ import '../../catalog/domain/catalog.dart';
 import 'order_edit_screen.dart';
 import 'order_product_picker.dart';
 import 'orders_screens.dart';
+import 'rate_order_screen.dart';
 
 /// The Customer's orders, inside the Customer area: the list, an order, its
 /// editor and the product picker the editor adds from. Each opens over the
@@ -42,10 +43,26 @@ final FeatureRoutes ordersRoutes = FeatureRoutes(
     GoRoute(
       path: AppPaths.customerOrderAddPattern,
       name: 'customer-order-add',
+      // The products the editor keeps come along, to mark them; opened by
+      // its address alone, the picker reads them from the order.
       builder: (BuildContext context, GoRouterState state) =>
           OrderProductPickerScreen(
             orderId: state.pathParameters['order']!.toLowerCase(),
+            productIds: switch (state.extra) {
+              final Set<String> ids => ids,
+              _ => null,
+            },
           ),
+    ),
+    GoRoute(
+      path: AppPaths.customerOrderRatePattern,
+      name: 'customer-order-rate',
+      // The stars tapped before the screen opened; anything but 1 to 5 is
+      // ignored.
+      builder: (BuildContext context, GoRouterState state) => RateOrderScreen(
+        orderId: state.pathParameters['order']!.toLowerCase(),
+        stars: int.tryParse(state.uri.queryParameters['stars'] ?? ''),
+      ),
     ),
   ],
 );

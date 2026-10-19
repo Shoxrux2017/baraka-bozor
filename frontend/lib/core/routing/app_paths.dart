@@ -39,6 +39,7 @@ abstract final class AppPaths {
   static const String customerOrderPattern = '$customerOrders/:order';
   static const String customerOrderEditPattern = '$customerOrderPattern/edit';
   static const String customerOrderAddPattern = '$customerOrderEditPattern/add';
+  static const String customerOrderRatePattern = '$customerOrderPattern/rate';
 
   static String customerOrder(String id) =>
       '$customerOrders/${Uri.encodeComponent(id)}';
@@ -46,6 +47,11 @@ abstract final class AppPaths {
   static String customerOrderEdit(String id) => '${customerOrder(id)}/edit';
 
   static String customerOrderAdd(String id) => '${customerOrderEdit(id)}/add';
+
+  /// The rating screen, with [stars] already chosen when the Customer tapped
+  /// them on the order or its card.
+  static String customerOrderRate(String id, {int? stars}) =>
+      '${customerOrder(id)}/rate${stars == null ? '' : '?stars=$stars'}';
 
   static String customerAddress(String id) =>
       '$customerAddresses/${Uri.encodeComponent(id)}';

@@ -454,7 +454,7 @@ void main() {
     test(
       'each call on the Customer session, with its verb, path and body',
       () async {
-        await repository.orders(2);
+        await repository.orders(OrdersTab.current, 2);
         await repository.order(orderOne);
         answer = customerOrderJson(
           note: null,
@@ -483,6 +483,7 @@ void main() {
           ],
         );
         expect(adapter.requests[0].queryParameters, <String, Object>{
+          'state': 'current',
           'page': 2,
         });
         expect(adapter.requests[2].data, <String, Object?>{
@@ -658,6 +659,258 @@ void main() {
         repository.order(orderOne),
         throwsA(isA<MalformedResponseFailure>()),
       );
+    });
+  });
+
+  group('the 6a fields', () {
+    late FakeHttpClientAdapter adapter;
+    late CustomerOrdersRepositoryImpl repository;
+    Map<String, Object?>? answer;
+
+    setUp(() {
+      answer = null;
+      adapter = FakeHttpClientAdapter((RequestOptions options) {
+        if (options.path == '/customer/orders' ||
+            options.path == '/customer/approvals') {
+          return jsonReply(200, <String, Object?>{
+            'data': options.path == '/customer/orders'
+                ? <Object?>[orderSummaryJson()]
+                : <Object?>[
+                    approvalJson(status: 'pending'),
+                    approvalJson(
+                      id: '0192f0a0-0000-7000-8000-00000000c032',
+                      status: 'pending',
+                    ),
+                  ],
+            'meta': <String, Object?>{
+              'pagination': <String, int>{
+                'page': options.queryParameters['page']! as int,
+                'per_page': 20,
+                'total': 1,
+                'last_page': 1,
+              },
+            },
+          });
+        }
+        return jsonReply(200, <String, Object?>{
+          'data': answer ?? customerOrderJson(),
+        });
+      });
+      repository = CustomerOrdersRepositoryImpl(
+        CustomerOrdersApi(dioWith(adapter)),
+      );
+    });
+
+    test('a tab asks for its state', () async {
+      await repository.orders(OrdersTab.past, 2);
+      expect(adapter.requests.single.queryParameters, <String, Object>{
+        'state': 'past',
+        'page': 2,
+      });
+    });
+
+    test('a summary carries the 6a fields', () {
+      final OrderSummary summary = CustomerOrdersApi.parseSummary(
+        <String, Object?>{
+          ...orderSummaryJson(status: 'on_the_way'),
+          'courier_phone': '+998901234567',
+          'image_url': 'https://cdn.example/p.webp',
+          'rating_stars': 4,
+          'can_rate': true,
+        },
+      );
+      expect(summary.street, 'Amir Temur');
+      expect(summary.house, '12');
+      expect(summary.courierPhone, '+998901234567');
+      expect(summary.imageUrl, 'https://cdn.example/p.webp');
+      expect(summary.ratingStars, 4);
+      expect(summary.canRate, isTrue);
+
+      final OrderSummary bare = CustomerOrdersApi.parseSummary(
+        orderSummaryJson(),
+      );
+      expect(bare.courierPhone, isNull);
+      expect(bare.imageUrl, isNull);
+      expect(bare.ratingStars, isNull);
+      expect(bare.canRate, isFalse);
+
+      expect(
+        () => CustomerOrdersApi.parseSummary(<String, Object?>{
+          ...orderSummaryJson()..remove('address'),
+        }),
+        throwsFormatException,
+      );
+      for (final Map<String, Object?> bad in <Map<String, Object?>>[
+        <String, Object?>{'courier_phone': '998901234567'},
+        <String, Object?>{'rating_stars': 6},
+        <String, Object?>{'rating_stars': 0},
+      ]) {
+        expect(
+          () => CustomerOrdersApi.parseSummary(<String, Object?>{
+            ...orderSummaryJson(),
+            ...bad,
+          }),
+          throwsFormatException,
+        );
+      }
+    });
+
+    test('an order carries the courier, support, rating and instants', () {
+      final Map<String, Object?> json = customerOrderJson(
+        status: 'on_the_way',
+        courier: <String, Object?>{
+          'first_name': null,
+          'phone': '+998901234567',
+        },
+        supportPhone: '+998712000000',
+        rating: <String, Object?>{
+          'stars': 2,
+          'reasons': <Object?>['not_fresh', 'from_the_future'],
+          'comment': 'мятые',
+          'created_at': '2026-09-29T08:00:00Z',
+        },
+        lines: <Object?>[
+          orderLineJson(patch: <String, Object?>{'image_url': 'https://i/1'}),
+        ],
+      );
+      (json['timestamps']! as Map<String, Object?>)['on_the_way_at'] =
+          '2026-09-28T09:00:00Z';
+      final CustomerOrder order = CustomerOrdersApi.parseOrder(json);
+      expect(order.courier!.firstName, isNull);
+      expect(order.courier!.phone, '+998901234567');
+      expect(order.supportPhone, '+998712000000');
+      expect(order.rating!.stars, 2);
+      expect(order.rating!.reasons, <RatingReason>[RatingReason.notFresh]);
+      expect(order.rating!.comment, 'мятые');
+      expect(order.onTheWayAt, DateTime.utc(2026, 9, 28, 9));
+      expect(order.shoppingStartedAt, isNull);
+      expect(order.lines.single.imageUrl, 'https://i/1');
+      expect(order.canRate, isFalse);
+
+      final CustomerOrder plain = CustomerOrdersApi.parseOrder(
+        customerOrderJson(),
+      );
+      expect(plain.courier, isNull);
+      expect(plain.rating, isNull);
+      expect(plain.supportPhone, isNull);
+      expect(plain.lines.first.imageUrl, isNull);
+
+      expect(
+        () => CustomerOrdersApi.parseOrder(
+          customerOrderJson(supportPhone: '712000000'),
+        ),
+        throwsFormatException,
+      );
+      expect(
+        () => CustomerOrdersApi.parseOrder(
+          customerOrderJson(
+            courier: <String, Object?>{'first_name': 'Ali', 'phone': '1'},
+          ),
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('reorder posts with its key and parses the four lists', () async {
+      answer = <String, Object?>{
+        'added_items': <Object?>[
+          <String, Object?>{
+            'product_id': productTomato,
+            'name_uz': 'Pomidor',
+            'name_ru': 'Помидоры',
+            'quantity': '2.000',
+          },
+        ],
+        'skipped_existing_items': <Object?>[
+          <String, Object?>{
+            'product_id': productBread,
+            'name_uz': 'Non',
+            'name_ru': 'Хлеб',
+          },
+        ],
+        'unavailable_items': <Object?>[
+          <String, Object?>{
+            'product_id': productMilk,
+            'name_uz': 'Sut',
+            'name_ru': 'Молоко',
+          },
+        ],
+        'cart_full_items': <Object?>[],
+      };
+      final ReorderResult result = await repository.reorder(orderOne, 'key-1');
+
+      final RequestOptions request = adapter.requests.single;
+      expect(request.method, 'POST');
+      expect(request.path, '/customer/orders/$orderOne/reorder');
+      expect(request.headers['Idempotency-Key'], 'key-1');
+      expect(request.data, isNull);
+      expect(result.added.single.quantity, '2.000');
+      expect(result.added.single.name(AppLanguage.ru), 'Помидоры');
+      expect(result.skipped.single.quantity, isNull);
+      expect(result.unavailable.single.quantity, isNull);
+      expect(result.cartFull, isEmpty);
+    });
+
+    test('rate posts stars, reasons and a comment', () async {
+      answer = customerOrderJson(
+        status: 'completed',
+        rating: <String, Object?>{
+          'stars': 2,
+          'reasons': <Object?>['not_fresh'],
+          'comment': 'мятые',
+          'created_at': '2026-09-29T08:00:00Z',
+        },
+      );
+      final CustomerOrder order = await repository.rate(
+        orderOne,
+        2,
+        const <RatingReason>[RatingReason.notFresh],
+        'мятые',
+      );
+      expect(adapter.requests.single.method, 'POST');
+      expect(adapter.requests.single.path, '/customer/orders/$orderOne/rating');
+      expect(adapter.requests.single.data, <String, Object?>{
+        'stars': 2,
+        'reasons': <String>['not_fresh'],
+        'comment': 'мятые',
+      });
+      expect(adapter.requests.single.headers['Idempotency-Key'], isNull);
+      expect(order.rating!.stars, 2);
+
+      answer = customerOrderJson(
+        status: 'completed',
+        rating: <String, Object?>{
+          'stars': 5,
+          'reasons': <Object?>[],
+          'comment': null,
+          'created_at': '2026-09-29T08:00:00Z',
+        },
+      );
+      await repository.rate(orderOne, 5, const <RatingReason>[], null);
+      expect(adapter.requests.last.data, <String, Object?>{'stars': 5});
+
+      answer = customerOrderJson(status: 'completed');
+      await expectLater(
+        repository.rate(orderOne, 5, const <RatingReason>[], null),
+        throwsA(isA<MalformedResponseFailure>()),
+      );
+    });
+
+    test('pending questions read the approvals list', () async {
+      final List<PendingQuestion> questions = await repository
+          .pendingQuestions();
+      final RequestOptions request = adapter.requests.single;
+      expect(request.method, 'GET');
+      expect(request.path, '/customer/approvals');
+      expect(request.queryParameters, <String, Object>{
+        'status': 'pending',
+        'page': 1,
+      });
+      expect(questions, hasLength(2));
+      expect(questions.first.approvalId, approvalOne);
+      expect(questions.first.orderId, orderOne);
+      expect(questions.first.orderNumber, 1001);
+      expect(questions.first.expiresAt, DateTime.utc(2026, 9, 28, 8));
     });
   });
 }

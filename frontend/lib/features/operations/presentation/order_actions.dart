@@ -710,7 +710,7 @@ class RatingDetails extends ConsumerWidget {
               runSpacing: 4,
               children: <Widget>[
                 for (final RatingReason reason in rating.reasons)
-                  Chip(label: Text(_reasonLabel(l10n, reason))),
+                  Chip(label: Text(OrderLabels.ratingReason(l10n, reason))),
               ],
             ),
           ),
@@ -748,12 +748,4 @@ class RatingDetails extends ConsumerWidget {
       ],
     );
   }
-
-  static String _reasonLabel(AppLocalizations l10n, RatingReason reason) =>
-      switch (reason) {
-        RatingReason.notFresh => l10n.ratingReasonNotFresh,
-        RatingReason.wrongWeight => l10n.ratingReasonWrongWeight,
-        RatingReason.late => l10n.ratingReasonLate,
-        RatingReason.rude => l10n.ratingReasonRude,
-      };
 }

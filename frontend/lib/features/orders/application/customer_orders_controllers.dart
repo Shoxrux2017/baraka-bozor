@@ -8,9 +8,11 @@ import '../../../app/providers.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/network/idempotency_key.dart';
 import '../../../core/network/paged.dart';
+import '../../../core/orders/order_values.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/state/account_mutation.dart';
 import '../../../core/state/mutation_state.dart';
+import '../../cart/application/cart_controllers.dart';
 import '../data/customer_orders_api.dart';
 import '../domain/customer_orders.dart';
 
@@ -21,9 +23,14 @@ final Provider<CustomerOrdersRepository> customerOrdersRepositoryProvider =
       ),
     );
 
-/// The page of the Customer's orders shown while the list is open; the
-/// list opens on the newest orders again, and another account starts over.
+/// The page of one tab of the Customer's orders shown while the list is
+/// open; the list opens on the newest orders again, and another account
+/// starts over.
 class OrdersPageController extends Notifier<int> {
+  OrdersPageController(this.tab);
+
+  final OrdersTab tab;
+
   @override
   int build() {
     ref.watch(customerAccountProvider);
@@ -33,20 +40,39 @@ class OrdersPageController extends Notifier<int> {
   void goToPage(int page) => state = page;
 }
 
-final NotifierProvider<OrdersPageController, int> ordersPageProvider =
-    NotifierProvider.autoDispose<OrdersPageController, int>(
-      OrdersPageController.new,
-    );
+final NotifierProviderFamily<OrdersPageController, int, OrdersTab>
+ordersPageProvider = NotifierProvider.autoDispose
+    .family<OrdersPageController, int, OrdersTab>(OrdersPageController.new);
 
-/// The Customer's orders, newest first, one page at a time.
-final FutureProvider<Paged<OrderSummary>> customerOrdersProvider =
-    FutureProvider.autoDispose<Paged<OrderSummary>>((Ref ref) {
+/// One tab of the Customer's orders, newest first, one page at a time.
+final FutureProviderFamily<Paged<OrderSummary>, OrdersTab>
+customerOrdersProvider = FutureProvider.autoDispose
+    .family<Paged<OrderSummary>, OrdersTab>((Ref ref, OrdersTab tab) {
       if (ref.watch(customerAccountProvider) == null) {
         return Completer<Paged<OrderSummary>>().future;
       }
       return ref
           .watch(customerOrdersRepositoryProvider)
-          .orders(ref.watch(ordersPageProvider));
+          .orders(tab, ref.watch(ordersPageProvider(tab)));
+    });
+
+/// The question to put on the home banner: of the first page of pending
+/// questions, the one expiring first; `null` when none waits.
+final FutureProvider<PendingQuestion?> pendingQuestionProvider =
+    FutureProvider.autoDispose<PendingQuestion?>((Ref ref) async {
+      if (ref.watch(customerAccountProvider) == null) {
+        return Completer<PendingQuestion?>().future;
+      }
+      final List<PendingQuestion> questions = await ref
+          .watch(customerOrdersRepositoryProvider)
+          .pendingQuestions();
+      PendingQuestion? first;
+      for (final PendingQuestion question in questions) {
+        if (first == null || question.expiresAt.isBefore(first.expiresAt)) {
+          first = question;
+        }
+      }
+      return first;
     });
 
 /// One of the Customer's orders.
@@ -77,7 +103,8 @@ abstract class OrderMutation extends AccountMutation {
 
   void reload(Object? _) => ref
     ..invalidate(customerOrderProvider(orderId))
-    ..invalidate(customerOrdersProvider);
+    ..invalidate(customerOrdersProvider)
+    ..invalidate(pendingQuestionProvider);
 }
 
 /// The order's edit: every line it keeps and the delivery wish.
@@ -130,13 +157,7 @@ class OrderCancelController extends OrderMutation {
       () => orders.cancel(orderId, sent, key),
       reload: reload,
     );
-    final ApiFailure? failure = ref.mounted ? state.failure : null;
-    final bool uncertain =
-        failure != null &&
-        (failure is! ApiRefusal ||
-            failure.status >= 500 ||
-            failure.code == 'idempotency_in_progress');
-    if (!uncertain) {
+    if (!_uncertain(ref.mounted ? state.failure : null)) {
       _key = null;
       _reason = null;
     }
@@ -149,6 +170,71 @@ orderCancelProvider = NotifierProvider.autoDispose
     .family<OrderCancelController, MutationState, String>(
       OrderCancelController.new,
     );
+
+/// Whether an answer leaves it open what a keyed request did: no refusal, a
+/// `5xx`, or an `idempotency_in_progress` (`docs/09` section 48).
+bool _uncertain(ApiFailure? failure) =>
+    failure != null &&
+    (failure is! ApiRefusal ||
+        failure.status >= 500 ||
+        failure.code == 'idempotency_in_progress');
+
+/// The order's reorder into the cart, under an `Idempotency-Key` kept until
+/// an answer says for sure what it did (`docs/09` sections 26 and 48). After
+/// a sure answer the cart loads again.
+class ReorderController extends OrderMutation {
+  ReorderController(super.orderId);
+
+  String? _key;
+
+  Future<ReorderResult?> reorder() async {
+    // A tap while a reorder runs is not another attempt, and leaves the key.
+    if (state.isBusy) {
+      return null;
+    }
+    final String key = _key ??= newIdempotencyKey();
+    final ReorderResult? result = await perform(
+      () => orders.reorder(orderId, key),
+      reload: (_) => ref.invalidate(cartProvider),
+    );
+    if (!_uncertain(ref.mounted ? state.failure : null)) {
+      _key = null;
+      if (ref.mounted) {
+        ref.invalidate(cartProvider);
+      }
+    }
+    return result;
+  }
+}
+
+final NotifierProviderFamily<ReorderController, MutationState, String>
+reorderProvider = NotifierProvider.autoDispose
+    .family<ReorderController, MutationState, String>(ReorderController.new);
+
+/// The Customer's rating of the order. It carries no key: the identical
+/// repeat is the retry (`docs/09` section 49).
+class RateController extends OrderMutation {
+  RateController(super.orderId);
+
+  Future<CustomerOrder?> rate(
+    int stars,
+    List<RatingReason> reasons,
+    String? comment,
+  ) {
+    // A tap while a rating runs is not another one.
+    if (state.isBusy) {
+      return Future<CustomerOrder?>.value();
+    }
+    return perform(
+      () => orders.rate(orderId, stars, reasons, comment),
+      reload: reload,
+    );
+  }
+}
+
+final NotifierProviderFamily<RateController, MutationState, String>
+rateProvider = NotifierProvider.autoDispose
+    .family<RateController, MutationState, String>(RateController.new);
 
 /// The decisions on one order's questions sent without a sure answer, by
 /// question: the key and the decision sent, which a retry sends again as it

@@ -244,27 +244,6 @@ final class AttentionItem {
   final PersonRef? courier;
 }
 
-/// Why a Customer gave a low rating (`docs/09` section 59).
-enum RatingReason {
-  notFresh('not_fresh'),
-  wrongWeight('wrong_weight'),
-  late('late'),
-  rude('rude');
-
-  const RatingReason(this.code);
-
-  final String code;
-
-  static RatingReason? tryParse(String code) {
-    for (final RatingReason reason in values) {
-      if (reason.code == code) {
-        return reason;
-      }
-    }
-    return null;
-  }
-}
-
 /// The Customer's rating of a delivered order and, once an Operator or an
 /// Admin has dealt with it, who did and when (`docs/09` sections 59 and 60).
 final class OrderRating {
