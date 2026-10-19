@@ -57,16 +57,17 @@ final class OrdersTableTest extends TestCase
             'order_number' => ['bigint', false],
             'customer_id' => ['uuid', false],
             'source_cart_id' => ['uuid', false],
-            'source_address_id' => ['uuid', false],
+            'source_address_id' => ['uuid', true],
             'status' => ['character varying', false, 32],
             'payment_method' => ['character varying', false, 16],
             'delivery_time_note' => ['character varying', true, 160],
-            'recipient_name_snapshot' => ['character varying', false, 160],
-            'recipient_phone_snapshot' => ['character varying', false, 20],
-            'latitude_snapshot' => ['numeric', false],
-            'longitude_snapshot' => ['numeric', false],
-            'street_snapshot' => ['character varying', false, 160],
-            'house_snapshot' => ['character varying', false, 40],
+            'customer_erased_at' => ['timestamp with time zone', true],
+            'recipient_name_snapshot' => ['character varying', true, 160],
+            'recipient_phone_snapshot' => ['character varying', true, 20],
+            'latitude_snapshot' => ['numeric', true],
+            'longitude_snapshot' => ['numeric', true],
+            'street_snapshot' => ['character varying', true, 160],
+            'house_snapshot' => ['character varying', true, 40],
             'apartment_snapshot' => ['character varying', true, 40],
             'landmark_snapshot' => ['character varying', true, 160],
             'delivery_note_snapshot' => ['character varying', true, 300],
@@ -117,6 +118,20 @@ final class OrdersTableTest extends TestCase
             $this->row(['order_number' => $numbers[0]]),
             'BR-ORDER-005: an order number is never shared.'
         );
+    }
+
+    public function test_only_an_erased_order_may_lack_the_personal_snapshots(): void
+    {
+        $erased = [
+            'recipient_name_snapshot' => null, 'recipient_phone_snapshot' => null, 'latitude_snapshot' => null,
+            'longitude_snapshot' => null, 'street_snapshot' => null, 'house_snapshot' => null,
+        ];
+
+        $this->assertRejectedBy(self::TABLE, 'orders_personal_snapshots_check', $this->row($erased), 'BR-ROLE-013: only erasure empties them.');
+        $this->assertRejectedBy(self::TABLE, 'orders_personal_snapshots_check', $this->row(['street_snapshot' => null]), 'A single missing snapshot is refused too.');
+
+        DB::table(self::TABLE)->insert($this->row($erased + ['customer_erased_at' => now()]));
+        $this->assertSame(1, DB::table(self::TABLE)->whereNotNull('customer_erased_at')->count());
     }
 
     public function test_one_cart_makes_at_most_one_order(): void

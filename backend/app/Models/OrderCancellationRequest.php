@@ -26,7 +26,7 @@ use Illuminate\Support\Carbon;
  * @property CancellationRequestOrigin $origin
  * @property string $requested_by_user_id
  * @property CancellationRequestStatus $status
- * @property string $reason
+ * @property string|null $reason
  * @property string|null $resolved_by_user_id
  * @property string|null $resolution_note
  * @property Carbon|null $resolved_at

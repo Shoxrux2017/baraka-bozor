@@ -38,7 +38,7 @@ At most one active Customer account and at most one active Staff account per pho
 
 ## 4. Customer
 
-May: sign in; edit own name and language; manage own addresses; browse and search the catalog; manage own cart; create, edit (until shopping starts) and cancel own orders; decide own approvals; pay own online orders; file cancellation requests; see own orders, payments, refunds and delivery state; reorder.
+May: sign in; edit own name and language; manage own addresses; browse and search the catalog; manage own cart; create, edit (until shopping starts) and cancel own orders; decide own approvals; pay own online orders; file cancellation requests; see own orders, payments, refunds and delivery state; reorder; delete own account with a login code while no order is unfinished (`BR-ROLE-013`).
 
 Must not: reach another Customer's data; choose a role or status; assign staff; change prices or fees; set billable quantities or totals; mark payments as paid; mark deliveries as done; see internal or staff data.
 
