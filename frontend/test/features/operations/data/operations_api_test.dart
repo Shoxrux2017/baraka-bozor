@@ -57,6 +57,40 @@ void main() {
       expect(marked.shopper, isNull);
     });
 
+    test(
+      'an erased Customer\'s row and order read without the personal data',
+      () {
+        final BoardRow row = OperationsApi.parseRow(rowJson(erased: true));
+        expect(row.customerErased, isTrue);
+        expect(row.customerName, isNull);
+        expect(row.customerPhone, isNull);
+
+        final BoardOrder order = OperationsApi.parseOrder(
+          orderJson(erased: true),
+        );
+        expect(order.customerErased, isTrue);
+        expect(order.customer.id, customerId);
+        expect(order.customer.fullName, isNull);
+        expect(order.customer.phone, isNull);
+        expect(order.address, isNull);
+        expect(order.deliveryTimeNote, isNull);
+
+        final BoardOrder normal = OperationsApi.parseOrder(orderJson());
+        expect(normal.customerErased, isFalse);
+        expect(normal.address, isNotNull);
+        expect(OperationsApi.parseRow(rowJson()).customerErased, isFalse);
+      },
+    );
+
+    test('an erased flag that disagrees with the data is refused', () {
+      final Map<String, Object?> row = rowJson()..['customer_erased'] = true;
+      expect(() => OperationsApi.parseRow(row), throwsFormatException);
+
+      final Map<String, Object?> order = orderJson(erased: true)
+        ..['customer_erased'] = false;
+      expect(() => OperationsApi.parseOrder(order), throwsFormatException);
+    });
+
     test('a row off the contract is refused', () {
       for (final Map<String, Object?> broken in <Map<String, Object?>>[
         rowJson(totalUzs: null),
@@ -238,8 +272,8 @@ void main() {
 
       expect(order.orderNumber, 1001);
       expect(order.customer.phone, '+998901112233');
-      expect(order.address.apartment, '34');
-      expect(order.address.landmark, isNull);
+      expect(order.address!.apartment, '34');
+      expect(order.address!.landmark, isNull);
       expect(order.items.single.marketPriceUzs, 16000);
       expect(order.items.single.markupPercent, '15.00');
       expect(order.items.single.quantity, '3.000');

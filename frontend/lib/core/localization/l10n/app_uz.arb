@@ -258,6 +258,33 @@
   "legalPublish": "E'lon qilish",
   "legalUnpublishConfirm": "Hujjatni e'londan olib tashlaysizmi?",
   "legalSaved": "Hujjat e'lon qilindi",
+  "customersTitle": "Xaridorlar",
+  "customersPhoneHint": "+998 va 9 raqam",
+  "customersFind": "Topish",
+  "customersNone": "Bu raqamli xaridor yo'q",
+  "customerNoName": "Ismsiz",
+  "customerOrders": "Buyurtmalar: {count}",
+  "@customerOrders": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "customerUnfinished": "Tugallanmagan buyurtma № {number}",
+  "@customerUnfinished": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "customerErase": "Akkauntni o'chirish",
+  "customerEraseTitle": "Xaridor akkauntini o'chirasizmi?",
+  "customerEraseBody": "Ism, raqam, manzillar, sevimlilar va savat o'chiriladi. Buyurtmalar tarixi ism va telefonsiz qoladi.",
+  "customerEraseConfirm": "O'chirish",
+  "customerErased": "Akkaunt o'chirildi",
+  "orderCustomerErased": "Xaridor ma'lumotlari o'chirilgan",
   "roleShopper": "Yig'uvchi",
   "roleCourier": "Kuryer",
   "roleOperator": "Operator",

@@ -52,6 +52,8 @@ void main() {
         AdminPaths.newProduct,
         AdminPaths.productPattern,
         AdminPaths.staff,
+        AdminPaths.customers,
+        AdminPaths.legalDocuments,
         AdminPaths.settings,
         AppPaths.operations,
         OperationsPaths.orderPattern,

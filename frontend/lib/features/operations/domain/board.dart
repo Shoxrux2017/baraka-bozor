@@ -125,6 +125,7 @@ final class BoardRow {
     required this.paymentMethod,
     required this.customerName,
     required this.customerPhone,
+    this.customerErased = false,
     required this.itemCount,
     required this.pendingApprovalCount,
     required this.totalUzs,
@@ -139,8 +140,15 @@ final class BoardRow {
   final DateTime createdAt;
   final OrderStatus status;
   final PaymentMethod paymentMethod;
-  final String customerName;
-  final String customerPhone;
+
+  /// The Customer's name and phone; both `null` once the Customer's account
+  /// was erased ([customerErased]).
+  final String? customerName;
+  final String? customerPhone;
+
+  /// The Customer erased their account: the order stays, the personal data
+  /// is gone (`docs/09` section 65).
+  final bool customerErased;
   final int itemCount;
 
   /// The Customer's questions still open (`DL-60` (4)).
@@ -277,6 +285,7 @@ final class BoardOrder {
     required this.deliveryTimeNote,
     required this.customer,
     required this.address,
+    this.customerErased = false,
     required this.items,
     required this.totals,
     required this.shopperAssignments,
@@ -298,7 +307,14 @@ final class BoardOrder {
   final PaymentMethod paymentMethod;
   final String? deliveryTimeNote;
   final BoardCustomer customer;
-  final BoardAddress address;
+
+  /// `null` once the Customer's account was erased: the address went with
+  /// the account.
+  final BoardAddress? address;
+
+  /// The Customer erased their account: [customer] and [address] hold no
+  /// personal data.
+  final bool customerErased;
   final List<BoardItem> items;
   final BoardTotals totals;
 
@@ -397,8 +413,10 @@ final class BoardCustomer {
   });
 
   final String id;
-  final String fullName;
-  final String phone;
+
+  /// `null` once the account was erased.
+  final String? fullName;
+  final String? phone;
 }
 
 /// The delivery address as the order was placed.

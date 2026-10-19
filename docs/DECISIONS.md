@@ -1373,3 +1373,5 @@ Answers to the questions of kit stage 7 (`kit/07-profil.dc.html`, approved the s
 5. **The Admin's side.** A Customer who has no app any more calls support; the Admin finds the account by phone — active and blocked Customer accounts on that number, with their unfinished order if any — and erases it with the same action and the same refusal. Only an Admin erases; an Operator or Manager does not. Board orders say `customer_erased` and carry no recipient or address, so the panel can say why.
 
 6. **The panel's documents page.** Four texts — two documents in two languages — each with its own "Опубликовать", the publication date and author, and a confirmation before an empty save takes a document down. The format hint sits under each field.
+
+7. **The panel's customers page.** The Admin types the number the caller rang from and sees the Customer accounts on it; "Удалить аккаунт" is disabled while an order is unfinished and asks with the same lists the Customer sees. An erased order on the board says "Данные покупателя удалены" instead of a name, phone and address.

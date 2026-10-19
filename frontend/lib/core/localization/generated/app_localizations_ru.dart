@@ -617,6 +617,50 @@ class AppLocalizationsRu extends AppLocalizations {
   String get legalSaved => 'Документ опубликован';
 
   @override
+  String get customersTitle => 'Покупатели';
+
+  @override
+  String get customersPhoneHint => '+998 и 9 цифр';
+
+  @override
+  String get customersFind => 'Найти';
+
+  @override
+  String get customersNone => 'Покупателей с этим номером нет';
+
+  @override
+  String get customerNoName => 'Без имени';
+
+  @override
+  String customerOrders(int count) {
+    return 'Заказов: $count';
+  }
+
+  @override
+  String customerUnfinished(String number) {
+    return 'Незавершённый заказ № $number';
+  }
+
+  @override
+  String get customerErase => 'Удалить аккаунт';
+
+  @override
+  String get customerEraseTitle => 'Удалить аккаунт покупателя?';
+
+  @override
+  String get customerEraseBody =>
+      'Сотрём имя, номер, адреса, избранное и корзину. История заказов останется без имени и телефона.';
+
+  @override
+  String get customerEraseConfirm => 'Удалить';
+
+  @override
+  String get customerErased => 'Аккаунт удалён';
+
+  @override
+  String get orderCustomerErased => 'Данные покупателя удалены';
+
+  @override
   String get roleShopper => 'Сборщик';
 
   @override

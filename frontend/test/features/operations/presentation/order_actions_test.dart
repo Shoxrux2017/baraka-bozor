@@ -959,6 +959,21 @@ void main() {
       await tapAndSettle(tester, byKey('action-cancel'));
     }
   });
+
+  testWidgets('an erased order says so and offers no phone and no address', (
+    WidgetTester tester,
+  ) async {
+    operations.details[orderA] = OperationsApi.parseOrder(
+      orderJson(erased: true),
+    );
+    await openOrder(tester, device: const Locale('ru'));
+
+    expect(find.text('Данные покупателя удалены'), findsOneWidget);
+    expect(find.text('Aziza Karimova'), findsNothing);
+    expect(find.textContaining('901112233'), findsNothing);
+    expect(find.textContaining('Amir Temur'), findsNothing);
+    expect(find.text(l10n(tester).orderSectionAddress), findsNothing);
+  });
 }
 
 const Map<String, Object?> _none = <String, Object?>{

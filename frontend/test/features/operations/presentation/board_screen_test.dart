@@ -397,6 +397,19 @@ void main() {
     },
   );
 
+  testWidgets('an erased row says so instead of a name and phone', (
+    WidgetTester tester,
+  ) async {
+    operations.rows = <BoardRow>[OperationsApi.parseRow(rowJson(erased: true))];
+    await open(tester, device: const Locale('ru'));
+
+    expect(
+      tester.widget<Text>(byKey('board-customer-$orderA')).data,
+      'Данные покупателя удалены',
+    );
+    expect(find.textContaining('901112233'), findsNothing);
+  });
+
   testWidgets(
     'an order opens on its page, and the board comes back as it was left',
     (WidgetTester tester) async {
