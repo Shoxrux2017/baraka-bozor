@@ -4190,12 +4190,6 @@ abstract class AppLocalizations {
   /// **'Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo\'lsa, u yerda mijozdan so\'rash taklif qilinadi.'**
   String get substituteUseBuy;
 
-  /// No description provided for @questionPrice.
-  ///
-  /// In uz, this message translates to:
-  /// **'{name}: narxi endi {price} (buyurtma paytida {was} edi). Shu narxga rozimisiz?'**
-  String questionPrice(String name, String price, String was);
-
   /// No description provided for @questionReplacementPrice.
   ///
   /// In uz, this message translates to:
@@ -4207,18 +4201,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'{name}: topilmadi. O\'rniga — {replacement}, {price}. Rozimisiz?'**
   String questionSubstitution(String name, String replacement, String price);
-
-  /// No description provided for @questionQuantity.
-  ///
-  /// In uz, this message translates to:
-  /// **'{name}: faqat {proposed} bor, siz {ordered} buyurtma qilgansiz. Shunchasiga rozimisiz?'**
-  String questionQuantity(String name, String proposed, String ordered);
-
-  /// No description provided for @questionNote.
-  ///
-  /// In uz, this message translates to:
-  /// **'Yig\'uvchi izohi: {note}'**
-  String questionNote(String note);
 
   /// No description provided for @questionExpires.
   ///
@@ -4238,11 +4220,59 @@ abstract class AppLocalizations {
   /// **'Rad etish'**
   String get questionReject;
 
-  /// No description provided for @questionExpired.
+  /// No description provided for @questionFromShopper.
   ///
   /// In uz, this message translates to:
-  /// **'Javob berish vaqti o\'tdi — bu mahsulot buyurtmadan olib tashlanadi.'**
-  String get questionExpired;
+  /// **'Yig\'uvchidan savol'**
+  String get questionFromShopper;
+
+  /// No description provided for @questionSubstitutionTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Almashtirish'**
+  String get questionSubstitutionTitle;
+
+  /// No description provided for @questionLessTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmadan kam'**
+  String get questionLessTitle;
+
+  /// No description provided for @questionPriceKit.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bugungi narx {price}, buyurtma paytida {was} edi. Shu narxga rozimisiz?'**
+  String questionPriceKit(String price, String was);
+
+  /// No description provided for @questionLessKit.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faqat {proposed} bor, siz {ordered} buyurtma qildingiz. Kamiga rozimisiz?'**
+  String questionLessKit(String proposed, String ordered);
+
+  /// No description provided for @questionInsteadOf.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» o\'rniga, {quantity}'**
+  String questionInsteadOf(String name, String quantity);
+
+  /// No description provided for @questionNoteKit.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi: «{note}»'**
+  String questionNoteKit(String note);
+
+  /// No description provided for @questionExpiredTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob vaqti tugadi'**
+  String get questionExpiredTitle;
+
+  /// No description provided for @questionExpiredLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu mahsulot buyurtmadan olib tashlanadi'**
+  String get questionExpiredLine;
 
   /// No description provided for @decisionUnanswered.
   ///

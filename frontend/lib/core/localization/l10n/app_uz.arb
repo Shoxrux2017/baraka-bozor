@@ -1447,20 +1447,6 @@
   "shopperOrderGone": "Bu buyurtma endi sizda emas.",
   "shopperOrderCancelled": "Buyurtma bekor qilindi: sotib olinadigan narsa qolmadi.",
   "substituteUseBuy": "Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo'lsa, u yerda mijozdan so'rash taklif qilinadi.",
-  "questionPrice": "{name}: narxi endi {price} (buyurtma paytida {was} edi). Shu narxga rozimisiz?",
-  "@questionPrice": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "price": {
-        "type": "String"
-      },
-      "was": {
-        "type": "String"
-      }
-    }
-  },
   "questionReplacementPrice": "O'rniga olinadigan «{name}»: narxi {price}. Shu narxga rozimisiz?",
   "@questionReplacementPrice": {
     "placeholders": {
@@ -1486,28 +1472,6 @@
       }
     }
   },
-  "questionQuantity": "{name}: faqat {proposed} bor, siz {ordered} buyurtma qilgansiz. Shunchasiga rozimisiz?",
-  "@questionQuantity": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "proposed": {
-        "type": "String"
-      },
-      "ordered": {
-        "type": "String"
-      }
-    }
-  },
-  "questionNote": "Yig'uvchi izohi: {note}",
-  "@questionNote": {
-    "placeholders": {
-      "note": {
-        "type": "String"
-      }
-    }
-  },
   "questionExpires": "Javob berish muddati: {time}gacha",
   "@questionExpires": {
     "placeholders": {
@@ -1518,7 +1482,52 @@
   },
   "questionApprove": "Rozi bo'lish",
   "questionReject": "Rad etish",
-  "questionExpired": "Javob berish vaqti o'tdi — bu mahsulot buyurtmadan olib tashlanadi.",
+  "questionFromShopper": "Yig'uvchidan savol",
+  "questionSubstitutionTitle": "Almashtirish",
+  "questionLessTitle": "Buyurtmadan kam",
+  "questionPriceKit": "Bugungi narx {price}, buyurtma paytida {was} edi. Shu narxga rozimisiz?",
+  "@questionPriceKit": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "was": {
+        "type": "String"
+      }
+    }
+  },
+  "questionLessKit": "Faqat {proposed} bor, siz {ordered} buyurtma qildingiz. Kamiga rozimisiz?",
+  "@questionLessKit": {
+    "placeholders": {
+      "proposed": {
+        "type": "String"
+      },
+      "ordered": {
+        "type": "String"
+      }
+    }
+  },
+  "questionInsteadOf": "«{name}» o'rniga, {quantity}",
+  "@questionInsteadOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "questionNoteKit": "Yig'uvchi: «{note}»",
+  "@questionNoteKit": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "questionExpiredTitle": "Javob vaqti tugadi",
+  "questionExpiredLine": "Bu mahsulot buyurtmadan olib tashlanadi",
   "decisionUnanswered": "«{decision}» javobingiz yuborildi, lekin tasdiq kelmadi. Qayta yuborsangiz, xuddi shu javob ketadi.",
   "@decisionUnanswered": {
     "placeholders": {

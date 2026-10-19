@@ -2398,11 +2398,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Эта замена уже разрешена. Введите цену через «Купить» — там при необходимости можно спросить клиента.';
 
   @override
-  String questionPrice(String name, String price, String was) {
-    return '$name: цена теперь $price (при заказе была $was). Согласны на эту цену?';
-  }
-
-  @override
   String questionReplacementPrice(String name, String price) {
     return 'Замена «$name»: цена $price. Согласны на эту цену?';
   }
@@ -2410,16 +2405,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String questionSubstitution(String name, String replacement, String price) {
     return '$name: нет в наличии. Замена — $replacement, $price. Согласны?';
-  }
-
-  @override
-  String questionQuantity(String name, String proposed, String ordered) {
-    return '$name: есть только $proposed, вы заказали $ordered. Согласны на меньшее?';
-  }
-
-  @override
-  String questionNote(String note) {
-    return 'Комментарий сборщика: $note';
   }
 
   @override
@@ -2434,8 +2419,39 @@ class AppLocalizationsRu extends AppLocalizations {
   String get questionReject => 'Отказаться';
 
   @override
-  String get questionExpired =>
-      'Время ответа истекло — этот товар уберут из заказа.';
+  String get questionFromShopper => 'Вопрос от сборщика';
+
+  @override
+  String get questionSubstitutionTitle => 'Замена';
+
+  @override
+  String get questionLessTitle => 'Меньше, чем заказали';
+
+  @override
+  String questionPriceKit(String price, String was) {
+    return 'Цена сегодня $price, при заказе была $was. Согласны на эту цену?';
+  }
+
+  @override
+  String questionLessKit(String proposed, String ordered) {
+    return 'Есть только $proposed, вы заказали $ordered. Согласны на меньшее?';
+  }
+
+  @override
+  String questionInsteadOf(String name, String quantity) {
+    return 'вместо «$name», $quantity';
+  }
+
+  @override
+  String questionNoteKit(String note) {
+    return 'Сборщик: «$note»';
+  }
+
+  @override
+  String get questionExpiredTitle => 'Время ответа истекло';
+
+  @override
+  String get questionExpiredLine => 'Этот товар уберут из заказа';
 
   @override
   String decisionUnanswered(String decision) {

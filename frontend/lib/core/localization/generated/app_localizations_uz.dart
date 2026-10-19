@@ -2368,11 +2368,6 @@ class AppLocalizationsUz extends AppLocalizations {
       'Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo\'lsa, u yerda mijozdan so\'rash taklif qilinadi.';
 
   @override
-  String questionPrice(String name, String price, String was) {
-    return '$name: narxi endi $price (buyurtma paytida $was edi). Shu narxga rozimisiz?';
-  }
-
-  @override
   String questionReplacementPrice(String name, String price) {
     return 'O\'rniga olinadigan «$name»: narxi $price. Shu narxga rozimisiz?';
   }
@@ -2380,16 +2375,6 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String questionSubstitution(String name, String replacement, String price) {
     return '$name: topilmadi. O\'rniga — $replacement, $price. Rozimisiz?';
-  }
-
-  @override
-  String questionQuantity(String name, String proposed, String ordered) {
-    return '$name: faqat $proposed bor, siz $ordered buyurtma qilgansiz. Shunchasiga rozimisiz?';
-  }
-
-  @override
-  String questionNote(String note) {
-    return 'Yig\'uvchi izohi: $note';
   }
 
   @override
@@ -2404,8 +2389,39 @@ class AppLocalizationsUz extends AppLocalizations {
   String get questionReject => 'Rad etish';
 
   @override
-  String get questionExpired =>
-      'Javob berish vaqti o\'tdi — bu mahsulot buyurtmadan olib tashlanadi.';
+  String get questionFromShopper => 'Yig\'uvchidan savol';
+
+  @override
+  String get questionSubstitutionTitle => 'Almashtirish';
+
+  @override
+  String get questionLessTitle => 'Buyurtmadan kam';
+
+  @override
+  String questionPriceKit(String price, String was) {
+    return 'Bugungi narx $price, buyurtma paytida $was edi. Shu narxga rozimisiz?';
+  }
+
+  @override
+  String questionLessKit(String proposed, String ordered) {
+    return 'Faqat $proposed bor, siz $ordered buyurtma qildingiz. Kamiga rozimisiz?';
+  }
+
+  @override
+  String questionInsteadOf(String name, String quantity) {
+    return '«$name» o\'rniga, $quantity';
+  }
+
+  @override
+  String questionNoteKit(String note) {
+    return 'Yig\'uvchi: «$note»';
+  }
+
+  @override
+  String get questionExpiredTitle => 'Javob vaqti tugadi';
+
+  @override
+  String get questionExpiredLine => 'Bu mahsulot buyurtmadan olib tashlanadi';
 
   @override
   String decisionUnanswered(String decision) {

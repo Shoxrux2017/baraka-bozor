@@ -169,18 +169,18 @@ void main() {
       for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
         final AppLocalizations words = lookupAppLocalizations(locale);
         final Set<String> read = <String>{
-          words.questionPrice('A', 'B', 'C'),
+          words.questionPriceKit('B', 'C'),
           words.questionReplacementPrice('A', 'B'),
           words.questionSubstitution('A', 'D', 'B'),
-          words.questionQuantity('A', 'B', 'C'),
+          words.questionLessKit('B', 'C'),
         };
         expect(read, hasLength(4), reason: locale.languageCode);
       }
       final AppLocalizations uz = lookupAppLocalizations(const Locale('uz'));
       final AppLocalizations ru = lookupAppLocalizations(const Locale('ru'));
       expect(
-        uz.questionPrice('A', 'B', 'C'),
-        isNot(ru.questionPrice('A', 'B', 'C')),
+        uz.questionPriceKit('B', 'C'),
+        isNot(ru.questionPriceKit('B', 'C')),
       );
       expect(
         OrderLabels.customerRemovedReason(
@@ -226,17 +226,14 @@ void main() {
 
           await show(orderOne);
           expect(
-            find.text(words.questionPrice(tomato, perKg(21850), perKg(18400))),
+            find.text(words.questionPriceKit(perKg(21850), perKg(18400))),
             findsOneWidget,
           );
           expect(
-            find.text(words.questionNote('Qizili qolmadi')),
+            find.text(words.questionNoteKit('Qizili qolmadi')),
             findsOneWidget,
           );
-          expect(
-            find.text(words.questionExpires('28.09.2026 13:00')),
-            findsOneWidget,
-          );
+          expect(find.text(words.questionExpires('13:00')), findsOneWidget);
           expect(find.text(words.questionRejectRemoves), findsOneWidget);
           expect(byKey('approve-$approvalOne'), findsOneWidget);
           expect(byKey('reject-$approvalOne'), findsOneWidget);
@@ -263,8 +260,7 @@ void main() {
           await show(orderTwo);
           expect(
             find.text(
-              words.questionQuantity(
-                tomato,
+              words.questionLessKit(
                 '${QuantityRules.display('1.000')} $kg',
                 '${QuantityRules.display('1.500')} $kg',
               ),
@@ -497,7 +493,8 @@ void main() {
         expect(find.text(words.errorApprovalExpired), findsOneWidget);
         expect(byKey('question-$approvalOne'), findsNothing);
         expect(byKey('question-expired-$lineTomato'), findsOneWidget);
-        expect(find.text(words.questionExpired), findsOneWidget);
+        expect(find.text(words.questionExpiredTitle), findsOneWidget);
+        expect(find.text(words.questionExpiredLine), findsOneWidget);
         expect(byKey('decide-again-$approvalOne'), findsNothing);
       },
     );

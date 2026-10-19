@@ -1426,20 +1426,6 @@
   "shopperOrderGone": "Этот заказ больше не ваш.",
   "shopperOrderCancelled": "Заказ отменён: покупать больше нечего.",
   "substituteUseBuy": "Эта замена уже разрешена. Введите цену через «Купить» — там при необходимости можно спросить клиента.",
-  "questionPrice": "{name}: цена теперь {price} (при заказе была {was}). Согласны на эту цену?",
-  "@questionPrice": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "price": {
-        "type": "String"
-      },
-      "was": {
-        "type": "String"
-      }
-    }
-  },
   "questionReplacementPrice": "Замена «{name}»: цена {price}. Согласны на эту цену?",
   "@questionReplacementPrice": {
     "placeholders": {
@@ -1465,28 +1451,6 @@
       }
     }
   },
-  "questionQuantity": "{name}: есть только {proposed}, вы заказали {ordered}. Согласны на меньшее?",
-  "@questionQuantity": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "proposed": {
-        "type": "String"
-      },
-      "ordered": {
-        "type": "String"
-      }
-    }
-  },
-  "questionNote": "Комментарий сборщика: {note}",
-  "@questionNote": {
-    "placeholders": {
-      "note": {
-        "type": "String"
-      }
-    }
-  },
   "questionExpires": "Ответьте до {time}",
   "@questionExpires": {
     "placeholders": {
@@ -1497,7 +1461,52 @@
   },
   "questionApprove": "Согласиться",
   "questionReject": "Отказаться",
-  "questionExpired": "Время ответа истекло — этот товар уберут из заказа.",
+  "questionFromShopper": "Вопрос от сборщика",
+  "questionSubstitutionTitle": "Замена",
+  "questionLessTitle": "Меньше, чем заказали",
+  "questionPriceKit": "Цена сегодня {price}, при заказе была {was}. Согласны на эту цену?",
+  "@questionPriceKit": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "was": {
+        "type": "String"
+      }
+    }
+  },
+  "questionLessKit": "Есть только {proposed}, вы заказали {ordered}. Согласны на меньшее?",
+  "@questionLessKit": {
+    "placeholders": {
+      "proposed": {
+        "type": "String"
+      },
+      "ordered": {
+        "type": "String"
+      }
+    }
+  },
+  "questionInsteadOf": "вместо «{name}», {quantity}",
+  "@questionInsteadOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "questionNoteKit": "Сборщик: «{note}»",
+  "@questionNoteKit": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "questionExpiredTitle": "Время ответа истекло",
+  "questionExpiredLine": "Этот товар уберут из заказа",
   "decisionUnanswered": "Ваш ответ «{decision}» отправлен, но подтверждения нет. Если отправить снова, уйдёт тот же ответ.",
   "@decisionUnanswered": {
     "placeholders": {
