@@ -1652,12 +1652,6 @@ abstract class AppLocalizations {
   /// **'Ismingiz'**
   String get profileName;
 
-  /// No description provided for @profileNameNeeded.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtma berish uchun ismingizni kiriting'**
-  String get profileNameNeeded;
-
   /// No description provided for @profileSaved.
   ///
   /// In uz, this message translates to:

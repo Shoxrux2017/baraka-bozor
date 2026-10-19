@@ -847,9 +847,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get profileName => 'Ismingiz';
 
   @override
-  String get profileNameNeeded => 'Buyurtma berish uchun ismingizni kiriting';
-
-  @override
   String get profileSaved => 'Ism saqlandi';
 
   @override

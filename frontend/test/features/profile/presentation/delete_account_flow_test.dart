@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:baraka_bozor/core/formatting/countdown_format.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/app/providers.dart';
@@ -183,6 +184,42 @@ void main() {
       await finish(tester);
     });
 
+    testWidgets('a locked phone at the request shows the lock on the sheet', (
+      tester,
+    ) async {
+      deletion.requestFailures.add(lockedRefusal(retryAfter: 30));
+      await openSheet(tester);
+
+      await tester.tap(byKey('delete-confirm'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(byKey('delete-account-sheet'), findsOneWidget);
+      expect(byKey('lock-message'), findsOneWidget);
+      expect(
+        find.text(l10n(tester).codeLocked(formatCountdown(30))),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<FilledButton>(byKey('delete-confirm')).onPressed,
+        isNull,
+      );
+      final int sent = deletion.requests;
+      await tester.tap(byKey('delete-confirm'), warnIfMissed: false);
+      await tester.pump();
+      expect(deletion.requests, sent);
+
+      await tester.pump(const Duration(seconds: 31));
+      await tester.pump();
+
+      expect(byKey('lock-message'), findsNothing);
+      expect(
+        tester.widget<FilledButton>(byKey('delete-confirm')).onPressed,
+        isNotNull,
+      );
+      await finish(tester);
+    });
+
     testWidgets('a 409 at the request opens the unfinished-order sheet and '
         '"К заказу" opens that order', (tester) async {
       deletion.requestFailures.add(unfinishedRefusal());
@@ -322,6 +359,28 @@ void main() {
 
       expect(byKey('continue-button'), findsOneWidget);
       expect(location(tester), AppPaths.auth);
+      await finish(tester);
+    });
+
+    testWidgets('back is blocked while the delete runs', (tester) async {
+      await openCodeScreen(tester);
+      final Completer<void> hold = Completer<void>();
+      deletion.hold = hold;
+      await tester.enterText(byKey('code-field'), '123456');
+      await tester.pump();
+      await tester.tap(byKey('delete-submit'));
+      await tester.pump();
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+
+      expect(byKey('delete-account-screen'), findsOneWidget);
+      expect(location(tester), AppPaths.customerDeleteAccount);
+
+      hold.complete();
+      await tester.pumpAndSettle();
+
+      expect(byKey('account-deleted'), findsOneWidget);
       await finish(tester);
     });
 

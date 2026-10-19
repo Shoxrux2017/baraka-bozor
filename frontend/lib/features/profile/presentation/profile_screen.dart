@@ -188,8 +188,8 @@ class _Rows extends ConsumerWidget {
           title: l10n.legalTerms,
           onTap: () => context.push(AppPaths.legal(LegalDocumentKind.terms)),
         ),
-      // A staff sign-in shares the phone, so deleting the account would
-      // erase it too (`DL-96`).
+      // Hidden while the phone also holds a staff session, whose sign-in
+      // shares the phone (`DL-96` item 6).
       if (session is SignedIn && session.staffUser == null)
         _ProfileRow(
           rowKey: 'profile-delete',

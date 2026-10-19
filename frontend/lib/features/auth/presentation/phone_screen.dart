@@ -7,6 +7,7 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../legal/application/legal_providers.dart';
 import '../../legal/presentation/consent_line.dart';
 import '../application/code_login_controller.dart';
 import 'auth_scaffold.dart';
@@ -47,6 +48,11 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
   }
 
   Future<void> _submit() async {
+    // A failed read of the documents is tried again, so the consent line
+    // can still appear on this screen.
+    if (ref.read(legalIndexProvider).hasError) {
+      ref.invalidate(legalIndexProvider);
+    }
     if (!(_form.currentState?.validate() ?? false)) {
       return;
     }

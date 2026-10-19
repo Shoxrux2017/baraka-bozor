@@ -416,6 +416,16 @@ void main() {
       }
     });
 
+    test('a pending step sends an open legal page to the staff password', () {
+      final AsyncValue<SessionState> pending = signedIn(
+        customer: user(id: 'c', fullName: 'Aziza'),
+        step: pendingStep,
+      );
+
+      expect(redirect(pending, AppPaths.legalTerms), AppPaths.staffPassword);
+      expect(redirect(pending, AppPaths.legalPrivacy), AppPaths.staffPassword);
+    });
+
     test('a pending step wins over the missing name', () {
       final AsyncValue<SessionState> pending = signedIn(
         customer: user(id: 'c', fullName: null),

@@ -74,15 +74,11 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
 
     switch (outcome) {
       case DeletionOutcome.deleted:
-        await searches?.clear();
-        if (!mounted) {
-          return;
-        }
-        controller.reset();
         // The page of the deleted account opens first and the session is
         // forgotten after it: the server has already revoked the token, and
         // the page is open to a signed-out phone.
         context.go(AppPaths.accountDeleted);
+        await searches?.clear();
         await session.dropSession(SessionSlot.customer);
       case DeletionOutcome.unfinished:
         final order = ref.read(accountDeletionControllerProvider).unfinished;
@@ -109,139 +105,142 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
         ) ??
         '';
 
-    return Scaffold(
-      key: const ValueKey<String>('delete-account-screen'),
-      backgroundColor: Colors.white,
-      appBar: kitAppBar(title: l10n.deleteCodeTitle),
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Center(
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: const BoxDecoration(
-                          color: KitColors.dangerWash,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.lock,
-                          size: 28,
-                          color: KitColors.danger,
+    return PopScope(
+      canPop: !state.busy,
+      child: Scaffold(
+        key: const ValueKey<String>('delete-account-screen'),
+        backgroundColor: Colors.white,
+        appBar: kitAppBar(title: l10n.deleteCodeTitle),
+        body: SafeArea(
+          child: Column(
+            children: <Widget>[
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Center(
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: const BoxDecoration(
+                            color: KitColors.dangerWash,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.lock,
+                            size: 28,
+                            color: KitColors.danger,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        l10n.deleteCodeHeading,
+                      const SizedBox(height: 16),
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          l10n.deleteCodeHeading,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: KitColors.ink,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        codeSentLine(
+                          l10n,
+                          phone: phone,
+                          channel: state.requested?.channel,
+                        ),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: KitColors.ink,
+                          fontSize: 14,
+                          height: 1.4,
+                          color: KitColors.ink2,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      codeSentLine(
-                        l10n,
-                        phone: phone,
-                        channel: state.requested?.channel,
+                      const SizedBox(height: 24),
+                      CodeBoxes(
+                        controller: _code,
+                        invalidMessage: l10n.codeInvalidFormat,
+                        enabled: state.entryOpen && !state.busy,
+                        accent: KitColors.danger,
+                        onSubmitted: () {
+                          if (_ready(state)) {
+                            _delete();
+                          }
+                        },
                       ),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        height: 1.4,
-                        color: KitColors.ink2,
+                      FailureMessage(state.failure),
+                      LockMessage(
+                        lockedSeconds: state.lockedSeconds,
+                        lockOver: state.lockOver,
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    CodeBoxes(
-                      controller: _code,
-                      invalidMessage: l10n.codeInvalidFormat,
-                      enabled: state.entryOpen && !state.busy,
-                      accent: KitColors.danger,
-                      onSubmitted: () {
-                        if (_ready(state)) {
-                          _delete();
-                        }
-                      },
-                    ),
-                    FailureMessage(state.failure),
-                    LockMessage(
-                      lockedSeconds: state.lockedSeconds,
-                      lockOver: state.lockOver,
-                    ),
-                    if (state.lockOver)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
+                      if (state.lockOver)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            l10n.codeLockOver,
+                            key: const ValueKey<String>('lock-over-message'),
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        key: const ValueKey<String>('resend-button'),
+                        onPressed: state.canResend ? _resend : null,
+                        style: TextButton.styleFrom(
+                          disabledForegroundColor: KitColors.muted,
+                          textStyle: const TextStyle(
+                            fontFamily: appFontFamily,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
                         child: Text(
-                          l10n.codeLockOver,
-                          key: const ValueKey<String>('lock-over-message'),
+                          state.resendInSeconds > 0
+                              ? l10n.resendIn(
+                                  formatCountdown(state.resendInSeconds),
+                                )
+                              : l10n.resendCode,
+                          textAlign: TextAlign.center,
                         ),
                       ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      key: const ValueKey<String>('resend-button'),
-                      onPressed: state.canResend ? _resend : null,
-                      style: TextButton.styleFrom(
-                        disabledForegroundColor: KitColors.muted,
-                        textStyle: const TextStyle(
-                          fontFamily: appFontFamily,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      child: Text(
-                        state.resendInSeconds > 0
-                            ? l10n.resendIn(
-                                formatCountdown(state.resendInSeconds),
-                              )
-                            : l10n.resendCode,
-                        textAlign: TextAlign.center,
-                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: FilledButton(
+                  key: const ValueKey<String>('delete-submit'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: KitColors.danger,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: KitColors.danger.withValues(
+                      alpha: 0.4,
                     ),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: FilledButton(
-                key: const ValueKey<String>('delete-submit'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: KitColors.danger,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: KitColors.danger.withValues(
-                    alpha: 0.4,
+                    disabledForegroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                  disabledForegroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(56),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                onPressed: _ready(state) ? _delete : null,
-                child: Text(
-                  l10n.profileDeleteAccount,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                  onPressed: _ready(state) ? _delete : null,
+                  child: Text(
+                    l10n.profileDeleteAccount,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

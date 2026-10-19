@@ -92,6 +92,23 @@ void main() {
     expect(line, findsNothing);
   });
 
+  testWidgets('"Получить код" reads a failed index again', (
+    WidgetTester tester,
+  ) async {
+    legal.publishBoth();
+    legal.indexFailure = const NetworkFailure();
+    await openPhone(tester);
+    expect(line, findsNothing);
+    final int calls = legal.indexCalls;
+
+    legal.indexFailure = null;
+    await tester.tap(find.byKey(const ValueKey<String>('continue-button')));
+    await tester.pumpAndSettle();
+
+    expect(legal.indexCalls, calls + 1);
+    expect(line, findsOneWidget);
+  });
+
   testWidgets('while the index loads: no line', (WidgetTester tester) async {
     legal.publishBoth();
 

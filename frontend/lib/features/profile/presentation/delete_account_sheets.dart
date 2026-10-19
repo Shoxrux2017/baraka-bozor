@@ -6,6 +6,7 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../auth/presentation/lock_message.dart';
 import '../application/account_deletion_controller.dart';
 import '../domain/account_deletion.dart';
 
@@ -262,6 +263,7 @@ class _DeleteAccountSheet extends ConsumerWidget {
             ),
           ),
           FailureMessage(state.failure),
+          LockMessage(lockedSeconds: state.lockedSeconds),
           const SizedBox(height: 20),
           _SheetButtons(
             left: OutlinedButton(
@@ -277,7 +279,9 @@ class _DeleteAccountSheet extends ConsumerWidget {
             right: FilledButton(
               key: const ValueKey<String>('delete-confirm'),
               style: _filled(KitColors.danger),
-              onPressed: state.busy ? null : () => _confirm(context, ref),
+              onPressed: state.busy || state.locked
+                  ? null
+                  : () => _confirm(context, ref),
               child: state.busy
                   ? const SizedBox(
                       width: 22,

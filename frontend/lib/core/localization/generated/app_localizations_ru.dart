@@ -845,9 +845,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileName => 'Ваше имя';
 
   @override
-  String get profileNameNeeded => 'Чтобы оформить заказ, укажите имя';
-
-  @override
   String get profileSaved => 'Имя сохранено';
 
   @override
