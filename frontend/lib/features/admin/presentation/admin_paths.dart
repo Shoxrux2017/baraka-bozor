@@ -9,6 +9,8 @@ abstract final class AdminPaths {
   static const String products = AppPaths.adminProducts;
   static const String newProduct = '$products/new';
   static const String staff = AppPaths.adminStaff;
+  static const String legalDocuments = AppPaths.adminLegalDocuments;
+  static const String customers = AppPaths.adminCustomers;
 
   /// The route pattern of one product's page.
   static const String productPattern = '$products/:product';

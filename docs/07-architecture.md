@@ -230,6 +230,8 @@ One session guard decides every navigation from the session state and the surfac
 
 Versioned JSON REST under `/api/v1`; envelopes, strict request shape, pagination, error codes with an optional `details` object, idempotency headers — all in `09`. The backend performs no locale negotiation; `message` is developer English.
 
+The only server-rendered pages are the public ones for the store listing (`DL-94` item 2): `/legal/terms`, `/legal/privacy` and `/account-deletion` (Blade, no script, no session, no cookie, `?lang=uz|ru`, throttled to 60 calls a minute). Everything else is the JSON API.
+
 ## 31. PII and Logging
 
 Logs carry request ID, actor ID and role, order and payment IDs, action and safe error category. Never passwords, login codes, tokens, provider secrets, raw provider payloads. Shopper screens omit the address; Courier screens carry only the delivery data.

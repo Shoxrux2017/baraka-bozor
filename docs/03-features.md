@@ -26,6 +26,8 @@ Supporting features: the Admin and Operator web panel, notifications, business s
 
 View and edit `full_name` and `preferred_language` (`uz` or `ru`). Checkout requires a non-empty name. The phone is the login identity and is not edited here.
 
+The terms of use and the privacy policy are server documents in Uzbek and Russian, shown in the profile and at public addresses (`GET /legal`, `GET /legal/{kind}`); the Admin edits them in the panel, and a document with no text is hidden (`DL-93` (1), `DL-94` (1)).
+
 ## 4. Delivery Addresses
 
 Create, list, edit and deactivate own addresses. Required: a point on the map inside the service area, street, house. Optional: label, apartment, landmark, note for the Courier. The point is set on a Google map, or found from the address typed in words and checked by the Customer; the words fill the street (`DL-84` item 2, `DL-86`). The backend stores coordinates and text only and checks the service-area circle. The Google logo on the map is never covered (`DL-86` item 2). The Customer's home names the delivery address above its search; the choice is kept on the device per account, and checkout starts from it (`DL-74`, `DL-75`).

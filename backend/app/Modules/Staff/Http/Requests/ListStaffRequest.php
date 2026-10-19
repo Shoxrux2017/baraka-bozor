@@ -21,7 +21,7 @@ final class ListStaffRequest extends ListRequest
     {
         return [
             'role' => ['sometimes', 'nullable', 'string', Rule::enum(Role::class)->except([Role::Customer])],
-            'status' => ['sometimes', 'nullable', 'string', Rule::enum(UserStatus::class)],
+            'status' => ['sometimes', 'nullable', 'string', Rule::enum(UserStatus::class)->only([UserStatus::Active, UserStatus::Blocked])],
         ];
     }
 

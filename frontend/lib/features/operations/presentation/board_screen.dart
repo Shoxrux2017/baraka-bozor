@@ -554,7 +554,7 @@ class _TableState extends State<_Table> {
                         maxWidth: _Table.nameWidth,
                       ),
                       child: Text(
-                        '${row.customerName}\n${formatPhone(row.customerPhone)}',
+                        _customerOf(l10n, row, '\n'),
                         key: ValueKey<String>('board-customer-${row.id}'),
                       ),
                     ),
@@ -676,7 +676,7 @@ class _Card extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
             Text(TashkentTime.format(row.createdAt)),
-            Text('${row.customerName} · ${formatPhone(row.customerPhone)}'),
+            Text(_customerOf(l10n, row, ' · ')),
             Text(OrderLabels.paymentMethod(l10n, row.paymentMethod)),
             Text(totalText(context, l10n, row.totalUzs, row.totalKind)),
             Text(l10n.boardItemCount(row.itemCount)),
@@ -802,4 +802,15 @@ class _AttentionListState extends ConsumerState<_AttentionList> {
         AttentionType.lowRating => l10n.attentionLowRating,
         AttentionType.other => l10n.attentionOther,
       };
+}
+
+/// Who ordered, as a row says it: the name and phone, or that the Customer's
+/// data is gone.
+String _customerOf(AppLocalizations l10n, BoardRow row, String separator) {
+  final String? phone = row.customerPhone;
+  if (row.customerErased || phone == null) {
+    return l10n.orderCustomerErased;
+  }
+  final String name = row.customerName ?? l10n.customerNoName;
+  return '$name$separator${formatPhone(phone)}';
 }

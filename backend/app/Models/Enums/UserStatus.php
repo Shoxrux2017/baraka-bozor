@@ -7,12 +7,14 @@ namespace App\Models\Enums;
 /**
  * The account states `08` Section 3 approves.
  *
- * There is no third state. A deleted account is not one of them either: `08`
- * Section 3 forbids hard-deleting historical users, so an account that should no
- * longer be used is `Blocked`, with `blocked_at` recorded.
+ * `Deleted` is a Customer account that was erased (`BR-ROLE-013`): the row stays
+ * because orders, payments and history reference it, but it holds no phone and
+ * no name and can never sign in again. `08` Section 3 still forbids
+ * hard-deleting historical users.
  */
 enum UserStatus: string
 {
     case Active = 'active';
     case Blocked = 'blocked';
+    case Deleted = 'deleted';
 }

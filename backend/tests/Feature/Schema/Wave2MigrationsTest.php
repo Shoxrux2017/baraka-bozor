@@ -82,7 +82,7 @@ final class Wave2MigrationsTest extends TestCase
             'order_shopper_assignments_order_id_foreign' => 'r',
             'order_shopper_assignments_shopper_id_foreign' => 'r',
             'orders_customer_id_foreign' => 'r',
-            'orders_source_address_id_foreign' => 'r',
+            'orders_source_address_id_foreign' => 'n',
             'orders_source_cart_id_foreign' => 'r',
         ], $byName, 'docs/08 section 28: RESTRICT on every business-history foreign key.');
     }

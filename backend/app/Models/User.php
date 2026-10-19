@@ -30,14 +30,17 @@ use Laravel\Sanctum\HasApiTokens;
  *
  * @property string $id
  * @property Role $role
- * @property string $phone
+ * @property string|null $phone
  * @property string|null $full_name
  * @property string|null $password
  * @property UserStatus $status
  * @property bool $must_change_password
  * @property Carbon|null $password_changed_at
  * @property Carbon|null $last_login_at
+ * @property Carbon|null $terms_accepted_at
  * @property Carbon|null $blocked_at
+ * @property Carbon|null $deleted_at
+ * @property string|null $deleted_by_user_id
  * @property string|null $created_by_user_id
  * @property string $preferred_language
  * @property Carbon $created_at
@@ -89,6 +92,7 @@ class User extends Authenticatable
 
             'password_changed_at' => 'datetime',
             'last_login_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
             'blocked_at' => 'datetime',
         ];
     }

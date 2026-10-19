@@ -408,6 +408,18 @@ class OperationsApi {
     return raw.map(item).toList(growable: false);
   }
 
+  /// Whether the order's Customer was erased. An erased Customer has no name
+  /// and no phone; one that is not erased is read as before, strictly.
+  static bool _erased(JsonFields order, JsonFields customer) {
+    final bool erased = order.boolean('customer_erased');
+    if (erased &&
+        (customer.member('full_name') != null ||
+            customer.member('phone') != null)) {
+      throw const FormatException('an erased customer keeps personal data');
+    }
+    return erased;
+  }
+
   /// One row of the board.
   static BoardRow parseRow(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'board row');
@@ -415,6 +427,7 @@ class OperationsApi {
       json.member('customer'),
       'customer',
     );
+    final bool erased = _erased(json, customer);
     final Object? shopper = json.member('shopper');
     final Object? courier = json.member('courier');
     final BoardRow row = BoardRow(
@@ -423,8 +436,9 @@ class OperationsApi {
       createdAt: json.instant('created_at'),
       status: json.choice('status', OrderStatus.tryParse),
       paymentMethod: json.choice('payment_method', PaymentMethod.tryParse),
-      customerName: customer.string('full_name'),
-      customerPhone: _phoneOf(customer, 'phone'),
+      customerName: erased ? null : customer.string('full_name'),
+      customerPhone: erased ? null : _phoneOf(customer, 'phone'),
+      customerErased: erased,
       itemCount: _amount(json, 'item_count'),
       pendingApprovalCount: _amount(json, 'pending_approval_count'),
       totalUzs: _nullableAmount(json, 'total_uzs'),
@@ -492,6 +506,25 @@ class OperationsApi {
     );
   }
 
+  /// The address of an erased order: every member is `null`, and so there
+  /// is no address.
+  static BoardAddress? _erasedAddress(JsonFields address) {
+    for (final String key in const <String>[
+      'latitude',
+      'longitude',
+      'street',
+      'house',
+      'apartment',
+      'landmark',
+      'delivery_note',
+    ]) {
+      if (address.member(key) != null) {
+        throw FormatException('$key is left on an erased order');
+      }
+    }
+    return null;
+  }
+
   /// The whole order.
   static BoardOrder parseOrder(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'board order');
@@ -500,6 +533,7 @@ class OperationsApi {
       'customer',
     );
     final JsonFields address = JsonFields.of(json.member('address'), 'address');
+    final bool erased = _erased(json, customer);
     final JsonFields timestamps = JsonFields.of(
       json.member('timestamps'),
       'timestamps',
@@ -555,18 +589,21 @@ class OperationsApi {
       deliveryTimeNote: json.nullableString('delivery_time_note'),
       customer: BoardCustomer(
         id: customer.uuid('id'),
-        fullName: customer.string('full_name'),
-        phone: _phoneOf(customer, 'phone'),
+        fullName: erased ? null : customer.string('full_name'),
+        phone: erased ? null : _phoneOf(customer, 'phone'),
       ),
-      address: BoardAddress(
-        latitude: _matching(address, 'latitude', _coordinate),
-        longitude: _matching(address, 'longitude', _coordinate),
-        street: address.string('street'),
-        house: address.string('house'),
-        apartment: address.nullableString('apartment'),
-        landmark: address.nullableString('landmark'),
-        deliveryNote: address.nullableString('delivery_note'),
-      ),
+      customerErased: erased,
+      address: erased
+          ? _erasedAddress(address)
+          : BoardAddress(
+              latitude: _matching(address, 'latitude', _coordinate),
+              longitude: _matching(address, 'longitude', _coordinate),
+              street: address.string('street'),
+              house: address.string('house'),
+              apartment: address.nullableString('apartment'),
+              landmark: address.nullableString('landmark'),
+              deliveryNote: address.nullableString('delivery_note'),
+            ),
       items: items,
       totals: _totals(json.member('totals')),
       shopperAssignments: assignments,
@@ -778,7 +815,7 @@ class OperationsApi {
       id: json.uuid('id'),
       origin: json.choice('origin', CancellationRequestOrigin.tryParse),
       status: json.choice('status', CancellationRequestStatus.tryParse),
-      reason: json.string('reason'),
+      reason: json.nullableString('reason'),
       requestedBy: _person(json.member('requested_by'), 'requested_by'),
       createdAt: json.instant('created_at'),
       resolvedBy: resolvedBy == null

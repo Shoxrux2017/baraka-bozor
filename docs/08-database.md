@@ -25,20 +25,20 @@ order_cancellation_requests   order_ratings
 payments                    payment_attempts         provider_events
 refunds
 push_devices                notification_deliveries
-idempotency_keys
+idempotency_keys            legal_documents
 ```
 
 Framework: `personal_access_tokens`, `cache`, `jobs`, `failed_jobs`, `job_batches`, `migrations`.
 
 ## 3. `users` (migrated)
 
-`id, role, phone, full_name?, password?, status, must_change_password, password_changed_at?, last_login_at?, blocked_at?, created_by_user_id?, timestamps`, plus **`preferred_language varchar(2) NOT NULL DEFAULT 'uz'`** (`CHECK IN ('uz','ru')`, added by a Wave 0 migration).
+`id, role, phone?, full_name?, password?, status, must_change_password, password_changed_at?, last_login_at?, terms_accepted_at?, blocked_at?, deleted_at?, deleted_by_user_id? → users, created_by_user_id?, timestamps`, plus **`preferred_language varchar(2) NOT NULL DEFAULT 'uz'`** (`CHECK IN ('uz','ru')`, added by a Wave 0 migration). `terms_accepted_at` is the moment of the Customer's latest verified sign-in made while at least one legal document (terms or privacy, in either language) is published; while none is, sign-in leaves it as it was, because consent names an edition and none exists (`DL-94` item 3).
 
-Checks: role in the six values; status `active|blocked`; phone `^\+998[0-9]{9}$`; Customer has null password and no gate; Staff has a password; blocked implies `blocked_at`. Two partial unique indexes: `(phone) WHERE status='active' AND role='customer'` and `(phone) WHERE status='active' AND role<>'customer'`. Index `(role,status)`, `lower(full_name)`.
+Checks: role in the six values; status `active|blocked|deleted`; phone `^\+998[0-9]{9}$`, and null only when the status is `deleted` (`BR-ROLE-013`, `DL-94` item 4); `deleted_at` is set exactly when the status is `deleted`, and `deleted_by_user_id` only then; Customer has null password and no gate; Staff has a password; blocked implies `blocked_at`. Two partial unique indexes: `(phone) WHERE status='active' AND role='customer'` and `(phone) WHERE status='active' AND role<>'customer'`. Index `(role,status)`, `lower(full_name)`.
 
 ## 4. `customer_otp_challenges` (migrated)
 
-`id, phone, purpose (customer_login), code_hash, failed_attempts ≥ 0, expires_at, consumed_at?, invalidated_at?, created_at`, plus **`channel varchar(16)`** (`CHECK IN ('telegram','sms','fake','test')`, added by a Wave 0 migration). Index `(phone, created_at)`, `expires_at`. No plaintext code.
+`id, phone, purpose (customer_login, account_deletion; `BR-ROLE-012`), code_hash, failed_attempts ≥ 0, expires_at, consumed_at?, invalidated_at?, created_at`, plus **`channel varchar(16)`** (`CHECK IN ('telegram','sms','fake','test')`, added by a Wave 0 migration). Index `(phone, created_at)`, `expires_at`. No plaintext code.
 
 ## 5. `customer_addresses` (migrated)
 
@@ -83,12 +83,12 @@ id uuid PK
 order_number bigint unique, from sequence orders_order_number_seq (starts at 1001, DL-37)
 customer_id → users
 source_cart_id → carts, unique
-source_address_id → customer_addresses
+source_address_id? → customer_addresses (ON DELETE SET NULL)
 status
 payment_method            cash|online
 delivery_time_note?       varchar(160)
-recipient_name_snapshot, recipient_phone_snapshot
-latitude_snapshot, longitude_snapshot, street_snapshot, house_snapshot,
+recipient_name_snapshot?, recipient_phone_snapshot?
+latitude_snapshot?, longitude_snapshot?, street_snapshot?, house_snapshot?,
 apartment_snapshot?, landmark_snapshot?, delivery_note_snapshot?
 markup_percent_snapshot, price_tolerance_percent_snapshot
 service_fee_mode_snapshot, service_fee_fixed_uzs_snapshot?, service_fee_percent_snapshot?
@@ -98,8 +98,11 @@ final_merchandise_subtotal_uzs?, final_service_fee_uzs?, final_total_uzs?
 shopping_started_at?, shopping_completed_at?,
 ready_for_delivery_at?, on_the_way_at?, completed_at?, cancelled_at?
 cancellation_reason_code?
+customer_erased_at?
 created_at, updated_at
 ```
+
+The six personal snapshots (recipient name and phone, point, street, house) are required unless `customer_erased_at` is set (`orders_personal_snapshots_check`). Erasing a Customer (`BR-ROLE-013`) nulls them, the apartment, landmark and delivery-note snapshots, `delivery_time_note` and the pointer to the erased address, and sets `customer_erased_at`; status, amounts, lines and history stay. `order_history` stays append-only: an erasure alone may blank the `note` and `details` of a row, inside a transaction that sets `app.customer_erasure` (`DL-94` item 4).
 
 Status check on the nine values, and checks holding what a status implies: from `shopping` on a start, after shopping the completion and the final amounts, from `ready_for_delivery` on its instant, `on_the_way_at` for `on_the_way` and `completed`, `completed_at` exactly for `completed`, `cancelled_at` and a reason exactly for `cancelled`; the three final amounts all or none and the total their sum with the delivery fee; the stored service fee by the snapshotted rule; the service-fee snapshot's value by its mode (`DL-38`). Indexes `(customer_id, created_at)`, `(status, created_at)`, `(status, updated_at)`, `completed_at`, `cancelled_at`. The 30-minute online-payment attention instant lives on the payment row (Section 21).
 
@@ -159,7 +162,7 @@ Append-only, by a trigger as for `order_history`: `id, order_item_id, old_actual
 
 ## 20. `order_cancellation_requests`
 
-A request still pending when its order is cancelled another way ends `closed` (`DL-54` (12)). `id, order_id, origin (customer|staff), requested_by_user_id, status (pending|approved|rejected|closed), reason, resolved_by_user_id?, resolution_note?, resolved_at?, timestamps`. A decision names its Operator and instant, a closed request only its instant, and a resolution note is the decider's (`DL-55`). Partial unique `(order_id) WHERE status='pending'`. Index `(order_id)`, `(status, created_at)`.
+A request still pending when its order is cancelled another way ends `closed` (`DL-54` (12)). `id, order_id, origin (customer|staff), requested_by_user_id, status (pending|approved|rejected|closed), reason? (null once its Customer is erased), resolved_by_user_id?, resolution_note?, resolved_at?, timestamps`. A decision names its Operator and instant, a closed request only its instant, and a resolution note is the decider's (`DL-55`). Partial unique `(order_id) WHERE status='pending'`. Index `(order_id)`, `(status, created_at)`.
 
 ## 21. `payments`
 
@@ -216,3 +219,7 @@ Markets, cities, sellers, warehouses, inventory, promotions, bonuses, subscripti
 ## 33. `order_ratings`
 
 `id, order_id → orders (unique, restrict), customer_id → users (restrict), stars smallint, reasons jsonb not null default '[]', comment varchar(500)?, reviewed_by_user_id → users (restrict)?, reviewed_at timestamptz?, timestamps`. `stars` from 1 to 5 (`order_ratings_stars_check`); `reasons` a JSON array (`order_ratings_reasons_type_check`) that is empty above 3 stars (`order_ratings_reasons_check`, `BR-RATE-002`); `reviewed_by_user_id` and `reviewed_at` are both set or both null (`order_ratings_reviewed_check`, `BR-RATE-003`). One rating per order (`BR-RATE-001`); the window of seven days is the application's (`DL-91` (4)).
+
+## 34. `legal_documents`
+
+`id, kind varchar(16), language char(2), body text?, created_by_user_id → users (restrict), created_at timestamptz, edition bigint generated always as identity (unique)`. `edition` orders the editions (a clock can tie, a sequence cannot); `created_at` is the edition date shown everywhere. `kind` is `terms` or `privacy` (`legal_documents_kind_check`), `language` is `uz` or `ru` (`legal_documents_language_check`); index `(kind, language, created_at)`. Append-only (`DL-94` (1)): a row is never updated or deleted, the newest row of a kind and language is in force, and a null `body` means the document is not published.

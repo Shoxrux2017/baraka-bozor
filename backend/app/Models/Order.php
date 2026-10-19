@@ -34,16 +34,16 @@ use Illuminate\Support\Carbon;
  * @property int $order_number
  * @property string $customer_id
  * @property string $source_cart_id
- * @property string $source_address_id
+ * @property string|null $source_address_id
  * @property OrderStatus $status
  * @property PaymentMethod $payment_method
  * @property string|null $delivery_time_note
- * @property string $recipient_name_snapshot
- * @property string $recipient_phone_snapshot
- * @property string $latitude_snapshot
- * @property string $longitude_snapshot
- * @property string $street_snapshot
- * @property string $house_snapshot
+ * @property string|null $recipient_name_snapshot
+ * @property string|null $recipient_phone_snapshot
+ * @property string|null $latitude_snapshot
+ * @property string|null $longitude_snapshot
+ * @property string|null $street_snapshot
+ * @property string|null $house_snapshot
  * @property string|null $apartment_snapshot
  * @property string|null $landmark_snapshot
  * @property string|null $delivery_note_snapshot
@@ -63,6 +63,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $on_the_way_at
  * @property Carbon|null $completed_at
  * @property Carbon|null $cancelled_at
+ * @property Carbon|null $customer_erased_at
  * @property CancellationReason|null $cancellation_reason_code
  * @property Carbon $created_at
  * @property Carbon $updated_at
@@ -106,6 +107,7 @@ class Order extends Model
             'on_the_way_at' => 'datetime',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'customer_erased_at' => 'datetime',
             'cancellation_reason_code' => CancellationReason::class,
         ];
     }

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Enums\Role;
+use App\Modules\Accounts\Http\Controllers\AccountDeletionController;
 use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Auth\Http\Middleware\RequireRole;
 use App\Modules\Customer\Http\Controllers\AddressController;
@@ -25,6 +26,9 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Custome
     ->group(function (): void {
         Route::get('profile', [ProfileController::class, 'show'])->name('customer.profile.show');
         Route::patch('profile', [ProfileController::class, 'update'])->name('customer.profile.update');
+
+        Route::post('account/deletion-code', [AccountDeletionController::class, 'requestCode'])->name('customer.account.deletion-code');
+        Route::post('account/delete', [AccountDeletionController::class, 'destroy'])->name('customer.account.delete');
 
         Route::get('addresses', [AddressController::class, 'index'])->name('customer.addresses.index');
         Route::post('addresses', [AddressController::class, 'store'])->name('customer.addresses.store');

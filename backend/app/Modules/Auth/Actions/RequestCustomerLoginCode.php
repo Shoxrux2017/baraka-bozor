@@ -46,7 +46,7 @@ final class RequestCustomerLoginCode
         private readonly TestPhones $testPhones,
     ) {}
 
-    public function __invoke(string $phone, string $ip): RequestedLoginCode
+    public function __invoke(string $phone, string $ip, string $purpose = LoginChallenge::PURPOSE_CUSTOMER_LOGIN): RequestedLoginCode
     {
         // Broadest first: a request refused on the address alone charges the
         // phone nothing, so one noisy source cannot use up a phone's window.
@@ -67,16 +67,17 @@ final class RequestCustomerLoginCode
 
         $channel = $testCode !== null ? TestPhones::CHANNEL : $this->deliver($phone, $code);
 
-        DB::transaction(function () use ($phone, $code, $channel): void {
-            // The newest challenge is the only live one: a code from an earlier
-            // request must stop working once a fresh one has been sent.
-            LoginChallenge::query()->openFor($phone)->update(['invalidated_at' => now()]);
+        DB::transaction(function () use ($phone, $code, $channel, $purpose): void {
+            // The newest challenge of the purpose is the only live one: a code
+            // from an earlier request must stop working once a fresh one has
+            // been sent. The other purpose's open challenge is left alone.
+            LoginChallenge::query()->openFor($phone, $purpose)->update(['invalidated_at' => now()]);
 
             // forceCreate: the model guards every attribute against request
             // input, and these values are all server-generated.
             LoginChallenge::query()->forceCreate([
                 'phone' => $phone,
-                'purpose' => LoginChallenge::PURPOSE_CUSTOMER_LOGIN,
+                'purpose' => $purpose,
                 'code_hash' => Hash::make($code),
                 'failed_attempts' => 0,
                 'channel' => $channel,

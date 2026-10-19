@@ -1178,6 +1178,144 @@ abstract class AppLocalizations {
   /// **'Xodimlar'**
   String get adminSectionStaff;
 
+  /// No description provided for @legalDocumentsTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjatlar'**
+  String get legalDocumentsTitle;
+
+  /// No description provided for @legalTerms.
+  ///
+  /// In uz, this message translates to:
+  /// **'Foydalanish shartlari'**
+  String get legalTerms;
+
+  /// No description provided for @legalPrivacy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Maxfiylik siyosati'**
+  String get legalPrivacy;
+
+  /// No description provided for @legalFormatHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'## — sarlavha, - — ro\'yxat bandi, har bir qator — xatboshi'**
+  String get legalFormatHint;
+
+  /// No description provided for @legalPublishedBy.
+  ///
+  /// In uz, this message translates to:
+  /// **'E\'lon qilindi: {date}, {name}'**
+  String legalPublishedBy(String date, String name);
+
+  /// No description provided for @legalNotPublished.
+  ///
+  /// In uz, this message translates to:
+  /// **'E\'lon qilinmagan — ilovada qator ko\'rinmaydi'**
+  String get legalNotPublished;
+
+  /// No description provided for @legalPublish.
+  ///
+  /// In uz, this message translates to:
+  /// **'E\'lon qilish'**
+  String get legalPublish;
+
+  /// No description provided for @legalUnpublishConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjatni e\'londan olib tashlaysizmi?'**
+  String get legalUnpublishConfirm;
+
+  /// No description provided for @legalSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjat e\'lon qilindi'**
+  String get legalSaved;
+
+  /// No description provided for @customersTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaridorlar'**
+  String get customersTitle;
+
+  /// No description provided for @customersPhoneHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'+998 va 9 raqam'**
+  String get customersPhoneHint;
+
+  /// No description provided for @customersFind.
+  ///
+  /// In uz, this message translates to:
+  /// **'Topish'**
+  String get customersFind;
+
+  /// No description provided for @customersNone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu raqamli xaridor yo\'q'**
+  String get customersNone;
+
+  /// No description provided for @customerNoName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismsiz'**
+  String get customerNoName;
+
+  /// No description provided for @customerOrders.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar: {count}'**
+  String customerOrders(int count);
+
+  /// No description provided for @customerUnfinished.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tugallanmagan buyurtma № {number}'**
+  String customerUnfinished(String number);
+
+  /// No description provided for @customerErase.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntni o\'chirish'**
+  String get customerErase;
+
+  /// No description provided for @customerEraseBlocked.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bloklangan — o\'chirib bo\'lmaydi'**
+  String get customerEraseBlocked;
+
+  /// No description provided for @customerEraseTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaridor akkauntini o\'chirasizmi?'**
+  String get customerEraseTitle;
+
+  /// No description provided for @customerEraseBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism, raqam, manzillar, sevimlilar va savat o\'chiriladi. Buyurtmalar tarixi ism va telefonsiz qoladi.'**
+  String get customerEraseBody;
+
+  /// No description provided for @customerEraseConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chirish'**
+  String get customerEraseConfirm;
+
+  /// No description provided for @customerErased.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkaunt o\'chirildi'**
+  String get customerErased;
+
+  /// No description provided for @orderCustomerErased.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaridor ma\'lumotlari o\'chirilgan'**
+  String get orderCustomerErased;
+
   /// No description provided for @roleShopper.
   ///
   /// In uz, this message translates to:

@@ -36,7 +36,7 @@ final class UsersTableShapeTest extends TestCase
         return [
             'id' => ['uuid', false],
             'role' => ['character varying', false],
-            'phone' => ['character varying', false],
+            'phone' => ['character varying', true],
             'full_name' => ['character varying', true],
             'password' => ['character varying', true],
             'status' => ['character varying', false],
@@ -44,6 +44,9 @@ final class UsersTableShapeTest extends TestCase
             'password_changed_at' => ['timestamp with time zone', true],
             'last_login_at' => ['timestamp with time zone', true],
             'blocked_at' => ['timestamp with time zone', true],
+            'terms_accepted_at' => ['timestamp with time zone', true],
+            'deleted_at' => ['timestamp with time zone', true],
+            'deleted_by_user_id' => ['uuid', true],
             'created_by_user_id' => ['uuid', true],
             'preferred_language' => ['character varying', false],
             'created_at' => ['timestamp with time zone', false],

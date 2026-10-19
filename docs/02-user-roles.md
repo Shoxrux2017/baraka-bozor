@@ -38,7 +38,7 @@ At most one active Customer account and at most one active Staff account per pho
 
 ## 4. Customer
 
-May: sign in; edit own name and language; manage own addresses; browse and search the catalog; manage own cart; create, edit (until shopping starts) and cancel own orders; decide own approvals; pay own online orders; file cancellation requests; see own orders, payments, refunds and delivery state; reorder.
+May: sign in; edit own name and language; manage own addresses; browse and search the catalog; manage own cart; create, edit (until shopping starts) and cancel own orders; decide own approvals; pay own online orders; file cancellation requests; see own orders, payments, refunds and delivery state; reorder; delete own account with a login code while no order is unfinished (`BR-ROLE-013`).
 
 Must not: reach another Customer's data; choose a role or status; assign staff; change prices or fees; set billable quantities or totals; mark payments as paid; mark deliveries as done; see internal or staff data.
 
@@ -68,7 +68,7 @@ The Operator surface is the Admin surface with catalog, staff, settings and refu
 
 ## 8. Admin
 
-Everything the Operator may do, plus: manage categories, products, images and prices; create staff, block and unblock staff, reset another staff member's password; edit business settings and provider enablement; mark manual refunds as done; correct the recorded price of a bought line billed from it — an estimate item or a replacement — before the order is paid and the Courier has set off, with an audited reason (`DL-54` (18)).
+Everything the Operator may do, plus: manage categories, products, images and prices; create staff, block and unblock staff, reset another staff member's password; edit business settings and provider enablement; write and publish the terms of use and the privacy policy in both languages (anyone, signed in or not, may read them); find a Customer account by phone and delete it on the Customer's request when the Customer has no app (`BR-ROLE-013`); mark manual refunds as done; correct the recorded price of a bought line billed from it — an estimate item or a replacement — before the order is paid and the Courier has set off, with an audited reason (`DL-54` (18)).
 
 Boundaries: an existing account's role is immutable; Admin cannot block itself or the last active Admin; Admin never sees a password; Admin cannot mark an online payment as paid; provider secrets are never returned by any API.
 

@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace App\Modules\Auth\Actions;
 
 use App\Exceptions\ApiException;
+use App\Models\Enums\LegalDocumentKind;
 use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Models\User;
+use App\Modules\Auth\LoginCodeCheck;
 use App\Modules\Auth\LoginCodePolicy;
+use App\Modules\Auth\LoginCodeRefused;
 use App\Modules\Auth\Models\LoginChallenge;
 use App\Modules\Auth\Models\StaffLoginStep;
 use App\Modules\Auth\StaffAccounts;
+use App\Modules\Legal\LegalDocuments;
 use Carbon\CarbonImmutable;
-use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
@@ -34,91 +36,55 @@ use Illuminate\Support\Str;
  */
 final class VerifyCustomerLoginCode
 {
-    public function __construct(private readonly RateLimiter $limiter) {}
+    public function __construct(
+        private readonly LoginCodeCheck $check,
+        private readonly LegalDocuments $documents,
+    ) {}
 
     public function __invoke(string $phone, #[\SensitiveParameter] string $code): VerifiedLogin
     {
-        // First, before the challenge is read: a locked phone tells nothing
-        // about its code, not even the right one (`DL-88`).
-        $lockKey = LoginCodePolicy::lockKey($phone);
-        if ($this->limiter->tooManyAttempts($lockKey, 1)) {
-            throw ApiException::tooManyRequests('code_locked', $this->limiter->availableIn($lockKey));
+        try {
+            $this->check->consume($phone, $code, LoginChallenge::PURPOSE_CUSTOMER_LOGIN);
+        } catch (LoginCodeRefused $refusal) {
+            throw $refusal->apiCode === 'code_locked'
+                ? ApiException::tooManyRequests('code_locked', $refusal->retryAfterSeconds ?? LoginCodePolicy::LOCK_SECONDS)
+                : ApiException::unauthenticated($refusal->apiCode);
         }
 
-        /** @var ApiException|null $refusal */
-        $refusal = null;
-        // A refusal is thrown only after the transaction has committed: the
-        // failed-attempt count and the consumption of the code must persist,
-        // and an exception escaping the closure would roll them back.
-        $session = DB::transaction(function () use ($phone, $code, &$refusal): ?VerifiedLogin {
-            try {
-                return $this->verify($phone, $code);
-            } catch (ApiException $exception) {
-                $refusal = $exception;
-
-                return null;
-            }
-        });
-
-        if ($refusal !== null) {
-            // The third wrong code locks the phone, now that the count is
-            // committed.
-            if ($refusal->apiCode() === 'code_locked') {
-                $this->limiter->hit($lockKey, LoginCodePolicy::LOCK_SECONDS);
-            }
-
-            throw $refusal;
-        }
-
-        // The closure returns null only alongside a refusal.
-        assert($session instanceof VerifiedLogin);
-
-        return $session;
+        // The code is consumed and committed above, so a blocked account's
+        // refusal below cannot give the code a second use.
+        return DB::transaction(fn (): VerifiedLogin => $this->openSession($phone));
     }
 
-    private function verify(string $phone, #[\SensitiveParameter] string $code): VerifiedLogin
+    private function openSession(string $phone): VerifiedLogin
     {
-        $challenge = LoginChallenge::query()
-            ->openFor($phone)
-            ->orderByDesc('created_at')
-            ->lockForUpdate()
-            ->first();
-
-        if ($challenge === null) {
-            throw ApiException::unauthenticated('code_invalid');
-        }
-
-        if ($challenge->isExpired()) {
-            throw ApiException::unauthenticated('code_expired');
-        }
-
-        if ($challenge->failed_attempts >= LoginCodePolicy::MAX_FAILED_ATTEMPTS) {
-            throw ApiException::unauthenticated('code_attempts_exhausted');
-        }
-
-        if (! Hash::check($code, $challenge->code_hash)) {
-            $challenge->forceFill(['failed_attempts' => $challenge->failed_attempts + 1])->save();
-
-            // The attempt that reaches the limit is answered as the lock; the
-            // lock itself is taken after the commit.
-            if ($challenge->failed_attempts >= LoginCodePolicy::MAX_FAILED_ATTEMPTS) {
-                throw ApiException::tooManyRequests('code_locked', LoginCodePolicy::LOCK_SECONDS);
-            }
-
-            throw ApiException::unauthenticated('code_invalid');
-        }
-
-        // Consumed before the account is looked at, so a valid code opens
-        // nothing twice — not even for a blocked account.
-        $challenge->forceFill(['consumed_at' => now()])->save();
-
         $customer = $this->resolveCustomer($phone);
 
-        $customer->forceFill(['last_login_at' => now()])->save();
+        $customer->last_login_at = now();
+
+        // Consent names an edition, so it is recorded only when one is published.
+        if ($this->anyDocumentPublished()) {
+            $customer->terms_accepted_at = now();
+        }
+
+        $customer->save();
 
         $session = new IssuedSession($customer->createToken('customer')->plainTextToken, $customer);
 
         return $this->withStaffStep($session, $phone);
+    }
+
+    private function anyDocumentPublished(): bool
+    {
+        foreach ([LegalDocumentKind::Terms, LegalDocumentKind::Privacy] as $kind) {
+            foreach (LegalDocuments::LANGUAGES as $language) {
+                if ($this->documents->published($kind, $language) !== null) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

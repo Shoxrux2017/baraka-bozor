@@ -34,6 +34,8 @@ final class LoginChallenge extends Model
 
     public const PURPOSE_CUSTOMER_LOGIN = 'customer_login';
 
+    public const PURPOSE_ACCOUNT_DELETION = 'account_deletion';
+
     protected $table = 'customer_otp_challenges';
 
     public $timestamps = false;
@@ -59,16 +61,17 @@ final class LoginChallenge extends Model
     }
 
     /**
-     * Challenges still open for a phone: not consumed, not invalidated.
+     * Challenges of one purpose still open for a phone: not consumed, not
+     * invalidated. A code of one purpose never serves the other (`BR-ROLE-012`).
      *
      * @param  Builder<LoginChallenge>  $query
      * @return Builder<LoginChallenge>
      */
-    public function scopeOpenFor(Builder $query, string $phone): Builder
+    public function scopeOpenFor(Builder $query, string $phone, string $purpose = self::PURPOSE_CUSTOMER_LOGIN): Builder
     {
         return $query
             ->where('phone', $phone)
-            ->where('purpose', self::PURPOSE_CUSTOMER_LOGIN)
+            ->where('purpose', $purpose)
             ->whereNull('consumed_at')
             ->whereNull('invalidated_at');
     }

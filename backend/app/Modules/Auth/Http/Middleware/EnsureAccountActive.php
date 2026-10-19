@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Refuses a valid token whose account has since been blocked.
+ * Refuses a valid token whose account has since been blocked or deleted.
  *
  * Blocking deletes every token of the account, and this check runs on every
  * request as well — two independent barriers, deliberately redundant, because
@@ -29,7 +29,7 @@ final class EnsureAccountActive
     {
         $user = $request->user();
 
-        if ($user instanceof User && $user->status === UserStatus::Blocked) {
+        if ($user instanceof User && $user->status !== UserStatus::Active) {
             // A token that reached here should already be gone; make sure.
             $user->tokens()->delete();
 

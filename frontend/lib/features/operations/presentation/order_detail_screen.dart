@@ -97,7 +97,7 @@ class _Order extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
-    final BoardAddress address = order.address;
+    final BoardAddress? address = order.address;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -127,24 +127,30 @@ class _Order extends StatelessWidget {
         _Section(
           title: l10n.orderSectionCustomer,
           children: <Widget>[
-            Text(order.customer.fullName),
-            Text(formatPhone(order.customer.phone)),
+            if (order.customerErased)
+              Text(l10n.orderCustomerErased)
+            else ...<Widget>[
+              Text(order.customer.fullName ?? l10n.customerNoName),
+              if (order.customer.phone != null)
+                Text(formatPhone(order.customer.phone!)),
+            ],
           ],
         ),
-        _Section(
-          title: l10n.orderSectionAddress,
-          children: <Widget>[
-            Text('${l10n.addressStreet}: ${address.street}'),
-            Text('${l10n.addressHouse}: ${address.house}'),
-            if (address.apartment != null)
-              Text('${l10n.addressApartment}: ${address.apartment}'),
-            if (address.landmark != null)
-              Text('${l10n.addressLandmark}: ${address.landmark}'),
-            if (address.deliveryNote != null)
-              Text('${l10n.addressDeliveryNote}: ${address.deliveryNote}'),
-            Text(l10n.orderCoordinates(address.latitude, address.longitude)),
-          ],
-        ),
+        if (address != null)
+          _Section(
+            title: l10n.orderSectionAddress,
+            children: <Widget>[
+              Text('${l10n.addressStreet}: ${address.street}'),
+              Text('${l10n.addressHouse}: ${address.house}'),
+              if (address.apartment != null)
+                Text('${l10n.addressApartment}: ${address.apartment}'),
+              if (address.landmark != null)
+                Text('${l10n.addressLandmark}: ${address.landmark}'),
+              if (address.deliveryNote != null)
+                Text('${l10n.addressDeliveryNote}: ${address.deliveryNote}'),
+              Text(l10n.orderCoordinates(address.latitude, address.longitude)),
+            ],
+          ),
         _Section(
           title: l10n.orderSectionDeliveryWish,
           children: <Widget>[

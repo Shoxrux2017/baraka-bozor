@@ -73,7 +73,7 @@ final class OrderCancellationRequestsTableTest extends TestCase
             'origin' => ['character varying', false, 16],
             'requested_by_user_id' => ['uuid', false],
             'status' => ['character varying', false, 16],
-            'reason' => ['character varying', false, 300],
+            'reason' => ['character varying', true, 300],
             'resolved_by_user_id' => ['uuid', true],
             'resolution_note' => ['character varying', true, 300],
             'resolved_at' => ['timestamp with time zone', true],

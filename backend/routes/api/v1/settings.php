@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use App\Models\Enums\Role;
+use App\Modules\Accounts\Http\Controllers\AdminCustomerController;
 use App\Modules\Auth\AuthServiceProvider;
 use App\Modules\Auth\Http\Middleware\RequireRole;
+use App\Modules\Legal\Http\Controllers\AdminLegalDocumentController;
 use App\Modules\Settings\Http\Controllers\BusinessSettingsController;
 use App\Modules\Settings\Http\Controllers\PaymentProviderSettingsController;
 use Illuminate\Support\Facades\Route;
@@ -29,4 +31,37 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Admin)]
             ->name('admin.settings.payment-providers.index');
         Route::patch('payment-providers/{provider}', [PaymentProviderSettingsController::class, 'update'])
             ->name('admin.settings.payment-providers.update');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Legal documents editor — docs/09-api-contracts.md Section 63
+|--------------------------------------------------------------------------
+|
+| Admin only. The public read side is routes/api/v1/legal.php.
+|
+*/
+
+Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Admin)])
+    ->prefix('admin/legal-documents')
+    ->group(function (): void {
+        Route::get('/', [AdminLegalDocumentController::class, 'index'])->name('admin.legal-documents.index');
+        Route::put('{kind}/{language}', [AdminLegalDocumentController::class, 'update'])
+            ->name('admin.legal-documents.update');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Customer search and erasure — docs/09-api-contracts.md Sections 66 and 67
+|--------------------------------------------------------------------------
+|
+| Admin only: an Operator or Manager does not erase accounts (DL-94 item 5).
+|
+*/
+
+Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Admin)])
+    ->prefix('admin/customers')
+    ->group(function (): void {
+        Route::get('/', [AdminCustomerController::class, 'index'])->name('admin.customers.index');
+        Route::post('{customer}/erase', [AdminCustomerController::class, 'erase'])->name('admin.customers.erase');
     });

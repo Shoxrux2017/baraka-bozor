@@ -6,6 +6,8 @@ import '../../../core/routing/feature_routes.dart';
 import '../../shells/presentation/panel_shell.dart';
 import 'admin_paths.dart';
 import 'categories_screen.dart';
+import 'customers_screen.dart';
+import 'legal_documents_screen.dart';
 import 'product_edit_screen.dart';
 import 'products_screen.dart';
 import 'settings_screen.dart';
@@ -59,6 +61,18 @@ final FeatureRoutes adminRoutes = FeatureRoutes(
           name: 'admin-staff',
           builder: (BuildContext context, GoRouterState state) =>
               const StaffScreen(),
+        ),
+        GoRoute(
+          path: AdminPaths.customers,
+          name: 'admin-customers',
+          builder: (BuildContext context, GoRouterState state) =>
+              const CustomersScreen(),
+        ),
+        GoRoute(
+          path: AdminPaths.legalDocuments,
+          name: 'admin-legal-documents',
+          builder: (BuildContext context, GoRouterState state) =>
+              const LegalDocumentsScreen(),
         ),
         GoRoute(
           path: AdminPaths.settings,

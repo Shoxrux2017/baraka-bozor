@@ -588,6 +588,84 @@ class AppLocalizationsUz extends AppLocalizations {
   String get adminSectionStaff => 'Xodimlar';
 
   @override
+  String get legalDocumentsTitle => 'Hujjatlar';
+
+  @override
+  String get legalTerms => 'Foydalanish shartlari';
+
+  @override
+  String get legalPrivacy => 'Maxfiylik siyosati';
+
+  @override
+  String get legalFormatHint =>
+      '## — sarlavha, - — ro\'yxat bandi, har bir qator — xatboshi';
+
+  @override
+  String legalPublishedBy(String date, String name) {
+    return 'E\'lon qilindi: $date, $name';
+  }
+
+  @override
+  String get legalNotPublished =>
+      'E\'lon qilinmagan — ilovada qator ko\'rinmaydi';
+
+  @override
+  String get legalPublish => 'E\'lon qilish';
+
+  @override
+  String get legalUnpublishConfirm => 'Hujjatni e\'londan olib tashlaysizmi?';
+
+  @override
+  String get legalSaved => 'Hujjat e\'lon qilindi';
+
+  @override
+  String get customersTitle => 'Xaridorlar';
+
+  @override
+  String get customersPhoneHint => '+998 va 9 raqam';
+
+  @override
+  String get customersFind => 'Topish';
+
+  @override
+  String get customersNone => 'Bu raqamli xaridor yo\'q';
+
+  @override
+  String get customerNoName => 'Ismsiz';
+
+  @override
+  String customerOrders(int count) {
+    return 'Buyurtmalar: $count';
+  }
+
+  @override
+  String customerUnfinished(String number) {
+    return 'Tugallanmagan buyurtma № $number';
+  }
+
+  @override
+  String get customerErase => 'Akkauntni o\'chirish';
+
+  @override
+  String get customerEraseBlocked => 'Bloklangan — o\'chirib bo\'lmaydi';
+
+  @override
+  String get customerEraseTitle => 'Xaridor akkauntini o\'chirasizmi?';
+
+  @override
+  String get customerEraseBody =>
+      'Ism, raqam, manzillar, sevimlilar va savat o\'chiriladi. Buyurtmalar tarixi ism va telefonsiz qoladi.';
+
+  @override
+  String get customerEraseConfirm => 'O\'chirish';
+
+  @override
+  String get customerErased => 'Akkaunt o\'chirildi';
+
+  @override
+  String get orderCustomerErased => 'Xaridor ma\'lumotlari o\'chirilgan';
+
+  @override
   String get roleShopper => 'Yig\'uvchi';
 
   @override
