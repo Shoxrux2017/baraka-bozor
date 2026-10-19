@@ -46,6 +46,7 @@ final class BoardOrderRowResource extends JsonResource
             'created_at' => $order->created_at->toIso8601ZuluString(),
             'status' => $order->status->value,
             'payment_method' => $order->payment_method->value,
+            'customer_erased' => $order->customer_erased_at !== null,
             'customer' => [
                 'full_name' => $order->recipient_name_snapshot,
                 'phone' => $order->recipient_phone_snapshot,

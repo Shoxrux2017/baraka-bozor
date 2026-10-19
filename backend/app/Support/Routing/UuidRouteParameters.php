@@ -42,6 +42,7 @@ final class UuidRouteParameters
         'payment',
         'refund',
         'device',
+        'customer',
     ];
 
     /**

@@ -16,6 +16,7 @@ use App\Models\OrderRating;
 use App\Models\OrderShopperAssignment;
 use App\Models\Product;
 use App\Models\User;
+use App\Modules\Accounts\Actions\EraseCustomer;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,7 +68,7 @@ final class OperationsBoardApiTest extends TestCase
 
         $this->assertSame([$newer->id, $older->id], array_column($rows, 'id'));
         $this->assertSame(
-            ['id', 'order_number', 'created_at', 'status', 'payment_method', 'customer', 'item_count', 'pending_approval_count', 'total_uzs', 'total_kind', 'shopper', 'courier', 'is_self_order'],
+            ['id', 'order_number', 'created_at', 'status', 'payment_method', 'customer_erased', 'customer', 'item_count', 'pending_approval_count', 'total_uzs', 'total_kind', 'shopper', 'courier', 'is_self_order'],
             array_keys($rows[0])
         );
         $this->assertNotNull($rows[0]['shopper']);
@@ -276,6 +277,43 @@ final class OperationsBoardApiTest extends TestCase
         $order->forceFill(['status' => 'shopping_assigned'])->save();
 
         return $order;
+    }
+
+    public function test_an_erased_order_shows_no_customer(): void
+    {
+        $customer = User::factory()->customer()->create(['phone' => '+998907654321']);
+        $order = Order::factory()->completed()->create([
+            'customer_id' => $customer->id,
+            'recipient_name_snapshot' => 'Aziza Karimova',
+            'recipient_phone_snapshot' => '+998907654321',
+            'street_snapshot' => 'Navoi',
+        ]);
+        $admin = User::factory()->role(Role::Admin)->create();
+        $live = Order::factory()->create();
+
+        $this->assertIds([$order->id], ['search' => '7654321']);
+
+        (new EraseCustomer)->erase($customer, $admin);
+
+        $detail = $this->as($this->operator)->getJson('/api/v1/operations/orders/'.$order->id)->assertOk()->json('data');
+        $this->assertTrue($detail['customer_erased']);
+        $this->assertSame(['id' => $customer->id, 'full_name' => null, 'phone' => null], $detail['customer']);
+        $this->assertSame(
+            ['latitude' => null, 'longitude' => null, 'street' => null, 'house' => null, 'apartment' => null, 'landmark' => null, 'delivery_note' => null],
+            $detail['address'],
+        );
+        $this->assertNull($detail['delivery_time_note']);
+
+        $rows = $this->board()->assertOk()->json('data');
+        $row = collect($rows)->firstWhere('id', $order->id);
+        $this->assertTrue($row['customer_erased']);
+        $this->assertSame(['full_name' => null, 'phone' => null], $row['customer']);
+        $this->assertFalse(collect($rows)->firstWhere('id', $live->id)['customer_erased']);
+        $this->assertFalse($this->as($this->operator)->getJson('/api/v1/operations/orders/'.$live->id)->json('data.customer_erased'));
+
+        $this->assertIds([], ['search' => '7654321']);
+        $this->assertIds([], ['search' => 'aziza']);
+        $this->assertIds([$order->id], ['search' => (string) $order->fresh()?->order_number]);
     }
 
     /**

@@ -58,6 +58,7 @@ final class BoardOrderResource extends JsonResource
             'status' => $order->status->value,
             'payment_method' => $order->payment_method->value,
             'delivery_time_note' => $order->delivery_time_note,
+            'customer_erased' => $order->customer_erased_at !== null,
             'customer' => [
                 'id' => $order->customer_id,
                 'full_name' => $order->recipient_name_snapshot,
