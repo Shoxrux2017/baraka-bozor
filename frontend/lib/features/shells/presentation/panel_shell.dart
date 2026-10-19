@@ -50,6 +50,11 @@ List<PanelSection> panelSectionsOf(UserRole role) => <PanelSection>[
       label: (AppLocalizations l10n) => l10n.adminSectionStaff,
     ),
     PanelSection(
+      path: AppPaths.adminLegalDocuments,
+      icon: Icons.description_outlined,
+      label: (AppLocalizations l10n) => l10n.legalDocumentsTitle,
+    ),
+    PanelSection(
       path: AppPaths.adminSettings,
       icon: Icons.settings_outlined,
       label: (AppLocalizations l10n) => l10n.adminSectionSettings,

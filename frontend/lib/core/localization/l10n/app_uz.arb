@@ -239,6 +239,25 @@
   "errorBusinessConflict": "Ma'lumot allaqachon o'zgargan. Joriy holatni tekshirib, qayta urinib ko'ring",
   "errorPayloadTooLarge": "Fayl juda katta",
   "adminSectionStaff": "Xodimlar",
+  "legalDocumentsTitle": "Hujjatlar",
+  "legalTerms": "Foydalanish shartlari",
+  "legalPrivacy": "Maxfiylik siyosati",
+  "legalFormatHint": "## — sarlavha, - — ro'yxat bandi, har bir qator — xatboshi",
+  "legalPublishedBy": "E'lon qilindi: {date}, {name}",
+  "@legalPublishedBy": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "legalNotPublished": "E'lon qilinmagan — ilovada qator ko'rinmaydi",
+  "legalPublish": "E'lon qilish",
+  "legalUnpublishConfirm": "Hujjatni e'londan olib tashlaysizmi?",
+  "legalSaved": "Hujjat e'lon qilindi",
   "roleShopper": "Yig'uvchi",
   "roleCourier": "Kuryer",
   "roleOperator": "Operator",

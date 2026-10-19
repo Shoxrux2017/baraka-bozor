@@ -85,6 +85,7 @@ abstract final class AppPaths {
   static const String adminProducts = '$admin/products';
   static const String adminStaff = '$admin/staff';
   static const String adminSettings = '$admin/settings';
+  static const String adminLegalDocuments = '$admin/documents';
 
   /// Where a role lands: its area, except the Admin's, which is the board
   /// (`DL-37` (17)).

@@ -1178,6 +1178,60 @@ abstract class AppLocalizations {
   /// **'Xodimlar'**
   String get adminSectionStaff;
 
+  /// No description provided for @legalDocumentsTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjatlar'**
+  String get legalDocumentsTitle;
+
+  /// No description provided for @legalTerms.
+  ///
+  /// In uz, this message translates to:
+  /// **'Foydalanish shartlari'**
+  String get legalTerms;
+
+  /// No description provided for @legalPrivacy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Maxfiylik siyosati'**
+  String get legalPrivacy;
+
+  /// No description provided for @legalFormatHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'## — sarlavha, - — ro\'yxat bandi, har bir qator — xatboshi'**
+  String get legalFormatHint;
+
+  /// No description provided for @legalPublishedBy.
+  ///
+  /// In uz, this message translates to:
+  /// **'E\'lon qilindi: {date}, {name}'**
+  String legalPublishedBy(String date, String name);
+
+  /// No description provided for @legalNotPublished.
+  ///
+  /// In uz, this message translates to:
+  /// **'E\'lon qilinmagan — ilovada qator ko\'rinmaydi'**
+  String get legalNotPublished;
+
+  /// No description provided for @legalPublish.
+  ///
+  /// In uz, this message translates to:
+  /// **'E\'lon qilish'**
+  String get legalPublish;
+
+  /// No description provided for @legalUnpublishConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjatni e\'londan olib tashlaysizmi?'**
+  String get legalUnpublishConfirm;
+
+  /// No description provided for @legalSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjat e\'lon qilindi'**
+  String get legalSaved;
+
   /// No description provided for @roleShopper.
   ///
   /// In uz, this message translates to:

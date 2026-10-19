@@ -587,6 +587,36 @@ class AppLocalizationsRu extends AppLocalizations {
   String get adminSectionStaff => 'Сотрудники';
 
   @override
+  String get legalDocumentsTitle => 'Документы';
+
+  @override
+  String get legalTerms => 'Условия использования';
+
+  @override
+  String get legalPrivacy => 'Политика конфиденциальности';
+
+  @override
+  String get legalFormatHint =>
+      '## — заголовок, - — пункт списка, каждая строка — абзац';
+
+  @override
+  String legalPublishedBy(String date, String name) {
+    return 'Опубликовано $date, $name';
+  }
+
+  @override
+  String get legalNotPublished => 'Не опубликовано — в приложении строки нет';
+
+  @override
+  String get legalPublish => 'Опубликовать';
+
+  @override
+  String get legalUnpublishConfirm => 'Снять документ с публикации?';
+
+  @override
+  String get legalSaved => 'Документ опубликован';
+
+  @override
   String get roleShopper => 'Сборщик';
 
   @override

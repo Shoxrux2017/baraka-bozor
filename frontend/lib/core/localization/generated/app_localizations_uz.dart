@@ -588,6 +588,37 @@ class AppLocalizationsUz extends AppLocalizations {
   String get adminSectionStaff => 'Xodimlar';
 
   @override
+  String get legalDocumentsTitle => 'Hujjatlar';
+
+  @override
+  String get legalTerms => 'Foydalanish shartlari';
+
+  @override
+  String get legalPrivacy => 'Maxfiylik siyosati';
+
+  @override
+  String get legalFormatHint =>
+      '## — sarlavha, - — ro\'yxat bandi, har bir qator — xatboshi';
+
+  @override
+  String legalPublishedBy(String date, String name) {
+    return 'E\'lon qilindi: $date, $name';
+  }
+
+  @override
+  String get legalNotPublished =>
+      'E\'lon qilinmagan — ilovada qator ko\'rinmaydi';
+
+  @override
+  String get legalPublish => 'E\'lon qilish';
+
+  @override
+  String get legalUnpublishConfirm => 'Hujjatni e\'londan olib tashlaysizmi?';
+
+  @override
+  String get legalSaved => 'Hujjat e\'lon qilindi';
+
+  @override
   String get roleShopper => 'Yig\'uvchi';
 
   @override
