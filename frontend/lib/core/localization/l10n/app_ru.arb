@@ -743,12 +743,10 @@
   "errorProductUnavailable": "Этого товара сейчас нет в продаже",
   "checkoutTitle": "Оформление",
   "checkoutGo": "Оформить",
-  "checkoutAddress": "Адрес доставки",
   "checkoutPayment": "Способ оплаты",
   "checkoutOnlineUnavailable": "Пока можно оплатить только наличными",
   "checkoutCalculating": "Рассчитываем",
   "checkoutPlacing": "Отправляем заказ",
-  "checkoutEstimateExplain": "Есть товары с ориентировочной ценой: итог станет известен, когда сборщик их купит",
   "checkoutPlaced": "Заказ № {number} оформлен",
   "@checkoutPlaced": {
     "placeholders": {
@@ -883,23 +881,11 @@
   "orderAddedLine": "Добавляется, по текущей цене",
   "orderAddAlreadyIn": "Этот товар уже в заказе — его можно изменить",
   "orderAddFull": "В заказе может быть не больше {count} товаров",
-  "orderCancel": "Отменить заказ",
-  "orderCancelConfirm": "Отменить заказ?",
   "orderCancelReason": "Причина (необязательно)",
   "orderCancelRepeating": "Прошлый запрос остался без ответа: он повторится с той же причиной",
-  "orderCancelKeep": "Нет, оставить",
   "orderCancelling": "Отменяем",
-  "orderCancellationRequested": "Отмена запрошена: решит оператор",
   "orderCancellationNeedsReason": "Заказ уже в работе: напишите причину отмены, и решит оператор",
   "orderOpen": "Открыть заказ",
-  "orderLineRemoved": "Убрано: {reason}",
-  "@orderLineRemoved": {
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
   "errorOrderEditingLocked": "Заказ уже нельзя изменить. Заказ обновлён",
   "errorOrderCancellationNotAllowed": "Заказ уже нельзя отменить. Заказ обновлён",
   "boardColumnPeople": "Сборщик и курьер",
@@ -1440,21 +1426,6 @@
   "shopperOrderGone": "Этот заказ больше не ваш.",
   "shopperOrderCancelled": "Заказ отменён: покупать больше нечего.",
   "substituteUseBuy": "Эта замена уже разрешена. Введите цену через «Купить» — там при необходимости можно спросить клиента.",
-  "ordersNeedAnswer": "Нужен ваш ответ",
-  "orderLineBought": "Куплено: {quantity} × {price} = {total}",
-  "@orderLineBought": {
-    "placeholders": {
-      "quantity": {
-        "type": "String"
-      },
-      "price": {
-        "type": "String"
-      },
-      "total": {
-        "type": "String"
-      }
-    }
-  },
   "questionPrice": "{name}: цена теперь {price} (при заказе была {was}). Согласны на эту цену?",
   "@questionPrice": {
     "placeholders": {
@@ -1536,32 +1507,11 @@
     }
   },
   "sendAgain": "Отправить снова",
-  "orderPaid": "Оплачено: {amount}, {time}",
-  "@orderPaid": {
-    "placeholders": {
-      "amount": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "requestYours": "Ваш запрос на отмену: {reason}",
-  "@requestYours": {
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
   "requestStateApproved": "Одобрен — заказ отменён",
   "requestStateRejected": "Отклонён оператором",
   "requestStateClosed": "Закрыт — заказ завершился иначе",
   "orderRequestCancel": "Попросить отменить",
-  "orderRequestCancelTitle": "Попросить отменить заказ?",
   "orderRequestCancelReason": "Причина",
-  "orderRequestCancelExplained": "Заказ уже в работе — решит оператор.",
   "errorApprovalExpired": "Время ответа на вопрос истекло.",
   "questionRejectRemoves": "Если откажетесь, этот товар уберут из заказа.",
   "removedYouRejected": "вы отказались",
@@ -1937,5 +1887,51 @@
   "ordersEmptyHint": "Соберите корзину — сборщик купит всё на базаре, а курьер привезёт.",
   "ordersEmptyAction": "За покупками",
   "ordersPastEmpty": "Здесь будут доставленные и отменённые заказы",
-  "rateStarsLabel": "Оценить на {stars} из 5"
+  "rateStarsLabel": "Оценить на {stars} из 5",
+  "orderStateAccepted": "Заказ принят",
+  "orderStateAcceptedHint": "Скоро сборщик начнёт покупать на базаре",
+  "orderStateShopping": "Покупаем на базаре",
+  "orderStateShoppingHint": "Сборщик выбирает ваши продукты",
+  "orderStateCollected": "Заказ собран",
+  "orderStateCollectedHint": "Скоро курьер заберёт его",
+  "orderStateOnTheWay": "Курьер везёт заказ",
+  "orderStateLeftAt": "Выехал в {time}",
+  "orderStateDelivered": "Доставлен",
+  "orderStateCancelled": "Заказ отменён",
+  "orderCancelledByYou": "Вы отменили {when}",
+  "orderCancelledWhen": "Отменён {when}",
+  "orderCancelReasonQuoted": "Причина: «{reason}»",
+  "progressAccepted": "Принят",
+  "progressShopping": "Покупаем",
+  "progressDelivering": "Везём",
+  "progressDelivered": "Доставлен",
+  "orderCanStillChange": "Пока сборщик не начал, заказ можно изменить или отменить.",
+  "orderLineBoughtKit": "Куплено {quantity} × {price}",
+  "lineTagBought": "Куплено",
+  "lineTagWaiting": "Ждёт вашего ответа",
+  "lineTagUnavailable": "Не было на базаре — убрали",
+  "lineTagRejected": "Вы отказались — убрали",
+  "lineTagExpired": "Не ответили вовремя — убрали",
+  "lineTagOperator": "Убрал оператор",
+  "orderToPayLabel": "К оплате",
+  "orderNothingDue": "нет",
+  "orderPaidCash": "Оплачено наличными",
+  "orderPaidWhen": "{amount}, {when}",
+  "orderToPayAmount": "К оплате {amount}",
+  "orderCashOnDelivery": "Наличными курьеру при получении",
+  "orderAddressTitle": "Адрес доставки",
+  "supportTitle": "Поддержка",
+  "supportHint": "Если что-то пошло не так",
+  "callAction": "Позвонить",
+  "courierYours": "Ваш курьер",
+  "orderCancelShort": "Отменить",
+  "requestYouAsked": "Вы попросили отменить",
+  "requestPendingHint": "Решит оператор — мы сообщим. Пока заказ в работе.",
+  "cancelSheetTitle": "Отменить заказ № {number}?",
+  "cancelSheetHint": "Сборщик ещё не начал покупать — отменим сразу.",
+  "requestSheetTitle": "Попросить отменить?",
+  "requestSheetHint": "Сборщик уже покупает. Напишите причину — решит оператор и сообщит вам.",
+  "cancelReasonHint": "Например: заказал не то",
+  "orderCancelKeepKit": "Не отменять",
+  "requestSend": "Отправить"
 }

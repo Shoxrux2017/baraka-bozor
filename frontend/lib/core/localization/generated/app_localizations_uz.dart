@@ -1486,9 +1486,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get checkoutGo => 'Rasmiylashtirish';
 
   @override
-  String get checkoutAddress => 'Yetkazish manzili';
-
-  @override
   String get checkoutPayment => 'To\'lov usuli';
 
   @override
@@ -1500,10 +1497,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get checkoutPlacing => 'Buyurtma yuborilmoqda';
-
-  @override
-  String get checkoutEstimateExplain =>
-      'Narxi taxminiy mahsulotlar bor: yakuniy summa yig\'uvchi ularni sotib olgach aniqlanadi';
 
   @override
   String checkoutPlaced(String number) {
@@ -1745,12 +1738,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get orderCancel => 'Buyurtmani bekor qilish';
-
-  @override
-  String get orderCancelConfirm => 'Buyurtma bekor qilinsinmi?';
-
-  @override
   String get orderCancelReason => 'Sabab (ixtiyoriy)';
 
   @override
@@ -1758,14 +1745,7 @@ class AppLocalizationsUz extends AppLocalizations {
       'Avvalgi so\'rov javobsiz qoldi: u shu sabab bilan qayta yuboriladi';
 
   @override
-  String get orderCancelKeep => 'Yo\'q, qoldirish';
-
-  @override
   String get orderCancelling => 'Bekor qilinmoqda';
-
-  @override
-  String get orderCancellationRequested =>
-      'Bekor qilish so\'raldi: operator hal qiladi';
 
   @override
   String get orderCancellationNeedsReason =>
@@ -1773,11 +1753,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get orderOpen => 'Buyurtmani ochish';
-
-  @override
-  String orderLineRemoved(String reason) {
-    return 'Olib tashlandi: $reason';
-  }
 
   @override
   String get errorOrderEditingLocked =>
@@ -2393,14 +2368,6 @@ class AppLocalizationsUz extends AppLocalizations {
       'Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo\'lsa, u yerda mijozdan so\'rash taklif qilinadi.';
 
   @override
-  String get ordersNeedAnswer => 'Javobingiz kerak';
-
-  @override
-  String orderLineBought(String quantity, String price, String total) {
-    return 'Olindi: $quantity × $price = $total';
-  }
-
-  @override
   String questionPrice(String name, String price, String was) {
     return '$name: narxi endi $price (buyurtma paytida $was edi). Shu narxga rozimisiz?';
   }
@@ -2449,16 +2416,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get sendAgain => 'Qayta yuborish';
 
   @override
-  String orderPaid(String amount, String time) {
-    return 'To\'landi: $amount, $time';
-  }
-
-  @override
-  String requestYours(String reason) {
-    return 'Bekor qilish so\'rovingiz: $reason';
-  }
-
-  @override
   String get requestStateApproved => 'Tasdiqlandi — buyurtma bekor qilindi';
 
   @override
@@ -2471,15 +2428,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get orderRequestCancel => 'Bekor qilishni so\'rash';
 
   @override
-  String get orderRequestCancelTitle =>
-      'Buyurtmani bekor qilishni so\'raysizmi?';
-
-  @override
   String get orderRequestCancelReason => 'Sabab';
-
-  @override
-  String get orderRequestCancelExplained =>
-      'Buyurtma allaqachon bajarilmoqda — operator hal qiladi.';
 
   @override
   String get errorApprovalExpired => 'Savolga javob berish vaqti o\'tgan.';
@@ -3161,4 +3110,164 @@ class AppLocalizationsUz extends AppLocalizations {
   String rateStarsLabel(int stars) {
     return '5 dan $stars ga baholash';
   }
+
+  @override
+  String get orderStateAccepted => 'Buyurtma qabul qilindi';
+
+  @override
+  String get orderStateAcceptedHint =>
+      'Tez orada yig\'uvchi bozordan xarid qilishni boshlaydi';
+
+  @override
+  String get orderStateShopping => 'Bozordan xarid qilyapmiz';
+
+  @override
+  String get orderStateShoppingHint =>
+      'Yig\'uvchi mahsulotlaringizni tanlayapti';
+
+  @override
+  String get orderStateCollected => 'Buyurtma yig\'ildi';
+
+  @override
+  String get orderStateCollectedHint => 'Tez orada kuryer olib ketadi';
+
+  @override
+  String get orderStateOnTheWay => 'Kuryer buyurtmani olib kelmoqda';
+
+  @override
+  String orderStateLeftAt(String time) {
+    return 'Soat $time da yo\'lga chiqdi';
+  }
+
+  @override
+  String get orderStateDelivered => 'Yetkazildi';
+
+  @override
+  String get orderStateCancelled => 'Buyurtma bekor qilindi';
+
+  @override
+  String orderCancelledByYou(String when) {
+    return 'Siz bekor qildingiz: $when';
+  }
+
+  @override
+  String orderCancelledWhen(String when) {
+    return 'Bekor qilindi: $when';
+  }
+
+  @override
+  String orderCancelReasonQuoted(String reason) {
+    return 'Sabab: «$reason»';
+  }
+
+  @override
+  String get progressAccepted => 'Qabul qilindi';
+
+  @override
+  String get progressShopping => 'Xarid';
+
+  @override
+  String get progressDelivering => 'Yo\'lda';
+
+  @override
+  String get progressDelivered => 'Yetkazildi';
+
+  @override
+  String get orderCanStillChange =>
+      'Yig\'uvchi boshlamaguncha buyurtmani o\'zgartirish yoki bekor qilish mumkin.';
+
+  @override
+  String orderLineBoughtKit(String quantity, String price) {
+    return 'Sotib olindi: $quantity × $price';
+  }
+
+  @override
+  String get lineTagBought => 'Sotib olindi';
+
+  @override
+  String get lineTagWaiting => 'Javobingizni kutmoqda';
+
+  @override
+  String get lineTagUnavailable => 'Bozorda yo\'q edi — olib tashlandi';
+
+  @override
+  String get lineTagRejected => 'Siz rad etdingiz — olib tashlandi';
+
+  @override
+  String get lineTagExpired => 'Vaqtida javob berilmadi — olib tashlandi';
+
+  @override
+  String get lineTagOperator => 'Operator olib tashladi';
+
+  @override
+  String get orderToPayLabel => 'To\'lov';
+
+  @override
+  String get orderNothingDue => 'yo\'q';
+
+  @override
+  String get orderPaidCash => 'Naqd to\'landi';
+
+  @override
+  String orderPaidWhen(String amount, String when) {
+    return '$amount, $when';
+  }
+
+  @override
+  String orderToPayAmount(String amount) {
+    return 'To\'lov: $amount';
+  }
+
+  @override
+  String get orderCashOnDelivery => 'Qabul qilganda kuryerga naqd';
+
+  @override
+  String get orderAddressTitle => 'Yetkazish manzili';
+
+  @override
+  String get supportTitle => 'Qo\'llab-quvvatlash';
+
+  @override
+  String get supportHint => 'Agar biror narsa noto\'g\'ri ketsa';
+
+  @override
+  String get callAction => 'Qo\'ng\'iroq';
+
+  @override
+  String get courierYours => 'Sizning kuryeringiz';
+
+  @override
+  String get orderCancelShort => 'Bekor qilish';
+
+  @override
+  String get requestYouAsked => 'Siz bekor qilishni so\'radingiz';
+
+  @override
+  String get requestPendingHint =>
+      'Operator hal qiladi — sizga xabar beramiz. Hozircha buyurtma ishda.';
+
+  @override
+  String cancelSheetTitle(int number) {
+    return 'Buyurtma № $number bekor qilinsinmi?';
+  }
+
+  @override
+  String get cancelSheetHint =>
+      'Yig\'uvchi hali xarid qilishni boshlamadi — darhol bekor qilamiz.';
+
+  @override
+  String get requestSheetTitle => 'Bekor qilishni so\'raysizmi?';
+
+  @override
+  String get requestSheetHint =>
+      'Yig\'uvchi allaqachon xarid qilmoqda. Sababini yozing — operator hal qilib, sizga xabar beradi.';
+
+  @override
+  String get cancelReasonHint => 'Masalan: noto\'g\'ri buyurtma berdim';
+
+  @override
+  String get orderCancelKeepKit => 'Bekor qilmaslik';
+
+  @override
+  String get requestSend => 'Yuborish';
 }

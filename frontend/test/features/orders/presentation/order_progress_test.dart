@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
-import 'package:baraka_bozor/core/formatting/tashkent_time.dart';
+import 'package:baraka_bozor/core/formatting/order_dates.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/catalog_labels.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
@@ -132,6 +132,7 @@ void main() {
         orders: orders,
         cart: cart,
         device: device,
+        clock: () => DateTime.utc(2026, 9, 28, 12),
       ),
     );
     await tester.pumpAndSettle();
@@ -353,10 +354,7 @@ void main() {
 
         expect(orders.decisions.single.$2, ApprovalDecision.reject);
         final AppLocalizations words = l10n(tester);
-        expect(
-          find.text(words.orderLineRemoved(words.removedYouRejected)),
-          findsOneWidget,
-        );
+        expect(find.text(words.lineTagRejected), findsOneWidget);
         expect(byKey('question-$approvalOne'), findsNothing);
       },
     );
@@ -595,17 +593,13 @@ void main() {
 
       expect(
         find.text(
-          words.orderLineBought(
-            '${QuantityRules.display('1.500')} $kg',
-            words.catalogPricePerUnit(
-              MoneyFormat.uzs(18975, AppLanguage.uz),
-              kg,
-            ),
-            MoneyFormat.uzs(28463, AppLanguage.uz),
-          ),
+          '${QuantityRules.display('1.500')} $kg × '
+          '${MoneyFormat.uzs(18975, AppLanguage.uz)}',
         ),
         findsOneWidget,
       );
+      expect(find.text(words.lineTagBought), findsOneWidget);
+      expect(find.text(MoneyFormat.uzs(28463, AppLanguage.uz)), findsOneWidget);
       expect(byKey('order-line-replacement-$lineTomato'), findsOneWidget);
       expect(
         find.text(words.itemReplacedWith('Olcha pomidor')),
@@ -648,39 +642,45 @@ void main() {
       await open(tester, at: AppPaths.customerOrder(orderOne));
       final AppLocalizations words = l10n(tester);
 
+      expect(find.text(words.orderPaidCash), findsOneWidget);
       expect(
         find.text(
-          words.orderPaid(
+          words.orderPaidWhen(
             MoneyFormat.uzs(48463, AppLanguage.uz),
-            TashkentTime.format(DateTime.utc(2026, 9, 28, 9)),
+            orderAtLower(
+              words,
+              DateTime.utc(2026, 9, 28, 9),
+              DateTime.utc(2026, 9, 28, 12),
+            ),
           ),
         ),
         findsOneWidget,
       );
       expect(
-        find.text(
-          '${MoneyFormat.uzs(48463, AppLanguage.uz)} · ${words.totalKindFinal}',
-        ),
+        find.text(MoneyFormat.uzs(48463, AppLanguage.uz)),
         findsOneWidget,
+        reason: 'the final total, without "≈"',
       );
       expect(byKey('order-request-cancel'), findsNothing);
     });
 
-    testWidgets('no payment shows until one is made', (
+    testWidgets('no payment is shown as taken until one is made', (
       WidgetTester tester,
     ) async {
       orders.rows = <Map<String, Object?>>[
         shopping(<Object?>[orderLineJson()]),
       ];
       await open(tester, at: AppPaths.customerOrder(orderOne));
-      expect(byKey('order-payment'), findsNothing);
+      expect(byKey('order-payment'), findsOneWidget);
+      expect(find.text(l10n(tester).paymentCashTitle), findsOneWidget);
+      expect(find.text(l10n(tester).orderPaidCash), findsNothing);
     });
   });
 
   group('the cancellation request', () {
     final Map<String, String Function(AppLocalizations)> states =
         <String, String Function(AppLocalizations)>{
-          'pending': (AppLocalizations l) => l.orderCancellationRequested,
+          'pending': (AppLocalizations l) => l.requestStatusPending,
           'approved': (AppLocalizations l) => l.requestStateApproved,
           'rejected': (AppLocalizations l) => l.requestStateRejected,
           'closed': (AppLocalizations l) => l.requestStateClosed,
@@ -700,7 +700,8 @@ void main() {
         await open(tester, at: AppPaths.customerOrder(orderOne));
         final AppLocalizations words = l10n(tester);
 
-        expect(find.text(words.requestYours('Kerak emas')), findsOneWidget);
+        expect(find.text(words.requestYouAsked), findsOneWidget);
+        expect(find.text('«Kerak emas»'), findsOneWidget);
         expect(find.text(word(words)), findsOneWidget);
         for (final MapEntry<String, String Function(AppLocalizations)> other
             in states.entries) {
@@ -722,8 +723,8 @@ void main() {
       expect(byKey('order-cancel'), findsNothing);
 
       await tapAndSettle(tester, byKey('order-request-cancel'));
-      expect(find.text(words.orderRequestCancelTitle), findsOneWidget);
-      expect(find.text(words.orderRequestCancelExplained), findsOneWidget);
+      expect(find.text(words.requestSheetTitle), findsOneWidget);
+      expect(find.text(words.requestSheetHint), findsOneWidget);
       await tester.enterText(byKey('cancel-reason'), '   ');
       await tapAndSettle(tester, byKey('cancel-confirm'));
       expect(find.text(words.fieldRequired), findsOneWidget);

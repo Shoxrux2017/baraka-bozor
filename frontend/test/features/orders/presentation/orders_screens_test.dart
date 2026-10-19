@@ -170,11 +170,9 @@ void main() {
     await tapAndSettle(tester, byKey('order-$orderOne'));
 
     expect(byKey('order-status'), findsOneWidget);
-    expect(find.text(l10n(tester).customerStatusNew), findsOneWidget);
-    expect(
-      find.text('${l10n(tester).orderSectionDeliveryWish}: Kechqurun'),
-      findsOneWidget,
-    );
+    expect(find.text(l10n(tester).orderStateAccepted), findsOneWidget);
+    expect(find.text(l10n(tester).checkoutWishLabel), findsOneWidget);
+    expect(find.text('Kechqurun'), findsOneWidget);
     expect(byKey('order-edit'), findsOneWidget);
     expect(byKey('order-cancel'), findsOneWidget);
   });
@@ -241,10 +239,7 @@ void main() {
 
       expect(byKey('order-line-$lineTomato'), findsOneWidget);
       expect(byKey('order-line-$lineBread'), findsNothing);
-      expect(
-        find.text(words.orderLineRemoved(words.removedUnavailable)),
-        findsOneWidget,
-      );
+      expect(find.text(words.lineTagUnavailable), findsOneWidget);
     },
   );
 
@@ -256,7 +251,7 @@ void main() {
     ];
     await open(tester, at: AppPaths.customerOrder(orderOne));
 
-    expect(find.text(l10n(tester).customerStatusShopping), findsOneWidget);
+    expect(find.text(l10n(tester).orderStateShopping), findsOneWidget);
     expect(byKey('order-edit'), findsNothing);
     expect(byKey('order-cancel'), findsNothing);
   });
@@ -277,8 +272,8 @@ void main() {
       await tapAndSettle(tester, byKey('cancel-confirm'));
 
       expect(orders.cancels.single.$2, 'Kerak emas');
-      expect(find.text(l10n(tester).customerStatusCancelled), findsOneWidget);
-      expect(find.text(l10n(tester).totalNothingDue), findsOneWidget);
+      expect(find.text(l10n(tester).orderStateCancelled), findsOneWidget);
+      expect(find.text(l10n(tester).orderNothingDue), findsOneWidget);
       expect(byKey('order-cancel'), findsNothing);
     });
 
@@ -319,7 +314,7 @@ void main() {
           find.text(l10n(tester).errorOrderCancellationNotAllowed),
           findsOneWidget,
         );
-        expect(find.text(l10n(tester).customerStatusShopping), findsOneWidget);
+        expect(find.text(l10n(tester).orderStateShopping), findsOneWidget);
       },
     );
   });
@@ -341,11 +336,8 @@ void main() {
 
         expect(orders.cancels.single.$2, 'Kerak emas');
         expect(byKey('order-cancellation-requested'), findsOneWidget);
-        expect(
-          find.text(l10n(tester).orderCancellationRequested),
-          findsOneWidget,
-        );
-        expect(find.text(l10n(tester).customerStatusShopping), findsOneWidget);
+        expect(find.text(l10n(tester).requestStatusPending), findsOneWidget);
+        expect(find.text(l10n(tester).orderStateShopping), findsOneWidget);
         expect(byKey('failure-message'), findsNothing);
       },
     );
@@ -458,7 +450,7 @@ void main() {
         expect(find.text(l10n(tester).orderEditClosed), findsOneWidget);
         expect(byKey('edit-save'), findsNothing);
         await tapAndSettle(tester, byKey('edit-back-to-order'));
-        expect(find.text(l10n(tester).customerStatusShopping), findsOneWidget);
+        expect(find.text(l10n(tester).orderStateShopping), findsOneWidget);
         expect(byKey('order-edit'), findsNothing);
       },
     );

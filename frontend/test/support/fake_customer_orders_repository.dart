@@ -98,6 +98,10 @@ Map<String, Object?> customerOrderJson({
   String? supportPhone,
   Map<String, Object?>? rating,
   bool canRate = false,
+  String requestReason = 'Kerak emas',
+  Map<String, Object?>? totals,
+  Map<String, Object?>? address,
+  Map<String, Object?>? timestamps,
 }) {
   final bool cancelled = status == 'cancelled';
   final List<Object?> items =
@@ -135,28 +139,30 @@ Map<String, Object?> customerOrderJson({
         : <String, Object?>{
             'id': '0192f0a0-0000-7000-8000-00000000cc01',
             'status': cancellationRequest,
-            'reason': 'Kerak emas',
+            'reason': requestReason,
             'created_at': '2026-09-28T08:00:00Z',
             'resolved_at': cancellationRequest == 'pending'
                 ? null
                 : '2026-09-28T08:30:00Z',
           },
     'items': items,
-    'totals': cancelled
-        ? <String, Object?>{
-            'merchandise_subtotal_uzs': null,
-            'service_fee_uzs': null,
-            'delivery_fee_uzs': null,
-            'total_uzs': null,
-            'total_kind': 'none',
-          }
-        : <String, Object?>{
-            'merchandise_subtotal_uzs': 35600,
-            'service_fee_uzs': 5000,
-            'delivery_fee_uzs': 15000,
-            'total_uzs': 55600,
-            'total_kind': 'estimate',
-          },
+    'totals':
+        totals ??
+        (cancelled
+            ? <String, Object?>{
+                'merchandise_subtotal_uzs': null,
+                'service_fee_uzs': null,
+                'delivery_fee_uzs': null,
+                'total_uzs': null,
+                'total_kind': 'none',
+              }
+            : <String, Object?>{
+                'merchandise_subtotal_uzs': 35600,
+                'service_fee_uzs': 5000,
+                'delivery_fee_uzs': 15000,
+                'total_uzs': 55600,
+                'total_kind': 'estimate',
+              }),
     'address': <String, Object?>{
       'latitude': '41.311081',
       'longitude': '69.240562',
@@ -165,6 +171,7 @@ Map<String, Object?> customerOrderJson({
       'apartment': '34',
       'landmark': null,
       'delivery_note': null,
+      ...?address,
     },
     'cancellation_reason_code': cancelled
         ? (cancellationReason ?? 'customer_cancelled')
@@ -179,6 +186,7 @@ Map<String, Object?> customerOrderJson({
       'on_the_way_at': null,
       'completed_at': null,
       'cancelled_at': cancelled ? '2026-09-28T08:00:00Z' : null,
+      ...?timestamps,
     },
   };
 }
