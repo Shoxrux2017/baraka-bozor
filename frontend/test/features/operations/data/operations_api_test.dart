@@ -82,6 +82,25 @@ void main() {
       },
     );
 
+    test(
+      'an erased order with a cancellation request reads without its reason',
+      () {
+        final BoardOrder order = OperationsApi.parseOrder(
+          orderJson(
+            erased: true,
+            status: 'cancelled',
+            cancellationRequests: <Object?>[
+              cancellationRequestJson(status: 'approved', erased: true),
+            ],
+          ),
+        );
+
+        expect(order.customerErased, isTrue);
+        expect(order.cancellationRequests.single.reason, isNull);
+        expect(order.cancellationRequests.single.requestedBy.fullName, isNull);
+      },
+    );
+
     test('an erased flag that disagrees with the data is refused', () {
       final Map<String, Object?> row = rowJson()..['customer_erased'] = true;
       expect(() => OperationsApi.parseRow(row), throwsFormatException);

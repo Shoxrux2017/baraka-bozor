@@ -256,6 +256,7 @@
   "customerOrders": "Заказов: {count}",
   "customerUnfinished": "Незавершённый заказ № {number}",
   "customerErase": "Удалить аккаунт",
+  "customerEraseBlocked": "Заблокирован — удалить нельзя",
   "customerEraseTitle": "Удалить аккаунт покупателя?",
   "customerEraseBody": "Сотрём имя, номер, адреса, избранное и корзину. История заказов останется без имени и телефона.",
   "customerEraseConfirm": "Удалить",

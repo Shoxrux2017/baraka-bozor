@@ -1280,6 +1280,12 @@ abstract class AppLocalizations {
   /// **'Akkauntni o\'chirish'**
   String get customerErase;
 
+  /// No description provided for @customerEraseBlocked.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bloklangan — o\'chirib bo\'lmaydi'**
+  String get customerEraseBlocked;
+
   /// No description provided for @customerEraseTitle.
   ///
   /// In uz, this message translates to:

@@ -602,7 +602,7 @@ final class BoardCancellationRequest {
   final String id;
   final CancellationRequestOrigin origin;
   final CancellationRequestStatus status;
-  final String reason;
+  final String? reason;
   final PersonRef requestedBy;
   final DateTime createdAt;
   final PersonRef? resolvedBy;

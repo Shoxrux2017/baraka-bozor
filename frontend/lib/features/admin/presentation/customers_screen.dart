@@ -198,10 +198,13 @@ class _CustomerCard extends StatelessWidget {
             Text(l10n.customerOrders(customer.orderCount)),
             if (unfinished != null)
               Text(l10n.customerUnfinished('${unfinished.number}')),
+            if (customer.isBlocked) Text(l10n.customerEraseBlocked),
             const SizedBox(height: 12),
             OutlinedButton(
               key: ValueKey<String>('customer-erase-${customer.id}'),
-              onPressed: unfinished != null || busy ? null : onErase,
+              onPressed: unfinished != null || customer.isBlocked || busy
+                  ? null
+                  : onErase,
               child: Text(l10n.customerErase),
             ),
           ],

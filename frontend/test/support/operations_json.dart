@@ -243,14 +243,15 @@ Map<String, Object?> cancellationRequestJson({
   String id = requestId,
   String status = 'pending',
   String? note,
+  bool erased = false,
 }) => <String, Object?>{
   'id': id,
   'origin': 'customer',
   'status': status,
-  'reason': 'Rejalar o\'zgardi',
+  'reason': erased ? null : 'Rejalar o\'zgardi',
   'requested_by': <String, Object?>{
     'id': customerId,
-    'full_name': 'Aziza Karimova',
+    'full_name': erased ? null : 'Aziza Karimova',
   },
   'created_at': '2026-09-27T07:45:00Z',
   'resolved_by': status == 'approved' || status == 'rejected'

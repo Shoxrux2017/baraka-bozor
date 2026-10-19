@@ -122,6 +122,19 @@ void main() {
     expect(enabled(tester, 'customer-erase-$idB'), isFalse);
   });
 
+  testWidgets('a blocked account cannot be erased and says why', (
+    WidgetTester tester,
+  ) async {
+    api.byPhone[phone] = <AdminCustomer>[
+      FakeAdminCustomersApi.customer(id: idA, status: 'blocked'),
+    ];
+    await openCustomers(tester);
+    await search(tester, phone);
+
+    expect(enabled(tester, 'customer-erase-$idA'), isFalse);
+    expect(find.text('Заблокирован — удалить нельзя'), findsOneWidget);
+  });
+
   testWidgets('erasing asks, sends once, removes the card and confirms', (
     WidgetTester tester,
   ) async {

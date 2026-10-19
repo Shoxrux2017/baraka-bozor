@@ -815,7 +815,7 @@ class OperationsApi {
       id: json.uuid('id'),
       origin: json.choice('origin', CancellationRequestOrigin.tryParse),
       status: json.choice('status', CancellationRequestStatus.tryParse),
-      reason: json.string('reason'),
+      reason: json.nullableString('reason'),
       requestedBy: _person(json.member('requested_by'), 'requested_by'),
       createdAt: json.instant('created_at'),
       resolvedBy: resolvedBy == null

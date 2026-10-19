@@ -207,7 +207,11 @@ class CancellationRequestTile extends ConsumerWidget {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(l10n.requestReason(request.reason)),
+          Text(
+            request.reason == null
+                ? l10n.orderCustomerErased
+                : l10n.requestReason(request.reason!),
+          ),
           Text(
             l10n.requestFiledBy(
               nameOf(l10n, request.requestedBy),
