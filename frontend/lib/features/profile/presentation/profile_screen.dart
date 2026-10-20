@@ -290,9 +290,13 @@ class _ProfileRow extends StatelessWidget {
                 ),
               ),
             ),
+            // The value keeps its own width, so it and the chevron end on
+            // the right edge; a Flexible would take half the free space and
+            // leave a gap after a short value.
             if (value != null) ...<Widget>[
               const SizedBox(width: 8),
-              Flexible(
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 160),
                 child: Text(
                   value!,
                   maxLines: 1,

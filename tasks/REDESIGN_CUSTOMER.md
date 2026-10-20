@@ -10,7 +10,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 | 4 | Корзина и адрес | Merged (PR #94, #95) |
 | 5 | Оформление | Merged (PR #98) |
 | 6 | Заказы | Merged (PR #99, #100) |
-| 7 | Профиль | In Progress (7a merged PR #101, 7b screens) |
+| 7 | Профиль | Merged (PR #101, #102) |
 
 ## Risks
 
@@ -31,6 +31,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - Stage 7, the code delivery message names no purpose. Ruling: the Wave 4 gateway task must word the deletion code differently from a login code.
 - Stage 7, erasure of a blocked Customer. Ruling: the Owner decided (`DL-95`): an Admin erases it like any other account and a one-way fingerprint of its phone stays on a block list, so the number cannot sign up again.
 - Stage 7b, a blocked number that the operator later gives to someone else stays refused; lifting a fingerprint needs an Admin tool that does not exist yet.
+- Stage 7b walk: the language chosen on the sign-in screen never reaches the server, so a new Customer's `preferred_language` stays `uz` until it is changed in the profile, and push texts would arrive in Uzbek. Found outside the stage (the session reports a language only on a change). Ruling: the Wave 4 push task reports the chosen language when a new Customer finishes the name step.
 
 ## Part 1 history (design 4a, `DL-74`, `DL-75`)
 

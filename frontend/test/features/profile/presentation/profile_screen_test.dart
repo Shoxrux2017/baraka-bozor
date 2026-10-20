@@ -139,6 +139,27 @@ void main() {
       expect(find.text('Til'), findsOneWidget);
     });
 
+    testWidgets('values and chevrons sit on the right edge on a phone', (
+      tester,
+    ) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(360, 2000));
+
+      double chevronRight(String row) => tester
+          .getTopRight(
+            find.descendant(
+              of: byKey(row),
+              matching: find.byIcon(Icons.chevron_right),
+            ),
+          )
+          .dx;
+      expect(chevronRight('profile-language'), chevronRight('profile-edit'));
+      expect(
+        tester.getTopRight(find.text('+998 71 200 00 00')).dx,
+        tester.getTopRight(byKey('profile-support')).dx,
+      );
+    });
+
     testWidgets('test_the_legal_rows_follow_the_documents', (tester) async {
       profile.current = named('Дилноза Каримова');
       await openProfile(tester);
