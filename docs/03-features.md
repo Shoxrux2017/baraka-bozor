@@ -26,6 +26,8 @@ Supporting features: the Admin and Operator web panel, notifications, business s
 
 View and edit `full_name` and `preferred_language` (`uz` or `ru`). Checkout requires a non-empty name. The phone is the login identity and is not edited here.
 
+The profile tab (kit drawings 32, 32а, 32б; `DL-96` (6)) has a green header with the initials, the name (or "Как вас зовут?") and the phone, then the rows: the name editor, the addresses, the language (chosen in a sheet), support (only with a support phone; a tap dials it), the privacy policy and the terms (each only while published) and the deletion of the account (hidden while the phone also holds a staff session); "Выйти" closes the Customer session. A profile that fails to load keeps the retry, the language row and "Выйти".
+
 The terms of use and the privacy policy are server documents in Uzbek and Russian, shown in the profile and at public addresses (`GET /legal`, `GET /legal/{kind}`); the Admin edits them in the panel, and a document with no text is hidden (`DL-93` (1), `DL-94` (1)).
 
 ## 4. Delivery Addresses

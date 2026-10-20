@@ -34,7 +34,7 @@ The rules below apply to every staff account, whichever surface it signs in on. 
 
 ## 3. Phone Uniqueness by Account Family
 
-At most one active Customer account and at most one active Staff account per phone number. A blocked account keeps its phone; an active account of the same family cannot be created or unblocked while another active account of that family holds the number. One person may hold an active Customer account and an active Staff account on one number; the two never collide because they authenticate on different endpoints.
+At most one active Customer account and at most one active Staff account per phone number. A blocked account keeps its phone until an Admin erases it; the erased account leaves only a one-way fingerprint of the phone on a block list, and that number never signs up again (`DL-95`). An active account of the same family cannot be created or unblocked while another active account of that family holds the number. One person may hold an active Customer account and an active Staff account on one number; the two never collide because they authenticate on different endpoints.
 
 ## 4. Customer
 

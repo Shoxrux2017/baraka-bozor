@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Customer;
 
+use App\Models\BusinessSettings;
 use App\Models\Enums\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -30,7 +32,22 @@ final class ProfileApiTest extends TestCase
             'phone' => '+998901112233',
             'full_name' => null,
             'preferred_language' => 'uz',
+            'support_phone' => null,
         ], $data);
+    }
+
+    public function test_the_profile_answers_the_support_phone(): void
+    {
+        $customer = User::factory()->customer()->create();
+
+        $this->as($customer)->getJson(self::URL)->assertOk()->assertJsonPath('data.support_phone', null);
+
+        DB::table('business_settings')->where('id', BusinessSettings::SINGLETON_ID)->update(['support_phone' => '+998712000000']);
+
+        $this->as($customer)->getJson(self::URL)->assertOk()->assertJsonPath('data.support_phone', '+998712000000');
+        $this->as($customer)->patchJson(self::URL, ['full_name' => 'Aziza'])
+            ->assertOk()
+            ->assertJsonPath('data.support_phone', '+998712000000');
     }
 
     public function test_the_name_and_the_language_are_updated_and_the_name_is_trimmed(): void

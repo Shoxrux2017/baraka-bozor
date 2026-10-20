@@ -10,6 +10,7 @@ use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Models\Order;
 use App\Models\User;
+use App\Modules\Accounts\BlockedPhones;
 use App\Modules\Accounts\UnfinishedOrders;
 use App\Modules\Orders\CustomerCart;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,7 @@ final class EraseCustomer
     private const NOTE_KEYS = ['delivery_time_note', 'customer_note'];
 
     /**
-     * @throws ApiException `account_has_unfinished_orders` or `account_blocked` (409), or not found
+     * @throws ApiException `account_has_unfinished_orders` (409), or not found
      *                      for an account that is not an erasable Customer
      */
     public function erase(User $customer, User $actor): void
@@ -48,12 +49,6 @@ final class EraseCustomer
                 throw ApiException::notFound();
             }
 
-            // Erasing a blocked account would free its phone and let the block
-            // be escaped with one sign-in code (`BR-ROLE-010`).
-            if ($locked->status === UserStatus::Blocked) {
-                throw ApiException::conflict('account_blocked');
-            }
-
             $unfinished = UnfinishedOrders::oldest($locked);
 
             if ($unfinished !== null) {
@@ -61,6 +56,12 @@ final class EraseCustomer
                     'order_id' => $unfinished->id,
                     'order_number' => $unfinished->order_number,
                 ]);
+            }
+
+            // A blocked account's number stays refused after the erasure
+            // (`DL-95`): only its fingerprint is kept, in this transaction.
+            if ($locked->status === UserStatus::Blocked && $locked->phone !== null) {
+                BlockedPhones::block($locked->phone, $locked, $actor);
             }
 
             $this->eraseRows($locked, $actor);

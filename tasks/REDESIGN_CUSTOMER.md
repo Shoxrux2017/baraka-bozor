@@ -10,13 +10,14 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 | 4 | Корзина и адрес | Merged (PR #94, #95) |
 | 5 | Оформление | Merged (PR #98) |
 | 6 | Заказы | Merged (PR #99, #100) |
-| 7 | Профиль | In Progress (7a server and panel, 7b screens) |
+| 7 | Профиль | Merged (PR #101, #102) |
 
 ## Risks
 
 - White text on the primary `#5AC268` has a contrast of 2.4:1, below WCAG AA. Kept as the kit's look.
 - Real Telegram delivery arrives in Wave 4. Until then only the configured test phones can sign in, staff included.
-- A blocked Customer account would also stop that person's staff sign-in on the phone (verify refuses before the step). Latent: no API blocks a Customer today.
+- A blocked Customer account would also stop that person's staff sign-in on the phone (verify refuses before the step). Latent: no API blocks a Customer today. After an erasure of a blocked Customer (`DL-95`) the lockout is permanent: no Admin tool lifts a fingerprint yet.
+- Stage 7b, the Wave 4 deployment sets `PHONE_FINGERPRINT_KEY` (base64, 32 bytes) and never removes a key from `PHONE_FINGERPRINT_PREVIOUS_KEYS`.
 - Wave 3 walkthrough compiled, not run, after the staff sign-in change - run it before Wave 4 closes.
 - The kit home's header (mode bar, address and cart, search) scrolls inside 60% of the screen height above the keyboard; with two sessions at 320×640 and text ×2 it takes about that much and the sections below get a strip of about 150 px (they scroll). Only at that extreme size.
 - Stage 4a: the cart's footer is the screen's bottom bar, so a snackbar rises above the button; the lines, the notice, the row, the amounts and the address scroll above it. At 320×640 with text ×2 a single large line leaves little room above the footer, and the rest scrolls.
@@ -28,7 +29,9 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - Stage 5, the checkout shows the service fee without "≈" (drawing 25); the preview carries no fee kind. A `service_fee_kind` in the checkout preview would let it match the cart's "≈" for a percentage fee.
 - Stage 7, in-flight Customer writes racing the erasure: a profile, address, favourite or cart request, or a sign-in, that passed the auth check before the erasure committed can still write to the deleted row. Ruling: the app cannot send them while the delete confirmation is open, so it is left; fix later by locking the user row in those writes.
 - Stage 7, the code delivery message names no purpose. Ruling: the Wave 4 gateway task must word the deletion code differently from a login code.
-- Stage 7, Owner question pending: erasure of a blocked Customer. Ruling: until the Owner answers, a blocked account is not erased (`409 account_blocked`, `DL-94` item 5), because erasing it would free the phone and let the block be escaped.
+- Stage 7, erasure of a blocked Customer. Ruling: the Owner decided (`DL-95`): an Admin erases it like any other account and a one-way fingerprint of its phone stays on a block list, so the number cannot sign up again.
+- Stage 7b, a blocked number that the operator later gives to someone else stays refused; lifting a fingerprint needs an Admin tool that does not exist yet.
+- Stage 7b walk: the language chosen on the sign-in screen never reaches the server, so a new Customer's `preferred_language` stays `uz` until it is changed in the profile, and push texts would arrive in Uzbek. Found outside the stage (the session reports a language only on a change). Ruling: the Wave 4 push task reports the chosen language when a new Customer finishes the name step.
 
 ## Part 1 history (design 4a, `DL-74`, `DL-75`)
 
@@ -52,3 +55,5 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 - Login lock (`DL-87`, `DL-88`), review P3: the countdown subtracts per tick, so it runs long while the app is suspended (iOS). Ruling: Android keeps Dart timers running and the server stays authoritative; fix with an injectable time source when iOS ships.
 - Login lock re-review, P3: on the phone screen, typing another number and then the locked one back after the lock has ended may announce "Запросите новый код" a second time. Ruling: it takes deliberate editing, says nothing false, kept.
 - Stage 6a re-review, out of scope: `ReorderRaceTest` deletes its committed rows in `tearDown` and swallows a `QueryException`, so a table added later that references orders could leave rows behind unseen. Ruling: matches the other race tests' cleanup; revisit if a race test leaves rows.
+- Stage 7b re-review, P3: a malformed fingerprint key is an argument of the frame that throws, so a stack trace could show its first characters where PHP keeps exception arguments. Ruling: `docker/php.ini` sets `zend.exception_ignore_args = On`, the image the deployment uses; only a malformed key throws, and it fails closed.
+- Stage 7b review, P3: `doneButton` is a new generic key though `staffDone` and `quantitySheetDone` say the same. Ruling: a generic key reads better than reusing feature-named ones, kept.

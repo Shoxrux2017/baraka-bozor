@@ -11,6 +11,7 @@ import 'package:baraka_bozor/core/platform/clock.dart';
 import 'package:baraka_bozor/core/platform/map_links.dart';
 import 'package:baraka_bozor/core/platform/phone_calls.dart';
 import 'package:baraka_bozor/features/courier/application/courier_orders_controllers.dart';
+import 'package:baraka_bozor/features/legal/application/legal_providers.dart';
 import 'package:baraka_bozor/features/operations/application/board_controllers.dart';
 import 'package:baraka_bozor/features/shopper/application/shopper_orders_controllers.dart';
 import 'package:baraka_bozor/main.dart';
@@ -26,6 +27,7 @@ import 'fake_courier_orders_repository.dart';
 import 'fake_customer_orders_repository.dart';
 import 'fake_customer_repositories.dart';
 import 'fake_favorites_repository.dart';
+import 'fake_legal_repository.dart';
 import 'fake_operations_repository.dart';
 import 'fake_shopper_orders_repository.dart';
 import 'in_memory_stores.dart';
@@ -46,6 +48,7 @@ Widget appUnderTest({
   FakeCustomerOrdersRepository? orders,
   FakeShopperOrdersRepository? shopper,
   FakeCourierOrdersRepository? courier,
+  FakeLegalRepository? legal,
   FakePhoneCalls? phoneCalls,
   FakeMapLinks? maps,
   InMemoryPreferenceStore? preferences,
@@ -92,6 +95,7 @@ Widget appUnderTest({
       courierOrdersRepositoryProvider.overrideWithValue(
         courier ?? FakeCourierOrdersRepository(),
       ),
+      legalRepositoryProvider.overrideWithValue(legal ?? FakeLegalRepository()),
       phoneCallsProvider.overrideWithValue(phoneCalls ?? FakePhoneCalls()),
       mapLinksProvider.overrideWithValue(maps ?? FakeMapLinks()),
       if (clock != null) clockProvider.overrideWithValue(clock),

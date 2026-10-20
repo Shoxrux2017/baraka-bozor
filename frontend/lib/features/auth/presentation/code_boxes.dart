@@ -22,6 +22,7 @@ class CodeBoxes extends StatefulWidget {
     required this.invalidMessage,
     this.onSubmitted,
     this.enabled = true,
+    this.accent = KitColors.primary,
     super.key,
   });
 
@@ -31,6 +32,9 @@ class CodeBoxes extends StatefulWidget {
 
   /// Off while the phone is locked: nothing can be typed or submitted.
   final bool enabled;
+
+  /// The colour of the box in focus, the filled ones and the caret.
+  final Color accent;
 
   @override
   State<CodeBoxes> createState() => _CodeBoxesState();
@@ -108,6 +112,7 @@ class _CodeBoxesState extends State<CodeBoxes> {
                                   i < code.length ||
                                   (_focus.hasFocus && i == code.length),
                               failed: field.hasError,
+                              accent: widget.accent,
                             ),
                           ],
                         ],
@@ -227,6 +232,7 @@ class _Box extends StatelessWidget {
     required this.caret,
     required this.highlighted,
     required this.failed,
+    required this.accent,
   });
 
   final double width;
@@ -235,6 +241,7 @@ class _Box extends StatelessWidget {
   final bool caret;
   final bool highlighted;
   final bool failed;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
@@ -249,7 +256,7 @@ class _Box extends StatelessWidget {
           color: failed
               ? KitColors.danger
               : highlighted
-              ? KitColors.primary
+              ? accent
               : KitColors.line,
           width: highlighted ? 1.5 : 1,
         ),
@@ -269,7 +276,7 @@ class _Box extends StatelessWidget {
               ),
             )
           : caret
-          ? Container(width: 2, height: 26, color: KitColors.primary)
+          ? Container(width: 2, height: 26, color: accent)
           : null,
     );
   }

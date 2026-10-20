@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show NotifierProviderFamily;
 
 import '../../../app/providers.dart';
+import '../../../core/legal/legal_document_kind.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/session/staff_account.dart';

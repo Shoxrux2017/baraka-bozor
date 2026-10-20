@@ -74,6 +74,30 @@ void main() {
     }
   });
 
+  test('the support phone is read, absent or null is none', () {
+    final Map<String, Object?> json = <String, Object?>{
+      'id': customerId,
+      'phone': '+998901234567',
+      'full_name': null,
+      'preferred_language': 'uz',
+    };
+    expect(
+      ProfileRepositoryImpl.parse(<String, Object?>{
+        ...json,
+        'support_phone': '+998712000000',
+      }).supportPhone,
+      '+998712000000',
+    );
+    expect(
+      ProfileRepositoryImpl.parse(<String, Object?>{
+        ...json,
+        'support_phone': null,
+      }).supportPhone,
+      isNull,
+    );
+    expect(ProfileRepositoryImpl.parse(json).supportPhone, isNull);
+  });
+
   test('an edit sends what changed, and the point only as a pair', () {
     final Address address = AddressesRepositoryImpl.parse(addressJson());
     final AddressDraft same = AddressDraft.fromAddress(address);

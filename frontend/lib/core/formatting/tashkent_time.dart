@@ -9,6 +9,8 @@ abstract final class TashkentTime {
 
   static final DateFormat _dateTime = DateFormat('dd.MM.yyyy HH:mm');
 
+  static final DateFormat _date = DateFormat('dd.MM.yyyy');
+
   static final DateFormat _time = DateFormat('HH:mm');
 
   /// The time of day of [instant] in Tashkent: `10:00`.
@@ -18,4 +20,8 @@ abstract final class TashkentTime {
   /// [instant] as a Tashkent wall-clock reading: `26.09.2026 10:00`.
   static String format(DateTime instant) =>
       _dateTime.format(instant.toUtc().add(offset));
+
+  /// The Tashkent day of [instant]: `19.10.2026`.
+  static String date(DateTime instant) =>
+      _date.format(instant.toUtc().add(offset));
 }

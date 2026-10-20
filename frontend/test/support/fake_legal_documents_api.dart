@@ -1,3 +1,4 @@
+import 'package:baraka_bozor/core/legal/legal_document_kind.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/features/admin/data/legal_documents_api.dart';

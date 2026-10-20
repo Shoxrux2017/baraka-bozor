@@ -35,6 +35,9 @@ abstract final class KitColors {
   /// Errors and destructive actions.
   static const Color danger = Color(0xFFF04438);
 
+  /// Faint red wash behind a destructive notice.
+  static const Color dangerWash = Color(0xFFFDECEB);
+
   /// Warnings: the icon of a notice that asks for the Customer's own action.
   static const Color warning = Color(0xFFE8A317);
 

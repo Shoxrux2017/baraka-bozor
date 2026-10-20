@@ -1280,11 +1280,11 @@ abstract class AppLocalizations {
   /// **'Akkauntni o\'chirish'**
   String get customerErase;
 
-  /// No description provided for @customerEraseBlocked.
+  /// No description provided for @customerEraseBlockedNote.
   ///
   /// In uz, this message translates to:
-  /// **'Bloklangan — o\'chirib bo\'lmaydi'**
-  String get customerEraseBlocked;
+  /// **'Akkaunt bloklangan: raqam qora ro\'yxatda qoladi, u bilan qayta ro\'yxatdan o\'tib bo\'lmaydi.'**
+  String get customerEraseBlockedNote;
 
   /// No description provided for @customerEraseTitle.
   ///
@@ -1610,23 +1610,83 @@ abstract class AppLocalizations {
   /// **'Profil'**
   String get profileTitle;
 
+  /// No description provided for @profileNoName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismingiz nima?'**
+  String get profileNoName;
+
+  /// No description provided for @profileEdit.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profilni tahrirlash'**
+  String get profileEdit;
+
+  /// No description provided for @profileSetName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismni kiritish'**
+  String get profileSetName;
+
+  /// No description provided for @profileLanguage.
+  ///
+  /// In uz, this message translates to:
+  /// **'Til'**
+  String get profileLanguage;
+
+  /// No description provided for @profileSupport.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'llab-quvvatlash'**
+  String get profileSupport;
+
+  /// No description provided for @profilePrivacy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Maxfiylik'**
+  String get profilePrivacy;
+
   /// No description provided for @profileName.
   ///
   /// In uz, this message translates to:
   /// **'Ismingiz'**
   String get profileName;
 
-  /// No description provided for @profileNameNeeded.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtma berish uchun ismingizni kiriting'**
-  String get profileNameNeeded;
-
   /// No description provided for @profileSaved.
   ///
   /// In uz, this message translates to:
   /// **'Ism saqlandi'**
   String get profileSaved;
+
+  /// No description provided for @profileEditTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Profilni tahrirlash'**
+  String get profileEditTitle;
+
+  /// No description provided for @profileNameLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism'**
+  String get profileNameLabel;
+
+  /// No description provided for @profilePhoneLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefon raqami'**
+  String get profilePhoneLabel;
+
+  /// No description provided for @profilePhoneLocked.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqam — ilovaga kirishingiz, uni o\'zgartirib bo\'lmaydi.'**
+  String get profilePhoneLocked;
+
+  /// No description provided for @profileNameRequired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ismni kiriting — usiz buyurtma berib bo\'lmaydi.'**
+  String get profileNameRequired;
 
   /// No description provided for @addressesTitle.
   ///
@@ -4754,11 +4814,47 @@ abstract class AppLocalizations {
   /// **'Kod Telegramga keladi'**
   String get codeComesInTelegram;
 
-  /// No description provided for @termsLine.
+  /// No description provided for @legalEdition.
   ///
   /// In uz, this message translates to:
-  /// **'Davom etib, siz foydalanish shartlariga rozilik bildirasiz'**
-  String get termsLine;
+  /// **'Tahrir: {date}'**
+  String legalEdition(String date);
+
+  /// No description provided for @legalNotPublishedYet.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hujjat hali e\'lon qilinmagan.'**
+  String get legalNotPublishedYet;
+
+  /// No description provided for @consentAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davom etib, siz {terms} va {privacy}ni qabul qilasiz'**
+  String consentAll(String terms, String privacy);
+
+  /// No description provided for @consentTermsOnly.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davom etib, siz {terms}ni qabul qilasiz'**
+  String consentTermsOnly(String terms);
+
+  /// No description provided for @consentPrivacyOnly.
+  ///
+  /// In uz, this message translates to:
+  /// **'Davom etib, siz {privacy}ni qabul qilasiz'**
+  String consentPrivacyOnly(String privacy);
+
+  /// No description provided for @consentTermsLink.
+  ///
+  /// In uz, this message translates to:
+  /// **'Foydalanish shartlari'**
+  String get consentTermsLink;
+
+  /// No description provided for @consentPrivacyLink.
+  ///
+  /// In uz, this message translates to:
+  /// **'Maxfiylik siyosati'**
+  String get consentPrivacyLink;
 
   /// No description provided for @confirmPhoneTitle.
   ///
@@ -5929,6 +6025,120 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o\'tdi.'**
   String get rateWindowClosed;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntni o\'chirasizmi?'**
+  String get deleteAccountTitle;
+
+  /// No description provided for @deleteErasedHeading.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chiriladi'**
+  String get deleteErasedHeading;
+
+  /// No description provided for @deleteErasedName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ism va telefon raqami'**
+  String get deleteErasedName;
+
+  /// No description provided for @deleteErasedAddresses.
+  ///
+  /// In uz, this message translates to:
+  /// **'Manzillar'**
+  String get deleteErasedAddresses;
+
+  /// No description provided for @deleteErasedFavorites.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilar va savat'**
+  String get deleteErasedFavorites;
+
+  /// No description provided for @deleteKeptHeading.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qoladi'**
+  String get deleteKeptHeading;
+
+  /// No description provided for @deleteKeptOrders.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar tarixi — ism va telefonsiz, hisob uchun'**
+  String get deleteKeptOrders;
+
+  /// No description provided for @deleteNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntni qaytarib bo\'lmaydi. Bu raqam bilan yana kirish mumkin — yangi xaridor sifatida.'**
+  String get deleteNote;
+
+  /// No description provided for @deleteConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chirish'**
+  String get deleteConfirm;
+
+  /// No description provided for @deleteBlockedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir o\'chirib bo\'lmaydi'**
+  String get deleteBlockedTitle;
+
+  /// No description provided for @deleteBlockedBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'№ {number} buyurtma hali tugallanmagan. Akkauntni buyurtma yetkazilgan yoki bekor qilingandan keyin o\'chirish mumkin.'**
+  String deleteBlockedBody(int number);
+
+  /// No description provided for @understoodButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tushunarli'**
+  String get understoodButton;
+
+  /// No description provided for @toOrderButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmaga'**
+  String get toOrderButton;
+
+  /// No description provided for @deleteCodeTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntni o\'chirish'**
+  String get deleteCodeTitle;
+
+  /// No description provided for @deleteCodeHeading.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chirishni tasdiqlang'**
+  String get deleteCodeHeading;
+
+  /// No description provided for @profileDeleteAccount.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkauntni o\'chirish'**
+  String get profileDeleteAccount;
+
+  /// No description provided for @deletedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Akkaunt o\'chirildi'**
+  String get deletedTitle;
+
+  /// No description provided for @deletedBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ma\'lumotlaringiz o\'chirildi.\nBiz bilan bo\'lganingiz uchun rahmat.'**
+  String get deletedBody;
+
+  /// No description provided for @doneButton.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor'**
+  String get doneButton;
 }
 
 class _AppLocalizationsDelegate

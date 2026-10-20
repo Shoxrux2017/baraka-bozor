@@ -6,11 +6,15 @@ import 'package:baraka_bozor/features/profile/domain/profile.dart';
 
 /// The Customer's profile in memory.
 class FakeProfileRepository implements ProfileRepository {
-  CustomerProfile current = const CustomerProfile(
-    id: 'c',
-    phone: '+998901234567',
-    fullName: null,
-  );
+  FakeProfileRepository({String? supportPhone})
+    : current = CustomerProfile(
+        id: 'c',
+        phone: '+998901234567',
+        fullName: null,
+        supportPhone: supportPhone,
+      );
+
+  CustomerProfile current;
   final List<String> renames = <String>[];
   ApiFailure? renameFailure;
 
@@ -47,6 +51,7 @@ class FakeProfileRepository implements ProfileRepository {
       id: current.id,
       phone: current.phone,
       fullName: fullName,
+      supportPhone: current.supportPhone,
     );
     return current;
   }

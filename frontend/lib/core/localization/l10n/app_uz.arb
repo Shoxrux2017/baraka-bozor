@@ -280,7 +280,7 @@
     }
   },
   "customerErase": "Akkauntni o'chirish",
-  "customerEraseBlocked": "Bloklangan — o'chirib bo'lmaydi",
+  "customerEraseBlockedNote": "Akkaunt bloklangan: raqam qora ro'yxatda qoladi, u bilan qayta ro'yxatdan o'tib bo'lmaydi.",
   "customerEraseTitle": "Xaridor akkauntini o'chirasizmi?",
   "customerEraseBody": "Ism, raqam, manzillar, sevimlilar va savat o'chiriladi. Buyurtmalar tarixi ism va telefonsiz qoladi.",
   "customerEraseConfirm": "O'chirish",
@@ -366,9 +366,19 @@
   "homeNavHome": "Bosh sahifa",
   "homeNavOrders": "Buyurtmalar",
   "profileTitle": "Profil",
+  "profileNoName": "Ismingiz nima?",
+  "profileEdit": "Profilni tahrirlash",
+  "profileSetName": "Ismni kiritish",
+  "profileLanguage": "Til",
+  "profileSupport": "Qo'llab-quvvatlash",
+  "profilePrivacy": "Maxfiylik",
   "profileName": "Ismingiz",
-  "profileNameNeeded": "Buyurtma berish uchun ismingizni kiriting",
   "profileSaved": "Ism saqlandi",
+  "profileEditTitle": "Profilni tahrirlash",
+  "profileNameLabel": "Ism",
+  "profilePhoneLabel": "Telefon raqami",
+  "profilePhoneLocked": "Raqam — ilovaga kirishingiz, uni o'zgartirib bo'lmaydi.",
+  "profileNameRequired": "Ismni kiriting — usiz buyurtma berib bo'lmaydi.",
   "addressesTitle": "Manzillarim",
   "addressNone": "Hali manzil qo'shilmagan",
   "addressNew": "Yangi manzil",
@@ -1758,7 +1768,44 @@
   "errorCashAmountMismatch": "Summa olinishi kerak bo'lgan summaga mos emas.",
   "getCodeButton": "Kod olish",
   "codeComesInTelegram": "Kod Telegramga keladi",
-  "termsLine": "Davom etib, siz foydalanish shartlariga rozilik bildirasiz",
+  "legalEdition": "Tahrir: {date}",
+  "@legalEdition": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "legalNotPublishedYet": "Hujjat hali e'lon qilinmagan.",
+  "consentAll": "Davom etib, siz {terms} va {privacy}ni qabul qilasiz",
+  "@consentAll": {
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      },
+      "privacy": {
+        "type": "String"
+      }
+    }
+  },
+  "consentTermsOnly": "Davom etib, siz {terms}ni qabul qilasiz",
+  "@consentTermsOnly": {
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      }
+    }
+  },
+  "consentPrivacyOnly": "Davom etib, siz {privacy}ni qabul qilasiz",
+  "@consentPrivacyOnly": {
+    "placeholders": {
+      "privacy": {
+        "type": "String"
+      }
+    }
+  },
+  "consentTermsLink": "Foydalanish shartlari",
+  "consentPrivacyLink": "Maxfiylik siyosati",
   "confirmPhoneTitle": "Raqamni tekshiring",
   "confirmPhoneBody": "Unga Telegramda kod yuboramiz",
   "editButton": "O'zgartirish",
@@ -2243,5 +2290,31 @@
   "ratedTitle": "Sizning bahoingiz",
   "ratedThanksLow": "Rahmat! Operator vaziyatni aniqlash uchun siz bilan bog'lanadi.",
   "ratedThanks": "Baho uchun rahmat!",
-  "rateWindowClosed": "Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o'tdi."
+  "rateWindowClosed": "Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o'tdi.",
+  "deleteAccountTitle": "Akkauntni o'chirasizmi?",
+  "deleteErasedHeading": "O'chiriladi",
+  "deleteErasedName": "Ism va telefon raqami",
+  "deleteErasedAddresses": "Manzillar",
+  "deleteErasedFavorites": "Sevimlilar va savat",
+  "deleteKeptHeading": "Qoladi",
+  "deleteKeptOrders": "Buyurtmalar tarixi — ism va telefonsiz, hisob uchun",
+  "deleteNote": "Akkauntni qaytarib bo'lmaydi. Bu raqam bilan yana kirish mumkin — yangi xaridor sifatida.",
+  "deleteConfirm": "O'chirish",
+  "deleteBlockedTitle": "Hozir o'chirib bo'lmaydi",
+  "deleteBlockedBody": "№ {number} buyurtma hali tugallanmagan. Akkauntni buyurtma yetkazilgan yoki bekor qilingandan keyin o'chirish mumkin.",
+  "@deleteBlockedBody": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "understoodButton": "Tushunarli",
+  "toOrderButton": "Buyurtmaga",
+  "deleteCodeTitle": "Akkauntni o'chirish",
+  "deleteCodeHeading": "O'chirishni tasdiqlang",
+  "profileDeleteAccount": "Akkauntni o'chirish",
+  "deletedTitle": "Akkaunt o'chirildi",
+  "deletedBody": "Ma'lumotlaringiz o'chirildi.\nBiz bilan bo'lganingiz uchun rahmat.",
+  "doneButton": "Tayyor"
 }

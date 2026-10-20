@@ -60,7 +60,7 @@ Resolves the active Customer account or creates one when none is active, records
 {"data":{"token":"...","user":{"id":"...","role":"customer","phone":"+998901234567","full_name":null,"status":"active","must_change_password":false,"preferred_language":"uz"},"staff_step":null}}
 ```
 
-`staff_step` is `null`, or `{"token":"<64 characters>","expires_at":"2026-10-15T09:05:00Z"}` when the phone also holds an active or blocked Shopper or Courier account (`DL-77`). Codes: `code_invalid`, `code_expired`, `code_attempts_exhausted`, `account_blocked` (evaluated only after the code is valid, `401`). Never issues a staff session; for a phone that also holds a Shopper or Courier account it returns a single-use `staff_step` (5 minutes, 5 wrong passwords) for `POST /auth/staff/step`, and a new verification closes the earlier open step. A configured test phone accepts the configured fixed code. The third wrong code answers `429 code_locked` with `Retry-After: 60` and locks the phone; while locked, verify and request answer `code_locked` with the seconds left (`DL-87`).
+`staff_step` is `null`, or `{"token":"<64 characters>","expires_at":"2026-10-15T09:05:00Z"}` when the phone also holds an active or blocked Shopper or Courier account (`DL-77`). Codes: `code_invalid`, `code_expired`, `code_attempts_exhausted`, `account_blocked` (evaluated only after the code is valid, `401`; it also answers a phone whose blocked account was erased, which gets no new account, `DL-95`). Never issues a staff session; for a phone that also holds a Shopper or Courier account it returns a single-use `staff_step` (5 minutes, 5 wrong passwords) for `POST /auth/staff/step`, and a new verification closes the earlier open step. A configured test phone accepts the configured fixed code. The third wrong code answers `429 code_locked` with `Retry-After: 60` and locks the phone; while locked, verify and request answer `code_locked` with the seconds left (`DL-87`).
 
 ## 8. Staff Login
 
@@ -84,7 +84,7 @@ Resolves the active Customer account or creates one when none is active, records
 
 ## 12. Profile
 
-`GET /customer/profile`, `PATCH /customer/profile` `{"full_name":"...","preferred_language":"uz"}`. A Customer session is required. The response is `{"data":{"id":"...","phone":"+998901234567","full_name":"Aziza Karimova","preferred_language":"uz"}}`. PATCH takes either field or both: `full_name` is trimmed and holds 1–120 characters and cannot be cleared; `preferred_language` is `uz` or `ru`. The phone is not editable (`DL-23`).
+`GET /customer/profile`, `PATCH /customer/profile` `{"full_name":"...","preferred_language":"uz"}`. A Customer session is required. The response is `{"data":{"id":"...","phone":"+998901234567","full_name":"Aziza Karimova","preferred_language":"uz","support_phone":"+998712000000"}}`; `support_phone` is the business setting, `null` while unset, as the order answers it (`DL-96` item 1). PATCH takes either field or both: `full_name` is trimmed and holds 1–120 characters and cannot be cleared; `preferred_language` is `uz` or `ru`. The phone is not editable (`DL-23`).
 
 ## 13. Addresses
 
@@ -416,4 +416,4 @@ Web pages for the store listing (not the JSON API; no session, no cookie, thrott
 
 ## 67. Admin Customer Erasure
 
-`POST /admin/customers/{customer}/erase` — Admin only, no body (any field is `422`). Erases the Customer's account with the same action as `POST /customer/account/delete` (Section 65) and answers `204`; `deleted_by_user_id` is the Admin. A Staff, deleted or unknown id is `404 resource_not_found`; an unfinished order is `409 account_has_unfinished_orders` with `details {order_id, order_number}`; a blocked account is `409 account_blocked`, because erasing it would free the phone and let the block be escaped (`BR-ROLE-010`, `BR-ROLE-013`, `DL-94` item 5).
+`POST /admin/customers/{customer}/erase` — Admin only, no body (any field is `422`). Erases the Customer's account with the same action as `POST /customer/account/delete` (Section 65) and answers `204`; `deleted_by_user_id` is the Admin. A Staff, deleted or unknown id is `404 resource_not_found`; an unfinished order is `409 account_has_unfinished_orders` with `details {order_id, order_number}`; a blocked account is erased like any other (after the unfinished-order check), and a one-way fingerprint of its phone is kept on the block list, so that number gets `401 account_blocked` at sign-up (`BR-ROLE-013`, `DL-95`).

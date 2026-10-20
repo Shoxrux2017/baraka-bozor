@@ -645,7 +645,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get customerErase => 'Удалить аккаунт';
 
   @override
-  String get customerEraseBlocked => 'Заблокирован — удалить нельзя';
+  String get customerEraseBlockedNote =>
+      'Аккаунт заблокирован: номер останется в чёрном списке, зарегистрироваться с ним снова будет нельзя.';
 
   @override
   String get customerEraseTitle => 'Удалить аккаунт покупателя?';
@@ -823,13 +824,44 @@ class AppLocalizationsRu extends AppLocalizations {
   String get profileTitle => 'Профиль';
 
   @override
+  String get profileNoName => 'Как вас зовут?';
+
+  @override
+  String get profileEdit => 'Редактировать профиль';
+
+  @override
+  String get profileSetName => 'Указать имя';
+
+  @override
+  String get profileLanguage => 'Язык';
+
+  @override
+  String get profileSupport => 'Поддержка';
+
+  @override
+  String get profilePrivacy => 'Конфиденциальность';
+
+  @override
   String get profileName => 'Ваше имя';
 
   @override
-  String get profileNameNeeded => 'Чтобы оформить заказ, укажите имя';
+  String get profileSaved => 'Имя сохранено';
 
   @override
-  String get profileSaved => 'Имя сохранено';
+  String get profileEditTitle => 'Редактирование профиля';
+
+  @override
+  String get profileNameLabel => 'Имя';
+
+  @override
+  String get profilePhoneLabel => 'Номер телефона';
+
+  @override
+  String get profilePhoneLocked =>
+      'Номер — ваш вход в приложение, его не меняют.';
+
+  @override
+  String get profileNameRequired => 'Введите имя — без него заказ не оформить.';
 
   @override
   String get addressesTitle => 'Мои адреса';
@@ -2751,8 +2783,33 @@ class AppLocalizationsRu extends AppLocalizations {
   String get codeComesInTelegram => 'Код придёт в Telegram';
 
   @override
-  String get termsLine =>
-      'Продолжая, вы соглашаетесь с условиями использования';
+  String legalEdition(String date) {
+    return 'Редакция от $date';
+  }
+
+  @override
+  String get legalNotPublishedYet => 'Документ пока не опубликован.';
+
+  @override
+  String consentAll(String terms, String privacy) {
+    return 'Продолжая, вы принимаете $terms и $privacy';
+  }
+
+  @override
+  String consentTermsOnly(String terms) {
+    return 'Продолжая, вы принимаете $terms';
+  }
+
+  @override
+  String consentPrivacyOnly(String privacy) {
+    return 'Продолжая, вы принимаете $privacy';
+  }
+
+  @override
+  String get consentTermsLink => 'Условия использования';
+
+  @override
+  String get consentPrivacyLink => 'Политику конфиденциальности';
 
   @override
   String get confirmPhoneTitle => 'Проверьте номер';
@@ -3485,4 +3542,65 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get rateWindowClosed =>
       'Оценить заказ можно в течение 7 дней после доставки — это время прошло.';
+
+  @override
+  String get deleteAccountTitle => 'Удалить аккаунт?';
+
+  @override
+  String get deleteErasedHeading => 'Сотрём';
+
+  @override
+  String get deleteErasedName => 'Имя и номер телефона';
+
+  @override
+  String get deleteErasedAddresses => 'Адреса';
+
+  @override
+  String get deleteErasedFavorites => 'Избранное и корзину';
+
+  @override
+  String get deleteKeptHeading => 'Останется';
+
+  @override
+  String get deleteKeptOrders =>
+      'История заказов — без имени и телефона, для учёта';
+
+  @override
+  String get deleteNote =>
+      'Вернуть аккаунт нельзя. С этим номером можно войти снова — как новый покупатель.';
+
+  @override
+  String get deleteConfirm => 'Удалить';
+
+  @override
+  String get deleteBlockedTitle => 'Сейчас удалить нельзя';
+
+  @override
+  String deleteBlockedBody(int number) {
+    return 'Заказ № $number ещё не завершён. Удалить аккаунт можно после доставки или отмены заказа.';
+  }
+
+  @override
+  String get understoodButton => 'Понятно';
+
+  @override
+  String get toOrderButton => 'К заказу';
+
+  @override
+  String get deleteCodeTitle => 'Удаление аккаунта';
+
+  @override
+  String get deleteCodeHeading => 'Подтвердите удаление';
+
+  @override
+  String get profileDeleteAccount => 'Удалить аккаунт';
+
+  @override
+  String get deletedTitle => 'Аккаунт удалён';
+
+  @override
+  String get deletedBody => 'Ваши данные стёрты.\nСпасибо, что были с нами.';
+
+  @override
+  String get doneButton => 'Готово';
 }

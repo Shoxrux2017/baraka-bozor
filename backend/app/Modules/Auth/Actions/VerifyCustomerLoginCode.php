@@ -9,6 +9,7 @@ use App\Models\Enums\LegalDocumentKind;
 use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Models\User;
+use App\Modules\Accounts\BlockedPhones;
 use App\Modules\Auth\LoginCodeCheck;
 use App\Modules\Auth\LoginCodePolicy;
 use App\Modules\Auth\LoginCodeRefused;
@@ -139,6 +140,12 @@ final class VerifyCustomerLoginCode
         if ($customers->isNotEmpty()) {
             // Only blocked Customer accounts exist for the phone: creating a
             // fresh one would let a block be escaped with one code.
+            throw ApiException::unauthenticated('account_blocked');
+        }
+
+        // A blocked account that was erased leaves its number's fingerprint
+        // behind (`DL-95`): the number gets no new account.
+        if (BlockedPhones::isBlocked($phone)) {
             throw ApiException::unauthenticated('account_blocked');
         }
 

@@ -647,7 +647,8 @@ class AppLocalizationsUz extends AppLocalizations {
   String get customerErase => 'Akkauntni o\'chirish';
 
   @override
-  String get customerEraseBlocked => 'Bloklangan — o\'chirib bo\'lmaydi';
+  String get customerEraseBlockedNote =>
+      'Akkaunt bloklangan: raqam qora ro\'yxatda qoladi, u bilan qayta ro\'yxatdan o\'tib bo\'lmaydi.';
 
   @override
   String get customerEraseTitle => 'Xaridor akkauntini o\'chirasizmi?';
@@ -825,13 +826,45 @@ class AppLocalizationsUz extends AppLocalizations {
   String get profileTitle => 'Profil';
 
   @override
+  String get profileNoName => 'Ismingiz nima?';
+
+  @override
+  String get profileEdit => 'Profilni tahrirlash';
+
+  @override
+  String get profileSetName => 'Ismni kiritish';
+
+  @override
+  String get profileLanguage => 'Til';
+
+  @override
+  String get profileSupport => 'Qo\'llab-quvvatlash';
+
+  @override
+  String get profilePrivacy => 'Maxfiylik';
+
+  @override
   String get profileName => 'Ismingiz';
 
   @override
-  String get profileNameNeeded => 'Buyurtma berish uchun ismingizni kiriting';
+  String get profileSaved => 'Ism saqlandi';
 
   @override
-  String get profileSaved => 'Ism saqlandi';
+  String get profileEditTitle => 'Profilni tahrirlash';
+
+  @override
+  String get profileNameLabel => 'Ism';
+
+  @override
+  String get profilePhoneLabel => 'Telefon raqami';
+
+  @override
+  String get profilePhoneLocked =>
+      'Raqam — ilovaga kirishingiz, uni o\'zgartirib bo\'lmaydi.';
+
+  @override
+  String get profileNameRequired =>
+      'Ismni kiriting — usiz buyurtma berib bo\'lmaydi.';
 
   @override
   String get addressesTitle => 'Manzillarim';
@@ -2723,8 +2756,33 @@ class AppLocalizationsUz extends AppLocalizations {
   String get codeComesInTelegram => 'Kod Telegramga keladi';
 
   @override
-  String get termsLine =>
-      'Davom etib, siz foydalanish shartlariga rozilik bildirasiz';
+  String legalEdition(String date) {
+    return 'Tahrir: $date';
+  }
+
+  @override
+  String get legalNotPublishedYet => 'Hujjat hali e\'lon qilinmagan.';
+
+  @override
+  String consentAll(String terms, String privacy) {
+    return 'Davom etib, siz $terms va ${privacy}ni qabul qilasiz';
+  }
+
+  @override
+  String consentTermsOnly(String terms) {
+    return 'Davom etib, siz ${terms}ni qabul qilasiz';
+  }
+
+  @override
+  String consentPrivacyOnly(String privacy) {
+    return 'Davom etib, siz ${privacy}ni qabul qilasiz';
+  }
+
+  @override
+  String get consentTermsLink => 'Foydalanish shartlari';
+
+  @override
+  String get consentPrivacyLink => 'Maxfiylik siyosati';
 
   @override
   String get confirmPhoneTitle => 'Raqamni tekshiring';
@@ -3446,4 +3504,66 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get rateWindowClosed =>
       'Buyurtmani yetkazilgandan keyin 7 kun ichida baholash mumkin — bu vaqt o\'tdi.';
+
+  @override
+  String get deleteAccountTitle => 'Akkauntni o\'chirasizmi?';
+
+  @override
+  String get deleteErasedHeading => 'O\'chiriladi';
+
+  @override
+  String get deleteErasedName => 'Ism va telefon raqami';
+
+  @override
+  String get deleteErasedAddresses => 'Manzillar';
+
+  @override
+  String get deleteErasedFavorites => 'Sevimlilar va savat';
+
+  @override
+  String get deleteKeptHeading => 'Qoladi';
+
+  @override
+  String get deleteKeptOrders =>
+      'Buyurtmalar tarixi — ism va telefonsiz, hisob uchun';
+
+  @override
+  String get deleteNote =>
+      'Akkauntni qaytarib bo\'lmaydi. Bu raqam bilan yana kirish mumkin — yangi xaridor sifatida.';
+
+  @override
+  String get deleteConfirm => 'O\'chirish';
+
+  @override
+  String get deleteBlockedTitle => 'Hozir o\'chirib bo\'lmaydi';
+
+  @override
+  String deleteBlockedBody(int number) {
+    return '№ $number buyurtma hali tugallanmagan. Akkauntni buyurtma yetkazilgan yoki bekor qilingandan keyin o\'chirish mumkin.';
+  }
+
+  @override
+  String get understoodButton => 'Tushunarli';
+
+  @override
+  String get toOrderButton => 'Buyurtmaga';
+
+  @override
+  String get deleteCodeTitle => 'Akkauntni o\'chirish';
+
+  @override
+  String get deleteCodeHeading => 'O\'chirishni tasdiqlang';
+
+  @override
+  String get profileDeleteAccount => 'Akkauntni o\'chirish';
+
+  @override
+  String get deletedTitle => 'Akkaunt o\'chirildi';
+
+  @override
+  String get deletedBody =>
+      'Ma\'lumotlaringiz o\'chirildi.\nBiz bilan bo\'lganingiz uchun rahmat.';
+
+  @override
+  String get doneButton => 'Tayyor';
 }

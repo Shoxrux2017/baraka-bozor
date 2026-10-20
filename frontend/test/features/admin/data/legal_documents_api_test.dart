@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:baraka_bozor/core/legal/legal_document_kind.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/network/auth_interceptor.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';

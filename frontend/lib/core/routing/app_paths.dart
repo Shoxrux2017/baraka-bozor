@@ -1,4 +1,5 @@
 import '../../features/auth/domain/app_user.dart';
+import '../legal/legal_document_kind.dart';
 
 /// The fixed entry points of the route table: the areas of
 /// `docs/07-architecture.md` section 29 and the screens the client passes
@@ -15,6 +16,27 @@ abstract final class AppPaths {
   static const String unreachable = '/auth/unreachable';
   static const String wrongSurface = '/auth/wrong-surface';
 
+  // Shown once the account is deleted and the session is gone.
+  static const String accountDeleted = '/account-deleted';
+
+  // The documents the sign-in screen links to before any session; the
+  // profile opens the same screens.
+  static const String legalTerms = '/legal/terms';
+  static const String legalPrivacy = '/legal/privacy';
+
+  static String legal(LegalDocumentKind kind) => switch (kind) {
+    LegalDocumentKind.terms => legalTerms,
+    LegalDocumentKind.privacy => legalPrivacy,
+  };
+
+  /// The pages of the mobile app open signed out and, once the session's own
+  /// gates pass, signed in: whoever reads them keeps their place.
+  static const Set<String> openPages = <String>{
+    legalTerms,
+    legalPrivacy,
+    accountDeleted,
+  };
+
   static const String customer = '/customer';
   static const String shopper = '/shopper';
   static const String courier = '/courier';
@@ -25,6 +47,8 @@ abstract final class AppPaths {
   // Inside the Customer area, where more than one feature links: the
   // catalog's home opens the profile, the profile the addresses.
   static const String customerProfile = '$customer/profile';
+  static const String customerEditProfile = '$customerProfile/edit';
+  static const String customerDeleteAccount = '$customerProfile/delete';
   static const String customerAddresses = '$customer/addresses';
   // The tab bar opens the favourites from every Customer tab.
   static const String customerFavorites = '$customer/favorites';

@@ -16,8 +16,9 @@ import 'app_paths.dart';
 ///    screen, which remembers the page asked for; a bootstrap that threw is
 ///    treated as unreachable, so the person gets a retry rather than a
 ///    spinner;
-/// 2. signed out, only the public auth screens of the surface are reachable:
-///    the phone and the code on mobile, the sign-in alone on the web;
+/// 2. signed out, only the public screens of the surface are reachable: the
+///    phone, the code and the open pages on mobile, the sign-in alone on the
+///    web;
 /// 3. unreachable, only the retry screen, which keeps remembering the page;
 /// 4. signed in on the wrong surface, only the screen naming the right one
 ///    (`docs/02-user-roles.md` section 10);
@@ -25,7 +26,9 @@ import 'app_paths.dart';
 ///    has not given a name, only the name screen;
 /// 6. signed in behind the first-login gate, only the password change
 ///    (`docs/04-user-flows.md` section 3);
-/// 7. otherwise the active role's areas; the page the bootstrap or the retry
+/// 7. on mobile, an open page (`AppPaths.openPages`: the legal documents) is
+///    reachable signed out and, past the gates above, signed in;
+/// 8. otherwise the active role's areas; the page the bootstrap or the retry
 ///    screen remembered opens when it lies inside those areas, and anything
 ///    else goes to the role's home (`DL-37` (17), `DL-46` (1)).
 String? sessionRedirect({
@@ -58,6 +61,7 @@ String? sessionRedirect({
 const Set<String> _publicMobile = <String>{
   AppPaths.auth,
   AppPaths.customerCode,
+  ...AppPaths.openPages,
 };
 
 const Set<String> _publicWeb = <String>{AppPaths.auth, AppPaths.staffLogin};
@@ -86,6 +90,10 @@ String? _signedIn(SignedIn state, Surface surface, Uri uri) {
 
   if (user.mustChangePassword) {
     return _only(AppPaths.changePassword, location);
+  }
+
+  if (surface == Surface.mobile && AppPaths.openPages.contains(location)) {
+    return null;
   }
 
   final List<String> areas = AppPaths.areasOf(user.role);

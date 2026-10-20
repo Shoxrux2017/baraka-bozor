@@ -4,21 +4,30 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/formatting/phone_format.dart';
+import '../../../core/legal/legal_document_kind.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/platform/phone_calls.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
-import '../../../core/state/mutation_state.dart';
+import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/customer_tab_bar.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../legal/application/legal_providers.dart';
+import '../../legal/domain/legal.dart';
 import '../application/profile_controllers.dart';
 import '../domain/profile.dart';
+import 'delete_account_sheets.dart';
+import 'language_sheet.dart';
+import 'profile_header.dart';
 
-/// The Customer's profile (`docs/03-features.md` section 3): the phone they
-/// sign in with, their name — which checkout needs — the interface language,
-/// the way to their addresses, and the way out of the session (`DL-75`).
+/// The Customer's profile tab (`docs/03-features.md` section 3, kit drawings
+/// 32 and 32а): the header with the initials, the name and the phone; the rows
+/// for the name, the addresses, the language, support, the two documents and
+/// the deletion; and the way out of the session under them (`DL-75`,
+/// `DL-96` item 6).
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -31,74 +40,95 @@ class ProfileScreen extends ConsumerWidget {
 
     return CustomerTabScope(
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.profileTitle),
-          actions: const <Widget>[_LogoutButton()],
-        ),
+        backgroundColor: Colors.white,
         bottomNavigationBar: const CustomerTabBar(current: CustomerTab.profile),
-        body: SafeArea(
-          child: UnderActiveMode(
-            child: profile.when(
-              skipLoadingOnReload: false,
-              skipLoadingOnRefresh: !profile.hasError,
-              data: (CustomerProfile profile) => ListView(
-                key: const ValueKey<String>('profile-list'),
-                padding: const EdgeInsets.all(16),
-                children: <Widget>[
-                  Text(
-                    formatPhone(profile.phone),
-                    key: const ValueKey<String>('profile-phone'),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  _NameForm(
-                    key: ValueKey<String>(profile.id),
-                    profile: profile,
-                  ),
-                  const SizedBox(height: 24),
-                  const _LanguageChoice(),
-                  const Divider(height: 32),
-                  ListTile(
-                    key: const ValueKey<String>('profile-addresses'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.home_outlined),
-                    title: Text(l10n.addressesTitle),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.push(AppPaths.customerAddresses),
-                  ),
-                ],
-              ),
-              // The language is on the profile in every state of it.
-              error: (Object error, StackTrace _) => ListView(
-                padding: const EdgeInsets.all(24),
-                children: <Widget>[
-                  FailureMessage(
-                    error is ApiFailure ? error : const UnexpectedFailure(),
-                  ),
-                  const SizedBox(height: 12),
-                  Center(
-                    child: OutlinedButton(
-                      onPressed: () =>
-                          ref.invalidate(profileControllerProvider),
-                      child: Text(l10n.retryButton),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const _LanguageChoice(),
-                ],
-              ),
-              loading: () => Column(
-                children: <Widget>[
-                  const Expanded(
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: _LanguageChoice(),
-                  ),
-                ],
+        body: Column(
+          children: <Widget>[
+            // The header runs up under the status bar.
+            ColoredBox(
+              color: KitColors.primary,
+              child: SizedBox(
+                width: double.infinity,
+                height: MediaQuery.paddingOf(context).top,
               ),
             ),
+            Expanded(
+              child: UnderActiveMode(
+                child: profile.when(
+                  skipLoadingOnReload: false,
+                  skipLoadingOnRefresh: !profile.hasError,
+                  data: (CustomerProfile profile) => ListView(
+                    key: const ValueKey<String>('profile-list'),
+                    padding: EdgeInsets.zero,
+                    children: <Widget>[
+                      ProfileHeader(profile: profile),
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: _Rows(profile: profile),
+                      ),
+                      const _LogoutButton(),
+                    ],
+                  ),
+                  // The language and the way out are on the profile in every
+                  // state of it.
+                  error: (Object error, StackTrace _) => ListView(
+                    padding: const EdgeInsets.all(20),
+                    children: <Widget>[
+                      const _PlainTitle(),
+                      FailureMessage(
+                        error is ApiFailure ? error : const UnexpectedFailure(),
+                      ),
+                      const SizedBox(height: 12),
+                      Center(
+                        child: OutlinedButton(
+                          onPressed: () =>
+                              ref.invalidate(profileControllerProvider),
+                          child: Text(l10n.retryButton),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const _LanguageRow(),
+                      const _LogoutButton(),
+                    ],
+                  ),
+                  loading: () => ListView(
+                    padding: const EdgeInsets.all(20),
+                    children: const <Widget>[
+                      _PlainTitle(),
+                      SizedBox(height: 120),
+                      Center(child: CircularProgressIndicator()),
+                      SizedBox(height: 120),
+                      _LanguageRow(),
+                      _LogoutButton(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The title over a profile that has no header yet.
+class _PlainTitle extends StatelessWidget {
+  const _PlainTitle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Semantics(
+        header: true,
+        child: Text(
+          AppLocalizations.of(context).profileTitle,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: KitColors.ink,
           ),
         ),
       ),
@@ -106,154 +136,187 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-class _NameForm extends ConsumerStatefulWidget {
-  const _NameForm({required this.profile, super.key});
+/// The rows under the header, a line between each pair.
+class _Rows extends ConsumerWidget {
+  const _Rows({required this.profile});
 
   final CustomerProfile profile;
 
   @override
-  ConsumerState<_NameForm> createState() => _NameFormState();
-}
-
-class _NameFormState extends ConsumerState<_NameForm> {
-  final GlobalKey<FormState> _form = GlobalKey<FormState>();
-  late final TextEditingController _name = TextEditingController(
-    text: widget.profile.fullName ?? '',
-  );
-
-  @override
-  void didUpdateWidget(_NameForm old) {
-    super.didUpdateWidget(old);
-    // A reload brings the name as the server has it; a name the Customer is
-    // still typing stays (`DL-28` (9)).
-    if (_name.text == (old.profile.fullName ?? '')) {
-      _name.text = widget.profile.fullName ?? '';
-    }
-  }
-
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!(_form.currentState?.validate() ?? false)) {
-      return;
-    }
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final String name = _name.text.trim();
-    if (name == widget.profile.fullName) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.noChanges)));
-      return;
-    }
+    final LegalIndex? documents = ref.watch(legalIndexProvider).value;
+    final SessionState? session = ref.watch(sessionControllerProvider).value;
+    final String? support = profile.supportPhone;
+    final String? name = profile.fullName;
+    final bool hasName = name != null && name.trim().isNotEmpty;
 
-    final CustomerProfile? saved = await ref
-        .read(renameControllerProvider.notifier)
-        .rename(widget.profile, name);
-    // A save for another account says nothing, and neither does one the
-    // Customer has moved on from — to the addresses above the profile.
-    if (saved != null &&
-        mounted &&
-        (ModalRoute.of(context)?.isCurrent ?? false)) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.profileSaved)));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final MutationState rename = ref.watch(renameControllerProvider);
-
-    return Form(
-      key: _form,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          TextFormField(
-            key: const ValueKey<String>('profile-name'),
-            controller: _name,
-            enabled: !rename.isBusy,
-            textCapitalization: TextCapitalization.words,
-            textInputAction: TextInputAction.done,
-            onFieldSubmitted: (String _) => _submit(),
-            decoration: InputDecoration(
-              labelText: l10n.profileName,
-              helperText: widget.profile.fullName == null
-                  ? l10n.profileNameNeeded
-                  : null,
-              border: const OutlineInputBorder(),
-            ),
-            validator: (String? text) {
-              final String value = (text ?? '').trim();
-              if (value.isEmpty) {
-                return l10n.fieldRequired;
-              }
-              return value.runes.length > 120 ? l10n.fieldTooLong(120) : null;
-            },
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton(
-              key: const ValueKey<String>('profile-save'),
-              onPressed: rename.isBusy ? null : _submit,
-              child: Text(l10n.saveButton),
-            ),
-          ),
-          FailureMessage(rename.failure),
-        ],
+    final List<Widget> rows = <Widget>[
+      _ProfileRow(
+        rowKey: 'profile-edit',
+        icon: Icons.edit_square,
+        title: hasName ? l10n.profileEdit : l10n.profileSetName,
+        onTap: () => context.push(AppPaths.customerEditProfile),
       ),
+      _ProfileRow(
+        rowKey: 'profile-addresses',
+        icon: Icons.location_on,
+        title: l10n.addressesTitle,
+        onTap: () => context.push(AppPaths.customerAddresses),
+      ),
+      const _LanguageRow(),
+      if (support != null && support.isNotEmpty)
+        _ProfileRow(
+          rowKey: 'profile-support',
+          icon: Icons.support_agent,
+          title: l10n.profileSupport,
+          value: formatPhone(support),
+          chevron: false,
+          onTap: () => _call(context, ref, support),
+        ),
+      if (documents?.privacy != null)
+        _ProfileRow(
+          rowKey: 'profile-privacy',
+          icon: Icons.verified_user,
+          title: l10n.profilePrivacy,
+          onTap: () => context.push(AppPaths.legal(LegalDocumentKind.privacy)),
+        ),
+      if (documents?.terms != null)
+        _ProfileRow(
+          rowKey: 'profile-terms',
+          icon: Icons.event_note,
+          title: l10n.legalTerms,
+          onTap: () => context.push(AppPaths.legal(LegalDocumentKind.terms)),
+        ),
+      // Hidden while the phone also holds a staff session, whose sign-in
+      // shares the phone (`DL-96` item 6).
+      if (session is SignedIn && session.staffUser == null)
+        _ProfileRow(
+          rowKey: 'profile-delete',
+          icon: Icons.delete,
+          title: l10n.profileDeleteAccount,
+          color: KitColors.danger,
+          chevron: false,
+          onTap: () => showDeleteAccountSheet(context),
+        ),
+    ];
+
+    return Column(
+      children: <Widget>[
+        for (int i = 0; i < rows.length; i++) ...<Widget>[
+          rows[i],
+          if (i < rows.length - 1)
+            const Divider(height: 1, thickness: 1, color: KitColors.line),
+        ],
+      ],
     );
   }
+
+  Future<void> _call(BuildContext context, WidgetRef ref, String phone) async {
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool opened = await ref.read(phoneCallsProvider).call(phone);
+    if (!opened) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.callFailed(formatPhone(phone)))),
+      );
+    }
+  }
 }
 
-/// The interface language, the same choice as the app bar's switch: stored
-/// on the device and reported to the server for push texts
-/// (`docs/07-architecture.md` section 27).
-class _LanguageChoice extends ConsumerWidget {
-  const _LanguageChoice();
+/// The language row, with the chosen language as its value; it opens the
+/// language sheet.
+class _LanguageRow extends ConsumerWidget {
+  const _LanguageRow();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage? current = ref.watch(languageControllerProvider).value;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(l10n.languageLabel, style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
-        SegmentedButton<AppLanguage>(
-          key: const ValueKey<String>('profile-language'),
-          segments: <ButtonSegment<AppLanguage>>[
-            ButtonSegment<AppLanguage>(
-              value: AppLanguage.uz,
-              label: Text(l10n.languageUzbek),
-            ),
-            ButtonSegment<AppLanguage>(
-              value: AppLanguage.ru,
-              label: Text(l10n.languageRussian),
-            ),
-          ],
-          selected: <AppLanguage>{?current},
-          emptySelectionAllowed: true,
-          onSelectionChanged: (Set<AppLanguage> selected) {
-            if (selected.isNotEmpty) {
-              ref
-                  .read(languageControllerProvider.notifier)
-                  .select(selected.single);
-            }
-          },
-        ),
-      ],
+    return _ProfileRow(
+      rowKey: 'profile-language',
+      icon: Icons.translate,
+      title: l10n.profileLanguage,
+      value: switch (current) {
+        AppLanguage.uz => l10n.languageUzbek,
+        AppLanguage.ru => l10n.languageRussian,
+        null => null,
+      },
+      onTap: () => showLanguageSheet(context),
     );
   }
 }
 
-/// The way out of the Customer session, in the app bar so it is there
+class _ProfileRow extends StatelessWidget {
+  const _ProfileRow({
+    required this.rowKey,
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.value,
+    this.color = KitColors.ink,
+    this.chevron = true,
+  });
+
+  final String rowKey;
+  final IconData icon;
+  final String title;
+  final String? value;
+  final Color color;
+  final bool chevron;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      key: ValueKey<String>(rowKey),
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 58),
+        child: Row(
+          children: <Widget>[
+            Icon(icon, size: 24, color: color),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: color,
+                ),
+              ),
+            ),
+            // The value keeps its own width, so it and the chevron end on
+            // the right edge; a Flexible would take half the free space and
+            // leave a gap after a short value.
+            if (value != null) ...<Widget>[
+              const SizedBox(width: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 160),
+                child: Text(
+                  value!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 14, color: KitColors.muted),
+                ),
+              ),
+            ],
+            if (chevron) ...<Widget>[
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right, size: 22, color: KitColors.muted),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The way out of the Customer session, under the rows so it is there
 /// whatever state the profile is in.
 class _LogoutButton extends ConsumerWidget {
   const _LogoutButton();
@@ -264,12 +327,26 @@ class _LogoutButton extends ConsumerWidget {
     if (state is! SignedIn) {
       return const SizedBox.shrink();
     }
-    return IconButton(
-      key: const ValueKey<String>('logout-button'),
-      icon: const Icon(Icons.logout),
-      tooltip: AppLocalizations.of(context).logoutButton,
-      onPressed: () =>
-          ref.read(sessionControllerProvider.notifier).logout(state.activeMode),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+      child: SizedBox(
+        height: 56,
+        child: FilledButton.icon(
+          key: const ValueKey<String>('logout-button'),
+          style: FilledButton.styleFrom(
+            backgroundColor: KitColors.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          icon: const Icon(Icons.logout),
+          label: Text(AppLocalizations.of(context).logoutButton),
+          onPressed: () => ref
+              .read(sessionControllerProvider.notifier)
+              .logout(state.activeMode),
+        ),
+      ),
     );
   }
 }

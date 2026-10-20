@@ -1,0 +1,20 @@
+## Qanday ma'lumotlarni saqlaymiz
+- Telefon raqami — kod bilan kirish uchun.
+- Ism — teruvchi va kuryer buyurtma kimniki ekanini bilishi uchun.
+- Manzillar va xaritadagi nuqta — yetkazib berish uchun.
+- Buyurtmalar, teruvchiga javoblar, baholar va fikrlar.
+- Ilova tili.
+Telefoningiz joylashuvi faqat sizni xaritada ko'rsatish uchun kerak — biz uni saqlamaymiz.
+## Ularni kim ko'radi
+BarakaBozor teruvchisi, kuryeri va operatori — faqat buyurtmangiz uchun keraklisini.
+## Ma'lumotlarni kimga beramiz
+- Telegram — kirish kodini yuborish uchun telefon raqami.
+- Google — xaritada manzil qidirgan so'zlaringiz.
+Biz ma'lumotlaringizni sotmaymiz.
+## Qancha saqlaymiz
+Akkauntingiz bor ekan. Akkaunt o'chirilgandan keyin buyurtmalar ism va telefonsiz saqlanadi — hisob uchun, [muddat — buxgalter aniqlaydi].
+Agar akkaunt bloklangan va keyin o'chirilgan bo'lsa, biz telefon raqamining qaytarib bo'lmaydigan izini saqlaymiz — undan raqamni tiklab bo'lmaydi, lekin u bilan qayta ro'yxatdan o'tib bo'lmaydi.
+## Ma'lumotlarni qanday o'chirish mumkin
+Profil → «Akkauntni o'chirish». Yoki qo'llab-quvvatlash raqamiga qo'ng'iroq qiling.
+## Rozilik
+Ilovaga kirib, siz ushbu ma'lumotlarni O'zbekiston Respublikasining «Shaxsga doir ma'lumotlar to'g'risida»gi Qonuniga muvofiq qayta ishlashga rozilik bildirasiz.

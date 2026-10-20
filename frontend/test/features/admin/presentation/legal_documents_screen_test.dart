@@ -1,7 +1,7 @@
+import 'package:baraka_bozor/core/legal/legal_document_kind.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/admin/application/legal_documents_controllers.dart';
-import 'package:baraka_bozor/features/admin/domain/legal_documents.dart';
 import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:flutter/material.dart';
