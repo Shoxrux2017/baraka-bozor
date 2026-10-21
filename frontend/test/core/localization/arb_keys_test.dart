@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -49,7 +50,7 @@ void main() {
 {
   "a": "first {n}",
   "@a": {"placeholders": {"n": {"type": "String"}}},
-  "b": "say \\"a\\": twice",
+  "b": "one \\": quote",
   "@b": {"placeholders": {"n": {"type": "String"}}},
   "a": "second"
 }
@@ -59,13 +60,27 @@ void main() {
     expect(repeated(topLevelKeys(source)), <String>['a']);
   });
 
-  for (final String locale in <String>['uz', 'ru']) {
-    test('app_$locale.arb defines every key once', () {
-      final List<String> keys = topLevelKeys(
-        File('lib/core/localization/l10n/app_$locale.arb').readAsStringSync(),
-      );
+  final List<File> files =
+      Directory('lib/core/localization/l10n')
+          .listSync()
+          .whereType<File>()
+          .where((File file) => file.path.endsWith('.arb'))
+          .toList()
+        ..sort((File a, File b) => a.path.compareTo(b.path));
 
-      expect(keys, isNotEmpty);
+  test('the ARB files are found', () {
+    expect(files, isNotEmpty);
+  });
+
+  for (final File file in files) {
+    test('${file.uri.pathSegments.last} defines every key once', () {
+      final String source = file.readAsStringSync();
+      final List<String> keys = topLevelKeys(source);
+
+      expect(
+        keys.toSet(),
+        (jsonDecode(source) as Map<String, Object?>).keys.toSet(),
+      );
       expect(repeated(keys), isEmpty);
     });
   }
