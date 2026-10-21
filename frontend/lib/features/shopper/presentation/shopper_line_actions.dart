@@ -577,13 +577,12 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
   /// Whether the authorized replacement, rather than the original, is bought.
   bool _replacement = true;
 
-  /// Whether asking about the price found no price to ask about.
-  bool _askNeedsPrice = false;
-
-  /// The texts of the quantity and the price as the last purchase was sent;
-  /// the question to the Customer holds only while the fields read them.
+  /// The texts of the quantity and the price, and the product (the
+  /// replacement or the original), as the last purchase was sent; the
+  /// question to the Customer holds only while the sheet shows them.
   String? _sentQuantity;
   String? _sentPrice;
+  bool? _sentReplacement;
 
   ShopperLineRef get _lineRef =>
       (orderId: widget.order.id, itemId: widget.line.id);
@@ -692,6 +691,7 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
     }
     _sentQuantity = _quantity.text;
     _sentPrice = _price.text;
+    _sentReplacement = _buysReplacement;
     final void Function(ShopperOrder answer) close = _closer();
     final ShopperOrder? done = await _controller.purchase(entry);
     if (mounted && done != null) {
@@ -700,22 +700,6 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
   }
 
   Future<void> _askAboutPrice() async {
-    // A question about a price needs one, even for a line bought as itself;
-    // the field asks for it once rebuilt so.
-    if (!_askNeedsPrice) {
-      setState(() => _askNeedsPrice = true);
-      await WidgetsBinding.instance.endOfFrame;
-      if (!mounted) {
-        return;
-      }
-    }
-    final bool valid = _form.currentState?.validate() ?? false;
-    // The field says what is missing; a purchase after it needs no price
-    // the product does not.
-    setState(() => _askNeedsPrice = false);
-    if (!valid) {
-      return;
-    }
     final PurchaseEntry entry = _entry();
     final int? price = entry.actualMarketPriceUzs;
     if (price == null) {
@@ -851,7 +835,10 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
     // The question holds while the fields read what the refused purchase
     // was sent with.
     final bool asking =
-        known && _quantity.text == _sentQuantity && _price.text == _sentPrice;
+        known &&
+        _quantity.text == _sentQuantity &&
+        _price.text == _sentPrice &&
+        _buysReplacement == _sentReplacement;
     final bool askingPrice = asking && approvalType == 'price_over_tolerance';
     final bool askingQuantity = asking && approvalType == 'reduced_quantity';
     final Object? required = approval?.error.details['required_quantity'];
@@ -890,7 +877,7 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
       fieldKey: 'purchase-price',
       controller: _price,
       label: l10n.purchasePriceFor(unit),
-      required: priceRequired || _askNeedsPrice,
+      required: priceRequired,
       enabled: !locked,
       helper: priceRequired ? null : l10n.purchasePriceOptional,
       warn: askingPrice,

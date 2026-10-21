@@ -59,6 +59,9 @@ class ShopperOrderScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      // The page holds no text field; its sheets pad themselves for the
+      // keyboard, so the page behind must not shrink under them.
+      resizeToAvoidBottomInset: false,
       appBar: kitAppBar(
         title: shown == null
             ? l10n.shellShopper

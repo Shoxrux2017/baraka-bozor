@@ -762,8 +762,8 @@ void main() {
     expect(shopper.keys.first, shopper.keys.last);
   });
 
-  testWidgets('asking about a price needs one, whatever the product chosen '
-      'since', (WidgetTester tester) async {
+  testWidgets('the ask state belongs to the product refused'
+      '', (WidgetTester tester) async {
     shopper.details[shopperOrderA] = shopping(<Object?>[
       tomato(),
       bread(
@@ -794,29 +794,30 @@ void main() {
     await buy(tester, shopperLineBread, price: '6000');
     expect(byKey('ask-price'), findsOneWidget);
 
-    // Another product chosen keeps the question, which asks about the
-    // values refused.
+    // The replacement's price was refused: the original chosen is a
+    // purchase, with no question about a product nobody asked about.
     await tapAndSettle(tester, byKey('buy-original'));
-    expect(byKey('ask-price'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-
-    // Bought as itself after all, the loaf needs no price: a cleared price
-    // is a purchase again, and no question was sent.
-    await tester.enterText(byKey('purchase-price'), '');
-    await tester.pump();
+    expect(byKey('purchase-save'), findsOneWidget);
     expect(byKey('ask-price'), findsNothing);
-    expect(shopper.actions.where((String a) => a.startsWith('ask-')), isEmpty);
+    expect(byKey('purchase-needs-customer'), findsNothing);
+
+    // The replacement again, the fields untouched: the question returns,
+    // and names the replacement.
     shopper
       ..actionFailure = null
       ..afterAction[shopperOrderA] = shopping(<Object?>[
         tomato(),
-        bread(status: 'purchased'),
+        shopperAskedLineJson('price_over_tolerance'),
       ]);
-    await tapAndSettle(tester, byKey('purchase-save'));
+    await tapAndSettle(tester, byKey('buy-replacement'));
+    expect(byKey('purchase-save'), findsNothing);
+    expect(byKey('purchase-needs-customer'), findsOneWidget);
+    await tapAndSettle(tester, byKey('ask-price'));
     expect(
       shopper.actions.last,
-      'purchase:$shopperLineBread:2:null:$shopperProductBread',
+      'ask-price:$shopperLineBread:6000:$shopperProductCherry:null',
     );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('a replacement is searched, chosen, and offered with the price '
@@ -1206,67 +1207,48 @@ void main() {
         textScale: 2,
         device: language,
       );
-      // The keyboard also shrinks the order page behind a sheet, which is
-      // not under test here: what the sheets themselves throw is recorded.
-      final List<String> problems = <String>[];
-      final void Function(FlutterErrorDetails)? previous = FlutterError.onError;
-      FlutterError.onError = (FlutterErrorDetails details) {
-        final String text = <String>[
-          details.exceptionAsString(),
-          ...?details.informationCollector?.call().map(
-            (DiagnosticsNode node) => node.toStringDeep(),
-          ),
-        ].join(' ');
-        if (!text.contains('_OrderView')) {
-          problems.add(text);
-        }
-      };
-      try {
-        await tester.dragUntilVisible(
-          byKey('buy-$shopperLineTomato'),
-          byKey('shopper-order'),
-          const Offset(0, -200),
-        );
+      await tester.dragUntilVisible(
+        byKey('buy-$shopperLineTomato'),
+        byKey('shopper-order'),
+        const Offset(0, -200),
+      );
 
-        // The plain purchase, then with the original chosen; the keyboard is
-        // up while a sheet is open.
-        await tapAndSettle(tester, byKey('buy-$shopperLineTomato'));
-        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
-        await tester.pumpAndSettle();
-        expect(problems, isEmpty, reason: 'plain');
-        await tapAndSettle(tester, byKey('buy-original'));
-        expect(problems, isEmpty, reason: 'two tabs');
+      // The plain purchase, then with the original chosen; the keyboard is
+      // up while a sheet is open.
+      await tapAndSettle(tester, byKey('buy-$shopperLineTomato'));
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'plain');
+      await tapAndSettle(tester, byKey('buy-original'));
+      expect(tester.takeException(), isNull, reason: 'two tabs');
 
-        // The typo guard's modal.
-        await tester.enterText(byKey('purchase-price'), '60000');
-        await tapAndSettle(tester, byKey('purchase-save'));
-        expect(byKey('typo-confirm'), findsOneWidget);
-        expect(problems, isEmpty, reason: 'the modal');
-        await tapAndSettle(tester, byKey('typo-cancel'));
+      // The typo guard's modal.
+      await tester.enterText(byKey('purchase-price'), '60000');
+      await tapAndSettle(tester, byKey('purchase-save'));
+      expect(byKey('typo-confirm'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'the modal');
+      await tapAndSettle(tester, byKey('typo-cancel'));
 
-        // The question, with a note at its limit.
-        shopper.actionFailure = priceRefusal;
-        await tester.enterText(byKey('purchase-price'), '22000');
-        await tapAndSettle(tester, byKey('purchase-save'));
-        expect(byKey('ask-price'), findsOneWidget);
-        await tester.enterText(byKey('ask-note'), List.filled(300, 'я').join());
-        await tester.pumpAndSettle();
-        expect(problems, isEmpty, reason: 'the question');
-        await tapAndSettle(tester, byKey('purchase-cancel'));
-        tester.view.resetViewInsets();
-        await tester.pumpAndSettle();
+      // The question, with a note at its limit.
+      shopper.actionFailure = priceRefusal;
+      await tester.enterText(byKey('purchase-price'), '22000');
+      await tapAndSettle(tester, byKey('purchase-save'));
+      expect(byKey('ask-price'), findsOneWidget);
+      await tester.enterText(byKey('ask-note'), List.filled(300, 'я').join());
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'the question');
+      await tapAndSettle(tester, byKey('purchase-cancel'));
+      tester.view.resetViewInsets();
+      await tester.pumpAndSettle();
 
-        // The line not found.
-        await tapAndSettle(tester, byKey('unavailable-$shopperLineTomato'));
-        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
-        await tester.pumpAndSettle();
-        expect(byKey('unavailable-sheet'), findsOneWidget);
-        await tester.enterText(byKey('unavailable-note'), 'Qolmagan');
-        await tester.pumpAndSettle();
-        expect(problems, isEmpty, reason: 'not found');
-      } finally {
-        FlutterError.onError = previous;
-      }
+      // The line not found.
+      await tapAndSettle(tester, byKey('unavailable-$shopperLineTomato'));
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+      expect(byKey('unavailable-sheet'), findsOneWidget);
+      await tester.enterText(byKey('unavailable-note'), 'Qolmagan');
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: 'not found');
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }
