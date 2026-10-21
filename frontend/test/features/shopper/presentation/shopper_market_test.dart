@@ -428,7 +428,7 @@ void main() {
     // The order is the Shopper's no more: back on the list, told why.
     expect(byKey('shopper-order'), findsNothing);
     expect(find.text(l10n(tester).shopperOrderCancelled), findsOneWidget);
-    expect(find.text(l10n(tester).shellShopper), findsOneWidget);
+    expect(find.text(l10n(tester).myOrders), findsOneWidget);
   });
 
   testWidgets('an order that can no longer be read says so, and leads back', (
@@ -690,7 +690,7 @@ void main() {
 
     expect(byKey('shopper-done-title'), findsNothing);
     expect(find.text(l10n(tester).doneTitle('1001')), findsOneWidget);
-    expect(find.text(l10n(tester).shellShopper), findsOneWidget);
+    expect(find.text(l10n(tester).myOrders), findsOneWidget);
   });
 
   testWidgets('the refresh waits while a completion runs', (

@@ -4055,20 +4055,74 @@ abstract class AppLocalizations {
   /// No description provided for @shopperOrdersEmpty.
   ///
   /// In uz, this message translates to:
-  /// **'Hozircha sizga buyurtma tayinlanmagan. Tayinlansa, shu yerda paydo bo\'ladi.'**
+  /// **'Operator sizga buyurtma tayinlasa, u shu yerda paydo bo\'ladi. Ro\'yxat o\'zi yangilanadi.'**
   String get shopperOrdersEmpty;
 
-  /// No description provided for @shopperOpenLines.
+  /// No description provided for @shopperChipNew.
   ///
   /// In uz, this message translates to:
-  /// **'Qolgan mahsulotlar: {open} / {total}'**
-  String shopperOpenLines(int open, int total);
+  /// **'Yangi'**
+  String get shopperChipNew;
 
-  /// No description provided for @shopperNotAccepted.
+  /// No description provided for @shopperChipAccepted.
   ///
   /// In uz, this message translates to:
-  /// **'Yangi buyurtma — qabul qiling'**
-  String get shopperNotAccepted;
+  /// **'Qabul qilindi'**
+  String get shopperChipAccepted;
+
+  /// No description provided for @shopperAssigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayinlandi: {when}'**
+  String shopperAssigned(String when);
+
+  /// No description provided for @shopperAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qilindi: {when}'**
+  String shopperAccepted(String when);
+
+  /// No description provided for @shopperStarted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish boshlandi: {when}'**
+  String shopperStarted(String when);
+
+  /// No description provided for @shopperOpenOf.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qoldi: {open} / {total}'**
+  String shopperOpenOf(int open, int total);
+
+  /// No description provided for @shopperDeliveryWish.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish: {wish}'**
+  String shopperDeliveryWish(String wish);
+
+  /// No description provided for @shopperOpenToAccept.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oching va buyurtmani qabul qiling'**
+  String get shopperOpenToAccept;
+
+  /// No description provided for @shopperStartAtMarket.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bozorga yetganingizda yig\'ishni boshlang'**
+  String get shopperStartAtMarket;
+
+  /// No description provided for @shopperEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha buyurtma yo\'q'**
+  String get shopperEmptyTitle;
+
+  /// No description provided for @staffCustomerModeHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zingiz uchun mahsulot buyurtma qilish'**
+  String get staffCustomerModeHint;
 
   /// No description provided for @shopperAssignedAt.
   ///

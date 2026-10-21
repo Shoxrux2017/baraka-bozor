@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'shopper_done_screen.dart';
+import 'shopper_list_screen.dart';
 import 'shopper_replace_screen.dart';
 import 'shopper_screens.dart';
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
+import 'package:baraka_bozor/core/localization/language_menu.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/localization/order_labels.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
@@ -169,7 +170,7 @@ void main() {
       expect(find.text(l10n(tester).courierOrdersEmpty), findsOneWidget);
     });
 
-    testWidgets('the app bar holds the language and one menu', (
+    testWidgets("the Courier's app bar holds one menu", (
       WidgetTester tester,
     ) async {
       // The customer session opened with the code that signed in.
@@ -182,11 +183,17 @@ void main() {
         findsOneWidget,
       );
       expect(
+        find.descendant(of: bar, matching: find.byType(LanguageMenuButton)),
+        findsNothing,
+      );
+      expect(
         find.descendant(of: bar, matching: byKey('logout-button')),
         findsNothing,
       );
       await tapAndSettle(tester, byKey('staff-menu'));
       expect(byKey('switch-to-customer-button'), findsOneWidget);
+      await tapAndSettle(tester, byKey('staff-menu-language'));
+      expect(byKey('language-sheet'), findsOneWidget);
     });
 
     testWidgets('the list keeps current every ten seconds while shown', (

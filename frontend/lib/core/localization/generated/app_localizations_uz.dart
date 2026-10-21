@@ -2266,15 +2266,52 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get shopperOrdersEmpty =>
-      'Hozircha sizga buyurtma tayinlanmagan. Tayinlansa, shu yerda paydo bo\'ladi.';
+      'Operator sizga buyurtma tayinlasa, u shu yerda paydo bo\'ladi. Ro\'yxat o\'zi yangilanadi.';
 
   @override
-  String shopperOpenLines(int open, int total) {
-    return 'Qolgan mahsulotlar: $open / $total';
+  String get shopperChipNew => 'Yangi';
+
+  @override
+  String get shopperChipAccepted => 'Qabul qilindi';
+
+  @override
+  String shopperAssigned(String when) {
+    return 'Tayinlandi: $when';
   }
 
   @override
-  String get shopperNotAccepted => 'Yangi buyurtma — qabul qiling';
+  String shopperAccepted(String when) {
+    return 'Qabul qilindi: $when';
+  }
+
+  @override
+  String shopperStarted(String when) {
+    return 'Yig\'ish boshlandi: $when';
+  }
+
+  @override
+  String shopperOpenOf(int open, int total) {
+    return 'Qoldi: $open / $total';
+  }
+
+  @override
+  String shopperDeliveryWish(String wish) {
+    return 'Yetkazish: $wish';
+  }
+
+  @override
+  String get shopperOpenToAccept => 'Oching va buyurtmani qabul qiling';
+
+  @override
+  String get shopperStartAtMarket =>
+      'Bozorga yetganingizda yig\'ishni boshlang';
+
+  @override
+  String get shopperEmptyTitle => 'Hozircha buyurtma yo\'q';
+
+  @override
+  String get staffCustomerModeHint =>
+      'O\'zingiz uchun mahsulot buyurtma qilish';
 
   @override
   String shopperAssignedAt(String time) {

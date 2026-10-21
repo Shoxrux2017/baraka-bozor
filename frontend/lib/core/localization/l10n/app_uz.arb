@@ -1320,9 +1320,35 @@
   "errorPriceCorrectionLocked": "Narxni endi tuzatib bo'lmaydi: buyurtma yo'lda, yakunlangan, bekor qilingan yoki onlayn to'lanadi.",
   "errorPriceCorrectionNotApplicable": "Bu mahsulot narxini tuzatib bo'lmaydi.",
   "staffMenu": "Menyu",
-  "shopperOrdersEmpty": "Hozircha sizga buyurtma tayinlanmagan. Tayinlansa, shu yerda paydo bo'ladi.",
-  "shopperOpenLines": "Qolgan mahsulotlar: {open} / {total}",
-  "@shopperOpenLines": {
+  "shopperOrdersEmpty": "Operator sizga buyurtma tayinlasa, u shu yerda paydo bo'ladi. Ro'yxat o'zi yangilanadi.",
+  "shopperChipNew": "Yangi",
+  "shopperChipAccepted": "Qabul qilindi",
+  "shopperAssigned": "Tayinlandi: {when}",
+  "@shopperAssigned": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperAccepted": "Qabul qilindi: {when}",
+  "@shopperAccepted": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperStarted": "Yig'ish boshlandi: {when}",
+  "@shopperStarted": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperOpenOf": "Qoldi: {open} / {total}",
+  "@shopperOpenOf": {
     "placeholders": {
       "open": {
         "type": "int"
@@ -1332,7 +1358,18 @@
       }
     }
   },
-  "shopperNotAccepted": "Yangi buyurtma — qabul qiling",
+  "shopperDeliveryWish": "Yetkazish: {wish}",
+  "@shopperDeliveryWish": {
+    "placeholders": {
+      "wish": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperOpenToAccept": "Oching va buyurtmani qabul qiling",
+  "shopperStartAtMarket": "Bozorga yetganingizda yig'ishni boshlang",
+  "shopperEmptyTitle": "Hozircha buyurtma yo'q",
+  "staffCustomerModeHint": "O'zingiz uchun mahsulot buyurtma qilish",
   "shopperAssignedAt": "Tayinlandi: {time}",
   "@shopperAssignedAt": {
     "placeholders": {

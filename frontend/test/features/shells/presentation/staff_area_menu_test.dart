@@ -1,6 +1,7 @@
 import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/session/session_controller.dart';
+import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/shells/presentation/staff_area_menu.dart';
@@ -8,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../support/app_harness.dart';
 import '../../../support/fake_auth_repository.dart';
+import '../../../support/in_memory_stores.dart';
 
 /// A session controller whose state the test sets.
 class _Session extends SessionController {
@@ -73,6 +76,53 @@ void main() {
       expect(logout, findsOneWidget);
     },
   );
+
+  testWidgets('the menu sheet holds the language, Customer mode and the way '
+      'out', (WidgetTester tester) async {
+    final InMemoryTokenStore tokens = InMemoryTokenStore()
+      ..tokens[SessionSlot.staff] = 's'
+      ..tokens[SessionSlot.customer] = 'c';
+    final FakeAuthRepository auth = FakeAuthRepository()
+      ..identities[SessionSlot.staff] = user(id: 's', role: UserRole.shopper)
+      ..identities[SessionSlot.customer] = user(id: 'c');
+    await tester.pumpWidget(appUnderTest(tokens: tokens, repository: auth));
+    await tester.pumpAndSettle();
+    final AppLocalizations words = AppLocalizations.of(
+      tester.element(find.byType(Scaffold).first),
+    );
+
+    await tester.tap(find.byKey(const ValueKey<String>('staff-menu')));
+    await tester.pumpAndSettle();
+
+    final Finder sheet = find.byKey(const ValueKey<String>('staff-menu-sheet'));
+    expect(sheet, findsOneWidget);
+    expect(
+      find.descendant(of: sheet, matching: find.text(words.languageLabel)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text(words.languageUzbek)),
+      findsOneWidget,
+    );
+    expect(customerMode, findsOneWidget);
+    expect(logout, findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('staff-menu-language')));
+    await tester.pumpAndSettle();
+    expect(sheet, findsNothing);
+    expect(
+      find.byKey(const ValueKey<String>('language-sheet')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey<String>('language-ru')));
+    await tester.pumpAndSettle();
+
+    final AppLocalizations russian = AppLocalizations.of(
+      tester.element(find.byType(Scaffold).first),
+    );
+    expect(russian.localeName, 'ru');
+  });
 
   testWidgets('choosing Customer mode switches at once, with no code', (
     WidgetTester tester,

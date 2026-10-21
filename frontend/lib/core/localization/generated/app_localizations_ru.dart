@@ -2296,15 +2296,50 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get shopperOrdersEmpty =>
-      'Пока вам не назначено заказов. Назначенный заказ появится здесь.';
+      'Когда оператор назначит вам заказ, он появится здесь. Список обновляется сам.';
 
   @override
-  String shopperOpenLines(int open, int total) {
-    return 'Осталось позиций: $open из $total';
+  String get shopperChipNew => 'Новый';
+
+  @override
+  String get shopperChipAccepted => 'Принят';
+
+  @override
+  String shopperAssigned(String when) {
+    return 'Назначен $when';
   }
 
   @override
-  String get shopperNotAccepted => 'Новый заказ — примите его';
+  String shopperAccepted(String when) {
+    return 'Принят $when';
+  }
+
+  @override
+  String shopperStarted(String when) {
+    return 'Сборка начата $when';
+  }
+
+  @override
+  String shopperOpenOf(int open, int total) {
+    return 'Осталось $open из $total';
+  }
+
+  @override
+  String shopperDeliveryWish(String wish) {
+    return 'Доставка: $wish';
+  }
+
+  @override
+  String get shopperOpenToAccept => 'Откройте и примите заказ';
+
+  @override
+  String get shopperStartAtMarket => 'Начните сборку, когда будете на базаре';
+
+  @override
+  String get shopperEmptyTitle => 'Заказов пока нет';
+
+  @override
+  String get staffCustomerModeHint => 'Заказать продукты для себя';
 
   @override
   String shopperAssignedAt(String time) {

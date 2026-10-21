@@ -2,7 +2,11 @@ import 'dart:async';
 
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
+import 'package:baraka_bozor/core/formatting/order_dates.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
+import 'package:baraka_bozor/core/localization/language_menu.dart';
+import 'package:baraka_bozor/core/localization/order_labels.dart';
+import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
@@ -77,6 +81,7 @@ void main() {
         shopper: shopper,
         phoneCalls: phone,
         device: device,
+        clock: () => DateTime.utc(2026, 9, 27, 9),
       ),
     );
     await tester.pumpAndSettle();
@@ -98,22 +103,31 @@ void main() {
     await open(tester);
     final AppLocalizations words = l10n(tester);
 
-    expect(find.text(words.shellShopper), findsOneWidget);
+    final DateTime now = DateTime.utc(2026, 9, 27, 9);
+    final DateTime assigned = DateTime.utc(2026, 9, 27, 7, 5);
+
+    expect(find.text(words.myOrders), findsOneWidget);
     expect(
       tester.getTopLeft(byKey('shopper-order-$shopperOrderA')).dy,
       lessThan(tester.getTopLeft(byKey('shopper-order-$shopperOrderB')).dy),
     );
-    expect(find.textContaining(words.shopperOpenLines(2, 2)), findsOneWidget);
-    expect(find.textContaining(words.shopperOpenLines(1, 2)), findsOneWidget);
-    expect(find.textContaining(words.shopperNotAccepted), findsOneWidget);
+    final Finder a = byKey('shopper-order-$shopperOrderA');
+    final Finder b = byKey('shopper-order-$shopperOrderB');
+    Finder within(Finder card, String text) =>
+        find.descendant(of: card, matching: find.text(text));
+    expect(within(a, words.shopperChipNew), findsOneWidget);
+    expect(within(a, words.orderItemCount(2)), findsOneWidget);
     expect(
-      find.textContaining(words.shopperAssignedAt('27.09.2026 12:05')),
+      within(a, words.shopperAssigned(orderAtLower(words, assigned, now))),
       findsOneWidget,
     );
+    expect(within(a, words.shopperOpenToAccept), findsOneWidget);
     expect(
-      find.textContaining('${words.orderSectionDeliveryWish}: Kechqurun'),
-      findsNWidgets(2),
+      within(b, OrderLabels.status(words, OrderStatus.shopping)),
+      findsOneWidget,
     );
+    expect(within(b, words.shopperOpenOf(1, 2)), findsOneWidget);
+    expect(within(a, words.shopperDeliveryWish('Kechqurun')), findsOneWidget);
 
     await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
     expect(byKey('shopper-order'), findsOneWidget);
@@ -125,7 +139,66 @@ void main() {
     await open(tester);
 
     expect(byKey('shopper-orders-empty'), findsOneWidget);
-    expect(find.text(l10n(tester).shopperOrdersEmpty), findsOneWidget);
+    final Finder empty = byKey('shopper-orders-empty');
+    expect(
+      find.descendant(
+        of: empty,
+        matching: find.text(l10n(tester).shopperEmptyTitle),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: empty,
+        matching: find.text(l10n(tester).shopperOrdersEmpty),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('an accepted order waits for the market', (
+    WidgetTester tester,
+  ) async {
+    shopper.rows = <ShopperOrderRow>[
+      ShopperOrdersApi.parseRow(shopperRowJson(accepted: true)),
+    ];
+    await open(tester);
+    final AppLocalizations words = l10n(tester);
+    final Finder card = byKey('shopper-order-$shopperOrderA');
+    Finder within(String text) =>
+        find.descendant(of: card, matching: find.text(text));
+
+    expect(within(words.shopperChipAccepted), findsOneWidget);
+    expect(
+      within(
+        words.shopperAccepted(
+          orderAtLower(
+            words,
+            DateTime.utc(2026, 9, 27, 7, 6),
+            DateTime.utc(2026, 9, 27, 9),
+          ),
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(within(words.shopperStartAtMarket), findsOneWidget);
+  });
+
+  testWidgets('a delivery wish shows on the card', (WidgetTester tester) async {
+    shopper.rows = <ShopperOrderRow>[
+      ShopperOrdersApi.parseRow(
+        shopperRowJson()..['delivery_time_note'] = 'после 18:00',
+      ),
+    ];
+    await open(tester);
+
+    expect(
+      find.descendant(
+        of: byKey('shopper-order-$shopperOrderA'),
+        matching: find.text(l10n(tester).shopperDeliveryWish('после 18:00')),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a line bought so cheaply that its total rounds to nothing is '
@@ -492,15 +565,22 @@ void main() {
     );
   });
 
-  testWidgets('the app bar keeps two buttons; the menu holds Customer mode '
-      'and the way out', (WidgetTester tester) async {
+  testWidgets('the app bar holds one menu; the menu holds Customer mode and '
+      'the way out', (WidgetTester tester) async {
     // The customer session opened with the code that signed in.
     tokens.tokens[SessionSlot.customer] = 'c';
     auth.identities[SessionSlot.customer] = user(id: 'c');
     await open(tester, size: const Size(360, 800));
     final AppLocalizations words = l10n(tester);
 
-    expect(find.text(words.shellShopper), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text(words.myOrders),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(LanguageMenuButton), findsNothing);
     expect(byKey('logout-button'), findsNothing);
     await tapAndSettle(tester, byKey('staff-menu'));
     expect(find.text(words.switchToCustomer), findsOneWidget);
@@ -508,6 +588,47 @@ void main() {
 
     expect(auth.calls, contains('logout:staff'));
   });
+
+  for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
+    testWidgets(
+      'the list holds at 320x640 with text x2 (${language.languageCode})',
+      (WidgetTester tester) async {
+        shopper.rows = <ShopperOrderRow>[
+          ShopperOrdersApi.parseRow(
+            shopperRowJson()..['delivery_time_note'] = 'после 18:00',
+          ),
+          ShopperOrdersApi.parseRow(
+            shopperRowJson(id: shopperOrderB, number: 1002, accepted: true),
+          ),
+          ShopperOrdersApi.parseRow(
+            shopperRowJson(
+              id: '0192f0a0-0000-7000-8000-00000000d003',
+              number: 1003,
+              status: 'shopping',
+              accepted: true,
+              open: 1,
+            ),
+          ),
+        ];
+        tokens.tokens[SessionSlot.customer] = 'c';
+        auth.identities[SessionSlot.customer] = user(id: 'c');
+        await open(
+          tester,
+          size: const Size(320, 640),
+          textScale: 2,
+          device: language,
+        );
+        expect(tester.takeException(), isNull);
+        await tester.drag(byKey('shopper-orders'), const Offset(0, -3000));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+
+        await tapAndSettle(tester, byKey('staff-menu'));
+        expect(byKey('staff-menu-sheet'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets('a phone-wide window with large text fits the list and an order '
       'in both languages', (WidgetTester tester) async {

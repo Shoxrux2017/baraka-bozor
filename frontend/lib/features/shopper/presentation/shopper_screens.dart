@@ -9,10 +9,8 @@ import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
-import '../../../core/localization/language_menu.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/network/api_failure.dart';
-import '../../../core/network/paged.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/platform/phone_calls.dart';
@@ -22,7 +20,6 @@ import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/periodic_refresh.dart';
-import '../../shells/presentation/staff_area_menu.dart';
 import '../application/shopper_orders_controllers.dart';
 import '../domain/shopper_orders.dart';
 import 'shopper_line_actions.dart';
@@ -31,124 +28,6 @@ import 'shopper_line_actions.dart';
 /// may run (`DL-54` (15)).
 bool _settled(AsyncValue<Object?> value) =>
     value.hasValue && !value.hasError && !value.isLoading;
-
-/// The Shopper's area: their current orders, the longest-waiting first,
-/// kept current while shown (`docs/09` section 28, `DL-69`).
-class ShopperOrdersScreen extends ConsumerWidget {
-  const ShopperOrdersScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<Paged<ShopperOrderRow>> page = ref.watch(
-      shopperOrdersProvider,
-    );
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.shellShopper),
-        actions: const <Widget>[LanguageMenuButton(), StaffAreaMenu()],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            const ActiveModeBar(),
-            Expanded(
-              child: PeriodicRefresh(
-                active: _settled(page),
-                onRefresh: () => ref.invalidate(shopperOrdersProvider),
-                child: page.when(
-                  skipLoadingOnReload: false,
-                  skipLoadingOnRefresh: !page.hasError,
-                  data: (Paged<ShopperOrderRow> page) =>
-                      page.items.isEmpty && !page.hasPrevious
-                      ? Center(
-                          key: const ValueKey<String>('shopper-orders-empty'),
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Text(
-                              l10n.shopperOrdersEmpty,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        )
-                      : ListView(
-                          key: const ValueKey<String>('shopper-orders'),
-                          padding: const EdgeInsets.all(16),
-                          children: <Widget>[
-                            // A page a refresh emptied, past the last one.
-                            if (page.items.isEmpty)
-                              Text(
-                                l10n.shopperPageEmpty,
-                                key: const ValueKey<String>(
-                                  'shopper-page-empty',
-                                ),
-                              ),
-                            for (final ShopperOrderRow row in page.items)
-                              _Row(row: row),
-                            PaginationBar(
-                              page: page,
-                              onPage: ref
-                                  .read(shopperOrdersPageProvider.notifier)
-                                  .goToPage,
-                            ),
-                          ],
-                        ),
-                  error: (Object error, StackTrace _) => Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: LoadFailure(
-                      error: error,
-                      onRetry: () => ref.invalidate(shopperOrdersProvider),
-                    ),
-                  ),
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Row extends StatelessWidget {
-  const _Row({required this.row});
-
-  final ShopperOrderRow row;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final bool accepted = row.assignment.acceptedAt != null;
-
-    return Card(
-      child: ListTile(
-        key: ValueKey<String>('shopper-order-${row.id}'),
-        title: Text(
-          '${l10n.boardOrderNumber('${row.orderNumber}')} · '
-          '${OrderLabels.status(l10n, row.status)}',
-        ),
-        subtitle: Text(
-          <String>[
-            l10n.shopperOpenLines(row.openItemCount, row.itemCount),
-            if (row.deliveryTimeNote != null)
-              '${l10n.orderSectionDeliveryWish}: ${row.deliveryTimeNote}',
-            if (accepted)
-              l10n.shopperAssignedAt(
-                TashkentTime.format(row.assignment.assignedAt),
-              )
-            else
-              l10n.shopperNotAccepted,
-          ].join('\n'),
-        ),
-        trailing: accepted ? null : const Icon(Icons.fiber_new_outlined),
-        onTap: () => context.push(AppPaths.shopperOrder(row.id)),
-      ),
-    );
-  }
-}
 
 /// One of the Shopper's orders (`docs/09` sections 28 and 29): its number,
 /// the delivery wish, every line with how far its price may go and what

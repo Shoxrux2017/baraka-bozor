@@ -1397,3 +1397,5 @@ Answer to the question `DL-94` item 5 left open. An Admin erases a blocked Custo
 ## DL-98 — The Shopper's screens, staff stage 1 (2026-10-21, agent)
 
 1. **Pictures.** The Shopper's order gives each line's picture and the authorized replacement's — the product's picture now, as the Customer's order shows it — so the Shopper recognises the product at the stall; the replacement list already gave its own.
+2. **Kit pieces.** The sheet, the button styles, the card, the note, the tag and the empty state live in `core/widgets/kit/` for every staff screen; the Customer's private copies stay until their screens are touched. A kit sheet is never dragged closed, so a sheet whose request runs holds through the ×, back and the scrim.
+3. **The menu and the list.** One ⋮ in a staff app bar opens a sheet with the language, Customer mode and sign-out; the language button leaves the app bar — the Courier's too, since the menu is shared. The list titles itself "Мои заказы" and draws a card per state of the assignment: new (to accept), accepted (to start at the market), started (lines left of all), with the times as the Tashkent day reads them.

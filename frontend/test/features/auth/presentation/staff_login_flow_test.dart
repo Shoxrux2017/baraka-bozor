@@ -116,7 +116,7 @@ void main() {
       await openGate(tester, UserRole.shopper);
 
       expect(currentPassword, findsOneWidget);
-      expect(find.text(l10n(tester).shellShopper), findsNothing);
+      expect(find.text(l10n(tester).myOrders), findsNothing);
 
       await tester.enterText(currentPassword, 'temporary pass');
       await tester.enterText(newPassword, 'short');
@@ -151,7 +151,7 @@ void main() {
 
       expect(repository.calls, contains('change-password:staff'));
       expect(find.text(l10n(tester).passwordChanged), findsOneWidget);
-      expect(find.text(l10n(tester).shellShopper), findsOneWidget);
+      expect(find.text(l10n(tester).myOrders), findsOneWidget);
     },
   );
 
@@ -334,7 +334,7 @@ void main() {
 
         expect(stepPassword, findsOneWidget);
         expect(find.text(l10n(tester).staffPasswordTitle), findsOneWidget);
-        expect(find.text(l10n(tester).shellShopper), findsNothing);
+        expect(find.text(l10n(tester).myOrders), findsNothing);
 
         await tester.enterText(stepPassword, 'staff pass');
         await tester.tap(stepSubmit);
@@ -342,7 +342,7 @@ void main() {
 
         expect(repository.calls, contains('step:${'t' * 64}'));
         expect(tokens.tokens[SessionSlot.staff], 's');
-        expect(find.text(l10n(tester).shellShopper), findsOneWidget);
+        expect(find.text(l10n(tester).myOrders), findsOneWidget);
 
         await tester.tap(find.byKey(const ValueKey<String>('staff-menu')));
         await tester.pumpAndSettle();

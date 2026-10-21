@@ -1275,9 +1275,35 @@
   "errorPriceCorrectionLocked": "Цену уже нельзя исправить: заказ в пути, завершён, отменён или оплачивается онлайн.",
   "errorPriceCorrectionNotApplicable": "Цену этой позиции исправить нельзя.",
   "staffMenu": "Меню",
-  "shopperOrdersEmpty": "Пока вам не назначено заказов. Назначенный заказ появится здесь.",
-  "shopperOpenLines": "Осталось позиций: {open} из {total}",
-  "@shopperOpenLines": {
+  "shopperOrdersEmpty": "Когда оператор назначит вам заказ, он появится здесь. Список обновляется сам.",
+  "shopperChipNew": "Новый",
+  "shopperChipAccepted": "Принят",
+  "shopperAssigned": "Назначен {when}",
+  "@shopperAssigned": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperAccepted": "Принят {when}",
+  "@shopperAccepted": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperStarted": "Сборка начата {when}",
+  "@shopperStarted": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperOpenOf": "Осталось {open} из {total}",
+  "@shopperOpenOf": {
     "placeholders": {
       "open": {
         "type": "int"
@@ -1287,7 +1313,18 @@
       }
     }
   },
-  "shopperNotAccepted": "Новый заказ — примите его",
+  "shopperDeliveryWish": "Доставка: {wish}",
+  "@shopperDeliveryWish": {
+    "placeholders": {
+      "wish": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperOpenToAccept": "Откройте и примите заказ",
+  "shopperStartAtMarket": "Начните сборку, когда будете на базаре",
+  "shopperEmptyTitle": "Заказов пока нет",
+  "staffCustomerModeHint": "Заказать продукты для себя",
   "shopperAssignedAt": "Назначен: {time}",
   "@shopperAssignedAt": {
     "placeholders": {
