@@ -199,18 +199,18 @@ Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54
 `GET /shopper/orders`, `GET /shopper/orders/{order}`. Current assignments only; any other order, a replaced Shopper's included, is the scope-safe `404` (`DL-54` (3)). The list is paginated, the longest-waiting assignment first, a row `{id, order_number, status, item_count, open_item_count, delivery_time_note, assignment{id, assigned_at, accepted_at, started_at}}`: `item_count` counts the lines the Shopper sees — every line but those the Customer removed before shopping — and `open_item_count` those still `pending` or `awaiting_customer`. The detail is `{id, order_number, status, delivery_time_note, customer_phone, assignment, can_accept, can_start, items}` — `customer_phone` the recipient's, `null` unless the order is `shopping` — with `items` oldest first:
 
 ```json
-{"id":"...","product_id":"...","name_uz":"...","name_ru":"...","unit_code":"kg","price_mode":"estimate",
+{"id":"...","product_id":"...","name_uz":"...","name_ru":"...","image_url":"https://.../storage/products/<uuid>.webp","unit_code":"kg","price_mode":"estimate",
  "quantity":"2.000","approved_quantity_cap":null,"customer_note":"...","substitution_policy":"allow_similar_substitution","status":"pending",
  "market_price_uzs":16000,"customer_unit_price_uzs":18400,
  "bound":{"customer_unit_price_uzs":21160,"market_price_uzs":18400},
- "replacement":{"product_id":"...","name_uz":"...","name_ru":"...","market_price_uzs":15500,"substitution_resolution":"automatic",
+ "replacement":{"product_id":"...","name_uz":"...","name_ru":"...","image_url":null,"market_price_uzs":15500,"substitution_resolution":"automatic",
                 "bound":{"customer_unit_price_uzs":21160,"market_price_uzs":18400}},
  "purchase":{"product_id":"...","purchased_quantity":"2.000","billable_quantity":"2.000","actual_market_price_uzs":16000,"billable_unit_price_uzs":18400,"line_total_uzs":36800},
  "removed_reason_code":null,
  "pending_approval":{"id":"...","type":"price_over_tolerance","expires_at":"..."}}
 ```
 
-`bound` is the bound of the original (`DL-54` (5)), `null` for a fixed line bought as itself; `replacement` is the authorized replacement, with its current market price and its own bound, or `null`, as it is for a removed line (`DL-57` (6)); each bound is the customer price and the highest market price within it under the line's markup (`DL-54` (6)); `purchase` is `null` until the line is bought, `pending_approval` while no question is pending. The resource never carries the address, the Customer's name or any amount the order owes (`docs/02` section 11, `DL-56`).
+`image_url` is the product's picture now, `null` without one; a replacement carries its own (`DL-98` (1)). `bound` is the bound of the original (`DL-54` (5)), `null` for a fixed line bought as itself; `replacement` is the authorized replacement, with its current market price and its own bound, or `null`, as it is for a removed line (`DL-57` (6)); each bound is the customer price and the highest market price within it under the line's markup (`DL-54` (6)); `purchase` is `null` until the line is bought, `pending_approval` while no question is pending. The resource never carries the address, the Customer's name or any amount the order owes (`docs/02` section 11, `DL-56`).
 
 ## 29. Accept and Start
 

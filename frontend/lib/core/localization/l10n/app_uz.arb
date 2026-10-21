@@ -1320,9 +1320,35 @@
   "errorPriceCorrectionLocked": "Narxni endi tuzatib bo'lmaydi: buyurtma yo'lda, yakunlangan, bekor qilingan yoki onlayn to'lanadi.",
   "errorPriceCorrectionNotApplicable": "Bu mahsulot narxini tuzatib bo'lmaydi.",
   "staffMenu": "Menyu",
-  "shopperOrdersEmpty": "Hozircha sizga buyurtma tayinlanmagan. Tayinlansa, shu yerda paydo bo'ladi.",
-  "shopperOpenLines": "Qolgan mahsulotlar: {open} / {total}",
-  "@shopperOpenLines": {
+  "shopperOrdersEmpty": "Operator sizga buyurtma tayinlasa, u shu yerda paydo bo'ladi. Ro'yxat o'zi yangilanadi.",
+  "shopperChipNew": "Yangi",
+  "shopperChipAccepted": "Qabul qilindi",
+  "shopperAssigned": "Tayinlandi: {when}",
+  "@shopperAssigned": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperAccepted": "Qabul qilindi: {when}",
+  "@shopperAccepted": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperStarted": "Yig'ish boshlandi: {when}",
+  "@shopperStarted": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperOpenOf": "Qoldi: {open} / {total}",
+  "@shopperOpenOf": {
     "placeholders": {
       "open": {
         "type": "int"
@@ -1332,41 +1358,92 @@
       }
     }
   },
-  "shopperNotAccepted": "Yangi buyurtma — qabul qiling",
-  "shopperAssignedAt": "Tayinlandi: {time}",
-  "@shopperAssignedAt": {
+  "shopperDeliveryWish": "Yetkazish: {wish}",
+  "@shopperDeliveryWish": {
     "placeholders": {
-      "time": {
+      "wish": {
         "type": "String"
       }
     }
   },
-  "shopperAcceptedAt": "Qabul qilindi: {time}",
-  "@shopperAcceptedAt": {
+  "shopperOpenToAccept": "Oching va buyurtmani qabul qiling",
+  "shopperStatusNew": "Yangi buyurtma",
+  "shopperStatusNewHint": "Mahsulotlarni ko'rib chiqing va buyurtmani qabul qiling",
+  "shopperStatusAccepted": "Buyurtma qabul qilindi",
+  "shopperStatusShopping": "Yig'ish davom etmoqda",
+  "shopperShoppingHint": "Boshlandi: {when} · qoldi {open} / {total}",
+  "@shopperShoppingHint": {
     "placeholders": {
-      "time": {
+      "when": {
         "type": "String"
+      },
+      "open": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
       }
     }
   },
-  "shopperStartedAt": "Yig'ish boshlandi: {time}",
-  "@shopperStartedAt": {
+  "shopperStatusResolved": "Hammasi hal qilindi",
+  "shopperResolvedHint": "Sotib olindi: {bought} · olib tashlandi: {removed} · yakunlash mumkin",
+  "@shopperResolvedHint": {
     "placeholders": {
-      "time": {
-        "type": "String"
+      "bought": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
       }
     }
   },
-  "shopperAccept": "Qabul qilish",
+  "shopperStepAssigned": "Tayinlandi",
+  "shopperStepAccepted": "Qabul qilindi",
+  "shopperStepShopping": "Yig'ish",
+  "shopperStepDone": "Yig'ildi",
+  "shopperLegendDone": "Tayyor: {count}",
+  "@shopperLegendDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperLegendWaiting": "Javob kutilmoqda: {count}",
+  "@shopperLegendWaiting": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperLegendToBuy": "Sotib olish: {count}",
+  "@shopperLegendToBuy": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperCallCustomer": "Mijozga qo'ng'iroq qilish",
+  "shopperPhoneLater": "Mijozning telefoni yig'ishni boshlaganingizda ko'rinadi.",
+  "shopperResolveFirst": "Avval barcha mahsulotlarni hal qiling · qoldi: {count}",
+  "@shopperResolveFirst": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperCompleteBought": "Sotib olindi",
+  "shopperCompleteRemoved": "Olib tashlandi",
+  "completeConfirm": "Yakunlash",
+  "shopperOrderGoneHint": "U bekor qilingan yoki boshqa yig'uvchiga berilgan.",
+  "shopperStartAtMarket": "Bozorga yetganingizda yig'ishni boshlang",
+  "shopperEmptyTitle": "Hozircha buyurtma yo'q",
+  "staffCustomerModeHint": "O'zingiz uchun mahsulot buyurtma qilish",
+  "shopperAccept": "Buyurtmani qabul qilish",
   "shopperStart": "Yig'ishni boshlash",
-  "callCustomer": "Mijozga qo'ng'iroq: {phone}",
-  "@callCustomer": {
-    "placeholders": {
-      "phone": {
-        "type": "String"
-      }
-    }
-  },
   "callFailed": "Qo'ng'iroq ilovasi ochilmadi. Raqamni qo'lda tering: {phone}",
   "@callFailed": {
     "placeholders": {
@@ -1375,63 +1452,100 @@
       }
     }
   },
-  "shopperLineCap": "Mijoz rozi bo'lgan miqdor: {quantity}",
-  "@shopperLineCap": {
+  "shopperPageEmpty": "Bu sahifada buyurtma qolmadi. Oldingi sahifaga o'ting.",
+  "lineBuy": "Sotib olish",
+  "lineReplace": "Almashtirish",
+  "lineUnavailable": "Topilmadi",
+  "purchaseSheetTitle": "Xarid",
+  "purchaseNeeded": "Mijozga {quantity} kerak",
+  "@purchaseNeeded": {
     "placeholders": {
       "quantity": {
         "type": "String"
       }
     }
   },
-  "shopperPriceLimit": "So'ramasdan ko'pi bilan: {price}",
-  "@shopperPriceLimit": {
+  "purchaseQuantity": "Sotib olingan miqdor",
+  "purchasePriceFor": "1 {unit} narxi (to'langan)",
+  "@purchasePriceFor": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "purchasePriceShort": "1 {unit} narxi",
+  "@purchasePriceShort": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseExcess": "{quantity} dan ortig'ini mijoz to'lamaydi.",
+  "@purchaseExcess": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseMarketInfo": "Bozor narxi {price}. Mijozdan so'ramasdan — 1 {unit} uchun {bound} gacha.",
+  "@purchaseMarketInfo": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "bound": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseMarketOnly": "Bozor narxi {price}.",
+  "@purchaseMarketOnly": {
     "placeholders": {
       "price": {
         "type": "String"
       }
     }
   },
-  "shopperQuestion": "Mijoz javobi kutilmoqda ({type}), {time} gacha",
-  "@shopperQuestion": {
-    "placeholders": {
-      "type": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "shopperPageEmpty": "Bu sahifada buyurtma qolmadi. Oldingi sahifaga o'ting.",
-  "lineBuy": "Sotib olish",
-  "lineReplace": "Almashtirish",
-  "lineUnavailable": "Topilmadi",
-  "purchaseTitle": "Sotib olish: {name}",
-  "@purchaseTitle": {
+  "purchaseWhich": "Almashtiruvchini oldingizmi yoki «{name}» topildimi? Nima olganingizni tanlang.",
+  "@purchaseWhich": {
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "purchaseQuantity": "Sotib olingan miqdor",
-  "purchasePrice": "Birlik narxi (to'langan)",
   "purchasePriceOptional": "Narxi belgilangan mahsulot: narx ixtiyoriy",
   "purchaseSave": "Sotib oldim",
   "purchaseAgain": "Qayta yuborish",
-  "purchaseUnconfirmed": "Oxirgi xaridga javob kelmadi — xuddi shu xarid qayta yuboriladi.",
-  "purchaseAboveBound": "Bu narx mijozdan so'ramasdan to'lash mumkin bo'lganidan yuqori. Mijozdan so'raysizmi?",
-  "purchaseBelowQuantity": "Mijozga {quantity} kerak. Shuncha sotib oling yoki mijozdan kamroq miqdorga roziligini so'rang.",
+  "purchaseUnconfirmed": "Oxirgi xaridga javob kelmadi. «Sotib olish»ni bosing — o'sha xarid qayta yuboriladi.",
+  "purchaseAboveBound": "Bu mijozdan so'ramasdan mumkin bo'lganidan qimmat ({bound} gacha). Mijozdan so'rang yoki arzonroq toping.",
+  "@purchaseAboveBound": {
+    "placeholders": {
+      "bound": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseBelowQuantity": "Mijozga {required} kerak. Shuncha sotib oling yoki mijozdan {quantity} ga roziligini so'rang.",
   "@purchaseBelowQuantity": {
     "placeholders": {
+      "required": {
+        "type": "String"
+      },
       "quantity": {
         "type": "String"
       }
     }
   },
   "askNote": "Mijozga izoh (ixtiyoriy)",
-  "askPrice": "Mijozdan narx haqida so'rash",
-  "askQuantity": "Mijozdan miqdor haqida so'rash",
+  "askCustomer": "Mijozdan so'rash",
+  "askNotePlaceholder": "Masalan: boshqa yangisi yo'q",
   "typoTitle": "Narxni tekshiring",
   "typoExplained": "Siz {price} kiritdingiz, bozor narxi esa {market}. To'g'rimi?",
   "@typoExplained": {
@@ -1446,15 +1560,16 @@
   },
   "typoConfirm": "Ha, to'g'ri",
   "typoCancel": "Tuzataman",
-  "unavailableTitle": "«{name}» topilmadimi?",
-  "@unavailableTitle": {
+  "unavailableSheetTitle": "Mahsulot yo'qmi?",
+  "unavailableExplained": "«{name}» buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.",
+  "@unavailableExplained": {
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "unavailableExplained": "Mahsulot buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.",
+  "unavailableNotePlaceholder": "Masalan: hammasi so'lgan",
   "unavailableConfirm": "Ha, topilmadi",
   "replaceTitle": "«{name}» o'rniga",
   "@replaceTitle": {
@@ -1466,14 +1581,52 @@
   },
   "replaceSearchHint": "Mahsulot nomi",
   "replaceNone": "Mos mahsulot topilmadi",
-  "substituteTitle": "O'rniga olish: {name}",
-  "@substituteTitle": {
+  "replaceInfoSimilar": "Mijoz: o'xshashi bilan almashtirish mumkin. Narx chegarada bo'lsa — darhol almashtiriladi, aks holda mijozdan so'raladi.",
+  "replaceInfoContact": "Mijoz almashtirishdan oldin bog'lanishni so'ragan — avval unga taklif qilinadi.",
+  "replacePricePer": "{price} / {unit}",
+  "@replacePricePer": {
     "placeholders": {
-      "name": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
   },
+  "replaceMarket": "bozor narxi",
+  "replaceUnitHint": "Bir xil o'lchov birligidagi mahsulotlar: {unit}",
+  "@replaceUnitHint": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "replaceNoneHint": "Boshqa nom bilan qidiring. Almashtiradigan narsa bo'lmasa — orqaga qayting va «Topilmadi»ni bosing.",
+  "substituteSheetTitle": "Almashtirishni taklif qilish",
+  "substituteInstead": "«{name}» o'rniga, {quantity}",
+  "@substituteInstead": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "substitutePriceFor": "1 {unit} narxi (to'laysiz)",
+  "@substitutePriceFor": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "substituteInfoSimilar": "Narx chegarada bo'lsa — darhol oling. Qimmatroq bo'lsa — mijozga savol boradi.",
+  "substituteInfoContact": "Mijozga almashtirish haqida savol boradi.",
+  "doneWriteOnBag": "Paketga yozing",
   "substituteSave": "Taklif qilish",
   "completeShopping": "Yig'ishni yakunlash",
   "completeTitle": "Yig'ish yakunlansinmi?",
@@ -1487,7 +1640,7 @@
       }
     }
   },
-  "doneTitle": "Buyurtma №{number} yig'ildi",
+  "doneTitle": "Buyurtma № {number} yig'ildi",
   "@doneTitle": {
     "placeholders": {
       "number": {
@@ -1495,14 +1648,7 @@
       }
     }
   },
-  "doneLabel": "Paketga {number} raqamini yozing va uni topshirish joyiga olib boring.",
-  "@doneLabel": {
-    "placeholders": {
-      "number": {
-        "type": "String"
-      }
-    }
-  },
+  "doneLabel": "Paketni topshirish joyiga olib boring.",
   "doneBack": "Buyurtmalarimga",
   "errorShoppingNotActive": "Bu buyurtmani hozir yig'ib bo'lmaydi.",
   "errorItemAlreadyResolved": "Bu mahsulot allaqachon hal qilingan.",
@@ -1510,7 +1656,7 @@
   "errorApprovalNotNeeded": "Bu narx uchun mijozdan so'rash shart emas — sotib olavering.",
   "errorSubstitutionNotAllowed": "Mijoz bu mahsulotni almashtirishga rozi emas.",
   "errorShoppingIncomplete": "Hali hal qilinmagan mahsulotlar bor.",
-  "shopperOrderGone": "Bu buyurtma endi sizda emas.",
+  "shopperOrderGone": "Bu buyurtma endi sizda emas",
   "shopperOrderCancelled": "Buyurtma bekor qilindi: sotib olinadigan narsa qolmadi.",
   "substituteUseBuy": "Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo'lsa, u yerda mijozdan so'rash taklif qilinadi.",
   "questionReplacementPrice": "O'rniga olinadigan «{name}»: narxi {price}. Shu narxga rozimisiz?",
@@ -2316,5 +2462,130 @@
   "profileDeleteAccount": "Akkauntni o'chirish",
   "deletedTitle": "Akkaunt o'chirildi",
   "deletedBody": "Ma'lumotlaringiz o'chirildi.\nBiz bilan bo'lganingiz uchun rahmat.",
+  "shopperMarketPer": "Bozor narxi: {price} / {unit}",
+  "@shopperMarketPer": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperBoundPer": "Mijozdan so'ramasdan — {unit} uchun {price} gacha",
+  "@shopperBoundPer": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperCapAgreed": "Mijoz {ordered} o'rniga {quantity} ga rozi",
+  "@shopperCapAgreed": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "ordered": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperCapBuy": "{quantity} dan ko'p olmang",
+  "@shopperCapBuy": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperReplacementApproved": "Mijoz almashtirishga rozi bo'ldi",
+  "shopperReplacementAutomatic": "Mijoz o'xshashiga almashtirishga ruxsat bergan",
+  "shopperReplacementPrices": "Bozor narxi {price} · so'ramasdan {bound} gacha",
+  "@shopperReplacementPrices": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "bound": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperClientNote": "Mijoz: «{note}»",
+  "@shopperClientNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperGroupToBuy": "Sotib olish",
+  "shopperGroupWaiting": "Mijoz javobini kutyapmiz",
+  "shopperGroupDone": "Tayyor",
+  "shopperAskedPrice": "Mijozdan so'raldi: narx chegaradan yuqori. Javob {time} gacha",
+  "@shopperAskedPrice": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperAskedSubstitution": "Mijozdan so'raldi: almashtirish. Javob {time} gacha",
+  "@shopperAskedSubstitution": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperAskedQuantity": "Mijozdan so'raldi: kamroq miqdor. Javob {time} gacha",
+  "@shopperAskedQuantity": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperWaitBuyOthers": "Kutayotganda qolganlarini sotib oling.",
+  "shopperQuestionExpired": "Mijoz o'z vaqtida javob bermadi. Operator bu mahsulotni buyurtmadan olib tashlaydi.",
+  "shopperBoughtAt": "{quantity}, {price} dan sotib olindi",
+  "@shopperBoughtAt": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperBoughtInstead": "«{name}» o'rniga · {quantity}, {price} dan",
+  "@shopperBoughtInstead": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperTagReplaced": "Almashtirildi",
+  "shopperTagRemoved": "Olib tashlandi: {reason}",
+  "@shopperTagRemoved": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "doneButton": "Tayyor"
 }

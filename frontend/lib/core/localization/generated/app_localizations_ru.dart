@@ -2296,60 +2296,137 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get shopperOrdersEmpty =>
-      'Пока вам не назначено заказов. Назначенный заказ появится здесь.';
+      'Когда оператор назначит вам заказ, он появится здесь. Список обновляется сам.';
 
   @override
-  String shopperOpenLines(int open, int total) {
-    return 'Осталось позиций: $open из $total';
+  String get shopperChipNew => 'Новый';
+
+  @override
+  String get shopperChipAccepted => 'Принят';
+
+  @override
+  String shopperAssigned(String when) {
+    return 'Назначен $when';
   }
 
   @override
-  String get shopperNotAccepted => 'Новый заказ — примите его';
-
-  @override
-  String shopperAssignedAt(String time) {
-    return 'Назначен: $time';
+  String shopperAccepted(String when) {
+    return 'Принят $when';
   }
 
   @override
-  String shopperAcceptedAt(String time) {
-    return 'Принят: $time';
+  String shopperStarted(String when) {
+    return 'Сборка начата $when';
   }
 
   @override
-  String shopperStartedAt(String time) {
-    return 'Сборка начата: $time';
+  String shopperOpenOf(int open, int total) {
+    return 'Осталось $open из $total';
   }
 
   @override
-  String get shopperAccept => 'Принять';
+  String shopperDeliveryWish(String wish) {
+    return 'Доставка: $wish';
+  }
+
+  @override
+  String get shopperOpenToAccept => 'Откройте и примите заказ';
+
+  @override
+  String get shopperStatusNew => 'Новый заказ';
+
+  @override
+  String get shopperStatusNewHint => 'Посмотрите товары и примите заказ';
+
+  @override
+  String get shopperStatusAccepted => 'Заказ принят';
+
+  @override
+  String get shopperStatusShopping => 'Идёт сборка';
+
+  @override
+  String shopperShoppingHint(String when, int open, int total) {
+    return 'Начата $when · осталось $open из $total';
+  }
+
+  @override
+  String get shopperStatusResolved => 'Всё решено';
+
+  @override
+  String shopperResolvedHint(int bought, int removed) {
+    return 'Куплено $bought · убрано $removed · можно завершать';
+  }
+
+  @override
+  String get shopperStepAssigned => 'Назначен';
+
+  @override
+  String get shopperStepAccepted => 'Принят';
+
+  @override
+  String get shopperStepShopping => 'Сборка';
+
+  @override
+  String get shopperStepDone => 'Собран';
+
+  @override
+  String shopperLegendDone(int count) {
+    return 'Готово $count';
+  }
+
+  @override
+  String shopperLegendWaiting(int count) {
+    return 'Ждём ответа $count';
+  }
+
+  @override
+  String shopperLegendToBuy(int count) {
+    return 'Купить $count';
+  }
+
+  @override
+  String get shopperCallCustomer => 'Позвонить клиенту';
+
+  @override
+  String get shopperPhoneLater =>
+      'Телефон клиента появится, когда вы начнёте сборку.';
+
+  @override
+  String shopperResolveFirst(int count) {
+    return 'Сначала решите все товары · осталось $count';
+  }
+
+  @override
+  String get shopperCompleteBought => 'Куплено';
+
+  @override
+  String get shopperCompleteRemoved => 'Убрано';
+
+  @override
+  String get completeConfirm => 'Завершить';
+
+  @override
+  String get shopperOrderGoneHint =>
+      'Его отменили или передали другому сборщику.';
+
+  @override
+  String get shopperStartAtMarket => 'Начните сборку, когда будете на базаре';
+
+  @override
+  String get shopperEmptyTitle => 'Заказов пока нет';
+
+  @override
+  String get staffCustomerModeHint => 'Заказать продукты для себя';
+
+  @override
+  String get shopperAccept => 'Принять заказ';
 
   @override
   String get shopperStart => 'Начать сборку';
 
   @override
-  String callCustomer(String phone) {
-    return 'Позвонить клиенту: $phone';
-  }
-
-  @override
   String callFailed(String phone) {
     return 'Не удалось открыть приложение для звонков. Наберите номер вручную: $phone';
-  }
-
-  @override
-  String shopperLineCap(String quantity) {
-    return 'Согласовано с клиентом: $quantity';
-  }
-
-  @override
-  String shopperPriceLimit(String price) {
-    return 'Без вопроса клиенту не дороже: $price';
-  }
-
-  @override
-  String shopperQuestion(String type, String time) {
-    return 'Ждём ответа клиента ($type) до $time';
   }
 
   @override
@@ -2363,18 +2440,48 @@ class AppLocalizationsRu extends AppLocalizations {
   String get lineReplace => 'Заменить';
 
   @override
-  String get lineUnavailable => 'Нет в наличии';
+  String get lineUnavailable => 'Нет товара';
 
   @override
-  String purchaseTitle(String name) {
-    return 'Покупка: $name';
+  String get purchaseSheetTitle => 'Покупка';
+
+  @override
+  String purchaseNeeded(String quantity) {
+    return 'Клиенту нужно $quantity';
   }
 
   @override
-  String get purchaseQuantity => 'Сколько куплено';
+  String get purchaseQuantity => 'Сколько купили';
 
   @override
-  String get purchasePrice => 'Цена за единицу (оплачено)';
+  String purchasePriceFor(String unit) {
+    return 'Цена за $unit (сколько заплатили)';
+  }
+
+  @override
+  String purchasePriceShort(String unit) {
+    return 'Цена за $unit';
+  }
+
+  @override
+  String purchaseExcess(String quantity) {
+    return 'Лишнее сверх $quantity клиент не оплачивает.';
+  }
+
+  @override
+  String purchaseMarketInfo(String price, String bound, String unit) {
+    return 'Рыночная $price. Без вопроса клиенту — до $bound за $unit';
+  }
+
+  @override
+  String purchaseMarketOnly(String price) {
+    return 'Рыночная $price.';
+  }
+
+  @override
+  String purchaseWhich(String name) {
+    return 'Купили замену или нашли «$name»? Выберите, что купили.';
+  }
 
   @override
   String get purchasePriceOptional =>
@@ -2388,25 +2495,26 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get purchaseUnconfirmed =>
-      'На последнюю покупку нет ответа — та же покупка будет отправлена снова.';
+      'На последнюю покупку не пришёл ответ. Нажмите «Купить» — отправим ту же покупку ещё раз.';
 
   @override
-  String get purchaseAboveBound =>
-      'Эта цена выше той, что можно платить без вопроса клиенту. Спросить клиента?';
+  String purchaseAboveBound(String bound) {
+    return 'Это дороже, чем можно без вопроса клиенту (до $bound). Спросите клиента или найдите дешевле.';
+  }
 
   @override
-  String purchaseBelowQuantity(String quantity) {
-    return 'Клиенту нужно $quantity. Купите столько или спросите клиента, согласен ли он на меньшее.';
+  String purchaseBelowQuantity(String required, String quantity) {
+    return 'Клиенту нужно $required — купите столько или спросите клиента, согласен ли он на $quantity';
   }
 
   @override
   String get askNote => 'Комментарий для клиента (необязательно)';
 
   @override
-  String get askPrice => 'Спросить клиента о цене';
+  String get askCustomer => 'Спросить клиента';
 
   @override
-  String get askQuantity => 'Спросить клиента о количестве';
+  String get askNotePlaceholder => 'Например: больше свежих нет';
 
   @override
   String get typoTitle => 'Проверьте цену';
@@ -2423,16 +2531,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get typoCancel => 'Исправлю';
 
   @override
-  String unavailableTitle(String name) {
-    return '«$name» нет в наличии?';
+  String get unavailableSheetTitle => 'Товара нет?';
+
+  @override
+  String unavailableExplained(String name) {
+    return 'Уберём «$name» из заказа. Если покупать больше нечего, заказ отменится.';
   }
 
   @override
-  String get unavailableExplained =>
-      'Товар будет убран из заказа. Если покупать больше нечего, заказ отменится.';
+  String get unavailableNotePlaceholder => 'Например: весь вялый';
 
   @override
-  String get unavailableConfirm => 'Да, нет в наличии';
+  String get unavailableConfirm => 'Да, товара нет';
 
   @override
   String replaceTitle(String name) {
@@ -2446,9 +2556,52 @@ class AppLocalizationsRu extends AppLocalizations {
   String get replaceNone => 'Подходящих товаров нет';
 
   @override
-  String substituteTitle(String name) {
-    return 'Взять вместо: $name';
+  String get replaceInfoSimilar =>
+      'Клиент: можно заменить похожим. Если цена в пределах — замена сразу, иначе спросим клиента.';
+
+  @override
+  String get replaceInfoContact =>
+      'Клиент просил связаться перед заменой — замену сначала предложим ему.';
+
+  @override
+  String replacePricePer(String price, String unit) {
+    return '$price за $unit';
   }
+
+  @override
+  String get replaceMarket => 'рыночная';
+
+  @override
+  String replaceUnitHint(String unit) {
+    return 'Показываем товары с той же единицей: $unit';
+  }
+
+  @override
+  String get replaceNoneHint =>
+      'Попробуйте другое название. Если заменить нечем — вернитесь и нажмите «Нет товара».';
+
+  @override
+  String get substituteSheetTitle => 'Предложить замену';
+
+  @override
+  String substituteInstead(String name, String quantity) {
+    return 'Вместо «$name», $quantity';
+  }
+
+  @override
+  String substitutePriceFor(String unit) {
+    return 'Цена за $unit (сколько заплатите)';
+  }
+
+  @override
+  String get substituteInfoSimilar =>
+      'В пределах цены — покупайте сразу. Дороже — клиент получит вопрос.';
+
+  @override
+  String get substituteInfoContact => 'Клиент получит вопрос о замене.';
+
+  @override
+  String get doneWriteOnBag => 'Напишите на пакете';
 
   @override
   String get substituteSave => 'Предложить';
@@ -2474,13 +2627,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String doneTitle(String number) {
-    return 'Заказ №$number собран';
+    return 'Заказ № $number собран';
   }
 
   @override
-  String doneLabel(String number) {
-    return 'Напишите на пакете номер $number и отнесите его в пункт передачи.';
-  }
+  String get doneLabel => 'Отнесите пакет в пункт передачи.';
 
   @override
   String get doneBack => 'К моим заказам';
@@ -2507,7 +2658,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get errorShoppingIncomplete => 'Есть ещё нерешённые позиции.';
 
   @override
-  String get shopperOrderGone => 'Этот заказ больше не ваш.';
+  String get shopperOrderGone => 'Этот заказ больше не ваш';
 
   @override
   String get shopperOrderCancelled => 'Заказ отменён: покупать больше нечего.';
@@ -3600,6 +3751,91 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get deletedBody => 'Ваши данные стёрты.\nСпасибо, что были с нами.';
+
+  @override
+  String shopperMarketPer(String price, String unit) {
+    return 'Рыночная $price за $unit';
+  }
+
+  @override
+  String shopperBoundPer(String price, String unit) {
+    return 'Без вопроса клиенту — до $price за $unit';
+  }
+
+  @override
+  String shopperCapAgreed(String quantity, String ordered) {
+    return 'Клиент согласен на $quantity вместо $ordered';
+  }
+
+  @override
+  String shopperCapBuy(String quantity) {
+    return 'Купите не больше $quantity';
+  }
+
+  @override
+  String get shopperReplacementApproved => 'Клиент согласился на замену';
+
+  @override
+  String get shopperReplacementAutomatic => 'Клиент разрешил похожую замену';
+
+  @override
+  String shopperReplacementPrices(String price, String bound) {
+    return 'Рыночная $price · без вопроса до $bound';
+  }
+
+  @override
+  String shopperClientNote(String note) {
+    return 'Клиент: «$note»';
+  }
+
+  @override
+  String get shopperGroupToBuy => 'Купить';
+
+  @override
+  String get shopperGroupWaiting => 'Ждём ответа клиента';
+
+  @override
+  String get shopperGroupDone => 'Готово';
+
+  @override
+  String shopperAskedPrice(String time) {
+    return 'Спросили клиента: цена выше допустимой. Ответ до $time';
+  }
+
+  @override
+  String shopperAskedSubstitution(String time) {
+    return 'Спросили клиента: замена. Ответ до $time';
+  }
+
+  @override
+  String shopperAskedQuantity(String time) {
+    return 'Спросили клиента: меньшее количество. Ответ до $time';
+  }
+
+  @override
+  String get shopperWaitBuyOthers => 'Пока ждём — покупайте остальное.';
+
+  @override
+  String get shopperQuestionExpired =>
+      'Клиент не ответил вовремя. Оператор уберёт этот товар из заказа.';
+
+  @override
+  String shopperBoughtAt(String quantity, String price) {
+    return 'Куплено $quantity по $price';
+  }
+
+  @override
+  String shopperBoughtInstead(String name, String quantity, String price) {
+    return 'Вместо «$name» · $quantity по $price';
+  }
+
+  @override
+  String get shopperTagReplaced => 'Заменено';
+
+  @override
+  String shopperTagRemoved(String reason) {
+    return 'Убрано: $reason';
+  }
 
   @override
   String get doneButton => 'Готово';

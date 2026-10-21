@@ -33,6 +33,85 @@ void main() {
       expect(row.assignment.startedAt, isNull);
     });
 
+    test('a line and its replacement carry their pictures', () {
+      final ShopperOrder order = ShopperOrdersApi.parseOrder(
+        shopperOrderJson(
+          status: 'shopping',
+          items: <Object?>[
+            shopperLineJson(
+              imageUrl: 'https://cdn.test/products/tomato.webp',
+              patch: <String, Object?>{
+                'replacement': shopperReplacementJson(
+                  imageUrl: 'https://cdn.test/products/cherry.webp',
+                ),
+              },
+            ),
+            shopperLineJson(bread: true),
+            shopperLineJson(
+              patch: <String, Object?>{
+                'id': shopperLineBread,
+                ...without(shopperLineJson(), 'image_url'),
+                'replacement': without(shopperReplacementJson(), 'image_url'),
+              },
+            ),
+          ],
+        ),
+      );
+
+      expect(order.items[0].imageUrl, 'https://cdn.test/products/tomato.webp');
+      expect(
+        order.items[0].replacement?.imageUrl,
+        'https://cdn.test/products/cherry.webp',
+      );
+      expect(order.items[1].imageUrl, isNull);
+      expect(order.items[2].imageUrl, isNull);
+      expect(order.items[2].replacement?.imageUrl, isNull);
+      for (final Map<String, Object?> broken in <Map<String, Object?>>[
+        <String, Object?>{...shopperLineJson(), 'image_url': 5},
+        shopperLineJson(
+          patch: <String, Object?>{
+            'replacement': <String, Object?>{
+              ...shopperReplacementJson(),
+              'image_url': 5,
+            },
+          },
+        ),
+      ]) {
+        expect(
+          () => ShopperOrdersApi.parseOrder(
+            shopperOrderJson(status: 'shopping', items: <Object?>[broken]),
+          ),
+          throwsFormatException,
+          reason: '$broken',
+        );
+      }
+    });
+
+    test('a replacement choice carries its picture', () {
+      expect(
+        ShopperOrdersApi.parseChoice(
+          shopperChoiceJson(imageUrl: 'https://cdn.test/products/cherry.webp'),
+        ).imageUrl,
+        'https://cdn.test/products/cherry.webp',
+      );
+      expect(
+        ShopperOrdersApi.parseChoice(shopperChoiceJson()).imageUrl,
+        isNull,
+      );
+      expect(
+        ShopperOrdersApi.parseChoice(without(shopperChoiceJson(), 'image_url'))
+            .imageUrl,
+        isNull,
+      );
+      expect(
+        () => ShopperOrdersApi.parseChoice(<String, Object?>{
+          ...shopperChoiceJson(),
+          'image_url': 5,
+        }),
+        throwsFormatException,
+      );
+    });
+
     test('an order with each kind of line', () {
       final ShopperOrder order = ShopperOrdersApi.parseOrder(
         shopperOrderJson(

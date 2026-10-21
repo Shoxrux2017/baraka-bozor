@@ -87,7 +87,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(nameField, findsNothing);
-      expect(find.text(l10n(tester).shellShopper), findsOneWidget);
+      expect(find.text(l10n(tester).myOrders), findsOneWidget);
     },
   );
 }

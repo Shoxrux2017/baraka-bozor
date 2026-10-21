@@ -2266,60 +2266,140 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get shopperOrdersEmpty =>
-      'Hozircha sizga buyurtma tayinlanmagan. Tayinlansa, shu yerda paydo bo\'ladi.';
+      'Operator sizga buyurtma tayinlasa, u shu yerda paydo bo\'ladi. Ro\'yxat o\'zi yangilanadi.';
 
   @override
-  String shopperOpenLines(int open, int total) {
-    return 'Qolgan mahsulotlar: $open / $total';
+  String get shopperChipNew => 'Yangi';
+
+  @override
+  String get shopperChipAccepted => 'Qabul qilindi';
+
+  @override
+  String shopperAssigned(String when) {
+    return 'Tayinlandi: $when';
   }
 
   @override
-  String get shopperNotAccepted => 'Yangi buyurtma — qabul qiling';
-
-  @override
-  String shopperAssignedAt(String time) {
-    return 'Tayinlandi: $time';
+  String shopperAccepted(String when) {
+    return 'Qabul qilindi: $when';
   }
 
   @override
-  String shopperAcceptedAt(String time) {
-    return 'Qabul qilindi: $time';
+  String shopperStarted(String when) {
+    return 'Yig\'ish boshlandi: $when';
   }
 
   @override
-  String shopperStartedAt(String time) {
-    return 'Yig\'ish boshlandi: $time';
+  String shopperOpenOf(int open, int total) {
+    return 'Qoldi: $open / $total';
   }
 
   @override
-  String get shopperAccept => 'Qabul qilish';
+  String shopperDeliveryWish(String wish) {
+    return 'Yetkazish: $wish';
+  }
+
+  @override
+  String get shopperOpenToAccept => 'Oching va buyurtmani qabul qiling';
+
+  @override
+  String get shopperStatusNew => 'Yangi buyurtma';
+
+  @override
+  String get shopperStatusNewHint =>
+      'Mahsulotlarni ko\'rib chiqing va buyurtmani qabul qiling';
+
+  @override
+  String get shopperStatusAccepted => 'Buyurtma qabul qilindi';
+
+  @override
+  String get shopperStatusShopping => 'Yig\'ish davom etmoqda';
+
+  @override
+  String shopperShoppingHint(String when, int open, int total) {
+    return 'Boshlandi: $when · qoldi $open / $total';
+  }
+
+  @override
+  String get shopperStatusResolved => 'Hammasi hal qilindi';
+
+  @override
+  String shopperResolvedHint(int bought, int removed) {
+    return 'Sotib olindi: $bought · olib tashlandi: $removed · yakunlash mumkin';
+  }
+
+  @override
+  String get shopperStepAssigned => 'Tayinlandi';
+
+  @override
+  String get shopperStepAccepted => 'Qabul qilindi';
+
+  @override
+  String get shopperStepShopping => 'Yig\'ish';
+
+  @override
+  String get shopperStepDone => 'Yig\'ildi';
+
+  @override
+  String shopperLegendDone(int count) {
+    return 'Tayyor: $count';
+  }
+
+  @override
+  String shopperLegendWaiting(int count) {
+    return 'Javob kutilmoqda: $count';
+  }
+
+  @override
+  String shopperLegendToBuy(int count) {
+    return 'Sotib olish: $count';
+  }
+
+  @override
+  String get shopperCallCustomer => 'Mijozga qo\'ng\'iroq qilish';
+
+  @override
+  String get shopperPhoneLater =>
+      'Mijozning telefoni yig\'ishni boshlaganingizda ko\'rinadi.';
+
+  @override
+  String shopperResolveFirst(int count) {
+    return 'Avval barcha mahsulotlarni hal qiling · qoldi: $count';
+  }
+
+  @override
+  String get shopperCompleteBought => 'Sotib olindi';
+
+  @override
+  String get shopperCompleteRemoved => 'Olib tashlandi';
+
+  @override
+  String get completeConfirm => 'Yakunlash';
+
+  @override
+  String get shopperOrderGoneHint =>
+      'U bekor qilingan yoki boshqa yig\'uvchiga berilgan.';
+
+  @override
+  String get shopperStartAtMarket =>
+      'Bozorga yetganingizda yig\'ishni boshlang';
+
+  @override
+  String get shopperEmptyTitle => 'Hozircha buyurtma yo\'q';
+
+  @override
+  String get staffCustomerModeHint =>
+      'O\'zingiz uchun mahsulot buyurtma qilish';
+
+  @override
+  String get shopperAccept => 'Buyurtmani qabul qilish';
 
   @override
   String get shopperStart => 'Yig\'ishni boshlash';
 
   @override
-  String callCustomer(String phone) {
-    return 'Mijozga qo\'ng\'iroq: $phone';
-  }
-
-  @override
   String callFailed(String phone) {
     return 'Qo\'ng\'iroq ilovasi ochilmadi. Raqamni qo\'lda tering: $phone';
-  }
-
-  @override
-  String shopperLineCap(String quantity) {
-    return 'Mijoz rozi bo\'lgan miqdor: $quantity';
-  }
-
-  @override
-  String shopperPriceLimit(String price) {
-    return 'So\'ramasdan ko\'pi bilan: $price';
-  }
-
-  @override
-  String shopperQuestion(String type, String time) {
-    return 'Mijoz javobi kutilmoqda ($type), $time gacha';
   }
 
   @override
@@ -2336,15 +2416,45 @@ class AppLocalizationsUz extends AppLocalizations {
   String get lineUnavailable => 'Topilmadi';
 
   @override
-  String purchaseTitle(String name) {
-    return 'Sotib olish: $name';
+  String get purchaseSheetTitle => 'Xarid';
+
+  @override
+  String purchaseNeeded(String quantity) {
+    return 'Mijozga $quantity kerak';
   }
 
   @override
   String get purchaseQuantity => 'Sotib olingan miqdor';
 
   @override
-  String get purchasePrice => 'Birlik narxi (to\'langan)';
+  String purchasePriceFor(String unit) {
+    return '1 $unit narxi (to\'langan)';
+  }
+
+  @override
+  String purchasePriceShort(String unit) {
+    return '1 $unit narxi';
+  }
+
+  @override
+  String purchaseExcess(String quantity) {
+    return '$quantity dan ortig\'ini mijoz to\'lamaydi.';
+  }
+
+  @override
+  String purchaseMarketInfo(String price, String bound, String unit) {
+    return 'Bozor narxi $price. Mijozdan so\'ramasdan — 1 $unit uchun $bound gacha.';
+  }
+
+  @override
+  String purchaseMarketOnly(String price) {
+    return 'Bozor narxi $price.';
+  }
+
+  @override
+  String purchaseWhich(String name) {
+    return 'Almashtiruvchini oldingizmi yoki «$name» topildimi? Nima olganingizni tanlang.';
+  }
 
   @override
   String get purchasePriceOptional =>
@@ -2358,25 +2468,26 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get purchaseUnconfirmed =>
-      'Oxirgi xaridga javob kelmadi — xuddi shu xarid qayta yuboriladi.';
+      'Oxirgi xaridga javob kelmadi. «Sotib olish»ni bosing — o\'sha xarid qayta yuboriladi.';
 
   @override
-  String get purchaseAboveBound =>
-      'Bu narx mijozdan so\'ramasdan to\'lash mumkin bo\'lganidan yuqori. Mijozdan so\'raysizmi?';
+  String purchaseAboveBound(String bound) {
+    return 'Bu mijozdan so\'ramasdan mumkin bo\'lganidan qimmat ($bound gacha). Mijozdan so\'rang yoki arzonroq toping.';
+  }
 
   @override
-  String purchaseBelowQuantity(String quantity) {
-    return 'Mijozga $quantity kerak. Shuncha sotib oling yoki mijozdan kamroq miqdorga roziligini so\'rang.';
+  String purchaseBelowQuantity(String required, String quantity) {
+    return 'Mijozga $required kerak. Shuncha sotib oling yoki mijozdan $quantity ga roziligini so\'rang.';
   }
 
   @override
   String get askNote => 'Mijozga izoh (ixtiyoriy)';
 
   @override
-  String get askPrice => 'Mijozdan narx haqida so\'rash';
+  String get askCustomer => 'Mijozdan so\'rash';
 
   @override
-  String get askQuantity => 'Mijozdan miqdor haqida so\'rash';
+  String get askNotePlaceholder => 'Masalan: boshqa yangisi yo\'q';
 
   @override
   String get typoTitle => 'Narxni tekshiring';
@@ -2393,13 +2504,15 @@ class AppLocalizationsUz extends AppLocalizations {
   String get typoCancel => 'Tuzataman';
 
   @override
-  String unavailableTitle(String name) {
-    return '«$name» topilmadimi?';
+  String get unavailableSheetTitle => 'Mahsulot yo\'qmi?';
+
+  @override
+  String unavailableExplained(String name) {
+    return '«$name» buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.';
   }
 
   @override
-  String get unavailableExplained =>
-      'Mahsulot buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.';
+  String get unavailableNotePlaceholder => 'Masalan: hammasi so\'lgan';
 
   @override
   String get unavailableConfirm => 'Ha, topilmadi';
@@ -2416,9 +2529,53 @@ class AppLocalizationsUz extends AppLocalizations {
   String get replaceNone => 'Mos mahsulot topilmadi';
 
   @override
-  String substituteTitle(String name) {
-    return 'O\'rniga olish: $name';
+  String get replaceInfoSimilar =>
+      'Mijoz: o\'xshashi bilan almashtirish mumkin. Narx chegarada bo\'lsa — darhol almashtiriladi, aks holda mijozdan so\'raladi.';
+
+  @override
+  String get replaceInfoContact =>
+      'Mijoz almashtirishdan oldin bog\'lanishni so\'ragan — avval unga taklif qilinadi.';
+
+  @override
+  String replacePricePer(String price, String unit) {
+    return '$price / $unit';
   }
+
+  @override
+  String get replaceMarket => 'bozor narxi';
+
+  @override
+  String replaceUnitHint(String unit) {
+    return 'Bir xil o\'lchov birligidagi mahsulotlar: $unit';
+  }
+
+  @override
+  String get replaceNoneHint =>
+      'Boshqa nom bilan qidiring. Almashtiradigan narsa bo\'lmasa — orqaga qayting va «Topilmadi»ni bosing.';
+
+  @override
+  String get substituteSheetTitle => 'Almashtirishni taklif qilish';
+
+  @override
+  String substituteInstead(String name, String quantity) {
+    return '«$name» o\'rniga, $quantity';
+  }
+
+  @override
+  String substitutePriceFor(String unit) {
+    return '1 $unit narxi (to\'laysiz)';
+  }
+
+  @override
+  String get substituteInfoSimilar =>
+      'Narx chegarada bo\'lsa — darhol oling. Qimmatroq bo\'lsa — mijozga savol boradi.';
+
+  @override
+  String get substituteInfoContact =>
+      'Mijozga almashtirish haqida savol boradi.';
+
+  @override
+  String get doneWriteOnBag => 'Paketga yozing';
 
   @override
   String get substituteSave => 'Taklif qilish';
@@ -2444,13 +2601,11 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String doneTitle(String number) {
-    return 'Buyurtma №$number yig\'ildi';
+    return 'Buyurtma № $number yig\'ildi';
   }
 
   @override
-  String doneLabel(String number) {
-    return 'Paketga $number raqamini yozing va uni topshirish joyiga olib boring.';
-  }
+  String get doneLabel => 'Paketni topshirish joyiga olib boring.';
 
   @override
   String get doneBack => 'Buyurtmalarimga';
@@ -2478,7 +2633,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get errorShoppingIncomplete => 'Hali hal qilinmagan mahsulotlar bor.';
 
   @override
-  String get shopperOrderGone => 'Bu buyurtma endi sizda emas.';
+  String get shopperOrderGone => 'Bu buyurtma endi sizda emas';
 
   @override
   String get shopperOrderCancelled =>
@@ -3563,6 +3718,92 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get deletedBody =>
       'Ma\'lumotlaringiz o\'chirildi.\nBiz bilan bo\'lganingiz uchun rahmat.';
+
+  @override
+  String shopperMarketPer(String price, String unit) {
+    return 'Bozor narxi: $price / $unit';
+  }
+
+  @override
+  String shopperBoundPer(String price, String unit) {
+    return 'Mijozdan so\'ramasdan — $unit uchun $price gacha';
+  }
+
+  @override
+  String shopperCapAgreed(String quantity, String ordered) {
+    return 'Mijoz $ordered o\'rniga $quantity ga rozi';
+  }
+
+  @override
+  String shopperCapBuy(String quantity) {
+    return '$quantity dan ko\'p olmang';
+  }
+
+  @override
+  String get shopperReplacementApproved => 'Mijoz almashtirishga rozi bo\'ldi';
+
+  @override
+  String get shopperReplacementAutomatic =>
+      'Mijoz o\'xshashiga almashtirishga ruxsat bergan';
+
+  @override
+  String shopperReplacementPrices(String price, String bound) {
+    return 'Bozor narxi $price · so\'ramasdan $bound gacha';
+  }
+
+  @override
+  String shopperClientNote(String note) {
+    return 'Mijoz: «$note»';
+  }
+
+  @override
+  String get shopperGroupToBuy => 'Sotib olish';
+
+  @override
+  String get shopperGroupWaiting => 'Mijoz javobini kutyapmiz';
+
+  @override
+  String get shopperGroupDone => 'Tayyor';
+
+  @override
+  String shopperAskedPrice(String time) {
+    return 'Mijozdan so\'raldi: narx chegaradan yuqori. Javob $time gacha';
+  }
+
+  @override
+  String shopperAskedSubstitution(String time) {
+    return 'Mijozdan so\'raldi: almashtirish. Javob $time gacha';
+  }
+
+  @override
+  String shopperAskedQuantity(String time) {
+    return 'Mijozdan so\'raldi: kamroq miqdor. Javob $time gacha';
+  }
+
+  @override
+  String get shopperWaitBuyOthers => 'Kutayotganda qolganlarini sotib oling.';
+
+  @override
+  String get shopperQuestionExpired =>
+      'Mijoz o\'z vaqtida javob bermadi. Operator bu mahsulotni buyurtmadan olib tashlaydi.';
+
+  @override
+  String shopperBoughtAt(String quantity, String price) {
+    return '$quantity, $price dan sotib olindi';
+  }
+
+  @override
+  String shopperBoughtInstead(String name, String quantity, String price) {
+    return '«$name» o\'rniga · $quantity, $price dan';
+  }
+
+  @override
+  String get shopperTagReplaced => 'Almashtirildi';
+
+  @override
+  String shopperTagRemoved(String reason) {
+    return 'Olib tashlandi: $reason';
+  }
 
   @override
   String get doneButton => 'Tayyor';

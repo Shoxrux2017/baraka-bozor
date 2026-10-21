@@ -64,6 +64,7 @@ final class ShopperReplacement {
     required this.productId,
     required this.nameUz,
     required this.nameRu,
+    required this.imageUrl,
     required this.marketPriceUzs,
     required this.resolution,
     required this.bound,
@@ -72,6 +73,9 @@ final class ShopperReplacement {
   final String productId;
   final String nameUz;
   final String nameRu;
+
+  /// The replacement's picture now, `null` without one.
+  final String? imageUrl;
 
   /// The product's market price now.
   final int marketPriceUzs;
@@ -125,6 +129,7 @@ final class ShopperLine {
     required this.productId,
     required this.nameUz,
     required this.nameRu,
+    required this.imageUrl,
     required this.unit,
     required this.priceMode,
     required this.quantity,
@@ -145,6 +150,9 @@ final class ShopperLine {
   final String productId;
   final String nameUz;
   final String nameRu;
+
+  /// The product's picture now, `null` without one.
+  final String? imageUrl;
   final UnitCode unit;
   final PriceMode priceMode;
 
@@ -215,6 +223,7 @@ final class ReplacementChoice {
     required this.id,
     required this.nameUz,
     required this.nameRu,
+    required this.imageUrl,
     required this.unit,
     required this.priceMode,
     required this.marketPriceUzs,
@@ -223,6 +232,9 @@ final class ReplacementChoice {
   final String id;
   final String nameUz;
   final String nameRu;
+
+  /// The product's picture, `null` without one.
+  final String? imageUrl;
   final UnitCode unit;
   final PriceMode priceMode;
   final int marketPriceUzs;

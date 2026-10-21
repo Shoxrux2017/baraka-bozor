@@ -4055,43 +4055,205 @@ abstract class AppLocalizations {
   /// No description provided for @shopperOrdersEmpty.
   ///
   /// In uz, this message translates to:
-  /// **'Hozircha sizga buyurtma tayinlanmagan. Tayinlansa, shu yerda paydo bo\'ladi.'**
+  /// **'Operator sizga buyurtma tayinlasa, u shu yerda paydo bo\'ladi. Ro\'yxat o\'zi yangilanadi.'**
   String get shopperOrdersEmpty;
 
-  /// No description provided for @shopperOpenLines.
+  /// No description provided for @shopperChipNew.
   ///
   /// In uz, this message translates to:
-  /// **'Qolgan mahsulotlar: {open} / {total}'**
-  String shopperOpenLines(int open, int total);
+  /// **'Yangi'**
+  String get shopperChipNew;
 
-  /// No description provided for @shopperNotAccepted.
+  /// No description provided for @shopperChipAccepted.
   ///
   /// In uz, this message translates to:
-  /// **'Yangi buyurtma — qabul qiling'**
-  String get shopperNotAccepted;
+  /// **'Qabul qilindi'**
+  String get shopperChipAccepted;
 
-  /// No description provided for @shopperAssignedAt.
+  /// No description provided for @shopperAssigned.
   ///
   /// In uz, this message translates to:
-  /// **'Tayinlandi: {time}'**
-  String shopperAssignedAt(String time);
+  /// **'Tayinlandi: {when}'**
+  String shopperAssigned(String when);
 
-  /// No description provided for @shopperAcceptedAt.
+  /// No description provided for @shopperAccepted.
   ///
   /// In uz, this message translates to:
-  /// **'Qabul qilindi: {time}'**
-  String shopperAcceptedAt(String time);
+  /// **'Qabul qilindi: {when}'**
+  String shopperAccepted(String when);
 
-  /// No description provided for @shopperStartedAt.
+  /// No description provided for @shopperStarted.
   ///
   /// In uz, this message translates to:
-  /// **'Yig\'ish boshlandi: {time}'**
-  String shopperStartedAt(String time);
+  /// **'Yig\'ish boshlandi: {when}'**
+  String shopperStarted(String when);
+
+  /// No description provided for @shopperOpenOf.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qoldi: {open} / {total}'**
+  String shopperOpenOf(int open, int total);
+
+  /// No description provided for @shopperDeliveryWish.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish: {wish}'**
+  String shopperDeliveryWish(String wish);
+
+  /// No description provided for @shopperOpenToAccept.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oching va buyurtmani qabul qiling'**
+  String get shopperOpenToAccept;
+
+  /// No description provided for @shopperStatusNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi buyurtma'**
+  String get shopperStatusNew;
+
+  /// No description provided for @shopperStatusNewHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotlarni ko\'rib chiqing va buyurtmani qabul qiling'**
+  String get shopperStatusNewHint;
+
+  /// No description provided for @shopperStatusAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma qabul qilindi'**
+  String get shopperStatusAccepted;
+
+  /// No description provided for @shopperStatusShopping.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish davom etmoqda'**
+  String get shopperStatusShopping;
+
+  /// No description provided for @shopperShoppingHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshlandi: {when} · qoldi {open} / {total}'**
+  String shopperShoppingHint(String when, int open, int total);
+
+  /// No description provided for @shopperStatusResolved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hammasi hal qilindi'**
+  String get shopperStatusResolved;
+
+  /// No description provided for @shopperResolvedHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib olindi: {bought} · olib tashlandi: {removed} · yakunlash mumkin'**
+  String shopperResolvedHint(int bought, int removed);
+
+  /// No description provided for @shopperStepAssigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayinlandi'**
+  String get shopperStepAssigned;
+
+  /// No description provided for @shopperStepAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qilindi'**
+  String get shopperStepAccepted;
+
+  /// No description provided for @shopperStepShopping.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish'**
+  String get shopperStepShopping;
+
+  /// No description provided for @shopperStepDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ildi'**
+  String get shopperStepDone;
+
+  /// No description provided for @shopperLegendDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor: {count}'**
+  String shopperLegendDone(int count);
+
+  /// No description provided for @shopperLegendWaiting.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob kutilmoqda: {count}'**
+  String shopperLegendWaiting(int count);
+
+  /// No description provided for @shopperLegendToBuy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib olish: {count}'**
+  String shopperLegendToBuy(int count);
+
+  /// No description provided for @shopperCallCustomer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga qo\'ng\'iroq qilish'**
+  String get shopperCallCustomer;
+
+  /// No description provided for @shopperPhoneLater.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozning telefoni yig\'ishni boshlaganingizda ko\'rinadi.'**
+  String get shopperPhoneLater;
+
+  /// No description provided for @shopperResolveFirst.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval barcha mahsulotlarni hal qiling · qoldi: {count}'**
+  String shopperResolveFirst(int count);
+
+  /// No description provided for @shopperCompleteBought.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib olindi'**
+  String get shopperCompleteBought;
+
+  /// No description provided for @shopperCompleteRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib tashlandi'**
+  String get shopperCompleteRemoved;
+
+  /// No description provided for @completeConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yakunlash'**
+  String get completeConfirm;
+
+  /// No description provided for @shopperOrderGoneHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'U bekor qilingan yoki boshqa yig\'uvchiga berilgan.'**
+  String get shopperOrderGoneHint;
+
+  /// No description provided for @shopperStartAtMarket.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bozorga yetganingizda yig\'ishni boshlang'**
+  String get shopperStartAtMarket;
+
+  /// No description provided for @shopperEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha buyurtma yo\'q'**
+  String get shopperEmptyTitle;
+
+  /// No description provided for @staffCustomerModeHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'zingiz uchun mahsulot buyurtma qilish'**
+  String get staffCustomerModeHint;
 
   /// No description provided for @shopperAccept.
   ///
   /// In uz, this message translates to:
-  /// **'Qabul qilish'**
+  /// **'Buyurtmani qabul qilish'**
   String get shopperAccept;
 
   /// No description provided for @shopperStart.
@@ -4100,35 +4262,11 @@ abstract class AppLocalizations {
   /// **'Yig\'ishni boshlash'**
   String get shopperStart;
 
-  /// No description provided for @callCustomer.
-  ///
-  /// In uz, this message translates to:
-  /// **'Mijozga qo\'ng\'iroq: {phone}'**
-  String callCustomer(String phone);
-
   /// No description provided for @callFailed.
   ///
   /// In uz, this message translates to:
   /// **'Qo\'ng\'iroq ilovasi ochilmadi. Raqamni qo\'lda tering: {phone}'**
   String callFailed(String phone);
-
-  /// No description provided for @shopperLineCap.
-  ///
-  /// In uz, this message translates to:
-  /// **'Mijoz rozi bo\'lgan miqdor: {quantity}'**
-  String shopperLineCap(String quantity);
-
-  /// No description provided for @shopperPriceLimit.
-  ///
-  /// In uz, this message translates to:
-  /// **'So\'ramasdan ko\'pi bilan: {price}'**
-  String shopperPriceLimit(String price);
-
-  /// No description provided for @shopperQuestion.
-  ///
-  /// In uz, this message translates to:
-  /// **'Mijoz javobi kutilmoqda ({type}), {time} gacha'**
-  String shopperQuestion(String type, String time);
 
   /// No description provided for @shopperPageEmpty.
   ///
@@ -4154,11 +4292,17 @@ abstract class AppLocalizations {
   /// **'Topilmadi'**
   String get lineUnavailable;
 
-  /// No description provided for @purchaseTitle.
+  /// No description provided for @purchaseSheetTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Sotib olish: {name}'**
-  String purchaseTitle(String name);
+  /// **'Xarid'**
+  String get purchaseSheetTitle;
+
+  /// No description provided for @purchaseNeeded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga {quantity} kerak'**
+  String purchaseNeeded(String quantity);
 
   /// No description provided for @purchaseQuantity.
   ///
@@ -4166,11 +4310,41 @@ abstract class AppLocalizations {
   /// **'Sotib olingan miqdor'**
   String get purchaseQuantity;
 
-  /// No description provided for @purchasePrice.
+  /// No description provided for @purchasePriceFor.
   ///
   /// In uz, this message translates to:
-  /// **'Birlik narxi (to\'langan)'**
-  String get purchasePrice;
+  /// **'1 {unit} narxi (to\'langan)'**
+  String purchasePriceFor(String unit);
+
+  /// No description provided for @purchasePriceShort.
+  ///
+  /// In uz, this message translates to:
+  /// **'1 {unit} narxi'**
+  String purchasePriceShort(String unit);
+
+  /// No description provided for @purchaseExcess.
+  ///
+  /// In uz, this message translates to:
+  /// **'{quantity} dan ortig\'ini mijoz to\'lamaydi.'**
+  String purchaseExcess(String quantity);
+
+  /// No description provided for @purchaseMarketInfo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bozor narxi {price}. Mijozdan so\'ramasdan — 1 {unit} uchun {bound} gacha.'**
+  String purchaseMarketInfo(String price, String bound, String unit);
+
+  /// No description provided for @purchaseMarketOnly.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bozor narxi {price}.'**
+  String purchaseMarketOnly(String price);
+
+  /// No description provided for @purchaseWhich.
+  ///
+  /// In uz, this message translates to:
+  /// **'Almashtiruvchini oldingizmi yoki «{name}» topildimi? Nima olganingizni tanlang.'**
+  String purchaseWhich(String name);
 
   /// No description provided for @purchasePriceOptional.
   ///
@@ -4193,20 +4367,20 @@ abstract class AppLocalizations {
   /// No description provided for @purchaseUnconfirmed.
   ///
   /// In uz, this message translates to:
-  /// **'Oxirgi xaridga javob kelmadi — xuddi shu xarid qayta yuboriladi.'**
+  /// **'Oxirgi xaridga javob kelmadi. «Sotib olish»ni bosing — o\'sha xarid qayta yuboriladi.'**
   String get purchaseUnconfirmed;
 
   /// No description provided for @purchaseAboveBound.
   ///
   /// In uz, this message translates to:
-  /// **'Bu narx mijozdan so\'ramasdan to\'lash mumkin bo\'lganidan yuqori. Mijozdan so\'raysizmi?'**
-  String get purchaseAboveBound;
+  /// **'Bu mijozdan so\'ramasdan mumkin bo\'lganidan qimmat ({bound} gacha). Mijozdan so\'rang yoki arzonroq toping.'**
+  String purchaseAboveBound(String bound);
 
   /// No description provided for @purchaseBelowQuantity.
   ///
   /// In uz, this message translates to:
-  /// **'Mijozga {quantity} kerak. Shuncha sotib oling yoki mijozdan kamroq miqdorga roziligini so\'rang.'**
-  String purchaseBelowQuantity(String quantity);
+  /// **'Mijozga {required} kerak. Shuncha sotib oling yoki mijozdan {quantity} ga roziligini so\'rang.'**
+  String purchaseBelowQuantity(String required, String quantity);
 
   /// No description provided for @askNote.
   ///
@@ -4214,17 +4388,17 @@ abstract class AppLocalizations {
   /// **'Mijozga izoh (ixtiyoriy)'**
   String get askNote;
 
-  /// No description provided for @askPrice.
+  /// No description provided for @askCustomer.
   ///
   /// In uz, this message translates to:
-  /// **'Mijozdan narx haqida so\'rash'**
-  String get askPrice;
+  /// **'Mijozdan so\'rash'**
+  String get askCustomer;
 
-  /// No description provided for @askQuantity.
+  /// No description provided for @askNotePlaceholder.
   ///
   /// In uz, this message translates to:
-  /// **'Mijozdan miqdor haqida so\'rash'**
-  String get askQuantity;
+  /// **'Masalan: boshqa yangisi yo\'q'**
+  String get askNotePlaceholder;
 
   /// No description provided for @typoTitle.
   ///
@@ -4250,17 +4424,23 @@ abstract class AppLocalizations {
   /// **'Tuzataman'**
   String get typoCancel;
 
-  /// No description provided for @unavailableTitle.
+  /// No description provided for @unavailableSheetTitle.
   ///
   /// In uz, this message translates to:
-  /// **'«{name}» topilmadimi?'**
-  String unavailableTitle(String name);
+  /// **'Mahsulot yo\'qmi?'**
+  String get unavailableSheetTitle;
 
   /// No description provided for @unavailableExplained.
   ///
   /// In uz, this message translates to:
-  /// **'Mahsulot buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.'**
-  String get unavailableExplained;
+  /// **'«{name}» buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.'**
+  String unavailableExplained(String name);
+
+  /// No description provided for @unavailableNotePlaceholder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Masalan: hammasi so\'lgan'**
+  String get unavailableNotePlaceholder;
 
   /// No description provided for @unavailableConfirm.
   ///
@@ -4286,11 +4466,77 @@ abstract class AppLocalizations {
   /// **'Mos mahsulot topilmadi'**
   String get replaceNone;
 
-  /// No description provided for @substituteTitle.
+  /// No description provided for @replaceInfoSimilar.
   ///
   /// In uz, this message translates to:
-  /// **'O\'rniga olish: {name}'**
-  String substituteTitle(String name);
+  /// **'Mijoz: o\'xshashi bilan almashtirish mumkin. Narx chegarada bo\'lsa — darhol almashtiriladi, aks holda mijozdan so\'raladi.'**
+  String get replaceInfoSimilar;
+
+  /// No description provided for @replaceInfoContact.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz almashtirishdan oldin bog\'lanishni so\'ragan — avval unga taklif qilinadi.'**
+  String get replaceInfoContact;
+
+  /// No description provided for @replacePricePer.
+  ///
+  /// In uz, this message translates to:
+  /// **'{price} / {unit}'**
+  String replacePricePer(String price, String unit);
+
+  /// No description provided for @replaceMarket.
+  ///
+  /// In uz, this message translates to:
+  /// **'bozor narxi'**
+  String get replaceMarket;
+
+  /// No description provided for @replaceUnitHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bir xil o\'lchov birligidagi mahsulotlar: {unit}'**
+  String replaceUnitHint(String unit);
+
+  /// No description provided for @replaceNoneHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa nom bilan qidiring. Almashtiradigan narsa bo\'lmasa — orqaga qayting va «Topilmadi»ni bosing.'**
+  String get replaceNoneHint;
+
+  /// No description provided for @substituteSheetTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Almashtirishni taklif qilish'**
+  String get substituteSheetTitle;
+
+  /// No description provided for @substituteInstead.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» o\'rniga, {quantity}'**
+  String substituteInstead(String name, String quantity);
+
+  /// No description provided for @substitutePriceFor.
+  ///
+  /// In uz, this message translates to:
+  /// **'1 {unit} narxi (to\'laysiz)'**
+  String substitutePriceFor(String unit);
+
+  /// No description provided for @substituteInfoSimilar.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narx chegarada bo\'lsa — darhol oling. Qimmatroq bo\'lsa — mijozga savol boradi.'**
+  String get substituteInfoSimilar;
+
+  /// No description provided for @substituteInfoContact.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga almashtirish haqida savol boradi.'**
+  String get substituteInfoContact;
+
+  /// No description provided for @doneWriteOnBag.
+  ///
+  /// In uz, this message translates to:
+  /// **'Paketga yozing'**
+  String get doneWriteOnBag;
 
   /// No description provided for @substituteSave.
   ///
@@ -4331,14 +4577,14 @@ abstract class AppLocalizations {
   /// No description provided for @doneTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma №{number} yig\'ildi'**
+  /// **'Buyurtma № {number} yig\'ildi'**
   String doneTitle(String number);
 
   /// No description provided for @doneLabel.
   ///
   /// In uz, this message translates to:
-  /// **'Paketga {number} raqamini yozing va uni topshirish joyiga olib boring.'**
-  String doneLabel(String number);
+  /// **'Paketni topshirish joyiga olib boring.'**
+  String get doneLabel;
 
   /// No description provided for @doneBack.
   ///
@@ -4385,7 +4631,7 @@ abstract class AppLocalizations {
   /// No description provided for @shopperOrderGone.
   ///
   /// In uz, this message translates to:
-  /// **'Bu buyurtma endi sizda emas.'**
+  /// **'Bu buyurtma endi sizda emas'**
   String get shopperOrderGone;
 
   /// No description provided for @shopperOrderCancelled.
@@ -6133,6 +6379,126 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Ma\'lumotlaringiz o\'chirildi.\nBiz bilan bo\'lganingiz uchun rahmat.'**
   String get deletedBody;
+
+  /// No description provided for @shopperMarketPer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bozor narxi: {price} / {unit}'**
+  String shopperMarketPer(String price, String unit);
+
+  /// No description provided for @shopperBoundPer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozdan so\'ramasdan — {unit} uchun {price} gacha'**
+  String shopperBoundPer(String price, String unit);
+
+  /// No description provided for @shopperCapAgreed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz {ordered} o\'rniga {quantity} ga rozi'**
+  String shopperCapAgreed(String quantity, String ordered);
+
+  /// No description provided for @shopperCapBuy.
+  ///
+  /// In uz, this message translates to:
+  /// **'{quantity} dan ko\'p olmang'**
+  String shopperCapBuy(String quantity);
+
+  /// No description provided for @shopperReplacementApproved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz almashtirishga rozi bo\'ldi'**
+  String get shopperReplacementApproved;
+
+  /// No description provided for @shopperReplacementAutomatic.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz o\'xshashiga almashtirishga ruxsat bergan'**
+  String get shopperReplacementAutomatic;
+
+  /// No description provided for @shopperReplacementPrices.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bozor narxi {price} · so\'ramasdan {bound} gacha'**
+  String shopperReplacementPrices(String price, String bound);
+
+  /// No description provided for @shopperClientNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz: «{note}»'**
+  String shopperClientNote(String note);
+
+  /// No description provided for @shopperGroupToBuy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib olish'**
+  String get shopperGroupToBuy;
+
+  /// No description provided for @shopperGroupWaiting.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz javobini kutyapmiz'**
+  String get shopperGroupWaiting;
+
+  /// No description provided for @shopperGroupDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor'**
+  String get shopperGroupDone;
+
+  /// No description provided for @shopperAskedPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozdan so\'raldi: narx chegaradan yuqori. Javob {time} gacha'**
+  String shopperAskedPrice(String time);
+
+  /// No description provided for @shopperAskedSubstitution.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozdan so\'raldi: almashtirish. Javob {time} gacha'**
+  String shopperAskedSubstitution(String time);
+
+  /// No description provided for @shopperAskedQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozdan so\'raldi: kamroq miqdor. Javob {time} gacha'**
+  String shopperAskedQuantity(String time);
+
+  /// No description provided for @shopperWaitBuyOthers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kutayotganda qolganlarini sotib oling.'**
+  String get shopperWaitBuyOthers;
+
+  /// No description provided for @shopperQuestionExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz o\'z vaqtida javob bermadi. Operator bu mahsulotni buyurtmadan olib tashlaydi.'**
+  String get shopperQuestionExpired;
+
+  /// No description provided for @shopperBoughtAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'{quantity}, {price} dan sotib olindi'**
+  String shopperBoughtAt(String quantity, String price);
+
+  /// No description provided for @shopperBoughtInstead.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» o\'rniga · {quantity}, {price} dan'**
+  String shopperBoughtInstead(String name, String quantity, String price);
+
+  /// No description provided for @shopperTagReplaced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Almashtirildi'**
+  String get shopperTagReplaced;
+
+  /// No description provided for @shopperTagRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib tashlandi: {reason}'**
+  String shopperTagRemoved(String reason);
 
   /// No description provided for @doneButton.
   ///

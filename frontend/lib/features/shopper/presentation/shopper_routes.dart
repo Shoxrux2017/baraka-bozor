@@ -4,8 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'shopper_done_screen.dart';
+import 'shopper_list_screen.dart';
 import 'shopper_replace_screen.dart';
-import 'shopper_screens.dart';
+import 'shopper_order_screen.dart';
 
 /// The Shopper's area: their orders, one order opened over the list, a
 /// line's replacement search opened over the order — so the system back

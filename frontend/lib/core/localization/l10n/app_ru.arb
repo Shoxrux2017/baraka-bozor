@@ -1275,9 +1275,35 @@
   "errorPriceCorrectionLocked": "Цену уже нельзя исправить: заказ в пути, завершён, отменён или оплачивается онлайн.",
   "errorPriceCorrectionNotApplicable": "Цену этой позиции исправить нельзя.",
   "staffMenu": "Меню",
-  "shopperOrdersEmpty": "Пока вам не назначено заказов. Назначенный заказ появится здесь.",
-  "shopperOpenLines": "Осталось позиций: {open} из {total}",
-  "@shopperOpenLines": {
+  "shopperOrdersEmpty": "Когда оператор назначит вам заказ, он появится здесь. Список обновляется сам.",
+  "shopperChipNew": "Новый",
+  "shopperChipAccepted": "Принят",
+  "shopperAssigned": "Назначен {when}",
+  "@shopperAssigned": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperAccepted": "Принят {when}",
+  "@shopperAccepted": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperStarted": "Сборка начата {when}",
+  "@shopperStarted": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperOpenOf": "Осталось {open} из {total}",
+  "@shopperOpenOf": {
     "placeholders": {
       "open": {
         "type": "int"
@@ -1287,41 +1313,92 @@
       }
     }
   },
-  "shopperNotAccepted": "Новый заказ — примите его",
-  "shopperAssignedAt": "Назначен: {time}",
-  "@shopperAssignedAt": {
+  "shopperDeliveryWish": "Доставка: {wish}",
+  "@shopperDeliveryWish": {
     "placeholders": {
-      "time": {
+      "wish": {
         "type": "String"
       }
     }
   },
-  "shopperAcceptedAt": "Принят: {time}",
-  "@shopperAcceptedAt": {
+  "shopperOpenToAccept": "Откройте и примите заказ",
+  "shopperStatusNew": "Новый заказ",
+  "shopperStatusNewHint": "Посмотрите товары и примите заказ",
+  "shopperStatusAccepted": "Заказ принят",
+  "shopperStatusShopping": "Идёт сборка",
+  "shopperShoppingHint": "Начата {when} · осталось {open} из {total}",
+  "@shopperShoppingHint": {
     "placeholders": {
-      "time": {
+      "when": {
         "type": "String"
+      },
+      "open": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
       }
     }
   },
-  "shopperStartedAt": "Сборка начата: {time}",
-  "@shopperStartedAt": {
+  "shopperStatusResolved": "Всё решено",
+  "shopperResolvedHint": "Куплено {bought} · убрано {removed} · можно завершать",
+  "@shopperResolvedHint": {
     "placeholders": {
-      "time": {
-        "type": "String"
+      "bought": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
       }
     }
   },
-  "shopperAccept": "Принять",
+  "shopperStepAssigned": "Назначен",
+  "shopperStepAccepted": "Принят",
+  "shopperStepShopping": "Сборка",
+  "shopperStepDone": "Собран",
+  "shopperLegendDone": "Готово {count}",
+  "@shopperLegendDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperLegendWaiting": "Ждём ответа {count}",
+  "@shopperLegendWaiting": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperLegendToBuy": "Купить {count}",
+  "@shopperLegendToBuy": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperCallCustomer": "Позвонить клиенту",
+  "shopperPhoneLater": "Телефон клиента появится, когда вы начнёте сборку.",
+  "shopperResolveFirst": "Сначала решите все товары · осталось {count}",
+  "@shopperResolveFirst": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperCompleteBought": "Куплено",
+  "shopperCompleteRemoved": "Убрано",
+  "completeConfirm": "Завершить",
+  "shopperOrderGoneHint": "Его отменили или передали другому сборщику.",
+  "shopperStartAtMarket": "Начните сборку, когда будете на базаре",
+  "shopperEmptyTitle": "Заказов пока нет",
+  "staffCustomerModeHint": "Заказать продукты для себя",
+  "shopperAccept": "Принять заказ",
   "shopperStart": "Начать сборку",
-  "callCustomer": "Позвонить клиенту: {phone}",
-  "@callCustomer": {
-    "placeholders": {
-      "phone": {
-        "type": "String"
-      }
-    }
-  },
   "callFailed": "Не удалось открыть приложение для звонков. Наберите номер вручную: {phone}",
   "@callFailed": {
     "placeholders": {
@@ -1330,63 +1407,100 @@
       }
     }
   },
-  "shopperLineCap": "Согласовано с клиентом: {quantity}",
-  "@shopperLineCap": {
+  "shopperPageEmpty": "На этой странице заказов не осталось. Перейдите на предыдущую.",
+  "lineBuy": "Купить",
+  "lineReplace": "Заменить",
+  "lineUnavailable": "Нет товара",
+  "purchaseSheetTitle": "Покупка",
+  "purchaseNeeded": "Клиенту нужно {quantity}",
+  "@purchaseNeeded": {
     "placeholders": {
       "quantity": {
         "type": "String"
       }
     }
   },
-  "shopperPriceLimit": "Без вопроса клиенту не дороже: {price}",
-  "@shopperPriceLimit": {
+  "purchaseQuantity": "Сколько купили",
+  "purchasePriceFor": "Цена за {unit} (сколько заплатили)",
+  "@purchasePriceFor": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "purchasePriceShort": "Цена за {unit}",
+  "@purchasePriceShort": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseExcess": "Лишнее сверх {quantity} клиент не оплачивает.",
+  "@purchaseExcess": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseMarketInfo": "Рыночная {price}. Без вопроса клиенту — до {bound} за {unit}",
+  "@purchaseMarketInfo": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "bound": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseMarketOnly": "Рыночная {price}.",
+  "@purchaseMarketOnly": {
     "placeholders": {
       "price": {
         "type": "String"
       }
     }
   },
-  "shopperQuestion": "Ждём ответа клиента ({type}) до {time}",
-  "@shopperQuestion": {
-    "placeholders": {
-      "type": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "shopperPageEmpty": "На этой странице заказов не осталось. Перейдите на предыдущую.",
-  "lineBuy": "Купить",
-  "lineReplace": "Заменить",
-  "lineUnavailable": "Нет в наличии",
-  "purchaseTitle": "Покупка: {name}",
-  "@purchaseTitle": {
+  "purchaseWhich": "Купили замену или нашли «{name}»? Выберите, что купили.",
+  "@purchaseWhich": {
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "purchaseQuantity": "Сколько куплено",
-  "purchasePrice": "Цена за единицу (оплачено)",
   "purchasePriceOptional": "Товар с фиксированной ценой: цену можно не вводить",
   "purchaseSave": "Записать покупку",
   "purchaseAgain": "Отправить снова",
-  "purchaseUnconfirmed": "На последнюю покупку нет ответа — та же покупка будет отправлена снова.",
-  "purchaseAboveBound": "Эта цена выше той, что можно платить без вопроса клиенту. Спросить клиента?",
-  "purchaseBelowQuantity": "Клиенту нужно {quantity}. Купите столько или спросите клиента, согласен ли он на меньшее.",
+  "purchaseUnconfirmed": "На последнюю покупку не пришёл ответ. Нажмите «Купить» — отправим ту же покупку ещё раз.",
+  "purchaseAboveBound": "Это дороже, чем можно без вопроса клиенту (до {bound}). Спросите клиента или найдите дешевле.",
+  "@purchaseAboveBound": {
+    "placeholders": {
+      "bound": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseBelowQuantity": "Клиенту нужно {required} — купите столько или спросите клиента, согласен ли он на {quantity}",
   "@purchaseBelowQuantity": {
     "placeholders": {
+      "required": {
+        "type": "String"
+      },
       "quantity": {
         "type": "String"
       }
     }
   },
   "askNote": "Комментарий для клиента (необязательно)",
-  "askPrice": "Спросить клиента о цене",
-  "askQuantity": "Спросить клиента о количестве",
+  "askCustomer": "Спросить клиента",
+  "askNotePlaceholder": "Например: больше свежих нет",
   "typoTitle": "Проверьте цену",
   "typoExplained": "Вы ввели {price}, а рыночная цена {market}. Всё верно?",
   "@typoExplained": {
@@ -1401,16 +1515,17 @@
   },
   "typoConfirm": "Да, верно",
   "typoCancel": "Исправлю",
-  "unavailableTitle": "«{name}» нет в наличии?",
-  "@unavailableTitle": {
+  "unavailableSheetTitle": "Товара нет?",
+  "unavailableExplained": "Уберём «{name}» из заказа. Если покупать больше нечего, заказ отменится.",
+  "@unavailableExplained": {
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "unavailableExplained": "Товар будет убран из заказа. Если покупать больше нечего, заказ отменится.",
-  "unavailableConfirm": "Да, нет в наличии",
+  "unavailableNotePlaceholder": "Например: весь вялый",
+  "unavailableConfirm": "Да, товара нет",
   "replaceTitle": "Замена для «{name}»",
   "@replaceTitle": {
     "placeholders": {
@@ -1421,14 +1536,52 @@
   },
   "replaceSearchHint": "Название товара",
   "replaceNone": "Подходящих товаров нет",
-  "substituteTitle": "Взять вместо: {name}",
-  "@substituteTitle": {
+  "replaceInfoSimilar": "Клиент: можно заменить похожим. Если цена в пределах — замена сразу, иначе спросим клиента.",
+  "replaceInfoContact": "Клиент просил связаться перед заменой — замену сначала предложим ему.",
+  "replacePricePer": "{price} за {unit}",
+  "@replacePricePer": {
     "placeholders": {
-      "name": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
   },
+  "replaceMarket": "рыночная",
+  "replaceUnitHint": "Показываем товары с той же единицей: {unit}",
+  "@replaceUnitHint": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "replaceNoneHint": "Попробуйте другое название. Если заменить нечем — вернитесь и нажмите «Нет товара».",
+  "substituteSheetTitle": "Предложить замену",
+  "substituteInstead": "Вместо «{name}», {quantity}",
+  "@substituteInstead": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "substitutePriceFor": "Цена за {unit} (сколько заплатите)",
+  "@substitutePriceFor": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "substituteInfoSimilar": "В пределах цены — покупайте сразу. Дороже — клиент получит вопрос.",
+  "substituteInfoContact": "Клиент получит вопрос о замене.",
+  "doneWriteOnBag": "Напишите на пакете",
   "substituteSave": "Предложить",
   "completeShopping": "Завершить сборку",
   "completeTitle": "Завершить сборку?",
@@ -1442,7 +1595,7 @@
       }
     }
   },
-  "doneTitle": "Заказ №{number} собран",
+  "doneTitle": "Заказ № {number} собран",
   "@doneTitle": {
     "placeholders": {
       "number": {
@@ -1450,14 +1603,7 @@
       }
     }
   },
-  "doneLabel": "Напишите на пакете номер {number} и отнесите его в пункт передачи.",
-  "@doneLabel": {
-    "placeholders": {
-      "number": {
-        "type": "String"
-      }
-    }
-  },
+  "doneLabel": "Отнесите пакет в пункт передачи.",
   "doneBack": "К моим заказам",
   "errorShoppingNotActive": "Этот заказ сейчас нельзя собирать.",
   "errorItemAlreadyResolved": "По этой позиции уже всё решено.",
@@ -1465,7 +1611,7 @@
   "errorApprovalNotNeeded": "Для этой цены спрашивать клиента не нужно — покупайте.",
   "errorSubstitutionNotAllowed": "Клиент не разрешил заменять этот товар.",
   "errorShoppingIncomplete": "Есть ещё нерешённые позиции.",
-  "shopperOrderGone": "Этот заказ больше не ваш.",
+  "shopperOrderGone": "Этот заказ больше не ваш",
   "shopperOrderCancelled": "Заказ отменён: покупать больше нечего.",
   "substituteUseBuy": "Эта замена уже разрешена. Введите цену через «Купить» — там при необходимости можно спросить клиента.",
   "questionReplacementPrice": "Замена «{name}»: цена {price}. Согласны на эту цену?",
@@ -2030,5 +2176,130 @@
   "profileDeleteAccount": "Удалить аккаунт",
   "deletedTitle": "Аккаунт удалён",
   "deletedBody": "Ваши данные стёрты.\nСпасибо, что были с нами.",
+  "shopperMarketPer": "Рыночная {price} за {unit}",
+  "@shopperMarketPer": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperBoundPer": "Без вопроса клиенту — до {price} за {unit}",
+  "@shopperBoundPer": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperCapAgreed": "Клиент согласен на {quantity} вместо {ordered}",
+  "@shopperCapAgreed": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "ordered": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperCapBuy": "Купите не больше {quantity}",
+  "@shopperCapBuy": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperReplacementApproved": "Клиент согласился на замену",
+  "shopperReplacementAutomatic": "Клиент разрешил похожую замену",
+  "shopperReplacementPrices": "Рыночная {price} · без вопроса до {bound}",
+  "@shopperReplacementPrices": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "bound": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperClientNote": "Клиент: «{note}»",
+  "@shopperClientNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperGroupToBuy": "Купить",
+  "shopperGroupWaiting": "Ждём ответа клиента",
+  "shopperGroupDone": "Готово",
+  "shopperAskedPrice": "Спросили клиента: цена выше допустимой. Ответ до {time}",
+  "@shopperAskedPrice": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperAskedSubstitution": "Спросили клиента: замена. Ответ до {time}",
+  "@shopperAskedSubstitution": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperAskedQuantity": "Спросили клиента: меньшее количество. Ответ до {time}",
+  "@shopperAskedQuantity": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperWaitBuyOthers": "Пока ждём — покупайте остальное.",
+  "shopperQuestionExpired": "Клиент не ответил вовремя. Оператор уберёт этот товар из заказа.",
+  "shopperBoughtAt": "Куплено {quantity} по {price}",
+  "@shopperBoughtAt": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperBoughtInstead": "Вместо «{name}» · {quantity} по {price}",
+  "@shopperBoughtInstead": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperTagReplaced": "Заменено",
+  "shopperTagRemoved": "Убрано: {reason}",
+  "@shopperTagRemoved": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "doneButton": "Готово"
 }

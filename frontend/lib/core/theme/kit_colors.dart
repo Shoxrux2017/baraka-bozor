@@ -43,4 +43,7 @@ abstract final class KitColors {
 
   /// Faint amber wash behind a warning notice.
   static const Color warningWash = Color(0xFFFFF6E5);
+
+  /// Amber text on the amber wash.
+  static const Color warningDark = Color(0xFFB7791F);
 }

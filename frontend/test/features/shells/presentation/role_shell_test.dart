@@ -119,7 +119,7 @@ void main() {
     repository.identities[SessionSlot.customer] = user(id: 'c');
     await openApp(tester);
 
-    expect(find.text(l10n(tester).shellShopper), findsOneWidget);
+    expect(find.text(l10n(tester).myOrders), findsOneWidget);
     await tester.tap(staffMenu);
     await tester.pumpAndSettle();
     await tester.tap(switchToCustomer);
@@ -133,7 +133,7 @@ void main() {
 
     expect(repository.calls, contains('logout:customer'));
     expect(tokens.tokens.keys, <SessionSlot>[SessionSlot.staff]);
-    expect(find.text(l10n(tester).shellShopper), findsOneWidget);
+    expect(find.text(l10n(tester).myOrders), findsOneWidget);
     expect(modeChip, findsNothing);
   });
 

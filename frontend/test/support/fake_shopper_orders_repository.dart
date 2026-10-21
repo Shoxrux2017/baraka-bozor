@@ -55,12 +55,14 @@ Map<String, Object?> shopperRowJson({
 Map<String, Object?> shopperLineJson({
   bool bread = false,
   String status = 'pending',
+  String? imageUrl,
   Map<String, Object?>? patch,
 }) => <String, Object?>{
   'id': bread ? shopperLineBread : shopperLineTomato,
   'product_id': bread ? shopperProductBread : shopperProductTomato,
   'name_uz': bread ? 'Non' : 'Pomidor',
   'name_ru': bread ? 'Хлеб' : 'Помидоры',
+  'image_url': imageUrl,
   'unit_code': bread ? 'piece' : 'kg',
   'price_mode': bread ? 'fixed' : 'estimate',
   'quantity': bread ? '2' : '2.000',
@@ -96,6 +98,7 @@ Map<String, Object?> shopperLineJson({
 Map<String, Object?> shopperChoiceJson({
   String id = shopperProductCherry,
   int price = 15500,
+  String? imageUrl,
 }) => <String, Object?>{
   'id': id,
   'name_uz': 'Olcha pomidor',
@@ -103,17 +106,19 @@ Map<String, Object?> shopperChoiceJson({
   'unit_code': 'kg',
   'price_mode': 'estimate',
   'market_price_uzs': price,
-  'image_url': null,
+  'image_url': imageUrl,
 };
 
 /// The authorized replacement of the tomato line: cherry tomatoes at
 /// 15 500, bound at 18 400 on the market.
 Map<String, Object?> shopperReplacementJson({
   String resolution = 'automatic',
+  String? imageUrl,
 }) => <String, Object?>{
   'product_id': shopperProductCherry,
   'name_uz': 'Olcha pomidor',
   'name_ru': 'Помидоры черри',
+  'image_url': imageUrl,
   'market_price_uzs': 15500,
   'substitution_resolution': resolution,
   'bound': <String, Object?>{

@@ -10,7 +10,6 @@ import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
-import '../../../core/localization/language_menu.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/network/paged.dart';
@@ -59,7 +58,7 @@ class CourierOrdersScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.shellCourier),
-        actions: const <Widget>[LanguageMenuButton(), StaffAreaMenu()],
+        actions: const <Widget>[StaffAreaMenu()],
       ),
       body: SafeArea(
         child: Column(

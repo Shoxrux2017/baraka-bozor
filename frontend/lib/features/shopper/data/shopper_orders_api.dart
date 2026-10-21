@@ -408,6 +408,7 @@ class ShopperOrdersApi {
       productId: json.uuid('product_id'),
       nameUz: json.string('name_uz'),
       nameRu: json.string('name_ru'),
+      imageUrl: _imageUrl(json),
       unit: unit,
       priceMode: json.choice('price_mode', PriceMode.tryParse),
       quantity: _quantityOf(json, 'quantity', unit),
@@ -447,12 +448,18 @@ class ShopperOrdersApi {
     return line;
   }
 
+  /// A picture, `null` when the member is absent or `null`; a value that is
+  /// not a string is off the contract.
+  static String? _imageUrl(JsonFields json) =>
+      json.has('image_url') ? json.nullableString('image_url') : null;
+
   static ShopperReplacement _replacement(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'replacement');
     return ShopperReplacement(
       productId: json.uuid('product_id'),
       nameUz: json.string('name_uz'),
       nameRu: json.string('name_ru'),
+      imageUrl: _imageUrl(json),
       marketPriceUzs: _price(json, 'market_price_uzs'),
       resolution: json.choice(
         'substitution_resolution',
@@ -483,6 +490,7 @@ class ShopperOrdersApi {
       id: json.uuid('id'),
       nameUz: json.string('name_uz'),
       nameRu: json.string('name_ru'),
+      imageUrl: _imageUrl(json),
       unit: json.choice('unit_code', UnitCode.tryParse),
       priceMode: json.choice('price_mode', PriceMode.tryParse),
       marketPriceUzs: _price(json, 'market_price_uzs'),
