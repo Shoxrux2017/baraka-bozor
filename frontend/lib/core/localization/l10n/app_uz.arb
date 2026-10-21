@@ -1758,9 +1758,57 @@
   "questionRejectRemoves": "Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.",
   "questionDropsReplacement": "Rozi bo'lsangiz, o'rniga boshqasi emas, buyurtma qilingan mahsulotning o'zi olinadi.",
   "decisionSending": "Javob yuborilmoqda",
-  "courierOrdersEmpty": "Hozircha sizga yetkazish tayinlanmagan. Tayinlangan yetkazish shu yerda paydo bo'ladi.",
+  "myDeliveries": "Mening yetkazishlarim",
+  "courierChipNew": "Yangi",
+  "courierChipAccepted": "Qabul qilindi",
+  "courierAssigned": "Tayinlandi: {when}",
+  "@courierAssigned": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "courierAccepted": "Qabul qilindi: {when}",
+  "@courierAccepted": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "courierOnTheWayLine": "Yo'lga chiqildi: {when} · {due} gacha",
+  "@courierOnTheWayLine": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      },
+      "due": {
+        "type": "String"
+      }
+    }
+  },
+  "courierOnTheWaySince": "Yo'lga chiqildi: {when}",
+  "@courierOnTheWaySince": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "courierDeliveryWish": "Yetkazish: {wish}",
+  "@courierDeliveryWish": {
+    "placeholders": {
+      "wish": {
+        "type": "String"
+      }
+    }
+  },
+  "courierRequestShort": "Mijoz bekor qilishni so'ramoqda — yo'lga chiqmang",
+  "courierOpenToAccept": "Oching va yetkazishni qabul qiling",
+  "courierEmptyTitle": "Hozircha yetkazish yo'q",
+  "courierOrdersEmpty": "Operator sizga yetkazish tayinlasa, u shu yerda paydo bo'ladi. Ro'yxat o'zi yangilanadi.",
   "courierPageEmpty": "Bu sahifada yetkazishlar qolmadi. Oldingi sahifaga o'ting.",
-  "courierNotAccepted": "Yangi yetkazish — qabul qiling",
   "courierAccept": "Qabul qilish",
   "courierStart": "Yo'lga chiqish",
   "courierDelivered": "Yetkazildi",
@@ -1791,14 +1839,6 @@
     }
   },
   "courierPickupFromShopper": "Topshirish punkti yo'q — buyurtmani yig'uvchidan oling.",
-  "courierAddress": "Manzil: {address}",
-  "@courierAddress": {
-    "placeholders": {
-      "address": {
-        "type": "String"
-      }
-    }
-  },
   "courierLandmark": "Mo'ljal: {landmark}",
   "@courierLandmark": {
     "placeholders": {
@@ -1835,7 +1875,7 @@
       }
     }
   },
-  "courierPaidOnline": "Onlayn to'lanadi — pul olinmaydi",
+  "courierPaidOnline": "Onlayn to'langan — pul olinmaydi",
   "courierAssignedAt": "Tayinlangan: {time}",
   "@courierAssignedAt": {
     "placeholders": {

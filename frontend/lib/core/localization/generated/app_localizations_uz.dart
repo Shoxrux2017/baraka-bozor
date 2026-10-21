@@ -2737,15 +2737,56 @@ class AppLocalizationsUz extends AppLocalizations {
   String get decisionSending => 'Javob yuborilmoqda';
 
   @override
+  String get myDeliveries => 'Mening yetkazishlarim';
+
+  @override
+  String get courierChipNew => 'Yangi';
+
+  @override
+  String get courierChipAccepted => 'Qabul qilindi';
+
+  @override
+  String courierAssigned(String when) {
+    return 'Tayinlandi: $when';
+  }
+
+  @override
+  String courierAccepted(String when) {
+    return 'Qabul qilindi: $when';
+  }
+
+  @override
+  String courierOnTheWayLine(String when, String due) {
+    return 'Yo\'lga chiqildi: $when · $due gacha';
+  }
+
+  @override
+  String courierOnTheWaySince(String when) {
+    return 'Yo\'lga chiqildi: $when';
+  }
+
+  @override
+  String courierDeliveryWish(String wish) {
+    return 'Yetkazish: $wish';
+  }
+
+  @override
+  String get courierRequestShort =>
+      'Mijoz bekor qilishni so\'ramoqda — yo\'lga chiqmang';
+
+  @override
+  String get courierOpenToAccept => 'Oching va yetkazishni qabul qiling';
+
+  @override
+  String get courierEmptyTitle => 'Hozircha yetkazish yo\'q';
+
+  @override
   String get courierOrdersEmpty =>
-      'Hozircha sizga yetkazish tayinlanmagan. Tayinlangan yetkazish shu yerda paydo bo\'ladi.';
+      'Operator sizga yetkazish tayinlasa, u shu yerda paydo bo\'ladi. Ro\'yxat o\'zi yangilanadi.';
 
   @override
   String get courierPageEmpty =>
       'Bu sahifada yetkazishlar qolmadi. Oldingi sahifaga o\'ting.';
-
-  @override
-  String get courierNotAccepted => 'Yangi yetkazish — qabul qiling';
 
   @override
   String get courierAccept => 'Qabul qilish';
@@ -2783,11 +2824,6 @@ class AppLocalizationsUz extends AppLocalizations {
       'Topshirish punkti yo\'q — buyurtmani yig\'uvchidan oling.';
 
   @override
-  String courierAddress(String address) {
-    return 'Manzil: $address';
-  }
-
-  @override
   String courierLandmark(String landmark) {
     return 'Mo\'ljal: $landmark';
   }
@@ -2820,7 +2856,7 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get courierPaidOnline => 'Onlayn to\'lanadi — pul olinmaydi';
+  String get courierPaidOnline => 'Onlayn to\'langan — pul olinmaydi';
 
   @override
   String courierAssignedAt(String time) {

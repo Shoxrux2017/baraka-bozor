@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
+import 'courier_list_screen.dart';
 import 'courier_screens.dart';
 
 /// The Courier's area: their deliveries, and one delivery opened over the

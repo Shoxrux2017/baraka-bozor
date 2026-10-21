@@ -1713,9 +1713,57 @@
   "questionRejectRemoves": "Если откажетесь, этот товар уберут из заказа.",
   "questionDropsReplacement": "Если согласитесь, купят заказанный товар, а не замену.",
   "decisionSending": "Отправляем ответ",
-  "courierOrdersEmpty": "Пока вам не назначено доставок. Назначенная доставка появится здесь.",
+  "myDeliveries": "Мои доставки",
+  "courierChipNew": "Новая",
+  "courierChipAccepted": "Принята",
+  "courierAssigned": "Назначена {when}",
+  "@courierAssigned": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "courierAccepted": "Принята {when}",
+  "@courierAccepted": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "courierOnTheWayLine": "Выехали {when} · до {due}",
+  "@courierOnTheWayLine": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      },
+      "due": {
+        "type": "String"
+      }
+    }
+  },
+  "courierOnTheWaySince": "Выехали {when}",
+  "@courierOnTheWaySince": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "courierDeliveryWish": "Доставка: {wish}",
+  "@courierDeliveryWish": {
+    "placeholders": {
+      "wish": {
+        "type": "String"
+      }
+    }
+  },
+  "courierRequestShort": "Клиент просит отменить — не выезжайте",
+  "courierOpenToAccept": "Откройте и примите доставку",
+  "courierEmptyTitle": "Доставок пока нет",
+  "courierOrdersEmpty": "Когда оператор назначит вам доставку, она появится здесь. Список обновляется сам.",
   "courierPageEmpty": "На этой странице доставок не осталось. Перейдите на предыдущую.",
-  "courierNotAccepted": "Новая доставка — примите её",
   "courierAccept": "Принять",
   "courierStart": "Выехать",
   "courierDelivered": "Доставлено",
@@ -1746,14 +1794,6 @@
     }
   },
   "courierPickupFromShopper": "Пункта передачи нет — заберите заказ у сборщика.",
-  "courierAddress": "Адрес: {address}",
-  "@courierAddress": {
-    "placeholders": {
-      "address": {
-        "type": "String"
-      }
-    }
-  },
   "courierLandmark": "Ориентир: {landmark}",
   "@courierLandmark": {
     "placeholders": {
@@ -1790,7 +1830,7 @@
       }
     }
   },
-  "courierPaidOnline": "Оплата онлайн — деньги не брать",
+  "courierPaidOnline": "Оплачено онлайн — деньги не брать",
   "courierAssignedAt": "Назначена: {time}",
   "@courierAssignedAt": {
     "placeholders": {

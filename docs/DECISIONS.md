@@ -1411,3 +1411,5 @@ Answer to the question `DL-94` item 5 left open. An Admin erases a blocked Custo
 ## DL-99 — The Courier's screens, staff stage 2 (2026-10-21, agent)
 
 1. **Shared pieces.** The status card with its steps, the call card, the pinned footer and the price and note fields move from the Shopper's screens into `core/widgets/kit/`, so the Courier's and later the panel's screens draw the same parts; the Shopper's screens look as before.
+
+2. **The list.** It titles itself "Мои доставки" and draws a card per stage — new (to accept), accepted (to pick up), on the way (with the time to deliver by) — each with the address, the cash to collect or that nothing is, the delivery wish, and a waiting cancellation request in amber. The recipient's name moves to the delivery page, where the call is.

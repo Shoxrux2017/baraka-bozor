@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraka_bozor/core/formatting/money_format.dart';
+import 'package:baraka_bozor/core/formatting/order_dates.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/language_menu.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
@@ -9,6 +10,8 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_empty_state.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_status_card.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/courier/data/courier_orders_api.dart';
@@ -35,6 +38,9 @@ void main() {
   late FakeCourierOrdersRepository courier;
   late FakePhoneCalls phone;
   late FakeMapLinks maps;
+
+  // The list's clock: 15:00 in Tashkent, the day the fixtures were made.
+  final DateTime listNow = DateTime.utc(2026, 9, 28, 10);
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
@@ -86,6 +92,7 @@ void main() {
         phoneCalls: phone,
         maps: maps,
         device: device,
+        clock: () => listNow,
       ),
     );
     await tester.pumpAndSettle();
@@ -121,54 +128,189 @@ void main() {
     testWidgets('the Courier lands on their deliveries, with what each needs', (
       WidgetTester tester,
     ) async {
-      courier.details[courierOrderA] = courierOrder(pending: true);
       await open(tester);
       final AppLocalizations words = l10n(tester);
 
       expect(location(tester), AppPaths.courier);
-      expect(find.text(words.shellCourier), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text(words.myDeliveries),
+        ),
+        findsOneWidget,
+      );
       expect(
         tester.getTopLeft(byKey('courier-order-$courierOrderA')).dy,
         lessThan(tester.getTopLeft(byKey('courier-order-$courierOrderB')).dy),
       );
       Finder inRow(String id, String text) => find.descendant(
         of: byKey('courier-order-$id'),
-        matching: find.textContaining(text),
+        matching: find.text(text),
       );
       expect(
-        inRow(courierOrderA, words.courierRecipient('Dilnoza Karimova')),
+        inRow(courierOrderA, words.customerOrderTitle(1001)),
+        findsOneWidget,
+      );
+      expect(
+        inRow(courierOrderA, 'Amir Temur, 12, 34-xonadon'),
         findsOneWidget,
       );
       expect(
         inRow(
           courierOrderA,
-          words.courierAddress('Amir Temur, 12, 34-xonadon'),
+          words.courierAssigned(
+            orderAtLower(words, DateTime.utc(2026, 9, 28, 9), listNow),
+          ),
         ),
         findsOneWidget,
       );
+      expect(inRow(courierOrderA, words.courierChipNew), findsOneWidget);
       expect(
         inRow(courierOrderA, words.courierCollect(money(55600))),
         findsOneWidget,
       );
-      expect(inRow(courierOrderA, words.courierRequestPending), findsOneWidget);
-      expect(inRow(courierOrderA, words.courierNotAccepted), findsOneWidget);
-      expect(inRow(courierOrderB, words.courierRequestPending), findsNothing);
+      expect(inRow(courierOrderA, words.courierOpenToAccept), findsOneWidget);
+      expect(inRow(courierOrderA, words.courierRequestShort), findsNothing);
+
       expect(
-        inRow(courierOrderB, words.courierAssignedAt('28.09.2026 14:00')),
+        inRow(courierOrderB, words.customerOrderTitle(1002)),
         findsOneWidget,
       );
+      expect(
+        inRow(courierOrderB, OrderLabels.status(words, OrderStatus.onTheWay)),
+        findsOneWidget,
+      );
+      expect(
+        inRow(
+          courierOrderB,
+          words.courierOnTheWayLine(
+            orderAtLower(words, DateTime.utc(2026, 9, 28, 9, 10), listNow),
+            '15:10',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(inRow(courierOrderB, words.courierOpenToAccept), findsNothing);
+      final List<Color> bar = tester
+          .widget<SegmentBar>(
+            find.descendant(
+              of: byKey('courier-order-$courierOrderB'),
+              matching: find.byType(SegmentBar),
+            ),
+          )
+          .segments;
+      expect(bar, hasLength(4));
+      expect(bar.where((Color c) => c == KitColors.primary), hasLength(3));
 
       await tapAndSettle(tester, byKey('courier-order-$courierOrderA'));
       expect(location(tester), AppPaths.courierOrder(courierOrderA));
       expect(byKey('courier-order'), findsOneWidget);
     });
 
+    testWidgets(
+      'an accepted delivery with a request waiting says not to set off',
+      (WidgetTester tester) async {
+        courier.details[courierOrderA] = courierOrder(
+          accepted: true,
+          pending: true,
+        );
+        await open(tester);
+        final AppLocalizations words = l10n(tester);
+        Finder inRow(String text) => find.descendant(
+          of: byKey('courier-order-$courierOrderA'),
+          matching: find.text(text),
+        );
+
+        expect(inRow(words.courierChipAccepted), findsOneWidget);
+        expect(inRow(words.courierChipNew), findsNothing);
+        expect(
+          inRow(
+            words.courierAccepted(
+              orderAtLower(words, DateTime.utc(2026, 9, 28, 9, 5), listNow),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(inRow(words.courierRequestShort), findsOneWidget);
+        expect(inRow(words.courierOpenToAccept), findsNothing);
+      },
+    );
+
+    testWidgets('an online delivery says nothing is to be taken', (
+      WidgetTester tester,
+    ) async {
+      courier.details[courierOrderA] = courierOrder(cash: false);
+      await open(tester);
+      final AppLocalizations words = l10n(tester);
+
+      expect(
+        find.descendant(
+          of: byKey('courier-order-$courierOrderA'),
+          matching: find.text(words.courierPaidOnline),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a delivery wish shows on the card', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      final AppLocalizations words = l10n(tester);
+
+      expect(
+        find.descendant(
+          of: byKey('courier-order-$courierOrderA'),
+          matching: find.text(words.courierDeliveryWish('Kechqurun')),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('no delivery says so', (WidgetTester tester) async {
       courier.details.clear();
       await open(tester);
+      final AppLocalizations words = l10n(tester);
       expect(byKey('courier-orders-empty'), findsOneWidget);
-      expect(find.text(l10n(tester).courierOrdersEmpty), findsOneWidget);
+      expect(
+        tester.widget(byKey('courier-orders-empty')),
+        isA<KitEmptyState>(),
+      );
+      expect(find.text(words.courierEmptyTitle), findsOneWidget);
+      expect(find.text(words.courierOrdersEmpty), findsOneWidget);
     });
+
+    for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets(
+        'the list holds at 320x640 with text x2 (${language.languageCode})',
+        (WidgetTester tester) async {
+          courier.details
+            ..clear()
+            ..[courierOrderA] = courierOrder()
+            ..[courierOrderB] = courierOrder(
+              id: courierOrderB,
+              number: 1002,
+              accepted: true,
+              pending: true,
+            )
+            ..[courierOrderC] = courierOrder(
+              id: courierOrderC,
+              number: 1003,
+              status: 'on_the_way',
+            );
+          await open(
+            tester,
+            size: const Size(320, 640),
+            textScale: 2,
+            device: language,
+          );
+          expect(tester.takeException(), isNull);
+          await tester.drag(byKey('courier-orders'), const Offset(0, -3000));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
 
     testWidgets("the Courier's app bar holds one menu", (
       WidgetTester tester,

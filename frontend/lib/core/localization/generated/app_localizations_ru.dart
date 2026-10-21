@@ -2761,15 +2761,55 @@ class AppLocalizationsRu extends AppLocalizations {
   String get decisionSending => 'Отправляем ответ';
 
   @override
+  String get myDeliveries => 'Мои доставки';
+
+  @override
+  String get courierChipNew => 'Новая';
+
+  @override
+  String get courierChipAccepted => 'Принята';
+
+  @override
+  String courierAssigned(String when) {
+    return 'Назначена $when';
+  }
+
+  @override
+  String courierAccepted(String when) {
+    return 'Принята $when';
+  }
+
+  @override
+  String courierOnTheWayLine(String when, String due) {
+    return 'Выехали $when · до $due';
+  }
+
+  @override
+  String courierOnTheWaySince(String when) {
+    return 'Выехали $when';
+  }
+
+  @override
+  String courierDeliveryWish(String wish) {
+    return 'Доставка: $wish';
+  }
+
+  @override
+  String get courierRequestShort => 'Клиент просит отменить — не выезжайте';
+
+  @override
+  String get courierOpenToAccept => 'Откройте и примите доставку';
+
+  @override
+  String get courierEmptyTitle => 'Доставок пока нет';
+
+  @override
   String get courierOrdersEmpty =>
-      'Пока вам не назначено доставок. Назначенная доставка появится здесь.';
+      'Когда оператор назначит вам доставку, она появится здесь. Список обновляется сам.';
 
   @override
   String get courierPageEmpty =>
       'На этой странице доставок не осталось. Перейдите на предыдущую.';
-
-  @override
-  String get courierNotAccepted => 'Новая доставка — примите её';
 
   @override
   String get courierAccept => 'Принять';
@@ -2807,11 +2847,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Пункта передачи нет — заберите заказ у сборщика.';
 
   @override
-  String courierAddress(String address) {
-    return 'Адрес: $address';
-  }
-
-  @override
   String courierLandmark(String landmark) {
     return 'Ориентир: $landmark';
   }
@@ -2844,7 +2879,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get courierPaidOnline => 'Оплата онлайн — деньги не брать';
+  String get courierPaidOnline => 'Оплачено онлайн — деньги не брать';
 
   @override
   String courierAssignedAt(String time) {

@@ -4796,10 +4796,76 @@ abstract class AppLocalizations {
   /// **'Javob yuborilmoqda'**
   String get decisionSending;
 
+  /// No description provided for @myDeliveries.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mening yetkazishlarim'**
+  String get myDeliveries;
+
+  /// No description provided for @courierChipNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi'**
+  String get courierChipNew;
+
+  /// No description provided for @courierChipAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qilindi'**
+  String get courierChipAccepted;
+
+  /// No description provided for @courierAssigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayinlandi: {when}'**
+  String courierAssigned(String when);
+
+  /// No description provided for @courierAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qilindi: {when}'**
+  String courierAccepted(String when);
+
+  /// No description provided for @courierOnTheWayLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'lga chiqildi: {when} · {due} gacha'**
+  String courierOnTheWayLine(String when, String due);
+
+  /// No description provided for @courierOnTheWaySince.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'lga chiqildi: {when}'**
+  String courierOnTheWaySince(String when);
+
+  /// No description provided for @courierDeliveryWish.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish: {wish}'**
+  String courierDeliveryWish(String wish);
+
+  /// No description provided for @courierRequestShort.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz bekor qilishni so\'ramoqda — yo\'lga chiqmang'**
+  String get courierRequestShort;
+
+  /// No description provided for @courierOpenToAccept.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oching va yetkazishni qabul qiling'**
+  String get courierOpenToAccept;
+
+  /// No description provided for @courierEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha yetkazish yo\'q'**
+  String get courierEmptyTitle;
+
   /// No description provided for @courierOrdersEmpty.
   ///
   /// In uz, this message translates to:
-  /// **'Hozircha sizga yetkazish tayinlanmagan. Tayinlangan yetkazish shu yerda paydo bo\'ladi.'**
+  /// **'Operator sizga yetkazish tayinlasa, u shu yerda paydo bo\'ladi. Ro\'yxat o\'zi yangilanadi.'**
   String get courierOrdersEmpty;
 
   /// No description provided for @courierPageEmpty.
@@ -4807,12 +4873,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Bu sahifada yetkazishlar qolmadi. Oldingi sahifaga o\'ting.'**
   String get courierPageEmpty;
-
-  /// No description provided for @courierNotAccepted.
-  ///
-  /// In uz, this message translates to:
-  /// **'Yangi yetkazish — qabul qiling'**
-  String get courierNotAccepted;
 
   /// No description provided for @courierAccept.
   ///
@@ -4868,12 +4928,6 @@ abstract class AppLocalizations {
   /// **'Topshirish punkti yo\'q — buyurtmani yig\'uvchidan oling.'**
   String get courierPickupFromShopper;
 
-  /// No description provided for @courierAddress.
-  ///
-  /// In uz, this message translates to:
-  /// **'Manzil: {address}'**
-  String courierAddress(String address);
-
   /// No description provided for @courierLandmark.
   ///
   /// In uz, this message translates to:
@@ -4925,7 +4979,7 @@ abstract class AppLocalizations {
   /// No description provided for @courierPaidOnline.
   ///
   /// In uz, this message translates to:
-  /// **'Onlayn to\'lanadi — pul olinmaydi'**
+  /// **'Onlayn to\'langan — pul olinmaydi'**
   String get courierPaidOnline;
 
   /// No description provided for @courierAssignedAt.

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/formatting/address_format.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/formatting/tashkent_time.dart';
@@ -12,7 +11,6 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/network/api_failure.dart';
-import '../../../core/network/paged.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/platform/map_links.dart';
 import '../../../core/platform/phone_calls.dart';
@@ -23,106 +21,15 @@ import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/periodic_refresh.dart';
-import '../../shells/presentation/staff_area_menu.dart';
 import '../application/courier_orders_controllers.dart';
 import '../domain/courier_orders.dart';
 import 'courier_outcome_dialogs.dart';
+import 'courier_stage.dart';
 
 /// Whether a screen's load has settled on data, so its periodic refresh
 /// may run (`DL-54` (15)).
 bool _settled(AsyncValue<Object?> value) =>
     value.hasValue && !value.hasError && !value.isLoading;
-
-/// The address as one line: the street, the house and the apartment.
-String addressLine(AppLocalizations l10n, DeliveryAddress address) =>
-    addressFullLine(
-      l10n,
-      street: address.street,
-      house: address.house,
-      apartment: address.apartment,
-    );
-
-/// The Courier's area: their current deliveries, the longest-waiting first,
-/// kept current while shown (`docs/09` section 36, `DL-72`). Its app bar
-/// holds the language and one menu, as the Shopper's does (`DL-69` (5)).
-class CourierOrdersScreen extends ConsumerWidget {
-  const CourierOrdersScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<Paged<CourierOrder>> page = ref.watch(
-      courierOrdersProvider,
-    );
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.shellCourier),
-        actions: const <Widget>[StaffAreaMenu()],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            const ActiveModeBar(),
-            Expanded(
-              child: PeriodicRefresh(
-                active: _settled(page),
-                onRefresh: () => ref.invalidate(courierOrdersProvider),
-                child: page.when(
-                  skipLoadingOnReload: false,
-                  skipLoadingOnRefresh: !page.hasError,
-                  data: (Paged<CourierOrder> page) =>
-                      page.items.isEmpty && !page.hasPrevious
-                      ? Center(
-                          key: const ValueKey<String>('courier-orders-empty'),
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Text(
-                              l10n.courierOrdersEmpty,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        )
-                      : ListView(
-                          key: const ValueKey<String>('courier-orders'),
-                          padding: const EdgeInsets.all(16),
-                          children: <Widget>[
-                            // A page a refresh emptied, past the last one.
-                            if (page.items.isEmpty)
-                              Text(
-                                l10n.courierPageEmpty,
-                                key: const ValueKey<String>(
-                                  'courier-page-empty',
-                                ),
-                              ),
-                            for (final CourierOrder order in page.items)
-                              _Row(order: order),
-                            PaginationBar(
-                              page: page,
-                              onPage: ref
-                                  .read(courierOrdersPageProvider.notifier)
-                                  .goToPage,
-                            ),
-                          ],
-                        ),
-                  error: (Object error, StackTrace _) => Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: LoadFailure(
-                      error: error,
-                      onRetry: () => ref.invalidate(courierOrdersProvider),
-                    ),
-                  ),
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 /// What to collect, or that nothing is.
 String _collect(AppLocalizations l10n, AppLanguage language, CourierOrder o) {
@@ -130,50 +37,6 @@ String _collect(AppLocalizations l10n, AppLanguage language, CourierOrder o) {
   return amount == null
       ? l10n.courierPaidOnline
       : l10n.courierCollect(MoneyFormat.uzs(amount, language));
-}
-
-class _Row extends StatelessWidget {
-  const _Row({required this.order});
-
-  final CourierOrder order;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = interfaceLanguage(context);
-    final bool accepted = order.assignment.acceptedAt != null;
-    final Recipient? recipient = order.recipient;
-    final DeliveryAddress? address = order.address;
-
-    return Card(
-      child: ListTile(
-        key: ValueKey<String>('courier-order-${order.id}'),
-        title: Text(
-          '${l10n.boardOrderNumber('${order.orderNumber}')} · '
-          '${OrderLabels.status(l10n, order.status)}',
-        ),
-        subtitle: Text(
-          <String>[
-            if (recipient != null) l10n.courierRecipient(recipient.fullName),
-            if (address != null)
-              l10n.courierAddress(addressLine(l10n, address)),
-            if (order.deliveryTimeNote != null)
-              '${l10n.orderSectionDeliveryWish}: ${order.deliveryTimeNote}',
-            _collect(l10n, language, order),
-            if (order.cancellationRequestPending) l10n.courierRequestPending,
-            if (accepted)
-              l10n.courierAssignedAt(
-                TashkentTime.format(order.assignment.assignedAt),
-              )
-            else
-              l10n.courierNotAccepted,
-          ].join('\n'),
-        ),
-        trailing: accepted ? null : const Icon(Icons.fiber_new_outlined),
-        onTap: () => context.push(AppPaths.courierOrder(order.id)),
-      ),
-    );
-  }
 }
 
 /// One of the Courier's deliveries (`docs/09` sections 36 and 37): who
