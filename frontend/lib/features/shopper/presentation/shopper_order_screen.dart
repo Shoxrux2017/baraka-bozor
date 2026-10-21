@@ -7,6 +7,7 @@ import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/orders/order_values.dart';
 import '../../../core/platform/clock.dart';
 import '../../../core/platform/phone_calls.dart';
 import '../../../core/routing/app_paths.dart';
@@ -169,13 +170,48 @@ class _OrderView extends StatelessWidget {
                     ),
                   ),
                 ),
-              ] else
-                const SizedBox(height: 16),
-              for (final ShopperLine line in order.items)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: ShopperLineCard(order: order, line: line),
+                for (final ShopperLine line in order.items)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: ShopperLineRow(
+                      key: ValueKey<String>('shopper-line-${line.id}'),
+                      line: line,
+                    ),
+                  ),
+              ] else ...<Widget>[
+                _LineGroup(
+                  groupKey: 'shopper-group-buy',
+                  title: l10n.shopperGroupToBuy,
+                  tone: KitTone.green,
+                  order: order,
+                  lines: <ShopperLine>[
+                    for (final ShopperLine line in order.items)
+                      if (line.status == OrderItemStatus.pending) line,
+                  ],
                 ),
+                _LineGroup(
+                  groupKey: 'shopper-group-waiting',
+                  title: l10n.shopperGroupWaiting,
+                  tone: KitTone.amber,
+                  order: order,
+                  lines: <ShopperLine>[
+                    for (final ShopperLine line in order.items)
+                      if (line.status == OrderItemStatus.awaitingCustomer) line,
+                  ],
+                ),
+                _LineGroup(
+                  groupKey: 'shopper-group-done',
+                  title: l10n.shopperGroupDone,
+                  tone: KitTone.grey,
+                  order: order,
+                  lines: <ShopperLine>[
+                    for (final ShopperLine line in order.items)
+                      if (line.status == OrderItemStatus.purchased ||
+                          line.status == OrderItemStatus.removed)
+                        line,
+                  ],
+                ),
+              ],
               if (stage == ShopperStage.assigned ||
                   stage == ShopperStage.accepted) ...<Widget>[
                 const SizedBox(height: 16),
@@ -189,6 +225,102 @@ class _OrderView extends StatelessWidget {
         ),
         if (stage != ShopperStage.other) _Footer(order: order, stage: stage),
       ],
+    );
+  }
+}
+
+/// A group of lines under its heading with the count in a pill; nothing
+/// at all when the group is empty.
+class _LineGroup extends StatelessWidget {
+  const _LineGroup({
+    required this.groupKey,
+    required this.title,
+    required this.tone,
+    required this.order,
+    required this.lines,
+  });
+
+  final String groupKey;
+  final String title;
+  final KitTone tone;
+  final ShopperOrder order;
+  final List<ShopperLine> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    if (lines.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final ({Color wash, Color text}) pill = switch (tone) {
+      KitTone.green => (
+        wash: KitColors.primaryWash,
+        text: KitColors.primaryDark,
+      ),
+      KitTone.amber => (
+        wash: KitColors.warningWash,
+        text: KitColors.warningDark,
+      ),
+      _ => (wash: KitColors.field, text: KitColors.muted),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Semantics(
+            header: true,
+            child: Row(
+              key: ValueKey<String>(groupKey),
+              children: <Widget>[
+                Flexible(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: KitColors.ink,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: pill.wash,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    child: Text(
+                      '${lines.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: pill.text,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (final ShopperLine line in lines)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: switch (line.status) {
+                OrderItemStatus.pending || OrderItemStatus.awaitingCustomer =>
+                  ShopperLineCard(order: order, line: line),
+                _ => ShopperLineRow(
+                  key: ValueKey<String>('shopper-line-${line.id}'),
+                  line: line,
+                ),
+              },
+            ),
+        ],
+      ),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/formatting/tashkent_time.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/features/shopper/presentation/shopper_line_card.dart';
 import 'package:baraka_bozor/features/shopper/presentation/shopper_status_card.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/formatting/order_dates.dart';
@@ -96,9 +97,6 @@ void main() {
     await tester.tap(finder);
     await tester.pumpAndSettle();
   }
-
-  String text(WidgetTester tester, String key) =>
-      tester.widget<Text>(byKey(key)).data!;
 
   testWidgets('the Shopper lands on their orders, the longest-waiting first', (
     WidgetTester tester,
@@ -231,70 +229,412 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  Map<String, Object?> lineWith(
+    String id,
+    String status, {
+    bool bread = false,
+  }) => shopperLineJson(
+    bread: bread,
+    status: status,
+    patch: <String, Object?>{'id': '0192f0a0-0000-7000-8000-00000000e00$id'},
+  );
+
+  /// The text of the first [Text] at or under the widget keyed [key].
+  String shown(WidgetTester tester, String key) {
+    final Text widget = tester.widget<Text>(
+      find
+          .descendant(
+            of: byKey(key),
+            matching: find.byType(Text),
+            matchRoot: true,
+          )
+          .first,
+    );
+    return widget.textSpan?.toPlainText() ?? widget.data!;
+  }
+
+  Finder inKey(String key, String text) =>
+      find.descendant(of: byKey(key), matching: find.text(text));
+
+  Future<AppLocalizations> openShopping(
+    WidgetTester tester,
+    List<Object?> items, {
+    Size size = const Size(420, 1800),
+  }) async {
+    shopper.details[shopperOrderA] = shopperOrder(
+      status: 'shopping',
+      items: items,
+    );
+    await open(tester, size: size);
+    await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
+    return l10n(tester);
+  }
+
+  Map<String, Object?> asked(String type, {String id = shopperLineTomato}) =>
+      shopperAskedLineJson(type)..['id'] = id;
+
   testWidgets('an order shows each line: what to buy, how far its price may '
       'go, and what became of it', (WidgetTester tester) async {
     shopper.details[shopperOrderA] = shopperOrder(
-      status: 'shopping',
       items: <Object?>[
+        shopperLineJson(),
         shopperLineJson(
-          status: 'awaiting_customer',
+          bread: true,
           patch: <String, Object?>{
-            'approved_quantity_cap': '1.500',
-            'replacement': <String, Object?>{
-              'product_id': shopperProductCherry,
-              'name_uz': 'Olcha pomidor',
-              'name_ru': 'Помидоры черри',
-              'market_price_uzs': 15500,
-              'substitution_resolution': 'automatic',
-              'bound': <String, Object?>{
-                'customer_unit_price_uzs': 21160,
-                'market_price_uzs': 19000,
-              },
-            },
-            'pending_approval': <String, Object?>{
-              'id': shopperQuestion,
-              'type': 'price_over_tolerance',
-              'expires_at': '2026-09-27T08:00:00Z',
-            },
+            'substitution_policy': 'contact_before_substitution',
           },
         ),
-        shopperLineJson(bread: true, status: 'purchased'),
+        shopperLineJson(
+          bread: true,
+          patch: <String, Object?>{
+            'id': '0192f0a0-0000-7000-8000-00000000e009',
+            'substitution_policy': 'remove_if_unavailable',
+          },
+        ),
       ],
     );
     await open(tester);
     await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
     final AppLocalizations words = l10n(tester);
 
-    expect(find.text(words.shopperDeliveryWish('Kechqurun')), findsOneWidget);
+    expect(find.byType(ShopperLineRow), findsNWidgets(3));
+    final Finder tomato = byKey('shopper-line-$shopperLineTomato');
+    Finder within(Finder row, String text) =>
+        find.descendant(of: row, matching: find.text(text));
+    expect(within(tomato, 'Pomidor'), findsOneWidget);
     expect(
-      text(tester, 'shopper-line-status-$shopperLineTomato'),
-      words.itemStatusAwaitingCustomer,
+      within(tomato, words.shopperMarketPer(money(16000), words.unitKg)),
+      findsOneWidget,
     );
     expect(
-      text(tester, 'shopper-line-limit-$shopperLineTomato'),
-      words.shopperPriceLimit(money(18400)),
+      within(tomato, words.shopperClientNote('Qizilini oling')),
+      findsOneWidget,
     );
-    expect(find.text(words.itemMarketPrice(money(16000))), findsOneWidget);
-    expect(find.text(words.itemNote('Qizilini oling')), findsOneWidget);
-    expect(find.textContaining(words.shopperLineCap('1,5')), findsOneWidget);
     expect(
-      text(tester, 'shopper-line-replacement-$shopperLineTomato'),
-      '${words.itemReplacedWith('Olcha pomidor')}, '
-      '${words.replacementAutomatic}, ${words.itemMarketPrice(money(15500))}',
+      within(
+        tomato,
+        OrderLabels.substitution(words, SubstitutionPolicy.allowSimilar),
+      ),
+      findsOneWidget,
     );
-    expect(find.text(words.shopperPriceLimit(money(19000))), findsOneWidget);
+    expect(within(tomato, '2 ${words.unitKg}'), findsOneWidget);
     expect(
-      text(tester, 'shopper-line-question-$shopperLineTomato'),
-      words.shopperQuestion(words.approvalTypePrice, '27.09.2026 13:00'),
+      find.descendant(of: tomato, matching: find.byIcon(Icons.swap_horiz)),
+      findsOneWidget,
     );
-    // A fixed loaf bought as itself: no bound, and no price paid to show.
+    expect(find.byIcon(Icons.call), findsWidgets);
+    expect(find.byIcon(Icons.block), findsOneWidget);
+    expect(byKey('buy-$shopperLineTomato'), findsNothing);
+  });
+
+  testWidgets('while shopping the lines stand in three groups', (
+    WidgetTester tester,
+  ) async {
+    final AppLocalizations words = await openShopping(tester, <Object?>[
+      lineWith('1', 'pending'),
+      asked('price_over_tolerance', id: '0192f0a0-0000-7000-8000-00000000e002'),
+      lineWith('3', 'purchased', bread: true),
+      lineWith('4', 'removed', bread: true),
+    ]);
+
+    double top(String key) => tester.getTopLeft(byKey(key)).dy;
+    expect(top('shopper-group-buy'), lessThan(top('shopper-group-waiting')));
+    expect(top('shopper-group-waiting'), lessThan(top('shopper-group-done')));
+    expect(inKey('shopper-group-buy', words.shopperGroupToBuy), findsOneWidget);
+    expect(inKey('shopper-group-buy', '1'), findsOneWidget);
+    expect(
+      inKey('shopper-group-waiting', words.shopperGroupWaiting),
+      findsOneWidget,
+    );
+    expect(inKey('shopper-group-waiting', '1'), findsOneWidget);
+    expect(inKey('shopper-group-done', words.shopperGroupDone), findsOneWidget);
+    expect(inKey('shopper-group-done', '2'), findsOneWidget);
+
+    // A group with nothing in it has no heading.
+    shopper.details[shopperOrderA] = shopperOrder(
+      status: 'shopping',
+      items: <Object?>[lineWith('3', 'purchased', bread: true)],
+    );
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    expect(byKey('shopper-group-buy'), findsNothing);
+    expect(byKey('shopper-group-waiting'), findsNothing);
+    expect(byKey('shopper-group-done'), findsOneWidget);
+  });
+
+  testWidgets('a line to buy says how far its price may go', (
+    WidgetTester tester,
+  ) async {
+    final AppLocalizations words = await openShopping(tester, <Object?>[
+      shopperLineJson(),
+      shopperLineJson(bread: true),
+    ]);
+
+    expect(
+      shown(tester, 'shopper-line-limit-$shopperLineTomato'),
+      words.shopperBoundPer(money(18400), words.unitKg),
+    );
     expect(byKey('shopper-line-limit-$shopperLineBread'), findsNothing);
     expect(
-      text(tester, 'shopper-line-bought-$shopperLineBread'),
+      find.descendant(
+        of: byKey('shopper-line-$shopperLineTomato'),
+        matching: find.text('2 ${words.unitKg}'),
+      ),
+      findsOneWidget,
+    );
+    expect(byKey('buy-$shopperLineTomato'), findsOneWidget);
+  });
+
+  testWidgets('an agreed smaller quantity is the one to buy', (
+    WidgetTester tester,
+  ) async {
+    final AppLocalizations words = await openShopping(tester, <Object?>[
+      shopperLineJson(
+        patch: <String, Object?>{
+          'quantity': '3.000',
+          'approved_quantity_cap': '2.000',
+        },
+      ),
+    ]);
+    final Finder card = byKey('shopper-line-$shopperLineTomato');
+    final String capped = '2 ${words.unitKg}';
+
+    // The chip reads the cap; the note names it beside what was ordered.
+    expect(
+      find.descendant(of: card, matching: find.text(capped)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: card,
+        matching: find.text(
+          words.shopperCapAgreed(capped, '3 ${words.unitKg}'),
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: card,
+        matching: find.text(words.shopperCapBuy(capped)),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('an authorized replacement shows in its own box', (
+    WidgetTester tester,
+  ) async {
+    final AppLocalizations words = await openShopping(tester, <Object?>[
+      shopperLineJson(
+        patch: <String, Object?>{'replacement': shopperReplacementJson()},
+      ),
+      shopperLineJson(
+        bread: true,
+        patch: <String, Object?>{
+          'replacement': shopperReplacementJson(resolution: 'approved'),
+        },
+      ),
+    ]);
+    final String own = 'shopper-line-replacement-$shopperLineTomato';
+    final String agreed = 'shopper-line-replacement-$shopperLineBread';
+
+    expect(inKey(own, words.itemReplacedWith('Olcha pomidor')), findsOneWidget);
+    expect(inKey(own, words.shopperReplacementAutomatic), findsOneWidget);
+    expect(
+      inKey(own, words.shopperReplacementPrices(money(15500), money(18400))),
+      findsOneWidget,
+    );
+    expect(inKey(agreed, words.shopperReplacementApproved), findsOneWidget);
+    expect(byKey('shopper-line-limit-$shopperLineTomato'), findsNothing);
+  });
+
+  testWidgets('a waiting line says what was asked and until when', (
+    WidgetTester tester,
+  ) async {
+    const String third = '0192f0a0-0000-7000-8000-00000000e005';
+    final AppLocalizations words = await openShopping(tester, <Object?>[
+      asked('price_over_tolerance'),
+      asked('substitution', id: shopperLineBread),
+      asked('reduced_quantity', id: third),
+    ]);
+
+    expect(
+      shown(tester, 'shopper-line-question-$shopperLineTomato'),
+      words.shopperAskedPrice('13:00'),
+    );
+    expect(
+      shown(tester, 'shopper-line-question-$shopperLineBread'),
+      words.shopperAskedSubstitution('13:00'),
+    );
+    expect(
+      shown(tester, 'shopper-line-question-$third'),
+      words.shopperAskedQuantity('13:00'),
+    );
+    expect(find.text(words.shopperWaitBuyOthers), findsNWidgets(3));
+    expect(byKey('buy-$shopperLineTomato'), findsNothing);
+    expect(byKey('unavailable-$shopperLineTomato'), findsNothing);
+  });
+
+  testWidgets('a question the Customer let lapse waits for the Operator', (
+    WidgetTester tester,
+  ) async {
+    final AppLocalizations words = await openShopping(tester, <Object?>[
+      shopperLineJson(
+        status: 'awaiting_customer',
+        patch: <String, Object?>{'pending_approval': null},
+      ),
+    ]);
+
+    expect(
+      shown(tester, 'shopper-line-question-$shopperLineTomato'),
+      words.shopperQuestionExpired,
+    );
+    expect(find.byIcon(Icons.timer_off_outlined), findsOneWidget);
+    expect(byKey('buy-$shopperLineTomato'), findsNothing);
+  });
+
+  testWidgets('a done line says what was bought or why it went', (
+    WidgetTester tester,
+  ) async {
+    const String replaced = '0192f0a0-0000-7000-8000-00000000e006';
+    const String gone = '0192f0a0-0000-7000-8000-00000000e007';
+    const String fixed = '0192f0a0-0000-7000-8000-00000000e008';
+    final AppLocalizations words = await openShopping(tester, <Object?>[
+      shopperLineJson(status: 'purchased'),
+      shopperLineJson(
+        status: 'purchased',
+        patch: <String, Object?>{
+          'id': replaced,
+          'replacement': shopperReplacementJson(),
+          'purchase': <String, Object?>{
+            'product_id': shopperProductCherry,
+            'purchased_quantity': '2.100',
+            'billable_quantity': '2.100',
+            'actual_market_price_uzs': 15500,
+            'billable_unit_price_uzs': 17825,
+            'line_total_uzs': 37433,
+          },
+        },
+      ),
+      shopperLineJson(
+        bread: true,
+        status: 'removed',
+        patch: <String, Object?>{'id': gone},
+      ),
+      shopperLineJson(
+        bread: true,
+        status: 'purchased',
+        patch: <String, Object?>{'id': fixed},
+      ),
+    ]);
+
+    expect(
+      shown(tester, 'shopper-line-bought-$shopperLineTomato'),
+      words.shopperBoughtAt('2 ${words.unitKg}', money(16500)),
+    );
+    expect(find.text(words.lineTagBought), findsNWidgets(2));
+    expect(
+      shown(tester, 'shopper-line-bought-$replaced'),
+      words.shopperBoughtInstead(
+        'Pomidor',
+        '2,1 ${words.unitKg}',
+        money(15500),
+      ),
+    );
+    expect(
+      find.descendant(
+        of: byKey('shopper-line-$replaced'),
+        matching: find.text('Olcha pomidor'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(words.shopperTagReplaced), findsOneWidget);
+    expect(
+      shown(tester, 'shopper-line-bought-$fixed'),
       words.itemBought('2 ${words.unitPiece}'),
     );
-    expect(find.textContaining(words.itemPricePaid('')), findsNothing);
+    expect(
+      shown(tester, 'shopper-line-status-$gone'),
+      words.shopperTagRemoved(
+        OrderLabels.removedReason(words, ItemRemovedReason.unavailable),
+      ),
+    );
+    expect(
+      tester
+          .widget<Text>(
+            find.descendant(
+              of: byKey('shopper-line-$gone'),
+              matching: find.text('Non'),
+            ),
+          )
+          .style!
+          .decoration,
+      TextDecoration.lineThrough,
+    );
+    expect(
+      find.descendant(
+        of: byKey('shopper-line-$gone'),
+        matching: find.text('—'),
+      ),
+      findsOneWidget,
+    );
   });
+
+  for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
+    testWidgets('the shopping page holds at the extremes '
+        '(${language.languageCode})', (WidgetTester tester) async {
+      final String wish = 'x' * 160;
+      final String note = 'y' * 300;
+      String id(int n) =>
+          '0192f0a0-0000-7000-8000-0000000f${n.toString().padLeft(4, '0')}';
+      final List<Object?> items = <Object?>[
+        for (int n = 0; n < 12; n++)
+          shopperLineJson(
+            bread: n.isOdd,
+            patch: <String, Object?>{
+              'id': id(n),
+              'customer_note': note,
+              'market_price_uzs': 99999999,
+              if (n.isEven)
+                'bound': <String, Object?>{
+                  'customer_unit_price_uzs': 99999999,
+                  'market_price_uzs': 99999999,
+                },
+              if (n == 0)
+                'replacement': shopperReplacementJson(resolution: 'approved'),
+              if (n == 1) 'approved_quantity_cap': '1',
+              if (n == 1) 'quantity': '2',
+            },
+          ),
+        for (int n = 12; n < 15; n++) asked('price_over_tolerance', id: id(n)),
+        shopperLineJson(
+          status: 'awaiting_customer',
+          patch: <String, Object?>{'id': id(15), 'pending_approval': null},
+        ),
+        for (int n = 16; n < 30; n++)
+          shopperLineJson(
+            status: n.isEven ? 'purchased' : 'removed',
+            patch: <String, Object?>{'id': id(n)},
+          ),
+      ];
+      shopper.details[shopperOrderA] = ShopperOrdersApi.parseOrder(
+        shopperOrderJson(status: 'shopping', items: items)
+          ..['delivery_time_note'] = wish,
+      );
+      await open(
+        tester,
+        size: const Size(320, 640),
+        textScale: 2,
+        device: language,
+      );
+      await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
+      expect(tester.takeException(), isNull);
+      await tester.drag(byKey('shopper-order'), const Offset(0, -20000));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   List<Color> bar(WidgetTester tester) => tester
       .widget<SegmentBar>(
@@ -308,16 +648,6 @@ void main() {
   Finder inStatus(String text) => find.descendant(
     of: byKey('shopper-order-status'),
     matching: find.text(text),
-  );
-
-  Map<String, Object?> lineWith(
-    String id,
-    String status, {
-    bool bread = false,
-  }) => shopperLineJson(
-    bread: bread,
-    status: status,
-    patch: <String, Object?>{'id': '0192f0a0-0000-7000-8000-00000000e00$id'},
   );
 
   testWidgets('a new order is reviewed and accepted', (

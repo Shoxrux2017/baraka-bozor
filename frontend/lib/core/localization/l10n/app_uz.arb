@@ -1452,29 +1452,10 @@
       }
     }
   },
-  "shopperLineCap": "Mijoz rozi bo'lgan miqdor: {quantity}",
-  "@shopperLineCap": {
-    "placeholders": {
-      "quantity": {
-        "type": "String"
-      }
-    }
-  },
   "shopperPriceLimit": "So'ramasdan ko'pi bilan: {price}",
   "@shopperPriceLimit": {
     "placeholders": {
       "price": {
-        "type": "String"
-      }
-    }
-  },
-  "shopperQuestion": "Mijoz javobi kutilmoqda ({type}), {time} gacha",
-  "@shopperQuestion": {
-    "placeholders": {
-      "type": {
-        "type": "String"
-      },
-      "time": {
         "type": "String"
       }
     }
@@ -1496,7 +1477,7 @@
   "purchasePriceOptional": "Narxi belgilangan mahsulot: narx ixtiyoriy",
   "purchaseSave": "Sotib oldim",
   "purchaseAgain": "Qayta yuborish",
-  "purchaseUnconfirmed": "Oxirgi xaridga javob kelmadi — xuddi shu xarid qayta yuboriladi.",
+  "purchaseUnconfirmed": "Oxirgi xaridga javob kelmadi. «Sotib olish»ni bosing — o'sha xarid qayta yuboriladi.",
   "purchaseAboveBound": "Bu narx mijozdan so'ramasdan to'lash mumkin bo'lganidan yuqori. Mijozdan so'raysizmi?",
   "purchaseBelowQuantity": "Mijozga {quantity} kerak. Shuncha sotib oling yoki mijozdan kamroq miqdorga roziligini so'rang.",
   "@purchaseBelowQuantity": {
@@ -2393,5 +2374,130 @@
   "profileDeleteAccount": "Akkauntni o'chirish",
   "deletedTitle": "Akkaunt o'chirildi",
   "deletedBody": "Ma'lumotlaringiz o'chirildi.\nBiz bilan bo'lganingiz uchun rahmat.",
+  "shopperMarketPer": "Bozor narxi: {price} / {unit}",
+  "@shopperMarketPer": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperBoundPer": "Mijozdan so'ramasdan — {unit} uchun {price} gacha",
+  "@shopperBoundPer": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperCapAgreed": "Mijoz {ordered} o'rniga {quantity} ga rozi",
+  "@shopperCapAgreed": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "ordered": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperCapBuy": "{quantity} dan ko'p olmang",
+  "@shopperCapBuy": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperReplacementApproved": "Mijoz almashtirishga rozi bo'ldi",
+  "shopperReplacementAutomatic": "Mijoz o'xshashiga almashtirishga ruxsat bergan",
+  "shopperReplacementPrices": "Bozor narxi {price} · so'ramasdan {bound} gacha",
+  "@shopperReplacementPrices": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "bound": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperClientNote": "Mijoz: «{note}»",
+  "@shopperClientNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperGroupToBuy": "Sotib olish",
+  "shopperGroupWaiting": "Mijoz javobini kutyapmiz",
+  "shopperGroupDone": "Tayyor",
+  "shopperAskedPrice": "Mijozdan so'raldi: narx chegaradan yuqori. Javob {time} gacha",
+  "@shopperAskedPrice": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperAskedSubstitution": "Mijozdan so'raldi: almashtirish. Javob {time} gacha",
+  "@shopperAskedSubstitution": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperAskedQuantity": "Mijozdan so'raldi: kamroq miqdor. Javob {time} gacha",
+  "@shopperAskedQuantity": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperWaitBuyOthers": "Kutayotganda qolganlarini sotib oling.",
+  "shopperQuestionExpired": "Mijoz o'z vaqtida javob bermadi. Operator bu mahsulotni buyurtmadan olib tashlaydi.",
+  "shopperBoughtAt": "{quantity}, {price} dan sotib olindi",
+  "@shopperBoughtAt": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperBoughtInstead": "«{name}» o'rniga · {quantity}, {price} dan",
+  "@shopperBoughtInstead": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "shopperTagReplaced": "Almashtirildi",
+  "shopperTagRemoved": "Olib tashlandi: {reason}",
+  "@shopperTagRemoved": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "doneButton": "Tayyor"
 }

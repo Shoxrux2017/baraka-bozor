@@ -2403,18 +2403,8 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String shopperLineCap(String quantity) {
-    return 'Mijoz rozi bo\'lgan miqdor: $quantity';
-  }
-
-  @override
   String shopperPriceLimit(String price) {
     return 'So\'ramasdan ko\'pi bilan: $price';
-  }
-
-  @override
-  String shopperQuestion(String type, String time) {
-    return 'Mijoz javobi kutilmoqda ($type), $time gacha';
   }
 
   @override
@@ -2453,7 +2443,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get purchaseUnconfirmed =>
-      'Oxirgi xaridga javob kelmadi — xuddi shu xarid qayta yuboriladi.';
+      'Oxirgi xaridga javob kelmadi. «Sotib olish»ni bosing — o\'sha xarid qayta yuboriladi.';
 
   @override
   String get purchaseAboveBound =>
@@ -3658,6 +3648,92 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get deletedBody =>
       'Ma\'lumotlaringiz o\'chirildi.\nBiz bilan bo\'lganingiz uchun rahmat.';
+
+  @override
+  String shopperMarketPer(String price, String unit) {
+    return 'Bozor narxi: $price / $unit';
+  }
+
+  @override
+  String shopperBoundPer(String price, String unit) {
+    return 'Mijozdan so\'ramasdan — $unit uchun $price gacha';
+  }
+
+  @override
+  String shopperCapAgreed(String quantity, String ordered) {
+    return 'Mijoz $ordered o\'rniga $quantity ga rozi';
+  }
+
+  @override
+  String shopperCapBuy(String quantity) {
+    return '$quantity dan ko\'p olmang';
+  }
+
+  @override
+  String get shopperReplacementApproved => 'Mijoz almashtirishga rozi bo\'ldi';
+
+  @override
+  String get shopperReplacementAutomatic =>
+      'Mijoz o\'xshashiga almashtirishga ruxsat bergan';
+
+  @override
+  String shopperReplacementPrices(String price, String bound) {
+    return 'Bozor narxi $price · so\'ramasdan $bound gacha';
+  }
+
+  @override
+  String shopperClientNote(String note) {
+    return 'Mijoz: «$note»';
+  }
+
+  @override
+  String get shopperGroupToBuy => 'Sotib olish';
+
+  @override
+  String get shopperGroupWaiting => 'Mijoz javobini kutyapmiz';
+
+  @override
+  String get shopperGroupDone => 'Tayyor';
+
+  @override
+  String shopperAskedPrice(String time) {
+    return 'Mijozdan so\'raldi: narx chegaradan yuqori. Javob $time gacha';
+  }
+
+  @override
+  String shopperAskedSubstitution(String time) {
+    return 'Mijozdan so\'raldi: almashtirish. Javob $time gacha';
+  }
+
+  @override
+  String shopperAskedQuantity(String time) {
+    return 'Mijozdan so\'raldi: kamroq miqdor. Javob $time gacha';
+  }
+
+  @override
+  String get shopperWaitBuyOthers => 'Kutayotganda qolganlarini sotib oling.';
+
+  @override
+  String get shopperQuestionExpired =>
+      'Mijoz o\'z vaqtida javob bermadi. Operator bu mahsulotni buyurtmadan olib tashlaydi.';
+
+  @override
+  String shopperBoughtAt(String quantity, String price) {
+    return '$quantity, $price dan sotib olindi';
+  }
+
+  @override
+  String shopperBoughtInstead(String name, String quantity, String price) {
+    return '«$name» o\'rniga · $quantity, $price dan';
+  }
+
+  @override
+  String get shopperTagReplaced => 'Almashtirildi';
+
+  @override
+  String shopperTagRemoved(String reason) {
+    return 'Olib tashlandi: $reason';
+  }
 
   @override
   String get doneButton => 'Tayyor';

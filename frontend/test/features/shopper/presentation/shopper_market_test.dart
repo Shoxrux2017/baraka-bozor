@@ -139,6 +139,13 @@ void main() {
     expect(byKey('buy-$shopperLineTomato'), findsOneWidget);
     expect(byKey('replace-$shopperLineTomato'), findsOneWidget);
     expect(byKey('unavailable-$shopperLineTomato'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: byKey('unavailable-$shopperLineTomato'),
+        matching: find.text(l10n(tester).lineUnavailable),
+      ),
+      findsOneWidget,
+    );
     expect(byKey('buy-$shopperLineBread'), findsOneWidget);
     expect(byKey('replace-$shopperLineBread'), findsNothing);
 

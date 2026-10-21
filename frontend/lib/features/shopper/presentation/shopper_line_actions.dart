@@ -16,7 +16,10 @@ import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
+import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/kit/kit_buttons.dart';
+import '../../../core/widgets/kit/kit_note.dart';
 import '../application/shopper_orders_controllers.dart';
 import '../domain/price_guard.dart';
 import '../domain/shopper_orders.dart';
@@ -50,55 +53,91 @@ class ShopperLineActions extends ConsumerWidget {
     );
     final bool busy = state.isBusy;
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          if (unconfirmed)
-            Text(
-              l10n.purchaseUnconfirmed,
-              key: ValueKey<String>('purchase-unconfirmed-${line.id}'),
+    final bool large = MediaQuery.textScalerOf(context).scale(15) > 15 * 1.3;
+    final ButtonStyle compact = ButtonStyle(
+      padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
+        EdgeInsets.symmetric(horizontal: 8),
+      ),
+    );
+
+    Widget label(String text) =>
+        FittedBox(fit: BoxFit.scaleDown, child: Text(text, maxLines: 1));
+
+    final Widget buy = FilledButton.icon(
+      key: ValueKey<String>('buy-${line.id}'),
+      style: kitFilled(height: 46).merge(compact),
+      icon: const Icon(Icons.check, size: 20),
+      label: label(l10n.lineBuy),
+      onPressed: busy
+          ? null
+          : () => showDialog<void>(
+              context: context,
+              builder: (BuildContext context) =>
+                  PurchaseDialog(order: order, line: line),
             ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              FilledButton(
-                key: ValueKey<String>('buy-${line.id}'),
-                onPressed: busy
-                    ? null
-                    : () => showDialog<void>(
-                        context: context,
-                        builder: (BuildContext context) =>
-                            PurchaseDialog(order: order, line: line),
-                      ),
-                child: Text(l10n.lineBuy),
-              ),
-              if (line.substitutionPolicy !=
-                  SubstitutionPolicy.removeIfUnavailable)
-                OutlinedButton(
-                  key: ValueKey<String>('replace-${line.id}'),
-                  onPressed: busy
-                      ? null
-                      : () => context.push(
-                          AppPaths.shopperReplace(order.id, line.id),
-                        ),
-                  child: Text(l10n.lineReplace),
-                ),
-              TextButton(
-                key: ValueKey<String>('unavailable-${line.id}'),
-                onPressed: busy
-                    ? null
-                    : () => showDialog<void>(
-                        context: context,
-                        builder: (BuildContext context) =>
-                            UnavailableDialog(order: order, line: line),
-                      ),
-                child: Text(l10n.lineUnavailable),
-              ),
+    );
+    final Widget? replace =
+        line.substitutionPolicy == SubstitutionPolicy.removeIfUnavailable
+        ? null
+        : OutlinedButton(
+            key: ValueKey<String>('replace-${line.id}'),
+            style: kitOutlined(height: 46).merge(compact),
+            onPressed: busy
+                ? null
+                : () =>
+                      context.push(AppPaths.shopperReplace(order.id, line.id)),
+            child: label(l10n.lineReplace),
+          );
+    final Widget unavailable = OutlinedButton(
+      key: ValueKey<String>('unavailable-${line.id}'),
+      style: kitOutlined(
+        foreground: KitColors.danger,
+        height: 46,
+      ).merge(compact),
+      onPressed: busy
+          ? null
+          : () => showDialog<void>(
+              context: context,
+              builder: (BuildContext context) =>
+                  UnavailableDialog(order: order, line: line),
+            ),
+      child: label(l10n.lineUnavailable),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (unconfirmed) ...<Widget>[
+            KitNote(
+              key: ValueKey<String>('purchase-unconfirmed-${line.id}'),
+              icon: Icons.cloud_off,
+              tone: KitTone.grey,
+              text: Text(l10n.purchaseUnconfirmed),
+            ),
+            const SizedBox(height: 10),
+          ],
+          if (large) ...<Widget>[
+            buy,
+            if (replace != null) ...<Widget>[
+              const SizedBox(height: 8),
+              replace,
             ],
-          ),
+            const SizedBox(height: 8),
+            unavailable,
+          ] else
+            Row(
+              children: <Widget>[
+                Expanded(flex: 11, child: buy),
+                if (replace != null) ...<Widget>[
+                  const SizedBox(width: 8),
+                  Expanded(flex: 10, child: replace),
+                ],
+                const SizedBox(width: 8),
+                Expanded(flex: 10, child: unavailable),
+              ],
+            ),
         ],
       ),
     );
