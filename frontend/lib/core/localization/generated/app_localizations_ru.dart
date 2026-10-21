@@ -2430,11 +2430,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String shopperPriceLimit(String price) {
-    return 'Без вопроса клиенту не дороже: $price';
-  }
-
-  @override
   String get shopperPageEmpty =>
       'На этой странице заказов не осталось. Перейдите на предыдущую.';
 
@@ -2448,15 +2443,43 @@ class AppLocalizationsRu extends AppLocalizations {
   String get lineUnavailable => 'Нет товара';
 
   @override
-  String purchaseTitle(String name) {
-    return 'Покупка: $name';
+  String get purchaseSheetTitle => 'Покупка';
+
+  @override
+  String purchaseNeeded(String quantity) {
+    return 'Клиенту нужно $quantity';
   }
 
   @override
-  String get purchaseQuantity => 'Сколько куплено';
+  String get purchaseQuantity => 'Сколько купили';
 
   @override
   String get purchasePrice => 'Цена за единицу (оплачено)';
+
+  @override
+  String purchasePriceFor(String unit) {
+    return 'Цена за $unit (сколько заплатили)';
+  }
+
+  @override
+  String purchaseExcess(String quantity) {
+    return 'Лишнее сверх $quantity клиент не оплачивает.';
+  }
+
+  @override
+  String purchaseMarketInfo(String price, String bound, String unit) {
+    return 'Рыночная $price. Без вопроса клиенту — до $bound за $unit.';
+  }
+
+  @override
+  String purchaseMarketOnly(String price) {
+    return 'Рыночная $price.';
+  }
+
+  @override
+  String purchaseWhich(String name) {
+    return 'Купили замену или нашли «$name»? Выберите, что купили.';
+  }
 
   @override
   String get purchasePriceOptional =>
@@ -2473,22 +2496,23 @@ class AppLocalizationsRu extends AppLocalizations {
       'На последнюю покупку не пришёл ответ. Нажмите «Купить» — отправим ту же покупку ещё раз.';
 
   @override
-  String get purchaseAboveBound =>
-      'Эта цена выше той, что можно платить без вопроса клиенту. Спросить клиента?';
+  String purchaseAboveBound(String bound) {
+    return 'Это дороже, чем можно без вопроса клиенту (до $bound). Спросите клиента или найдите дешевле.';
+  }
 
   @override
-  String purchaseBelowQuantity(String quantity) {
-    return 'Клиенту нужно $quantity. Купите столько или спросите клиента, согласен ли он на меньшее.';
+  String purchaseBelowQuantity(String required, String quantity) {
+    return 'Клиенту нужно $required. Купите столько или спросите клиента, согласен ли он на $quantity.';
   }
 
   @override
   String get askNote => 'Комментарий для клиента (необязательно)';
 
   @override
-  String get askPrice => 'Спросить клиента о цене';
+  String get askCustomer => 'Спросить клиента';
 
   @override
-  String get askQuantity => 'Спросить клиента о количестве';
+  String get askNotePlaceholder => 'Например: больше свежих нет';
 
   @override
   String get typoTitle => 'Проверьте цену';
@@ -2505,16 +2529,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get typoCancel => 'Исправлю';
 
   @override
-  String unavailableTitle(String name) {
-    return '«$name» нет в наличии?';
+  String get unavailableSheetTitle => 'Товара нет?';
+
+  @override
+  String unavailableExplained(String name) {
+    return 'Уберём «$name» из заказа. Если покупать больше нечего, заказ отменится.';
   }
 
   @override
-  String get unavailableExplained =>
-      'Товар будет убран из заказа. Если покупать больше нечего, заказ отменится.';
+  String get unavailableNotePlaceholder => 'Например: весь вялый';
 
   @override
-  String get unavailableConfirm => 'Да, нет в наличии';
+  String get unavailableConfirm => 'Да, товара нет';
 
   @override
   String replaceTitle(String name) {

@@ -4268,12 +4268,6 @@ abstract class AppLocalizations {
   /// **'Qo\'ng\'iroq ilovasi ochilmadi. Raqamni qo\'lda tering: {phone}'**
   String callFailed(String phone);
 
-  /// No description provided for @shopperPriceLimit.
-  ///
-  /// In uz, this message translates to:
-  /// **'So\'ramasdan ko\'pi bilan: {price}'**
-  String shopperPriceLimit(String price);
-
   /// No description provided for @shopperPageEmpty.
   ///
   /// In uz, this message translates to:
@@ -4298,11 +4292,17 @@ abstract class AppLocalizations {
   /// **'Topilmadi'**
   String get lineUnavailable;
 
-  /// No description provided for @purchaseTitle.
+  /// No description provided for @purchaseSheetTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Sotib olish: {name}'**
-  String purchaseTitle(String name);
+  /// **'Xarid'**
+  String get purchaseSheetTitle;
+
+  /// No description provided for @purchaseNeeded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga {quantity} kerak'**
+  String purchaseNeeded(String quantity);
 
   /// No description provided for @purchaseQuantity.
   ///
@@ -4315,6 +4315,36 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Birlik narxi (to\'langan)'**
   String get purchasePrice;
+
+  /// No description provided for @purchasePriceFor.
+  ///
+  /// In uz, this message translates to:
+  /// **'1 {unit} narxi (to\'langan)'**
+  String purchasePriceFor(String unit);
+
+  /// No description provided for @purchaseExcess.
+  ///
+  /// In uz, this message translates to:
+  /// **'{quantity} dan ortig\'ini mijoz to\'lamaydi.'**
+  String purchaseExcess(String quantity);
+
+  /// No description provided for @purchaseMarketInfo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bozor narxi {price}. Mijozdan so\'ramasdan — 1 {unit} uchun {bound} gacha.'**
+  String purchaseMarketInfo(String price, String bound, String unit);
+
+  /// No description provided for @purchaseMarketOnly.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bozor narxi {price}.'**
+  String purchaseMarketOnly(String price);
+
+  /// No description provided for @purchaseWhich.
+  ///
+  /// In uz, this message translates to:
+  /// **'Almashtiruvchini oldingizmi yoki «{name}» topildimi? Nima olganingizni tanlang.'**
+  String purchaseWhich(String name);
 
   /// No description provided for @purchasePriceOptional.
   ///
@@ -4343,14 +4373,14 @@ abstract class AppLocalizations {
   /// No description provided for @purchaseAboveBound.
   ///
   /// In uz, this message translates to:
-  /// **'Bu narx mijozdan so\'ramasdan to\'lash mumkin bo\'lganidan yuqori. Mijozdan so\'raysizmi?'**
-  String get purchaseAboveBound;
+  /// **'Bu mijozdan so\'ramasdan mumkin bo\'lganidan qimmat ({bound} gacha). Mijozdan so\'rang yoki arzonroq toping.'**
+  String purchaseAboveBound(String bound);
 
   /// No description provided for @purchaseBelowQuantity.
   ///
   /// In uz, this message translates to:
-  /// **'Mijozga {quantity} kerak. Shuncha sotib oling yoki mijozdan kamroq miqdorga roziligini so\'rang.'**
-  String purchaseBelowQuantity(String quantity);
+  /// **'Mijozga {required} kerak. Shuncha sotib oling yoki mijozdan {quantity} ga roziligini so\'rang.'**
+  String purchaseBelowQuantity(String required, String quantity);
 
   /// No description provided for @askNote.
   ///
@@ -4358,17 +4388,17 @@ abstract class AppLocalizations {
   /// **'Mijozga izoh (ixtiyoriy)'**
   String get askNote;
 
-  /// No description provided for @askPrice.
+  /// No description provided for @askCustomer.
   ///
   /// In uz, this message translates to:
-  /// **'Mijozdan narx haqida so\'rash'**
-  String get askPrice;
+  /// **'Mijozdan so\'rash'**
+  String get askCustomer;
 
-  /// No description provided for @askQuantity.
+  /// No description provided for @askNotePlaceholder.
   ///
   /// In uz, this message translates to:
-  /// **'Mijozdan miqdor haqida so\'rash'**
-  String get askQuantity;
+  /// **'Masalan: boshqa yangisi yo\'q'**
+  String get askNotePlaceholder;
 
   /// No description provided for @typoTitle.
   ///
@@ -4394,17 +4424,23 @@ abstract class AppLocalizations {
   /// **'Tuzataman'**
   String get typoCancel;
 
-  /// No description provided for @unavailableTitle.
+  /// No description provided for @unavailableSheetTitle.
   ///
   /// In uz, this message translates to:
-  /// **'«{name}» topilmadimi?'**
-  String unavailableTitle(String name);
+  /// **'Mahsulot yo\'qmi?'**
+  String get unavailableSheetTitle;
 
   /// No description provided for @unavailableExplained.
   ///
   /// In uz, this message translates to:
-  /// **'Mahsulot buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.'**
-  String get unavailableExplained;
+  /// **'«{name}» buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.'**
+  String unavailableExplained(String name);
+
+  /// No description provided for @unavailableNotePlaceholder.
+  ///
+  /// In uz, this message translates to:
+  /// **'Masalan: hammasi so\'lgan'**
+  String get unavailableNotePlaceholder;
 
   /// No description provided for @unavailableConfirm.
   ///

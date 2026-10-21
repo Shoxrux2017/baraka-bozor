@@ -1407,44 +1407,93 @@
       }
     }
   },
-  "shopperPriceLimit": "Без вопроса клиенту не дороже: {price}",
-  "@shopperPriceLimit": {
-    "placeholders": {
-      "price": {
-        "type": "String"
-      }
-    }
-  },
   "shopperPageEmpty": "На этой странице заказов не осталось. Перейдите на предыдущую.",
   "lineBuy": "Купить",
   "lineReplace": "Заменить",
   "lineUnavailable": "Нет товара",
-  "purchaseTitle": "Покупка: {name}",
-  "@purchaseTitle": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "purchaseQuantity": "Сколько куплено",
-  "purchasePrice": "Цена за единицу (оплачено)",
-  "purchasePriceOptional": "Товар с фиксированной ценой: цену можно не вводить",
-  "purchaseSave": "Записать покупку",
-  "purchaseAgain": "Отправить снова",
-  "purchaseUnconfirmed": "На последнюю покупку не пришёл ответ. Нажмите «Купить» — отправим ту же покупку ещё раз.",
-  "purchaseAboveBound": "Эта цена выше той, что можно платить без вопроса клиенту. Спросить клиента?",
-  "purchaseBelowQuantity": "Клиенту нужно {quantity}. Купите столько или спросите клиента, согласен ли он на меньшее.",
-  "@purchaseBelowQuantity": {
+  "purchaseSheetTitle": "Покупка",
+  "purchaseNeeded": "Клиенту нужно {quantity}",
+  "@purchaseNeeded": {
     "placeholders": {
       "quantity": {
         "type": "String"
       }
     }
   },
+  "purchaseQuantity": "Сколько купили",
+  "purchasePrice": "Цена за единицу (оплачено)",
+  "purchasePriceFor": "Цена за {unit} (сколько заплатили)",
+  "@purchasePriceFor": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseExcess": "Лишнее сверх {quantity} клиент не оплачивает.",
+  "@purchaseExcess": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseMarketInfo": "Рыночная {price}. Без вопроса клиенту — до {bound} за {unit}.",
+  "@purchaseMarketInfo": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "bound": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseMarketOnly": "Рыночная {price}.",
+  "@purchaseMarketOnly": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseWhich": "Купили замену или нашли «{name}»? Выберите, что купили.",
+  "@purchaseWhich": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "purchasePriceOptional": "Товар с фиксированной ценой: цену можно не вводить",
+  "purchaseSave": "Записать покупку",
+  "purchaseAgain": "Отправить снова",
+  "purchaseUnconfirmed": "На последнюю покупку не пришёл ответ. Нажмите «Купить» — отправим ту же покупку ещё раз.",
+  "purchaseAboveBound": "Это дороже, чем можно без вопроса клиенту (до {bound}). Спросите клиента или найдите дешевле.",
+  "@purchaseAboveBound": {
+    "placeholders": {
+      "bound": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseBelowQuantity": "Клиенту нужно {required}. Купите столько или спросите клиента, согласен ли он на {quantity}.",
+  "@purchaseBelowQuantity": {
+    "placeholders": {
+      "required": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
   "askNote": "Комментарий для клиента (необязательно)",
-  "askPrice": "Спросить клиента о цене",
-  "askQuantity": "Спросить клиента о количестве",
+  "askCustomer": "Спросить клиента",
+  "askNotePlaceholder": "Например: больше свежих нет",
   "typoTitle": "Проверьте цену",
   "typoExplained": "Вы ввели {price}, а рыночная цена {market}. Всё верно?",
   "@typoExplained": {
@@ -1459,16 +1508,17 @@
   },
   "typoConfirm": "Да, верно",
   "typoCancel": "Исправлю",
-  "unavailableTitle": "«{name}» нет в наличии?",
-  "@unavailableTitle": {
+  "unavailableSheetTitle": "Товара нет?",
+  "unavailableExplained": "Уберём «{name}» из заказа. Если покупать больше нечего, заказ отменится.",
+  "@unavailableExplained": {
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "unavailableExplained": "Товар будет убран из заказа. Если покупать больше нечего, заказ отменится.",
-  "unavailableConfirm": "Да, нет в наличии",
+  "unavailableNotePlaceholder": "Например: весь вялый",
+  "unavailableConfirm": "Да, товара нет",
   "replaceTitle": "Замена для «{name}»",
   "@replaceTitle": {
     "placeholders": {

@@ -5,7 +5,10 @@ import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/kit/kit_empty_state.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_note.dart';
+import 'package:baraka_bozor/core/widgets/product_image.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/shopper/data/shopper_orders_api.dart';
 import 'package:baraka_bozor/features/shopper/domain/price_guard.dart';
@@ -96,6 +99,33 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The amber outline of a refused field (`KitColors.warning`).
+  bool outlinedAmber(WidgetTester tester, String field) {
+    final InputDecoration decoration = tester
+        .widget<InputDecorator>(
+          find.descendant(
+            of: byKey(field),
+            matching: find.byType(InputDecorator),
+          ),
+        )
+        .decoration;
+    final InputBorder? border = decoration.enabledBorder;
+    return border is OutlineInputBorder &&
+        border.borderSide.color == KitColors.warning;
+  }
+
+  const ApiRefusal priceRefusal = ApiRefusal(
+    ApiError(
+      status: 409,
+      code: 'customer_approval_required',
+      details: <String, Object?>{
+        'approval_type': 'price_over_tolerance',
+        'ceiling_customer_unit_price_uzs': 21160,
+        'proposed_customer_unit_price_uzs': 25300,
+      },
+    ),
+  );
+
   Future<void> buy(WidgetTester tester, String line, {String? price}) async {
     await tapAndSettle(tester, byKey('buy-$line'));
     if (price != null) {
@@ -168,14 +198,46 @@ void main() {
   testWidgets('an estimate is bought with its quantity and the price paid', (
     WidgetTester tester,
   ) async {
-    shopper.afterAction[shopperOrderA] = shopping(<Object?>[
-      tomato(status: 'purchased'),
-      bread(),
-    ]);
+    shopper
+      ..details[shopperOrderA] = shopping(<Object?>[
+        tomato(
+          patch: <String, Object?>{'image_url': 'https://example.test/t.webp'},
+        ),
+        bread(),
+      ])
+      ..afterAction[shopperOrderA] = shopping(<Object?>[
+        tomato(status: 'purchased'),
+        bread(),
+      ]);
     await openOrder(tester);
 
-    await buy(tester, shopperLineTomato);
-    expect(find.text(l10n(tester).fieldRequired), findsOneWidget);
+    await tapAndSettle(tester, byKey('buy-$shopperLineTomato'));
+    final AppLocalizations words = l10n(tester);
+    final Finder sheet = byKey('purchase-sheet');
+    Finder inSheet(String text) =>
+        find.descendant(of: sheet, matching: find.text(text));
+    expect(inSheet(words.purchaseSheetTitle), findsOneWidget);
+    expect(
+      tester
+          .widget<ProductImage>(
+            find.descendant(of: sheet, matching: find.byType(ProductImage)),
+          )
+          .url,
+      'https://example.test/t.webp',
+    );
+    expect(inSheet('Pomidor'), findsOneWidget);
+    expect(inSheet(words.purchaseNeeded('2 ${words.unitKg}')), findsOneWidget);
+    expect(
+      inSheet(
+        words.purchaseMarketInfo(money(16000), money(18400), words.unitKg),
+      ),
+      findsOneWidget,
+    );
+    expect(inSheet(words.purchasePriceFor(words.unitKg)), findsOneWidget);
+    expect(byKey('purchase-sheet-close'), findsOneWidget);
+
+    await tapAndSettle(tester, byKey('purchase-save'));
+    expect(find.text(words.fieldRequired), findsOneWidget);
     expect(shopper.actions, isEmpty);
 
     await tester.enterText(byKey('purchase-quantity'), '1,8');
@@ -185,8 +247,28 @@ void main() {
     expect(shopper.actions, <String>[
       'purchase:$shopperLineTomato:1.8:16500:$shopperProductTomato',
     ]);
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(sheet, findsNothing);
     expect(byKey('shopper-line-bought-$shopperLineTomato'), findsOneWidget);
+  });
+
+  testWidgets('buying more than needed says the excess is not billed', (
+    WidgetTester tester,
+  ) async {
+    await openOrder(tester);
+    await tapAndSettle(tester, byKey('buy-$shopperLineTomato'));
+    final AppLocalizations words = l10n(tester);
+    expect(byKey('purchase-excess'), findsNothing);
+
+    await tester.enterText(byKey('purchase-quantity'), '2,1');
+    await tester.pump();
+    expect(
+      tester.widget<Text>(byKey('purchase-excess')).data,
+      words.purchaseExcess('2 ${words.unitKg}'),
+    );
+
+    await tester.enterText(byKey('purchase-quantity'), '2');
+    await tester.pump();
+    expect(byKey('purchase-excess'), findsNothing);
   });
 
   testWidgets('a price the typo guard doubts is confirmed before it is sent', (
@@ -199,11 +281,14 @@ void main() {
     await openOrder(tester);
 
     await buy(tester, shopperLineTomato, price: '60000');
+    expect(find.text(l10n(tester).typoTitle), findsOneWidget);
+    expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     expect(
       find.text(l10n(tester).typoExplained(money(60000), money(16000))),
       findsOneWidget,
     );
     await tapAndSettle(tester, byKey('typo-cancel'));
+    expect(find.text(l10n(tester).typoTitle), findsNothing);
     expect(shopper.actions, isEmpty);
     expect(byKey('purchase-price'), findsOneWidget, reason: 'to correct it');
 
@@ -223,7 +308,11 @@ void main() {
     ]);
     await openOrder(tester);
 
-    await buy(tester, shopperLineBread);
+    await tapAndSettle(tester, byKey('buy-$shopperLineBread'));
+    final AppLocalizations words = l10n(tester);
+    expect(find.text(words.purchasePriceOptional), findsOneWidget);
+    expect(find.text(words.purchaseMarketOnly(money(4000))), findsOneWidget);
+    await tapAndSettle(tester, byKey('purchase-save'));
 
     expect(shopper.actions, <String>[
       'purchase:$shopperLineBread:2:null:$shopperProductBread',
@@ -250,12 +339,35 @@ void main() {
     expect(byKey('typo-confirm'), findsOneWidget);
     await tapAndSettle(tester, byKey('typo-cancel'));
 
+    final AppLocalizations words = l10n(tester);
+    expect(
+      find.descendant(
+        of: byKey('buy-replacement'),
+        matching: find.byIcon(Icons.swap_horiz),
+      ),
+      findsOneWidget,
+    );
+    expect(byKey('buy-original'), findsOneWidget);
+    expect(find.text(words.purchaseWhich('Pomidor')), findsOneWidget);
+    expect(
+      find.text(
+        words.purchaseMarketInfo(money(15500), money(18400), words.unitKg),
+      ),
+      findsOneWidget,
+    );
+
     // The replacement is named when bought.
     await tester.enterText(byKey('purchase-price'), '15000');
     await tapAndSettle(tester, byKey('purchase-save'));
 
     // The original's 16 000 makes 47 000 no slip, and it is named.
     await tapAndSettle(tester, byKey('buy-original'));
+    expect(
+      find.text(
+        words.purchaseMarketInfo(money(16000), money(18400), words.unitKg),
+      ),
+      findsOneWidget,
+    );
     await tester.enterText(byKey('purchase-price'), '47000');
     await tapAndSettle(tester, byKey('purchase-save'));
     expect(byKey('typo-confirm'), findsNothing);
@@ -271,22 +383,43 @@ void main() {
     WidgetTester tester,
   ) async {
     await openOrder(tester);
-    shopper.actionFailure = const ApiRefusal(
-      ApiError(
-        status: 409,
-        code: 'customer_approval_required',
-        details: <String, Object?>{
-          'approval_type': 'price_over_tolerance',
-          'ceiling_customer_unit_price_uzs': 21160,
-          'proposed_customer_unit_price_uzs': 25300,
-        },
-      ),
-    );
+    shopper.actionFailure = priceRefusal;
 
     await buy(tester, shopperLineTomato, price: '22000');
+    final AppLocalizations words = l10n(tester);
     expect(
       tester.widget<Text>(byKey('purchase-needs-customer')).data,
-      l10n(tester).purchaseAboveBound,
+      words.purchaseAboveBound(money(18400)),
+    );
+    expect(
+      tester
+          .widget<KitNote>(
+            find.ancestor(
+              of: byKey('purchase-needs-customer'),
+              matching: find.byType(KitNote),
+            ),
+          )
+          .tone,
+      KitTone.amber,
+    );
+    expect(outlinedAmber(tester, 'purchase-price'), isTrue);
+    expect(outlinedAmber(tester, 'purchase-quantity'), isFalse);
+    expect(find.text(words.askNotePlaceholder), findsOneWidget);
+    expect(find.text('0 / 300'), findsOneWidget);
+    expect(byKey('purchase-save'), findsNothing);
+    expect(
+      find.descendant(
+        of: byKey('ask-price'),
+        matching: find.text(words.askCustomer),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: byKey('purchase-cancel'),
+        matching: find.text(words.cancelButton),
+      ),
+      findsOneWidget,
     );
 
     shopper
@@ -296,14 +429,80 @@ void main() {
         bread(),
       ]);
     await tester.enterText(byKey('ask-note'), ' Narx oshgan ');
+    await tester.pump();
+    expect(find.text('11 / 300'), findsOneWidget);
     await tapAndSettle(tester, byKey('ask-price'));
 
     expect(shopper.actions, <String>[
       'purchase:$shopperLineTomato:2:22000:$shopperProductTomato',
       'ask-price:$shopperLineTomato:22000:$shopperProductTomato:Narx oshgan',
     ]);
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(byKey('purchase-sheet'), findsNothing);
     expect(byKey('shopper-line-question-$shopperLineTomato'), findsOneWidget);
+  });
+
+  testWidgets('editing the refused price returns to the purchase', (
+    WidgetTester tester,
+  ) async {
+    await openOrder(tester);
+    shopper.actionFailure = priceRefusal;
+    await buy(tester, shopperLineTomato, price: '22000');
+    expect(byKey('purchase-needs-customer'), findsOneWidget);
+    expect(byKey('purchase-save'), findsNothing);
+
+    shopper
+      ..actionFailure = null
+      ..afterAction[shopperOrderA] = shopping(<Object?>[
+        tomato(status: 'purchased'),
+        bread(),
+      ]);
+    await tester.enterText(byKey('purchase-price'), '22500');
+    await tester.pump();
+    expect(byKey('purchase-needs-customer'), findsNothing);
+    expect(byKey('ask-price'), findsNothing);
+    expect(outlinedAmber(tester, 'purchase-price'), isFalse);
+    expect(byKey('purchase-save'), findsOneWidget);
+
+    await tapAndSettle(tester, byKey('purchase-save'));
+    expect(shopper.actions, <String>[
+      'purchase:$shopperLineTomato:2:22000:$shopperProductTomato',
+      'purchase:$shopperLineTomato:2:22500:$shopperProductTomato',
+    ]);
+    expect(byKey('purchase-sheet'), findsNothing);
+  });
+
+  testWidgets('a running purchase holds its sheet', (
+    WidgetTester tester,
+  ) async {
+    await openOrder(tester);
+    shopper.afterAction[shopperOrderA] = shopping(<Object?>[
+      tomato(status: 'purchased'),
+      bread(),
+    ]);
+    final Completer<void> hold = Completer<void>();
+    shopper.hold = hold;
+
+    await tapAndSettle(tester, byKey('buy-$shopperLineTomato'));
+    await tester.enterText(byKey('purchase-price'), '16500');
+    await tester.tap(byKey('purchase-save'));
+    await tester.pump();
+
+    await tester.tap(byKey('purchase-sheet-close'));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(byKey('purchase-sheet'), findsOneWidget, reason: 'the x');
+    await tester.binding.handlePopRoute();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(byKey('purchase-sheet'), findsOneWidget, reason: 'back');
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(byKey('purchase-sheet'), findsOneWidget, reason: 'the scrim');
+
+    shopper.hold = null;
+    hold.complete();
+    await tester.pumpAndSettle();
+    expect(byKey('purchase-sheet'), findsNothing);
+    expect(shopper.actions, hasLength(1));
+    expect(byKey('shopper-line-bought-$shopperLineTomato'), findsOneWidget);
   });
 
   testWidgets('less than the Customer is owed is asked of them', (
@@ -327,8 +526,13 @@ void main() {
     await tapAndSettle(tester, byKey('purchase-save'));
     expect(
       tester.widget<Text>(byKey('purchase-needs-customer')).data,
-      l10n(tester).purchaseBelowQuantity('2 ${l10n(tester).unitKg}'),
+      l10n(tester).purchaseBelowQuantity(
+        '2 ${l10n(tester).unitKg}',
+        '1,5 ${l10n(tester).unitKg}',
+      ),
     );
+    expect(outlinedAmber(tester, 'purchase-quantity'), isTrue);
+    expect(outlinedAmber(tester, 'purchase-price'), isFalse);
 
     shopper
       ..actionFailure = null
@@ -339,6 +543,7 @@ void main() {
     await tapAndSettle(tester, byKey('ask-quantity'));
 
     expect(shopper.actions.last, 'ask-quantity:$shopperLineTomato:1.5:null');
+    expect(byKey('purchase-sheet'), findsNothing);
   });
 
   testWidgets('a purchase without a sure answer is sent again as it was, '
@@ -354,7 +559,7 @@ void main() {
       tester.widget<TextFormField>(byKey('purchase-price')).enabled,
       isFalse,
     );
-    await tapAndSettle(tester, byKey('purchase-cancel'));
+    await tapAndSettle(tester, byKey('purchase-sheet-close'));
     expect(byKey('purchase-unconfirmed-$shopperLineTomato'), findsOneWidget);
 
     // Opened again, the purchase is the one sent.
@@ -418,7 +623,36 @@ void main() {
     await openOrder(tester);
 
     await tapAndSettle(tester, byKey('unavailable-$shopperLineTomato'));
-    expect(find.text(l10n(tester).unavailableExplained), findsOneWidget);
+    final AppLocalizations words = l10n(tester);
+    final Finder sheet = byKey('unavailable-sheet');
+    Finder inSheet(String text) =>
+        find.descendant(of: sheet, matching: find.text(text));
+    expect(inSheet(words.unavailableSheetTitle), findsOneWidget);
+    expect(inSheet('Pomidor'), findsOneWidget);
+    expect(inSheet('2 ${words.unitKg}'), findsOneWidget);
+    expect(
+      find.descendant(of: sheet, matching: find.byType(ProductImage)),
+      findsOneWidget,
+    );
+    expect(inSheet(words.unavailableExplained('Pomidor')), findsOneWidget);
+    expect(inSheet(words.actionNote), findsOneWidget);
+    expect(inSheet(words.unavailableNotePlaceholder), findsOneWidget);
+    expect(inSheet('0 / 300'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(byKey('unavailable-confirm'))
+          .style!
+          .backgroundColor!
+          .resolve(<WidgetState>{}),
+      KitColors.danger,
+    );
+    expect(
+      find.descendant(
+        of: byKey('unavailable-confirm'),
+        matching: find.text(words.unavailableConfirm),
+      ),
+      findsOneWidget,
+    );
     await tester.enterText(byKey('unavailable-note'), 'Qolmagan');
     final int loads = shopper.loads
         .where((String load) => load == 'order:$shopperOrderA')
@@ -506,7 +740,7 @@ void main() {
     await openOrder(tester);
     shopper.actionFailure = const NetworkFailure();
     await buy(tester, shopperLineTomato, price: '16500');
-    await tapAndSettle(tester, byKey('purchase-cancel'));
+    await tapAndSettle(tester, byKey('purchase-sheet-close'));
 
     shopper.orderFailure = const NetworkFailure();
     await tester.pump(const Duration(seconds: 10));
@@ -560,16 +794,18 @@ void main() {
     await buy(tester, shopperLineBread, price: '6000');
     expect(byKey('ask-price'), findsOneWidget);
 
-    // The loaf itself takes no price; the question still needs one.
+    // Another product chosen keeps the question, which asks about the
+    // values refused.
     await tapAndSettle(tester, byKey('buy-original'));
-    await tester.enterText(byKey('purchase-price'), '');
-    await tapAndSettle(tester, byKey('ask-price'));
-
+    expect(byKey('ask-price'), findsOneWidget);
     expect(tester.takeException(), isNull);
-    expect(find.text(l10n(tester).fieldRequired), findsOneWidget);
-    expect(shopper.actions.where((String a) => a.startsWith('ask-')), isEmpty);
 
-    // Bought as itself after all, the loaf needs no price.
+    // Bought as itself after all, the loaf needs no price: a cleared price
+    // is a purchase again, and no question was sent.
+    await tester.enterText(byKey('purchase-price'), '');
+    await tester.pump();
+    expect(byKey('ask-price'), findsNothing);
+    expect(shopper.actions.where((String a) => a.startsWith('ask-')), isEmpty);
     shopper
       ..actionFailure = null
       ..afterAction[shopperOrderA] = shopping(<Object?>[
@@ -939,7 +1175,7 @@ void main() {
       );
       await tapAndSettle(tester, byKey('buy-$shopperLineTomato'));
       expect(tester.takeException(), isNull);
-      await tapAndSettle(tester, byKey('purchase-cancel'));
+      await tapAndSettle(tester, byKey('purchase-sheet-close'));
 
       await tapAndSettle(tester, byKey('replace-$shopperLineTomato'));
       await tapAndSettle(tester, byKey('replacement-$shopperProductCherry'));
@@ -954,4 +1190,84 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     }
   });
+
+  for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
+    testWidgets('the sheets hold at 320x640 with text x2 '
+        '(${language.languageCode})', (WidgetTester tester) async {
+      shopper.details[shopperOrderA] = shopping(<Object?>[
+        tomato(
+          patch: <String, Object?>{'replacement': shopperReplacementJson()},
+        ),
+        bread(),
+      ]);
+      await openOrder(
+        tester,
+        size: const Size(320, 640),
+        textScale: 2,
+        device: language,
+      );
+      // The keyboard also shrinks the order page behind a sheet, which is
+      // not under test here: what the sheets themselves throw is recorded.
+      final List<String> problems = <String>[];
+      final void Function(FlutterErrorDetails)? previous = FlutterError.onError;
+      FlutterError.onError = (FlutterErrorDetails details) {
+        final String text = <String>[
+          details.exceptionAsString(),
+          ...?details.informationCollector?.call().map(
+            (DiagnosticsNode node) => node.toStringDeep(),
+          ),
+        ].join(' ');
+        if (!text.contains('_OrderView')) {
+          problems.add(text);
+        }
+      };
+      try {
+        await tester.dragUntilVisible(
+          byKey('buy-$shopperLineTomato'),
+          byKey('shopper-order'),
+          const Offset(0, -200),
+        );
+
+        // The plain purchase, then with the original chosen; the keyboard is
+        // up while a sheet is open.
+        await tapAndSettle(tester, byKey('buy-$shopperLineTomato'));
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        await tester.pumpAndSettle();
+        expect(problems, isEmpty, reason: 'plain');
+        await tapAndSettle(tester, byKey('buy-original'));
+        expect(problems, isEmpty, reason: 'two tabs');
+
+        // The typo guard's modal.
+        await tester.enterText(byKey('purchase-price'), '60000');
+        await tapAndSettle(tester, byKey('purchase-save'));
+        expect(byKey('typo-confirm'), findsOneWidget);
+        expect(problems, isEmpty, reason: 'the modal');
+        await tapAndSettle(tester, byKey('typo-cancel'));
+
+        // The question, with a note at its limit.
+        shopper.actionFailure = priceRefusal;
+        await tester.enterText(byKey('purchase-price'), '22000');
+        await tapAndSettle(tester, byKey('purchase-save'));
+        expect(byKey('ask-price'), findsOneWidget);
+        await tester.enterText(byKey('ask-note'), List.filled(300, 'я').join());
+        await tester.pumpAndSettle();
+        expect(problems, isEmpty, reason: 'the question');
+        await tapAndSettle(tester, byKey('purchase-cancel'));
+        tester.view.resetViewInsets();
+        await tester.pumpAndSettle();
+
+        // The line not found.
+        await tapAndSettle(tester, byKey('unavailable-$shopperLineTomato'));
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        await tester.pumpAndSettle();
+        expect(byKey('unavailable-sheet'), findsOneWidget);
+        await tester.enterText(byKey('unavailable-note'), 'Qolmagan');
+        await tester.pumpAndSettle();
+        expect(problems, isEmpty, reason: 'not found');
+      } finally {
+        FlutterError.onError = previous;
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
 }

@@ -2403,11 +2403,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String shopperPriceLimit(String price) {
-    return 'So\'ramasdan ko\'pi bilan: $price';
-  }
-
-  @override
   String get shopperPageEmpty =>
       'Bu sahifada buyurtma qolmadi. Oldingi sahifaga o\'ting.';
 
@@ -2421,8 +2416,11 @@ class AppLocalizationsUz extends AppLocalizations {
   String get lineUnavailable => 'Topilmadi';
 
   @override
-  String purchaseTitle(String name) {
-    return 'Sotib olish: $name';
+  String get purchaseSheetTitle => 'Xarid';
+
+  @override
+  String purchaseNeeded(String quantity) {
+    return 'Mijozga $quantity kerak';
   }
 
   @override
@@ -2430,6 +2428,31 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get purchasePrice => 'Birlik narxi (to\'langan)';
+
+  @override
+  String purchasePriceFor(String unit) {
+    return '1 $unit narxi (to\'langan)';
+  }
+
+  @override
+  String purchaseExcess(String quantity) {
+    return '$quantity dan ortig\'ini mijoz to\'lamaydi.';
+  }
+
+  @override
+  String purchaseMarketInfo(String price, String bound, String unit) {
+    return 'Bozor narxi $price. Mijozdan so\'ramasdan — 1 $unit uchun $bound gacha.';
+  }
+
+  @override
+  String purchaseMarketOnly(String price) {
+    return 'Bozor narxi $price.';
+  }
+
+  @override
+  String purchaseWhich(String name) {
+    return 'Almashtiruvchini oldingizmi yoki «$name» topildimi? Nima olganingizni tanlang.';
+  }
 
   @override
   String get purchasePriceOptional =>
@@ -2446,22 +2469,23 @@ class AppLocalizationsUz extends AppLocalizations {
       'Oxirgi xaridga javob kelmadi. «Sotib olish»ni bosing — o\'sha xarid qayta yuboriladi.';
 
   @override
-  String get purchaseAboveBound =>
-      'Bu narx mijozdan so\'ramasdan to\'lash mumkin bo\'lganidan yuqori. Mijozdan so\'raysizmi?';
+  String purchaseAboveBound(String bound) {
+    return 'Bu mijozdan so\'ramasdan mumkin bo\'lganidan qimmat ($bound gacha). Mijozdan so\'rang yoki arzonroq toping.';
+  }
 
   @override
-  String purchaseBelowQuantity(String quantity) {
-    return 'Mijozga $quantity kerak. Shuncha sotib oling yoki mijozdan kamroq miqdorga roziligini so\'rang.';
+  String purchaseBelowQuantity(String required, String quantity) {
+    return 'Mijozga $required kerak. Shuncha sotib oling yoki mijozdan $quantity ga roziligini so\'rang.';
   }
 
   @override
   String get askNote => 'Mijozga izoh (ixtiyoriy)';
 
   @override
-  String get askPrice => 'Mijozdan narx haqida so\'rash';
+  String get askCustomer => 'Mijozdan so\'rash';
 
   @override
-  String get askQuantity => 'Mijozdan miqdor haqida so\'rash';
+  String get askNotePlaceholder => 'Masalan: boshqa yangisi yo\'q';
 
   @override
   String get typoTitle => 'Narxni tekshiring';
@@ -2478,13 +2502,15 @@ class AppLocalizationsUz extends AppLocalizations {
   String get typoCancel => 'Tuzataman';
 
   @override
-  String unavailableTitle(String name) {
-    return '«$name» topilmadimi?';
+  String get unavailableSheetTitle => 'Mahsulot yo\'qmi?';
+
+  @override
+  String unavailableExplained(String name) {
+    return '«$name» buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.';
   }
 
   @override
-  String get unavailableExplained =>
-      'Mahsulot buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.';
+  String get unavailableNotePlaceholder => 'Masalan: hammasi so\'lgan';
 
   @override
   String get unavailableConfirm => 'Ha, topilmadi';

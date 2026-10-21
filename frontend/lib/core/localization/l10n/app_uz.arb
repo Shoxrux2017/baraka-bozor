@@ -1452,44 +1452,93 @@
       }
     }
   },
-  "shopperPriceLimit": "So'ramasdan ko'pi bilan: {price}",
-  "@shopperPriceLimit": {
-    "placeholders": {
-      "price": {
-        "type": "String"
-      }
-    }
-  },
   "shopperPageEmpty": "Bu sahifada buyurtma qolmadi. Oldingi sahifaga o'ting.",
   "lineBuy": "Sotib olish",
   "lineReplace": "Almashtirish",
   "lineUnavailable": "Topilmadi",
-  "purchaseTitle": "Sotib olish: {name}",
-  "@purchaseTitle": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "purchaseQuantity": "Sotib olingan miqdor",
-  "purchasePrice": "Birlik narxi (to'langan)",
-  "purchasePriceOptional": "Narxi belgilangan mahsulot: narx ixtiyoriy",
-  "purchaseSave": "Sotib oldim",
-  "purchaseAgain": "Qayta yuborish",
-  "purchaseUnconfirmed": "Oxirgi xaridga javob kelmadi. «Sotib olish»ni bosing — o'sha xarid qayta yuboriladi.",
-  "purchaseAboveBound": "Bu narx mijozdan so'ramasdan to'lash mumkin bo'lganidan yuqori. Mijozdan so'raysizmi?",
-  "purchaseBelowQuantity": "Mijozga {quantity} kerak. Shuncha sotib oling yoki mijozdan kamroq miqdorga roziligini so'rang.",
-  "@purchaseBelowQuantity": {
+  "purchaseSheetTitle": "Xarid",
+  "purchaseNeeded": "Mijozga {quantity} kerak",
+  "@purchaseNeeded": {
     "placeholders": {
       "quantity": {
         "type": "String"
       }
     }
   },
+  "purchaseQuantity": "Sotib olingan miqdor",
+  "purchasePrice": "Birlik narxi (to'langan)",
+  "purchasePriceFor": "1 {unit} narxi (to'langan)",
+  "@purchasePriceFor": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseExcess": "{quantity} dan ortig'ini mijoz to'lamaydi.",
+  "@purchaseExcess": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseMarketInfo": "Bozor narxi {price}. Mijozdan so'ramasdan — 1 {unit} uchun {bound} gacha.",
+  "@purchaseMarketInfo": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "bound": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseMarketOnly": "Bozor narxi {price}.",
+  "@purchaseMarketOnly": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseWhich": "Almashtiruvchini oldingizmi yoki «{name}» topildimi? Nima olganingizni tanlang.",
+  "@purchaseWhich": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "purchasePriceOptional": "Narxi belgilangan mahsulot: narx ixtiyoriy",
+  "purchaseSave": "Sotib oldim",
+  "purchaseAgain": "Qayta yuborish",
+  "purchaseUnconfirmed": "Oxirgi xaridga javob kelmadi. «Sotib olish»ni bosing — o'sha xarid qayta yuboriladi.",
+  "purchaseAboveBound": "Bu mijozdan so'ramasdan mumkin bo'lganidan qimmat ({bound} gacha). Mijozdan so'rang yoki arzonroq toping.",
+  "@purchaseAboveBound": {
+    "placeholders": {
+      "bound": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseBelowQuantity": "Mijozga {required} kerak. Shuncha sotib oling yoki mijozdan {quantity} ga roziligini so'rang.",
+  "@purchaseBelowQuantity": {
+    "placeholders": {
+      "required": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
   "askNote": "Mijozga izoh (ixtiyoriy)",
-  "askPrice": "Mijozdan narx haqida so'rash",
-  "askQuantity": "Mijozdan miqdor haqida so'rash",
+  "askCustomer": "Mijozdan so'rash",
+  "askNotePlaceholder": "Masalan: boshqa yangisi yo'q",
   "typoTitle": "Narxni tekshiring",
   "typoExplained": "Siz {price} kiritdingiz, bozor narxi esa {market}. To'g'rimi?",
   "@typoExplained": {
@@ -1504,15 +1553,16 @@
   },
   "typoConfirm": "Ha, to'g'ri",
   "typoCancel": "Tuzataman",
-  "unavailableTitle": "«{name}» topilmadimi?",
-  "@unavailableTitle": {
+  "unavailableSheetTitle": "Mahsulot yo'qmi?",
+  "unavailableExplained": "«{name}» buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.",
+  "@unavailableExplained": {
     "placeholders": {
       "name": {
         "type": "String"
       }
     }
   },
-  "unavailableExplained": "Mahsulot buyurtmadan olib tashlanadi. Sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.",
+  "unavailableNotePlaceholder": "Masalan: hammasi so'lgan",
   "unavailableConfirm": "Ha, topilmadi",
   "replaceTitle": "«{name}» o'rniga",
   "@replaceTitle": {
