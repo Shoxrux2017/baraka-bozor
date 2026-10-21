@@ -563,7 +563,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(inKey('shopper-line-$gone', '1 ${words.unitPiece}'), findsNothing);
+    expect(inKey('shopper-line-$gone', '2 ${words.unitPiece}'), findsOneWidget);
     expect(
       tester
           .widget<Text>(
