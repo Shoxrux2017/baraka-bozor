@@ -1466,7 +1466,6 @@
     }
   },
   "purchaseQuantity": "Sotib olingan miqdor",
-  "purchasePrice": "Birlik narxi (to'langan)",
   "purchasePriceFor": "1 {unit} narxi (to'langan)",
   "@purchasePriceFor": {
     "placeholders": {
@@ -1574,14 +1573,52 @@
   },
   "replaceSearchHint": "Mahsulot nomi",
   "replaceNone": "Mos mahsulot topilmadi",
-  "substituteTitle": "O'rniga olish: {name}",
-  "@substituteTitle": {
+  "replaceInfoSimilar": "Mijoz: o'xshashi bilan almashtirish mumkin. Narx chegarada bo'lsa — darhol almashtiriladi, aks holda mijozdan so'raladi.",
+  "replaceInfoContact": "Mijoz almashtirishdan oldin bog'lanishni so'ragan — avval unga taklif qilinadi.",
+  "replacePricePer": "{price} / {unit}",
+  "@replacePricePer": {
     "placeholders": {
-      "name": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
   },
+  "replaceMarket": "bozor narxi",
+  "replaceUnitHint": "Bir xil o'lchov birligidagi mahsulotlar: {unit}.",
+  "@replaceUnitHint": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "replaceNoneHint": "Boshqa nom bilan qidiring. Almashtiradigan narsa bo'lmasa — orqaga qayting va «Topilmadi»ni bosing.",
+  "substituteSheetTitle": "Almashtirishni taklif qilish",
+  "substituteInstead": "«{name}» o'rniga, {quantity}",
+  "@substituteInstead": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "substitutePriceFor": "1 {unit} narxi (to'laysiz)",
+  "@substitutePriceFor": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "substituteInfoSimilar": "Narx chegarada bo'lsa — darhol oling. Qimmatroq bo'lsa — mijozga savol boradi.",
+  "substituteInfoContact": "Mijozga almashtirish haqida savol boradi.",
+  "doneWriteOnBag": "Paketga yozing",
   "substituteSave": "Taklif qilish",
   "completeShopping": "Yig'ishni yakunlash",
   "completeTitle": "Yig'ish yakunlansinmi?",
@@ -1595,7 +1632,7 @@
       }
     }
   },
-  "doneTitle": "Buyurtma №{number} yig'ildi",
+  "doneTitle": "Buyurtma № {number} yig'ildi",
   "@doneTitle": {
     "placeholders": {
       "number": {
@@ -1603,14 +1640,7 @@
       }
     }
   },
-  "doneLabel": "Paketga {number} raqamini yozing va uni topshirish joyiga olib boring.",
-  "@doneLabel": {
-    "placeholders": {
-      "number": {
-        "type": "String"
-      }
-    }
-  },
+  "doneLabel": "Paketni topshirish joyiga olib boring.",
   "doneBack": "Buyurtmalarimga",
   "errorShoppingNotActive": "Bu buyurtmani hozir yig'ib bo'lmaydi.",
   "errorItemAlreadyResolved": "Bu mahsulot allaqachon hal qilingan.",

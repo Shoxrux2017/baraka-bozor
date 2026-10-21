@@ -2454,9 +2454,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get purchaseQuantity => 'Сколько купили';
 
   @override
-  String get purchasePrice => 'Цена за единицу (оплачено)';
-
-  @override
   String purchasePriceFor(String unit) {
     return 'Цена за $unit (сколько заплатили)';
   }
@@ -2554,9 +2551,52 @@ class AppLocalizationsRu extends AppLocalizations {
   String get replaceNone => 'Подходящих товаров нет';
 
   @override
-  String substituteTitle(String name) {
-    return 'Взять вместо: $name';
+  String get replaceInfoSimilar =>
+      'Клиент: можно заменить похожим. Если цена в пределах — замена сразу, иначе спросим клиента.';
+
+  @override
+  String get replaceInfoContact =>
+      'Клиент просил связаться перед заменой — замену сначала предложим ему.';
+
+  @override
+  String replacePricePer(String price, String unit) {
+    return '$price за $unit';
   }
+
+  @override
+  String get replaceMarket => 'рыночная';
+
+  @override
+  String replaceUnitHint(String unit) {
+    return 'Показываем товары с той же единицей: $unit.';
+  }
+
+  @override
+  String get replaceNoneHint =>
+      'Попробуйте другое название. Если заменить нечем — вернитесь и нажмите «Нет товара».';
+
+  @override
+  String get substituteSheetTitle => 'Предложить замену';
+
+  @override
+  String substituteInstead(String name, String quantity) {
+    return 'Вместо «$name», $quantity';
+  }
+
+  @override
+  String substitutePriceFor(String unit) {
+    return 'Цена за $unit (сколько заплатите)';
+  }
+
+  @override
+  String get substituteInfoSimilar =>
+      'В пределах цены — покупайте сразу. Дороже — клиент получит вопрос.';
+
+  @override
+  String get substituteInfoContact => 'Клиент получит вопрос о замене.';
+
+  @override
+  String get doneWriteOnBag => 'Напишите на пакете';
 
   @override
   String get substituteSave => 'Предложить';
@@ -2582,13 +2622,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String doneTitle(String number) {
-    return 'Заказ №$number собран';
+    return 'Заказ № $number собран';
   }
 
   @override
-  String doneLabel(String number) {
-    return 'Напишите на пакете номер $number и отнесите его в пункт передачи.';
-  }
+  String get doneLabel => 'Отнесите пакет в пункт передачи.';
 
   @override
   String get doneBack => 'К моим заказам';

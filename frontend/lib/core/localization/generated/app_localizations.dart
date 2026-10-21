@@ -4310,12 +4310,6 @@ abstract class AppLocalizations {
   /// **'Sotib olingan miqdor'**
   String get purchaseQuantity;
 
-  /// No description provided for @purchasePrice.
-  ///
-  /// In uz, this message translates to:
-  /// **'Birlik narxi (to\'langan)'**
-  String get purchasePrice;
-
   /// No description provided for @purchasePriceFor.
   ///
   /// In uz, this message translates to:
@@ -4466,11 +4460,77 @@ abstract class AppLocalizations {
   /// **'Mos mahsulot topilmadi'**
   String get replaceNone;
 
-  /// No description provided for @substituteTitle.
+  /// No description provided for @replaceInfoSimilar.
   ///
   /// In uz, this message translates to:
-  /// **'O\'rniga olish: {name}'**
-  String substituteTitle(String name);
+  /// **'Mijoz: o\'xshashi bilan almashtirish mumkin. Narx chegarada bo\'lsa — darhol almashtiriladi, aks holda mijozdan so\'raladi.'**
+  String get replaceInfoSimilar;
+
+  /// No description provided for @replaceInfoContact.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz almashtirishdan oldin bog\'lanishni so\'ragan — avval unga taklif qilinadi.'**
+  String get replaceInfoContact;
+
+  /// No description provided for @replacePricePer.
+  ///
+  /// In uz, this message translates to:
+  /// **'{price} / {unit}'**
+  String replacePricePer(String price, String unit);
+
+  /// No description provided for @replaceMarket.
+  ///
+  /// In uz, this message translates to:
+  /// **'bozor narxi'**
+  String get replaceMarket;
+
+  /// No description provided for @replaceUnitHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bir xil o\'lchov birligidagi mahsulotlar: {unit}.'**
+  String replaceUnitHint(String unit);
+
+  /// No description provided for @replaceNoneHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa nom bilan qidiring. Almashtiradigan narsa bo\'lmasa — orqaga qayting va «Topilmadi»ni bosing.'**
+  String get replaceNoneHint;
+
+  /// No description provided for @substituteSheetTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Almashtirishni taklif qilish'**
+  String get substituteSheetTitle;
+
+  /// No description provided for @substituteInstead.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» o\'rniga, {quantity}'**
+  String substituteInstead(String name, String quantity);
+
+  /// No description provided for @substitutePriceFor.
+  ///
+  /// In uz, this message translates to:
+  /// **'1 {unit} narxi (to\'laysiz)'**
+  String substitutePriceFor(String unit);
+
+  /// No description provided for @substituteInfoSimilar.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narx chegarada bo\'lsa — darhol oling. Qimmatroq bo\'lsa — mijozga savol boradi.'**
+  String get substituteInfoSimilar;
+
+  /// No description provided for @substituteInfoContact.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga almashtirish haqida savol boradi.'**
+  String get substituteInfoContact;
+
+  /// No description provided for @doneWriteOnBag.
+  ///
+  /// In uz, this message translates to:
+  /// **'Paketga yozing'**
+  String get doneWriteOnBag;
 
   /// No description provided for @substituteSave.
   ///
@@ -4511,14 +4571,14 @@ abstract class AppLocalizations {
   /// No description provided for @doneTitle.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma №{number} yig\'ildi'**
+  /// **'Buyurtma № {number} yig\'ildi'**
   String doneTitle(String number);
 
   /// No description provided for @doneLabel.
   ///
   /// In uz, this message translates to:
-  /// **'Paketga {number} raqamini yozing va uni topshirish joyiga olib boring.'**
-  String doneLabel(String number);
+  /// **'Paketni topshirish joyiga olib boring.'**
+  String get doneLabel;
 
   /// No description provided for @doneBack.
   ///

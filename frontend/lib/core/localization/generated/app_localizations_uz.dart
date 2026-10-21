@@ -2427,9 +2427,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get purchaseQuantity => 'Sotib olingan miqdor';
 
   @override
-  String get purchasePrice => 'Birlik narxi (to\'langan)';
-
-  @override
   String purchasePriceFor(String unit) {
     return '1 $unit narxi (to\'langan)';
   }
@@ -2527,9 +2524,53 @@ class AppLocalizationsUz extends AppLocalizations {
   String get replaceNone => 'Mos mahsulot topilmadi';
 
   @override
-  String substituteTitle(String name) {
-    return 'O\'rniga olish: $name';
+  String get replaceInfoSimilar =>
+      'Mijoz: o\'xshashi bilan almashtirish mumkin. Narx chegarada bo\'lsa — darhol almashtiriladi, aks holda mijozdan so\'raladi.';
+
+  @override
+  String get replaceInfoContact =>
+      'Mijoz almashtirishdan oldin bog\'lanishni so\'ragan — avval unga taklif qilinadi.';
+
+  @override
+  String replacePricePer(String price, String unit) {
+    return '$price / $unit';
   }
+
+  @override
+  String get replaceMarket => 'bozor narxi';
+
+  @override
+  String replaceUnitHint(String unit) {
+    return 'Bir xil o\'lchov birligidagi mahsulotlar: $unit.';
+  }
+
+  @override
+  String get replaceNoneHint =>
+      'Boshqa nom bilan qidiring. Almashtiradigan narsa bo\'lmasa — orqaga qayting va «Topilmadi»ni bosing.';
+
+  @override
+  String get substituteSheetTitle => 'Almashtirishni taklif qilish';
+
+  @override
+  String substituteInstead(String name, String quantity) {
+    return '«$name» o\'rniga, $quantity';
+  }
+
+  @override
+  String substitutePriceFor(String unit) {
+    return '1 $unit narxi (to\'laysiz)';
+  }
+
+  @override
+  String get substituteInfoSimilar =>
+      'Narx chegarada bo\'lsa — darhol oling. Qimmatroq bo\'lsa — mijozga savol boradi.';
+
+  @override
+  String get substituteInfoContact =>
+      'Mijozga almashtirish haqida savol boradi.';
+
+  @override
+  String get doneWriteOnBag => 'Paketga yozing';
 
   @override
   String get substituteSave => 'Taklif qilish';
@@ -2555,13 +2596,11 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String doneTitle(String number) {
-    return 'Buyurtma №$number yig\'ildi';
+    return 'Buyurtma № $number yig\'ildi';
   }
 
   @override
-  String doneLabel(String number) {
-    return 'Paketga $number raqamini yozing va uni topshirish joyiga olib boring.';
-  }
+  String get doneLabel => 'Paketni topshirish joyiga olib boring.';
 
   @override
   String get doneBack => 'Buyurtmalarimga';

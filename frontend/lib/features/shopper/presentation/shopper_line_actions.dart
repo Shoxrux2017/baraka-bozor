@@ -395,13 +395,14 @@ class PriceField extends StatelessWidget {
 
 /// An optional note of up to 300 characters under its [label], with how many
 /// it holds.
-class _NoteField extends StatelessWidget {
-  const _NoteField({
+class KitNoteField extends StatelessWidget {
+  const KitNoteField({
     required this.fieldKey,
     required this.controller,
     required this.label,
     required this.hint,
     required this.enabled,
+    super.key,
   });
 
   final String fieldKey;
@@ -475,11 +476,12 @@ class _SheetPicture extends StatelessWidget {
 }
 
 /// The head of a sheet: the product's picture, its [name] and a [detail].
-class _SheetHeader extends StatelessWidget {
-  const _SheetHeader({
+class ShopperSheetHeader extends StatelessWidget {
+  const ShopperSheetHeader({
     required this.imageUrl,
     required this.name,
     required this.detail,
+    super.key,
   });
 
   final String? imageUrl;
@@ -900,7 +902,7 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              _SheetHeader(
+              ShopperSheetHeader(
                 imageUrl: boughtImage,
                 name: bought,
                 detail: l10n.purchaseNeeded(needed),
@@ -1005,7 +1007,7 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                _NoteField(
+                KitNoteField(
                   fieldKey: 'ask-note',
                   controller: _note,
                   label: l10n.askNote,
@@ -1120,7 +1122,7 @@ class _UnavailableSheetState extends ConsumerState<UnavailableSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              _SheetHeader(
+              ShopperSheetHeader(
                 imageUrl: line.imageUrl,
                 name: name,
                 detail:
@@ -1137,7 +1139,7 @@ class _UnavailableSheetState extends ConsumerState<UnavailableSheet> {
                 ),
               ),
               const SizedBox(height: 16),
-              _NoteField(
+              KitNoteField(
                 fieldKey: 'unavailable-note',
                 controller: _note,
                 label: l10n.actionNote,

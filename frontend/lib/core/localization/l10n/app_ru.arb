@@ -1421,7 +1421,6 @@
     }
   },
   "purchaseQuantity": "Сколько купили",
-  "purchasePrice": "Цена за единицу (оплачено)",
   "purchasePriceFor": "Цена за {unit} (сколько заплатили)",
   "@purchasePriceFor": {
     "placeholders": {
@@ -1529,14 +1528,52 @@
   },
   "replaceSearchHint": "Название товара",
   "replaceNone": "Подходящих товаров нет",
-  "substituteTitle": "Взять вместо: {name}",
-  "@substituteTitle": {
+  "replaceInfoSimilar": "Клиент: можно заменить похожим. Если цена в пределах — замена сразу, иначе спросим клиента.",
+  "replaceInfoContact": "Клиент просил связаться перед заменой — замену сначала предложим ему.",
+  "replacePricePer": "{price} за {unit}",
+  "@replacePricePer": {
     "placeholders": {
-      "name": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
   },
+  "replaceMarket": "рыночная",
+  "replaceUnitHint": "Показываем товары с той же единицей: {unit}.",
+  "@replaceUnitHint": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "replaceNoneHint": "Попробуйте другое название. Если заменить нечем — вернитесь и нажмите «Нет товара».",
+  "substituteSheetTitle": "Предложить замену",
+  "substituteInstead": "Вместо «{name}», {quantity}",
+  "@substituteInstead": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "substitutePriceFor": "Цена за {unit} (сколько заплатите)",
+  "@substitutePriceFor": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "substituteInfoSimilar": "В пределах цены — покупайте сразу. Дороже — клиент получит вопрос.",
+  "substituteInfoContact": "Клиент получит вопрос о замене.",
+  "doneWriteOnBag": "Напишите на пакете",
   "substituteSave": "Предложить",
   "completeShopping": "Завершить сборку",
   "completeTitle": "Завершить сборку?",
@@ -1550,7 +1587,7 @@
       }
     }
   },
-  "doneTitle": "Заказ №{number} собран",
+  "doneTitle": "Заказ № {number} собран",
   "@doneTitle": {
     "placeholders": {
       "number": {
@@ -1558,14 +1595,7 @@
       }
     }
   },
-  "doneLabel": "Напишите на пакете номер {number} и отнесите его в пункт передачи.",
-  "@doneLabel": {
-    "placeholders": {
-      "number": {
-        "type": "String"
-      }
-    }
-  },
+  "doneLabel": "Отнесите пакет в пункт передачи.",
   "doneBack": "К моим заказам",
   "errorShoppingNotActive": "Этот заказ сейчас нельзя собирать.",
   "errorItemAlreadyResolved": "По этой позиции уже всё решено.",

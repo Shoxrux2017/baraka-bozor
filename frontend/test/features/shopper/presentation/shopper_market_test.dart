@@ -826,7 +826,9 @@ void main() {
   ) async {
     shopper
       ..choices = <ReplacementChoice>[
-        ShopperOrdersApi.parseChoice(shopperChoiceJson()),
+        ShopperOrdersApi.parseChoice(
+          shopperChoiceJson(imageUrl: 'https://example.test/c.webp'),
+        ),
       ]
       ..afterAction[shopperOrderA] = shopping(<Object?>[
         tomato(
@@ -837,13 +839,55 @@ void main() {
     await openOrder(tester);
 
     await tapAndSettle(tester, byKey('replace-$shopperLineTomato'));
+    final AppLocalizations words = l10n(tester);
     expect(shopper.loads, contains('replacements:$shopperLineTomato::1'));
+    expect(find.text(words.replaceTitle('Pomidor')), findsOneWidget);
+    expect(find.text(words.replaceInfoSimilar), findsOneWidget);
+    final Finder row = byKey('replacement-$shopperProductCherry');
+    expect(
+      tester
+          .widget<ProductImage>(
+            find.descendant(of: row, matching: find.byType(ProductImage)),
+          )
+          .url,
+      'https://example.test/c.webp',
+    );
+    expect(
+      find.descendant(of: row, matching: find.text('Olcha pomidor')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: row,
+        matching: find.text(words.replacePricePer(money(15500), words.unitKg)),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(words.replaceUnitHint(words.unitKg)), findsOneWidget);
+
     await tester.enterText(byKey('replace-search'), 'olcha');
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
     expect(shopper.loads, contains('replacements:$shopperLineTomato:olcha:1'));
 
-    await tapAndSettle(tester, byKey('replacement-$shopperProductCherry'));
+    await tapAndSettle(tester, row);
+    final Finder sheet = byKey('substitute-sheet');
+    Finder inSheet(String text) =>
+        find.descendant(of: sheet, matching: find.text(text));
+    expect(inSheet(words.substituteSheetTitle), findsOneWidget);
+    expect(
+      inSheet(words.substituteInstead('Pomidor', '2 ${words.unitKg}')),
+      findsOneWidget,
+    );
+    expect(inSheet('Olcha pomidor'), findsOneWidget);
+    expect(
+      find.descendant(of: sheet, matching: find.byType(ProductImage)),
+      findsOneWidget,
+    );
+    expect(inSheet(words.substitutePriceFor(words.unitKg)), findsOneWidget);
+    expect(byKey('substitute-note'), findsOneWidget);
+    expect(inSheet(words.substituteInfoSimilar), findsOneWidget);
+
     await tester.enterText(byKey('substitute-price'), '47000');
     await tapAndSettle(tester, byKey('substitute-save'));
     await tapAndSettle(tester, byKey('typo-cancel'));
@@ -861,6 +905,85 @@ void main() {
       byKey('shopper-line-replacement-$shopperLineTomato'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a line that asks to be contacted first says so in the search '
+      'and in the proposal', (WidgetTester tester) async {
+    shopper
+      ..details[shopperOrderA] = shopping(<Object?>[
+        tomato(
+          patch: <String, Object?>{
+            'substitution_policy': 'contact_before_substitution',
+          },
+        ),
+        bread(),
+      ])
+      ..choices = <ReplacementChoice>[
+        ShopperOrdersApi.parseChoice(shopperChoiceJson()),
+      ];
+    await openOrder(tester);
+
+    await tapAndSettle(tester, byKey('replace-$shopperLineTomato'));
+    final AppLocalizations words = l10n(tester);
+    expect(find.text(words.replaceInfoContact), findsOneWidget);
+    expect(find.text(words.replaceInfoSimilar), findsNothing);
+    await tapAndSettle(tester, byKey('replacement-$shopperProductCherry'));
+    expect(find.text(words.substituteInfoContact), findsOneWidget);
+    expect(find.text(words.substituteInfoSimilar), findsNothing);
+  });
+
+  testWidgets('nothing found offers the way back', (WidgetTester tester) async {
+    shopper.choices = <ReplacementChoice>[];
+    await openOrder(tester);
+
+    await tapAndSettle(tester, byKey('replace-$shopperLineTomato'));
+    final AppLocalizations words = l10n(tester);
+    expect(
+      tester.widget<KitEmptyState>(byKey('replace-none')).title,
+      words.replaceNone,
+    );
+    expect(find.text(words.replaceNoneHint), findsOneWidget);
+  });
+
+  testWidgets('a running proposal holds its sheet', (
+    WidgetTester tester,
+  ) async {
+    shopper
+      ..choices = <ReplacementChoice>[
+        ShopperOrdersApi.parseChoice(shopperChoiceJson()),
+      ]
+      ..afterAction[shopperOrderA] = shopping(<Object?>[
+        tomato(
+          patch: <String, Object?>{'replacement': shopperReplacementJson()},
+        ),
+        bread(),
+      ]);
+    await openOrder(tester);
+    await tapAndSettle(tester, byKey('replace-$shopperLineTomato'));
+    await tapAndSettle(tester, byKey('replacement-$shopperProductCherry'));
+    final Completer<void> hold = Completer<void>();
+    shopper.hold = hold;
+
+    await tester.enterText(byKey('substitute-price'), '15000');
+    await tester.tap(byKey('substitute-save'));
+    await tester.pump();
+
+    await tester.tap(byKey('substitute-sheet-close'));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(byKey('substitute-sheet'), findsOneWidget, reason: 'the x');
+    await tester.binding.handlePopRoute();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(byKey('substitute-sheet'), findsOneWidget, reason: 'back');
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(byKey('substitute-sheet'), findsOneWidget, reason: 'the scrim');
+
+    shopper.hold = null;
+    hold.complete();
+    await tester.pumpAndSettle();
+    expect(byKey('substitute-sheet'), findsNothing);
+    expect(shopper.actions, hasLength(1));
+    expect(byKey('shopper-order'), findsOneWidget);
   });
 
   testWidgets('a completion whose answer was lost, and whose order then cannot '
@@ -1092,7 +1215,18 @@ void main() {
     );
     expect(
       tester.widget<Text>(byKey('shopper-done-label')).data,
-      l10n(tester).doneLabel('1001'),
+      l10n(tester).doneLabel,
+    );
+    expect(find.text(l10n(tester).doneWriteOnBag), findsOneWidget);
+    final Text number = tester.widget<Text>(find.text('1001'));
+    expect(number.style?.fontSize, 60);
+    expect(number.style?.fontWeight, FontWeight.w700);
+    expect(
+      find.descendant(
+        of: byKey('shopper-done-back'),
+        matching: find.text(l10n(tester).doneBack),
+      ),
+      findsOneWidget,
     );
 
     shopper.rows = <ShopperOrderRow>[];
@@ -1193,6 +1327,75 @@ void main() {
   });
 
   for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
+    testWidgets('the replacement and the closing screen hold at 320x640 with '
+        'text x2 (${language.languageCode})', (WidgetTester tester) async {
+      shopper
+        ..details[shopperOrderA] = shopping(<Object?>[tomato(), bread()])
+        ..choices = <ReplacementChoice>[
+          ShopperOrdersApi.parseChoice(
+            shopperChoiceJson(imageUrl: 'https://example.test/c.webp'),
+          ),
+        ];
+      await openOrder(
+        tester,
+        size: const Size(320, 640),
+        textScale: 2,
+        device: language,
+      );
+      final GoRouter router = GoRouter.of(
+        tester.element(find.byType(Scaffold).first),
+      );
+      const String replace =
+          '/shopper/orders/$shopperOrderA/items/$shopperLineTomato/replace';
+
+      router.go(replace);
+      await tester.pumpAndSettle();
+      // The policy note scrolls with the results.
+      await tester.dragUntilVisible(
+        byKey('replacement-$shopperProductCherry'),
+        byKey('replace-choices'),
+        const Offset(0, -100),
+      );
+      expect(byKey('replacement-$shopperProductCherry'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'the search');
+
+      shopper.choices = <ReplacementChoice>[];
+      await tester.enterText(byKey('replace-search'), 'zzz');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      expect(byKey('replace-none'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'the empty search');
+
+      shopper.choices = <ReplacementChoice>[
+        ShopperOrdersApi.parseChoice(shopperChoiceJson()),
+      ];
+      await tester.enterText(byKey('replace-search'), 'olcha');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      await tester.dragUntilVisible(
+        byKey('replacement-$shopperProductCherry'),
+        byKey('replace-choices'),
+        const Offset(0, -100),
+      );
+      await tapAndSettle(tester, byKey('replacement-$shopperProductCherry'));
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        byKey('substitute-note'),
+        List.filled(300, 'я').join(),
+      );
+      await tester.pumpAndSettle();
+      expect(byKey('substitute-sheet'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'the proposal');
+      tester.view.resetViewInsets();
+      await tester.pumpAndSettle();
+
+      router.go('/shopper/done/1234567890');
+      await tester.pumpAndSettle();
+      expect(find.text('1234567890'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'the closing screen');
+    });
+
     testWidgets('the sheets hold at 320x640 with text x2 '
         '(${language.languageCode})', (WidgetTester tester) async {
       shopper.details[shopperOrderA] = shopping(<Object?>[
