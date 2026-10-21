@@ -441,6 +441,21 @@ void main() {
     expect(byKey('shopper-line-question-$shopperLineTomato'), findsOneWidget);
   });
 
+  testWidgets('a note over the limit is not sent with the question about the '
+      'price', (WidgetTester tester) async {
+    await openOrder(tester);
+    shopper.actionFailure = priceRefusal;
+    await buy(tester, shopperLineTomato, price: '22000');
+    shopper.actions.clear();
+
+    await tester.enterText(byKey('ask-note'), List.filled(301, 'a').join());
+    await tapAndSettle(tester, byKey('ask-price'));
+
+    expect(shopper.actions, isEmpty);
+    expect(byKey('ask-price'), findsOneWidget);
+    expect(find.text(l10n(tester).fieldTooLong(300)), findsOneWidget);
+  });
+
   testWidgets('editing the refused price returns to the purchase', (
     WidgetTester tester,
   ) async {
@@ -673,6 +688,38 @@ void main() {
     expect(find.text(l10n(tester).myOrders), findsOneWidget);
   });
 
+  testWidgets('a running "not found" holds its sheet', (
+    WidgetTester tester,
+  ) async {
+    await openOrder(tester);
+    shopper.afterAction[shopperOrderA] = shopping(<Object?>[
+      tomato(status: 'removed'),
+      bread(),
+    ]);
+    final Completer<void> hold = Completer<void>();
+    shopper.hold = hold;
+
+    await tapAndSettle(tester, byKey('unavailable-$shopperLineTomato'));
+    await tester.tap(byKey('unavailable-confirm'));
+    await tester.pump();
+
+    await tester.tap(byKey('unavailable-sheet-close'));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(byKey('unavailable-sheet'), findsOneWidget, reason: 'the x');
+    await tester.binding.handlePopRoute();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(byKey('unavailable-sheet'), findsOneWidget, reason: 'back');
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(byKey('unavailable-sheet'), findsOneWidget, reason: 'the scrim');
+
+    shopper.hold = null;
+    hold.complete();
+    await tester.pumpAndSettle();
+    expect(byKey('unavailable-sheet'), findsNothing);
+    expect(shopper.actions, hasLength(1));
+  });
+
   testWidgets('an order that can no longer be read says so, and leads back', (
     WidgetTester tester,
   ) async {
@@ -817,6 +864,57 @@ void main() {
       shopper.actions.last,
       'ask-price:$shopperLineBread:6000:$shopperProductCherry:null',
     );
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('after a refusal about the replacement the original is bought '
+      'without a price', (WidgetTester tester) async {
+    shopper.details[shopperOrderA] = shopping(<Object?>[
+      tomato(),
+      bread(
+        patch: <String, Object?>{
+          'replacement': <String, Object?>{
+            ...shopperReplacementJson(),
+            'bound': <String, Object?>{
+              'customer_unit_price_uzs': 4600,
+              'market_price_uzs': 4000,
+            },
+          },
+        },
+      ),
+    ]);
+    await openOrder(tester);
+    shopper.actionFailure = const ApiRefusal(
+      ApiError(
+        status: 409,
+        code: 'customer_approval_required',
+        details: <String, Object?>{'approval_type': 'price_over_tolerance'},
+      ),
+    );
+    await tester.dragUntilVisible(
+      byKey('buy-$shopperLineBread'),
+      byKey('shopper-order'),
+      const Offset(0, -200),
+    );
+    await buy(tester, shopperLineBread, price: '6000');
+    expect(byKey('ask-price'), findsOneWidget);
+
+    // Bought as itself after all, the loaf needs no price.
+    shopper
+      ..actionFailure = null
+      ..afterAction[shopperOrderA] = shopping(<Object?>[
+        tomato(),
+        bread(status: 'purchased'),
+      ]);
+    await tapAndSettle(tester, byKey('buy-original'));
+    await tester.enterText(byKey('purchase-price'), '');
+    await tapAndSettle(tester, byKey('purchase-save'));
+
+    expect(
+      shopper.actions.last,
+      'purchase:$shopperLineBread:2:null:$shopperProductBread',
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -886,6 +984,7 @@ void main() {
     );
     expect(inSheet(words.substitutePriceFor(words.unitKg)), findsOneWidget);
     expect(byKey('substitute-note'), findsOneWidget);
+    expect(inSheet(words.askNote), findsOneWidget);
     expect(inSheet(words.substituteInfoSimilar), findsOneWidget);
 
     await tester.enterText(byKey('substitute-price'), '47000');
@@ -1258,6 +1357,19 @@ void main() {
     await tapAndSettle(tester, byKey('shopper-complete'));
     await tapAndSettle(tester, byKey('complete-confirm'));
     expect(
+      byKey('complete-open-lines'),
+      findsNothing,
+      reason: 'the page held says the named line is bought',
+    );
+
+    // The next load shows the named line open: now it is named.
+    shopper.details[shopperOrderA] = shopping(<Object?>[
+      tomato(),
+      bread(status: 'purchased'),
+    ]);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    expect(
       tester.widget<Text>(byKey('complete-open-lines')).data,
       l10n(tester).completeIncomplete('Pomidor'),
     );
@@ -1268,6 +1380,15 @@ void main() {
       ),
       findsOneWidget,
     );
+
+    // The next load shows it bought: the refusal no longer names it.
+    shopper.details[shopperOrderA] = shopping(<Object?>[
+      tomato(status: 'purchased'),
+      bread(status: 'purchased'),
+    ]);
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    expect(byKey('complete-open-lines'), findsNothing);
 
     shopper.actionFailure = const NetworkFailure();
     await tapAndSettle(tester, byKey('shopper-complete'));
@@ -1427,6 +1548,7 @@ void main() {
 
       // The typo guard's modal.
       await tester.enterText(byKey('purchase-price'), '60000');
+      await tester.pumpAndSettle();
       await tapAndSettle(tester, byKey('purchase-save'));
       expect(byKey('typo-confirm'), findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'the modal');
@@ -1435,6 +1557,7 @@ void main() {
       // The question, with a note at its limit.
       shopper.actionFailure = priceRefusal;
       await tester.enterText(byKey('purchase-price'), '22000');
+      await tester.pumpAndSettle();
       await tapAndSettle(tester, byKey('purchase-save'));
       expect(byKey('ask-price'), findsOneWidget);
       await tester.enterText(byKey('ask-note'), List.filled(300, 'я').join());

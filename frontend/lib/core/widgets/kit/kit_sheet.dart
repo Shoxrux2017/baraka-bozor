@@ -43,71 +43,82 @@ class _KitSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      key: ValueKey<String>(sheetKey),
+    return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          const SizedBox(height: 12),
-          Center(
-            child: Container(
-              width: 44,
-              height: 4,
-              decoration: BoxDecoration(
-                color: KitColors.line,
-                borderRadius: BorderRadius.circular(2),
+      child: SingleChildScrollView(
+        key: ValueKey<String>(sheetKey),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            const SizedBox(height: 12),
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: KitColors.line,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: KitColors.ink,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: KitColors.ink,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Semantics(
-                  button: true,
-                  label: MaterialLocalizations.of(context).closeButtonLabel,
-                  child: InkResponse(
-                    key: ValueKey<String>('$sheetKey-close'),
-                    onTap: () => Navigator.of(context).maybePop(),
-                    radius: 24,
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: KitColors.ink, width: 1.5),
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        size: 16,
-                        color: KitColors.ink,
+                  const SizedBox(width: 12),
+                  Semantics(
+                    button: true,
+                    label: MaterialLocalizations.of(context).closeButtonLabel,
+                    child: InkResponse(
+                      key: ValueKey<String>('$sheetKey-close'),
+                      onTap: () => Navigator.of(context).maybePop(),
+                      radius: 24,
+                      child: SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: Center(
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: KitColors.ink,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              size: 16,
+                              color: KitColors.ink,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const Divider(height: 1, thickness: 1, color: KitColors.line),
-          builder(context),
-        ],
+            const Divider(height: 1, thickness: 1, color: KitColors.line),
+            builder(context),
+          ],
+        ),
       ),
     );
   }

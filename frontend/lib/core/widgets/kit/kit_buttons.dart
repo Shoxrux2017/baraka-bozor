@@ -50,6 +50,10 @@ ButtonStyle kitOutlined({
   );
 }
 
+/// Whether the text is scaled so large that rows of buttons stack.
+bool kitLargeText(BuildContext context) =>
+    MediaQuery.textScalerOf(context).scale(15) > 15 * 1.3;
+
 /// The two buttons a sheet ends with: [secondary] on the left and [primary]
 /// on the right, each half the width, as the drawings show them. Past 1.3
 /// times the normal text size a half is too narrow for a label, so they
@@ -66,7 +70,7 @@ class KitActionPair extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool large = MediaQuery.textScalerOf(context).scale(15) > 15 * 1.3;
+    final bool large = kitLargeText(context);
     if (large) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

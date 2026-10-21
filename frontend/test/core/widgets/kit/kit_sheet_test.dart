@@ -106,4 +106,35 @@ void main() {
     expect(byKey('last'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('a focused field low in a tall body rises above the keyboard', (
+    WidgetTester tester,
+  ) async {
+    await pumpHost(
+      tester,
+      builder: (BuildContext context) => Column(
+        children: <Widget>[
+          const SizedBox(height: 600),
+          TextField(key: const ValueKey<String>('low-field')),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+
+    await tester.tap(byKey('low-field'));
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+
+    expect(tester.getBottomLeft(byKey('low-field')).dy, lessThanOrEqualTo(500));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the × has a 48 by 48 hit area', (WidgetTester tester) async {
+    await pumpHost(
+      tester,
+      builder: (BuildContext context) => const Text('body'),
+    );
+
+    expect(tester.getSize(byKey('test-sheet-close')), const Size(48, 48));
+  });
 }

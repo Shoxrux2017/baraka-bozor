@@ -10,11 +10,12 @@ import '../../../core/localization/order_labels.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../../core/widgets/kit/kit_card.dart';
 import '../../../core/widgets/kit/kit_note.dart';
-import '../../../core/widgets/product_image.dart';
 import '../domain/shopper_orders.dart';
 import 'shopper_line_actions.dart';
+import 'shopper_picture.dart';
 
 /// The words of one line in the interface language, with its amounts
 /// formatted: what every part of a line's card reads from.
@@ -34,50 +35,6 @@ class _LineWords {
 
   String amount(ShopperLine line, String quantity) =>
       '${QuantityRules.display(quantity)} ${unit(line)}';
-}
-
-/// Whether the text is large enough that the quantity goes under the name
-/// instead of beside it.
-bool _largeText(BuildContext context) =>
-    MediaQuery.textScalerOf(context).scale(15) > 15 * 1.3;
-
-const ColorFilter _grey = ColorFilter.matrix(<double>[
-  0.2126, 0.7152, 0.0722, 0, 0, //
-  0.2126, 0.7152, 0.0722, 0, 0, //
-  0.2126, 0.7152, 0.0722, 0, 0, //
-  0, 0, 0, 1, 0,
-]);
-
-/// A product's picture in a square of the kit's card colour; [greyed] for a
-/// line that went.
-class _Picture extends StatelessWidget {
-  const _Picture({required this.url, required this.size, this.greyed = false});
-
-  final String? url;
-  final double size;
-  final bool greyed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: KitColors.card,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: greyed
-          ? Opacity(
-              opacity: 0.4,
-              child: ColorFiltered(
-                colorFilter: _grey,
-                child: ProductImage(url: url, size: size),
-              ),
-            )
-          : ProductImage(url: url, size: size),
-    );
-  }
 }
 
 /// The tag with the Customer's rule for a replacement.
@@ -141,7 +98,7 @@ class _CardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final _LineWords words = _LineWords(context);
-    final bool large = _largeText(context);
+    final bool large = kitLargeText(context);
     final Widget chip = _QuantityChip(
       text: words.amount(line, line.approvedQuantityCap ?? line.quantity),
       tone: tone,
@@ -150,7 +107,7 @@ class _CardHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        _Picture(url: line.imageUrl, size: 60),
+        ShopperPicture(url: line.imageUrl, size: 60),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -375,7 +332,7 @@ class ShopperLineRow extends StatelessWidget {
       details.add(_PolicyTag(policy: line.substitutionPolicy));
     }
 
-    final bool large = _largeText(context);
+    final bool large = kitLargeText(context);
     final Widget quantity = Text(
       removed
           ? '—'
@@ -392,7 +349,7 @@ class ShopperLineRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _Picture(
+          ShopperPicture(
             url: instead != null ? instead.imageUrl : line.imageUrl,
             size: 56,
             greyed: removed,
@@ -426,7 +383,7 @@ class ShopperLineRow extends StatelessWidget {
 
 /// A line the Shopper still has to deal with while shopping: a card to buy,
 /// with what applies to it and the buttons, or a card waiting for the
-/// Customer's answer. A line already bought or removed is a plain row.
+/// Customer's answer. A line already bought or removed is a [ShopperLineRow].
 class ShopperLineCard extends StatelessWidget {
   const ShopperLineCard({required this.order, required this.line, super.key});
 
@@ -435,11 +392,9 @@ class ShopperLineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (line.status) {
-      OrderItemStatus.pending => _ToBuyCard(order: order, line: line),
-      OrderItemStatus.awaitingCustomer => _WaitingCard(line: line),
-      _ => ShopperLineRow(line: line),
-    };
+    return line.status == OrderItemStatus.awaitingCustomer
+        ? _WaitingCard(line: line)
+        : _ToBuyCard(order: order, line: line);
   }
 }
 

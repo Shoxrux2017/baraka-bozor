@@ -585,6 +585,20 @@ void main() {
     );
   });
 
+  List<Color> bar(WidgetTester tester) => tester
+      .widget<SegmentBar>(
+        find.descendant(
+          of: byKey('shopper-order-status'),
+          matching: find.byType(SegmentBar),
+        ),
+      )
+      .segments;
+
+  Finder inStatus(String text) => find.descendant(
+    of: byKey('shopper-order-status'),
+    matching: find.text(text),
+  );
+
   for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets('the shopping page holds at the extremes '
         '(${language.languageCode})', (WidgetTester tester) async {
@@ -634,25 +648,29 @@ void main() {
       );
       await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
       expect(tester.takeException(), isNull);
-      await tester.drag(byKey('shopper-order'), const Offset(0, -20000));
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
+      expect(bar(tester), hasLength(30));
+      final Finder scrollable = find
+          .descendant(
+            of: byKey('shopper-order'),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      for (final String stop in <String>[
+        'shopper-group-waiting',
+        'shopper-line-question-${id(15)}',
+        'shopper-line-${id(29)}',
+      ]) {
+        await tester.scrollUntilVisible(
+          byKey(stop),
+          400,
+          maxScrolls: 200,
+          scrollable: scrollable,
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: stop);
+      }
     });
   }
-
-  List<Color> bar(WidgetTester tester) => tester
-      .widget<SegmentBar>(
-        find.descendant(
-          of: byKey('shopper-order-status'),
-          matching: find.byType(SegmentBar),
-        ),
-      )
-      .segments;
-
-  Finder inStatus(String text) => find.descendant(
-    of: byKey('shopper-order-status'),
-    matching: find.text(text),
-  );
 
   testWidgets('a new order is reviewed and accepted', (
     WidgetTester tester,
@@ -690,6 +708,7 @@ void main() {
     await tapAndSettle(tester, byKey('shopper-accept'));
     expect(shopper.actions, <String>['accept:$shopperOrderA']);
     expect(byKey('shopper-accept'), findsNothing);
+    expect(byKey('shopper-start'), findsOneWidget);
   });
 
   testWidgets('an accepted order is started at the market', (

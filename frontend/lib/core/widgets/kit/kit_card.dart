@@ -7,6 +7,8 @@ class KitCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.outline,
+    this.onTap,
+    this.semanticLabel,
     super.key,
   });
 
@@ -14,11 +16,18 @@ class KitCard extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final Color? outline;
 
+  /// Makes the whole card a button whose ripple shows on the white.
+  final VoidCallback? onTap;
+
+  /// What a screen reader says for a tappable card; its texts when null.
+  final String? semanticLabel;
+
   @override
   Widget build(BuildContext context) {
     final BorderRadius radius = BorderRadius.circular(16);
+    final Widget padded = Padding(padding: padding, child: child);
 
-    return DecoratedBox(
+    final Widget card = DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: radius,
@@ -38,8 +47,30 @@ class KitCard extends StatelessWidget {
               ? null
               : Border.all(color: outline!, width: 1.5),
         ),
-        child: Padding(padding: padding, child: child),
+        child: onTap == null
+            ? padded
+            : Material(
+                color: Colors.white,
+                borderRadius: radius,
+                child: InkWell(
+                  borderRadius: radius,
+                  onTap: onTap,
+                  child: padded,
+                ),
+              ),
       ),
+    );
+
+    if (onTap == null) {
+      return card;
+    }
+
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      onTap: onTap,
+      excludeSemantics: semanticLabel != null,
+      child: card,
     );
   }
 }

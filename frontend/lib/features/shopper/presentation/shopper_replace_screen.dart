@@ -23,11 +23,11 @@ import '../../../core/widgets/kit/kit_note.dart';
 import '../../../core/widgets/kit/kit_sheet.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
-import '../../../core/widgets/product_image.dart';
 import '../application/shopper_orders_controllers.dart';
 import '../domain/price_guard.dart';
 import '../domain/shopper_orders.dart';
 import 'shopper_line_actions.dart';
+import 'shopper_picture.dart';
 
 /// The longest search the server takes (`DL-44` (4)).
 const int _searchMax = 100;
@@ -139,14 +139,11 @@ class _ShopperReplaceScreenState extends ConsumerState<ShopperReplaceScreen> {
                         child: Column(
                           children: <Widget>[
                             ?policy,
-                            SizedBox(
-                              height: 360,
-                              child: KitEmptyState(
-                                key: const ValueKey<String>('replace-none'),
-                                icon: Icons.search_off,
-                                title: l10n.replaceNone,
-                                text: l10n.replaceNoneHint,
-                              ),
+                            KitEmptyState(
+                              key: const ValueKey<String>('replace-none'),
+                              icon: Icons.search_off,
+                              title: l10n.replaceNone,
+                              text: l10n.replaceNoneHint,
                             ),
                           ],
                         ),
@@ -303,27 +300,6 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-/// A product's picture in a square of the kit's card colour.
-class _Picture extends StatelessWidget {
-  const _Picture({required this.url});
-
-  final String? url;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 56,
-      height: 56,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: KitColors.card,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ProductImage(url: url, size: 56),
-    );
-  }
-}
-
 /// One product the line may be replaced with.
 class _ChoiceRow extends StatelessWidget {
   const _ChoiceRow({required this.choice, required this.onTap});
@@ -343,7 +319,7 @@ class _ChoiceRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
           children: <Widget>[
-            _Picture(url: choice.imageUrl),
+            ShopperPicture(url: choice.imageUrl, size: 56),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -447,7 +423,7 @@ class _SubstituteSheetState extends ConsumerState<_SubstituteSheet> {
         .substitute(widget.choice.id, price, optionalNote(_note.text));
     if (mounted && done != null) {
       closeOnAnswer(
-        dialog: sheet,
+        sheet: sheet,
         router: router,
         messenger: messenger,
         l10n: l10n,
@@ -508,7 +484,7 @@ class _SubstituteSheetState extends ConsumerState<_SubstituteSheet> {
               KitNoteField(
                 fieldKey: 'substitute-note',
                 controller: _note,
-                label: l10n.actionNote,
+                label: l10n.askNote,
                 hint: l10n.askNotePlaceholder,
                 enabled: !change.isBusy,
               ),

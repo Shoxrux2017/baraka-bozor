@@ -21,10 +21,10 @@ import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../../core/widgets/kit/kit_note.dart';
 import '../../../core/widgets/kit/kit_sheet.dart';
-import '../../../core/widgets/product_image.dart';
 import '../application/shopper_orders_controllers.dart';
 import '../domain/price_guard.dart';
 import '../domain/shopper_orders.dart';
+import 'shopper_picture.dart';
 
 /// The longest note the server keeps with a question or a line's removal.
 const int _noteMax = 300;
@@ -55,7 +55,7 @@ class ShopperLineActions extends ConsumerWidget {
     );
     final bool busy = state.isBusy;
 
-    final bool large = MediaQuery.textScalerOf(context).scale(15) > 15 * 1.3;
+    final bool large = kitLargeText(context);
     final ButtonStyle compact = ButtonStyle(
       padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
         EdgeInsets.symmetric(horizontal: 8),
@@ -143,13 +143,13 @@ class ShopperLineActions extends ConsumerWidget {
 /// Shopper meanwhile — takes them back to their list and says why, since
 /// they can no longer read the order (`DL-70` (6)).
 void closeOnAnswer({
-  required NavigatorState dialog,
+  required NavigatorState sheet,
   required GoRouter router,
   required ScaffoldMessengerState messenger,
   required AppLocalizations l10n,
   required ShopperOrder answer,
 }) {
-  dialog.pop(true);
+  sheet.pop(true);
   if (answer.assignment == null) {
     router.go(AppPaths.shopper);
     messenger.showSnackBar(
@@ -454,27 +454,6 @@ class KitNoteField extends StatelessWidget {
   }
 }
 
-/// A product's picture in a square of the kit's card colour.
-class _SheetPicture extends StatelessWidget {
-  const _SheetPicture({required this.url});
-
-  final String? url;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 60,
-      height: 60,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: KitColors.card,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ProductImage(url: url, size: 60),
-    );
-  }
-}
-
 /// The head of a sheet: the product's picture, its [name] and a [detail].
 class ShopperSheetHeader extends StatelessWidget {
   const ShopperSheetHeader({
@@ -492,7 +471,7 @@ class ShopperSheetHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
-        _SheetPicture(url: imageUrl),
+        ShopperPicture(url: imageUrl, size: 60),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
@@ -518,9 +497,6 @@ class ShopperSheetHeader extends StatelessWidget {
     );
   }
 }
-
-bool _largeText(BuildContext context) =>
-    MediaQuery.textScalerOf(context).scale(15) > 15 * 1.3;
 
 /// Opens the purchase of [line] in a sheet.
 Future<void> showPurchaseSheet(
@@ -605,7 +581,7 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final AppLocalizations l10n = AppLocalizations.of(context);
     return (ShopperOrder answer) => closeOnAnswer(
-      dialog: sheet,
+      sheet: sheet,
       router: router,
       messenger: messenger,
       l10n: l10n,
@@ -702,6 +678,9 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
   }
 
   Future<void> _askAboutPrice() async {
+    if (!(_form.currentState?.validate() ?? false)) {
+      return;
+    }
     final PurchaseEntry entry = _entry();
     final int? price = entry.actualMarketPriceUzs;
     if (price == null) {
@@ -949,7 +928,7 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
                 ),
               ],
               const SizedBox(height: 16),
-              if (asking && !_largeText(context))
+              if (asking && !kitLargeText(context))
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -1095,7 +1074,7 @@ class _UnavailableSheetState extends ConsumerState<UnavailableSheet> {
         .markUnavailable(optionalNote(_note.text));
     if (mounted && done != null) {
       closeOnAnswer(
-        dialog: sheet,
+        sheet: sheet,
         router: router,
         messenger: messenger,
         l10n: l10n,

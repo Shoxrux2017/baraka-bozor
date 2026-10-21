@@ -20,12 +20,8 @@ import '../../../core/widgets/periodic_refresh.dart';
 import '../../shells/presentation/staff_area_menu.dart';
 import '../application/shopper_orders_controllers.dart';
 import '../domain/shopper_orders.dart';
+import 'shopper_load.dart';
 import 'shopper_status_card.dart';
-
-/// Whether a screen's load has settled on data, so its periodic refresh
-/// may run (`DL-54` (15)).
-bool _settled(AsyncValue<Object?> value) =>
-    value.hasValue && !value.hasError && !value.isLoading;
 
 /// The Shopper's area: their current orders, the longest-waiting first,
 /// kept current while shown (`docs/09` section 28, `DL-69`, `DL-98`).
@@ -53,7 +49,7 @@ class ShopperOrdersScreen extends ConsumerWidget {
             const ActiveModeBar(),
             Expanded(
               child: PeriodicRefresh(
-                active: _settled(page),
+                active: loadSettled(page),
                 onRefresh: () => ref.invalidate(shopperOrdersProvider),
                 child: page.when(
                   skipLoadingOnReload: false,
@@ -168,112 +164,106 @@ class _OrderCard extends StatelessWidget {
       chip = KitTag(text: OrderLabels.status(l10n, row.status));
     }
 
-    return InkWell(
+    return KitCard(
       key: ValueKey<String>('shopper-order-${row.id}'),
-      borderRadius: BorderRadius.circular(16),
       onTap: () => context.push(AppPaths.shopperOrder(row.id)),
-      child: KitCard(
-        outline: isNew ? KitColors.primary : null,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: tileColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, size: 28, color: iconColor),
+      outline: isNew ? KitColors.primary : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: tileColor,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: <Widget>[
-                          Text(
-                            l10n.boardOrderNumber('${row.orderNumber}'),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: KitColors.ink,
-                            ),
-                          ),
-                          chip,
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        started
-                            ? l10n.shopperOpenOf(
-                                row.openItemCount,
-                                row.itemCount,
-                              )
-                            : l10n.orderItemCount(row.itemCount),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: KitColors.ink2,
-                        ),
-                      ),
-                      if (detail.isNotEmpty)
+                child: Icon(icon, size: 28, color: iconColor),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: <Widget>[
                         Text(
-                          detail,
+                          l10n.boardOrderNumber('${row.orderNumber}'),
                           style: const TextStyle(
-                            fontSize: 12,
-                            color: KitColors.muted,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: KitColors.ink,
                           ),
                         ),
-                    ],
-                  ),
+                        chip,
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      started
+                          ? l10n.shopperOpenOf(row.openItemCount, row.itemCount)
+                          : l10n.orderItemCount(row.itemCount),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: KitColors.ink2,
+                      ),
+                    ),
+                    if (detail.isNotEmpty)
+                      Text(
+                        detail,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: KitColors.muted,
+                        ),
+                      ),
+                  ],
                 ),
+              ),
+            ],
+          ),
+          if (started && row.itemCount > 0) ...<Widget>[
+            const SizedBox(height: 12),
+            SegmentBar(
+              segments: <Color>[
+                for (int index = 0; index < row.itemCount; index++)
+                  index < row.itemCount - row.openItemCount
+                      ? KitColors.primary
+                      : KitColors.line,
               ],
             ),
-            if (started && row.itemCount > 0) ...<Widget>[
-              const SizedBox(height: 12),
-              SegmentBar(
-                segments: <Color>[
-                  for (int index = 0; index < row.itemCount; index++)
-                    index < row.itemCount - row.openItemCount
-                        ? KitColors.primary
-                        : KitColors.line,
-                ],
-              ),
-            ],
-            if (row.deliveryTimeNote != null) ...<Widget>[
-              const SizedBox(height: 12),
-              _InfoRow(
-                icon: Icons.schedule,
-                text: l10n.shopperDeliveryWish(row.deliveryTimeNote!),
-                color: KitColors.ink2,
-              ),
-            ],
-            if (isNew) ...<Widget>[
-              const SizedBox(height: 10),
-              _InfoRow(
-                icon: Icons.touch_app_outlined,
-                text: l10n.shopperOpenToAccept,
-                color: KitColors.primaryDark,
-                bold: true,
-              ),
-            ] else if (accepted) ...<Widget>[
-              const SizedBox(height: 10),
-              _InfoRow(
-                icon: Icons.storefront_outlined,
-                text: l10n.shopperStartAtMarket,
-                color: KitColors.ink2,
-              ),
-            ],
           ],
-        ),
+          if (row.deliveryTimeNote != null) ...<Widget>[
+            const SizedBox(height: 12),
+            _InfoRow(
+              icon: Icons.schedule,
+              text: l10n.shopperDeliveryWish(row.deliveryTimeNote!),
+              color: KitColors.ink2,
+            ),
+          ],
+          if (isNew) ...<Widget>[
+            const SizedBox(height: 10),
+            _InfoRow(
+              icon: Icons.touch_app_outlined,
+              text: l10n.shopperOpenToAccept,
+              color: KitColors.primaryDark,
+              bold: true,
+            ),
+          ] else if (accepted) ...<Widget>[
+            const SizedBox(height: 10),
+            _InfoRow(
+              icon: Icons.storefront_outlined,
+              text: l10n.shopperStartAtMarket,
+              color: KitColors.ink2,
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -26,12 +26,8 @@ import '../../../core/widgets/periodic_refresh.dart';
 import '../application/shopper_orders_controllers.dart';
 import '../domain/shopper_orders.dart';
 import 'shopper_line_card.dart';
+import 'shopper_load.dart';
 import 'shopper_status_card.dart';
-
-/// Whether a screen's load has settled on data, so its periodic refresh
-/// may run (`DL-54` (15)).
-bool _settled(AsyncValue<Object?> value) =>
-    value.hasValue && !value.hasError && !value.isLoading;
 
 /// One of the Shopper's orders (`docs/09` sections 28 and 29, `DL-98`): the
 /// status card of its stage, the call to the Customer while the server
@@ -73,7 +69,7 @@ class ShopperOrderScreen extends ConsumerWidget {
             const ActiveModeBar(),
             Expanded(
               child: PeriodicRefresh(
-                active: _settled(order) && !completing,
+                active: loadSettled(order) && !completing,
                 onRefresh: () => ref.invalidate(shopperOrderProvider(orderId)),
                 child: order.when(
                   skipLoadingOnRefresh: !order.hasError,
@@ -349,62 +345,60 @@ class _CallCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
 
-    return InkWell(
+    return KitCard(
       key: const ValueKey<String>('call-customer'),
-      borderRadius: BorderRadius.circular(16),
       onTap: () => _call(context, ref),
-      child: KitCard(
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: KitColors.primarySoft,
-              ),
-              child: const Icon(
-                Icons.person_outline,
-                size: 26,
-                color: KitColors.primaryDark,
-              ),
+      semanticLabel: '${l10n.shopperCallCustomer} ${formatPhone(phone)}',
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: KitColors.primarySoft,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    l10n.shopperCallCustomer,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: KitColors.ink,
-                    ),
+            child: const Icon(
+              Icons.person_outline,
+              size: 26,
+              color: KitColors.primaryDark,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  l10n.shopperCallCustomer,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: KitColors.ink,
                   ),
-                  Text(
-                    formatPhone(phone),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: KitColors.ink2,
-                    ),
+                ),
+                Text(
+                  formatPhone(phone),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: KitColors.ink2,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: 14),
-            Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: KitColors.primary,
-              ),
-              child: const Icon(Icons.call, size: 24, color: Colors.white),
+          ),
+          const SizedBox(width: 14),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: KitColors.primary,
             ),
-          ],
-        ),
+            child: const Icon(Icons.call, size: 24, color: Colors.white),
+          ),
+        ],
       ),
     );
   }
@@ -730,7 +724,9 @@ class _Complete extends ConsumerWidget {
     final List<String> openNames = <String>[
       if (openIds is List<Object?>)
         for (final ShopperLine line in order.items)
-          if (openIds.contains(line.id))
+          if (openIds.contains(line.id) &&
+              (line.status == OrderItemStatus.pending ||
+                  line.status == OrderItemStatus.awaitingCustomer))
             language == AppLanguage.ru ? line.nameRu : line.nameUz,
     ];
     final bool enabled = !state.isBusy && (open == 0 || unconfirmed);
@@ -764,7 +760,7 @@ class _Complete extends ConsumerWidget {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           )
-        else
+        else if (openIds is! List<Object?>)
           FailureMessage(failure),
         FilledButton.icon(
           key: const ValueKey<String>('shopper-complete'),
