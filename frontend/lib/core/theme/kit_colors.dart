@@ -46,4 +46,8 @@ abstract final class KitColors {
 
   /// Amber text on the amber wash.
   static const Color warningDark = Color(0xFFB7791F);
+
+  /// A step not yet reached on an amber card: the amber at a quarter over
+  /// its wash.
+  static const Color warningSoft = Color(0xFFFCE9BF);
 }

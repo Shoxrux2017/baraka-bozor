@@ -41,10 +41,18 @@ typedef KitStep = ({String label, DateTime? at});
 /// The steps of an assignment: a [SegmentBar] with one segment per step, the
 /// first [reached] green, each step named, with its time when known.
 class KitSteps extends StatelessWidget {
-  const KitSteps({required this.steps, required this.reached, super.key});
+  const KitSteps({
+    required this.steps,
+    required this.reached,
+    this.rest = KitColors.primarySoft,
+    super.key,
+  });
 
   final List<KitStep> steps;
   final int reached;
+
+  /// The colour of a step not yet reached, matched to the card's wash.
+  final Color rest;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +62,7 @@ class KitSteps extends StatelessWidget {
         SegmentBar(
           segments: <Color>[
             for (int index = 0; index < steps.length; index++)
-              index < reached ? KitColors.primary : KitColors.primarySoft,
+              index < reached ? KitColors.primary : rest,
           ],
         ),
         const SizedBox(height: 8),

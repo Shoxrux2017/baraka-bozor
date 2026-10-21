@@ -687,6 +687,10 @@ void main() {
         expect(card(tester).tone, KitTone.amber);
         expect(card(tester).title, words.courierStatusRequest);
         expect(
+          tester.widget<KitSteps>(find.byType(KitSteps)).rest,
+          KitColors.warningSoft,
+        );
+        expect(
           textAt(tester, 'courier-request-pending').data,
           words.courierRequestPending,
         );

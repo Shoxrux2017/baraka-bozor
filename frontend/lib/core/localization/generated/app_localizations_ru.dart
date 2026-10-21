@@ -2889,7 +2889,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String courierDeliveredDone(String number) {
-    return 'Заказ $number доставлен';
+    return 'Заказ № $number доставлен';
   }
 
   @override
@@ -2917,7 +2917,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String courierNotDeliveredDone(String number) {
-    return 'Заказ $number возвращён оператору';
+    return 'Заказ № $number возвращён оператору';
   }
 
   @override

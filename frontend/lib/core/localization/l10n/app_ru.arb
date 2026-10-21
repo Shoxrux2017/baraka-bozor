@@ -1820,7 +1820,7 @@
   },
   "courierHandoverRepeating": "Прошлая отметка осталась без ответа — отправим ту же сумму снова.",
   "courierHandoverUnconfirmed": "Отметка «Доставлено» отправлена, но ответа нет. Отправьте её снова — второй оплаты не будет.",
-  "courierDeliveredDone": "Заказ {number} доставлен",
+  "courierDeliveredDone": "Заказ № {number} доставлен",
   "@courierDeliveredDone": {
     "placeholders": {
       "number": {
@@ -1835,7 +1835,7 @@
   "courierOtherNoteHint": "Опишите, что случилось",
   "courierOnlineNothingToTake": "Заказ оплачен онлайн — деньги не брать.",
   "courierNotDeliveredExplained": "Заказ вернётся к оператору, он решит, что с ним делать дальше.",
-  "courierNotDeliveredDone": "Заказ {number} возвращён оператору",
+  "courierNotDeliveredDone": "Заказ № {number} возвращён оператору",
   "@courierNotDeliveredDone": {
     "placeholders": {
       "number": {

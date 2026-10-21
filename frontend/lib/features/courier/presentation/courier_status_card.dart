@@ -89,6 +89,9 @@ class CourierStatusCard extends StatelessWidget {
           ? null
           : KitSteps(
               reached: reached,
+              rest: tone == KitTone.amber
+                  ? KitColors.warningSoft
+                  : KitColors.primarySoft,
               steps: <KitStep>[
                 (label: l10n.courierStepAssigned, at: assignment.assignedAt),
                 (label: l10n.courierStepAccepted, at: assignment.acceptedAt),
