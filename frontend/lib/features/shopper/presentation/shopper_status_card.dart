@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/formatting/order_dates.dart';
-import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/kit/kit_note.dart';
+import '../../../core/widgets/kit/kit_status_card.dart';
 import '../domain/shopper_orders.dart';
 
 /// Where the Shopper's assignment stands, as the server offers the next step.
@@ -55,36 +56,6 @@ ShopperStage shopperStage(ShopperOrder order) {
   );
 }
 
-/// A bar of [segments], one box each: 4 high, round, with a gap of 4 up to
-/// twelve segments and 2 above.
-class SegmentBar extends StatelessWidget {
-  const SegmentBar({required this.segments, super.key});
-
-  final List<Color> segments;
-
-  @override
-  Widget build(BuildContext context) {
-    final double gap = segments.length <= 12 ? 4 : 2;
-
-    return Row(
-      children: <Widget>[
-        for (int index = 0; index < segments.length; index++) ...<Widget>[
-          if (index > 0) SizedBox(width: gap),
-          Expanded(
-            child: Container(
-              height: 4,
-              decoration: BoxDecoration(
-                color: segments[index],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
 /// The card on top of the order: what stage the order is at, what to do
 /// next, and how far the shopping has come.
 class ShopperStatusCard extends StatelessWidget {
@@ -102,28 +73,31 @@ class ShopperStatusCard extends StatelessWidget {
     final int open = counts.toBuy + counts.waiting;
     final DateTime? startedAt = order.assignment?.startedAt;
 
-    final Color wash;
-    final Color circle;
-    final Color iconColor;
     final IconData icon;
     final String title;
     final String? hint;
+    final KitTone tone;
     Widget? progress;
     if (stage == ShopperStage.assigned || stage == ShopperStage.accepted) {
       final bool assigned = stage == ShopperStage.assigned;
-      wash = KitColors.primaryWash;
-      circle = KitColors.primarySoft;
-      iconColor = KitColors.primaryDark;
+      final ShopperAssignment? assignment = order.assignment;
+      tone = KitTone.green;
       icon = assigned
           ? Icons.assignment_outlined
           : Icons.assignment_turned_in_outlined;
       title = assigned ? l10n.shopperStatusNew : l10n.shopperStatusAccepted;
       hint = assigned ? l10n.shopperStatusNewHint : l10n.shopperStartAtMarket;
-      progress = _Steps(order: order, reached: assigned ? 1 : 2);
+      progress = KitSteps(
+        reached: assigned ? 1 : 2,
+        steps: <KitStep>[
+          (label: l10n.shopperStepAssigned, at: assignment?.assignedAt),
+          (label: l10n.shopperStepAccepted, at: assignment?.acceptedAt),
+          (label: l10n.shopperStepShopping, at: assignment?.startedAt),
+          (label: l10n.shopperStepDone, at: null),
+        ],
+      );
     } else if (stage == ShopperStage.shopping && open > 0) {
-      wash = KitColors.warningWash;
-      circle = Colors.white;
-      iconColor = KitColors.warning;
+      tone = KitTone.amber;
       icon = Icons.shopping_basket_outlined;
       title = l10n.shopperStatusShopping;
       hint = startedAt == null
@@ -135,9 +109,7 @@ class ShopperStatusCard extends StatelessWidget {
             );
       progress = _LineProgress(counts: counts, l10n: l10n);
     } else if (stage == ShopperStage.shopping) {
-      wash = KitColors.primaryWash;
-      circle = KitColors.primarySoft;
-      iconColor = KitColors.primaryDark;
+      tone = KitTone.green;
       icon = Icons.task_alt;
       title = l10n.shopperStatusResolved;
       hint = l10n.shopperResolvedHint(counts.bought, counts.removed);
@@ -145,140 +117,19 @@ class ShopperStatusCard extends StatelessWidget {
         segments: List<Color>.filled(order.items.length, KitColors.primary),
       );
     } else {
-      wash = KitColors.field;
-      circle = Colors.white;
-      iconColor = KitColors.muted;
+      tone = KitTone.grey;
       icon = Icons.assignment_outlined;
       title = OrderLabels.status(l10n, order.status);
       hint = null;
     }
 
-    return DecoratedBox(
+    return KitStatusCard(
       key: const ValueKey<String>('shopper-order-status'),
-      decoration: BoxDecoration(
-        color: wash,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: circle,
-                  ),
-                  child: Icon(icon, size: 26, color: iconColor),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: KitColors.ink,
-                        ),
-                      ),
-                      if (hint != null) ...<Widget>[
-                        const SizedBox(height: 2),
-                        Text(
-                          hint,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: KitColors.ink2,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (progress != null) ...<Widget>[
-              const SizedBox(height: 14),
-              progress,
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The four steps of an assignment: [reached] of them green, each named, with
-/// the time when the server knows it.
-class _Steps extends StatelessWidget {
-  const _Steps({required this.order, required this.reached});
-
-  final ShopperOrder order;
-  final int reached;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final ShopperAssignment? assignment = order.assignment;
-    final List<(String, DateTime?)> steps = <(String, DateTime?)>[
-      (l10n.shopperStepAssigned, assignment?.assignedAt),
-      (l10n.shopperStepAccepted, assignment?.acceptedAt),
-      (l10n.shopperStepShopping, assignment?.startedAt),
-      (l10n.shopperStepDone, null),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        SegmentBar(
-          segments: <Color>[
-            for (int index = 0; index < steps.length; index++)
-              index < reached ? KitColors.primary : KitColors.primarySoft,
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            for (int index = 0; index < steps.length; index++)
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(left: index == 0 ? 0 : 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        steps[index].$1,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: index < reached
-                              ? KitColors.primaryDark
-                              : KitColors.muted,
-                        ),
-                      ),
-                      if (steps[index].$2 != null)
-                        Text(
-                          TashkentTime.time(steps[index].$2!),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: KitColors.muted,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
+      icon: icon,
+      title: title,
+      hint: hint,
+      tone: tone,
+      progress: progress,
     );
   }
 }

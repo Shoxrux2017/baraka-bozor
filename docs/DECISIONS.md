@@ -1407,3 +1407,7 @@ Answer to the question `DL-94` item 5 left open. An Admin erases a blocked Custo
 6. **Sheets.** The purchase, the questions and "Нет товара" open as kit sheets rather than dialogs. A sheet whose request runs cannot be closed, so its answer lands where it was asked. When the server says the Customer must agree, the sheet asks about exactly the values and the product it refused; changing the quantity, the price or the product returns it to a purchase. Typing more than needed says the excess is not billed (`docs/05`), which the server already ensures.
 
 7. **Replacement and the end.** The replacement search says what the Customer allowed and what follows from it — at once within the bound, or a question — and shows each product's picture and market price per unit. The closing screen puts the bag number large, since it is written by hand on a package.
+
+## DL-99 — The Courier's screens, staff stage 2 (2026-10-21, agent)
+
+1. **Shared pieces.** The status card with its steps, the call card, the pinned footer and the price and note fields move from the Shopper's screens into `core/widgets/kit/`, so the Courier's and later the panel's screens draw the same parts; the Shopper's screens look as before.

@@ -19,6 +19,7 @@ import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../../core/widgets/kit/kit_empty_state.dart';
+import '../../../core/widgets/kit/kit_fields.dart';
 import '../../../core/widgets/kit/kit_note.dart';
 import '../../../core/widgets/kit/kit_sheet.dart';
 import '../../../core/widgets/kit_app_bar.dart';

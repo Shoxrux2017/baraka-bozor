@@ -14,6 +14,7 @@ import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/kit/kit_card.dart';
 import '../../../core/widgets/kit/kit_empty_state.dart';
 import '../../../core/widgets/kit/kit_note.dart';
+import '../../../core/widgets/kit/kit_status_card.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/periodic_refresh.dart';
@@ -21,7 +22,6 @@ import '../../shells/presentation/staff_area_menu.dart';
 import '../application/shopper_orders_controllers.dart';
 import '../domain/shopper_orders.dart';
 import 'shopper_load.dart';
-import 'shopper_status_card.dart';
 
 /// The Shopper's area: their current orders, the longest-waiting first,
 /// kept current while shown (`docs/09` section 28, `DL-69`, `DL-98`).
