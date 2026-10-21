@@ -17,7 +17,9 @@ use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\OrderShopperAssignment;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\User;
+use App\Modules\Catalog\ProductImages;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
@@ -88,6 +90,32 @@ final class ShopperOrdersApiTest extends TestCase
         $this->assertSame(2, $second->json('meta.pagination.last_page'));
     }
 
+    public function test_a_line_and_its_replacement_carry_their_pictures(): void
+    {
+        $order = $this->shopping();
+        $original = Product::factory()->unit(UnitCode::Piece)->create();
+        $originalImage = ProductImage::factory()->create(['product_id' => $original->id]);
+        $replacement = Product::factory()->unit(UnitCode::Piece)->create();
+        $replacementImage = ProductImage::factory()->create(['product_id' => $replacement->id]);
+        $line = OrderItem::factory()->fixed()->for($order)->for($original)->create(['ordered_quantity' => '3']);
+        $line->forceFill([
+            'fulfilled_product_id' => $replacement->id,
+            'fulfilled_product_name_uz_snapshot' => $replacement->name_uz,
+            'fulfilled_product_name_ru_snapshot' => $replacement->name_ru,
+            'fulfilled_unit_code_snapshot' => UnitCode::Piece,
+            'substitution_resolution' => SubstitutionResolution::Automatic,
+        ])->save();
+        $bare = OrderItem::factory()->for($order)->create();
+
+        $data = $this->as($this->shopper)->getJson("/api/v1/shopper/orders/{$order->id}")->assertOk()->json('data');
+
+        $this->assertSame([$line->id, $bare->id], array_column($data['items'], 'id'));
+        $this->assertSame(ProductImages::url($originalImage), $data['items'][0]['image_url']);
+        $this->assertSame(ProductImages::url($replacementImage), $data['items'][0]['replacement']['image_url']);
+        $this->assertNotNull($data['items'][0]['image_url']);
+        $this->assertNull($data['items'][1]['image_url']);
+    }
+
     public function test_an_order_shows_what_to_buy_and_the_bound_of_each_product_never_the_address(): void
     {
         $order = $this->shopping();
@@ -120,6 +148,11 @@ final class ShopperOrdersApiTest extends TestCase
         $this->assertSame([$estimate->id, $fixed->id, $raised->id, $bought->id, $asked->order_item_id], array_column($data['items'], 'id'));
 
         $line = $data['items'][0];
+        $this->assertSame([
+            'id', 'product_id', 'name_uz', 'name_ru', 'image_url', 'unit_code', 'price_mode', 'quantity', 'approved_quantity_cap',
+            'customer_note', 'substitution_policy', 'status', 'market_price_uzs', 'customer_unit_price_uzs', 'bound', 'replacement',
+            'purchase', 'removed_reason_code', 'pending_approval',
+        ], array_keys($line));
         $this->assertSame('2.000', $line['quantity']);
         $this->assertSame('Спелые', $line['customer_note']);
         $this->assertSame(16000, $line['market_price_uzs']);
@@ -137,6 +170,7 @@ final class ShopperOrdersApiTest extends TestCase
             'product_id' => $replacement->id,
             'name_uz' => $replacement->name_uz,
             'name_ru' => $replacement->name_ru,
+            'image_url' => null,
             'market_price_uzs' => 2800,
             'substitution_resolution' => 'automatic',
             // BR-PRICE-005: the replacement of a fixed line stays within its 3 450.

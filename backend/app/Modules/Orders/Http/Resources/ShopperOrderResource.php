@@ -9,6 +9,7 @@ use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Modules\Catalog\ProductImages;
 use App\Modules\Orders\ApprovalExpiry;
 use App\Modules\Orders\PriceBound;
 use App\Modules\Orders\QuantityPolicy;
@@ -32,13 +33,19 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * - The Shopper's own assignment, and whether it may be accepted or started.
  *
  * Expects the caller's own assignment as `currentShopperAssignment` — in the
- * answer of a completion, the one it ended — with `items.fulfilledProduct` and
- * `items.approvals` loaded.
+ * answer of a completion, the one it ended — with `self::RELATIONS` loaded.
  *
  * @property-read Order $resource
  */
 final class ShopperOrderResource extends JsonResource
 {
+    /**
+     * What the resource reads beyond the order and its assignment.
+     *
+     * @var list<string>
+     */
+    public const RELATIONS = ['items.product.image', 'items.fulfilledProduct.image', 'items.approvals'];
+
     public function __construct(Order $order)
     {
         parent::__construct($order);
@@ -84,6 +91,7 @@ final class ShopperOrderResource extends JsonResource
             'product_id' => $line->product_id,
             'name_uz' => $line->product_name_uz_snapshot,
             'name_ru' => $line->product_name_ru_snapshot,
+            'image_url' => ProductImages::url($line->product?->image),
             'unit_code' => $line->unit_code_snapshot->value,
             'price_mode' => $line->price_mode_snapshot->value,
             'quantity' => QuantityPolicy::format($line->unit_code_snapshot, $line->ordered_quantity),
@@ -100,6 +108,7 @@ final class ShopperOrderResource extends JsonResource
                 'product_id' => $line->fulfilled_product_id,
                 'name_uz' => $line->fulfilled_product_name_uz_snapshot,
                 'name_ru' => $line->fulfilled_product_name_ru_snapshot,
+                'image_url' => ProductImages::url($line->fulfilledProduct?->image),
                 'market_price_uzs' => $line->fulfilledProduct?->market_price_uzs,
                 'substitution_resolution' => $line->substitution_resolution?->value,
                 'bound' => self::bound(PriceBound::replacement($line, $order), $line),

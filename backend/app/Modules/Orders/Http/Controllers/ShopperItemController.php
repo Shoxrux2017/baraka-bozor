@@ -141,8 +141,7 @@ final class ShopperItemController extends Controller
     {
         return new ShopperOrderResource($order->load([
             'currentShopperAssignment' => static fn (Relation $assignment) => $assignment->where('shopper_id', $shopper->id),
-            'items.fulfilledProduct',
-            'items.approvals',
+            ...ShopperOrderResource::RELATIONS,
         ]));
     }
 

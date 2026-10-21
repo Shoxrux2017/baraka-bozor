@@ -81,7 +81,7 @@ final class ShopperOrderController extends Controller
         $shopper = $this->shopper($request);
         $completed = $complete->complete($shopper, $order, RequireIdempotencyKey::of($request));
 
-        return new ShopperOrderResource($completed->load(['items.fulfilledProduct', 'items.approvals']));
+        return new ShopperOrderResource($completed->load(ShopperOrderResource::RELATIONS));
     }
 
     /**
@@ -93,8 +93,7 @@ final class ShopperOrderController extends Controller
     {
         return new ShopperOrderResource($order->load([
             'currentShopperAssignment' => static fn (Relation $assignment) => $assignment->where('shopper_id', $shopper->id),
-            'items.fulfilledProduct',
-            'items.approvals',
+            ...ShopperOrderResource::RELATIONS,
         ]));
     }
 

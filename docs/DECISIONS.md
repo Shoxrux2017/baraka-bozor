@@ -1389,3 +1389,11 @@ Answer to the question `DL-94` item 5 left open. An Admin erases a blocked Custo
 5. **Deleting the account.** The sheet asks first, then the code is requested, so an unfinished order is reported before any code is sent (`DL-94` item 4); an order that appears before the code is entered is reported the same way. The code screen keeps the sign-in code's rules: resend, the 60-second lock after three wrong codes, the entry closed until a new code. On success the app opens "Аккаунт удалён" first and then forgets the session, since the server has already revoked the token; it also forgets the account's recent searches on this phone. "Аккаунт удалён" is an open page, so it stays on screen once the session is gone.
 6. **The profile tab.** One kit screen: the header with the initials, name and phone; rows for the name, addresses, language, support, the two documents and deletion; "Выйти" under them. Support shows only with a support phone and calls it; each document row shows only while that document is published; deletion is hidden while the phone also holds a staff session, whose sign-in shares the phone. The language is chosen in a sheet.
 7. **Drafts, not data.** The terms and the privacy policy are drafted in `docs/legal/`, in Russian and Uzbek, for the lawyer, with the placeholders `DL-93` item 4 names; the Admin publishes them on the panel's documents page. No migration or seeder writes them, so nothing unchecked reaches the app or Google Play.
+
+## DL-97 — The staff screens take the kit's style before Wave 4 (2026-10-21, Owner)
+
+`DL-74` item 1 stands: before Wave 4 the Shopper's, the Courier's and the panel's screens take the Customer's style — the screen kit of `DL-76`, not design 4a. Wave 4 begins after them, in the order Shopper, Courier, panel. Each is drawn in Claude Design and approved by the Owner before code; the Shopper's drawing, `kit/08-sborshchik.dc.html`, was approved on 2026-10-21.
+
+## DL-98 — The Shopper's screens, staff stage 1 (2026-10-21, agent)
+
+1. **Pictures.** The Shopper's order gives each line's picture and the authorized replacement's — the product's picture now, as the Customer's order shows it — so the Shopper recognises the product at the stall; the replacement list already gave its own.
