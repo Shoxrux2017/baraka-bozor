@@ -466,7 +466,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productEditTitle => 'Mahsulotni tahrirlash';
 
   @override
-  String get productSaved => 'Savat yangilandi';
+  String get productSaved => 'Mahsulot saqlandi';
 
   @override
   String get productCategory => 'Kategoriya';
@@ -3157,6 +3157,9 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get productSave => 'Saqlash';
+
+  @override
+  String get cartLineSaved => 'Savat yangilandi';
 
   @override
   String get productAlreadyInCart =>

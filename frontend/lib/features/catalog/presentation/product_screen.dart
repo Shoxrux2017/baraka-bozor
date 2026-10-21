@@ -158,7 +158,7 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
         ? ref.read(cartLineProvider(line.id)).failure
         : null;
     final String? text = answer != null
-        ? l10n.productSaved
+        ? l10n.cartLineSaved
         : failure == null
         ? null
         : failureText(l10n, failure);

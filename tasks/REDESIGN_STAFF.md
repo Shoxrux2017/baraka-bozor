@@ -4,13 +4,13 @@ The Shopper's, the Courier's and the panel's screens take the screen kit's style
 
 | Stage | What | Status |
 |---|---|---|
-| 1 | Сборщик (kit/08-sborshchik) | Coded (PR #103) |
+| 1 | Сборщик (kit/08-sborshchik) | Merged (PR #103) |
 | 2 | Курьер | Planned |
 | 3 | Панель | Planned |
 
 ## Risks
 
-- Found outside the stage: `productSaved` is defined twice in both ARB files (the panel's "Товар сохранён" and the cart's "Корзина обновлена"); the later wins, so the Admin's product save says "Корзина обновлена". Fixed in a separate small PR.
+- Found outside the stage: `productSaved` is defined twice in both ARB files (the panel's "Товар сохранён" and the cart's "Корзина обновлена"); the later wins, so the Admin's product save says "Корзина обновлена". Fixed: the cart's text is `cartLineSaved` now, and `frontend/test/core/localization/arb_keys_test.dart` fails on any repeated top-level ARB key.
 
 ## Review findings not acted on
 

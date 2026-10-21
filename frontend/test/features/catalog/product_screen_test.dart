@@ -1028,7 +1028,7 @@ void main() {
       expect(sent.customerNote, expected.customerNote);
       expect(sent.substitutionPolicy, expected.substitutionPolicy);
       expect(cart.calls, contains('change:$tomatoLine'));
-      expect(find.text(l10n(tester).productSaved), findsOneWidget);
+      expect(find.text(l10n(tester).cartLineSaved), findsOneWidget);
       expect(enabled(tester, 'save-line'), isFalse);
       expect(quantityShown(tester), '2,5 кг');
       expect(chipShown(tester), 'В корзине: 2,5 кг');
@@ -1083,7 +1083,7 @@ void main() {
       cart.failure = const UnexpectedFailure();
       await tapAndSettle(tester, byKey('save-line'));
 
-      expect(find.text(l10n(tester).productSaved), findsNothing);
+      expect(find.text(l10n(tester).cartLineSaved), findsNothing);
       expect(quantityShown(tester), '2,5 кг');
       expect(enabled(tester, 'save-line'), isTrue);
     });
