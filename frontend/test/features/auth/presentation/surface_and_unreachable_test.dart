@@ -107,7 +107,7 @@ void main() {
         await tester.tap(retryButton);
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n(tester).shellCourier), findsOneWidget);
+        expect(find.text(l10n(tester).myDeliveries), findsOneWidget);
       },
     );
   });

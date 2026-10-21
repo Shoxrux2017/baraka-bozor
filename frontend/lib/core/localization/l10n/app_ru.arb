@@ -1713,64 +1713,64 @@
   "questionRejectRemoves": "Если откажетесь, этот товар уберут из заказа.",
   "questionDropsReplacement": "Если согласитесь, купят заказанный товар, а не замену.",
   "decisionSending": "Отправляем ответ",
-  "courierOrdersEmpty": "Пока вам не назначено доставок. Назначенная доставка появится здесь.",
+  "myDeliveries": "Мои доставки",
+  "courierChipNew": "Новая",
+  "courierChipAccepted": "Принята",
+  "courierAssigned": "Назначена {when}",
+  "@courierAssigned": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "courierAccepted": "Принята {when}",
+  "@courierAccepted": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "courierOnTheWayLine": "Выехали {when} · до {due}",
+  "@courierOnTheWayLine": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      },
+      "due": {
+        "type": "String"
+      }
+    }
+  },
+  "courierOnTheWaySince": "Выехали {when}",
+  "@courierOnTheWaySince": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "courierDeliveryWish": "Доставка: {wish}",
+  "@courierDeliveryWish": {
+    "placeholders": {
+      "wish": {
+        "type": "String"
+      }
+    }
+  },
+  "courierRequestShort": "Клиент просит отменить — не выезжайте",
+  "courierOpenToAccept": "Откройте и примите доставку",
+  "courierEmptyTitle": "Доставок пока нет",
+  "courierOrdersEmpty": "Когда оператор назначит вам доставку, она появится здесь. Список обновляется сам.",
   "courierPageEmpty": "На этой странице доставок не осталось. Перейдите на предыдущую.",
-  "courierNotAccepted": "Новая доставка — примите её",
-  "courierAccept": "Принять",
+  "courierAccept": "Принять доставку",
   "courierStart": "Выехать",
   "courierDelivered": "Доставлено",
   "courierNotDelivered": "Не доставлено",
-  "courierRequestPending": "Клиент просит отменить заказ. Не выезжайте, пока оператор не решит.",
-  "courierRecipient": "Получатель: {name}",
-  "@courierRecipient": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "callRecipient": "Позвонить получателю: {phone}",
-  "@callRecipient": {
-    "placeholders": {
-      "phone": {
-        "type": "String"
-      }
-    }
-  },
-  "callShopper": "Позвонить сборщику: {phone}",
-  "@callShopper": {
-    "placeholders": {
-      "phone": {
-        "type": "String"
-      }
-    }
-  },
-  "courierPickupFromShopper": "Пункта передачи нет — заберите заказ у сборщика.",
-  "courierAddress": "Адрес: {address}",
-  "@courierAddress": {
-    "placeholders": {
-      "address": {
-        "type": "String"
-      }
-    }
-  },
-  "courierLandmark": "Ориентир: {landmark}",
-  "@courierLandmark": {
-    "placeholders": {
-      "landmark": {
-        "type": "String"
-      }
-    }
-  },
-  "courierAddressTitle": "Адрес доставки",
-  "courierNoteLine": "Курьеру: {note}",
-  "@courierNoteLine": {
-    "placeholders": {
-      "note": {
-        "type": "String"
-      }
-    }
-  },
+  "courierRequestPending": "Не выезжайте, пока оператор не решит",
+  "courierPickupFromShopper": "Пункта передачи нет — заберите пакет у сборщика на базаре.",
+  "courierAddressTitle": "Адрес",
   "courierOpenYandex": "Открыть в Яндексе",
   "courierCopyAddress": "Скопировать адрес",
   "courierAddressCopied": "Адрес скопирован",
@@ -1790,33 +1790,9 @@
       }
     }
   },
-  "courierPaidOnline": "Оплата онлайн — деньги не брать",
-  "courierAssignedAt": "Назначена: {time}",
-  "@courierAssignedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "courierAcceptedAt": "Принята: {time}",
-  "@courierAcceptedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
+  "courierPaidOnline": "Оплачено онлайн — деньги не брать",
   "courierStartedAt": "Выехали: {time}",
   "@courierStartedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "courierDueBy": "Доставьте до {time}",
-  "@courierDueBy": {
     "placeholders": {
       "time": {
         "type": "String"
@@ -1844,7 +1820,7 @@
   },
   "courierHandoverRepeating": "Прошлая отметка осталась без ответа — отправим ту же сумму снова.",
   "courierHandoverUnconfirmed": "Отметка «Доставлено» отправлена, но ответа нет. Отправьте её снова — второй оплаты не будет.",
-  "courierDeliveredDone": "Заказ {number} доставлен",
+  "courierDeliveredDone": "Заказ № {number} доставлен",
   "@courierDeliveredDone": {
     "placeholders": {
       "number": {
@@ -1854,8 +1830,12 @@
   },
   "courierNotDeliveredTitle": "Почему не удалось доставить?",
   "courierNotDeliveredNote": "Комментарий",
+  "courierNotDeliveredNoteOptional": "Комментарий (необязательно)",
+  "courierNotDeliveredNoteHint": "Например: звонил три раза",
+  "courierOtherNoteHint": "Опишите, что случилось",
+  "courierOnlineNothingToTake": "Заказ оплачен онлайн — деньги не брать.",
   "courierNotDeliveredExplained": "Заказ вернётся к оператору, он решит, что с ним делать дальше.",
-  "courierNotDeliveredDone": "Заказ {number} возвращён оператору",
+  "courierNotDeliveredDone": "Заказ № {number} возвращён оператору",
   "@courierNotDeliveredDone": {
     "placeholders": {
       "number": {
@@ -1863,8 +1843,55 @@
       }
     }
   },
-  "courierOrderGone": "Эта доставка больше не ваша.",
+  "courierOrderGone": "Эта доставка больше не ваша",
   "courierBack": "К моим доставкам",
+  "courierStatusNew": "Новая доставка",
+  "courierStatusNewHint": "Посмотрите адрес и примите доставку",
+  "courierStatusAccepted": "Доставка принята",
+  "courierStatusAcceptedHint": "Заберите пакет № {number} и выезжайте",
+  "@courierStatusAcceptedHint": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "courierStatusRequest": "Клиент просит отменить",
+  "courierOnTheWayHint": "Выехали в {time} · доставьте до {due}",
+  "@courierOnTheWayHint": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "due": {
+        "type": "String"
+      }
+    }
+  },
+  "courierStepAssigned": "Назначена",
+  "courierStepAccepted": "Принята",
+  "courierStepOnTheWay": "В пути",
+  "courierStepDelivered": "Доставлена",
+  "courierNoWish": "Пожеланий по времени нет",
+  "courierPickupAtPoint": "Пакет № {number} ждёт в пункте передачи у базара.",
+  "@courierPickupAtPoint": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "courierCallShopper": "Позвонить сборщику",
+  "courierRecipientTitle": "Получатель",
+  "courierLandmarkLabel": "Ориентир",
+  "courierNoteLabel": "Курьеру",
+  "courierPaymentTitle": "Оплата",
+  "courierCollectLabel": "Получить наличными",
+  "courierPaidOnlineLabel": "Оплачено онлайн",
+  "courierNoCash": "Деньги не брать",
+  "courierWaitOperator": "Ждём решения оператора",
+  "courierDeliveredAgain": "Отправить «Доставлено» снова",
+  "courierOrderGoneHint": "Её закрыли, отменили или передали другому курьеру.",
   "errorDeliveryStateConflict": "Доставка уже изменилась, мы обновили заказ.",
   "errorCashAmountMismatch": "Сумма не совпадает с суммой к получению.",
   "getCodeButton": "Получить код",

@@ -19,15 +19,13 @@ import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
+import '../../../core/widgets/kit/kit_fields.dart';
 import '../../../core/widgets/kit/kit_note.dart';
 import '../../../core/widgets/kit/kit_sheet.dart';
 import '../application/shopper_orders_controllers.dart';
 import '../domain/price_guard.dart';
 import '../domain/shopper_orders.dart';
 import 'shopper_picture.dart';
-
-/// The longest note the server keeps with a question or a line's removal.
-const int _noteMax = 300;
 
 /// What the Shopper does with an open line at the market (`docs/09`
 /// sections 30 to 34, `DL-70`): buy it, replace it where its policy lets a
@@ -254,232 +252,6 @@ Future<bool> confirmUnusualPrice(
 String? optionalNote(String text) {
   final String value = trimLikeServer(text);
   return value.isEmpty ? null : value;
-}
-
-String? noteTooLong(AppLocalizations l10n, String text) =>
-    trimLikeServer(text).runes.length > _noteMax
-    ? l10n.fieldTooLong(_noteMax)
-    : null;
-
-OutlineInputBorder _fieldBorder(Color? color) => OutlineInputBorder(
-  borderRadius: BorderRadius.circular(14),
-  borderSide: color == null
-      ? BorderSide.none
-      : BorderSide(color: color, width: 1.5),
-);
-
-/// The kit's filled field; [warn] outlines it amber, the mark of the value a
-/// question to the Customer is about.
-InputDecoration _fieldDecoration({
-  String? hint,
-  String? suffix,
-  String? helper,
-  bool warn = false,
-  bool big = false,
-}) {
-  final Color? outline = warn ? KitColors.warning : null;
-
-  return InputDecoration(
-    hintText: hint,
-    hintStyle: const TextStyle(fontSize: 15, color: KitColors.muted),
-    suffixText: suffix,
-    suffixStyle: const TextStyle(
-      fontSize: 15,
-      fontWeight: FontWeight.w600,
-      color: KitColors.muted,
-    ),
-    helperText: helper,
-    helperMaxLines: 4,
-    helperStyle: const TextStyle(fontSize: 12, color: KitColors.muted),
-    filled: true,
-    fillColor: KitColors.field,
-    constraints: big ? const BoxConstraints(minHeight: 58) : null,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    border: _fieldBorder(outline),
-    enabledBorder: _fieldBorder(outline),
-    disabledBorder: _fieldBorder(outline),
-    focusedBorder: _fieldBorder(outline ?? KitColors.primary),
-    errorBorder: _fieldBorder(KitColors.danger),
-    focusedErrorBorder: _fieldBorder(KitColors.danger),
-  );
-}
-
-const TextStyle _bigFieldStyle = TextStyle(
-  fontSize: 22,
-  fontWeight: FontWeight.w700,
-  color: KitColors.ink,
-);
-
-/// A field under its [label].
-class _LabeledField extends StatelessWidget {
-  const _LabeledField({required this.label, required this.field});
-
-  final String label;
-  final Widget field;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: KitColors.ink,
-          ),
-        ),
-        const SizedBox(height: 8),
-        field,
-      ],
-    );
-  }
-}
-
-/// Groups the digits of a price by three from the right with spaces as the
-/// Shopper types, and keeps the cursor at the end.
-class _GroupedDigitsFormatter extends TextInputFormatter {
-  const _GroupedDigitsFormatter();
-
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final String digits = newValue.text.replaceAll(RegExp(r'\D'), '');
-    final StringBuffer grouped = StringBuffer();
-    for (int i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) {
-        grouped.write(' ');
-      }
-      grouped.write(digits[i]);
-    }
-    final String text = grouped.toString();
-
-    return TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
-    );
-  }
-}
-
-/// A price field in sum, digits only, with the groups spaced as typed; the
-/// kit's field with its [label] above. [warn] outlines it amber.
-class PriceField extends StatelessWidget {
-  const PriceField({
-    required this.fieldKey,
-    required this.controller,
-    required this.label,
-    required this.required,
-    required this.enabled,
-    this.helper,
-    this.warn = false,
-    super.key,
-  });
-
-  final String fieldKey;
-  final TextEditingController controller;
-  final String label;
-  final bool required;
-  final bool enabled;
-  final String? helper;
-  final bool warn;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-
-    return _LabeledField(
-      label: label,
-      field: TextFormField(
-        key: ValueKey<String>(fieldKey),
-        controller: controller,
-        enabled: enabled,
-        keyboardType: TextInputType.number,
-        style: _bigFieldStyle,
-        inputFormatters: <TextInputFormatter>[
-          FilteringTextInputFormatter.allow(RegExp(r'[0-9 ]')),
-          LengthLimitingTextInputFormatter(14),
-          const _GroupedDigitsFormatter(),
-        ],
-        decoration: _fieldDecoration(
-          suffix: MoneyFormat.currency(interfaceLanguage(context)),
-          helper: helper,
-          warn: warn,
-          big: true,
-        ),
-        validator: (String? text) {
-          final String value = (text ?? '').trim();
-          if (value.isEmpty) {
-            return required ? l10n.fieldRequired : null;
-          }
-          return parsePrice(value) == null ? l10n.fieldMarketPrice : null;
-        },
-      ),
-    );
-  }
-}
-
-/// An optional note of up to 300 characters under its [label], with how many
-/// it holds.
-class KitNoteField extends StatelessWidget {
-  const KitNoteField({
-    required this.fieldKey,
-    required this.controller,
-    required this.label,
-    required this.hint,
-    required this.enabled,
-    super.key,
-  });
-
-  final String fieldKey;
-  final TextEditingController controller;
-  final String label;
-  final String hint;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        _LabeledField(
-          label: label,
-          field: TextFormField(
-            key: ValueKey<String>(fieldKey),
-            controller: controller,
-            enabled: enabled,
-            minLines: 1,
-            maxLines: 3,
-            style: const TextStyle(fontSize: 15, color: KitColors.ink),
-            decoration: _fieldDecoration(hint: hint),
-            validator: (String? text) => noteTooLong(l10n, text ?? ''),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: ListenableBuilder(
-            listenable: controller,
-            builder: (BuildContext context, Widget? _) {
-              final int kept = trimLikeServer(controller.text).runes.length;
-
-              return Text(
-                '$kept / $_noteMax',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: kept > _noteMax ? KitColors.danger : KitColors.muted,
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 /// The head of a sheet: the product's picture, its [name] and a [detail].
@@ -855,21 +627,21 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
         ? ''
         : '${QuantityRules.display(QuantityRules.normalize(line.unit, _sentQuantity!) ?? _sentQuantity!)} $unit';
 
-    final Widget quantityField = _LabeledField(
+    final Widget quantityField = KitLabeledField(
       label: l10n.purchaseQuantity,
       field: TextFormField(
         key: const ValueKey<String>('purchase-quantity'),
         controller: _quantity,
         enabled: !locked,
         keyboardType: TextInputType.numberWithOptions(decimal: fraction),
-        style: _bigFieldStyle,
+        style: kitBigFieldStyle,
         inputFormatters: <TextInputFormatter>[
           FilteringTextInputFormatter.allow(
             RegExp(fraction ? r'[0-9.,]' : '[0-9]'),
           ),
           LengthLimitingTextInputFormatter(fraction ? 8 : 4),
         ],
-        decoration: _fieldDecoration(
+        decoration: kitFieldDecoration(
           suffix: unit,
           warn: askingQuantity,
           big: true,

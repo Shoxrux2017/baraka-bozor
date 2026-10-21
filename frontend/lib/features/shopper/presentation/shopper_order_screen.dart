@@ -2,22 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/formatting/phone_format.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/platform/clock.dart';
-import '../../../core/platform/phone_calls.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
-import '../../../core/widgets/kit/kit_card.dart';
+import '../../../core/widgets/kit/kit_call_card.dart';
 import '../../../core/widgets/kit/kit_empty_state.dart';
+import '../../../core/widgets/kit/kit_footer.dart';
 import '../../../core/widgets/kit/kit_note.dart';
 import '../../../core/widgets/kit/kit_sheet.dart';
 import '../../../core/widgets/kit_app_bar.dart';
@@ -154,7 +153,11 @@ class _OrderView extends StatelessWidget {
               ],
               if (phone != null) ...<Widget>[
                 const SizedBox(height: 16),
-                _CallCard(phone: phone),
+                KitCallCard(
+                  key: const ValueKey<String>('call-customer'),
+                  title: AppLocalizations.of(context).shopperCallCustomer,
+                  phone: phone,
+                ),
               ],
               if (!shopping) ...<Widget>[
                 const SizedBox(height: 20),
@@ -324,86 +327,6 @@ class _LineGroup extends StatelessWidget {
   }
 }
 
-/// The Customer's phone as a card that dials it.
-class _CallCard extends ConsumerWidget {
-  const _CallCard({required this.phone});
-
-  final String phone;
-
-  Future<void> _call(BuildContext context, WidgetRef ref) async {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final bool opened = await ref.read(phoneCallsProvider).call(phone);
-    if (!opened) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.callFailed(formatPhone(phone)))),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-
-    return KitCard(
-      key: const ValueKey<String>('call-customer'),
-      onTap: () => _call(context, ref),
-      semanticLabel: '${l10n.shopperCallCustomer} ${formatPhone(phone)}',
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: KitColors.primarySoft,
-            ),
-            child: const Icon(
-              Icons.person_outline,
-              size: 26,
-              color: KitColors.primaryDark,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  l10n.shopperCallCustomer,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: KitColors.ink,
-                  ),
-                ),
-                Text(
-                  formatPhone(phone),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: KitColors.ink2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 14),
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: KitColors.primary,
-            ),
-            child: const Icon(Icons.call, size: 24, color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// The step the server offers, pinned under the list: the acceptance, the
 /// start, or the completion of the shopping.
 class _Footer extends ConsumerWidget {
@@ -425,7 +348,7 @@ class _Footer extends ConsumerWidget {
 
     final Widget button;
     if (stage == ShopperStage.assigned) {
-      button = _FooterButton(
+      button = KitFooterButton(
         buttonKey: 'shopper-accept',
         icon: Icons.check,
         label: l10n.shopperAccept,
@@ -433,7 +356,7 @@ class _Footer extends ConsumerWidget {
         onPressed: busy ? null : actions.accept,
       );
     } else if (stage == ShopperStage.accepted) {
-      button = _FooterButton(
+      button = KitFooterButton(
         buttonKey: 'shopper-start',
         icon: Icons.shopping_cart_outlined,
         label: l10n.shopperStart,
@@ -444,61 +367,9 @@ class _Footer extends ConsumerWidget {
       button = _Complete(order: order);
     }
 
-    return DecoratedBox(
+    return KitFooter(
       key: const ValueKey<String>('shopper-order-footer'),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 12,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[FailureMessage(state.failure), button],
-        ),
-      ),
-    );
-  }
-}
-
-class _FooterButton extends StatelessWidget {
-  const _FooterButton({
-    required this.buttonKey,
-    required this.icon,
-    required this.label,
-    required this.busy,
-    required this.onPressed,
-  });
-
-  final String buttonKey;
-  final IconData icon;
-  final String label;
-  final bool busy;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton.icon(
-      key: ValueKey<String>(buttonKey),
-      style: kitFilled(),
-      icon: busy
-          ? const SizedBox.square(
-              dimension: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: KitColors.muted,
-              ),
-            )
-          : Icon(icon),
-      label: Text(label),
-      onPressed: onPressed,
+      children: <Widget>[FailureMessage(state.failure), button],
     );
   }
 }

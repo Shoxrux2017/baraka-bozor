@@ -9,6 +9,7 @@ import 'package:baraka_bozor/features/courier/domain/courier_orders.dart';
 
 const String courierOrderA = '0192f0a0-0000-7000-8000-00000000e001';
 const String courierOrderB = '0192f0a0-0000-7000-8000-00000000e002';
+const String courierOrderC = '0192f0a0-0000-7000-8000-00000000e003';
 const String courierAssignment = '0192f0a0-0000-7000-8000-00000000e011';
 
 /// The Courier's assignment, assigned at 09:00 and, as asked, accepted at

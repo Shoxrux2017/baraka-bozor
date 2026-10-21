@@ -236,6 +236,7 @@ class CourierOrdersApi {
       shopperPhone: shopper && json.member('shopper_phone') != null
           ? _phoneOf(json, 'shopper_phone')
           : null,
+      handoffPoint: !shopper,
     );
     final CourierAssignment assignment = order.assignment;
     // What the server offers follows from the assignment, as its resource

@@ -64,7 +64,7 @@ void main() {
       );
       await openApp(tester);
 
-      expect(find.text(l10n(tester).shellCourier), findsOneWidget);
+      expect(find.text(l10n(tester).myDeliveries), findsOneWidget);
       expect(modeChip, findsOneWidget);
 
       await tester.tap(staffMenu);
@@ -87,7 +87,7 @@ void main() {
       await tester.tap(switchToStaff);
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n(tester).shellCourier), findsOneWidget);
+      expect(find.text(l10n(tester).myDeliveries), findsOneWidget);
       expect(find.text(l10n(tester).staffModeLabel), findsOneWidget);
     },
   );

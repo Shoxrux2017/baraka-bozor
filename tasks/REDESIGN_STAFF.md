@@ -5,7 +5,7 @@ The Shopper's, the Courier's and the panel's screens take the screen kit's style
 | Stage | What | Status |
 |---|---|---|
 | 1 | Сборщик (kit/08-sborshchik) | Merged (PR #103) |
-| 2 | Курьер | Planned |
+| 2 | Курьер (kit/09-kurer) | Coded (PR #105) |
 | 3 | Панель | Planned |
 
 ## Risks
@@ -20,3 +20,6 @@ The Shopper's, the Courier's and the panel's screens take the screen kit's style
 - Stage 1 walk: a purchase without a sure answer refills its price undivided ("14000"), while a typed price is grouped ("14 000"). Ruling: only the resend case, the value is right; kept.
 - Stage 1 final review, out of scope: after a proposal whose order left the Shopper, `ShopperReplaceScreen` goes to the list and then pops; an old purchase refusal can show in the "Нет товара" sheet. Both behave as on `main`. Ruling: left for a later Shopper change, with tests.
 - Stage 1 final review, out of scope: the Customer's `order_line_sheet.dart` pads the keyboard inside its scroll view (the defect fixed here in the kit sheet). Ruling: the Customer's sheet is outside this stage; fix it when that screen is next touched.
+- Stage 2 re-review, P3: no test pins the amount's `FittedBox` or the list's w700 amount (`courier_order_screen.dart`, `courier_list_screen.dart`). Ruling: both were seen on the emulator walk; a pixel-weight assertion adds little; kept.
+- Stage 2 re-review, P3: the resend seed `_grouped` in `courier_outcome_sheets.dart` repeats the grouping loop of the kit field's private formatter. Ruling: two short loops with one rule (groups of three, plain spaces); share them when a third caller appears; kept.
+- Stage 2 walk: the cash mismatch note stays under the field while the Courier corrects the amount, until the next send. Ruling: as the dialog did; the next send clears or repeats it; kept.
