@@ -3000,7 +3000,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get courierOrderGoneHint =>
-      'Её отменили или передали другому курьеру.';
+      'Её закрыли, отменили или передали другому курьеру.';
 
   @override
   String get errorDeliveryStateConflict =>

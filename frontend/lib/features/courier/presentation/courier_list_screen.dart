@@ -26,11 +26,6 @@ import '../application/courier_orders_controllers.dart';
 import '../domain/courier_orders.dart';
 import 'courier_stage.dart';
 
-/// Whether a screen's load has settled on data, so its periodic refresh
-/// may run (`DL-54` (15)).
-bool _settled(AsyncValue<Object?> value) =>
-    value.hasValue && !value.hasError && !value.isLoading;
-
 /// The Courier's area: their current deliveries, the longest-waiting first,
 /// kept current while shown (`docs/09` section 36, `DL-72`, `DL-99`). Its
 /// app bar holds one menu, as the Shopper's does (`DL-69` (5)).
@@ -58,7 +53,7 @@ class CourierOrdersScreen extends ConsumerWidget {
             const ActiveModeBar(),
             Expanded(
               child: PeriodicRefresh(
-                active: _settled(page),
+                active: settled(page),
                 onRefresh: () => ref.invalidate(courierOrdersProvider),
                 child: page.when(
                   skipLoadingOnReload: false,
@@ -279,7 +274,7 @@ class _DeliveryCard extends StatelessWidget {
               icon: Icons.payments_outlined,
               text: l10n.courierCollect(MoneyFormat.uzs(amount, language)),
               color: KitColors.ink2,
-              bold: true,
+              emphasis: MoneyFormat.uzs(amount, language),
             ),
           if (stage == CourierStage.assigned) ...<Widget>[
             const SizedBox(height: 12),
@@ -330,12 +325,34 @@ class _InfoRow extends StatelessWidget {
     required this.text,
     required this.color,
     this.bold = false,
+    this.emphasis,
   });
 
   final IconData icon;
   final String text;
   final Color color;
   final bool bold;
+
+  /// The part of [text] set heavier than the rest, as the amount is.
+  final String? emphasis;
+
+  TextSpan _spans() {
+    final String? heavy = emphasis;
+    final int at = heavy == null ? -1 : text.indexOf(heavy);
+    if (heavy == null || at < 0) {
+      return TextSpan(text: text);
+    }
+    return TextSpan(
+      children: <InlineSpan>[
+        TextSpan(text: text.substring(0, at)),
+        TextSpan(
+          text: heavy,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        TextSpan(text: text.substring(at + heavy.length)),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -345,8 +362,8 @@ class _InfoRow extends StatelessWidget {
         Icon(icon, size: 17, color: color),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            text,
+          child: Text.rich(
+            _spans(),
             style: TextStyle(
               fontSize: 13,
               fontWeight: bold ? FontWeight.w600 : FontWeight.w500,

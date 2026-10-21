@@ -2981,7 +2981,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get courierOrderGoneHint =>
-      'U bekor qilingan yoki boshqa kuryerga berilgan.';
+      'U yopilgan, bekor qilingan yoki boshqa kuryerga berilgan.';
 
   @override
   String get errorDeliveryStateConflict =>

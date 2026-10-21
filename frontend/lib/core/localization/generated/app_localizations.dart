@@ -5201,7 +5201,7 @@ abstract class AppLocalizations {
   /// No description provided for @courierOrderGoneHint.
   ///
   /// In uz, this message translates to:
-  /// **'U bekor qilingan yoki boshqa kuryerga berilgan.'**
+  /// **'U yopilgan, bekor qilingan yoki boshqa kuryerga berilgan.'**
   String get courierOrderGoneHint;
 
   /// No description provided for @errorDeliveryStateConflict.

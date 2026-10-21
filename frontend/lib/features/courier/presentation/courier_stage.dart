@@ -1,7 +1,14 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/formatting/address_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/orders/order_values.dart';
 import '../domain/courier_orders.dart';
+
+/// Whether a screen's load has settled on data, so its periodic refresh
+/// may run (`DL-54` (15)).
+bool settled(AsyncValue<Object?> value) =>
+    value.hasValue && !value.hasError && !value.isLoading;
 
 /// Where a delivery stands for the Courier: handed to them and not yet
 /// accepted, accepted and not yet set off, on the way, or anything else.

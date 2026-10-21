@@ -1891,7 +1891,7 @@
   "courierNoCash": "Деньги не брать",
   "courierWaitOperator": "Ждём решения оператора",
   "courierDeliveredAgain": "Отправить «Доставлено» снова",
-  "courierOrderGoneHint": "Её отменили или передали другому курьеру.",
+  "courierOrderGoneHint": "Её закрыли, отменили или передали другому курьеру.",
   "errorDeliveryStateConflict": "Доставка уже изменилась, мы обновили заказ.",
   "errorCashAmountMismatch": "Сумма не совпадает с суммой к получению.",
   "getCodeButton": "Получить код",

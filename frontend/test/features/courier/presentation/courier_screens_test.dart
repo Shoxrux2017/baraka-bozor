@@ -1137,7 +1137,7 @@ void main() {
           matching: find.byType(TextField),
         ),
       );
-      expect(field.controller!.text, '55600');
+      expect(field.controller!.text, '55 600');
       expect(field.enabled, isFalse, reason: 'locked');
       expect(find.text(words.courierHandoverRepeating), findsOneWidget);
 
@@ -1211,6 +1211,17 @@ void main() {
             .onPressed,
         isNull,
       );
+      expect(
+        tester
+            .widget<CircularProgressIndicator>(
+              find.descendant(
+                of: byKey('courier-delivered-confirm'),
+                matching: find.byType(CircularProgressIndicator),
+              ),
+            )
+            .color,
+        KitColors.muted,
+      );
       await tester.pump(const Duration(seconds: 30));
       expect(count('order:$courierOrderA'), loads, reason: 'no refresh');
 
@@ -1273,7 +1284,7 @@ void main() {
           matching: find.byType(TextField),
         ),
       );
-      expect(field.controller!.text, '55600');
+      expect(field.controller!.text, '55 600');
       expect(field.enabled, isFalse);
       expect(find.text(l10n(tester).courierHandoverRepeating), findsOneWidget);
     });
@@ -1320,6 +1331,47 @@ void main() {
         status: 'ready_for_delivery',
         ended: true,
       );
+    });
+
+    testWidgets('a running not-delivered report holds its sheet', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, at: AppPaths.courierOrder(courierOrderA));
+      await tapAndSettle(tester, byKey('courier-not-delivered'));
+      await tapAndSettle(tester, byKey('failure-no_answer'));
+      final Completer<void> hold = Completer<void>();
+      courier.hold = hold;
+
+      await tester.tap(byKey('courier-not-delivered-confirm'));
+      await tester.pump();
+
+      await tester.tap(byKey('courier-not-delivered-sheet-close'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        byKey('courier-not-delivered-sheet'),
+        findsOneWidget,
+        reason: 'the x',
+      );
+      await tester.binding.handlePopRoute();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        byKey('courier-not-delivered-sheet'),
+        findsOneWidget,
+        reason: 'back',
+      );
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        byKey('courier-not-delivered-sheet'),
+        findsOneWidget,
+        reason: 'the scrim',
+      );
+
+      courier.hold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('courier-not-delivered-sheet'), findsNothing);
+      expect(courier.actions, hasLength(1));
     });
 
     testWidgets('each reason reads as the panel reads it, in both languages', (
@@ -1533,7 +1585,7 @@ void main() {
         courier.details[courierOrderA] = courierOrder(pending: true);
         await open(
           tester,
-          size: const Size(360, 800),
+          size: const Size(320, 640),
           textScale: 2,
           device: device,
         );
@@ -1608,7 +1660,7 @@ void main() {
         await open(
           tester,
           at: AppPaths.courierOrder(courierOrderA),
-          size: const Size(360, 800),
+          size: const Size(320, 640),
           textScale: 2,
           device: device,
         );

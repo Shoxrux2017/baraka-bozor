@@ -1936,7 +1936,7 @@
   "courierNoCash": "Pul olinmaydi",
   "courierWaitOperator": "Operator qarorini kutyapmiz",
   "courierDeliveredAgain": "«Yetkazildi»ni qayta yuborish",
-  "courierOrderGoneHint": "U bekor qilingan yoki boshqa kuryerga berilgan.",
+  "courierOrderGoneHint": "U yopilgan, bekor qilingan yoki boshqa kuryerga berilgan.",
   "errorDeliveryStateConflict": "Yetkazish allaqachon o'zgargan, buyurtma yangilandi.",
   "errorCashAmountMismatch": "Summa olinishi kerak bo'lgan summaga mos emas.",
   "getCodeButton": "Kod olish",

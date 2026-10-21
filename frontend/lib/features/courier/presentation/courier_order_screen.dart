@@ -30,11 +30,6 @@ import 'courier_outcome_sheets.dart';
 import 'courier_stage.dart';
 import 'courier_status_card.dart';
 
-/// Whether a screen's load has settled on data, so its periodic refresh
-/// may run (`DL-54` (15)).
-bool _settled(AsyncValue<Object?> value) =>
-    value.hasValue && !value.hasError && !value.isLoading;
-
 /// One of the Courier's deliveries (`docs/09` sections 36 and 37, `DL-99`):
 /// the status card of its stage, where the package is picked up, the calls,
 /// the address with the route, and the payment; and under it the next step —
@@ -53,7 +48,7 @@ class CourierOrderScreen extends ConsumerWidget {
     );
     final CourierOrder? shown = order.value;
     // Watched here, so a handover without a sure answer lasts while the
-    // delivery is shown (`DL-72`). An outcome is sent from a dialog, which
+    // delivery is shown (`DL-72`). An outcome is sent from a sheet, which
     // covers the page, so the refresh waits for it anyway.
     final bool unanswered =
         ref.watch(unansweredHandoverProvider(orderId)) != null;
@@ -71,7 +66,7 @@ class CourierOrderScreen extends ConsumerWidget {
             const ActiveModeBar(),
             Expanded(
               child: PeriodicRefresh(
-                active: _settled(order),
+                active: settled(order),
                 onRefresh: () => ref.invalidate(courierOrderProvider(orderId)),
                 child: order.when(
                   skipLoadingOnRefresh: !order.hasError,
@@ -508,14 +503,18 @@ class _PaymentBox extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    cash
-                        ? MoneyFormat.uzs(amount, language)
-                        : l10n.courierNoCash,
-                    style: TextStyle(
-                      fontSize: cash ? 24 : 16,
-                      fontWeight: FontWeight.w700,
-                      color: KitColors.ink,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(
+                      cash
+                          ? MoneyFormat.uzs(amount, language)
+                          : l10n.courierNoCash,
+                      style: TextStyle(
+                        fontSize: cash ? 24 : 16,
+                        fontWeight: FontWeight.w700,
+                        color: KitColors.ink,
+                      ),
                     ),
                   ),
                 ],

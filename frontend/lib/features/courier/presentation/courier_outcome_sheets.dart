@@ -111,7 +111,7 @@ Widget _busyLabel(bool busy, String label) {
           dimension: 18,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: Colors.white,
+            color: KitColors.muted,
             semanticsLabel: label,
           ),
         )
@@ -147,10 +147,9 @@ class _DeliveredSheetState extends ConsumerState<_DeliveredSheet> {
   void initState() {
     super.initState();
     _cash = TextEditingController(
-      text: ref
-          .read(unansweredHandoverProvider(widget.order.id))
-          ?.sent
-          ?.toString(),
+      text: _grouped(
+        ref.read(unansweredHandoverProvider(widget.order.id))?.sent,
+      ),
     );
   }
 
@@ -158,6 +157,23 @@ class _DeliveredSheetState extends ConsumerState<_DeliveredSheet> {
   void dispose() {
     _cash.dispose();
     super.dispose();
+  }
+
+  /// The sent amount as the field's formatter groups typed text: digits in
+  /// threes, separated by plain spaces.
+  static String? _grouped(int? amount) {
+    if (amount == null) {
+      return null;
+    }
+    final String digits = amount.toString();
+    final StringBuffer out = StringBuffer();
+    for (int i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) {
+        out.write(' ');
+      }
+      out.write(digits[i]);
+    }
+    return out.toString();
   }
 
   bool get _takesCash => widget.order.paymentMethod == PaymentMethod.cash;
