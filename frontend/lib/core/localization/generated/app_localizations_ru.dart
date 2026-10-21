@@ -465,7 +465,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get productEditTitle => 'Редактирование товара';
 
   @override
-  String get productSaved => 'Корзина обновлена';
+  String get productSaved => 'Товар сохранён';
 
   @override
   String get productCategory => 'Категория';
@@ -3185,6 +3185,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get productSave => 'Сохранить';
+
+  @override
+  String get cartLineSaved => 'Корзина обновлена';
 
   @override
   String get productAlreadyInCart =>

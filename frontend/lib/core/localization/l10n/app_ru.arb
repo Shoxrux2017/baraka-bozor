@@ -1960,7 +1960,7 @@
     }
   },
   "productSave": "Сохранить",
-  "productSaved": "Корзина обновлена",
+  "cartLineSaved": "Корзина обновлена",
   "productAlreadyInCart": "Этот товар уже в корзине — можно изменить и сохранить",
   "quantitySheetTitle": "Количество",
   "quantitySheetDone": "Готово",

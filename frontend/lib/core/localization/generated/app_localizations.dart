@@ -953,7 +953,7 @@ abstract class AppLocalizations {
   /// No description provided for @productSaved.
   ///
   /// In uz, this message translates to:
-  /// **'Savat yangilandi'**
+  /// **'Mahsulot saqlandi'**
   String get productSaved;
 
   /// No description provided for @productCategory.
@@ -5479,6 +5479,12 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Saqlash'**
   String get productSave;
+
+  /// No description provided for @cartLineSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savat yangilandi'**
+  String get cartLineSaved;
 
   /// No description provided for @productAlreadyInCart.
   ///

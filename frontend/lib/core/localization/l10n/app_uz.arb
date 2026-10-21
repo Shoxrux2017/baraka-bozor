@@ -2071,7 +2071,7 @@
     }
   },
   "productSave": "Saqlash",
-  "productSaved": "Savat yangilandi",
+  "cartLineSaved": "Savat yangilandi",
   "productAlreadyInCart": "Bu mahsulot savatda bor — o'zgartirib, saqlashingiz mumkin",
   "quantitySheetTitle": "Miqdor",
   "quantitySheetDone": "Tayyor",
