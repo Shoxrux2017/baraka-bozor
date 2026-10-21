@@ -2470,7 +2470,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String purchaseMarketInfo(String price, String bound, String unit) {
-    return 'Рыночная $price. Без вопроса клиенту — до $bound за $unit.';
+    return 'Рыночная $price. Без вопроса клиенту — до $bound за $unit';
   }
 
   @override
@@ -2504,7 +2504,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String purchaseBelowQuantity(String required, String quantity) {
-    return 'Клиенту нужно $required. Купите столько или спросите клиента, согласен ли он на $quantity.';
+    return 'Клиенту нужно $required — купите столько или спросите клиента, согласен ли он на $quantity';
   }
 
   @override

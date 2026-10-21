@@ -1445,7 +1445,7 @@
       }
     }
   },
-  "purchaseMarketInfo": "Рыночная {price}. Без вопроса клиенту — до {bound} за {unit}.",
+  "purchaseMarketInfo": "Рыночная {price}. Без вопроса клиенту — до {bound} за {unit}",
   "@purchaseMarketInfo": {
     "placeholders": {
       "price": {
@@ -1487,7 +1487,7 @@
       }
     }
   },
-  "purchaseBelowQuantity": "Клиенту нужно {required}. Купите столько или спросите клиента, согласен ли он на {quantity}.",
+  "purchaseBelowQuantity": "Клиенту нужно {required} — купите столько или спросите клиента, согласен ли он на {quantity}",
   "@purchaseBelowQuantity": {
     "placeholders": {
       "required": {
