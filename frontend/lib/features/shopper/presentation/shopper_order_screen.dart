@@ -438,7 +438,6 @@ class _CompleteSheet extends StatelessWidget {
             label: l10n.shopperCompleteBought,
             value: l10n.orderItemCount(counts.bought),
           ),
-          const SizedBox(height: 8),
           _CountRow(
             label: l10n.shopperCompleteRemoved,
             value: l10n.orderItemCount(counts.removed),
@@ -453,18 +452,19 @@ class _CompleteSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          FilledButton(
-            key: const ValueKey<String>('complete-confirm'),
-            style: kitFilled(),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.completeConfirm),
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton(
-            key: const ValueKey<String>('complete-cancel'),
-            style: kitOutlined(),
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancelButton),
+          KitActionPair(
+            secondary: OutlinedButton(
+              key: const ValueKey<String>('complete-cancel'),
+              style: kitOutlined(),
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.cancelButton),
+            ),
+            primary: FilledButton(
+              key: const ValueKey<String>('complete-confirm'),
+              style: kitFilled(),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.completeConfirm),
+            ),
           ),
         ],
       ),
@@ -481,12 +481,11 @@ class _CountRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: KitColors.field,
-        borderRadius: BorderRadius.circular(12),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: KitColors.line)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: <Widget>[
             Expanded(

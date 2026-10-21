@@ -49,3 +49,37 @@ ButtonStyle kitOutlined({
     ),
   );
 }
+
+/// The two buttons a sheet ends with: [secondary] on the left and [primary]
+/// on the right, each half the width, as the drawings show them. Past 1.3
+/// times the normal text size a half is too narrow for a label, so they
+/// stack, [primary] first, each the full width.
+class KitActionPair extends StatelessWidget {
+  const KitActionPair({
+    required this.secondary,
+    required this.primary,
+    super.key,
+  });
+
+  final Widget secondary;
+  final Widget primary;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool large = MediaQuery.textScalerOf(context).scale(15) > 15 * 1.3;
+    if (large) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[primary, const SizedBox(height: 10), secondary],
+      );
+    }
+
+    return Row(
+      children: <Widget>[
+        Expanded(child: secondary),
+        const SizedBox(width: 12),
+        Expanded(child: primary),
+      ],
+    );
+  }
+}
