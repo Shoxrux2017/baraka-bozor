@@ -41,12 +41,21 @@ class _LineWords {
 bool _largeText(BuildContext context) =>
     MediaQuery.textScalerOf(context).scale(15) > 15 * 1.3;
 
-/// A product's picture in a square of the kit's card colour.
+const ColorFilter _grey = ColorFilter.matrix(<double>[
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0, 0, 0, 1, 0,
+]);
+
+/// A product's picture in a square of the kit's card colour; [greyed] for a
+/// line that went.
 class _Picture extends StatelessWidget {
-  const _Picture({required this.url, required this.size});
+  const _Picture({required this.url, required this.size, this.greyed = false});
 
   final String? url;
   final double size;
+  final bool greyed;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +67,15 @@ class _Picture extends StatelessWidget {
         color: KitColors.card,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: ProductImage(url: url, size: size),
+      child: greyed
+          ? Opacity(
+              opacity: 0.4,
+              child: ColorFiltered(
+                colorFilter: _grey,
+                child: ProductImage(url: url, size: size),
+              ),
+            )
+          : ProductImage(url: url, size: size),
     );
   }
 }
@@ -322,16 +339,21 @@ class ShopperLineRow extends StatelessWidget {
         ),
       );
     } else if (removed) {
+      details.add(
+        Text(
+          words.amount(line, line.quantity),
+          style: const TextStyle(fontSize: 12, color: KitColors.muted),
+        ),
+      );
       if (reason != null) {
+        details.add(const SizedBox(height: 6));
         details.add(
-          Text(
-            l10n.shopperTagRemoved(OrderLabels.removedReason(l10n, reason)),
+          KitTag(
             key: ValueKey<String>('shopper-line-status-${line.id}'),
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: KitColors.danger,
+            text: l10n.shopperTagRemoved(
+              OrderLabels.removedReason(l10n, reason),
             ),
+            tone: KitTone.grey,
           ),
         );
       }
@@ -358,10 +380,10 @@ class ShopperLineRow extends StatelessWidget {
       removed
           ? '—'
           : words.amount(line, purchase?.purchasedQuantity ?? line.quantity),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w700,
-        color: KitColors.ink,
+        color: removed ? KitColors.muted : KitColors.ink,
       ),
     );
 
@@ -373,6 +395,7 @@ class ShopperLineRow extends StatelessWidget {
           _Picture(
             url: instead != null ? instead.imageUrl : line.imageUrl,
             size: 56,
+            greyed: removed,
           ),
           const SizedBox(width: 12),
           Expanded(

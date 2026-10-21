@@ -555,11 +555,15 @@ void main() {
       words.itemBought('2 ${words.unitPiece}'),
     );
     expect(
-      shown(tester, 'shopper-line-status-$gone'),
-      words.shopperTagRemoved(
-        OrderLabels.removedReason(words, ItemRemovedReason.unavailable),
+      inKey(
+        'shopper-line-status-$gone',
+        words.shopperTagRemoved(
+          OrderLabels.removedReason(words, ItemRemovedReason.unavailable),
+        ),
       ),
+      findsOneWidget,
     );
+    expect(inKey('shopper-line-$gone', '1 ${words.unitPiece}'), findsNothing);
     expect(
       tester
           .widget<Text>(
