@@ -5018,6 +5018,30 @@ abstract class AppLocalizations {
   /// **'Izoh'**
   String get courierNotDeliveredNote;
 
+  /// No description provided for @courierNotDeliveredNoteOptional.
+  ///
+  /// In uz, this message translates to:
+  /// **'Izoh (ixtiyoriy)'**
+  String get courierNotDeliveredNoteOptional;
+
+  /// No description provided for @courierNotDeliveredNoteHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Masalan: uch marta qo\'ng\'iroq qildim'**
+  String get courierNotDeliveredNoteHint;
+
+  /// No description provided for @courierOtherNoteHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nima bo\'lganini yozing'**
+  String get courierOtherNoteHint;
+
+  /// No description provided for @courierOnlineNothingToTake.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma onlayn to\'langan — pul olinmaydi.'**
+  String get courierOnlineNothingToTake;
+
   /// No description provided for @courierNotDeliveredExplained.
   ///
   /// In uz, this message translates to:

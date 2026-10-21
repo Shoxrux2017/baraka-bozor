@@ -5,7 +5,7 @@ The Shopper's, the Courier's and the panel's screens take the screen kit's style
 | Stage | What | Status |
 |---|---|---|
 | 1 | Сборщик (kit/08-sborshchik) | Merged (PR #103) |
-| 2 | Курьер (kit/09-kurer) | In progress |
+| 2 | Курьер (kit/09-kurer) | Coded (PR #—) |
 | 3 | Панель | Planned |
 
 ## Risks

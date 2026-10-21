@@ -997,7 +997,23 @@ void main() {
       final AppLocalizations words = l10n(tester);
 
       await tapAndSettle(tester, byKey('courier-delivered'));
+      expect(byKey('courier-delivered-sheet'), findsOneWidget);
       expect(find.text(words.courierCashPrompt(money(55600))), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('courier-delivered-sheet'),
+          matching: find.text(words.courierCashField),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('courier-cash'),
+          matching: find.text(MoneyFormat.currency(AppLanguage.uz)),
+        ),
+        findsOneWidget,
+        reason: 'the suffix',
+      );
       final TextField field = tester.widget<TextField>(
         find.descendant(
           of: byKey('courier-cash'),
@@ -1006,7 +1022,7 @@ void main() {
       );
       expect(field.controller!.text, isEmpty, reason: 'the Courier counts');
 
-      for (final String typed in <String>['', '0', '55 6OO', '12,5']) {
+      for (final String typed in <String>['', '0']) {
         await tester.enterText(byKey('courier-cash'), typed);
         await tapAndSettle(tester, byKey('courier-delivered-confirm'));
         expect(
@@ -1017,6 +1033,20 @@ void main() {
       }
       expect(courier.actions, isEmpty);
 
+      // The kit's field takes digits only, grouped as typed.
+      await tester.enterText(byKey('courier-cash'), '55600');
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: byKey('courier-cash'),
+                matching: find.byType(TextField),
+              ),
+            )
+            .controller!
+            .text,
+        '55 600',
+      );
       await tester.enterText(byKey('courier-cash'), '55 600');
       await tapAndSettle(tester, byKey('courier-delivered-confirm'));
 
@@ -1027,7 +1057,7 @@ void main() {
       expect(byKey('courier-order-$courierOrderA'), findsNothing);
     });
 
-    testWidgets('a cash mismatch says what to collect, and keeps the dialog', (
+    testWidgets('a cash mismatch says what to collect, and keeps the sheet', (
       WidgetTester tester,
     ) async {
       await open(tester, at: AppPaths.courierOrder(courierOrderA));
@@ -1045,10 +1075,16 @@ void main() {
       await tapAndSettle(tester, byKey('courier-delivered-confirm'));
 
       expect(byKey('courier-cash-mismatch'), findsOneWidget);
+      expect(tester.widget(byKey('courier-cash-mismatch')), isA<KitNote>());
+      expect(
+        tester.widget<KitNote>(byKey('courier-cash-mismatch')).tone,
+        KitTone.red,
+      );
       expect(
         find.text(l10n(tester).courierCashMismatch(money(57000))),
         findsOneWidget,
       );
+      expect(byKey('courier-delivered-sheet'), findsOneWidget);
       expect(byKey('courier-delivered-confirm'), findsOneWidget);
       expect(count('order:$courierOrderA'), loads + 1, reason: 'read again');
 
@@ -1102,7 +1138,7 @@ void main() {
         ),
       );
       expect(field.controller!.text, '55600');
-      expect(field.readOnly, isTrue);
+      expect(field.enabled, isFalse, reason: 'locked');
       expect(find.text(words.courierHandoverRepeating), findsOneWidget);
 
       courier.actionFailure = null;
@@ -1170,7 +1206,9 @@ void main() {
         isNull,
       );
       expect(
-        tester.widget<TextButton>(byKey('courier-delivered-cancel')).onPressed,
+        tester
+            .widget<OutlinedButton>(byKey('courier-delivered-cancel'))
+            .onPressed,
         isNull,
       );
       await tester.pump(const Duration(seconds: 30));
@@ -1198,8 +1236,80 @@ void main() {
       expect(find.text(l10n(tester).courierPaidOnlineLabel), findsOneWidget);
       await tapAndSettle(tester, byKey('courier-delivered'));
       expect(byKey('courier-cash'), findsNothing);
+      expect(
+        find.text(l10n(tester).courierOnlineNothingToTake),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<KitNote>(
+              find.ancestor(
+                of: find.text(l10n(tester).courierOnlineNothingToTake),
+                matching: find.byType(KitNote),
+              ),
+            )
+            .tone,
+        KitTone.green,
+      );
       await tapAndSettle(tester, byKey('courier-delivered-confirm'));
       expect(courier.actions, <String>['delivered:$courierOrderA:null']);
+    });
+
+    testWidgets('the resent handover locks the cash it sent', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, at: AppPaths.courierOrder(courierOrderA));
+      courier.actionFailure = const NetworkFailure();
+      await tapAndSettle(tester, byKey('courier-delivered'));
+      await tester.enterText(byKey('courier-cash'), '55 600');
+      await tapAndSettle(tester, byKey('courier-delivered-confirm'));
+      await tapAndSettle(tester, byKey('courier-delivered-cancel'));
+
+      await tapAndSettle(tester, byKey('courier-delivered'));
+      expect(byKey('courier-delivered-sheet'), findsOneWidget);
+      final TextField field = tester.widget<TextField>(
+        find.descendant(
+          of: byKey('courier-cash'),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(field.controller!.text, '55600');
+      expect(field.enabled, isFalse);
+      expect(find.text(l10n(tester).courierHandoverRepeating), findsOneWidget);
+    });
+
+    testWidgets('a running handover holds its sheet', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, at: AppPaths.courierOrder(courierOrderA));
+      await tapAndSettle(tester, byKey('courier-delivered'));
+      await tester.enterText(byKey('courier-cash'), '55600');
+      final Completer<void> hold = Completer<void>();
+      courier.hold = hold;
+
+      await tester.tap(byKey('courier-delivered-confirm'));
+      await tester.pump();
+
+      await tester.tap(byKey('courier-delivered-sheet-close'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(byKey('courier-delivered-sheet'), findsOneWidget, reason: 'the x');
+      await tester.binding.handlePopRoute();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(byKey('courier-delivered-sheet'), findsOneWidget, reason: 'back');
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        byKey('courier-delivered-sheet'),
+        findsOneWidget,
+        reason: 'the scrim',
+      );
+
+      courier.hold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('courier-delivered-sheet'), findsNothing);
+      expect(courier.actions, hasLength(1));
+      expect(location(tester), AppPaths.courier);
     });
   });
 
@@ -1223,6 +1333,11 @@ void main() {
           device: device,
         );
         await tapAndSettle(tester, byKey('courier-not-delivered'));
+        expect(byKey('courier-not-delivered-sheet'), findsOneWidget);
+        expect(
+          find.text(l10n(tester).courierNotDeliveredExplained),
+          findsOneWidget,
+        );
         for (final DeliveryFailureReason reason
             in DeliveryFailureReason.values) {
           expect(
@@ -1250,8 +1365,15 @@ void main() {
         expect(byKey('courier-failure-reason-missing'), findsOneWidget);
         expect(courier.actions, isEmpty);
 
+        expect(
+          find.text(words.courierNotDeliveredNoteOptional),
+          findsOneWidget,
+        );
+        expect(find.text(words.courierNotDeliveredNoteHint), findsOneWidget);
         await tapAndSettle(tester, byKey('failure-other'));
         expect(byKey('courier-failure-reason-missing'), findsNothing);
+        expect(find.text(words.courierNotDeliveredNote), findsOneWidget);
+        expect(find.text(words.courierOtherNoteHint), findsOneWidget);
         await tester.enterText(byKey('courier-failure-note'), '   ');
         await tapAndSettle(tester, byKey('courier-not-delivered-confirm'));
         expect(find.text(words.fieldRequired), findsOneWidget);
@@ -1288,7 +1410,7 @@ void main() {
       ]);
     });
 
-    testWidgets('a refusal is said in the dialog, which stays open', (
+    testWidgets('a refusal is said in the sheet, which stays open', (
       WidgetTester tester,
     ) async {
       await open(tester, at: AppPaths.courierOrder(courierOrderA));
@@ -1297,6 +1419,7 @@ void main() {
       await tapAndSettle(tester, byKey('failure-refused'));
       await tapAndSettle(tester, byKey('courier-not-delivered-confirm'));
       expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      expect(byKey('courier-not-delivered-sheet'), findsOneWidget);
       expect(byKey('courier-not-delivered-confirm'), findsOneWidget);
 
       // A natural repeat: sent again as it is.
@@ -1325,7 +1448,7 @@ void main() {
     );
   });
 
-  testWidgets('each outcome dialog says only what its own attempt answered', (
+  testWidgets('each outcome sheet says only what its own attempt answered', (
     WidgetTester tester,
   ) async {
     courier.details[courierOrderA] = courierOrder(status: 'on_the_way');
@@ -1398,7 +1521,7 @@ void main() {
 
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets(
-      'the list, a delivery and both dialogs fit a phone with large text (${device.languageCode})',
+      'the list, a delivery and both sheets fit a phone with large text (${device.languageCode})',
       (WidgetTester tester) async {
         courier.details[courierOrderB] = courierOrder(
           id: courierOrderB,
@@ -1427,6 +1550,19 @@ void main() {
         await tapAndSettle(tester, byKey('courier-not-delivered'));
         await tapAndSettle(tester, byKey('courier-not-delivered-confirm'));
         expect(tester.takeException(), isNull);
+        // "Other" with a full note, the keyboard up.
+        await tapAndSettle(tester, byKey('failure-other'));
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          byKey('courier-failure-note'),
+          List.filled(300, 'я').join(),
+        );
+        await tester.pumpAndSettle();
+        expect(byKey('courier-not-delivered-sheet'), findsOneWidget);
+        expect(tester.takeException(), isNull, reason: 'other with a note');
+        tester.view.resetViewInsets();
+        await tester.pumpAndSettle();
         await tapAndSettle(tester, byKey('courier-not-delivered-cancel'));
 
         // The cash mismatch, then a handover without a sure answer.
@@ -1438,10 +1574,14 @@ void main() {
           ),
         );
         await tapAndSettle(tester, byKey('courier-delivered'));
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        await tester.pumpAndSettle();
         await tester.enterText(byKey('courier-cash'), '5000');
         await tapAndSettle(tester, byKey('courier-delivered-confirm'));
         expect(byKey('courier-cash-mismatch'), findsOneWidget);
-        expect(tester.takeException(), isNull);
+        expect(tester.takeException(), isNull, reason: 'the mismatch');
+        tester.view.resetViewInsets();
+        await tester.pumpAndSettle();
         courier.actionFailure = const NetworkFailure();
         await tapAndSettle(tester, byKey('courier-delivered-confirm'));
         await tapAndSettle(tester, byKey('courier-delivered-cancel'));

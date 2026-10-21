@@ -2878,6 +2878,20 @@ class AppLocalizationsUz extends AppLocalizations {
   String get courierNotDeliveredNote => 'Izoh';
 
   @override
+  String get courierNotDeliveredNoteOptional => 'Izoh (ixtiyoriy)';
+
+  @override
+  String get courierNotDeliveredNoteHint =>
+      'Masalan: uch marta qo\'ng\'iroq qildim';
+
+  @override
+  String get courierOtherNoteHint => 'Nima bo\'lganini yozing';
+
+  @override
+  String get courierOnlineNothingToTake =>
+      'Buyurtma onlayn to\'langan — pul olinmaydi.';
+
+  @override
   String get courierNotDeliveredExplained =>
       'Buyurtma operatorga qaytadi, u keyin nima qilishni hal qiladi.';
 

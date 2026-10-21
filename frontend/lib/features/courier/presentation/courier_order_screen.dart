@@ -26,7 +26,7 @@ import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/periodic_refresh.dart';
 import '../application/courier_orders_controllers.dart';
 import '../domain/courier_orders.dart';
-import 'courier_outcome_dialogs.dart';
+import 'courier_outcome_sheets.dart';
 import 'courier_stage.dart';
 import 'courier_status_card.dart';
 
@@ -555,11 +555,7 @@ class _Footer extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final GoRouter router = GoRouter.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final CourierOrder? done = await showDialog<CourierOrder>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) => DeliveredDialog(order: order),
-    );
+    final CourierOrder? done = await showDeliveredSheet(context, order: order);
     if (done != null) {
       _leave(
         router,
@@ -574,10 +570,9 @@ class _Footer extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final GoRouter router = GoRouter.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final CourierOrder? done = await showDialog<CourierOrder>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) => NotDeliveredDialog(order: order),
+    final CourierOrder? done = await showNotDeliveredSheet(
+      context,
+      order: order,
     );
     if (done != null) {
       _leave(

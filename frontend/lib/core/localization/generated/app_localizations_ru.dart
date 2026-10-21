@@ -2899,6 +2899,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get courierNotDeliveredNote => 'Комментарий';
 
   @override
+  String get courierNotDeliveredNoteOptional => 'Комментарий (необязательно)';
+
+  @override
+  String get courierNotDeliveredNoteHint => 'Например: звонил три раза';
+
+  @override
+  String get courierOtherNoteHint => 'Опишите, что случилось';
+
+  @override
+  String get courierOnlineNothingToTake =>
+      'Заказ оплачен онлайн — деньги не брать.';
+
+  @override
   String get courierNotDeliveredExplained =>
       'Заказ вернётся к оператору, он решит, что с ним делать дальше.';
 

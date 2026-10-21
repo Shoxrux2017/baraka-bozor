@@ -1875,6 +1875,10 @@
   },
   "courierNotDeliveredTitle": "Nega yetkazib bo'lmadi?",
   "courierNotDeliveredNote": "Izoh",
+  "courierNotDeliveredNoteOptional": "Izoh (ixtiyoriy)",
+  "courierNotDeliveredNoteHint": "Masalan: uch marta qo'ng'iroq qildim",
+  "courierOtherNoteHint": "Nima bo'lganini yozing",
+  "courierOnlineNothingToTake": "Buyurtma onlayn to'langan — pul olinmaydi.",
   "courierNotDeliveredExplained": "Buyurtma operatorga qaytadi, u keyin nima qilishni hal qiladi.",
   "courierNotDeliveredDone": "{number}-buyurtma operatorga qaytarildi",
   "@courierNotDeliveredDone": {
