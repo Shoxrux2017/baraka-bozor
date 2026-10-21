@@ -1809,53 +1809,13 @@
   "courierEmptyTitle": "Hozircha yetkazish yo'q",
   "courierOrdersEmpty": "Operator sizga yetkazish tayinlasa, u shu yerda paydo bo'ladi. Ro'yxat o'zi yangilanadi.",
   "courierPageEmpty": "Bu sahifada yetkazishlar qolmadi. Oldingi sahifaga o'ting.",
-  "courierAccept": "Qabul qilish",
+  "courierAccept": "Yetkazishni qabul qilish",
   "courierStart": "Yo'lga chiqish",
   "courierDelivered": "Yetkazildi",
   "courierNotDelivered": "Yetkazilmadi",
-  "courierRequestPending": "Mijoz buyurtmani bekor qilishni so'ramoqda. Operator hal qilmaguncha yo'lga chiqmang.",
-  "courierRecipient": "Qabul qiluvchi: {name}",
-  "@courierRecipient": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "callRecipient": "Qabul qiluvchiga qo'ng'iroq: {phone}",
-  "@callRecipient": {
-    "placeholders": {
-      "phone": {
-        "type": "String"
-      }
-    }
-  },
-  "callShopper": "Yig'uvchiga qo'ng'iroq: {phone}",
-  "@callShopper": {
-    "placeholders": {
-      "phone": {
-        "type": "String"
-      }
-    }
-  },
-  "courierPickupFromShopper": "Topshirish punkti yo'q — buyurtmani yig'uvchidan oling.",
-  "courierLandmark": "Mo'ljal: {landmark}",
-  "@courierLandmark": {
-    "placeholders": {
-      "landmark": {
-        "type": "String"
-      }
-    }
-  },
-  "courierAddressTitle": "Yetkazish manzili",
-  "courierNoteLine": "Kuryerga: {note}",
-  "@courierNoteLine": {
-    "placeholders": {
-      "note": {
-        "type": "String"
-      }
-    }
-  },
+  "courierRequestPending": "Operator hal qilmaguncha yo'lga chiqmang",
+  "courierPickupFromShopper": "Topshirish joyi yo'q — paketni bozorda yig'uvchidan oling.",
+  "courierAddressTitle": "Manzil",
   "courierOpenYandex": "Yandexda ochish",
   "courierCopyAddress": "Manzilni nusxalash",
   "courierAddressCopied": "Manzil nusxalandi",
@@ -1876,32 +1836,8 @@
     }
   },
   "courierPaidOnline": "Onlayn to'langan — pul olinmaydi",
-  "courierAssignedAt": "Tayinlangan: {time}",
-  "@courierAssignedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "courierAcceptedAt": "Qabul qilingan: {time}",
-  "@courierAcceptedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "courierStartedAt": "Yo'lga chiqilgan: {time}",
   "@courierStartedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "courierDueBy": "{time} gacha yetkazing",
-  "@courierDueBy": {
     "placeholders": {
       "time": {
         "type": "String"
@@ -1948,8 +1884,55 @@
       }
     }
   },
-  "courierOrderGone": "Bu yetkazish endi sizda emas.",
+  "courierOrderGone": "Bu yetkazish endi sizda emas",
   "courierBack": "Yetkazishlarimga",
+  "courierStatusNew": "Yangi yetkazish",
+  "courierStatusNewHint": "Manzilni ko'rib chiqing va yetkazishni qabul qiling",
+  "courierStatusAccepted": "Yetkazish qabul qilindi",
+  "courierStatusAcceptedHint": "№ {number} paketni oling va yo'lga chiqing",
+  "@courierStatusAcceptedHint": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "courierStatusRequest": "Mijoz bekor qilishni so'ramoqda",
+  "courierOnTheWayHint": "Yo'lga chiqildi: {time} · {due} gacha yetkazing",
+  "@courierOnTheWayHint": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "due": {
+        "type": "String"
+      }
+    }
+  },
+  "courierStepAssigned": "Tayinlandi",
+  "courierStepAccepted": "Qabul qilindi",
+  "courierStepOnTheWay": "Yo'lda",
+  "courierStepDelivered": "Yetkazildi",
+  "courierNoWish": "Vaqt bo'yicha istak yo'q",
+  "courierPickupAtPoint": "№ {number} paket bozor yonidagi topshirish joyida kutmoqda.",
+  "@courierPickupAtPoint": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "courierCallShopper": "Yig'uvchiga qo'ng'iroq qilish",
+  "courierRecipientTitle": "Qabul qiluvchi",
+  "courierLandmarkLabel": "Mo'ljal",
+  "courierNoteLabel": "Kuryer uchun",
+  "courierPaymentTitle": "To'lov",
+  "courierCollectLabel": "Naqd pul olish",
+  "courierPaidOnlineLabel": "Onlayn to'langan",
+  "courierNoCash": "Pul olinmaydi",
+  "courierWaitOperator": "Operator qarorini kutyapmiz",
+  "courierDeliveredAgain": "«Yetkazildi»ni qayta yuborish",
+  "courierOrderGoneHint": "U bekor qilingan yoki boshqa kuryerga berilgan.",
   "errorDeliveryStateConflict": "Yetkazish allaqachon o'zgargan, buyurtma yangilandi.",
   "errorCashAmountMismatch": "Summa olinishi kerak bo'lgan summaga mos emas.",
   "getCodeButton": "Kod olish",

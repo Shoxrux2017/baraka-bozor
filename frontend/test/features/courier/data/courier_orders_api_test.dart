@@ -84,6 +84,26 @@ void main() {
       expect(online.amountToCollectUzs, isNull);
     });
 
+    test("the handoff point follows whether the Shopper's phone is sent", () {
+      final CourierOrder point = CourierOrdersApi.parseOrder(
+        courierOrderJson(),
+      );
+      expect(point.handoffPoint, isTrue);
+      expect(point.shopperPhone, isNull);
+
+      final CourierOrder nobody = CourierOrdersApi.parseOrder(
+        courierOrderJson(shopperPhone: null),
+      );
+      expect(nobody.handoffPoint, isFalse);
+      expect(nobody.shopperPhone, isNull);
+
+      final CourierOrder named = CourierOrdersApi.parseOrder(
+        courierOrderJson(shopperPhone: '+998907654321'),
+      );
+      expect(named.handoffPoint, isFalse);
+      expect(named.shopperPhone, '+998907654321');
+    });
+
     test('an ended delivery tells the outcome only', () {
       for (final String status in <String>[
         'completed',

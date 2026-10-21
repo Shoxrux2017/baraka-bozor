@@ -349,7 +349,7 @@ class _InfoRow extends StatelessWidget {
             text,
             style: TextStyle(
               fontSize: 13,
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+              fontWeight: bold ? FontWeight.w600 : FontWeight.w500,
               color: color,
             ),
           ),

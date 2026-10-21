@@ -2812,7 +2812,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'На этой странице доставок не осталось. Перейдите на предыдущую.';
 
   @override
-  String get courierAccept => 'Принять';
+  String get courierAccept => 'Принять доставку';
 
   @override
   String get courierStart => 'Выехать';
@@ -2824,40 +2824,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get courierNotDelivered => 'Не доставлено';
 
   @override
-  String get courierRequestPending =>
-      'Клиент просит отменить заказ. Не выезжайте, пока оператор не решит.';
-
-  @override
-  String courierRecipient(String name) {
-    return 'Получатель: $name';
-  }
-
-  @override
-  String callRecipient(String phone) {
-    return 'Позвонить получателю: $phone';
-  }
-
-  @override
-  String callShopper(String phone) {
-    return 'Позвонить сборщику: $phone';
-  }
+  String get courierRequestPending => 'Не выезжайте, пока оператор не решит';
 
   @override
   String get courierPickupFromShopper =>
-      'Пункта передачи нет — заберите заказ у сборщика.';
+      'Пункта передачи нет — заберите пакет у сборщика на базаре.';
 
   @override
-  String courierLandmark(String landmark) {
-    return 'Ориентир: $landmark';
-  }
-
-  @override
-  String get courierAddressTitle => 'Адрес доставки';
-
-  @override
-  String courierNoteLine(String note) {
-    return 'Курьеру: $note';
-  }
+  String get courierAddressTitle => 'Адрес';
 
   @override
   String get courierOpenYandex => 'Открыть в Яндексе';
@@ -2882,23 +2856,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get courierPaidOnline => 'Оплачено онлайн — деньги не брать';
 
   @override
-  String courierAssignedAt(String time) {
-    return 'Назначена: $time';
-  }
-
-  @override
-  String courierAcceptedAt(String time) {
-    return 'Принята: $time';
-  }
-
-  @override
   String courierStartedAt(String time) {
     return 'Выехали: $time';
-  }
-
-  @override
-  String courierDueBy(String time) {
-    return 'Доставьте до $time';
   }
 
   @override
@@ -2949,10 +2908,86 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get courierOrderGone => 'Эта доставка больше не ваша.';
+  String get courierOrderGone => 'Эта доставка больше не ваша';
 
   @override
   String get courierBack => 'К моим доставкам';
+
+  @override
+  String get courierStatusNew => 'Новая доставка';
+
+  @override
+  String get courierStatusNewHint => 'Посмотрите адрес и примите доставку';
+
+  @override
+  String get courierStatusAccepted => 'Доставка принята';
+
+  @override
+  String courierStatusAcceptedHint(String number) {
+    return 'Заберите пакет № $number и выезжайте';
+  }
+
+  @override
+  String get courierStatusRequest => 'Клиент просит отменить';
+
+  @override
+  String courierOnTheWayHint(String time, String due) {
+    return 'Выехали в $time · доставьте до $due';
+  }
+
+  @override
+  String get courierStepAssigned => 'Назначена';
+
+  @override
+  String get courierStepAccepted => 'Принята';
+
+  @override
+  String get courierStepOnTheWay => 'В пути';
+
+  @override
+  String get courierStepDelivered => 'Доставлена';
+
+  @override
+  String get courierNoWish => 'Пожеланий по времени нет';
+
+  @override
+  String courierPickupAtPoint(String number) {
+    return 'Пакет № $number ждёт в пункте передачи у базара.';
+  }
+
+  @override
+  String get courierCallShopper => 'Позвонить сборщику';
+
+  @override
+  String get courierRecipientTitle => 'Получатель';
+
+  @override
+  String get courierLandmarkLabel => 'Ориентир';
+
+  @override
+  String get courierNoteLabel => 'Курьеру';
+
+  @override
+  String get courierPaymentTitle => 'Оплата';
+
+  @override
+  String get courierCollectLabel => 'Получить наличными';
+
+  @override
+  String get courierPaidOnlineLabel => 'Оплачено онлайн';
+
+  @override
+  String get courierNoCash => 'Деньги не брать';
+
+  @override
+  String get courierWaitOperator => 'Ждём решения оператора';
+
+  @override
+  String get courierDeliveredAgain => 'Отправить «Доставлено» снова';
+
+  @override
+  String get courierOrderGoneHint =>
+      'Её отменили или передали другому курьеру.';
 
   @override
   String get errorDeliveryStateConflict =>

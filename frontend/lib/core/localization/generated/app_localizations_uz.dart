@@ -2789,7 +2789,7 @@ class AppLocalizationsUz extends AppLocalizations {
       'Bu sahifada yetkazishlar qolmadi. Oldingi sahifaga o\'ting.';
 
   @override
-  String get courierAccept => 'Qabul qilish';
+  String get courierAccept => 'Yetkazishni qabul qilish';
 
   @override
   String get courierStart => 'Yo\'lga chiqish';
@@ -2802,39 +2802,14 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get courierRequestPending =>
-      'Mijoz buyurtmani bekor qilishni so\'ramoqda. Operator hal qilmaguncha yo\'lga chiqmang.';
-
-  @override
-  String courierRecipient(String name) {
-    return 'Qabul qiluvchi: $name';
-  }
-
-  @override
-  String callRecipient(String phone) {
-    return 'Qabul qiluvchiga qo\'ng\'iroq: $phone';
-  }
-
-  @override
-  String callShopper(String phone) {
-    return 'Yig\'uvchiga qo\'ng\'iroq: $phone';
-  }
+      'Operator hal qilmaguncha yo\'lga chiqmang';
 
   @override
   String get courierPickupFromShopper =>
-      'Topshirish punkti yo\'q — buyurtmani yig\'uvchidan oling.';
+      'Topshirish joyi yo\'q — paketni bozorda yig\'uvchidan oling.';
 
   @override
-  String courierLandmark(String landmark) {
-    return 'Mo\'ljal: $landmark';
-  }
-
-  @override
-  String get courierAddressTitle => 'Yetkazish manzili';
-
-  @override
-  String courierNoteLine(String note) {
-    return 'Kuryerga: $note';
-  }
+  String get courierAddressTitle => 'Manzil';
 
   @override
   String get courierOpenYandex => 'Yandexda ochish';
@@ -2859,23 +2834,8 @@ class AppLocalizationsUz extends AppLocalizations {
   String get courierPaidOnline => 'Onlayn to\'langan — pul olinmaydi';
 
   @override
-  String courierAssignedAt(String time) {
-    return 'Tayinlangan: $time';
-  }
-
-  @override
-  String courierAcceptedAt(String time) {
-    return 'Qabul qilingan: $time';
-  }
-
-  @override
   String courierStartedAt(String time) {
     return 'Yo\'lga chiqilgan: $time';
-  }
-
-  @override
-  String courierDueBy(String time) {
-    return '$time gacha yetkazing';
   }
 
   @override
@@ -2927,10 +2887,87 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get courierOrderGone => 'Bu yetkazish endi sizda emas.';
+  String get courierOrderGone => 'Bu yetkazish endi sizda emas';
 
   @override
   String get courierBack => 'Yetkazishlarimga';
+
+  @override
+  String get courierStatusNew => 'Yangi yetkazish';
+
+  @override
+  String get courierStatusNewHint =>
+      'Manzilni ko\'rib chiqing va yetkazishni qabul qiling';
+
+  @override
+  String get courierStatusAccepted => 'Yetkazish qabul qilindi';
+
+  @override
+  String courierStatusAcceptedHint(String number) {
+    return '№ $number paketni oling va yo\'lga chiqing';
+  }
+
+  @override
+  String get courierStatusRequest => 'Mijoz bekor qilishni so\'ramoqda';
+
+  @override
+  String courierOnTheWayHint(String time, String due) {
+    return 'Yo\'lga chiqildi: $time · $due gacha yetkazing';
+  }
+
+  @override
+  String get courierStepAssigned => 'Tayinlandi';
+
+  @override
+  String get courierStepAccepted => 'Qabul qilindi';
+
+  @override
+  String get courierStepOnTheWay => 'Yo\'lda';
+
+  @override
+  String get courierStepDelivered => 'Yetkazildi';
+
+  @override
+  String get courierNoWish => 'Vaqt bo\'yicha istak yo\'q';
+
+  @override
+  String courierPickupAtPoint(String number) {
+    return '№ $number paket bozor yonidagi topshirish joyida kutmoqda.';
+  }
+
+  @override
+  String get courierCallShopper => 'Yig\'uvchiga qo\'ng\'iroq qilish';
+
+  @override
+  String get courierRecipientTitle => 'Qabul qiluvchi';
+
+  @override
+  String get courierLandmarkLabel => 'Mo\'ljal';
+
+  @override
+  String get courierNoteLabel => 'Kuryer uchun';
+
+  @override
+  String get courierPaymentTitle => 'To\'lov';
+
+  @override
+  String get courierCollectLabel => 'Naqd pul olish';
+
+  @override
+  String get courierPaidOnlineLabel => 'Onlayn to\'langan';
+
+  @override
+  String get courierNoCash => 'Pul olinmaydi';
+
+  @override
+  String get courierWaitOperator => 'Operator qarorini kutyapmiz';
+
+  @override
+  String get courierDeliveredAgain => '«Yetkazildi»ni qayta yuborish';
+
+  @override
+  String get courierOrderGoneHint =>
+      'U bekor qilingan yoki boshqa kuryerga berilgan.';
 
   @override
   String get errorDeliveryStateConflict =>

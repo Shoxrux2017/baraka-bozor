@@ -77,6 +77,7 @@ final class CourierOrder {
     required this.canAccept,
     required this.canStart,
     required this.shopperPhone,
+    required this.handoffPoint,
   });
 
   final String id;
@@ -102,6 +103,11 @@ final class CourierOrder {
   /// without a handoff point (`BR-DEL-006`); `null` otherwise, and also when
   /// the server knows no such Shopper.
   final String? shopperPhone;
+
+  /// Whether the package waits at the handoff point: the server leaves the
+  /// Shopper's phone out of the answer then (`docs/09` section 36). Sent as
+  /// `null` or as a phone, the Shopper has it instead.
+  final bool handoffPoint;
 
   /// Whether the Courier still holds the delivery.
   bool get held => recipient != null;
