@@ -241,7 +241,20 @@ void main() {
     expect(shopper.actions, isEmpty);
 
     await tester.enterText(byKey('purchase-quantity'), '1,8');
-    await tester.enterText(byKey('purchase-price'), '16 500');
+    await tester.enterText(byKey('purchase-price'), '16500');
+    await tester.pump();
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(
+              of: byKey('purchase-price'),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .controller
+          .text,
+      '16 500',
+    );
     await tapAndSettle(tester, byKey('purchase-save'));
 
     expect(shopper.actions, <String>[
@@ -404,6 +417,13 @@ void main() {
     );
     expect(outlinedAmber(tester, 'purchase-price'), isTrue);
     expect(outlinedAmber(tester, 'purchase-quantity'), isFalse);
+    // Side by side the price label is short, and the two fields align.
+    expect(find.text(words.purchasePriceShort(words.unitKg)), findsOneWidget);
+    expect(find.text(words.purchasePriceFor(words.unitKg)), findsNothing);
+    expect(
+      tester.getBottomLeft(byKey('purchase-price')).dy,
+      tester.getBottomLeft(byKey('purchase-quantity')).dy,
+    );
     expect(find.text(words.askNotePlaceholder), findsOneWidget);
     expect(find.text('0 / 300'), findsOneWidget);
     expect(byKey('purchase-save'), findsNothing);
@@ -962,6 +982,13 @@ void main() {
       findsOneWidget,
     );
     expect(find.text(words.replaceUnitHint(words.unitKg)), findsOneWidget);
+    expect(
+      find.text("Bir xil o'lchov birligidagi mahsulotlar: ${words.unitKg}"),
+      findsOneWidget,
+      reason: 'no doubled period after the unit',
+    );
+    // One page: no bar saying "page 1 of 1".
+    expect(byKey('next-page'), findsNothing);
 
     await tester.enterText(byKey('replace-search'), 'olcha');
     await tester.testTextInput.receiveAction(TextInputAction.search);
@@ -978,6 +1005,10 @@ void main() {
       findsOneWidget,
     );
     expect(inSheet('Olcha pomidor'), findsOneWidget);
+    expect(
+      inSheet(words.shopperMarketPer(money(15500), words.unitKg)),
+      findsOneWidget,
+    );
     expect(
       find.descendant(of: sheet, matching: find.byType(ProductImage)),
       findsOneWidget,
@@ -1239,6 +1270,7 @@ void main() {
     router.go('/shopper/done/1001');
     await tester.pumpAndSettle();
     expect(byKey('shopper-done-title'), findsOneWidget);
+    expect(find.byType(AppBar), findsNothing);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(byKey('shopper-order-$shopperOrderA'), findsOneWidget);

@@ -61,7 +61,7 @@ class ShopperOrderScreen extends ConsumerWidget {
       appBar: kitAppBar(
         title: shown == null
             ? l10n.shellShopper
-            : l10n.boardOrderNumber('${shown.orderNumber}'),
+            : l10n.customerOrderTitle(shown.orderNumber),
       ),
       body: SafeArea(
         child: Column(
@@ -739,6 +739,7 @@ class _Complete extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 10),
             child: Text(
               l10n.shopperResolveFirst(open),
+              textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 12, color: KitColors.muted),
             ),
           ),

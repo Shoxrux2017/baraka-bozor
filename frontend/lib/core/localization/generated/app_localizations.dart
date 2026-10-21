@@ -4316,6 +4316,12 @@ abstract class AppLocalizations {
   /// **'1 {unit} narxi (to\'langan)'**
   String purchasePriceFor(String unit);
 
+  /// No description provided for @purchasePriceShort.
+  ///
+  /// In uz, this message translates to:
+  /// **'1 {unit} narxi'**
+  String purchasePriceShort(String unit);
+
   /// No description provided for @purchaseExcess.
   ///
   /// In uz, this message translates to:
@@ -4487,7 +4493,7 @@ abstract class AppLocalizations {
   /// No description provided for @replaceUnitHint.
   ///
   /// In uz, this message translates to:
-  /// **'Bir xil o\'lchov birligidagi mahsulotlar: {unit}.'**
+  /// **'Bir xil o\'lchov birligidagi mahsulotlar: {unit}'**
   String replaceUnitHint(String unit);
 
   /// No description provided for @replaceNoneHint.

@@ -79,12 +79,13 @@ class ShopperOrdersScreen extends ConsumerWidget {
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: _OrderCard(row: row, now: now),
                               ),
-                            PaginationBar(
-                              page: page,
-                              onPage: ref
-                                  .read(shopperOrdersPageProvider.notifier)
-                                  .goToPage,
-                            ),
+                            if (page.lastPage > 1 || page.hasPrevious)
+                              PaginationBar(
+                                page: page,
+                                onPage: ref
+                                    .read(shopperOrdersPageProvider.notifier)
+                                    .goToPage,
+                              ),
                           ],
                         ),
                   error: (Object error, StackTrace _) => Padding(
@@ -194,7 +195,7 @@ class _OrderCard extends StatelessWidget {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: <Widget>[
                         Text(
-                          l10n.boardOrderNumber('${row.orderNumber}'),
+                          l10n.customerOrderTitle(row.orderNumber),
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,

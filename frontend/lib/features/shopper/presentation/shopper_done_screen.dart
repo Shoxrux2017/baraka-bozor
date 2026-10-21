@@ -8,7 +8,6 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
-import '../../../core/widgets/kit_app_bar.dart';
 
 /// What follows a completed shopping (`docs/04` section 22, W3-16): the
 /// order is the Shopper's no more, so the screen stands on its own, puts the
@@ -32,10 +31,6 @@ class ShopperDoneScreen extends StatelessWidget {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: kitAppBar(
-          title: l10n.shellShopper,
-          automaticallyImplyLeading: false,
-        ),
         body: SafeArea(
           child: Column(
             children: <Widget>[

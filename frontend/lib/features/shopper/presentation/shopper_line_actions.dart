@@ -337,6 +337,33 @@ class _LabeledField extends StatelessWidget {
   }
 }
 
+/// Groups the digits of a price by three from the right with spaces as the
+/// Shopper types, and keeps the cursor at the end.
+class _GroupedDigitsFormatter extends TextInputFormatter {
+  const _GroupedDigitsFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final String digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    final StringBuffer grouped = StringBuffer();
+    for (int i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) {
+        grouped.write(' ');
+      }
+      grouped.write(digits[i]);
+    }
+    final String text = grouped.toString();
+
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+}
+
 /// A price field in sum, digits only, with the groups spaced as typed; the
 /// kit's field with its [label] above. [warn] outlines it amber.
 class PriceField extends StatelessWidget {
@@ -374,6 +401,7 @@ class PriceField extends StatelessWidget {
         inputFormatters: <TextInputFormatter>[
           FilteringTextInputFormatter.allow(RegExp(r'[0-9 ]')),
           LengthLimitingTextInputFormatter(14),
+          const _GroupedDigitsFormatter(),
         ],
         decoration: _fieldDecoration(
           suffix: MoneyFormat.currency(interfaceLanguage(context)),
@@ -854,10 +882,13 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
             : l10n.cartQuantityWhole,
       ),
     );
+    final bool sideBySide = asking && !kitLargeText(context);
     final Widget priceField = PriceField(
       fieldKey: 'purchase-price',
       controller: _price,
-      label: l10n.purchasePriceFor(unit),
+      label: sideBySide
+          ? l10n.purchasePriceShort(unit)
+          : l10n.purchasePriceFor(unit),
       required: priceRequired,
       enabled: !locked,
       helper: priceRequired ? null : l10n.purchasePriceOptional,
@@ -928,9 +959,9 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
                 ),
               ],
               const SizedBox(height: 16),
-              if (asking && !kitLargeText(context))
+              if (sideBySide)
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: <Widget>[
                     Expanded(child: quantityField),
                     const SizedBox(width: 12),

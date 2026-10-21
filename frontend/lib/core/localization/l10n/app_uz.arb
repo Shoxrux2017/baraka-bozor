@@ -1474,6 +1474,14 @@
       }
     }
   },
+  "purchasePriceShort": "1 {unit} narxi",
+  "@purchasePriceShort": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
   "purchaseExcess": "{quantity} dan ortig'ini mijoz to'lamaydi.",
   "@purchaseExcess": {
     "placeholders": {
@@ -1587,7 +1595,7 @@
     }
   },
   "replaceMarket": "bozor narxi",
-  "replaceUnitHint": "Bir xil o'lchov birligidagi mahsulotlar: {unit}.",
+  "replaceUnitHint": "Bir xil o'lchov birligidagi mahsulotlar: {unit}",
   "@replaceUnitHint": {
     "placeholders": {
       "unit": {

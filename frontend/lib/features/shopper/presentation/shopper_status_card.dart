@@ -335,9 +335,9 @@ class _LineProgress extends StatelessWidget {
                     child: Text(
                       entry.$2,
                       style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: KitColors.warningDark,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: KitColors.ink2,
                       ),
                     ),
                   ),

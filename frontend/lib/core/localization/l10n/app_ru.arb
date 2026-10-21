@@ -1429,6 +1429,14 @@
       }
     }
   },
+  "purchasePriceShort": "Цена за {unit}",
+  "@purchasePriceShort": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
   "purchaseExcess": "Лишнее сверх {quantity} клиент не оплачивает.",
   "@purchaseExcess": {
     "placeholders": {
@@ -1542,7 +1550,7 @@
     }
   },
   "replaceMarket": "рыночная",
-  "replaceUnitHint": "Показываем товары с той же единицей: {unit}.",
+  "replaceUnitHint": "Показываем товары с той же единицей: {unit}",
   "@replaceUnitHint": {
     "placeholders": {
       "unit": {

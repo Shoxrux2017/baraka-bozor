@@ -185,10 +185,12 @@ class _ShopperReplaceScreenState extends ConsumerState<ShopperReplaceScreen> {
                                 ),
                               ),
                             ),
-                          PaginationBar(
-                            page: page,
-                            onPage: (int page) => setState(() => _page = page),
-                          ),
+                          if (page.lastPage > 1 || page.hasPrevious)
+                            PaginationBar(
+                              page: page,
+                              onPage: (int page) =>
+                                  setState(() => _page = page),
+                            ),
                         ],
                       ),
                 error: (Object error, StackTrace _) => Padding(
@@ -466,8 +468,9 @@ class _SubstituteSheetState extends ConsumerState<_SubstituteSheet> {
               ShopperSheetHeader(
                 imageUrl: choice.imageUrl,
                 name: ru ? choice.nameRu : choice.nameUz,
-                detail: l10n.itemMarketPrice(
+                detail: l10n.shopperMarketPer(
                   MoneyFormat.uzs(choice.marketPriceUzs, language),
+                  CatalogLabels.unit(l10n, choice.unit),
                 ),
               ),
               const SizedBox(height: 16),

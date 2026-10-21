@@ -2432,6 +2432,11 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String purchasePriceShort(String unit) {
+    return '1 $unit narxi';
+  }
+
+  @override
   String purchaseExcess(String quantity) {
     return '$quantity dan ortig\'ini mijoz to\'lamaydi.';
   }
@@ -2541,7 +2546,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String replaceUnitHint(String unit) {
-    return 'Bir xil o\'lchov birligidagi mahsulotlar: $unit.';
+    return 'Bir xil o\'lchov birligidagi mahsulotlar: $unit';
   }
 
   @override

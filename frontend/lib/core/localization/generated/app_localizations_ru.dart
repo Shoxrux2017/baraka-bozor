@@ -2459,6 +2459,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String purchasePriceShort(String unit) {
+    return 'Цена за $unit';
+  }
+
+  @override
   String purchaseExcess(String quantity) {
     return 'Лишнее сверх $quantity клиент не оплачивает.';
   }
@@ -2568,7 +2573,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String replaceUnitHint(String unit) {
-    return 'Показываем товары с той же единицей: $unit.';
+    return 'Показываем товары с той же единицей: $unit';
   }
 
   @override

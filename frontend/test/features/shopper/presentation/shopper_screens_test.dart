@@ -129,10 +129,15 @@ void main() {
     );
     expect(within(b, words.shopperOpenOf(1, 2)), findsOneWidget);
     expect(within(a, words.shopperDeliveryWish('Kechqurun')), findsOneWidget);
+    expect(within(a, words.customerOrderTitle(1001)), findsOneWidget);
+    expect(within(a, words.boardOrderNumber('1001')), findsNothing);
+    // One page: no bar saying "page 1 of 1".
+    expect(byKey('next-page'), findsNothing);
+    expect(byKey('previous-page'), findsNothing);
 
     await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
     expect(byKey('shopper-order'), findsOneWidget);
-    expect(find.text(words.boardOrderNumber('1001')), findsOneWidget);
+    expect(find.text(words.customerOrderTitle(1001)), findsOneWidget);
   });
 
   testWidgets('no orders says so', (WidgetTester tester) async {
@@ -809,6 +814,23 @@ void main() {
     expect(inStatus(words.shopperLegendDone(2)), findsOneWidget);
     expect(inStatus(words.shopperLegendWaiting(1)), findsOneWidget);
     expect(inStatus(words.shopperLegendToBuy(2)), findsOneWidget);
+    for (final String text in <String>[
+      words.shopperLegendDone(2),
+      words.shopperLegendWaiting(1),
+      words.shopperLegendToBuy(2),
+    ]) {
+      final TextStyle style = tester
+          .widget<Text>(
+            find.descendant(
+              of: byKey('shopper-order-status'),
+              matching: find.text(text),
+            ),
+          )
+          .style!;
+      expect(style.color, KitColors.ink2);
+      expect(style.fontSize, 11);
+      expect(style.fontWeight, FontWeight.w500);
+    }
 
     // A count of zero is left out of the legend.
     shopper.details[shopperOrderA] = shopperOrder(
@@ -839,6 +861,12 @@ void main() {
     await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
 
     expect(find.text(l10n(tester).shopperResolveFirst(3)), findsOneWidget);
+    expect(
+      tester
+          .widget<Text>(find.text(l10n(tester).shopperResolveFirst(3)))
+          .textAlign,
+      TextAlign.center,
+    );
     expect(
       tester.widget<FilledButton>(byKey('shopper-complete')).onPressed,
       isNull,
