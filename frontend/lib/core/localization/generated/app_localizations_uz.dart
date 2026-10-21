@@ -2303,6 +2303,84 @@ class AppLocalizationsUz extends AppLocalizations {
   String get shopperOpenToAccept => 'Oching va buyurtmani qabul qiling';
 
   @override
+  String get shopperStatusNew => 'Yangi buyurtma';
+
+  @override
+  String get shopperStatusNewHint =>
+      'Mahsulotlarni ko\'rib chiqing va buyurtmani qabul qiling';
+
+  @override
+  String get shopperStatusAccepted => 'Buyurtma qabul qilindi';
+
+  @override
+  String get shopperStatusShopping => 'Yig\'ish davom etmoqda';
+
+  @override
+  String shopperShoppingHint(String when, int open, int total) {
+    return 'Boshlandi: $when · qoldi $open / $total';
+  }
+
+  @override
+  String get shopperStatusResolved => 'Hammasi hal qilindi';
+
+  @override
+  String shopperResolvedHint(int bought, int removed) {
+    return 'Sotib olindi: $bought · olib tashlandi: $removed · yakunlash mumkin';
+  }
+
+  @override
+  String get shopperStepAssigned => 'Tayinlandi';
+
+  @override
+  String get shopperStepAccepted => 'Qabul qilindi';
+
+  @override
+  String get shopperStepShopping => 'Yig\'ish';
+
+  @override
+  String get shopperStepDone => 'Yig\'ildi';
+
+  @override
+  String shopperLegendDone(int count) {
+    return 'Tayyor: $count';
+  }
+
+  @override
+  String shopperLegendWaiting(int count) {
+    return 'Javob kutilmoqda: $count';
+  }
+
+  @override
+  String shopperLegendToBuy(int count) {
+    return 'Sotib olish: $count';
+  }
+
+  @override
+  String get shopperCallCustomer => 'Mijozga qo\'ng\'iroq qilish';
+
+  @override
+  String get shopperPhoneLater =>
+      'Mijozning telefoni yig\'ishni boshlaganingizda ko\'rinadi.';
+
+  @override
+  String shopperResolveFirst(int count) {
+    return 'Avval barcha mahsulotlarni hal qiling · qoldi: $count';
+  }
+
+  @override
+  String get shopperCompleteBought => 'Sotib olindi';
+
+  @override
+  String get shopperCompleteRemoved => 'Olib tashlandi';
+
+  @override
+  String get completeConfirm => 'Yakunlash';
+
+  @override
+  String get shopperOrderGoneHint =>
+      'U bekor qilingan yoki boshqa yig\'uvchiga berilgan.';
+
+  @override
   String get shopperStartAtMarket =>
       'Bozorga yetganingizda yig\'ishni boshlang';
 
@@ -2314,30 +2392,10 @@ class AppLocalizationsUz extends AppLocalizations {
       'O\'zingiz uchun mahsulot buyurtma qilish';
 
   @override
-  String shopperAssignedAt(String time) {
-    return 'Tayinlandi: $time';
-  }
-
-  @override
-  String shopperAcceptedAt(String time) {
-    return 'Qabul qilindi: $time';
-  }
-
-  @override
-  String shopperStartedAt(String time) {
-    return 'Yig\'ish boshlandi: $time';
-  }
-
-  @override
-  String get shopperAccept => 'Qabul qilish';
+  String get shopperAccept => 'Buyurtmani qabul qilish';
 
   @override
   String get shopperStart => 'Yig\'ishni boshlash';
-
-  @override
-  String callCustomer(String phone) {
-    return 'Mijozga qo\'ng\'iroq: $phone';
-  }
 
   @override
   String callFailed(String phone) {
@@ -2515,7 +2573,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get errorShoppingIncomplete => 'Hali hal qilinmagan mahsulotlar bor.';
 
   @override
-  String get shopperOrderGone => 'Bu buyurtma endi sizda emas.';
+  String get shopperOrderGone => 'Bu buyurtma endi sizda emas';
 
   @override
   String get shopperOrderCancelled =>

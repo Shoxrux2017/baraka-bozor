@@ -4106,6 +4106,132 @@ abstract class AppLocalizations {
   /// **'Oching va buyurtmani qabul qiling'**
   String get shopperOpenToAccept;
 
+  /// No description provided for @shopperStatusNew.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi buyurtma'**
+  String get shopperStatusNew;
+
+  /// No description provided for @shopperStatusNewHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotlarni ko\'rib chiqing va buyurtmani qabul qiling'**
+  String get shopperStatusNewHint;
+
+  /// No description provided for @shopperStatusAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma qabul qilindi'**
+  String get shopperStatusAccepted;
+
+  /// No description provided for @shopperStatusShopping.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish davom etmoqda'**
+  String get shopperStatusShopping;
+
+  /// No description provided for @shopperShoppingHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshlandi: {when} · qoldi {open} / {total}'**
+  String shopperShoppingHint(String when, int open, int total);
+
+  /// No description provided for @shopperStatusResolved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hammasi hal qilindi'**
+  String get shopperStatusResolved;
+
+  /// No description provided for @shopperResolvedHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib olindi: {bought} · olib tashlandi: {removed} · yakunlash mumkin'**
+  String shopperResolvedHint(int bought, int removed);
+
+  /// No description provided for @shopperStepAssigned.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayinlandi'**
+  String get shopperStepAssigned;
+
+  /// No description provided for @shopperStepAccepted.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qabul qilindi'**
+  String get shopperStepAccepted;
+
+  /// No description provided for @shopperStepShopping.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish'**
+  String get shopperStepShopping;
+
+  /// No description provided for @shopperStepDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ildi'**
+  String get shopperStepDone;
+
+  /// No description provided for @shopperLegendDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor: {count}'**
+  String shopperLegendDone(int count);
+
+  /// No description provided for @shopperLegendWaiting.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob kutilmoqda: {count}'**
+  String shopperLegendWaiting(int count);
+
+  /// No description provided for @shopperLegendToBuy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib olish: {count}'**
+  String shopperLegendToBuy(int count);
+
+  /// No description provided for @shopperCallCustomer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozga qo\'ng\'iroq qilish'**
+  String get shopperCallCustomer;
+
+  /// No description provided for @shopperPhoneLater.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozning telefoni yig\'ishni boshlaganingizda ko\'rinadi.'**
+  String get shopperPhoneLater;
+
+  /// No description provided for @shopperResolveFirst.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval barcha mahsulotlarni hal qiling · qoldi: {count}'**
+  String shopperResolveFirst(int count);
+
+  /// No description provided for @shopperCompleteBought.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotib olindi'**
+  String get shopperCompleteBought;
+
+  /// No description provided for @shopperCompleteRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib tashlandi'**
+  String get shopperCompleteRemoved;
+
+  /// No description provided for @completeConfirm.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yakunlash'**
+  String get completeConfirm;
+
+  /// No description provided for @shopperOrderGoneHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'U bekor qilingan yoki boshqa yig\'uvchiga berilgan.'**
+  String get shopperOrderGoneHint;
+
   /// No description provided for @shopperStartAtMarket.
   ///
   /// In uz, this message translates to:
@@ -4124,28 +4250,10 @@ abstract class AppLocalizations {
   /// **'O\'zingiz uchun mahsulot buyurtma qilish'**
   String get staffCustomerModeHint;
 
-  /// No description provided for @shopperAssignedAt.
-  ///
-  /// In uz, this message translates to:
-  /// **'Tayinlandi: {time}'**
-  String shopperAssignedAt(String time);
-
-  /// No description provided for @shopperAcceptedAt.
-  ///
-  /// In uz, this message translates to:
-  /// **'Qabul qilindi: {time}'**
-  String shopperAcceptedAt(String time);
-
-  /// No description provided for @shopperStartedAt.
-  ///
-  /// In uz, this message translates to:
-  /// **'Yig\'ish boshlandi: {time}'**
-  String shopperStartedAt(String time);
-
   /// No description provided for @shopperAccept.
   ///
   /// In uz, this message translates to:
-  /// **'Qabul qilish'**
+  /// **'Buyurtmani qabul qilish'**
   String get shopperAccept;
 
   /// No description provided for @shopperStart.
@@ -4153,12 +4261,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Yig\'ishni boshlash'**
   String get shopperStart;
-
-  /// No description provided for @callCustomer.
-  ///
-  /// In uz, this message translates to:
-  /// **'Mijozga qo\'ng\'iroq: {phone}'**
-  String callCustomer(String phone);
 
   /// No description provided for @callFailed.
   ///
@@ -4439,7 +4541,7 @@ abstract class AppLocalizations {
   /// No description provided for @shopperOrderGone.
   ///
   /// In uz, this message translates to:
-  /// **'Bu buyurtma endi sizda emas.'**
+  /// **'Bu buyurtma endi sizda emas'**
   String get shopperOrderGone;
 
   /// No description provided for @shopperOrderCancelled.

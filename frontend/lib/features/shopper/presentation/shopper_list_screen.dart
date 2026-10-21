@@ -20,6 +20,7 @@ import '../../../core/widgets/periodic_refresh.dart';
 import '../../shells/presentation/staff_area_menu.dart';
 import '../application/shopper_orders_controllers.dart';
 import '../domain/shopper_orders.dart';
+import 'shopper_status_card.dart';
 
 /// Whether a screen's load has settled on data, so its periodic refresh
 /// may run (`DL-54` (15)).
@@ -238,9 +239,13 @@ class _OrderCard extends StatelessWidget {
             ),
             if (started && row.itemCount > 0) ...<Widget>[
               const SizedBox(height: 12),
-              _Segments(
-                done: row.itemCount - row.openItemCount,
-                of: row.itemCount,
+              SegmentBar(
+                segments: <Color>[
+                  for (int index = 0; index < row.itemCount; index++)
+                    index < row.itemCount - row.openItemCount
+                        ? KitColors.primary
+                        : KitColors.line,
+                ],
               ),
             ],
             if (row.deliveryTimeNote != null) ...<Widget>[
@@ -332,36 +337,6 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
         ),
-      ],
-    );
-  }
-}
-
-/// One segment per line of the order: the first [done] green, the rest grey.
-class _Segments extends StatelessWidget {
-  const _Segments({required this.done, required this.of});
-
-  final int done;
-  final int of;
-
-  @override
-  Widget build(BuildContext context) {
-    final double gap = of <= 12 ? 4 : 2;
-
-    return Row(
-      children: <Widget>[
-        for (int index = 0; index < of; index++) ...<Widget>[
-          if (index > 0) SizedBox(width: gap),
-          Expanded(
-            child: Container(
-              height: 6,
-              decoration: BoxDecoration(
-                color: index < done ? KitColors.primary : KitColors.line,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }

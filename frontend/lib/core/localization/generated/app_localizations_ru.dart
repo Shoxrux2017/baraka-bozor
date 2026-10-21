@@ -2333,6 +2333,83 @@ class AppLocalizationsRu extends AppLocalizations {
   String get shopperOpenToAccept => 'Откройте и примите заказ';
 
   @override
+  String get shopperStatusNew => 'Новый заказ';
+
+  @override
+  String get shopperStatusNewHint => 'Посмотрите товары и примите заказ';
+
+  @override
+  String get shopperStatusAccepted => 'Заказ принят';
+
+  @override
+  String get shopperStatusShopping => 'Идёт сборка';
+
+  @override
+  String shopperShoppingHint(String when, int open, int total) {
+    return 'Начата $when · осталось $open из $total';
+  }
+
+  @override
+  String get shopperStatusResolved => 'Всё решено';
+
+  @override
+  String shopperResolvedHint(int bought, int removed) {
+    return 'Куплено $bought · убрано $removed · можно завершать';
+  }
+
+  @override
+  String get shopperStepAssigned => 'Назначен';
+
+  @override
+  String get shopperStepAccepted => 'Принят';
+
+  @override
+  String get shopperStepShopping => 'Сборка';
+
+  @override
+  String get shopperStepDone => 'Собран';
+
+  @override
+  String shopperLegendDone(int count) {
+    return 'Готово $count';
+  }
+
+  @override
+  String shopperLegendWaiting(int count) {
+    return 'Ждём ответа $count';
+  }
+
+  @override
+  String shopperLegendToBuy(int count) {
+    return 'Купить $count';
+  }
+
+  @override
+  String get shopperCallCustomer => 'Позвонить клиенту';
+
+  @override
+  String get shopperPhoneLater =>
+      'Телефон клиента появится, когда вы начнёте сборку.';
+
+  @override
+  String shopperResolveFirst(int count) {
+    return 'Сначала решите все товары · осталось $count';
+  }
+
+  @override
+  String get shopperCompleteBought => 'Куплено';
+
+  @override
+  String get shopperCompleteRemoved => 'Убрано';
+
+  @override
+  String get completeConfirm => 'Завершить';
+
+  @override
+  String get shopperOrderGoneHint =>
+      'Его отменили или передали другому сборщику.';
+
+  @override
   String get shopperStartAtMarket => 'Начните сборку, когда будете на базаре';
 
   @override
@@ -2342,30 +2419,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get staffCustomerModeHint => 'Заказать продукты для себя';
 
   @override
-  String shopperAssignedAt(String time) {
-    return 'Назначен: $time';
-  }
-
-  @override
-  String shopperAcceptedAt(String time) {
-    return 'Принят: $time';
-  }
-
-  @override
-  String shopperStartedAt(String time) {
-    return 'Сборка начата: $time';
-  }
-
-  @override
-  String get shopperAccept => 'Принять';
+  String get shopperAccept => 'Принять заказ';
 
   @override
   String get shopperStart => 'Начать сборку';
-
-  @override
-  String callCustomer(String phone) {
-    return 'Позвонить клиенту: $phone';
-  }
 
   @override
   String callFailed(String phone) {
@@ -2542,7 +2599,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get errorShoppingIncomplete => 'Есть ещё нерешённые позиции.';
 
   @override
-  String get shopperOrderGone => 'Этот заказ больше не ваш.';
+  String get shopperOrderGone => 'Этот заказ больше не ваш';
 
   @override
   String get shopperOrderCancelled => 'Заказ отменён: покупать больше нечего.';

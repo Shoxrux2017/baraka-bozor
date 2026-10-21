@@ -1367,43 +1367,83 @@
     }
   },
   "shopperOpenToAccept": "Oching va buyurtmani qabul qiling",
+  "shopperStatusNew": "Yangi buyurtma",
+  "shopperStatusNewHint": "Mahsulotlarni ko'rib chiqing va buyurtmani qabul qiling",
+  "shopperStatusAccepted": "Buyurtma qabul qilindi",
+  "shopperStatusShopping": "Yig'ish davom etmoqda",
+  "shopperShoppingHint": "Boshlandi: {when} · qoldi {open} / {total}",
+  "@shopperShoppingHint": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      },
+      "open": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperStatusResolved": "Hammasi hal qilindi",
+  "shopperResolvedHint": "Sotib olindi: {bought} · olib tashlandi: {removed} · yakunlash mumkin",
+  "@shopperResolvedHint": {
+    "placeholders": {
+      "bought": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperStepAssigned": "Tayinlandi",
+  "shopperStepAccepted": "Qabul qilindi",
+  "shopperStepShopping": "Yig'ish",
+  "shopperStepDone": "Yig'ildi",
+  "shopperLegendDone": "Tayyor: {count}",
+  "@shopperLegendDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperLegendWaiting": "Javob kutilmoqda: {count}",
+  "@shopperLegendWaiting": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperLegendToBuy": "Sotib olish: {count}",
+  "@shopperLegendToBuy": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperCallCustomer": "Mijozga qo'ng'iroq qilish",
+  "shopperPhoneLater": "Mijozning telefoni yig'ishni boshlaganingizda ko'rinadi.",
+  "shopperResolveFirst": "Avval barcha mahsulotlarni hal qiling · qoldi: {count}",
+  "@shopperResolveFirst": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperCompleteBought": "Sotib olindi",
+  "shopperCompleteRemoved": "Olib tashlandi",
+  "completeConfirm": "Yakunlash",
+  "shopperOrderGoneHint": "U bekor qilingan yoki boshqa yig'uvchiga berilgan.",
   "shopperStartAtMarket": "Bozorga yetganingizda yig'ishni boshlang",
   "shopperEmptyTitle": "Hozircha buyurtma yo'q",
   "staffCustomerModeHint": "O'zingiz uchun mahsulot buyurtma qilish",
-  "shopperAssignedAt": "Tayinlandi: {time}",
-  "@shopperAssignedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "shopperAcceptedAt": "Qabul qilindi: {time}",
-  "@shopperAcceptedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "shopperStartedAt": "Yig'ish boshlandi: {time}",
-  "@shopperStartedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "shopperAccept": "Qabul qilish",
+  "shopperAccept": "Buyurtmani qabul qilish",
   "shopperStart": "Yig'ishni boshlash",
-  "callCustomer": "Mijozga qo'ng'iroq: {phone}",
-  "@callCustomer": {
-    "placeholders": {
-      "phone": {
-        "type": "String"
-      }
-    }
-  },
   "callFailed": "Qo'ng'iroq ilovasi ochilmadi. Raqamni qo'lda tering: {phone}",
   "@callFailed": {
     "placeholders": {
@@ -1547,7 +1587,7 @@
   "errorApprovalNotNeeded": "Bu narx uchun mijozdan so'rash shart emas — sotib olavering.",
   "errorSubstitutionNotAllowed": "Mijoz bu mahsulotni almashtirishga rozi emas.",
   "errorShoppingIncomplete": "Hali hal qilinmagan mahsulotlar bor.",
-  "shopperOrderGone": "Bu buyurtma endi sizda emas.",
+  "shopperOrderGone": "Bu buyurtma endi sizda emas",
   "shopperOrderCancelled": "Buyurtma bekor qilindi: sotib olinadigan narsa qolmadi.",
   "substituteUseBuy": "Bu almashtirish allaqachon tasdiqlangan. Narxni «Sotib olish» orqali kiriting — kerak bo'lsa, u yerda mijozdan so'rash taklif qilinadi.",
   "questionReplacementPrice": "O'rniga olinadigan «{name}»: narxi {price}. Shu narxga rozimisiz?",

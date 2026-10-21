@@ -5,6 +5,7 @@ import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_empty_state.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/shopper/data/shopper_orders_api.dart';
 import 'package:baraka_bozor/features/shopper/domain/price_guard.dart';
@@ -440,7 +441,26 @@ void main() {
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
 
-    expect(byKey('shopper-order-gone'), findsOneWidget);
+    final Finder gone = byKey('shopper-order-gone');
+    expect(gone, findsOneWidget);
+    expect(tester.widget(gone), isA<KitEmptyState>());
+    final AppLocalizations words = l10n(tester);
+    for (final String text in <String>[
+      words.shopperOrderGone,
+      words.shopperOrderGoneHint,
+    ]) {
+      expect(
+        find.descendant(of: gone, matching: find.text(text)),
+        findsOneWidget,
+      );
+    }
+    expect(
+      find.descendant(
+        of: byKey('shopper-order-gone-back'),
+        matching: find.text(words.doneBack),
+      ),
+      findsOneWidget,
+    );
     expect(byKey('retry-load'), findsNothing);
     await tapAndSettle(tester, byKey('shopper-order-gone-back'));
     expect(byKey('shopper-order-$shopperOrderA'), findsOneWidget);
@@ -840,6 +860,12 @@ void main() {
       'sure answer is sent again under its key, without asking again', (
     WidgetTester tester,
   ) async {
+    // The page the Shopper holds says all is resolved; the server finds a
+    // line open (a page older than the server).
+    shopper.details[shopperOrderA] = shopping(<Object?>[
+      tomato(status: 'purchased'),
+      bread(status: 'purchased'),
+    ]);
     await openOrder(tester);
     shopper.actionFailure = const ApiRefusal(
       ApiError(
@@ -856,6 +882,13 @@ void main() {
     expect(
       tester.widget<Text>(byKey('complete-open-lines')).data,
       l10n(tester).completeIncomplete('Pomidor'),
+    );
+    expect(
+      find.descendant(
+        of: byKey('shopper-order-footer'),
+        matching: byKey('complete-open-lines'),
+      ),
+      findsOneWidget,
     );
 
     shopper.actionFailure = const NetworkFailure();

@@ -1322,43 +1322,83 @@
     }
   },
   "shopperOpenToAccept": "Откройте и примите заказ",
+  "shopperStatusNew": "Новый заказ",
+  "shopperStatusNewHint": "Посмотрите товары и примите заказ",
+  "shopperStatusAccepted": "Заказ принят",
+  "shopperStatusShopping": "Идёт сборка",
+  "shopperShoppingHint": "Начата {when} · осталось {open} из {total}",
+  "@shopperShoppingHint": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      },
+      "open": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperStatusResolved": "Всё решено",
+  "shopperResolvedHint": "Куплено {bought} · убрано {removed} · можно завершать",
+  "@shopperResolvedHint": {
+    "placeholders": {
+      "bought": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperStepAssigned": "Назначен",
+  "shopperStepAccepted": "Принят",
+  "shopperStepShopping": "Сборка",
+  "shopperStepDone": "Собран",
+  "shopperLegendDone": "Готово {count}",
+  "@shopperLegendDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperLegendWaiting": "Ждём ответа {count}",
+  "@shopperLegendWaiting": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperLegendToBuy": "Купить {count}",
+  "@shopperLegendToBuy": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperCallCustomer": "Позвонить клиенту",
+  "shopperPhoneLater": "Телефон клиента появится, когда вы начнёте сборку.",
+  "shopperResolveFirst": "Сначала решите все товары · осталось {count}",
+  "@shopperResolveFirst": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shopperCompleteBought": "Куплено",
+  "shopperCompleteRemoved": "Убрано",
+  "completeConfirm": "Завершить",
+  "shopperOrderGoneHint": "Его отменили или передали другому сборщику.",
   "shopperStartAtMarket": "Начните сборку, когда будете на базаре",
   "shopperEmptyTitle": "Заказов пока нет",
   "staffCustomerModeHint": "Заказать продукты для себя",
-  "shopperAssignedAt": "Назначен: {time}",
-  "@shopperAssignedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "shopperAcceptedAt": "Принят: {time}",
-  "@shopperAcceptedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "shopperStartedAt": "Сборка начата: {time}",
-  "@shopperStartedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "shopperAccept": "Принять",
+  "shopperAccept": "Принять заказ",
   "shopperStart": "Начать сборку",
-  "callCustomer": "Позвонить клиенту: {phone}",
-  "@callCustomer": {
-    "placeholders": {
-      "phone": {
-        "type": "String"
-      }
-    }
-  },
   "callFailed": "Не удалось открыть приложение для звонков. Наберите номер вручную: {phone}",
   "@callFailed": {
     "placeholders": {
@@ -1502,7 +1542,7 @@
   "errorApprovalNotNeeded": "Для этой цены спрашивать клиента не нужно — покупайте.",
   "errorSubstitutionNotAllowed": "Клиент не разрешил заменять этот товар.",
   "errorShoppingIncomplete": "Есть ещё нерешённые позиции.",
-  "shopperOrderGone": "Этот заказ больше не ваш.",
+  "shopperOrderGone": "Этот заказ больше не ваш",
   "shopperOrderCancelled": "Заказ отменён: покупать больше нечего.",
   "substituteUseBuy": "Эта замена уже разрешена. Введите цену через «Купить» — там при необходимости можно спросить клиента.",
   "questionReplacementPrice": "Замена «{name}»: цена {price}. Согласны на эту цену?",

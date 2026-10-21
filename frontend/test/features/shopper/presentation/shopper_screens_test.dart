@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:baraka_bozor/core/formatting/money_format.dart';
+import 'package:baraka_bozor/core/formatting/tashkent_time.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/features/shopper/presentation/shopper_status_card.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/formatting/order_dates.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
@@ -262,10 +265,7 @@ void main() {
     await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
     final AppLocalizations words = l10n(tester);
 
-    expect(
-      find.text('${words.orderSectionDeliveryWish}: Kechqurun'),
-      findsOneWidget,
-    );
+    expect(find.text(words.shopperDeliveryWish('Kechqurun')), findsOneWidget);
     expect(
       text(tester, 'shopper-line-status-$shopperLineTomato'),
       words.itemStatusAwaitingCustomer,
@@ -296,46 +296,244 @@ void main() {
     expect(find.textContaining(words.itemPricePaid('')), findsNothing);
   });
 
-  testWidgets('the Shopper accepts, then starts; while shopping they can call '
-      'the Customer', (WidgetTester tester) async {
+  List<Color> bar(WidgetTester tester) => tester
+      .widget<SegmentBar>(
+        find.descendant(
+          of: byKey('shopper-order-status'),
+          matching: find.byType(SegmentBar),
+        ),
+      )
+      .segments;
+
+  Finder inStatus(String text) => find.descendant(
+    of: byKey('shopper-order-status'),
+    matching: find.text(text),
+  );
+
+  Map<String, Object?> lineWith(
+    String id,
+    String status, {
+    bool bread = false,
+  }) => shopperLineJson(
+    bread: bread,
+    status: status,
+    patch: <String, Object?>{'id': '0192f0a0-0000-7000-8000-00000000e00$id'},
+  );
+
+  testWidgets('a new order is reviewed and accepted', (
+    WidgetTester tester,
+  ) async {
     shopper.afterAction[shopperOrderA] = shopperOrder(accepted: true);
     await open(tester);
     await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
-    expect(byKey('shopper-start'), findsNothing);
+    final AppLocalizations words = l10n(tester);
+
+    expect(inStatus(words.shopperStatusNew), findsOneWidget);
+    expect(inStatus(words.shopperStatusNewHint), findsOneWidget);
+    expect(inStatus(words.shopperStepAssigned), findsOneWidget);
+    expect(inStatus(words.shopperStepAccepted), findsOneWidget);
+    expect(inStatus(words.shopperStepShopping), findsOneWidget);
+    expect(inStatus(words.shopperStepDone), findsOneWidget);
+    expect(
+      inStatus(TashkentTime.time(DateTime.utc(2026, 9, 27, 7, 5))),
+      findsOneWidget,
+    );
+    final List<Color> segments = bar(tester);
+    expect(segments, hasLength(4));
+    expect(segments.where((Color c) => c == KitColors.primary), hasLength(1));
+    expect(find.text(words.checkoutItems(2)), findsOneWidget);
+    expect(find.text(words.shopperPhoneLater), findsOneWidget);
     expect(byKey('call-customer'), findsNothing);
+    expect(find.text(words.shopperDeliveryWish('Kechqurun')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: byKey('shopper-accept'),
+        matching: find.text(words.shopperAccept),
+      ),
+      findsOneWidget,
+    );
 
     await tapAndSettle(tester, byKey('shopper-accept'));
     expect(shopper.actions, <String>['accept:$shopperOrderA']);
     expect(byKey('shopper-accept'), findsNothing);
-    expect(byKey('shopper-start'), findsOneWidget);
-    expect(byKey('call-customer'), findsNothing);
+  });
 
+  testWidgets('an accepted order is started at the market', (
+    WidgetTester tester,
+  ) async {
+    shopper.details[shopperOrderA] = shopperOrder(accepted: true);
     shopper.afterAction[shopperOrderA] = shopperOrder(status: 'shopping');
-    await tapAndSettle(tester, byKey('shopper-start'));
-    expect(shopper.actions, <String>[
-      'accept:$shopperOrderA',
-      'start:$shopperOrderA',
-    ]);
-    expect(byKey('shopper-start'), findsNothing);
+    await open(tester);
+    await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
+    final AppLocalizations words = l10n(tester);
+
+    expect(inStatus(words.shopperStatusAccepted), findsOneWidget);
+    expect(inStatus(words.shopperStartAtMarket), findsOneWidget);
     expect(
-      find.text(l10n(tester).callCustomer('+998 90 111 22 33')),
+      bar(tester).where((Color c) => c == KitColors.primary),
+      hasLength(2),
+    );
+    expect(byKey('shopper-accept'), findsNothing);
+    expect(
+      find.descendant(
+        of: byKey('shopper-start'),
+        matching: find.text(words.shopperStart),
+      ),
       findsOneWidget,
     );
 
-    await tapAndSettle(tester, byKey('call-customer'));
-    expect(phone.calls, <String>['+998901112233']);
+    await tapAndSettle(tester, byKey('shopper-start'));
+    expect(shopper.actions, <String>['start:$shopperOrderA']);
+    expect(byKey('shopper-start'), findsNothing);
+  });
+
+  testWidgets('while shopping the Customer is one tap away', (
+    WidgetTester tester,
+  ) async {
+    shopper.details[shopperOrderA] = shopperOrder(status: 'shopping');
+    await open(tester);
+    await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
+    final AppLocalizations words = l10n(tester);
+    final Finder card = byKey('call-customer');
+
     expect(
-      find.text(l10n(tester).callFailed('+998 90 111 22 33')),
-      findsNothing,
+      find.descendant(of: card, matching: find.text(words.shopperCallCustomer)),
+      findsOneWidget,
     );
+    expect(
+      find.descendant(of: card, matching: find.text('+998 90 111 22 33')),
+      findsOneWidget,
+    );
+    expect(find.text(words.shopperPhoneLater), findsNothing);
+
+    await tapAndSettle(tester, card);
+    expect(phone.calls, <String>['+998901112233']);
+    expect(find.text(words.callFailed('+998 90 111 22 33')), findsNothing);
 
     // A phone that cannot place the call says so, with the number.
     phone.opens = false;
-    await tapAndSettle(tester, byKey('call-customer'));
+    await tapAndSettle(tester, card);
+    expect(find.text(words.callFailed('+998 90 111 22 33')), findsOneWidget);
+  });
+
+  testWidgets('the shopping card counts the lines', (
+    WidgetTester tester,
+  ) async {
+    shopper.details[shopperOrderA] = shopperOrder(
+      status: 'shopping',
+      items: <Object?>[
+        lineWith('1', 'pending'),
+        lineWith('2', 'pending', bread: true),
+        shopperAskedLineJson('price_over_tolerance')
+          ..['id'] = '0192f0a0-0000-7000-8000-00000000e003',
+        lineWith('4', 'purchased'),
+        lineWith('5', 'removed', bread: true),
+      ],
+    );
+    await open(tester);
+    await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
+    final AppLocalizations words = l10n(tester);
+    final DateTime started = DateTime.utc(2026, 9, 27, 7, 7);
+
+    expect(inStatus(words.shopperStatusShopping), findsOneWidget);
     expect(
-      find.text(l10n(tester).callFailed('+998 90 111 22 33')),
+      inStatus(
+        words.shopperShoppingHint(
+          orderAtLower(words, started, DateTime.utc(2026, 9, 27, 9)),
+          3,
+          5,
+        ),
+      ),
       findsOneWidget,
     );
+    expect(bar(tester), <Color>[
+      KitColors.primary,
+      KitColors.primary,
+      KitColors.warning,
+      KitColors.line,
+      KitColors.line,
+    ]);
+    expect(inStatus(words.shopperLegendDone(2)), findsOneWidget);
+    expect(inStatus(words.shopperLegendWaiting(1)), findsOneWidget);
+    expect(inStatus(words.shopperLegendToBuy(2)), findsOneWidget);
+
+    // A count of zero is left out of the legend.
+    shopper.details[shopperOrderA] = shopperOrder(
+      status: 'shopping',
+      items: <Object?>[lineWith('1', 'pending'), lineWith('4', 'purchased')],
+    );
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    expect(inStatus(words.shopperLegendDone(1)), findsOneWidget);
+    expect(inStatus(words.shopperLegendToBuy(1)), findsOneWidget);
+    expect(inStatus(words.shopperLegendWaiting(0)), findsNothing);
+  });
+
+  testWidgets('the completion is held while lines are open', (
+    WidgetTester tester,
+  ) async {
+    shopper.details[shopperOrderA] = shopperOrder(
+      status: 'shopping',
+      items: <Object?>[
+        lineWith('1', 'pending'),
+        lineWith('2', 'pending', bread: true),
+        lineWith('3', 'purchased'),
+        shopperAskedLineJson('price_over_tolerance')
+          ..['id'] = '0192f0a0-0000-7000-8000-00000000e004',
+      ],
+    );
+    await open(tester);
+    await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
+
+    expect(find.text(l10n(tester).shopperResolveFirst(3)), findsOneWidget);
+    expect(
+      tester.widget<FilledButton>(byKey('shopper-complete')).onPressed,
+      isNull,
+    );
+  });
+
+  testWidgets('all resolved, the shopping completes', (
+    WidgetTester tester,
+  ) async {
+    shopper.details[shopperOrderA] = shopperOrder(
+      status: 'shopping',
+      items: <Object?>[
+        lineWith('1', 'purchased'),
+        lineWith('2', 'purchased', bread: true),
+        lineWith('3', 'removed'),
+      ],
+    );
+    await open(tester);
+    await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
+    final AppLocalizations words = l10n(tester);
+
+    expect(inStatus(words.shopperStatusResolved), findsOneWidget);
+    expect(inStatus(words.shopperResolvedHint(2, 1)), findsOneWidget);
+    expect(bar(tester), everyElement(KitColors.primary));
+    expect(find.textContaining(words.shopperResolveFirst(0)), findsNothing);
+    expect(
+      tester.widget<FilledButton>(byKey('shopper-complete')).onPressed,
+      isNotNull,
+    );
+
+    await tapAndSettle(tester, byKey('shopper-complete'));
+    final Finder sheet = byKey('complete-sheet');
+    Finder inSheet(String text) =>
+        find.descendant(of: sheet, matching: find.text(text));
+    expect(inSheet(words.completeTitle), findsOneWidget);
+    expect(inSheet(words.shopperCompleteBought), findsOneWidget);
+    expect(inSheet(words.orderItemCount(2)), findsOneWidget);
+    expect(inSheet(words.shopperCompleteRemoved), findsOneWidget);
+    expect(inSheet(words.orderItemCount(1)), findsOneWidget);
+    expect(inSheet(words.completeExplained), findsOneWidget);
+    expect(
+      find.descendant(
+        of: byKey('complete-confirm'),
+        matching: find.text(words.completeConfirm),
+      ),
+      findsOneWidget,
+    );
+    expect(shopper.actions, isEmpty);
   });
 
   testWidgets('back on the list, an accepted order is shown as it now is', (
@@ -628,6 +826,53 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+  }
+
+  for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
+    testWidgets('the order page holds at 320x640 with text x2 '
+        '(${language.languageCode})', (WidgetTester tester) async {
+      final Map<String, ShopperOrder> stages = <String, ShopperOrder>{
+        'assigned': shopperOrder(),
+        'accepted': shopperOrder(accepted: true),
+        'open lines': shopperOrder(
+          status: 'shopping',
+          items: <Object?>[
+            lineWith('1', 'pending'),
+            lineWith('2', 'pending', bread: true),
+            shopperAskedLineJson('price_over_tolerance')
+              ..['id'] = '0192f0a0-0000-7000-8000-00000000e003',
+            lineWith('4', 'purchased'),
+          ],
+        ),
+        'resolved': shopperOrder(
+          status: 'shopping',
+          items: <Object?>[
+            lineWith('1', 'purchased'),
+            lineWith('2', 'removed', bread: true),
+          ],
+        ),
+      };
+      for (final MapEntry<String, ShopperOrder> stage in stages.entries) {
+        shopper.details[shopperOrderA] = stage.value;
+        await open(
+          tester,
+          size: const Size(320, 640),
+          textScale: 2,
+          device: language,
+        );
+        await tapAndSettle(tester, byKey('shopper-order-$shopperOrderA'));
+        expect(tester.takeException(), isNull, reason: stage.key);
+        await tester.drag(byKey('shopper-order'), const Offset(0, -3000));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: stage.key);
+        if (stage.key == 'resolved') {
+          await tapAndSettle(tester, byKey('shopper-complete'));
+          expect(byKey('complete-sheet'), findsOneWidget);
+          expect(tester.takeException(), isNull, reason: 'the sheet');
+        }
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+    });
   }
 
   testWidgets('a phone-wide window with large text fits the list and an order '
