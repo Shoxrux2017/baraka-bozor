@@ -969,10 +969,16 @@ void main() {
     await openOrder(tester, device: const Locale('ru'));
 
     expect(find.text('Данные покупателя удалены'), findsOneWidget);
-    expect(find.text('Aziza Karimova'), findsNothing);
-    expect(find.textContaining('901112233'), findsNothing);
-    expect(find.textContaining('Amir Temur'), findsNothing);
-    expect(find.text(l10n(tester).orderSectionAddress), findsNothing);
+    // The shell's user card shares the Customer's name in this fixture, so
+    // the absence is checked on the order page itself.
+    Finder onPage(Finder matching) => find.descendant(
+      of: find.byKey(const ValueKey<String>('order-detail')),
+      matching: matching,
+    );
+    expect(onPage(find.text('Aziza Karimova')), findsNothing);
+    expect(onPage(find.textContaining('901112233')), findsNothing);
+    expect(onPage(find.textContaining('Amir Temur')), findsNothing);
+    expect(onPage(find.text(l10n(tester).orderSectionAddress)), findsNothing);
   });
 
   testWidgets('an erased request shows no reason, only that the data is gone', (

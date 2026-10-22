@@ -25,7 +25,7 @@ class BoardOrders extends ConsumerWidget {
 
   /// From this card width the orders are a table whose six columns all
   /// show; below it, cards, which show the same.
-  static const double tableWidth = 760;
+  static const double tableWidth = 800;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

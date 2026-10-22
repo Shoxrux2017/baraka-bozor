@@ -1226,7 +1226,10 @@ void main() {
   ) async {
     await open(tester, size: const Size(1440, 1600), textScale: 2);
 
-    expect(ordersCard(tester).width, greaterThanOrEqualTo(760));
+    expect(
+      ordersCard(tester).width,
+      greaterThanOrEqualTo(BoardOrders.tableWidth),
+    );
     final Finder name = find.descendant(
       of: find.byType(BoardOrders),
       matching: find.text('Aziza Karimova'),
@@ -1365,8 +1368,8 @@ void main() {
   });
 
   for (final (double, bool) edge in const <(double, bool)>[
-    (807, false),
-    (808, true),
+    (847, false),
+    (848, true),
   ]) {
     testWidgets('the orders are ${edge.$2 ? 'a table' : 'cards'} at a card of '
         '${edge.$1.toInt() - 48}', (WidgetTester tester) async {
@@ -1396,7 +1399,7 @@ void main() {
         ),
       ),
     ];
-    await open(tester, size: const Size(420, 2400), device: const Locale('ru'));
+    await open(tester, size: const Size(820, 1180), device: const Locale('ru'));
     final AppLocalizations words = l10n(tester);
     Finder inCard(Finder matching) =>
         find.descendant(of: byKey('board-row-$orderA'), matching: matching);
