@@ -433,6 +433,60 @@ class AppLocalizationsUz extends AppLocalizations {
   String get catalogEmpty => 'Hech narsa topilmadi';
 
   @override
+  String catalogProductCount(int count) {
+    return '$count ta mahsulot';
+  }
+
+  @override
+  String catalogCategoryCount(int count) {
+    return '$count ta kategoriya';
+  }
+
+  @override
+  String get categoryShownHint =>
+      'Yashirilgan kategoriya mijozlardan barcha mahsulotlarini ham yashiradi';
+
+  @override
+  String get categoryArchiveTitle => 'Kategoriya arxivlansinmi?';
+
+  @override
+  String get categoryArchiveExplained =>
+      'Kategoriya va uning barcha mahsulotlari mijozlarga ko\'rinmay qoladi. Mahsulotlarning o\'zi o\'zgarmaydi: kategoriyani qaytarsangiz, ular yana chiqadi. Kategoriya arxivda ekan, unga yangi mahsulot qo\'shib bo\'lmaydi.';
+
+  @override
+  String get catalogColumnProduct => 'Mahsulot';
+
+  @override
+  String get catalogColumnCustomerPrice => 'Mijoz uchun';
+
+  @override
+  String get catalogColumnShown => 'Ko\'rinishi';
+
+  @override
+  String catalogForCustomer(String price) {
+    return 'mijozga $price';
+  }
+
+  @override
+  String get catalogCategoryHiddenLine =>
+      'Kategoriya yashirilgan — mijozlar ko\'rmaydi';
+
+  @override
+  String get catalogCategoryArchivedLine =>
+      'Kategoriya arxivda — mijozlar ko\'rmaydi';
+
+  @override
+  String get catalogEmptyHint =>
+      'Nomini tekshiring yoki «Barcha kategoriyalar»ni tanlang.';
+
+  @override
+  String get productArchiveTitle => 'Mahsulot arxivlansinmi?';
+
+  @override
+  String get productArchiveExplained =>
+      'Mijozlar mahsulotni ko\'rmay qoladi, savatlarda u mavjud bo\'lmaydi. U bor buyurtmalar o\'zgarmaydi. Uni «Arxivdagilar ham» ro\'yxatidan qaytarish mumkin.';
+
+  @override
   String catalogPage(int page, int last) {
     return '$page-sahifa, jami $last';
   }
@@ -466,9 +520,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productNew => 'Yangi mahsulot';
 
   @override
-  String get productEditTitle => 'Mahsulotni tahrirlash';
-
-  @override
   String get productSaved => 'Mahsulot saqlandi';
 
   @override
@@ -492,11 +543,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get productMarketPrice => 'Bozor narxi';
-
-  @override
-  String productCustomerPrice(String price) {
-    return 'Mijoz uchun narx: $price';
-  }
 
   @override
   String get productSearch => 'Nomi bo\'yicha qidirish';
@@ -523,6 +569,17 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productRemoveImageConfirm => 'Mahsulot rasmi o\'chirilsinmi?';
 
   @override
+  String get productImagePicked => 'Yangi rasm · yuklanmagan';
+
+  @override
+  String get productRemoveImageExplained =>
+      'Yangisini yuklamaguningizcha mijozlar mahsulotni rasmsiz ko\'radi.';
+
+  @override
+  String get categoryRemoveImageExplained =>
+      'Yangi rasm yuklamaguningizcha mijozlar nomning birinchi harfini ko\'radi.';
+
+  @override
   String get productImageRules => 'JPEG, PNG yoki WebP, ko\'pi bilan 5 MB';
 
   @override
@@ -538,6 +595,52 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get productImageAfterSave =>
       'Rasmni mahsulot saqlangandan keyin qo\'shish mumkin';
+
+  @override
+  String get productSectionMain => 'Mahsulot';
+
+  @override
+  String get productSectionPrice => 'Narx';
+
+  @override
+  String get productSectionShown => 'Ko\'rinishi';
+
+  @override
+  String get productMarkupNote =>
+      'Ustama barcha mahsulotlar uchun bitta — u «Sozlamalar»da.';
+
+  @override
+  String productPriceHint(String unit) {
+    return 'Butun son, 1 $unit uchun';
+  }
+
+  @override
+  String get productCustomerPriceTitle => 'Mijoz uchun narx';
+
+  @override
+  String productCustomerPriceBasis(String price) {
+    return 'Saqlangan $price narxi bo\'yicha. «Saqlash»dan keyin qayta hisoblanadi.';
+  }
+
+  @override
+  String get productCustomerPriceLater => 'Saqlangandan keyin chiqadi';
+
+  @override
+  String get catalogOptional => 'Ixtiyoriy';
+
+  @override
+  String get productShownHint =>
+      'Mahsulotni arxivlamasdan yashirish uchun o\'chiring';
+
+  @override
+  String productCategoryHiddenNote(String name) {
+    return '«$name» kategoriyasi yashirilgan, shu sababli mijozlar bu mahsulotni ham ko\'rmaydi. Uni «Kategoriyalar» bo\'limida yoqish mumkin.';
+  }
+
+  @override
+  String productCategoryArchivedNote(String name) {
+    return '«$name» kategoriyasi arxivda, shu sababli mijozlar bu mahsulotni ham ko\'rmaydi. Uni «Kategoriyalar» bo\'limida qaytarish mumkin.';
+  }
 
   @override
   String get unitKg => 'kg';

@@ -432,6 +432,75 @@ class AppLocalizationsRu extends AppLocalizations {
   String get catalogEmpty => 'Ничего не найдено';
 
   @override
+  String catalogProductCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count товара',
+      many: '$count товаров',
+      few: '$count товара',
+      one: '$count товар',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String catalogCategoryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count категории',
+      many: '$count категорий',
+      few: '$count категории',
+      one: '$count категория',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get categoryShownHint =>
+      'Скрытая категория прячет у клиентов и все свои товары';
+
+  @override
+  String get categoryArchiveTitle => 'Убрать категорию в архив?';
+
+  @override
+  String get categoryArchiveExplained =>
+      'Категория и все её товары пропадут у клиентов. Сами товары не меняются: вернёте категорию — они снова появятся. Пока категория в архиве, новые товары в неё не добавить.';
+
+  @override
+  String get catalogColumnProduct => 'Товар';
+
+  @override
+  String get catalogColumnCustomerPrice => 'Для клиента';
+
+  @override
+  String get catalogColumnShown => 'Показ';
+
+  @override
+  String catalogForCustomer(String price) {
+    return 'клиенту $price';
+  }
+
+  @override
+  String get catalogCategoryHiddenLine => 'Категория скрыта — клиенты не видят';
+
+  @override
+  String get catalogCategoryArchivedLine =>
+      'Категория в архиве — клиенты не видят';
+
+  @override
+  String get catalogEmptyHint =>
+      'Проверьте название или выберите «Все категории».';
+
+  @override
+  String get productArchiveTitle => 'Убрать товар в архив?';
+
+  @override
+  String get productArchiveExplained =>
+      'Клиенты перестанут видеть товар, в корзинах он станет недоступен. Заказы, где он уже есть, не меняются. Вернуть можно в списке «Вместе с архивом».';
+
+  @override
   String catalogPage(int page, int last) {
     return 'Страница $page из $last';
   }
@@ -465,9 +534,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get productNew => 'Новый товар';
 
   @override
-  String get productEditTitle => 'Редактирование товара';
-
-  @override
   String get productSaved => 'Товар сохранён';
 
   @override
@@ -491,11 +557,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get productMarketPrice => 'Рыночная цена';
-
-  @override
-  String productCustomerPrice(String price) {
-    return 'Цена для клиента: $price';
-  }
 
   @override
   String get productSearch => 'Поиск по названию';
@@ -522,6 +583,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get productRemoveImageConfirm => 'Удалить фото товара?';
 
   @override
+  String get productImagePicked => 'Новое фото · не загружено';
+
+  @override
+  String get productRemoveImageExplained =>
+      'Клиенты увидят товар без фото, пока вы не загрузите новое.';
+
+  @override
+  String get categoryRemoveImageExplained =>
+      'Клиенты увидят первую букву названия, пока вы не загрузите новую картинку.';
+
+  @override
   String get productImageRules => 'JPEG, PNG или WebP, не больше 5 МБ';
 
   @override
@@ -537,6 +609,52 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get productImageAfterSave =>
       'Фото можно добавить после сохранения товара';
+
+  @override
+  String get productSectionMain => 'Товар';
+
+  @override
+  String get productSectionPrice => 'Цена';
+
+  @override
+  String get productSectionShown => 'Показ';
+
+  @override
+  String get productMarkupNote =>
+      'Наценка одна на все товары — она в «Настройках».';
+
+  @override
+  String productPriceHint(String unit) {
+    return 'Целое число, за 1 $unit';
+  }
+
+  @override
+  String get productCustomerPriceTitle => 'Цена для клиента';
+
+  @override
+  String productCustomerPriceBasis(String price) {
+    return 'По сохранённой цене $price. Пересчитается после «Сохранить».';
+  }
+
+  @override
+  String get productCustomerPriceLater => 'Появится после сохранения';
+
+  @override
+  String get catalogOptional => 'Необязательно';
+
+  @override
+  String get productShownHint =>
+      'Выключите, чтобы скрыть товар, не убирая его в архив';
+
+  @override
+  String productCategoryHiddenNote(String name) {
+    return 'Категория «$name» скрыта, поэтому клиенты не видят и этот товар. Включить её можно в «Категориях».';
+  }
+
+  @override
+  String productCategoryArchivedNote(String name) {
+    return 'Категория «$name» в архиве, поэтому клиенты не видят и этот товар. Вернуть её можно в «Категориях».';
+  }
 
   @override
   String get unitKg => 'кг';

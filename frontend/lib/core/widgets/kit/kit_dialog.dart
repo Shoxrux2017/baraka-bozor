@@ -2,7 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../localization/generated/app_localizations.dart';
 import '../../theme/kit_colors.dart';
+import 'kit_buttons.dart';
 
 /// The widest a kit dialog gets; a narrower window gives it its width less 32.
 const double kitDialogWidth = 480;
@@ -14,6 +16,9 @@ const double kitDialogWidth = 480;
 /// `PopScope(canPop: false)` (an action that runs) holds through the x, the
 /// scrim and back alike.
 ///
+/// A wider window passes [maxWidth]; it is never wider than the screen less
+/// 32. With [barrierDismissible] false a tap outside does not close it.
+///
 /// The root is keyed `ValueKey(dialogKey)` and the x
 /// `ValueKey('$dialogKey-close')`.
 Future<T?> showKitDialog<T>({
@@ -22,15 +27,19 @@ Future<T?> showKitDialog<T>({
   required String title,
   String? subtitle,
   required WidgetBuilder builder,
+  double maxWidth = kitDialogWidth,
+  bool barrierDismissible = true,
 }) {
   return showDialog<T>(
     context: context,
+    barrierDismissible: barrierDismissible,
     barrierColor: const Color(0x61151D16),
     builder: (BuildContext dialog) => _KitDialog(
       dialogKey: dialogKey,
       title: title,
       subtitle: subtitle,
       builder: builder,
+      maxWidth: maxWidth,
     ),
   );
 }
@@ -41,12 +50,14 @@ class _KitDialog extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.builder,
+    required this.maxWidth,
   });
 
   final String dialogKey;
   final String title;
   final String? subtitle;
   final WidgetBuilder builder;
+  final double maxWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -59,10 +70,7 @@ class _KitDialog extends StatelessWidget {
       insetPadding: const EdgeInsets.all(16),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: math.min(
-            kitDialogWidth,
-            MediaQuery.sizeOf(context).width - 32,
-          ),
+          maxWidth: math.min(maxWidth, MediaQuery.sizeOf(context).width - 32),
         ),
         child: DecoratedBox(
           key: ValueKey<String>(dialogKey),
@@ -152,4 +160,47 @@ class _KitDialog extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The two buttons a window ends with: "Cancel" outlined (keyed [cancelKey])
+/// and the confirming button, a red one when the action [destructive]ly
+/// cancels or removes. While [busy] both are disabled.
+Widget kitDialogButtons({
+  required BuildContext context,
+  required bool busy,
+  required Key confirmKey,
+  required String confirm,
+  required VoidCallback submit,
+  IconData? confirmIcon,
+  bool destructive = false,
+  Key cancelKey = const ValueKey<String>('action-cancel'),
+}) {
+  final ButtonStyle style = kitFilled(
+    color: destructive ? KitColors.danger : KitColors.primary,
+    height: 48,
+  );
+  final VoidCallback? onPressed = busy ? null : submit;
+
+  return KitActionPair(
+    secondary: OutlinedButton(
+      key: cancelKey,
+      style: kitOutlined(height: 48),
+      onPressed: busy ? null : () => Navigator.of(context).pop(),
+      child: Text(AppLocalizations.of(context).cancelButton),
+    ),
+    primary: confirmIcon == null
+        ? FilledButton(
+            key: confirmKey,
+            style: style,
+            onPressed: onPressed,
+            child: Text(confirm),
+          )
+        : FilledButton.icon(
+            key: confirmKey,
+            style: style,
+            onPressed: onPressed,
+            icon: Icon(confirmIcon, size: 20),
+            label: Text(confirm),
+          ),
+  );
 }

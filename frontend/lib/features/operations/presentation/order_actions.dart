@@ -584,47 +584,6 @@ String orderDialogLine(AppLocalizations l10n, BoardOrder order) {
       : l10n.dialogOrderLine(number, name);
 }
 
-/// The two buttons a window ends with: "Cancel" outlined and the confirming
-/// button, a red one when the action [destructive]ly cancels or removes.
-Widget _dialogButtons({
-  required BuildContext context,
-  required bool busy,
-  required Key confirmKey,
-  required String confirm,
-  required VoidCallback submit,
-  IconData? confirmIcon,
-  bool destructive = false,
-}) {
-  final ButtonStyle style = kitFilled(
-    color: destructive ? KitColors.danger : KitColors.primary,
-    height: 48,
-  );
-  final VoidCallback? onPressed = busy ? null : submit;
-
-  return KitActionPair(
-    secondary: OutlinedButton(
-      key: const ValueKey<String>('action-cancel'),
-      style: kitOutlined(height: 48),
-      onPressed: busy ? null : () => Navigator.of(context).pop(),
-      child: Text(AppLocalizations.of(context).cancelButton),
-    ),
-    primary: confirmIcon == null
-        ? FilledButton(
-            key: confirmKey,
-            style: style,
-            onPressed: onPressed,
-            child: Text(confirm),
-          )
-        : FilledButton.icon(
-            key: confirmKey,
-            style: style,
-            onPressed: onPressed,
-            icon: Icon(confirmIcon, size: 20),
-            label: Text(confirm),
-          ),
-  );
-}
-
 /// A `field` box with rounded corners that holds a short fact of the window.
 Widget _factBox(Widget child) => DecoratedBox(
   decoration: BoxDecoration(
@@ -813,7 +772,7 @@ class _OrderActionDialogState extends ConsumerState<OrderActionDialog> {
             ),
             FailureMessage(change.failure),
             const SizedBox(height: 20),
-            _dialogButtons(
+            kitDialogButtons(
               context: context,
               busy: change.isBusy,
               confirmKey: const ValueKey<String>('action-confirm'),
@@ -973,7 +932,7 @@ class _PriceCorrectionDialogState extends ConsumerState<PriceCorrectionDialog> {
             ),
             _CorrectionFailure(change.failure),
             const SizedBox(height: 20),
-            _dialogButtons(
+            kitDialogButtons(
               context: context,
               busy: change.isBusy,
               confirmKey: const ValueKey<String>('correction-save'),

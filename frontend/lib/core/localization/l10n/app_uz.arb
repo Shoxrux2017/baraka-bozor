@@ -167,6 +167,41 @@
   "catalogRestore": "Arxivdan qaytarish",
   "catalogArchivedNote": "Arxivdagi yozuv mijozlarga ko'rinmaydi. Qaytarish uchun ro'yxatdagi amaldan foydalaning",
   "catalogEmpty": "Hech narsa topilmadi",
+  "catalogProductCount": "{count} ta mahsulot",
+  "@catalogProductCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "catalogCategoryCount": "{count} ta kategoriya",
+  "@catalogCategoryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "categoryShownHint": "Yashirilgan kategoriya mijozlardan barcha mahsulotlarini ham yashiradi",
+  "categoryArchiveTitle": "Kategoriya arxivlansinmi?",
+  "categoryArchiveExplained": "Kategoriya va uning barcha mahsulotlari mijozlarga ko'rinmay qoladi. Mahsulotlarning o'zi o'zgarmaydi: kategoriyani qaytarsangiz, ular yana chiqadi. Kategoriya arxivda ekan, unga yangi mahsulot qo'shib bo'lmaydi.",
+  "catalogColumnProduct": "Mahsulot",
+  "catalogColumnCustomerPrice": "Mijoz uchun",
+  "catalogColumnShown": "Ko'rinishi",
+  "catalogForCustomer": "mijozga {price}",
+  "@catalogForCustomer": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogCategoryHiddenLine": "Kategoriya yashirilgan — mijozlar ko'rmaydi",
+  "catalogCategoryArchivedLine": "Kategoriya arxivda — mijozlar ko'rmaydi",
+  "catalogEmptyHint": "Nomini tekshiring yoki «Barcha kategoriyalar»ni tanlang.",
+  "productArchiveTitle": "Mahsulot arxivlansinmi?",
+  "productArchiveExplained": "Mijozlar mahsulotni ko'rmay qoladi, savatlarda u mavjud bo'lmaydi. U bor buyurtmalar o'zgarmaydi. Uni «Arxivdagilar ham» ro'yxatidan qaytarish mumkin.",
   "catalogPage": "{page}-sahifa, jami {last}",
   "@catalogPage": {
     "placeholders": {
@@ -187,7 +222,6 @@
   "categoryRemoveImageConfirm": "Kategoriya rasmi o'chirilsinmi?",
   "categorySaved": "Kategoriya saqlandi",
   "productNew": "Yangi mahsulot",
-  "productEditTitle": "Mahsulotni tahrirlash",
   "productSaved": "Mahsulot saqlandi",
   "productCategory": "Kategoriya",
   "productAllCategories": "Barcha kategoriyalar",
@@ -196,14 +230,6 @@
   "productFeaturedHint": "Mahsulot bosh sahifadagi «Tavsiya etamiz» qatorida chiqadi",
   "productFeaturedBadge": "Tavsiya",
   "productMarketPrice": "Bozor narxi",
-  "productCustomerPrice": "Mijoz uchun narx: {price}",
-  "@productCustomerPrice": {
-    "placeholders": {
-      "price": {
-        "type": "String"
-      }
-    }
-  },
   "productSearch": "Nomi bo'yicha qidirish",
   "productBackToList": "Mahsulotlar ro'yxati",
   "productImage": "Rasm",
@@ -212,11 +238,54 @@
   "productUploadImage": "Yuklash",
   "productRemoveImage": "Rasmni o'chirish",
   "productRemoveImageConfirm": "Mahsulot rasmi o'chirilsinmi?",
+  "productImagePicked": "Yangi rasm · yuklanmagan",
+  "productRemoveImageExplained": "Yangisini yuklamaguningizcha mijozlar mahsulotni rasmsiz ko'radi.",
+  "categoryRemoveImageExplained": "Yangi rasm yuklamaguningizcha mijozlar nomning birinchi harfini ko'radi.",
   "productImageRules": "JPEG, PNG yoki WebP, ko'pi bilan 5 MB",
   "productImageTooLarge": "Rasm 5 MB dan katta",
   "productImageWrongType": "Faqat JPEG, PNG yoki WebP rasm",
   "productImageUnreadable": "Faylni o'qib bo'lmadi. Boshqa faylni tanlang",
   "productImageAfterSave": "Rasmni mahsulot saqlangandan keyin qo'shish mumkin",
+  "productSectionMain": "Mahsulot",
+  "productSectionPrice": "Narx",
+  "productSectionShown": "Ko'rinishi",
+  "productMarkupNote": "Ustama barcha mahsulotlar uchun bitta — u «Sozlamalar»da.",
+  "productPriceHint": "Butun son, 1 {unit} uchun",
+  "@productPriceHint": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "productCustomerPriceTitle": "Mijoz uchun narx",
+  "productCustomerPriceBasis": "Saqlangan {price} narxi bo'yicha. «Saqlash»dan keyin qayta hisoblanadi.",
+  "@productCustomerPriceBasis": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "productCustomerPriceLater": "Saqlangandan keyin chiqadi",
+  "catalogOptional": "Ixtiyoriy",
+  "productShownHint": "Mahsulotni arxivlamasdan yashirish uchun o'chiring",
+  "productCategoryHiddenNote": "«{name}» kategoriyasi yashirilgan, shu sababli mijozlar bu mahsulotni ham ko'rmaydi. Uni «Kategoriyalar» bo'limida yoqish mumkin.",
+  "@productCategoryHiddenNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "productCategoryArchivedNote": "«{name}» kategoriyasi arxivda, shu sababli mijozlar bu mahsulotni ham ko'rmaydi. Uni «Kategoriyalar» bo'limida qaytarish mumkin.",
+  "@productCategoryArchivedNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "unitKg": "kg",
   "unitGram": "g",
   "unitPiece": "dona",
