@@ -157,7 +157,10 @@ void main() {
     for (final String path in adminSections) {
       expect(section(path), findsOneWidget, reason: path);
     }
-    expect(find.text('Aziza Karimova'), findsOneWidget);
+    expect(
+      find.descendant(of: rail, matching: find.text('Aziza Karimova')),
+      findsOneWidget,
+    );
     expect(find.text(roleLabel(l10n(tester), UserRole.admin)), findsOneWidget);
     expect(logout, findsOneWidget);
     expect(find.byIcon(Icons.language), findsOneWidget);
@@ -217,7 +220,10 @@ void main() {
       for (final String path in adminSections) {
         expect(section(path), findsOneWidget, reason: path);
       }
-      expect(find.text('Aziza Karimova'), findsOneWidget);
+      expect(
+        find.descendant(of: drawer, matching: find.text('Aziza Karimova')),
+        findsOneWidget,
+      );
       expect(logout, findsOneWidget);
 
       await tester.tap(section(AppPaths.adminStaff));
