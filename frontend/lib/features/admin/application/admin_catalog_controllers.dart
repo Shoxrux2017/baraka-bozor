@@ -146,12 +146,12 @@ abstract class CatalogMutation extends AdminMutation {
 
 /// Archive and restore from the category list.
 class CategoryListActions extends CatalogMutation {
-  Future<void> archive(String id) => perform<AdminCategory>(
+  Future<AdminCategory?> archive(String id) => perform<AdminCategory>(
     () => catalog.archiveCategory(id),
     reload: _reload,
   );
 
-  Future<void> restore(String id) => perform<AdminCategory>(
+  Future<AdminCategory?> restore(String id) => perform<AdminCategory>(
     () => catalog.restoreCategory(id),
     reload: _reload,
   );
@@ -189,12 +189,12 @@ categoryFormControllerProvider =
 
 /// Archive and restore from the product list.
 class ProductListActions extends CatalogMutation {
-  Future<void> archive(String id) => perform<AdminProduct>(
+  Future<AdminProduct?> archive(String id) => perform<AdminProduct>(
     () => catalog.archiveProduct(id),
     reload: (AdminProduct? _) => _reload(id),
   );
 
-  Future<void> restore(String id) => perform<AdminProduct>(
+  Future<AdminProduct?> restore(String id) => perform<AdminProduct>(
     () => catalog.restoreProduct(id),
     reload: (AdminProduct? _) => _reload(id),
   );

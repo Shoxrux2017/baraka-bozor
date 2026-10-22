@@ -11,7 +11,6 @@ import '../domain/admin_catalog.dart';
 import 'catalog_form_rules.dart';
 import 'catalog_image_card.dart';
 import 'catalog_widgets.dart';
-import 'products_screen.dart' show ProductThumbnail;
 
 /// The Admin's categories (`docs/09-api-contracts.md` section 15): the
 /// paginated list, archived entries on request, a form to create or edit one

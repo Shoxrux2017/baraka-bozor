@@ -432,6 +432,51 @@ class AppLocalizationsRu extends AppLocalizations {
   String get catalogEmpty => 'Ничего не найдено';
 
   @override
+  String catalogProductCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count товара',
+      many: '$count товаров',
+      few: '$count товара',
+      one: '$count товар',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get catalogColumnProduct => 'Товар';
+
+  @override
+  String get catalogColumnCustomerPrice => 'Для клиента';
+
+  @override
+  String get catalogColumnShown => 'Показ';
+
+  @override
+  String catalogForCustomer(String price) {
+    return 'клиенту $price';
+  }
+
+  @override
+  String get catalogCategoryHiddenLine => 'Категория скрыта — клиенты не видят';
+
+  @override
+  String get catalogCategoryArchivedLine =>
+      'Категория в архиве — клиенты не видят';
+
+  @override
+  String get catalogEmptyHint =>
+      'Проверьте название или выберите «Все категории».';
+
+  @override
+  String get productArchiveTitle => 'Убрать товар в архив?';
+
+  @override
+  String get productArchiveExplained =>
+      'Клиенты перестанут видеть товар, в корзинах он станет недоступен. Заказы, где он уже есть, не меняются. Вернуть можно в списке «Вместе с архивом».';
+
+  @override
   String catalogPage(int page, int last) {
     return 'Страница $page из $last';
   }

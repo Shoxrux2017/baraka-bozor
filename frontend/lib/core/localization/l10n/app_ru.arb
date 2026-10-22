@@ -167,6 +167,30 @@
   "catalogRestore": "Вернуть из архива",
   "catalogArchivedNote": "Запись в архиве не видна клиентам. Вернуть её можно действием в списке",
   "catalogEmpty": "Ничего не найдено",
+  "catalogProductCount": "{count, plural, one{{count} товар} few{{count} товара} many{{count} товаров} other{{count} товара}}",
+  "@catalogProductCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "catalogColumnProduct": "Товар",
+  "catalogColumnCustomerPrice": "Для клиента",
+  "catalogColumnShown": "Показ",
+  "catalogForCustomer": "клиенту {price}",
+  "@catalogForCustomer": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogCategoryHiddenLine": "Категория скрыта — клиенты не видят",
+  "catalogCategoryArchivedLine": "Категория в архиве — клиенты не видят",
+  "catalogEmptyHint": "Проверьте название или выберите «Все категории».",
+  "productArchiveTitle": "Убрать товар в архив?",
+  "productArchiveExplained": "Клиенты перестанут видеть товар, в корзинах он станет недоступен. Заказы, где он уже есть, не меняются. Вернуть можно в списке «Вместе с архивом».",
   "catalogPage": "Страница {page} из {last}",
   "@catalogPage": {
     "placeholders": {

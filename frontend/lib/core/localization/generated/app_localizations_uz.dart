@@ -433,6 +433,44 @@ class AppLocalizationsUz extends AppLocalizations {
   String get catalogEmpty => 'Hech narsa topilmadi';
 
   @override
+  String catalogProductCount(int count) {
+    return '$count ta mahsulot';
+  }
+
+  @override
+  String get catalogColumnProduct => 'Mahsulot';
+
+  @override
+  String get catalogColumnCustomerPrice => 'Mijoz uchun';
+
+  @override
+  String get catalogColumnShown => 'Ko\'rinishi';
+
+  @override
+  String catalogForCustomer(String price) {
+    return 'mijozga $price';
+  }
+
+  @override
+  String get catalogCategoryHiddenLine =>
+      'Kategoriya yashirilgan — mijozlar ko\'rmaydi';
+
+  @override
+  String get catalogCategoryArchivedLine =>
+      'Kategoriya arxivda — mijozlar ko\'rmaydi';
+
+  @override
+  String get catalogEmptyHint =>
+      'Nomini tekshiring yoki «Barcha kategoriyalar»ni tanlang.';
+
+  @override
+  String get productArchiveTitle => 'Mahsulot arxivlansinmi?';
+
+  @override
+  String get productArchiveExplained =>
+      'Mijozlar mahsulotni ko\'rmay qoladi, savatlarda u mavjud bo\'lmaydi. U bor buyurtmalar o\'zgarmaydi. Uni «Arxivdagilar ham» ro\'yxatidan qaytarish mumkin.';
+
+  @override
   String catalogPage(int page, int last) {
     return '$page-sahifa, jami $last';
   }

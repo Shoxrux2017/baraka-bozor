@@ -890,6 +890,66 @@ abstract class AppLocalizations {
   /// **'Hech narsa topilmadi'**
   String get catalogEmpty;
 
+  /// No description provided for @catalogProductCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta mahsulot'**
+  String catalogProductCount(int count);
+
+  /// No description provided for @catalogColumnProduct.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot'**
+  String get catalogColumnProduct;
+
+  /// No description provided for @catalogColumnCustomerPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz uchun'**
+  String get catalogColumnCustomerPrice;
+
+  /// No description provided for @catalogColumnShown.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'rinishi'**
+  String get catalogColumnShown;
+
+  /// No description provided for @catalogForCustomer.
+  ///
+  /// In uz, this message translates to:
+  /// **'mijozga {price}'**
+  String catalogForCustomer(String price);
+
+  /// No description provided for @catalogCategoryHiddenLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kategoriya yashirilgan — mijozlar ko\'rmaydi'**
+  String get catalogCategoryHiddenLine;
+
+  /// No description provided for @catalogCategoryArchivedLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kategoriya arxivda — mijozlar ko\'rmaydi'**
+  String get catalogCategoryArchivedLine;
+
+  /// No description provided for @catalogEmptyHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Nomini tekshiring yoki «Barcha kategoriyalar»ni tanlang.'**
+  String get catalogEmptyHint;
+
+  /// No description provided for @productArchiveTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot arxivlansinmi?'**
+  String get productArchiveTitle;
+
+  /// No description provided for @productArchiveExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozlar mahsulotni ko\'rmay qoladi, savatlarda u mavjud bo\'lmaydi. U bor buyurtmalar o\'zgarmaydi. Uni «Arxivdagilar ham» ro\'yxatidan qaytarish mumkin.'**
+  String get productArchiveExplained;
+
   /// No description provided for @catalogPage.
   ///
   /// In uz, this message translates to:

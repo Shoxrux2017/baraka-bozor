@@ -7,7 +7,7 @@ import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/admin_catalog_controllers.dart';
 import '../domain/admin_catalog.dart';
-import 'products_screen.dart' show ProductThumbnail;
+import 'catalog_widgets.dart' show ProductThumbnail;
 
 /// A catalog entry's picture: the current one, a picked one waiting to be
 /// sent, the way to choose another and the way to remove it. The product form

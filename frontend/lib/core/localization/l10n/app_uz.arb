@@ -167,6 +167,30 @@
   "catalogRestore": "Arxivdan qaytarish",
   "catalogArchivedNote": "Arxivdagi yozuv mijozlarga ko'rinmaydi. Qaytarish uchun ro'yxatdagi amaldan foydalaning",
   "catalogEmpty": "Hech narsa topilmadi",
+  "catalogProductCount": "{count} ta mahsulot",
+  "@catalogProductCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "catalogColumnProduct": "Mahsulot",
+  "catalogColumnCustomerPrice": "Mijoz uchun",
+  "catalogColumnShown": "Ko'rinishi",
+  "catalogForCustomer": "mijozga {price}",
+  "@catalogForCustomer": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogCategoryHiddenLine": "Kategoriya yashirilgan — mijozlar ko'rmaydi",
+  "catalogCategoryArchivedLine": "Kategoriya arxivda — mijozlar ko'rmaydi",
+  "catalogEmptyHint": "Nomini tekshiring yoki «Barcha kategoriyalar»ni tanlang.",
+  "productArchiveTitle": "Mahsulot arxivlansinmi?",
+  "productArchiveExplained": "Mijozlar mahsulotni ko'rmay qoladi, savatlarda u mavjud bo'lmaydi. U bor buyurtmalar o'zgarmaydi. Uni «Arxivdagilar ham» ro'yxatidan qaytarish mumkin.",
   "catalogPage": "{page}-sahifa, jami {last}",
   "@catalogPage": {
     "placeholders": {
