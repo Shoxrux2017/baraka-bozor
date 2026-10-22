@@ -12,6 +12,7 @@ InputDecoration panelSearchDecoration({required String hint, Widget? suffix}) {
     prefixIconColor: KitColors.muted,
     prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
     suffixIcon: suffix,
+    suffixIconConstraints: const BoxConstraints(minHeight: 40),
     filled: true,
     fillColor: KitColors.field,
     isDense: true,

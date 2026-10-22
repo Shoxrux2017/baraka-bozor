@@ -843,6 +843,8 @@ void main() {
           catalog.productRows = <AdminProduct>[
             adminProduct(nameUz: long.trim(), nameRu: long.trim()),
             adminProduct(id: 'p-2', isFeatured: true),
+            for (int i = 3; i <= 25; i++)
+              adminProduct(id: 'p-$i', nameUz: 'Mahsulot $i'),
           ];
           tester.platformDispatcher.textScaleFactorTestValue = 2;
           addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -850,6 +852,18 @@ void main() {
           await open(tester, AdminPaths.products, size: size, device: device);
 
           expect(byKey('product-p-1'), findsOneWidget);
+          expect(byKey('new-product'), findsOneWidget);
+          expect(byKey('product-search'), findsOneWidget);
+          expect(byKey('product-category-filter'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+
+          await tapAndSettle(tester, byKey('archive-p-1'));
+          expect(byKey('archive-dialog'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          await tapAndSettle(tester, byKey('action-cancel'));
+          expect(byKey('archive-dialog'), findsNothing);
+
+          await tapAndSettle(tester, byKey('next-page'));
           expect(tester.takeException(), isNull);
         });
       }
@@ -1746,5 +1760,354 @@ void main() {
 
       expect(textOf(tester, 'name_uz'), 'Pomidor');
     });
+  });
+
+  group('fix wave', () {
+    Future<void> resize(WidgetTester tester, Size size) async {
+      tester.view.physicalSize = size;
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('typing survives the 1000 boundary on a saved product', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        AdminPaths.product('p-1'),
+        size: const Size(1048, 1000),
+      );
+      await tester.enterText(field('name_uz'), 'Qizil pomidor');
+      await tester.pumpAndSettle();
+
+      await resize(tester, const Size(1047, 1000));
+      expect(
+        tester.widget<CatalogImageCard>(find.byType(CatalogImageCard)).compact,
+        isTrue,
+      );
+      expect(textOf(tester, 'name_uz'), 'Qizil pomidor');
+
+      await resize(tester, const Size(1048, 1000));
+      expect(textOf(tester, 'name_uz'), 'Qizil pomidor');
+    });
+
+    testWidgets('a picked image survives the 1000 boundary', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        AdminPaths.product('p-1'),
+        size: const Size(1048, 1000),
+      );
+      picker.next = _png();
+      await tapAndSettle(tester, byKey('choose-image'));
+      expect(byKey('picked-image'), findsOneWidget);
+
+      await resize(tester, const Size(1047, 1000));
+      expect(byKey('picked-image'), findsOneWidget);
+
+      await resize(tester, const Size(1048, 1000));
+      expect(byKey('picked-image'), findsOneWidget);
+    });
+
+    testWidgets('typing survives the 1000 boundary on a new product', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.newProduct, size: const Size(1048, 1000));
+      await tester.enterText(field('name_uz'), 'Bodring');
+      await tester.pumpAndSettle();
+
+      await resize(tester, const Size(1047, 1000));
+      expect(textOf(tester, 'name_uz'), 'Bodring');
+
+      await resize(tester, const Size(1048, 1000));
+      expect(textOf(tester, 'name_uz'), 'Bodring');
+    });
+
+    testWidgets("an earlier action's failure is not shown in another window", (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = <AdminProduct>[
+        adminProduct(),
+        adminProduct(id: 'p-2', nameUz: 'Olma', nameRu: 'Яблоко'),
+      ];
+      await open(tester, AdminPaths.products);
+      final Finder failure = find.descendant(
+        of: byKey('archive-dialog'),
+        matching: find.text(l10n(tester).errorBusinessConflict),
+      );
+      const ApiRefusal conflict = ApiRefusal(
+        ApiError(status: 409, code: 'business_conflict'),
+      );
+
+      catalog.changeFailure = conflict;
+      await tapAndSettle(tester, byKey('archive-p-1'));
+      await tapAndSettle(tester, byKey('archive-confirm'));
+      expect(failure, findsOneWidget);
+      await tapAndSettle(tester, byKey('action-cancel'));
+
+      await tapAndSettle(tester, byKey('archive-p-2'));
+      expect(byKey('archive-dialog'), findsOneWidget);
+      expect(failure, findsNothing);
+
+      catalog.changeFailure = conflict;
+      await tapAndSettle(tester, byKey('archive-confirm'));
+      expect(failure, findsOneWidget);
+    });
+
+    testWidgets('a product page that did not load has no "new product" title', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.product('p-404'));
+
+      expect(find.text(l10n(tester).productNew), findsNothing);
+      expect(byKey('product-title'), findsNothing);
+      expect(byKey('back-to-products'), findsOneWidget);
+    });
+
+    testWidgets('the square picture is clipped at radius 16, not 87', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = <AdminProduct>[
+        adminProduct(imageUrl: 'https://api.test/storage/products/a.webp'),
+      ];
+      await open(
+        tester,
+        AdminPaths.product('p-1'),
+        size: const Size(1400, 1000),
+      );
+
+      final ClipRRect clip = tester.widget<ClipRRect>(
+        find.descendant(
+          of: byKey('current-image'),
+          matching: find.byType(ClipRRect),
+        ),
+      );
+      expect(clip.borderRadius, BorderRadius.circular(16));
+    });
+
+    testWidgets(
+      'a category without a picture shows the letter it is named by',
+      (WidgetTester tester) async {
+        await open(tester, AdminPaths.categories, device: const Locale('ru'));
+
+        expect(
+          find.descendant(
+            of: byKey('category-thumb-c-1'),
+            matching: find.text('О'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('a switch row is one labelled control the whole row toggles', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      await open(tester, AdminPaths.product('p-1'));
+
+      expect(
+        tester.getSemantics(field('is_active')).label,
+        contains(l10n(tester).catalogShownToCustomers),
+      );
+
+      final Finder title = find.text(l10n(tester).catalogShownToCustomers);
+      await tester.ensureVisible(title);
+      await tester.pumpAndSettle();
+      expect(tester.widget<Switch>(field('is_active')).value, isTrue);
+      await tester.tap(title);
+      await tester.pumpAndSettle();
+      expect(tester.widget<Switch>(field('is_active')).value, isFalse);
+      semantics.dispose();
+    });
+
+    testWidgets('the saved prices show before the refetch lands', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.product('p-1'));
+      final AppLocalizations text = l10n(tester);
+      catalog.loadHold = Completer<void>();
+
+      await tester.enterText(field('market_price_uzs'), '20 000');
+      await tapAndSettle(tester, byKey('product-save'));
+
+      expect(
+        find.descendant(
+          of: byKey('customer-price'),
+          matching: find.text(
+            text.productCustomerPriceBasis(
+              MoneyFormat.uzs(20000, AppLanguage.uz),
+            ),
+          ),
+        ),
+        findsOneWidget,
+      );
+      catalog.loadHold!.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the search hint is not covered by the Enter key', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.products);
+
+      final Finder hint = find.text(l10n(tester).productSearch);
+      final Finder enter = byKey('search-enter-hint');
+      expect(hint, findsOneWidget);
+      // 60 in the font of the app; the test font is wider.
+      expect(tester.getSize(enter).width, lessThan(80));
+      expect(tester.getRect(hint).overlaps(tester.getRect(enter)), isFalse);
+    });
+
+    testWidgets('the category filter hugs its label instead of a fixed 240', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        AdminPaths.products,
+        size: const Size(820, 1180),
+        device: const Locale('ru'),
+      );
+
+      expect(
+        tester.getSize(byKey('product-category-filter')).width,
+        lessThan(240),
+      );
+    });
+
+    testWidgets('the category field is white like the unit field', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.product('p-1'));
+
+      InputDecoration decoration(String apiKey) => tester
+          .widget<InputDecorator>(
+            find.descendant(
+              of: field(apiKey),
+              matching: find.byType(InputDecorator),
+            ),
+          )
+          .decoration;
+      expect(decoration('category_id').fillColor, Colors.white);
+      expect(
+        decoration('category_id').fillColor,
+        decoration('unit_code').fillColor,
+      );
+      expect(decoration('category_id').filled, isTrue);
+    });
+
+    testWidgets('the picture buttons are 12 px compact and 13 px square', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = <AdminProduct>[
+        adminProduct(imageUrl: 'https://api.test/storage/products/a.webp'),
+      ];
+      double sizeOf(String key) => tester
+          .widget<DefaultTextStyle>(
+            find
+                .descendant(
+                  of: byKey(key),
+                  matching: find.byType(DefaultTextStyle),
+                )
+                .last,
+          )
+          .style
+          .fontSize!;
+
+      await open(
+        tester,
+        AdminPaths.product('p-1'),
+        size: const Size(1400, 1000),
+      );
+      expect(sizeOf('choose-image'), 13);
+      expect(sizeOf('remove-image'), 13);
+
+      await open(
+        tester,
+        AdminPaths.product('p-1'),
+        size: const Size(800, 1400),
+      );
+      expect(sizeOf('choose-image'), 12);
+      expect(sizeOf('remove-image'), 12);
+    });
+
+    testWidgets('a card reaches the card edge with its prices and button', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = <AdminProduct>[
+        adminProduct(customerUnitPriceUzs: 100),
+      ];
+      await open(tester, AdminPaths.products, size: const Size(847, 1180));
+
+      final AppLocalizations text = l10n(tester);
+      final Finder caption = find.text(
+        '${text.catalogPerUnit(CatalogLabels.unit(text, UnitCode.kg))}'
+        ' · '
+        '${text.catalogForCustomer(MoneyFormat.uzs(100, AppLanguage.uz))}',
+      );
+      final double card = tester.getTopRight(byKey('product-p-1')).dx;
+      expect(card - tester.getTopRight(byKey('archive-p-1')).dx, lessThan(20));
+      // The prices take the width they need and the names the rest: the
+      // caption stands on one line instead of wrapping at half the free space.
+      expect(tester.getSize(caption).height, lessThan(20));
+    });
+
+    testWidgets('the compact picture of the product page is on a white card', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        AdminPaths.product('p-1'),
+        size: const Size(800, 1400),
+      );
+
+      expect(
+        find.ancestor(
+          of: byKey('choose-image'),
+          matching: find.byType(KitCard),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(CatalogImageCard),
+          matching: find.text(l10n(tester).productImage),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      for (final Size size in const <Size>[Size(1440, 900), Size(820, 1180)]) {
+        testWidgets('the archive window and the remove-image window hold at '
+            'the extremes (${device.languageCode} ${size.width.toInt()})', (
+          WidgetTester tester,
+        ) async {
+          final String name = ('Pomidor ' * 20).substring(0, 160);
+          catalog.productRows = <AdminProduct>[
+            adminProduct(
+              nameUz: name,
+              nameRu: name,
+              imageUrl: 'https://api.test/storage/products/a.webp',
+            ),
+          ];
+          tester.platformDispatcher.textScaleFactorTestValue = 2;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+          await open(tester, AdminPaths.products, size: size, device: device);
+          await tapAndSettle(tester, byKey('archive-p-1'));
+          expect(byKey('archive-dialog'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          await tapAndSettle(tester, byKey('action-cancel'));
+
+          GoRouter.of(tester.element(find.byType(Scaffold).first))
+              .go(AdminPaths.product('p-1'));
+          await tester.pumpAndSettle();
+          await tapAndSettle(tester, byKey('remove-image'));
+          expect(byKey('remove-image-dialog'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+      }
+    }
   });
 }

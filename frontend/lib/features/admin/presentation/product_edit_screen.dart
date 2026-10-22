@@ -59,8 +59,14 @@ class ProductEditScreen extends ConsumerWidget {
       ),
       (_, AsyncData(:final List<AdminCategory> value)) when id == null =>
         _TwoColumns(
+          key: const ValueKey<String>('new-product-columns'),
           form: _ProductForm(product: null, categories: value),
-          picture: (bool compact) => _NewImageCard(compact: compact),
+          picture: (bool compact) => CatalogImagePlaceholder(
+            title: l10n.productImage,
+            text: l10n.productImageAfterSave,
+            compact: compact,
+            onCard: true,
+          ),
         ),
       (final String id, AsyncData(:final List<AdminCategory> value)) =>
         product!.when(
@@ -69,6 +75,7 @@ class ProductEditScreen extends ConsumerWidget {
           // save keeps the form, which holds the Admin's edits.
           skipLoadingOnRefresh: !product.hasError,
           data: (AdminProduct product) => _TwoColumns(
+            key: ValueKey<String>('product-columns-$id'),
             form: _ProductForm(
               key: ValueKey<String>(product.id),
               product: product,
@@ -107,7 +114,11 @@ class ProductEditScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 8),
-        _Heading(product: product?.value, categories: categories.value),
+        _Heading(
+          isNew: id == null,
+          product: product?.value,
+          categories: categories.value,
+        ),
         const SizedBox(height: 20),
         body,
       ],
@@ -118,8 +129,15 @@ class ProductEditScreen extends ConsumerWidget {
 /// The page's title: the saved product's name with its state and its tag, and
 /// under it the other language's name and the category.
 class _Heading extends StatelessWidget {
-  const _Heading({required this.product, required this.categories});
+  const _Heading({
+    required this.isNew,
+    required this.product,
+    required this.categories,
+  });
 
+  /// The page makes a new product; a page of a product that has not loaded
+  /// has no title to show.
+  final bool isNew;
   final AdminProduct? product;
   final List<AdminCategory>? categories;
 
@@ -142,21 +160,22 @@ class _Heading extends StatelessWidget {
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
-            Text(
-              product == null
-                  ? l10n.productNew
-                  : catalogName(
-                      context,
-                      uz: product.nameUz,
-                      ru: product.nameRu,
-                    ),
-              key: const ValueKey<String>('product-title'),
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: KitColors.ink,
+            if (product != null || isNew)
+              Text(
+                product == null
+                    ? l10n.productNew
+                    : catalogName(
+                        context,
+                        uz: product.nameUz,
+                        ru: product.nameRu,
+                      ),
+                key: const ValueKey<String>('product-title'),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: KitColors.ink,
+                ),
               ),
-            ),
             if (product != null) CatalogStateChip(product.state),
             if (product != null && product.isFeatured) const FeaturedTag(),
           ],
@@ -177,29 +196,51 @@ class _Heading extends StatelessWidget {
 
 /// The form with the picture at its right from [ProductEditScreen.
 /// twoColumnsWidth], and the compact picture above it below that.
-class _TwoColumns extends StatelessWidget {
-  const _TwoColumns({required this.form, required this.picture});
+///
+/// Crossing that width moves the two between a row and a column. Each keeps a
+/// [GlobalKey] of its own, so the form's unsaved edits and a picked picture
+/// survive the move (a rotated tablet, a resized window). The keys live as
+/// long as this widget's state, which the screen gives a new key when the
+/// product changes.
+class _TwoColumns extends StatefulWidget {
+  const _TwoColumns({required this.form, required this.picture, super.key});
 
   final Widget form;
   final Widget Function(bool compact) picture;
 
   @override
+  State<_TwoColumns> createState() => _TwoColumnsState();
+}
+
+class _TwoColumnsState extends State<_TwoColumns> {
+  final GlobalKey _formKey = GlobalKey(debugLabel: 'product form');
+  final GlobalKey _pictureKey = GlobalKey(debugLabel: 'product picture');
+
+  @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        if (constraints.maxWidth >= ProductEditScreen.twoColumnsWidth) {
+        final bool wide =
+            constraints.maxWidth >= ProductEditScreen.twoColumnsWidth;
+        final Widget form = KeyedSubtree(key: _formKey, child: widget.form);
+        final Widget picture = KeyedSubtree(
+          key: _pictureKey,
+          child: widget.picture(!wide),
+        );
+
+        if (wide) {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(child: form),
               const SizedBox(width: 20),
-              SizedBox(width: 360, child: picture(false)),
+              SizedBox(width: 360, child: picture),
             ],
           );
         }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[picture(true), const SizedBox(height: 16), form],
+          children: <Widget>[picture, const SizedBox(height: 16), form],
         );
       },
     );
@@ -389,7 +430,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
         AppLanguage.tryParse(Localizations.localeOf(context).languageCode) ??
         AppLanguage.uz;
     final MutationState change = ref.watch(productFormControllerProvider);
-    final AdminProduct? product = widget.product;
+    final AdminProduct? product = _base ?? widget.product;
 
     String? rejected(String apiKey) =>
         _rejected.contains(apiKey) ? l10n.fieldRejected : null;
@@ -430,6 +471,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     String nameOf(AdminCategory category) =>
         catalogName(context, uz: category.nameUz, ru: category.nameRu);
 
+    final InputDecoration selectDecoration = panelFieldDecoration();
     final AdminCategory? chosen = _chosenCategory;
     final String? categoryNote = _archived || !_active || chosen == null
         ? null
@@ -515,7 +557,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
                         fontSize: 13,
                         color: KitColors.ink,
                       ),
-                      decoration: panelFieldDecoration(),
+                      decoration: selectDecoration,
                       items: <DropdownMenuItem<String>>[
                         for (final AdminCategory category in _choices)
                           DropdownMenuItem<String>(
@@ -550,7 +592,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
                         fontSize: 13,
                         color: KitColors.ink,
                       ),
-                      decoration: panelFieldDecoration(),
+                      decoration: selectDecoration,
                       items: <DropdownMenuItem<UnitCode>>[
                         for (final UnitCode unit in UnitCode.values)
                           DropdownMenuItem<UnitCode>(
@@ -793,96 +835,8 @@ class _ProductImageCard extends ConsumerWidget {
       change: ref.watch(productImageControllerProvider),
       keyPrefix: '',
       compact: compact,
+      onCard: true,
       compactPictureSize: 120,
-    );
-  }
-}
-
-/// What the picture's place says before the product exists: a picture can be
-/// added once it is saved.
-class _NewImageCard extends StatelessWidget {
-  const _NewImageCard({required this.compact});
-
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    const Widget icon = Icon(
-      Icons.add_photo_alternate_outlined,
-      size: 44,
-      color: KitColors.muted,
-    );
-    final Widget note = Text(
-      l10n.productImageAfterSave,
-      textAlign: compact ? TextAlign.start : TextAlign.center,
-      style: const TextStyle(fontSize: 12, color: KitColors.muted),
-    );
-    final BoxDecoration ground = BoxDecoration(
-      color: KitColors.field,
-      borderRadius: BorderRadius.circular(16),
-    );
-
-    if (compact) {
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: KitColors.line),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              SizedBox.square(
-                dimension: 88,
-                child: DecoratedBox(
-                  decoration: ground,
-                  child: const Center(child: icon),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      l10n.productImage,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: KitColors.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    note,
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return PanelCard(
-      title: l10n.productImage,
-      children: <Widget>[
-        const SizedBox(height: 12),
-        AspectRatio(
-          aspectRatio: 1,
-          child: DecoratedBox(
-            decoration: ground,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[icon, const SizedBox(height: 8), note],
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

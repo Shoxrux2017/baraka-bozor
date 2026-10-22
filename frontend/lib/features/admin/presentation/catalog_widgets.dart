@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_language.dart';
@@ -59,6 +61,10 @@ String catalogOtherName(
     ? uz
     : ru;
 
+/// The corner radius of a picture of side [size]: 12 on 44, growing with it
+/// to 16 and no further, so a 320 picture is not a circle.
+double catalogThumbRadius(double size) => math.min(size * 12 / 44, 16);
+
 /// A product's or category's picture, or — with none, or when it cannot be
 /// loaded — a placeholder: the [letter] on `primarySoft` for a category, an
 /// image icon on `field` for a product.
@@ -67,18 +73,24 @@ class CatalogThumb extends StatelessWidget {
     required this.url,
     this.size = 44,
     this.letter,
+    this.radius,
     super.key,
   });
 
   final String? url;
   final double size;
 
+  /// The corner radius; [catalogThumbRadius] of [size] when null.
+  final double? radius;
+
   /// The category's first letter, shown when there is no picture.
   final String? letter;
 
   @override
   Widget build(BuildContext context) {
-    final BorderRadius radius = BorderRadius.circular(size * 12 / 44);
+    final BorderRadius radius = BorderRadius.circular(
+      this.radius ?? catalogThumbRadius(size),
+    );
     final String? letter = this.letter;
     final Widget placeholder = letter != null
         ? DecoratedBox(
@@ -105,7 +117,7 @@ class CatalogThumb extends StatelessWidget {
             child: Center(
               child: Icon(
                 Icons.image_outlined,
-                size: size / 2,
+                size: math.min(size / 2, 44),
                 color: KitColors.muted,
                 semanticLabel: AppLocalizations.of(context).productNoImage,
               ),
@@ -298,43 +310,53 @@ class CatalogSwitchRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CatalogShownRow(
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: KitColors.ink,
-                  ),
+    final ValueChanged<bool>? onChanged = this.onChanged;
+
+    return MergeSemantics(
+      child: InkWell(
+        onTap: onChanged == null ? null : () => onChanged(!value),
+        child: CatalogShownRow(
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: KitColors.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hint,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: KitColors.muted,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  hint,
-                  style: const TextStyle(fontSize: 12, color: KitColors.muted),
+              ),
+              const SizedBox(width: 12),
+              Switch(
+                key: switchKey,
+                value: value,
+                onChanged: onChanged,
+                activeThumbColor: Colors.white,
+                activeTrackColor: KitColors.primary,
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: KitColors.line,
+                trackOutlineColor: const WidgetStatePropertyAll<Color>(
+                  Colors.transparent,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Switch(
-            key: switchKey,
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: Colors.white,
-            activeTrackColor: KitColors.primary,
-            inactiveThumbColor: Colors.white,
-            inactiveTrackColor: KitColors.line,
-            trackOutlineColor: const WidgetStatePropertyAll<Color>(
-              Colors.transparent,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

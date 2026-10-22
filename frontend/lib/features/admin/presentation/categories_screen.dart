@@ -13,6 +13,7 @@ import '../../../core/widgets/kit/kit_dialog.dart';
 import '../../../core/widgets/kit/kit_fields.dart';
 import '../../../core/widgets/kit/kit_note.dart';
 import '../../../core/widgets/list_widgets.dart';
+import '../../../core/widgets/panel/panel_action_button.dart';
 import '../../../core/widgets/panel/panel_card.dart';
 import '../../../core/widgets/panel/panel_fields.dart';
 import '../../../core/widgets/panel/panel_filter_chip.dart';
@@ -64,33 +65,13 @@ class CategoriesScreen extends ConsumerWidget {
               subtitle: page.hasValue
                   ? l10n.catalogCategoryCount(page.requireValue.total)
                   : null,
-              trailing: labelled
-                  ? FilledButton.icon(
-                      key: const ValueKey<String>('new-category'),
-                      style: kitFilled(height: 40).copyWith(
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      icon: const Icon(Icons.add, size: 20),
-                      label: Text(l10n.categoryNew),
-                      onPressed: () => showCategoryForm(context, null),
-                    )
-                  : Tooltip(
-                      message: l10n.categoryNew,
-                      child: FilledButton(
-                        key: const ValueKey<String>('new-category'),
-                        style: kitFilled(height: 40).copyWith(
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          minimumSize: const WidgetStatePropertyAll<Size>(
-                            Size(40, 40),
-                          ),
-                          padding: const WidgetStatePropertyAll<EdgeInsets>(
-                            EdgeInsets.symmetric(horizontal: 12),
-                          ),
-                        ),
-                        onPressed: () => showCategoryForm(context, null),
-                        child: const Icon(Icons.add, size: 20),
-                      ),
-                    ),
+              trailing: PanelHeaderButton(
+                buttonKey: const ValueKey<String>('new-category'),
+                icon: Icons.add,
+                label: l10n.categoryNew,
+                labelled: labelled,
+                onPressed: () => showCategoryForm(context, null),
+              ),
             ),
             const SizedBox(height: 20),
             PanelCard(
@@ -387,7 +368,11 @@ class _CategoryThumb extends StatelessWidget {
       key: ValueKey<String>('category-thumb-${category.id}'),
       url: category.imageUrl,
       size: size,
-      letter: String.fromCharCodes(category.nameUz.runes.take(1)).toUpperCase(),
+      letter: catalogName(
+        context,
+        uz: category.nameUz,
+        ru: category.nameRu,
+      ).characters.first.toUpperCase(),
     );
   }
 }
@@ -464,15 +449,17 @@ class _CategoryActions extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        _ActionButton(
-          buttonKey: 'edit-${category.id}',
+        PanelActionButton(
+          buttonKey: ValueKey<String>('edit-${category.id}'),
           tooltip: l10n.catalogEdit,
           icon: Icons.edit_outlined,
           onTap: busy ? null : () => showCategoryForm(context, category),
         ),
         const SizedBox(width: 8),
-        _ActionButton(
-          buttonKey: '${archived ? 'restore' : 'archive'}-${category.id}',
+        PanelActionButton(
+          buttonKey: ValueKey<String>(
+            '${archived ? 'restore' : 'archive'}-${category.id}',
+          ),
           tooltip: archived ? l10n.catalogRestore : l10n.catalogArchive,
           icon: archived ? Icons.unarchive_outlined : Icons.archive_outlined,
           onTap: busy
@@ -490,46 +477,6 @@ class _CategoryActions extends ConsumerWidget {
                 ),
         ),
       ],
-    );
-  }
-}
-
-/// A 36 square outlined button of radius 10 with a `muted` icon.
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.buttonKey,
-    required this.tooltip,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String buttonKey;
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final BorderRadius radius = BorderRadius.circular(10);
-
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: radius,
-          side: const BorderSide(color: KitColors.line),
-        ),
-        child: InkWell(
-          key: ValueKey<String>(buttonKey),
-          borderRadius: radius,
-          onTap: onTap,
-          child: SizedBox.square(
-            dimension: 36,
-            child: Icon(icon, size: 19, color: KitColors.muted),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -803,7 +750,11 @@ class _CategoryFormState extends ConsumerState<_CategoryForm> {
             const Divider(height: 1, thickness: 1, color: KitColors.line),
             const SizedBox(height: 16),
             if (widget.category == null)
-              const _NewPictureBox()
+              CatalogImagePlaceholder(
+                title: l10n.categoryImage,
+                text: l10n.categoryImageAfterSave,
+                compact: true,
+              )
             else
               CatalogImageCard(
                 imageUrl: _imageUrl,
@@ -832,72 +783,6 @@ class _CategoryFormState extends ConsumerState<_CategoryForm> {
                 }
                 return KitActionPair(secondary: cancel, primary: save);
               },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// What the picture's place says before the category exists: a picture can be
-/// added once it is saved.
-class _NewPictureBox extends StatelessWidget {
-  const _NewPictureBox();
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: KitColors.line),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            SizedBox.square(
-              dimension: 88,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: KitColors.field,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.add_photo_alternate_outlined,
-                    size: 44,
-                    color: KitColors.muted,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    l10n.categoryImage,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: KitColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    l10n.categoryImageAfterSave,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: KitColors.muted,
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),

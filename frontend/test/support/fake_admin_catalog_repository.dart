@@ -133,8 +133,12 @@ class FakeAdminCatalogRepository implements AdminCatalogRepository {
   /// The next product load answers this failure instead.
   ApiFailure? loadFailure;
 
+  /// While set, a product load waits for it before it answers.
+  Completer<void>? loadHold;
+
   @override
   Future<AdminProduct> product(String id) async {
+    await loadHold?.future;
     final ApiFailure? failure = loadFailure;
     if (failure != null) {
       loadFailure = null;

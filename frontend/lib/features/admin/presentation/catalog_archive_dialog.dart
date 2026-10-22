@@ -27,53 +27,83 @@ Future<void> showArchiveDialog(
     context: context,
     dialogKey: 'archive-dialog',
     title: title,
-    builder: (BuildContext dialog) => Consumer(
-      builder: (BuildContext context, WidgetRef ref, Widget? _) {
-        final MutationState change = ref.watch(state);
-        final AppLocalizations l10n = AppLocalizations.of(context);
-
-        Future<void> submit() async {
-          if (await archive() && context.mounted) {
-            Navigator.of(context).pop();
-          }
-        }
-
-        return PopScope(
-          canPop: !change.isBusy,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: KitColors.field,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: subject,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                explanation,
-                style: const TextStyle(fontSize: 13, color: KitColors.ink2),
-              ),
-              FailureMessage(change.failure),
-              const SizedBox(height: 20),
-              kitDialogButtons(
-                context: context,
-                busy: change.isBusy,
-                confirmKey: const ValueKey<String>('archive-confirm'),
-                confirm: l10n.catalogArchive,
-                confirmIcon: Icons.archive_outlined,
-                destructive: true,
-                submit: submit,
-              ),
-            ],
-          ),
-        );
-      },
+    builder: (BuildContext dialog) => _ArchiveBody(
+      explanation: explanation,
+      subject: subject,
+      state: state,
+      archive: archive,
     ),
   );
+}
+
+/// The window's content. A failure shows only after this window's own confirm:
+/// the controller's failure may come from an earlier action on another entry.
+class _ArchiveBody extends ConsumerStatefulWidget {
+  const _ArchiveBody({
+    required this.explanation,
+    required this.subject,
+    required this.state,
+    required this.archive,
+  });
+
+  final String explanation;
+  final Widget subject;
+  final ProviderListenable<MutationState> state;
+  final Future<bool> Function() archive;
+
+  @override
+  ConsumerState<_ArchiveBody> createState() => _ArchiveBodyState();
+}
+
+class _ArchiveBodyState extends ConsumerState<_ArchiveBody> {
+  bool _tried = false;
+
+  Future<void> _submit() async {
+    setState(() => _tried = true);
+    if (await widget.archive() && mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final MutationState change = ref.watch(widget.state);
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    return PopScope(
+      canPop: !change.isBusy,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: KitColors.field,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: widget.subject,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            widget.explanation,
+            style: const TextStyle(fontSize: 13, color: KitColors.ink2),
+          ),
+          if (_tried) FailureMessage(change.failure),
+          const SizedBox(height: 20),
+          kitDialogButtons(
+            context: context,
+            busy: change.isBusy,
+            confirmKey: const ValueKey<String>('archive-confirm'),
+            confirm: l10n.catalogArchive,
+            confirmIcon: Icons.archive_outlined,
+            destructive: true,
+            submit: _submit,
+          ),
+        ],
+      ),
+    );
+  }
 }

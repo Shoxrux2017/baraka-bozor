@@ -9,9 +9,16 @@ import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../../core/widgets/kit/kit_card.dart';
 import '../../../core/widgets/kit/kit_dialog.dart';
+import '../../../core/widgets/panel/panel_card.dart';
 import '../application/admin_catalog_controllers.dart';
 import '../domain/admin_catalog.dart';
-import 'catalog_widgets.dart' show CatalogThumb;
+import 'catalog_widgets.dart' show CatalogThumb, catalogThumbRadius;
+
+const TextStyle _cardTitle = TextStyle(
+  fontSize: 15,
+  fontWeight: FontWeight.w700,
+  color: KitColors.ink,
+);
 
 /// A catalog entry's picture: the current one, a picked one waiting to be
 /// sent, the way to choose another and the way to remove it. The product page
@@ -33,6 +40,7 @@ class CatalogImageCard extends ConsumerStatefulWidget {
     required this.keyPrefix,
     required this.compact,
     this.compactPictureSize = 88,
+    this.onCard = false,
     this.title,
     this.removeConfirm,
     this.removeExplained,
@@ -50,6 +58,10 @@ class CatalogImageCard extends ConsumerStatefulWidget {
 
   /// The side of the picture of a [compact] card.
   final double compactPictureSize;
+
+  /// Stands a [compact] card on a white card of its own, with the title above
+  /// the picture as the square card has it, instead of in an outlined box.
+  final bool onCard;
 
   /// The card's heading, the removal question and what it says Customers will
   /// see instead; the product's when null.
@@ -159,7 +171,7 @@ class _CatalogImageCardState extends ConsumerState<CatalogImageCard> {
         size: size,
       );
     }
-    final BorderRadius radius = BorderRadius.circular(widget.compact ? 12 : 16);
+    final BorderRadius radius = BorderRadius.circular(catalogThumbRadius(size));
     return SizedBox.square(
       key: _key('picked-image'),
       dimension: size,
@@ -256,21 +268,27 @@ class _CatalogImageCardState extends ConsumerState<CatalogImageCard> {
 
   /// "Upload" (only with a picked image), "choose" and "remove" (only with a
   /// current image and nothing picked), in that order.
-  List<Widget> _buttons(AppLocalizations l10n, double height) {
+  List<Widget> _buttons(AppLocalizations l10n, double height, double fontSize) {
+    final TextStyle label = TextStyle(
+      fontSize: fontSize,
+      fontWeight: FontWeight.w600,
+    );
     final bool busy = widget.change.isBusy;
     final bool picked = _picked != null;
     return <Widget>[
       if (picked)
         FilledButton.icon(
           key: _key('upload-image'),
-          style: kitFilled(height: height),
+          style: kitFilled(height: height)
+              .copyWith(textStyle: WidgetStatePropertyAll<TextStyle>(label)),
           icon: const Icon(Icons.upload, size: 18),
           label: Text(l10n.productUploadImage),
           onPressed: busy ? null : _upload,
         ),
       OutlinedButton.icon(
         key: _key('choose-image'),
-        style: kitOutlined(height: height),
+        style: kitOutlined(height: height)
+            .copyWith(textStyle: WidgetStatePropertyAll<TextStyle>(label)),
         icon: const Icon(Icons.image_outlined, size: 18),
         label: Text(l10n.productChooseImage),
         onPressed: busy ? null : _choose,
@@ -281,10 +299,7 @@ class _CatalogImageCardState extends ConsumerState<CatalogImageCard> {
           style: TextButton.styleFrom(
             foregroundColor: KitColors.danger,
             minimumSize: Size(0, height),
-            textStyle: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
+            textStyle: label,
           ),
           icon: const Icon(Icons.delete_outline, size: 18),
           label: Text(l10n.productRemoveImage),
@@ -300,73 +315,77 @@ class _CatalogImageCardState extends ConsumerState<CatalogImageCard> {
     final String? problem = _problem;
 
     if (widget.compact) {
+      final Widget row = Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _picture(l10n, widget.compactPictureSize),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                if (!widget.onCard) ...<Widget>[
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: KitColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                ],
+                Text(
+                  l10n.productImageRules,
+                  style: const TextStyle(fontSize: 12, color: KitColors.muted),
+                ),
+                if (problem != null) ...<Widget>[
+                  const SizedBox(height: 6),
+                  _problemLine(problem),
+                ],
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _buttons(l10n, 36, 12),
+                ),
+                FailureMessage(widget.change.failure),
+              ],
+            ),
+          ),
+        ],
+      );
+      if (widget.onCard) {
+        return KitCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(title, style: _cardTitle),
+              const SizedBox(height: 12),
+              row,
+            ],
+          ),
+        );
+      }
       return DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: KitColors.line),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _picture(l10n, widget.compactPictureSize),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: KitColors.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      l10n.productImageRules,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: KitColors.muted,
-                      ),
-                    ),
-                    if (problem != null) ...<Widget>[
-                      const SizedBox(height: 6),
-                      _problemLine(problem),
-                    ],
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _buttons(l10n, 36),
-                    ),
-                    FailureMessage(widget.change.failure),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        child: Padding(padding: const EdgeInsets.all(12), child: row),
       );
     }
 
-    final List<Widget> buttons = _buttons(l10n, 44);
+    final List<Widget> buttons = _buttons(l10n, 44, 13);
     return KitCard(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: KitColors.ink,
-            ),
-          ),
+          Text(title, style: _cardTitle),
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (BuildContext context, BoxConstraints box) =>
@@ -390,6 +409,119 @@ class _CatalogImageCardState extends ConsumerState<CatalogImageCard> {
           FailureMessage(widget.change.failure),
         ],
       ),
+    );
+  }
+}
+
+/// What a picture's place says before the entry exists: a picture can be added
+/// once it is saved. A [compact] place is the outlined box (or, [onCard], the
+/// white card) with the empty picture at its left; otherwise a card with a
+/// square one.
+class CatalogImagePlaceholder extends StatelessWidget {
+  const CatalogImagePlaceholder({
+    required this.title,
+    required this.text,
+    required this.compact,
+    this.onCard = false,
+    super.key,
+  });
+
+  final String title;
+  final String text;
+  final bool compact;
+  final bool onCard;
+
+  @override
+  Widget build(BuildContext context) {
+    const Widget icon = Icon(
+      Icons.add_photo_alternate_outlined,
+      size: 44,
+      color: KitColors.muted,
+    );
+    final Widget note = Text(
+      text,
+      textAlign: compact ? TextAlign.start : TextAlign.center,
+      style: const TextStyle(fontSize: 12, color: KitColors.muted),
+    );
+    final BoxDecoration ground = BoxDecoration(
+      color: KitColors.field,
+      borderRadius: BorderRadius.circular(catalogThumbRadius(88)),
+    );
+
+    if (compact) {
+      final Widget row = Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox.square(
+            dimension: 88,
+            child: DecoratedBox(
+              decoration: ground,
+              child: const Center(child: icon),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                if (!onCard) ...<Widget>[
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: KitColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                ],
+                note,
+              ],
+            ),
+          ),
+        ],
+      );
+      if (onCard) {
+        return KitCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(title, style: _cardTitle),
+              const SizedBox(height: 12),
+              row,
+            ],
+          ),
+        );
+      }
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: KitColors.line),
+        ),
+        child: Padding(padding: const EdgeInsets.all(12), child: row),
+      );
+    }
+
+    return PanelCard(
+      title: title,
+      children: <Widget>[
+        const SizedBox(height: 12),
+        AspectRatio(
+          aspectRatio: 1,
+          child: DecoratedBox(
+            decoration: ground,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[icon, const SizedBox(height: 8), note],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
