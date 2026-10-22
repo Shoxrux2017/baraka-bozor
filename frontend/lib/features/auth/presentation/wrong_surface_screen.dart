@@ -21,6 +21,7 @@ class WrongSurfaceScreen extends ConsumerWidget {
     final bool onPhone = surface == Surface.mobile;
 
     return AuthStatusScaffold(
+      wideCard: true,
       icon: onPhone ? Icons.computer : Icons.smartphone,
       title: onPhone ? l10n.wrongSurfaceTitle : l10n.wrongSurfaceWebTitle,
       bodyKey: const ValueKey<String>('wrong-surface-text'),
@@ -28,7 +29,13 @@ class WrongSurfaceScreen extends ConsumerWidget {
       button: session is SignedIn
           ? OutlinedButton(
               key: const ValueKey<String>('logout-button'),
-              style: authOutlinedButtonStyle,
+              style: AuthScaffold.showsWideCard(context)
+                  ? authOutlinedButtonStyle.copyWith(
+                      minimumSize: const WidgetStatePropertyAll<Size>(
+                        Size(0, 52),
+                      ),
+                    )
+                  : authOutlinedButtonStyle,
               onPressed: () => ref
                   .read(sessionControllerProvider.notifier)
                   .logout(session.activeMode),

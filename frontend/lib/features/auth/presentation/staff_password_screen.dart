@@ -82,6 +82,7 @@ class _StaffPasswordScreenState extends ConsumerState<StaffPasswordScreen> {
       title: l10n.staffPasswordTitle,
       subtitle: l10n.staffPasswordSubtitle,
       wordmark: false,
+      wideCard: true,
       onBack: state.isBusy
           ? null
           : () =>
@@ -104,7 +105,11 @@ class _StaffPasswordScreenState extends ConsumerState<StaffPasswordScreen> {
                     (value ?? '').isEmpty ? l10n.passwordRequired : null,
                 onSubmitted: (String _) => _submit(),
               ),
-              if (!wrongPassword) FailureMessage(failure),
+              if (!wrongPassword)
+                FailureMessage(
+                  failure,
+                  boxed: AuthScaffold.showsWideCard(context),
+                ),
               const SizedBox(height: 20),
               FilledButton(
                 key: const ValueKey<String>('staff-password-submit'),

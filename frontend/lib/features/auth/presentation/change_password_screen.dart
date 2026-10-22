@@ -68,6 +68,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       title: l10n.changePasswordTitle,
       subtitle: l10n.changePasswordRequiredIntro,
       wordmark: false,
+      wideCard: true,
       child: Form(
         key: _form,
         child: AutofillGroup(
@@ -110,7 +111,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     value != _fresh.text ? l10n.passwordsDoNotMatch : null,
                 onSubmitted: (String _) => _submit(),
               ),
-              FailureMessage(state.failure),
+              FailureMessage(
+                state.failure,
+                boxed: AuthScaffold.showsWideCard(context),
+              ),
               const SizedBox(height: 24),
               FilledButton(
                 key: const ValueKey<String>('save-password-button'),

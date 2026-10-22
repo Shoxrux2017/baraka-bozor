@@ -3096,6 +3096,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Номер подтверждён. Введите пароль сотрудника';
 
   @override
+  String get panelTagline => 'Панель управления';
+
+  @override
   String get staffPasswordForgot =>
       'Забыли пароль? Обратитесь к администратору';
 

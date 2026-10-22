@@ -55,6 +55,11 @@ class _PasswordFieldState extends State<PasswordField> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final String? label = widget.label;
+    final double vertical =
+        Theme.of(context).inputDecorationTheme.contentPadding
+            ?.resolve(Directionality.of(context))
+            .top ??
+        18;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -89,7 +94,7 @@ class _PasswordFieldState extends State<PasswordField> {
             helperText: widget.helperText,
             helperStyle: const TextStyle(fontSize: 11, color: KitColors.muted),
             errorText: widget.errorText,
-            contentPadding: const EdgeInsets.fromLTRB(20, 18, 8, 18),
+            contentPadding: EdgeInsets.fromLTRB(20, vertical, 8, vertical),
             suffixIcon: IconButton(
               key: const ValueKey<String>('password-eye'),
               tooltip: _hidden ? l10n.showPassword : l10n.hidePassword,

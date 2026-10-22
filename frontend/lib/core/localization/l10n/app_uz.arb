@@ -2023,6 +2023,7 @@
   "welcomeButton": "Xaridlarga",
   "staffPasswordTitle": "Xodim sifatida kirish",
   "staffPasswordSubtitle": "Raqam tasdiqlandi. Xodim parolini kiriting",
+  "panelTagline": "Boshqaruv paneli",
   "staffPasswordForgot": "Parolni unutdingizmi? Administratorga murojaat qiling",
   "staffPasswordWrong": "Noto'g'ri parol",
   "staffStepExpired": "Tasdiqlash muddati tugadi. Yangi kod oling",

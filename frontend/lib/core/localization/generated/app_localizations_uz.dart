@@ -3077,6 +3077,9 @@ class AppLocalizationsUz extends AppLocalizations {
       'Raqam tasdiqlandi. Xodim parolini kiriting';
 
   @override
+  String get panelTagline => 'Boshqaruv paneli';
+
+  @override
   String get staffPasswordForgot =>
       'Parolni unutdingizmi? Administratorga murojaat qiling';
 

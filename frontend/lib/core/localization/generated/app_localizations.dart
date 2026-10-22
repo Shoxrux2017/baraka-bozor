@@ -5354,6 +5354,12 @@ abstract class AppLocalizations {
   /// **'Raqam tasdiqlandi. Xodim parolini kiriting'**
   String get staffPasswordSubtitle;
 
+  /// No description provided for @panelTagline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqaruv paneli'**
+  String get panelTagline;
+
   /// No description provided for @staffPasswordForgot.
   ///
   /// In uz, this message translates to:

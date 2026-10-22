@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/state/mutation_state.dart';
+import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/staff_login_controller.dart';
 import 'auth_scaffold.dart';
@@ -47,9 +48,12 @@ class _StaffLoginScreenState extends ConsumerState<StaffLoginScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final MutationState state = ref.watch(staffLoginControllerProvider);
+    final bool wide = AuthScaffold.showsWideCard(context);
 
     return AuthScaffold(
       title: l10n.staffLoginTitle,
+      wideCard: true,
+      tagline: l10n.panelTagline,
       child: Form(
         key: _form,
         child: AutofillGroup(
@@ -66,13 +70,25 @@ class _StaffLoginScreenState extends ConsumerState<StaffLoginScreen> {
                     (value ?? '').isEmpty ? l10n.passwordRequired : null,
                 onSubmitted: (String _) => _submit(),
               ),
-              FailureMessage(state.failure),
+              FailureMessage(state.failure, boxed: wide),
               const SizedBox(height: 20),
               FilledButton(
                 key: const ValueKey<String>('login-button'),
                 onPressed: state.isBusy ? null : _submit,
                 child: Text(l10n.loginButton),
               ),
+              if (wide) ...<Widget>[
+                const SizedBox(height: 18),
+                Text(
+                  l10n.staffPasswordForgot,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.5,
+                    color: KitColors.muted,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

@@ -1934,6 +1934,7 @@
   "welcomeButton": "К покупкам",
   "staffPasswordTitle": "Вход для сотрудника",
   "staffPasswordSubtitle": "Номер подтверждён. Введите пароль сотрудника",
+  "panelTagline": "Панель управления",
   "staffPasswordForgot": "Забыли пароль? Обратитесь к администратору",
   "staffPasswordWrong": "Неверный пароль",
   "staffStepExpired": "Подтверждение истекло. Получите новый код",

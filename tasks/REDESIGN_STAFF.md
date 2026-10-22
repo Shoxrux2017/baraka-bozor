@@ -6,7 +6,7 @@ The Shopper's, the Courier's and the panel's screens take the screen kit's style
 |---|---|---|
 | 1 | Сборщик (kit/08-sborshchik) | Merged (PR #103) |
 | 2 | Курьер (kit/09-kurer) | Merged (PR #105) |
-| 3a | Панель: заказы (kit/10–10d) | In progress |
+| 3a | Панель: заказы (kit/10–10d) | Coded (PR #…) |
 | 3b | Панель: каталог (kit/11) | Planned |
 | 3c | Панель: сотрудники, покупатели, документы, настройки (kit/12) | Planned |
 
