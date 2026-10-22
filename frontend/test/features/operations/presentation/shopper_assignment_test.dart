@@ -382,15 +382,19 @@ void main() {
     testWidgets(
       'the picker holds at 820x1180 with text x2 (${locale.languageCode})',
       (WidgetTester tester) async {
+        const List<String> names = <String>[
+          'Dilnoza Karimova',
+          'Sardor Yusupov',
+          'Botir Aliyev',
+          'Ismoil Abdurahmonov',
+        ];
         operations.shopperList = <StaffChoice>[
-          for (final String name in <String>[
-            'Dilnoza Karimova',
-            'Sardor Yusupov',
-            'Botir Aliyev',
-            'Ismoil Abdurahmonov',
-          ])
+          for (int i = 0; i < names.length; i++)
             OperationsApi.parseStaff(
-              shopperJson(id: shopperId, fullName: name),
+              shopperJson(
+                id: '0192f0a0-0000-7000-8000-00000000090$i',
+                fullName: names[i],
+              ),
             ),
         ];
         tester.platformDispatcher.textScaleFactorTestValue = 2;
@@ -418,6 +422,27 @@ void main() {
       },
     );
   }
+
+  testWidgets('a row of the picker puts its count at the right end', (
+    WidgetTester tester,
+  ) async {
+    await openOrder(tester, orderB);
+    await tapAndSettle(tester, byKey('assign-shopper'));
+
+    final Finder row = byKey('pick-shopper-$otherShopperId');
+    final Finder count = find.descendant(
+      of: row,
+      matching: find.text(
+        AppLocalizations.of(anywhere(tester)).shopperOrdersNow(1),
+      ),
+    );
+    expect(count, findsOneWidget);
+    // The row ends 14 px (its padding) and 8 px (the tag's) after the text.
+    expect(
+      tester.getRect(row).right - tester.getTopRight(count).dx,
+      closeTo(22, 1),
+    );
+  });
 
   testWidgets('the picker fits a phone-wide window with large text', (
     WidgetTester tester,

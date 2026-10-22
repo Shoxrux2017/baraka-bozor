@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -228,10 +229,9 @@ class BoardStatusPills extends ConsumerWidget {
     final OrderStatus? filtered = ref.watch(
       boardQueryProvider.select((BoardQuery query) => query.status),
     );
-    if (summary == null) {
-      return const SizedBox.shrink();
-    }
 
+    // The pills stand and filter while the summary loads or fails; only the
+    // counts wait for it.
     final List<Widget> pills = <Widget>[
       _Pill(
         key: const ValueKey<String>('summary-all'),
@@ -239,15 +239,14 @@ class BoardStatusPills extends ConsumerWidget {
         selected: filtered == null,
         onTap: () => queries.filterByStatus(null),
       ),
-      for (final MapEntry<OrderStatus, int> open
-          in summary.openByStatus.entries)
+      for (final OrderStatus status in OrderStatus.open)
         _Pill(
-          key: ValueKey<String>('summary-${open.key.code}'),
-          label: OrderLabels.status(l10n, open.key),
-          count: open.value,
-          selected: filtered == open.key,
+          key: ValueKey<String>('summary-${status.code}'),
+          label: OrderLabels.status(l10n, status),
+          count: summary?.openByStatus[status],
+          selected: filtered == status,
           onTap: () =>
-              queries.filterByStatus(filtered == open.key ? null : open.key),
+              queries.filterByStatus(filtered == status ? null : status),
         ),
     ];
 
@@ -257,26 +256,68 @@ class BoardStatusPills extends ConsumerWidget {
           return Wrap(spacing: 6, runSpacing: 6, children: pills);
         }
 
-        return ShaderMask(
+        return _ScrollingPills(pills: pills);
+      },
+    );
+  }
+}
+
+/// One row of pills that scrolls sideways — by finger, by mouse drag, by
+/// wheel or by the scroll bar under it — and fades at its right edge.
+class _ScrollingPills extends StatefulWidget {
+  const _ScrollingPills({required this.pills});
+
+  final List<Widget> pills;
+
+  @override
+  State<_ScrollingPills> createState() => _ScrollingPillsState();
+}
+
+class _ScrollingPillsState extends State<_ScrollingPills> {
+  final ScrollController _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(
+        dragDevices: const <PointerDeviceKind>{
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.stylus,
+          PointerDeviceKind.trackpad,
+        },
+        scrollbars: false,
+      ),
+      child: Scrollbar(
+        controller: _controller,
+        thumbVisibility: true,
+        child: ShaderMask(
           blendMode: BlendMode.dstIn,
           shaderCallback: (Rect bounds) => const LinearGradient(
             colors: <Color>[Colors.white, Colors.white, Colors.transparent],
             stops: <double>[0, 0.9, 1],
           ).createShader(bounds),
           child: SingleChildScrollView(
+            controller: _controller,
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.only(right: 32),
+            padding: const EdgeInsets.only(right: 32, bottom: 12),
             child: Row(
               children: <Widget>[
-                for (int i = 0; i < pills.length; i++) ...<Widget>[
+                for (int i = 0; i < widget.pills.length; i++) ...<Widget>[
                   if (i > 0) const SizedBox(width: 6),
-                  pills[i],
+                  widget.pills[i],
                 ],
               ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

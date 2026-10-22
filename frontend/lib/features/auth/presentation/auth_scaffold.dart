@@ -505,17 +505,34 @@ class _WideCardPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
                       _TopBar(onBack: onBack, filled: true),
-                      const SizedBox(height: 24),
-                      ...above.map(
-                        (Widget w) =>
-                            Align(alignment: Alignment.topCenter, child: w),
-                      ),
-                      Center(child: card),
-                      if (footer != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 24),
-                          child: footer,
+                      // 16 + 24 of padding and the 40 px bar stand above.
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: (constraints.maxHeight - 80).clamp(
+                            0,
+                            double.infinity,
+                          ),
                         ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            const SizedBox(height: 24),
+                            ...above.map(
+                              (Widget w) => Align(
+                                alignment: Alignment.topCenter,
+                                child: w,
+                              ),
+                            ),
+                            Center(child: card),
+                            if (footer != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 24),
+                                child: footer,
+                              ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),

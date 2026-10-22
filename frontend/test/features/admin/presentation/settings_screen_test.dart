@@ -47,7 +47,7 @@ void main() {
 
   Future<void> openPanel(
     WidgetTester tester, {
-    Size size = const Size(1400, 2600),
+    Size size = const Size(1440, 2600),
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;

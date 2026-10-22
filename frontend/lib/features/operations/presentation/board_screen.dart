@@ -5,6 +5,7 @@ import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/platform/clock.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/panel/panel_layout.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
 import '../application/board_controllers.dart';
 import '../domain/board.dart';
@@ -38,22 +39,31 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   @override
   void initState() {
     super.initState();
-    ref.listenManual<AsyncValue<BoardSummary>>(
-      boardSummaryProvider,
-      fireImmediately: true,
-      (AsyncValue<BoardSummary>? _, AsyncValue<BoardSummary> next) {
-        if (next.hasValue && !next.isLoading) {
-          setState(() => _loadedAt = ref.read(clockProvider)());
+    // A summary kept from an earlier visit is loaded again once, after the
+    // first frame; "updated at" then shows when that load completed.
+    final bool kept = ref.read(boardSummaryProvider).hasValue;
+    ref.listenManual<AsyncValue<BoardSummary>>(boardSummaryProvider, (
+      AsyncValue<BoardSummary>? _,
+      AsyncValue<BoardSummary> next,
+    ) {
+      if (next.hasValue && !next.isLoading) {
+        setState(() => _loadedAt = ref.read(clockProvider)());
+      }
+    });
+    if (kept) {
+      WidgetsBinding.instance.addPostFrameCallback((Duration _) {
+        if (mounted) {
+          ref.invalidate(boardSummaryProvider);
         }
-      },
-    );
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final DateTime? loadedAt = _loadedAt;
-    final bool compact = MediaQuery.sizeOf(context).width < 1200;
+    final bool compact = MediaQuery.sizeOf(context).width < panelRailWidth;
     final EdgeInsets padding = compact
         ? const EdgeInsets.fromLTRB(24, 20, 24, 24)
         : const EdgeInsets.fromLTRB(28, 26, 28, 28);

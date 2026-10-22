@@ -60,8 +60,10 @@ class _StaffLoginScreenState extends ConsumerState<StaffLoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
+              if (wide) _FieldLabel(l10n.phoneLabel),
               PhoneField(controller: _phone, autofocus: true),
               const SizedBox(height: 16),
+              if (wide) _FieldLabel(l10n.passwordLabel),
               PasswordField(
                 fieldKey: const ValueKey<String>('password-field'),
                 controller: _password,
@@ -91,6 +93,28 @@ class _StaffLoginScreenState extends ConsumerState<StaffLoginScreen> {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The label above a field on the panel's sign-in card (drawing 60).
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: KitColors.ink2,
         ),
       ),
     );

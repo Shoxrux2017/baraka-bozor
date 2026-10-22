@@ -252,6 +252,7 @@ void main() {
       Size size = const Size(1440, 900),
       String language = 'ru',
       double textScale = 1,
+      Surface surface = Surface.web,
     }) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
@@ -262,7 +263,7 @@ void main() {
         appUnderTest(
           tokens: tokens,
           repository: repository,
-          surface: Surface.web,
+          surface: surface,
           device: Locale(language),
         ),
       );
@@ -314,6 +315,92 @@ void main() {
       expect(card, findsNothing);
       expect(pageColor(tester), Colors.white);
       expect(find.text(l10n(tester).panelTagline), findsNothing);
+    });
+
+    testWidgets('the card has a window of 720 and none of 719', (
+      WidgetTester tester,
+    ) async {
+      await openWide(tester, size: const Size(720, 900));
+      expect(card, findsOneWidget);
+
+      await openWide(tester, size: const Size(719, 900));
+      expect(card, findsNothing);
+      expect(pageColor(tester), Colors.white);
+    });
+
+    testWidgets('each field has its label above it, the group is centred', (
+      WidgetTester tester,
+    ) async {
+      await openWide(tester);
+
+      final AppLocalizations t = l10n(tester);
+      final Finder phoneLabel = find.descendant(
+        of: card,
+        matching: find.text(t.phoneLabel),
+      );
+      final Finder passwordLabel = find.descendant(
+        of: card,
+        matching: find.text(t.passwordLabel),
+      );
+      expect(phoneLabel, findsOneWidget);
+      expect(passwordLabel.first, findsOneWidget);
+      expect(
+        tester.getBottomLeft(phoneLabel).dy,
+        lessThanOrEqualTo(tester.getTopLeft(find.byType(PhoneField)).dy),
+      );
+      expect(
+        tester.getBottomLeft(passwordLabel.first).dy,
+        lessThanOrEqualTo(
+          tester.getTopLeft(find.byKey(key('password-field'))).dy,
+        ),
+      );
+      final TextStyle style = tester.widget<Text>(phoneLabel).style!;
+      expect(style.fontSize, 12);
+      expect(style.fontWeight, FontWeight.w600);
+
+      // Above the wordmark (and its 24 px) and below the card the same room
+      // stands between the top bar (56) and the page's end (24 padding).
+      final double above =
+          tester.getTopLeft(find.byType(BrandWordmark)).dy - 24 - 56;
+      final double below = 900 - 24 - tester.getBottomLeft(card).dy;
+      expect(above, closeTo(below, 1));
+    });
+
+    testWidgets('a Shopper on a tablet changes the first password without '
+        'the card', (WidgetTester tester) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = user(
+        role: UserRole.shopper,
+        mustChangePassword: true,
+      );
+      await openWide(
+        tester,
+        size: const Size(1024, 1366),
+        surface: Surface.mobile,
+      );
+
+      expect(find.byKey(key('save-password-button')), findsOneWidget);
+      expect(card, findsNothing);
+      expect(pageColor(tester), Colors.white);
+    });
+
+    testWidgets('and an Admin on a desktop changes it on the card', (
+      WidgetTester tester,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = user(
+        role: UserRole.admin,
+        mustChangePassword: true,
+      );
+      await openWide(tester);
+
+      expect(
+        find.descendant(
+          of: card,
+          matching: find.byKey(key('save-password-button')),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('a refused sign-in shows in red on the card', (

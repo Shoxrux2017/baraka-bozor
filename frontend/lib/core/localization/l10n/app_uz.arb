@@ -1109,6 +1109,14 @@
       }
     }
   },
+  "itemWasEstimate": "avval ≈ {price}",
+  "@itemWasEstimate": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "itemBilledPrice": "Mijozga narx: {price}",
   "@itemBilledPrice": {
     "placeholders": {

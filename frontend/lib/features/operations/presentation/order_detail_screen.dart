@@ -7,6 +7,7 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/panel/panel_layout.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../application/board_controllers.dart';
@@ -44,7 +45,7 @@ class OrderDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<BoardOrder> order = ref.watch(boardOrderProvider(orderId));
-    final bool compact = MediaQuery.sizeOf(context).width < 1200;
+    final bool compact = MediaQuery.sizeOf(context).width < panelRailWidth;
     final EdgeInsets padding = compact
         ? const EdgeInsets.fromLTRB(24, 20, 24, 24)
         : const EdgeInsets.fromLTRB(28, 26, 28, 28);

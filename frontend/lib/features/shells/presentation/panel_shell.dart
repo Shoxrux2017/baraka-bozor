@@ -8,6 +8,7 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/brand_wordmark.dart';
+import '../../../core/widgets/panel/panel_layout.dart';
 import '../../auth/domain/app_user.dart';
 import 'panel_menu.dart';
 
@@ -81,8 +82,8 @@ class PanelShell extends ConsumerWidget {
 
   final Widget child;
 
-  static const double fullMenuWidth = 1360;
-  static const double railWidth = 1200;
+  static const double fullMenuWidth = panelFullMenuWidth;
+  static const double railWidth = panelRailWidth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -9,6 +9,7 @@ import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/admin/application/admin_staff_controllers.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/operations/data/operations_api.dart';
+import 'package:baraka_bozor/features/shells/presentation/panel_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -77,7 +78,7 @@ void main() {
   Future<void> open(
     WidgetTester tester,
     UserRole role, {
-    Size size = const Size(1400, 1000),
+    Size size = const Size(1440, 1000),
     String? reload,
     Completer<void>? hold,
     FakeOperationsRepository? operations,
@@ -167,14 +168,65 @@ void main() {
     expect(find.byType(AppBar), findsNothing);
   });
 
-  testWidgets('the menu is whole at 1360 and folds at 1359', (
+  testWidgets('the whole menu puts the language and the way out side by side', (
     WidgetTester tester,
   ) async {
-    await open(tester, UserRole.admin, size: const Size(1360, 900));
+    await open(tester, UserRole.admin, size: const Size(1440, 900));
+
+    final Finder language = find.byType(PanelLanguageButton);
+    expect(tester.getSize(language).height, 38);
+    expect(tester.getSize(logout).height, 38);
+    expect(tester.getSize(language).width, tester.getSize(logout).width);
+    expect(tester.getTopLeft(language).dy, tester.getTopLeft(logout).dy);
+    expect(
+      tester.getTopLeft(logout).dx,
+      greaterThan(tester.getTopRight(language).dx),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the whole menu holds with text x2', (WidgetTester tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await open(tester, UserRole.admin, size: const Size(1440, 900));
+
+    expect(logout, findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the drawer keeps them one above the other', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, UserRole.admin, size: const Size(820, 1180));
+    await tester.tap(find.byTooltip(menuTooltip(tester)));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getTopLeft(logout).dy,
+      greaterThan(tester.getBottomLeft(find.byType(PanelLanguageButton)).dy),
+    );
+  });
+
+  testWidgets('the menu is whole at 1440 and folds at 1439', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, UserRole.admin, size: const Size(1440, 900));
     expect(tester.getSize(rail).width, 232);
 
-    await open(tester, UserRole.admin, size: const Size(1359, 900));
+    await open(tester, UserRole.admin, size: const Size(1439, 900));
     expect(tester.getSize(rail).width, 76);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the rail stands at exactly 1200 and the top bar at 1199', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, UserRole.admin, size: const Size(1200, 900));
+    expect(tester.getSize(rail).width, 76);
+
+    await open(tester, UserRole.admin, size: const Size(1199, 900));
+    expect(rail, findsNothing);
+    expect(find.byTooltip(menuTooltip(tester)), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

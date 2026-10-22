@@ -58,5 +58,5 @@ abstract final class KitColors {
   static const Color warningSoft = Color(0xFFFCE9BF);
 
   /// A filled rating star.
-  static const Color star = Color(0xFFFFB800);
+  static const Color star = Color(0xFFFFB020);
 }

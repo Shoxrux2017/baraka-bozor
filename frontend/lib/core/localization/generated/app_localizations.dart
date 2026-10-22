@@ -3662,6 +3662,12 @@ abstract class AppLocalizations {
   /// **'Sotib olish narxi: {price}'**
   String itemPricePaid(String price);
 
+  /// No description provided for @itemWasEstimate.
+  ///
+  /// In uz, this message translates to:
+  /// **'avval ≈ {price}'**
+  String itemWasEstimate(String price);
+
   /// No description provided for @itemBilledPrice.
   ///
   /// In uz, this message translates to:

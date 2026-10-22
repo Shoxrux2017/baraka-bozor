@@ -1051,6 +1051,14 @@
       }
     }
   },
+  "itemWasEstimate": "было ≈ {price}",
+  "@itemWasEstimate": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "itemBilledPrice": "Цена к оплате: {price}",
   "@itemBilledPrice": {
     "placeholders": {

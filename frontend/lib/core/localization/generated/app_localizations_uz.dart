@@ -2025,6 +2025,11 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String itemWasEstimate(String price) {
+    return 'avval ≈ $price';
+  }
+
+  @override
   String itemBilledPrice(String price) {
     return 'Mijozga narx: $price';
   }

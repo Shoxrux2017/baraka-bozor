@@ -2055,6 +2055,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String itemWasEstimate(String price) {
+    return 'было ≈ $price';
+  }
+
+  @override
   String itemBilledPrice(String price) {
     return 'Цена к оплате: $price';
   }

@@ -6,6 +6,7 @@ import '../../../core/formatting/phone_format.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/orders/order_values.dart';
+import '../../../core/platform/clock.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/kit/kit_dialog.dart';
 import '../../../core/widgets/panel/panel_menu_button.dart';
@@ -41,7 +42,7 @@ class _BoardFiltersState extends ConsumerState<BoardFilters> {
   }
 
   Future<void> _pickDays(BuildContext context, BoardQuery query) async {
-    final DateTime now = DateTime.now();
+    final DateTime now = ref.read(clockProvider)();
     final DateTimeRange? range = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2000),
@@ -130,41 +131,51 @@ class _BoardFiltersState extends ConsumerState<BoardFilters> {
           options: couriers,
           onSelected: queries.filterByCourier,
         ),
-        OutlinedButton(
-          key: const ValueKey<String>('board-days'),
-          style: panelFilterStyle(active: days),
-          onPressed: () => _pickDays(context, query),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const Icon(Icons.calendar_month, size: 18),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  days
-                      ? '${_day(query.from!)} – ${_day(query.to!)}'
-                      : l10n.boardDays,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Flexible(
+              child: OutlinedButton(
+                key: const ValueKey<String>('board-days'),
+                style: panelFilterStyle(active: days),
+                onPressed: () => _pickDays(context, query),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const Icon(Icons.calendar_month, size: 18),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        days
+                            ? '${_day(query.from!)} – ${_day(query.to!)}'
+                            : l10n.boardDays,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (query.from == null) ...const <Widget>[
+                      SizedBox(width: 4),
+                      Icon(Icons.expand_more, size: 18),
+                    ],
+                  ],
                 ),
               ),
-              if (query.from != null) ...<Widget>[
-                const SizedBox(width: 6),
-                Tooltip(
-                  message: l10n.boardClearDays,
-                  child: InkWell(
-                    key: const ValueKey<String>('board-clear-days'),
-                    customBorder: const CircleBorder(),
-                    onTap: () => queries.filterByDays(null, null),
-                    child: const Icon(Icons.close, size: 16),
-                  ),
+            ),
+            if (query.from != null)
+              IconButton(
+                key: const ValueKey<String>('board-clear-days'),
+                tooltip: l10n.boardClearDays,
+                padding: EdgeInsets.zero,
+                iconSize: 16,
+                color: KitColors.ink2,
+                constraints: const BoxConstraints.tightFor(
+                  width: 32,
+                  height: 32,
                 ),
-              ] else ...const <Widget>[
-                SizedBox(width: 4),
-                Icon(Icons.expand_more, size: 18),
-              ],
-            ],
-          ),
+                icon: const Icon(Icons.close),
+                onPressed: () => queries.filterByDays(null, null),
+              ),
+          ],
         ),
       ],
     );

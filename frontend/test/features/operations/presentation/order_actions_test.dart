@@ -85,6 +85,7 @@ void main() {
     Size size = const Size(1400, 3200),
     double textScale = 1,
     Locale device = const Locale('uz'),
+    DateTime Function()? clock,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -99,6 +100,8 @@ void main() {
         surface: Surface.web,
         operations: operations,
         device: device,
+        // The fixtures' day, so their times read as clock times.
+        clock: clock ?? () => DateTime.utc(2026, 9, 27, 10),
       ),
     );
     await tester.pumpAndSettle();

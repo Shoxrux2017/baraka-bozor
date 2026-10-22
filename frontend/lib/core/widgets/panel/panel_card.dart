@@ -51,8 +51,9 @@ class PanelCard extends StatelessWidget {
                   ? const EdgeInsets.symmetric(horizontal: 20)
                   : EdgeInsets.zero,
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
-                  Expanded(
+                  Flexible(
                     child: Row(
                       children: <Widget>[
                         if (title != null)
@@ -80,7 +81,10 @@ class PanelCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  ?trailing,
+                  if (trailing != null) ...<Widget>[
+                    const SizedBox(width: 8),
+                    trailing!,
+                  ],
                 ],
               ),
             ),

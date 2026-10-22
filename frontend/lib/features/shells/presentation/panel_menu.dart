@@ -301,6 +301,7 @@ class _MenuBody extends ConsumerWidget {
                   )
                 : _UserFooter(
                     user: user,
+                    sideBySide: onClose == null,
                     onLogout: () => _logout(ref, state as SignedIn),
                   ),
           ),
@@ -454,9 +455,17 @@ class _Avatar extends StatelessWidget {
 }
 
 class _UserFooter extends StatelessWidget {
-  const _UserFooter({required this.user, required this.onLogout});
+  const _UserFooter({
+    required this.user,
+    required this.onLogout,
+    required this.sideBySide,
+  });
 
   final AppUser user;
+
+  /// The language and the way out in one row (the whole menu), or one above
+  /// the other (the drawer).
+  final bool sideBySide;
   final VoidCallback onLogout;
 
   @override
@@ -499,15 +508,50 @@ class _UserFooter extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        const PanelLanguageButton(),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          key: const ValueKey<String>('logout-button'),
-          style: kitOutlined(height: 40),
-          icon: const Icon(Icons.logout, size: 18),
-          label: Text(l10n.logoutButton),
-          onPressed: onLogout,
-        ),
+        if (sideBySide)
+          Row(
+            children: <Widget>[
+              const Expanded(child: PanelLanguageButton()),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  key: const ValueKey<String>('logout-button'),
+                  style: kitOutlined(height: 38).copyWith(
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const WidgetStatePropertyAll<EdgeInsets>(
+                      EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                  ),
+                  onPressed: onLogout,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      const Icon(Icons.logout, size: 18),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          l10n.logoutButton,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          )
+        else ...<Widget>[
+          const PanelLanguageButton(),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const ValueKey<String>('logout-button'),
+            style: kitOutlined(height: 40),
+            icon: const Icon(Icons.logout, size: 18),
+            label: Text(l10n.logoutButton),
+            onPressed: onLogout,
+          ),
+        ],
       ],
     );
   }

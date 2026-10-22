@@ -3,10 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/formatting/phone_format.dart';
-import '../../../core/formatting/tashkent_time.dart';
+import '../../../core/formatting/order_dates.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/network/paged.dart';
+import '../../../core/platform/clock.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/kit/kit_card.dart';
 import '../../../core/widgets/list_widgets.dart';
@@ -250,10 +251,13 @@ class _OrderCard extends StatelessWidget {
               Expanded(child: _Customer(row: row)),
               const SizedBox(width: 12),
               Flexible(
-                child: _TotalAndCount(
-                  row: row,
-                  align: CrossAxisAlignment.end,
-                  withCount: false,
+                child: Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: _TotalAndCount(
+                    row: row,
+                    align: CrossAxisAlignment.end,
+                    withCount: false,
+                  ),
                 ),
               ),
             ],
@@ -285,20 +289,23 @@ class _OrderCard extends StatelessWidget {
 }
 
 /// The order's number over its time, or beside it on a card.
-class _NumberAndTime extends StatelessWidget {
+class _NumberAndTime extends ConsumerWidget {
   const _NumberAndTime({required this.row, this.inline = false});
 
   final BoardRow row;
   final bool inline;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final Text number = Text(
       l10n.boardOrderNumber('${row.orderNumber}'),
       style: _strong,
     );
-    final Text time = Text(TashkentTime.time(row.createdAt), style: _small);
+    final Text time = Text(
+      panelWhen(row.createdAt, ref.watch(clockProvider)()),
+      style: _small,
+    );
 
     if (inline) {
       return Wrap(

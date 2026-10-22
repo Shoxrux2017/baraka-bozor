@@ -95,19 +95,21 @@ class SelfOrderMark extends StatelessWidget {
   }
 }
 
-/// An order's total with its kind (`DL-37` (10)): the amount and whether
-/// it is an estimate or final, or that nothing is due.
+/// An order's total (`DL-37` (10)): "≈ amount" for an estimate, the amount
+/// for a final total, or that nothing is due.
 String totalText(
   BuildContext context,
   AppLocalizations l10n,
   int? totalUzs,
   TotalKind kind,
-) => switch (kind) {
-  TotalKind.none => l10n.totalNothingDue,
-  TotalKind.estimate =>
-    '${MoneyFormat.uzs(totalUzs ?? 0, interfaceLanguage(context))} · '
-        '${l10n.totalKindEstimate}',
-  TotalKind.finalTotal =>
-    '${MoneyFormat.uzs(totalUzs ?? 0, interfaceLanguage(context))} · '
-        '${l10n.totalKindFinal}',
-};
+) {
+  final String money = MoneyFormat.uzs(
+    totalUzs ?? 0,
+    interfaceLanguage(context),
+  );
+  return switch (kind) {
+    TotalKind.none => l10n.totalNothingDue,
+    TotalKind.estimate => '≈ $money',
+    TotalKind.finalTotal => money,
+  };
+}

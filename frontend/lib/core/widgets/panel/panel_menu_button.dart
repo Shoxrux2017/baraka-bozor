@@ -41,7 +41,6 @@ class PanelMenuButton<T> extends StatelessWidget {
     required this.active,
     required this.items,
     required this.onSelected,
-    this.icon,
     super.key,
   });
 
@@ -50,7 +49,6 @@ class PanelMenuButton<T> extends StatelessWidget {
   final bool active;
   final List<PanelMenuItem<T>> items;
   final ValueChanged<T> onSelected;
-  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -83,10 +81,6 @@ class PanelMenuButton<T> extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              if (icon != null) ...<Widget>[
-                Icon(icon, size: 18),
-                const SizedBox(width: 6),
-              ],
               Flexible(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 200),

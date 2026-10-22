@@ -761,72 +761,79 @@ class _StaffPickerRow extends StatelessWidget {
         onTap: current ? null : () => Navigator.of(context).pop(choice),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: <Widget>[
-              PersonAvatar(name, size: 40),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Wrap(
-                      spacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: <Widget>[
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: KitColors.ink,
-                          ),
-                        ),
-                        if (current)
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) => Row(
+              children: <Widget>[
+                PersonAvatar(name, size: 40),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Wrap(
+                        spacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: <Widget>[
                           Text(
-                            l10n.assignmentCurrent,
+                            name,
                             style: const TextStyle(
-                              fontSize: 11,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: KitColors.primaryDark,
+                              color: KitColors.ink,
                             ),
                           ),
-                      ],
-                    ),
-                    Text(
-                      formatPhone(choice.phone),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: KitColors.muted,
+                          if (current)
+                            Text(
+                              l10n.assignmentCurrent,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: KitColors.primaryDark,
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: free ? KitColors.primaryWash : KitColors.field,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    child: Text(
-                      l10n.shopperOrdersNow(choice.currentAssignmentCount),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: free ? KitColors.primaryDark : KitColors.ink,
+                      Text(
+                        formatPhone(choice.phone),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: KitColors.muted,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                // Not flexible: a flexible tag would take half the free space
+                // and leave the row's end empty; it wraps past its own limit.
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth * 0.45,
+                  ),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: free ? KitColors.primaryWash : KitColors.field,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Text(
+                        l10n.shopperOrdersNow(choice.currentAssignmentCount),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: free ? KitColors.primaryDark : KitColors.ink,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

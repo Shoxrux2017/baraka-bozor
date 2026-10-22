@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/formatting/tashkent_time.dart';
+import '../../../core/formatting/order_dates.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/platform/clock.dart';
 import '../../../core/theme/kit_colors.dart';
@@ -277,7 +277,7 @@ class _Item extends StatelessWidget {
                       l10n.historyCourierAssignedTo(
                         nameOf(l10n, item.courier!),
                       ),
-                    l10n.attentionSince(TashkentTime.time(item.since)),
+                    l10n.attentionSince(panelWhen(item.since, now)),
                   ].join(' · '),
                   style: const TextStyle(fontSize: 11, color: KitColors.muted),
                 ),

@@ -7,6 +7,7 @@ import '../../../core/session/session_state.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/change_password_controller.dart';
+import '../domain/app_user.dart';
 import 'auth_scaffold.dart';
 import 'password_field.dart';
 
@@ -63,12 +64,21 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final MutationState state = ref.watch(changePasswordControllerProvider);
+    // Only the panel's roles use the panel's card; a Shopper or Courier on a
+    // tablet keeps the mobile page.
+    final SessionState? session = ref.watch(sessionControllerProvider).value;
+    final UserRole? role = session is SignedIn ? session.staffUser?.role : null;
+    final bool panelRole =
+        role == UserRole.operator ||
+        role == UserRole.admin ||
+        role == UserRole.manager;
+    final bool card = panelRole && AuthScaffold.showsWideCard(context);
 
     return AuthScaffold(
       title: l10n.changePasswordTitle,
       subtitle: l10n.changePasswordRequiredIntro,
       wordmark: false,
-      wideCard: true,
+      wideCard: panelRole,
       child: Form(
         key: _form,
         child: AutofillGroup(
@@ -111,10 +121,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     value != _fresh.text ? l10n.passwordsDoNotMatch : null,
                 onSubmitted: (String _) => _submit(),
               ),
-              FailureMessage(
-                state.failure,
-                boxed: AuthScaffold.showsWideCard(context),
-              ),
+              FailureMessage(state.failure, boxed: card),
               const SizedBox(height: 24),
               FilledButton(
                 key: const ValueKey<String>('save-password-button'),

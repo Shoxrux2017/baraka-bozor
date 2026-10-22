@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/formatting/tashkent_time.dart';
+import '../../../core/formatting/order_dates.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/orders/order_values.dart';
+import '../../../core/platform/clock.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/kit/kit_card.dart';
 import '../domain/board.dart';
@@ -12,7 +14,7 @@ import '../domain/board.dart';
 /// for delivery, on the way, completed — each with the instant the server
 /// recorded for it. The step under way says since when; a cancelled order
 /// ends in red after the last step it reached (`DL-100` (4)).
-class OrderPath extends StatelessWidget {
+class OrderPath extends ConsumerWidget {
   const OrderPath({required this.order, super.key});
 
   final BoardOrder order;
@@ -48,8 +50,9 @@ class OrderPath extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final DateTime now = ref.watch(clockProvider)();
     final bool cancelled = order.status == OrderStatus.cancelled;
     final int current = _current;
     final List<String> labels = <String>[
@@ -62,7 +65,7 @@ class OrderPath extends StatelessWidget {
 
     String clock(int step) {
       final DateTime? instant = _instant(step);
-      return instant == null ? '—' : TashkentTime.time(instant);
+      return instant == null ? '—' : panelWhen(instant, now);
     }
 
     String? underWay(int step) {
@@ -70,7 +73,7 @@ class OrderPath extends StatelessWidget {
       if (instant == null) {
         return null;
       }
-      final String time = TashkentTime.time(instant);
+      final String time = panelWhen(instant, now);
       return switch (step) {
         1 when order.status == OrderStatus.finalPaymentPending =>
           OrderLabels.status(l10n, order.status),
@@ -96,7 +99,7 @@ class OrderPath extends StatelessWidget {
                       label: OrderLabels.status(l10n, OrderStatus.cancelled),
                       time: order.cancelledAt == null
                           ? '—'
-                          : TashkentTime.time(order.cancelledAt!),
+                          : panelWhen(order.cancelledAt!, now),
                       barAfter: null,
                     )
                   : _Step(

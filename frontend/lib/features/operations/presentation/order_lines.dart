@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/catalog/catalog_values.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
@@ -138,6 +139,7 @@ class _Line extends StatelessWidget {
     final int? billedPrice = item.billableUnitPriceUzs;
     final String? bought = item.purchasedQuantity;
     final String? billed = item.billableQuantity;
+    final bool estimate = item.priceMode == PriceMode.estimate;
     String money(int amount) => MoneyFormat.uzs(amount, language);
 
     final Widget quantity = Column(
@@ -177,9 +179,19 @@ class _Line extends StatelessWidget {
                     textAlign: TextAlign.end,
                     style: _small,
                   ),
+                if (estimate)
+                  Text(
+                    l10n.itemWasEstimate(
+                      '${money(item.customerUnitPriceUzs)}/$unit',
+                    ),
+                    key: ValueKey<String>('order-item-was-${item.id}'),
+                    textAlign: TextAlign.end,
+                    style: _small,
+                  ),
               ] else ...<Widget>[
                 Text(
-                  '≈ ${money(item.customerUnitPriceUzs)}/$unit',
+                  '${estimate ? '≈ ' : ''}'
+                  '${money(item.customerUnitPriceUzs)}/$unit',
                   textAlign: TextAlign.end,
                   style: _text,
                 ),
@@ -202,7 +214,7 @@ class _Line extends StatelessWidget {
     final Widget total = removed
         ? const Text('—', textAlign: TextAlign.end, style: _small)
         : Text(
-            '${purchased ? '' : '≈ '}${money(item.lineTotalUzs)}',
+            '${purchased || !estimate ? '' : '≈ '}${money(item.lineTotalUzs)}',
             textAlign: TextAlign.end,
             style: _strong,
           );

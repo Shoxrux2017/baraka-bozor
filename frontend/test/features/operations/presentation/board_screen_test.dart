@@ -76,7 +76,8 @@ void main() {
         surface: Surface.web,
         operations: operations,
         device: device,
-        clock: clock,
+        // The fixtures' day, so their times read as clock times.
+        clock: clock ?? () => DateTime.utc(2026, 9, 27, 10),
       ),
     );
     await tester.pumpAndSettle();

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/formatting/money_format.dart';
-import '../../../core/formatting/tashkent_time.dart';
+import '../../../core/formatting/order_dates.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/localization/role_labels.dart';
 import '../../../core/orders/order_values.dart';
+import '../../../core/platform/clock.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/panel/panel_card.dart';
 import '../../auth/domain/app_user.dart';
@@ -18,7 +20,7 @@ import 'board_widgets.dart';
 /// entry — green for a purchase or a substitution, red for an expiry, a
 /// failed delivery or a cancellation — showing the newest [folded] and
 /// folding the rest behind a button.
-class OrderHistory extends StatefulWidget {
+class OrderHistory extends ConsumerStatefulWidget {
   const OrderHistory({required this.order, super.key});
 
   final BoardOrder order;
@@ -27,10 +29,10 @@ class OrderHistory extends StatefulWidget {
   static const int folded = 8;
 
   @override
-  State<OrderHistory> createState() => _OrderHistoryState();
+  ConsumerState<OrderHistory> createState() => _OrderHistoryState();
 }
 
-class _OrderHistoryState extends State<OrderHistory> {
+class _OrderHistoryState extends ConsumerState<OrderHistory> {
   bool _all = false;
 
   @override
@@ -41,6 +43,8 @@ class _OrderHistoryState extends State<OrderHistory> {
     final List<HistoryEntry> shown = folds && !_all
         ? entries.take(OrderHistory.folded).toList()
         : entries;
+
+    final DateTime now = ref.watch(clockProvider)();
 
     return PanelCard(
       title: l10n.orderSectionHistory,
@@ -72,7 +76,7 @@ class _OrderHistoryState extends State<OrderHistory> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   for (final HistoryEntry entry in shown)
-                    _Entry(entry: entry, order: widget.order),
+                    _Entry(entry: entry, order: widget.order, now: now),
                 ],
               ),
             ],
@@ -106,10 +110,11 @@ class _OrderHistoryState extends State<OrderHistory> {
 }
 
 class _Entry extends StatelessWidget {
-  const _Entry({required this.entry, required this.order});
+  const _Entry({required this.entry, required this.order, required this.now});
 
   final HistoryEntry entry;
   final BoardOrder order;
+  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +123,7 @@ class _Entry extends StatelessWidget {
     final OrderStatus? to = entry.toStatus;
     final String? details = _details(l10n, interfaceLanguage(context));
     final Color dot = _dotColor();
-    final double timeWidth = MediaQuery.textScalerOf(context).scale(40);
+    final double timeWidth = MediaQuery.textScalerOf(context).scale(76);
 
     return Padding(
       key: ValueKey<String>('history-${entry.id}'),
@@ -142,7 +147,7 @@ class _Entry extends StatelessWidget {
           SizedBox(
             width: timeWidth,
             child: Text(
-              TashkentTime.time(entry.createdAt),
+              panelWhen(entry.createdAt, now),
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
