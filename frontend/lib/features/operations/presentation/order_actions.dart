@@ -51,83 +51,178 @@ class ApprovalTile extends ConsumerWidget {
     final bool removable =
         approval.awaitsRemoval && order.status == OrderStatus.shopping;
 
-    return ListTile(
+    final bool pending = approval.status == ApprovalStatus.pending;
+    final Color ground = approval.awaitsRemoval
+        ? KitColors.dangerWash
+        : pending
+        ? KitColors.warningWash
+        : Colors.white;
+    final Color outline = approval.awaitsRemoval
+        ? KitColors.danger
+        : pending
+        ? KitColors.warning
+        : KitColors.line;
+    final (Color tagGround, Color tagText) = switch (approval.status) {
+      ApprovalStatus.pending => (KitColors.warningSoft, KitColors.warningDark),
+      ApprovalStatus.approved => (KitColors.primaryWash, KitColors.primaryDark),
+      ApprovalStatus.expired => (KitColors.dangerWash, KitColors.dangerDark),
+      ApprovalStatus.rejected ||
+      ApprovalStatus.cancelled => (KitColors.line, KitColors.ink2),
+    };
+    const TextStyle body = TextStyle(fontSize: 13, color: KitColors.ink);
+    const TextStyle small = TextStyle(fontSize: 12, color: KitColors.muted);
+
+    return Container(
       key: ValueKey<String>('approval-${approval.id}'),
-      contentPadding: EdgeInsets.zero,
-      title: Wrap(
-        spacing: 12,
-        runSpacing: 4,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          Text('${OrderLabels.approvalType(l10n, approval.type)} · $name'),
-          Text(
-            OrderLabels.approvalStatus(l10n, approval.status),
-            key: ValueKey<String>('approval-status-${approval.id}'),
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: ground,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: outline,
+          width: pending || approval.awaitsRemoval ? 1.5 : 1,
+        ),
       ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  '${OrderLabels.approvalType(l10n, approval.type)} · $name',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: KitColors.ink,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: tagGround,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    child: Text(
+                      OrderLabels.approvalStatus(l10n, approval.status),
+                      key: ValueKey<String>('approval-status-${approval.id}'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: tagText,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
           if (replacement != null)
-            Text(
-              l10n.approvalReplacement(
-                _name(language, replacement.nameUz, replacement.nameRu),
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                l10n.approvalReplacement(
+                  _name(language, replacement.nameUz, replacement.nameRu),
+                ),
+                style: body,
               ),
             ),
           if (price != null)
-            Text(
-              l10n.approvalProposedPrice(
-                MoneyFormat.uzs(price, language),
-                MoneyFormat.uzs(
-                  approval.proposedActualMarketPriceUzs!,
-                  language,
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                l10n.approvalProposedPrice(
+                  MoneyFormat.uzs(price, language),
+                  MoneyFormat.uzs(
+                    approval.proposedActualMarketPriceUzs!,
+                    language,
+                  ),
                 ),
+                key: ValueKey<String>('approval-proposal-${approval.id}'),
+                style: body,
               ),
-              key: ValueKey<String>('approval-proposal-${approval.id}'),
             ),
           if (quantity != null)
-            Text(
-              l10n.approvalProposedQuantity(
-                '${QuantityRules.display(quantity)} ${CatalogLabels.unit(l10n, item.unit)}',
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                l10n.approvalProposedQuantity(
+                  '${QuantityRules.display(quantity)} ${CatalogLabels.unit(l10n, item.unit)}',
+                ),
+                key: ValueKey<String>('approval-proposal-${approval.id}'),
+                style: body,
               ),
-              key: ValueKey<String>('approval-proposal-${approval.id}'),
             ),
           if (approval.requestNote != null)
-            Text(l10n.itemNote(approval.requestNote!)),
-          Text(
-            l10n.approvalAskedBy(
-              nameOf(l10n, approval.requestedBy),
-              TashkentTime.format(approval.createdAt),
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(l10n.itemNote(approval.requestNote!), style: body),
             ),
-          ),
-          Text(
-            l10n.approvalTimers(
-              TashkentTime.format(approval.attentionAt),
-              TashkentTime.format(approval.expiresAt),
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 2,
+              children: <Widget>[
+                Text(
+                  l10n.approvalAskedBy(
+                    nameOf(l10n, approval.requestedBy),
+                    TashkentTime.format(approval.createdAt),
+                  ),
+                  style: small,
+                ),
+                Text(
+                  l10n.approvalTimers(
+                    TashkentTime.format(approval.attentionAt),
+                    TashkentTime.format(approval.expiresAt),
+                  ),
+                  key: ValueKey<String>('approval-timers-${approval.id}'),
+                  style: small,
+                ),
+              ],
             ),
-            key: ValueKey<String>('approval-timers-${approval.id}'),
           ),
           if (resolvedAt != null)
-            Text(
-              resolvedBy == null
-                  ? l10n.approvalClosedAt(TashkentTime.format(resolvedAt))
-                  : l10n.approvalResolvedBy(
-                      nameOf(l10n, resolvedBy),
-                      TashkentTime.format(resolvedAt),
-                    ),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                resolvedBy == null
+                    ? l10n.approvalClosedAt(TashkentTime.format(resolvedAt))
+                    : l10n.approvalResolvedBy(
+                        nameOf(l10n, resolvedBy),
+                        TashkentTime.format(resolvedAt),
+                      ),
+                style: small,
+              ),
             ),
           if (approval.resolution == ApprovalResolution.removeItem)
-            Text(l10n.approvalLineRemoved),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(l10n.approvalLineRemoved, style: small),
+            ),
           if (removable)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: 10),
               child: Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: OutlinedButton.icon(
+                child: FilledButton.icon(
                   key: ValueKey<String>('remove-expired-${approval.id}'),
-                  icon: const Icon(Icons.remove_shopping_cart_outlined),
+                  style: kitFilled(
+                    color: KitColors.danger,
+                    height: 36,
+                  ).copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                  icon: const Icon(
+                    Icons.remove_shopping_cart_outlined,
+                    size: 18,
+                  ),
                   label: Text(l10n.removeExpiredLine),
                   onPressed: _reloading(ref, order)
                       ? null
@@ -393,10 +488,17 @@ class PriceCorrectionButton extends ConsumerWidget {
     }
 
     return Align(
-      alignment: AlignmentDirectional.centerStart,
+      alignment: AlignmentDirectional.centerEnd,
       child: TextButton.icon(
         key: ValueKey<String>('correct-price-${item.id}'),
-        icon: const Icon(Icons.edit_outlined),
+        style: TextButton.styleFrom(
+          foregroundColor: KitColors.primaryDark,
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          minimumSize: const Size(0, 28),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+        icon: const Icon(Icons.edit, size: 14),
         label: Text(l10n.correctPrice),
         onPressed: _reloading(ref, order)
             ? null

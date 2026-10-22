@@ -539,12 +539,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Фото можно добавить после сохранения товара';
 
   @override
-  String get priceModeFixed => 'Точная цена';
-
-  @override
-  String get priceModeEstimate => 'Ориентировочная цена';
-
-  @override
   String get unitKg => 'кг';
 
   @override
@@ -1350,18 +1344,8 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String itemCustomerPrice(String price) {
-    return 'Цена для клиента: $price';
-  }
-
-  @override
   String itemMarkup(String percent) {
     return 'Наценка: $percent%';
-  }
-
-  @override
-  String itemLineTotal(String amount) {
-    return 'Сумма: $amount';
   }
 
   @override
@@ -3952,4 +3936,30 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get doneButton => 'Готово';
+
+  @override
+  String get itemColumnProduct => 'Товар';
+
+  @override
+  String get itemColumnQuantity => 'Количество';
+
+  @override
+  String get itemColumnPrice => 'Цена для клиента';
+
+  @override
+  String get itemColumnTotal => 'Сумма';
+
+  @override
+  String get itemExpiredHint => 'Срок ответа истёк — см. «Вопросы клиенту»';
+
+  @override
+  String get historyNewestFirst => 'новые сверху';
+
+  @override
+  String historyShowAll(int count) {
+    return 'Показать всю историю ($count)';
+  }
+
+  @override
+  String get historyShowFewer => 'Свернуть историю';
 }

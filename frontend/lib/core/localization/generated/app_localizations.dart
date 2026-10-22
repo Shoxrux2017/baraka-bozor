@@ -1088,18 +1088,6 @@ abstract class AppLocalizations {
   /// **'Rasmni mahsulot saqlangandan keyin qo\'shish mumkin'**
   String get productImageAfterSave;
 
-  /// No description provided for @priceModeFixed.
-  ///
-  /// In uz, this message translates to:
-  /// **'Aniq narx'**
-  String get priceModeFixed;
-
-  /// No description provided for @priceModeEstimate.
-  ///
-  /// In uz, this message translates to:
-  /// **'Taxminiy narx'**
-  String get priceModeEstimate;
-
   /// No description provided for @unitKg.
   ///
   /// In uz, this message translates to:
@@ -2552,23 +2540,11 @@ abstract class AppLocalizations {
   /// **'Bozor narxi: {price}'**
   String itemMarketPrice(String price);
 
-  /// No description provided for @itemCustomerPrice.
-  ///
-  /// In uz, this message translates to:
-  /// **'Mijoz narxi: {price}'**
-  String itemCustomerPrice(String price);
-
   /// No description provided for @itemMarkup.
   ///
   /// In uz, this message translates to:
   /// **'Ustama: {percent}%'**
   String itemMarkup(String percent);
-
-  /// No description provided for @itemLineTotal.
-  ///
-  /// In uz, this message translates to:
-  /// **'Summa: {amount}'**
-  String itemLineTotal(String amount);
 
   /// No description provided for @itemNote.
   ///
@@ -6715,6 +6691,54 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Tayyor'**
   String get doneButton;
+
+  /// No description provided for @itemColumnProduct.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot'**
+  String get itemColumnProduct;
+
+  /// No description provided for @itemColumnQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Miqdor'**
+  String get itemColumnQuantity;
+
+  /// No description provided for @itemColumnPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz uchun narx'**
+  String get itemColumnPrice;
+
+  /// No description provided for @itemColumnTotal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Summa'**
+  String get itemColumnTotal;
+
+  /// No description provided for @itemExpiredHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob muddati tugadi — «Mijozga savollar»ga qarang'**
+  String get itemExpiredHint;
+
+  /// No description provided for @historyNewestFirst.
+  ///
+  /// In uz, this message translates to:
+  /// **'yangilari tepada'**
+  String get historyNewestFirst;
+
+  /// No description provided for @historyShowAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Butun tarixni ko\'rsatish ({count})'**
+  String historyShowAll(int count);
+
+  /// No description provided for @historyShowFewer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarixni yig\'ish'**
+  String get historyShowFewer;
 }
 
 class _AppLocalizationsDelegate

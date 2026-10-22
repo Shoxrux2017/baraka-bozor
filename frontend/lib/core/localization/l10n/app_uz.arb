@@ -217,8 +217,6 @@
   "productImageWrongType": "Faqat JPEG, PNG yoki WebP rasm",
   "productImageUnreadable": "Faylni o'qib bo'lmadi. Boshqa faylni tanlang",
   "productImageAfterSave": "Rasmni mahsulot saqlangandan keyin qo'shish mumkin",
-  "priceModeFixed": "Aniq narx",
-  "priceModeEstimate": "Taxminiy narx",
   "unitKg": "kg",
   "unitGram": "g",
   "unitPiece": "dona",
@@ -650,26 +648,10 @@
       }
     }
   },
-  "itemCustomerPrice": "Mijoz narxi: {price}",
-  "@itemCustomerPrice": {
-    "placeholders": {
-      "price": {
-        "type": "String"
-      }
-    }
-  },
   "itemMarkup": "Ustama: {percent}%",
   "@itemMarkup": {
     "placeholders": {
       "percent": {
-        "type": "String"
-      }
-    }
-  },
-  "itemLineTotal": "Summa: {amount}",
-  "@itemLineTotal": {
-    "placeholders": {
-      "amount": {
         "type": "String"
       }
     }
@@ -2657,5 +2639,20 @@
       }
     }
   },
-  "doneButton": "Tayyor"
+  "doneButton": "Tayyor",
+  "itemColumnProduct": "Mahsulot",
+  "itemColumnQuantity": "Miqdor",
+  "itemColumnPrice": "Mijoz uchun narx",
+  "itemColumnTotal": "Summa",
+  "itemExpiredHint": "Javob muddati tugadi — «Mijozga savollar»ga qarang",
+  "historyNewestFirst": "yangilari tepada",
+  "historyShowAll": "Butun tarixni ko'rsatish ({count})",
+  "@historyShowAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "historyShowFewer": "Tarixni yig'ish"
 }

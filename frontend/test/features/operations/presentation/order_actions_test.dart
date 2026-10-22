@@ -116,6 +116,416 @@ void main() {
   String text(WidgetTester tester, String key) =>
       tester.widget<Text>(byKey(key)).data!;
 
+  group('lines, questions and history in the kit style', () {
+    TextStyle? styleOf(WidgetTester tester, String key, String data) => tester
+        .widget<Text>(
+          find.descendant(of: byKey(key), matching: find.text(data)),
+        )
+        .style;
+
+    BoxDecoration decorationOf(WidgetTester tester, String key) =>
+        tester.widget<DecoratedBox>(byKey(key)).decoration as BoxDecoration;
+
+    testWidgets('each line shows its status beside its name', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        items: <Object?>[
+          itemJson(id: '0192f0a0-0000-7000-8000-500000000001'),
+          itemJson(
+            id: '0192f0a0-0000-7000-8000-500000000002',
+            status: 'purchased',
+          ),
+          itemJson(
+            id: '0192f0a0-0000-7000-8000-500000000003',
+            status: 'awaiting_customer',
+          ),
+          itemJson(
+            id: '0192f0a0-0000-7000-8000-500000000004',
+            status: 'removed',
+            removedReason: 'unavailable',
+          ),
+        ],
+      );
+      await openOrder(tester, size: const Size(2200, 3200));
+      final AppLocalizations words = l10n(tester);
+
+      final TextStyle? name = styleOf(
+        tester,
+        'order-item-0192f0a0-0000-7000-8000-500000000001',
+        'Pomidor',
+      );
+      expect(name?.fontSize, 13);
+      expect(name?.fontWeight, FontWeight.w600);
+      for (final (String id, Color ground) in <(String, Color)>[
+        ('0192f0a0-0000-7000-8000-500000000001', KitColors.line),
+        ('0192f0a0-0000-7000-8000-500000000002', KitColors.primaryWash),
+        ('0192f0a0-0000-7000-8000-500000000003', KitColors.warningSoft),
+        ('0192f0a0-0000-7000-8000-500000000004', KitColors.dangerWash),
+      ]) {
+        expect(tester.getSize(byKey('order-item-status-$id')).height, 22);
+        expect(decorationOf(tester, 'order-item-status-$id').color, ground);
+      }
+      expect(
+        tester
+            .getTopLeft(
+              byKey('order-item-status-0192f0a0-0000-7000-8000-500000000001'),
+            )
+            .dx,
+        greaterThan(
+          tester
+              .getTopRight(
+                find.descendant(
+                  of: byKey('order-item-0192f0a0-0000-7000-8000-500000000001'),
+                  matching: find.text('Pomidor'),
+                ),
+              )
+              .dx,
+        ),
+      );
+      expect(
+        find.descendant(
+          of: byKey('order-item-0192f0a0-0000-7000-8000-500000000001'),
+          matching: find.byIcon(Icons.swap_horiz),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        decorationOf(
+          tester,
+          'order-item-note-0192f0a0-0000-7000-8000-500000000001',
+        ).color,
+        KitColors.field,
+      );
+      expect(find.text(words.itemNote('Qizilini oling')), findsNWidgets(4));
+    });
+
+    testWidgets('a bought line shows what was bought and billed', (
+      WidgetTester tester,
+    ) async {
+      auth.identities[SessionSlot.staff] = user(role: UserRole.admin);
+      operations.details[orderA] = order(
+        status: 'ready_for_delivery',
+        items: <Object?>[bought()],
+      );
+      await openOrder(tester);
+      final AppLocalizations words = l10n(tester);
+
+      final TextStyle boughtStyle = tester
+          .widget<Text>(byKey('order-item-bought-$itemId'))
+          .style!;
+      expect(boughtStyle.fontSize, 12);
+      expect(boughtStyle.color, KitColors.muted);
+      expect(
+        tester.widget<Text>(byKey('order-item-paid-$itemId')).style!.color,
+        KitColors.muted,
+      );
+      expect(
+        tester
+            .widget<Text>(find.text(words.itemBilledPrice(money(18400))))
+            .style
+            ?.fontSize,
+        13,
+      );
+      expect(
+        tester
+            .widget<Text>(
+              find.descendant(
+                of: byKey('order-line-$itemId'),
+                matching: find.text(money(55200)),
+              ),
+            )
+            .style
+            ?.fontWeight,
+        FontWeight.w700,
+      );
+      final TextButton fix = tester.widget<TextButton>(
+        byKey('correct-price-$itemId'),
+      );
+      expect(
+        fix.style?.foregroundColor?.resolve(<WidgetState>{}),
+        KitColors.primaryDark,
+      );
+      expect(
+        find.descendant(
+          of: byKey('correct-price-$itemId'),
+          matching: find.byIcon(Icons.edit),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a waiting line shows the estimate and why it is late', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        items: <Object?>[itemJson(status: 'awaiting_customer')],
+        approvals: <Object?>[approvalJson(status: 'expired')],
+      );
+      await openOrder(tester);
+      final AppLocalizations words = l10n(tester);
+
+      expect(find.text('≈ ${money(18400)}/${words.unitKg}'), findsOneWidget);
+      expect(find.text(words.itemMarketPrice(money(16000))), findsOneWidget);
+      expect(find.text('≈ ${money(55200)}'), findsOneWidget);
+      expect(
+        decorationOf(tester, 'order-line-$itemId').color,
+        KitColors.warningWash,
+      );
+      expect(
+        tester.widget<Text>(find.text(words.itemExpiredHint)).style?.color,
+        KitColors.danger,
+      );
+
+      operations.details[orderA] = order(
+        items: <Object?>[itemJson(status: 'awaiting_customer')],
+        approvals: <Object?>[approvalJson()],
+      );
+      await tapAndSettle(tester, byKey('order-refresh'));
+      expect(find.text(words.itemExpiredHint), findsNothing);
+    });
+
+    testWidgets('a removed line is struck through with why', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        items: <Object?>[
+          itemJson(status: 'removed', removedReason: 'unavailable'),
+        ],
+      );
+      await openOrder(tester);
+      final AppLocalizations words = l10n(tester);
+
+      expect(
+        styleOf(tester, 'order-item-$itemId', 'Pomidor')?.decoration,
+        TextDecoration.lineThrough,
+      );
+      expect(find.textContaining(words.itemRemovedBecause('')), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('order-line-$itemId'),
+          matching: find.text('—'),
+        ),
+        findsNWidgets(2),
+      );
+    });
+
+    testWidgets('the markup shows once when every line shares it', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        items: <Object?>[
+          itemJson(),
+          itemJson(id: '0192f0a0-0000-7000-8000-500000000005'),
+        ],
+      );
+      await openOrder(tester);
+
+      expect(find.text(l10n(tester).itemMarkup('15')), findsOneWidget);
+    });
+
+    testWidgets('the markup shows per line when they differ', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        items: <Object?>[
+          itemJson(),
+          itemJson(
+            id: '0192f0a0-0000-7000-8000-500000000005',
+            purchase: <String, Object?>{'markup_percent': '10.00'},
+          ),
+        ],
+      );
+      await openOrder(tester);
+      final AppLocalizations words = l10n(tester);
+
+      expect(find.text(words.itemMarkup('15')), findsOneWidget);
+      expect(find.text(words.itemMarkup('10')), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text(words.itemMarkup('15'))).dy,
+        greaterThan(
+          tester
+              .getBottomLeft(find.text(words.itemColumnPrice.toUpperCase()))
+              .dy,
+        ),
+        reason: 'it is in the table, not in the card header',
+      );
+    });
+
+    testWidgets('questions take the tone of their state', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        approvals: <Object?>[
+          approvalJson(
+            status: 'approved',
+            resolution: 'approved',
+            resolved: true,
+          ),
+          approvalJson(id: secondApproval, status: 'expired'),
+          approvalJson(id: '0192f0a0-0000-7000-8000-500000000006'),
+        ],
+      );
+      await openOrder(tester);
+
+      BoxDecoration box(String id) =>
+          tester.widget<Container>(byKey('approval-$id')).decoration!
+              as BoxDecoration;
+
+      expect(
+        box('0192f0a0-0000-7000-8000-500000000006').color,
+        KitColors.warningWash,
+      );
+      expect(
+        (box('0192f0a0-0000-7000-8000-500000000006').border! as Border)
+            .top
+            .color,
+        KitColors.warning,
+      );
+      expect(
+        (box('0192f0a0-0000-7000-8000-500000000006').border! as Border)
+            .top
+            .width,
+        1.5,
+      );
+      expect(
+        byKey('approval-timers-0192f0a0-0000-7000-8000-500000000006'),
+        findsOneWidget,
+      );
+      expect(box(secondApproval).color, KitColors.dangerWash);
+      expect(
+        (box(secondApproval).border! as Border).top.color,
+        KitColors.danger,
+      );
+      expect(
+        tester.getSize(byKey('remove-expired-$secondApproval')).height,
+        36,
+      );
+      expect(box(approvalId).color, Colors.white);
+      expect(
+        tester.widget<Text>(byKey('approval-status-$approvalId')).style!.color,
+        KitColors.primaryDark,
+      );
+      expect(
+        tester
+            .getTopLeft(byKey('approval-0192f0a0-0000-7000-8000-500000000006'))
+            .dy,
+        lessThan(tester.getTopLeft(byKey('approval-$secondApproval')).dy),
+        reason: 'the newest first',
+      );
+    });
+
+    for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets('lines, questions and history hold at 820x1180 with text x2 '
+          '(${locale.languageCode})', (WidgetTester tester) async {
+        auth.identities[SessionSlot.staff] = user(role: UserRole.admin);
+        operations.details[orderA] = order(
+          items: <Object?>[
+            bought(replaced: true),
+            itemJson(
+              id: '0192f0a0-0000-7000-8000-500000000009',
+              status: 'awaiting_customer',
+            ),
+          ],
+          approvals: <Object?>[
+            approvalJson(status: 'expired'),
+            approvalJson(id: secondApproval),
+          ],
+          history: <Object?>[
+            for (int index = 0; index < 10; index++)
+              <String, Object?>{
+                ...historyJson(event: 'item_purchased', details: null),
+                'id':
+                    '0192f0a0-0000-7000-8000-7${index.toString().padLeft(11, '0')}',
+              },
+          ],
+        );
+        await openOrder(
+          tester,
+          size: const Size(820, 1180),
+          textScale: 2,
+          device: locale,
+        );
+        expect(tester.takeException(), isNull);
+        await tapAndSettle(tester, byKey('history-fold'));
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('no questions says so', (WidgetTester tester) async {
+      await openOrder(tester);
+
+      expect(find.text(l10n(tester).approvalsNone), findsOneWidget);
+    });
+
+    testWidgets('the history shows eight entries and folds the rest', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        history: <Object?>[
+          for (int index = 0; index < 13; index++)
+            <String, Object?>{
+              ...historyJson(
+                event: switch (index) {
+                  12 => 'approval_expired',
+                  11 => 'item_purchased',
+                  _ => 'status_changed',
+                },
+                details: null,
+              ),
+              'id':
+                  '0192f0a0-0000-7000-8000-7${index.toString().padLeft(11, '0')}',
+            },
+        ],
+      );
+      await openOrder(tester);
+      final AppLocalizations words = l10n(tester);
+
+      expect(
+        byKey('history-0192f0a0-0000-7000-8000-700000000012'),
+        findsOneWidget,
+      );
+      expect(
+        byKey('history-0192f0a0-0000-7000-8000-700000000005'),
+        findsOneWidget,
+      );
+      expect(
+        byKey('history-0192f0a0-0000-7000-8000-700000000004'),
+        findsNothing,
+      );
+      expect(find.text(words.historyShowAll(13)), findsOneWidget);
+      expect(tester.getSize(byKey('history-fold')).height, 38);
+      Color dot(String id) =>
+          (decorationOf(tester, 'history-dot-$id').border! as Border).top.color;
+      expect(dot('0192f0a0-0000-7000-8000-700000000012'), KitColors.danger);
+      expect(
+        dot('0192f0a0-0000-7000-8000-700000000011'),
+        KitColors.primaryDark,
+      );
+      expect(dot('0192f0a0-0000-7000-8000-700000000010'), KitColors.muted);
+      final TextStyle? time = styleOf(
+        tester,
+        'history-0192f0a0-0000-7000-8000-700000000012',
+        '12:05',
+      );
+      expect(time?.fontSize, 12);
+      expect(time?.fontWeight, FontWeight.w600);
+
+      await tapAndSettle(tester, byKey('history-fold'));
+      expect(
+        byKey('history-0192f0a0-0000-7000-8000-700000000000'),
+        findsOneWidget,
+      );
+      expect(find.text(words.historyShowFewer), findsOneWidget);
+
+      await tapAndSettle(tester, byKey('history-fold'));
+      expect(
+        byKey('history-0192f0a0-0000-7000-8000-700000000000'),
+        findsNothing,
+      );
+    });
+  });
+
   group('what the page shows', () {
     testWidgets('a bought line: what was bought, the price paid and billed', (
       WidgetTester tester,

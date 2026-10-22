@@ -270,7 +270,7 @@ void main() {
   group('the layout', () {
     Finder itemsCard() => find.ancestor(
       of: byKey('order-item-$itemId'),
-      matching: find.byType(Card),
+      matching: find.byType(PanelCard),
     );
 
     testWidgets('a wide order page has two columns', (

@@ -540,12 +540,6 @@ class AppLocalizationsUz extends AppLocalizations {
       'Rasmni mahsulot saqlangandan keyin qo\'shish mumkin';
 
   @override
-  String get priceModeFixed => 'Aniq narx';
-
-  @override
-  String get priceModeEstimate => 'Taxminiy narx';
-
-  @override
   String get unitKg => 'kg';
 
   @override
@@ -1347,18 +1341,8 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String itemCustomerPrice(String price) {
-    return 'Mijoz narxi: $price';
-  }
-
-  @override
   String itemMarkup(String percent) {
     return 'Ustama: $percent%';
-  }
-
-  @override
-  String itemLineTotal(String amount) {
-    return 'Summa: $amount';
   }
 
   @override
@@ -3924,4 +3908,31 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get doneButton => 'Tayyor';
+
+  @override
+  String get itemColumnProduct => 'Mahsulot';
+
+  @override
+  String get itemColumnQuantity => 'Miqdor';
+
+  @override
+  String get itemColumnPrice => 'Mijoz uchun narx';
+
+  @override
+  String get itemColumnTotal => 'Summa';
+
+  @override
+  String get itemExpiredHint =>
+      'Javob muddati tugadi — «Mijozga savollar»ga qarang';
+
+  @override
+  String get historyNewestFirst => 'yangilari tepada';
+
+  @override
+  String historyShowAll(int count) {
+    return 'Butun tarixni ko\'rsatish ($count)';
+  }
+
+  @override
+  String get historyShowFewer => 'Tarixni yig\'ish';
 }

@@ -13,10 +13,4 @@ abstract final class CatalogLabels {
     UnitCode.bundle => l10n.unitBundle,
     UnitCode.meter => l10n.unitMeter,
   };
-
-  static String priceMode(AppLocalizations l10n, PriceMode mode) =>
-      switch (mode) {
-        PriceMode.fixed => l10n.priceModeFixed,
-        PriceMode.estimate => l10n.priceModeEstimate,
-      };
 }

@@ -1031,8 +1031,9 @@ void main() {
 
       expect(location(tester), '/operations/orders/$orderA');
       expect(find.text(words.orderTitle('1001')), findsOneWidget);
-      expect(find.text('Pomidor · 3 ${words.unitKg}'), findsOneWidget);
-      expect(find.text(words.itemMarkup('15.00')), findsOneWidget);
+      expect(find.text('Pomidor'), findsOneWidget);
+      expect(find.text('3 ${words.unitKg}'), findsOneWidget);
+      expect(find.text(words.itemMarkup('15')), findsOneWidget);
       expect(
         find.text(
           words.itemMarketPrice(MoneyFormat.uzs(16000, AppLanguage.uz)),
