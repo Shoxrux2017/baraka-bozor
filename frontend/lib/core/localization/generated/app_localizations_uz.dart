@@ -504,9 +504,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productNew => 'Yangi mahsulot';
 
   @override
-  String get productEditTitle => 'Mahsulotni tahrirlash';
-
-  @override
   String get productSaved => 'Mahsulot saqlandi';
 
   @override
@@ -530,11 +527,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get productMarketPrice => 'Bozor narxi';
-
-  @override
-  String productCustomerPrice(String price) {
-    return 'Mijoz uchun narx: $price';
-  }
 
   @override
   String get productSearch => 'Nomi bo\'yicha qidirish';
@@ -587,6 +579,52 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get productImageAfterSave =>
       'Rasmni mahsulot saqlangandan keyin qo\'shish mumkin';
+
+  @override
+  String get productSectionMain => 'Mahsulot';
+
+  @override
+  String get productSectionPrice => 'Narx';
+
+  @override
+  String get productSectionShown => 'Ko\'rinishi';
+
+  @override
+  String get productMarkupNote =>
+      'Ustama barcha mahsulotlar uchun bitta — u «Sozlamalar»da.';
+
+  @override
+  String productPriceHint(String unit) {
+    return 'Butun son, 1 $unit uchun';
+  }
+
+  @override
+  String get productCustomerPriceTitle => 'Mijoz uchun narx';
+
+  @override
+  String productCustomerPriceBasis(String price) {
+    return 'Saqlangan $price narxi bo\'yicha. «Saqlash»dan keyin qayta hisoblanadi.';
+  }
+
+  @override
+  String get productCustomerPriceLater => 'Saqlangandan keyin chiqadi';
+
+  @override
+  String get catalogOptional => 'Ixtiyoriy';
+
+  @override
+  String get productShownHint =>
+      'Mahsulotni arxivlamasdan yashirish uchun o\'chiring';
+
+  @override
+  String productCategoryHiddenNote(String name) {
+    return '«$name» kategoriyasi yashirilgan, shu sababli mijozlar bu mahsulotni ham ko\'rmaydi. Uni «Kategoriyalar» bo\'limida yoqish mumkin.';
+  }
+
+  @override
+  String productCategoryArchivedNote(String name) {
+    return '«$name» kategoriyasi arxivda, shu sababli mijozlar bu mahsulotni ham ko\'rmaydi. Uni «Kategoriyalar» bo\'limida qaytarish mumkin.';
+  }
 
   @override
   String get unitKg => 'kg';

@@ -510,9 +510,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get productNew => 'Новый товар';
 
   @override
-  String get productEditTitle => 'Редактирование товара';
-
-  @override
   String get productSaved => 'Товар сохранён';
 
   @override
@@ -536,11 +533,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get productMarketPrice => 'Рыночная цена';
-
-  @override
-  String productCustomerPrice(String price) {
-    return 'Цена для клиента: $price';
-  }
 
   @override
   String get productSearch => 'Поиск по названию';
@@ -593,6 +585,52 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get productImageAfterSave =>
       'Фото можно добавить после сохранения товара';
+
+  @override
+  String get productSectionMain => 'Товар';
+
+  @override
+  String get productSectionPrice => 'Цена';
+
+  @override
+  String get productSectionShown => 'Показ';
+
+  @override
+  String get productMarkupNote =>
+      'Наценка одна на все товары — она в «Настройках».';
+
+  @override
+  String productPriceHint(String unit) {
+    return 'Целое число, за 1 $unit';
+  }
+
+  @override
+  String get productCustomerPriceTitle => 'Цена для клиента';
+
+  @override
+  String productCustomerPriceBasis(String price) {
+    return 'По сохранённой цене $price. Пересчитается после «Сохранить».';
+  }
+
+  @override
+  String get productCustomerPriceLater => 'Появится после сохранения';
+
+  @override
+  String get catalogOptional => 'Необязательно';
+
+  @override
+  String get productShownHint =>
+      'Выключите, чтобы скрыть товар, не убирая его в архив';
+
+  @override
+  String productCategoryHiddenNote(String name) {
+    return 'Категория «$name» скрыта, поэтому клиенты не видят и этот товар. Включить её можно в «Категориях».';
+  }
+
+  @override
+  String productCategoryArchivedNote(String name) {
+    return 'Категория «$name» в архиве, поэтому клиенты не видят и этот товар. Вернуть её можно в «Категориях».';
+  }
 
   @override
   String get unitKg => 'кг';

@@ -1010,12 +1010,6 @@ abstract class AppLocalizations {
   /// **'Yangi mahsulot'**
   String get productNew;
 
-  /// No description provided for @productEditTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Mahsulotni tahrirlash'**
-  String get productEditTitle;
-
   /// No description provided for @productSaved.
   ///
   /// In uz, this message translates to:
@@ -1063,12 +1057,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Bozor narxi'**
   String get productMarketPrice;
-
-  /// No description provided for @productCustomerPrice.
-  ///
-  /// In uz, this message translates to:
-  /// **'Mijoz uchun narx: {price}'**
-  String productCustomerPrice(String price);
 
   /// No description provided for @productSearch.
   ///
@@ -1165,6 +1153,78 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Rasmni mahsulot saqlangandan keyin qo\'shish mumkin'**
   String get productImageAfterSave;
+
+  /// No description provided for @productSectionMain.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot'**
+  String get productSectionMain;
+
+  /// No description provided for @productSectionPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narx'**
+  String get productSectionPrice;
+
+  /// No description provided for @productSectionShown.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ko\'rinishi'**
+  String get productSectionShown;
+
+  /// No description provided for @productMarkupNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ustama barcha mahsulotlar uchun bitta — u «Sozlamalar»da.'**
+  String get productMarkupNote;
+
+  /// No description provided for @productPriceHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Butun son, 1 {unit} uchun'**
+  String productPriceHint(String unit);
+
+  /// No description provided for @productCustomerPriceTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz uchun narx'**
+  String get productCustomerPriceTitle;
+
+  /// No description provided for @productCustomerPriceBasis.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlangan {price} narxi bo\'yicha. «Saqlash»dan keyin qayta hisoblanadi.'**
+  String productCustomerPriceBasis(String price);
+
+  /// No description provided for @productCustomerPriceLater.
+  ///
+  /// In uz, this message translates to:
+  /// **'Saqlangandan keyin chiqadi'**
+  String get productCustomerPriceLater;
+
+  /// No description provided for @catalogOptional.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ixtiyoriy'**
+  String get catalogOptional;
+
+  /// No description provided for @productShownHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotni arxivlamasdan yashirish uchun o\'chiring'**
+  String get productShownHint;
+
+  /// No description provided for @productCategoryHiddenNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» kategoriyasi yashirilgan, shu sababli mijozlar bu mahsulotni ham ko\'rmaydi. Uni «Kategoriyalar» bo\'limida yoqish mumkin.'**
+  String productCategoryHiddenNote(String name);
+
+  /// No description provided for @productCategoryArchivedNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{name}» kategoriyasi arxivda, shu sababli mijozlar bu mahsulotni ham ko\'rmaydi. Uni «Kategoriyalar» bo\'limida qaytarish mumkin.'**
+  String productCategoryArchivedNote(String name);
 
   /// No description provided for @unitKg.
   ///

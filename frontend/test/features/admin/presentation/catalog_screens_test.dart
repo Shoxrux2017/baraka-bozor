@@ -17,7 +17,10 @@ import 'package:baraka_bozor/features/admin/application/admin_catalog_controller
 import 'package:baraka_bozor/features/admin/application/product_image_picker.dart';
 import 'package:baraka_bozor/features/admin/domain/admin_catalog.dart';
 import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_note.dart';
 import 'package:baraka_bozor/features/admin/presentation/catalog_image_card.dart';
+import 'package:baraka_bozor/features/admin/presentation/catalog_widgets.dart';
+import 'package:baraka_bozor/features/admin/presentation/product_edit_screen.dart';
 import 'package:baraka_bozor/features/admin/presentation/products_screen.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:flutter/material.dart';
@@ -654,12 +657,264 @@ void main() {
       );
     }
 
+    testWidgets('the page has two columns from 1000 and one below', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        AdminPaths.product('p-1'),
+        size: const Size(1048, 1000),
+      );
+      expect(ProductEditScreen.twoColumnsWidth, 1000);
+      expect(
+        tester.getTopLeft(find.byType(CatalogImageCard)).dx,
+        greaterThan(tester.getTopRight(byKey('product-save')).dx),
+      );
+      expect(
+        tester.widget<CatalogImageCard>(find.byType(CatalogImageCard)).compact,
+        isFalse,
+      );
+      expect(tester.getSize(find.byType(CatalogImageCard)).width, 360);
+
+      await open(
+        tester,
+        AdminPaths.product('p-1'),
+        size: const Size(1047, 1000),
+      );
+      expect(
+        tester.getBottomLeft(find.byType(CatalogImageCard)).dy,
+        lessThanOrEqualTo(
+          tester.getTopLeft(find.text(l10n(tester).productSectionMain)).dy,
+        ),
+      );
+      expect(
+        tester.widget<CatalogImageCard>(find.byType(CatalogImageCard)).compact,
+        isTrue,
+      );
+    });
+
+    testWidgets('the fields stand in three cards', (WidgetTester tester) async {
+      await open(tester, AdminPaths.product('p-1'));
+      final AppLocalizations text = l10n(tester);
+
+      Finder card(String title) => find
+          .ancestor(of: find.text(title), matching: find.byType(PanelCard))
+          .first;
+      Finder within(String title, Finder finder) =>
+          find.descendant(of: card(title), matching: finder);
+
+      for (final String key in <String>[
+        'category_id',
+        'unit_code',
+        'name_uz',
+        'name_ru',
+        'description_uz',
+        'description_ru',
+      ]) {
+        expect(within(text.productSectionMain, field(key)), findsOneWidget);
+      }
+      expect(
+        within(text.productSectionPrice, field('market_price_uzs')),
+        findsOneWidget,
+      );
+      expect(
+        within(text.productSectionPrice, byKey('customer-price')),
+        findsOneWidget,
+      );
+      expect(
+        within(text.productSectionShown, field('sort_order')),
+        findsOneWidget,
+      );
+      expect(
+        within(text.productSectionShown, field('is_active')),
+        findsOneWidget,
+      );
+      expect(
+        within(text.productSectionShown, field('is_featured')),
+        findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(field('is_active')).dy,
+        lessThan(tester.getTopLeft(field('is_featured')).dy),
+      );
+    });
+
+    testWidgets('the customer price box names the saved price it comes from', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.product('p-1'));
+      final AppLocalizations text = l10n(tester);
+      final String market = MoneyFormat.uzs(16000, AppLanguage.uz);
+      final String customer = MoneyFormat.uzs(18400, AppLanguage.uz);
+
+      void expectBox() {
+        for (final String line in <String>[
+          text.productCustomerPriceTitle,
+          customer,
+          text.catalogPerUnit(CatalogLabels.unit(text, UnitCode.kg)),
+          text.productCustomerPriceBasis(market),
+        ]) {
+          expect(
+            find.descendant(
+              of: byKey('customer-price'),
+              matching: find.text(line),
+            ),
+            findsOneWidget,
+            reason: line,
+          );
+        }
+      }
+
+      expectBox();
+      await tester.enterText(field('market_price_uzs'), '20 000');
+      await tester.pumpAndSettle();
+      expectBox();
+
+      await open(tester, AdminPaths.newProduct);
+      expect(
+        find.descendant(
+          of: byKey('customer-price'),
+          matching: find.text(l10n(tester).productCustomerPriceLater),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets('the page says when the chosen category hides the product '
+          '(${device.languageCode})', (WidgetTester tester) async {
+        final bool ru = device.languageCode == 'ru';
+        catalog.categoryRows = <AdminCategory>[
+          adminCategory(),
+          adminCategory(
+            id: 'c-2',
+            nameUz: 'Mevalar',
+            nameRu: 'Фрукты',
+            isActive: false,
+          ),
+          adminCategory(
+            id: 'c-3',
+            nameUz: 'Konserva',
+            nameRu: 'Консервы',
+            archivedAt: DateTime.utc(2026, 9, 26),
+          ),
+        ];
+        catalog.productRows = <AdminProduct>[
+          adminProduct(),
+          adminProduct(id: 'p-3', categoryId: 'c-3'),
+          adminProduct(
+            id: 'p-4',
+            categoryId: 'c-2',
+            archivedAt: DateTime.utc(2026, 9, 26),
+          ),
+        ];
+        await open(tester, AdminPaths.product('p-1'), device: device);
+        final AppLocalizations text = l10n(tester);
+        expect(byKey('product-category-note'), findsNothing);
+
+        await tapAndSettle(tester, field('category_id'));
+        await tapAndSettle(tester, find.text(ru ? 'Фрукты' : 'Mevalar').last);
+        expect(
+          find.descendant(
+            of: byKey('product-category-note'),
+            matching: find.text(
+              text.productCategoryHiddenNote(ru ? 'Фрукты' : 'Mevalar'),
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester.widget<KitNote>(byKey('product-category-note')).tone,
+          KitTone.amber,
+        );
+
+        await tapAndSettle(tester, field('is_active'));
+        expect(byKey('product-category-note'), findsNothing);
+
+        await open(tester, AdminPaths.product('p-3'), device: device);
+        expect(
+          find.text(
+            text.productCategoryArchivedNote(ru ? 'Консервы' : 'Konserva'),
+          ),
+          findsOneWidget,
+        );
+        expect(byKey('product-category-note'), findsOneWidget);
+
+        await open(tester, AdminPaths.product('p-4'), device: device);
+        final Finder archived = find.ancestor(
+          of: find.text(text.catalogArchivedNote),
+          matching: find.byType(KitNote),
+        );
+        expect(archived, findsOneWidget);
+        expect(tester.widget<KitNote>(archived).tone, KitTone.grey);
+        expect(
+          tester.widget<KitNote>(archived).icon,
+          Icons.inventory_2_outlined,
+        );
+        expect(byKey('product-category-note'), findsNothing);
+      });
+    }
+
+    testWidgets('a description counts its characters', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.product('p-1'));
+
+      await tester.enterText(field('description_uz'), 'a' * 66);
+      await tester.pumpAndSettle();
+
+      final Finder counter = find.descendant(
+        of: field('description_uz'),
+        matching: find.text('66/2000'),
+      );
+      final Finder optional = find.descendant(
+        of: field('description_uz'),
+        matching: find.text(l10n(tester).catalogOptional),
+      );
+      expect(counter, findsOneWidget);
+      expect(optional, findsOneWidget);
+      expect(
+        tester.getTopLeft(optional).dx,
+        lessThan(tester.getTopLeft(counter).dx),
+      );
+    });
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      for (final Size size in const <Size>[Size(1440, 900), Size(820, 1180)]) {
+        testWidgets('the product page holds at the extremes '
+            '(${device.languageCode} ${size.width.toInt()})', (
+          WidgetTester tester,
+        ) async {
+          final String long = ('Pomidor ' * 20).trim();
+          catalog.productRows = <AdminProduct>[
+            adminProduct(nameUz: long, nameRu: long, isFeatured: true),
+          ];
+          tester.platformDispatcher.textScaleFactorTestValue = 2;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+          await open(
+            tester,
+            AdminPaths.product('p-1'),
+            size: size,
+            device: device,
+          );
+
+          expect(tester.widget<Text>(byKey('product-title')).data, long);
+          expect(tester.takeException(), isNull);
+        });
+      }
+    }
+
     testWidgets(
       'a new product is created and its page opens, ready for an image',
       (WidgetTester tester) async {
         await open(tester, AdminPaths.products);
 
         await tapAndSettle(tester, byKey('new-product'));
+        expect(
+          tester.widget<Text>(byKey('product-title')).data,
+          l10n(tester).productNew,
+        );
         expect(find.text(l10n(tester).productImageAfterSave), findsOneWidget);
         await tapAndSettle(tester, field('category_id'));
         await tapAndSettle(tester, find.text('Sabzavotlar').last);
@@ -678,7 +933,11 @@ void main() {
         expect(draft.unitCode, UnitCode.kg);
         expect(draft.isActive, isTrue);
         expect(byKey('choose-image'), findsOneWidget);
-        expect(find.text(l10n(tester).productEditTitle), findsOneWidget);
+        expect(tester.widget<Text>(byKey('product-title')).data, 'Bodring');
+        expect(find.byType(CatalogStateChip), findsOneWidget);
+        expect(find.text(l10n(tester).catalogStateActive), findsOneWidget);
+        expect(find.byType(FeaturedTag), findsOneWidget);
+        expect(find.text('Огурец · Sabzavotlar'), findsOneWidget);
       },
     );
 
