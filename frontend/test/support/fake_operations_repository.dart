@@ -68,6 +68,9 @@ class FakeOperationsRepository implements OperationsRepository {
   /// When set, an order's detail waits for it, and nothing else does.
   Completer<void>? holdOrder;
 
+  /// When set, the summary fails with it.
+  ApiFailure? summaryFailure;
+
   /// When set, the Shopper list fails with it.
   ApiFailure? shoppersFailure;
 
@@ -155,6 +158,9 @@ class FakeOperationsRepository implements OperationsRepository {
   Future<BoardSummary> summary() async {
     loads.add('summary');
     await _held();
+    if (summaryFailure != null) {
+      throw summaryFailure!;
+    }
     return summaryAnswer;
   }
 

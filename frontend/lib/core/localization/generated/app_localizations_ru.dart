@@ -166,6 +166,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get panelSectionBoard => 'Заказы';
 
   @override
+  String get panelMenuLabel => 'Панель';
+
+  @override
   String get customerModeLabel => 'Режим клиента';
 
   @override
@@ -536,12 +539,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Фото можно добавить после сохранения товара';
 
   @override
-  String get priceModeFixed => 'Точная цена';
-
-  @override
-  String get priceModeEstimate => 'Ориентировочная цена';
-
-  @override
   String get unitKg => 'кг';
 
   @override
@@ -876,9 +873,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressEdit => 'Изменить адрес';
 
   @override
-  String get addressStreet => 'Улица';
-
-  @override
   String get addressHouse => 'Дом';
 
   @override
@@ -1131,9 +1125,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get boardSearch => 'Номер, телефон или имя';
 
   @override
-  String get boardAllStatuses => 'Все статусы';
-
-  @override
   String get boardAllPaymentMethods => 'Все способы оплаты';
 
   @override
@@ -1158,10 +1149,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get boardEmptyFiltered => 'Нет заказов по этим фильтрам';
 
   @override
-  String get boardColumnNumber => 'Номер';
+  String get boardColumnOrder => 'Заказ';
 
   @override
-  String get boardColumnPlaced => 'Время';
+  String get boardFilters => 'Фильтры';
+
+  @override
+  String get boardNoCourier => 'Курьер не назначен';
+
+  @override
+  String boardPageRange(int from, int to, int total) {
+    return '$from–$to из $total';
+  }
 
   @override
   String get boardColumnCustomer => 'Клиент';
@@ -1212,7 +1211,28 @@ class AppLocalizationsRu extends AppLocalizations {
   String get summarySalesToday => 'Продажи сегодня';
 
   @override
-  String get summaryAttention => 'Требуют внимания';
+  String get summaryOpen => 'В работе';
+
+  @override
+  String get boardAllOrders => 'Все заказы';
+
+  @override
+  String boardUpdatedAt(String time) {
+    return 'Обновлено в $time';
+  }
+
+  @override
+  String get attentionLongestFirst => 'Дольше ждущие — сверху';
+
+  @override
+  String attentionWaitingMinutes(int minutes) {
+    return '$minutes мин';
+  }
+
+  @override
+  String attentionWaitingHours(int hours, int minutes) {
+    return '$hours ч $minutes мин';
+  }
 
   @override
   String get attentionTitle => 'Требует внимания';
@@ -1262,21 +1282,31 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get orderPathCreated => 'Создан';
+
+  @override
+  String get orderPathShopping => 'Сборка';
+
+  @override
+  String orderPathRunning(String time) {
+    return 'идёт с $time';
+  }
+
+  @override
+  String orderPathWaiting(String time) {
+    return 'ждёт с $time';
+  }
+
+  @override
+  String get orderCourierLater =>
+      'Назначить можно, когда заказ будет готов к доставке';
+
+  @override
   String get orderBackToBoard => 'К заказам';
 
   @override
   String orderPlacedAt(String time) {
     return 'Создан: $time';
-  }
-
-  @override
-  String orderCompletedAt(String time) {
-    return 'Выполнен: $time';
-  }
-
-  @override
-  String orderCancelledAt(String time) {
-    return 'Отменён: $time';
   }
 
   @override
@@ -1314,18 +1344,8 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String itemCustomerPrice(String price) {
-    return 'Цена для клиента: $price';
-  }
-
-  @override
   String itemMarkup(String percent) {
     return 'Наценка: $percent%';
-  }
-
-  @override
-  String itemLineTotal(String amount) {
-    return 'Сумма: $amount';
   }
 
   @override
@@ -1492,12 +1512,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get boardFilteredShopper => 'Выбранный сборщик';
-
-  @override
-  String get boardFilterStatus => 'Статус';
-
-  @override
-  String get boardFilterPayment => 'Способ оплаты';
 
   @override
   String get boardFilterShopper => 'Сборщик';
@@ -2041,6 +2055,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String itemWasEstimate(String price) {
+    return 'было ≈ $price';
+  }
+
+  @override
   String itemBilledPrice(String price) {
     return 'Цена к оплате: $price';
   }
@@ -2132,9 +2151,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get removeExpiredExplained =>
       'Клиент не ответил вовремя. Товар будет убран из заказа; если покупать больше нечего, заказ отменится.';
-
-  @override
-  String get cancellationRequestsNone => 'Запросов на отмену не было';
 
   @override
   String get requestStatusPending => 'Ждёт решения';
@@ -3085,6 +3101,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Номер подтверждён. Введите пароль сотрудника';
 
   @override
+  String get panelTagline => 'Панель управления';
+
+  @override
   String get staffPasswordForgot =>
       'Забыли пароль? Обратитесь к администратору';
 
@@ -3925,4 +3944,48 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get doneButton => 'Готово';
+
+  @override
+  String get itemColumnProduct => 'Товар';
+
+  @override
+  String get itemColumnQuantity => 'Количество';
+
+  @override
+  String get itemColumnPrice => 'Цена для клиента';
+
+  @override
+  String get itemColumnTotal => 'Сумма';
+
+  @override
+  String get itemExpiredHint => 'Срок ответа истёк — см. «Вопросы клиенту»';
+
+  @override
+  String get historyNewestFirst => 'новые сверху';
+
+  @override
+  String historyShowAll(int count) {
+    return 'Показать всю историю ($count)';
+  }
+
+  @override
+  String get historyShowFewer => 'Свернуть историю';
+
+  @override
+  String dialogOrderLine(String number, String customer) {
+    return 'Заказ № $number · $customer';
+  }
+
+  @override
+  String get pickShopperHint =>
+      'Нажмите на сборщика — заказ сразу перейдёт к нему.';
+
+  @override
+  String get pickCourierHint =>
+      'Нажмите на курьера — заказ сразу перейдёт к нему.';
+
+  @override
+  String requestCustomerReason(String reason) {
+    return 'Причина клиента: «$reason»';
+  }
 }

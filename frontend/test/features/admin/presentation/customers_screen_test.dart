@@ -3,6 +3,7 @@ import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/admin/application/admin_customers_controllers.dart';
 import 'package:baraka_bozor/features/admin/domain/admin_customers.dart';
 import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
+import 'package:baraka_bozor/features/admin/presentation/customers_screen.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,6 +29,10 @@ void main() {
 
   bool enabled(WidgetTester tester, String key) =>
       tester.widget<OutlinedButton>(byKey(key)).onPressed != null;
+
+  /// The shell's user card shows the staff user's own name and number.
+  Finder inScreen(Finder finder) =>
+      find.descendant(of: find.byType(CustomersScreen), matching: finder);
 
   setUp(() {
     tokens = InMemoryTokenStore();
@@ -96,12 +101,12 @@ void main() {
     await search(tester, phone);
 
     expect(api.finds, <String>[phone]);
-    expect(find.text('Aziza Karimova'), findsOneWidget);
-    expect(find.text('Без имени'), findsOneWidget);
-    expect(find.text('+998 90 123 45 67'), findsNWidgets(2));
-    expect(find.text('Заказов: 3'), findsNWidgets(2));
-    expect(find.text('Активен'), findsNWidgets(2));
-    expect(find.text('Незавершённый заказ № 1042'), findsOneWidget);
+    expect(inScreen(find.text('Aziza Karimova')), findsOneWidget);
+    expect(inScreen(find.text('Без имени')), findsOneWidget);
+    expect(inScreen(find.text('+998 90 123 45 67')), findsNWidgets(2));
+    expect(inScreen(find.text('Заказов: 3')), findsNWidgets(2));
+    expect(inScreen(find.text('Активен')), findsNWidgets(2));
+    expect(inScreen(find.text('Незавершённый заказ № 1042')), findsOneWidget);
   });
 
   testWidgets('a phone with no account says so', (WidgetTester tester) async {

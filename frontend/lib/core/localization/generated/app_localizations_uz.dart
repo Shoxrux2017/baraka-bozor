@@ -166,6 +166,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get panelSectionBoard => 'Buyurtmalar';
 
   @override
+  String get panelMenuLabel => 'Panel';
+
+  @override
   String get customerModeLabel => 'Mijoz rejimi';
 
   @override
@@ -537,12 +540,6 @@ class AppLocalizationsUz extends AppLocalizations {
       'Rasmni mahsulot saqlangandan keyin qo\'shish mumkin';
 
   @override
-  String get priceModeFixed => 'Aniq narx';
-
-  @override
-  String get priceModeEstimate => 'Taxminiy narx';
-
-  @override
   String get unitKg => 'kg';
 
   @override
@@ -879,9 +876,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get addressEdit => 'Manzilni tahrirlash';
 
   @override
-  String get addressStreet => 'Ko\'cha';
-
-  @override
   String get addressHouse => 'Uy';
 
   @override
@@ -1136,9 +1130,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get boardSearch => 'Raqam, telefon yoki ism';
 
   @override
-  String get boardAllStatuses => 'Barcha holatlar';
-
-  @override
   String get boardAllPaymentMethods => 'Barcha to\'lov usullari';
 
   @override
@@ -1163,10 +1154,18 @@ class AppLocalizationsUz extends AppLocalizations {
   String get boardEmptyFiltered => 'Filtrlarga mos buyurtma yo\'q';
 
   @override
-  String get boardColumnNumber => 'Raqam';
+  String get boardColumnOrder => 'Buyurtma';
 
   @override
-  String get boardColumnPlaced => 'Vaqt';
+  String get boardFilters => 'Filtrlar';
+
+  @override
+  String get boardNoCourier => 'Kuryer tayinlanmagan';
+
+  @override
+  String boardPageRange(int from, int to, int total) {
+    return '$total tadan $from–$to';
+  }
 
   @override
   String get boardColumnCustomer => 'Mijoz';
@@ -1209,7 +1208,28 @@ class AppLocalizationsUz extends AppLocalizations {
   String get summarySalesToday => 'Bugungi savdo';
 
   @override
-  String get summaryAttention => 'E\'tibor talab';
+  String get summaryOpen => 'Jarayonda';
+
+  @override
+  String get boardAllOrders => 'Barcha buyurtmalar';
+
+  @override
+  String boardUpdatedAt(String time) {
+    return '$time da yangilandi';
+  }
+
+  @override
+  String get attentionLongestFirst => 'Uzoq kutganlar — tepada';
+
+  @override
+  String attentionWaitingMinutes(int minutes) {
+    return '$minutes daq';
+  }
+
+  @override
+  String attentionWaitingHours(int hours, int minutes) {
+    return '$hours soat $minutes daq';
+  }
 
   @override
   String get attentionTitle => 'E\'tibor talab qiladi';
@@ -1259,21 +1279,31 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String get orderPathCreated => 'Yaratildi';
+
+  @override
+  String get orderPathShopping => 'Yig\'ish';
+
+  @override
+  String orderPathRunning(String time) {
+    return '$time dan beri';
+  }
+
+  @override
+  String orderPathWaiting(String time) {
+    return '$time dan kutmoqda';
+  }
+
+  @override
+  String get orderCourierLater =>
+      'Buyurtma yetkazishga tayyor bo\'lganda tayinlash mumkin';
+
+  @override
   String get orderBackToBoard => 'Buyurtmalarga qaytish';
 
   @override
   String orderPlacedAt(String time) {
     return 'Qabul qilingan: $time';
-  }
-
-  @override
-  String orderCompletedAt(String time) {
-    return 'Yakunlangan: $time';
-  }
-
-  @override
-  String orderCancelledAt(String time) {
-    return 'Bekor qilingan: $time';
   }
 
   @override
@@ -1311,18 +1341,8 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String itemCustomerPrice(String price) {
-    return 'Mijoz narxi: $price';
-  }
-
-  @override
   String itemMarkup(String percent) {
     return 'Ustama: $percent%';
-  }
-
-  @override
-  String itemLineTotal(String amount) {
-    return 'Summa: $amount';
   }
 
   @override
@@ -1489,12 +1509,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get boardFilteredShopper => 'Tanlangan yig\'uvchi';
-
-  @override
-  String get boardFilterStatus => 'Holat';
-
-  @override
-  String get boardFilterPayment => 'To\'lov usuli';
 
   @override
   String get boardFilterShopper => 'Yig\'uvchi';
@@ -2011,6 +2025,11 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String itemWasEstimate(String price) {
+    return 'avval ≈ $price';
+  }
+
+  @override
   String itemBilledPrice(String price) {
     return 'Mijozga narx: $price';
   }
@@ -2102,9 +2121,6 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get removeExpiredExplained =>
       'Mijoz o\'z vaqtida javob bermadi. Mahsulot buyurtmadan olib tashlanadi; sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.';
-
-  @override
-  String get cancellationRequestsNone => 'Bekor qilish so\'rovi bo\'lmagan';
 
   @override
   String get requestStatusPending => 'Qaror kutilmoqda';
@@ -3066,6 +3082,9 @@ class AppLocalizationsUz extends AppLocalizations {
       'Raqam tasdiqlandi. Xodim parolini kiriting';
 
   @override
+  String get panelTagline => 'Boshqaruv paneli';
+
+  @override
   String get staffPasswordForgot =>
       'Parolni unutdingizmi? Administratorga murojaat qiling';
 
@@ -3897,4 +3916,49 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get doneButton => 'Tayyor';
+
+  @override
+  String get itemColumnProduct => 'Mahsulot';
+
+  @override
+  String get itemColumnQuantity => 'Miqdor';
+
+  @override
+  String get itemColumnPrice => 'Mijoz uchun narx';
+
+  @override
+  String get itemColumnTotal => 'Summa';
+
+  @override
+  String get itemExpiredHint =>
+      'Javob muddati tugadi — «Mijozga savollar»ga qarang';
+
+  @override
+  String get historyNewestFirst => 'yangilari tepada';
+
+  @override
+  String historyShowAll(int count) {
+    return 'Butun tarixni ko\'rsatish ($count)';
+  }
+
+  @override
+  String get historyShowFewer => 'Tarixni yig\'ish';
+
+  @override
+  String dialogOrderLine(String number, String customer) {
+    return 'Buyurtma № $number · $customer';
+  }
+
+  @override
+  String get pickShopperHint =>
+      'Yig\'uvchini bosing — buyurtma darhol unga o\'tadi.';
+
+  @override
+  String get pickCourierHint =>
+      'Kuryerni bosing — buyurtma darhol unga o\'tadi.';
+
+  @override
+  String requestCustomerReason(String reason) {
+    return 'Mijoz sababi: «$reason»';
+  }
 }

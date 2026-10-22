@@ -76,6 +76,7 @@
   "shellManager": "Менеджер",
   "shellPlaceholder": "Этот раздел появится на следующем этапе",
   "panelSectionBoard": "Заказы",
+  "panelMenuLabel": "Панель",
   "customerModeLabel": "Режим клиента",
   "staffModeLabel": "Режим сотрудника",
   "switchToCustomer": "Продолжить как клиент",
@@ -216,8 +217,6 @@
   "productImageWrongType": "Только JPEG, PNG или WebP",
   "productImageUnreadable": "Не удалось прочитать файл. Выберите другой",
   "productImageAfterSave": "Фото можно добавить после сохранения товара",
-  "priceModeFixed": "Точная цена",
-  "priceModeEstimate": "Ориентировочная цена",
   "unitKg": "кг",
   "unitGram": "г",
   "unitPiece": "шт.",
@@ -359,7 +358,6 @@
   "addressNone": "Адресов пока нет",
   "addressNew": "Новый адрес",
   "addressEdit": "Изменить адрес",
-  "addressStreet": "Улица",
   "addressHouse": "Дом",
   "addressApartment": "Квартира",
   "addressLandmark": "Ориентир",
@@ -449,7 +447,6 @@
   "cancelSystem": "Отменён системой",
   "boardRefresh": "Обновить",
   "boardSearch": "Номер, телефон или имя",
-  "boardAllStatuses": "Все статусы",
   "boardAllPaymentMethods": "Все способы оплаты",
   "boardAllShoppers": "Все сборщики",
   "boardDays": "Даты",
@@ -458,8 +455,10 @@
   "boardClearFilters": "Сбросить фильтры",
   "boardEmpty": "Заказов пока нет",
   "boardEmptyFiltered": "Нет заказов по этим фильтрам",
-  "boardColumnNumber": "Номер",
-  "boardColumnPlaced": "Время",
+  "boardColumnOrder": "Заказ",
+  "boardFilters": "Фильтры",
+  "boardNoCourier": "Курьер не назначен",
+  "boardPageRange": "{from}–{to} из {total}",
   "boardColumnCustomer": "Клиент",
   "boardColumnStatus": "Статус",
   "boardColumnPayment": "Оплата",
@@ -486,7 +485,36 @@
   "summaryCompletedToday": "Выполнено сегодня",
   "summaryCancelledToday": "Отменено сегодня",
   "summarySalesToday": "Продажи сегодня",
-  "summaryAttention": "Требуют внимания",
+  "summaryOpen": "В работе",
+  "boardAllOrders": "Все заказы",
+  "boardUpdatedAt": "Обновлено в {time}",
+  "@boardUpdatedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "attentionLongestFirst": "Дольше ждущие — сверху",
+  "attentionWaitingMinutes": "{minutes} мин",
+  "@attentionWaitingMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "attentionWaitingHours": "{hours} ч {minutes} мин",
+  "@attentionWaitingHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "attentionTitle": "Требует внимания",
   "attentionEmpty": "Пока ничего нет",
   "attentionApprovalPending": "Клиент не отвечает 10 минут — позвоните",
@@ -514,25 +542,28 @@
       }
     }
   },
+  "orderPathCreated": "Создан",
+  "orderPathShopping": "Сборка",
+  "orderPathRunning": "идёт с {time}",
+  "@orderPathRunning": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPathWaiting": "ждёт с {time}",
+  "@orderPathWaiting": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderCourierLater": "Назначить можно, когда заказ будет готов к доставке",
   "orderBackToBoard": "К заказам",
   "orderPlacedAt": "Создан: {time}",
   "@orderPlacedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "orderCompletedAt": "Выполнен: {time}",
-  "@orderCompletedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "orderCancelledAt": "Отменён: {time}",
-  "@orderCancelledAt": {
     "placeholders": {
       "time": {
         "type": "String"
@@ -566,26 +597,10 @@
       }
     }
   },
-  "itemCustomerPrice": "Цена для клиента: {price}",
-  "@itemCustomerPrice": {
-    "placeholders": {
-      "price": {
-        "type": "String"
-      }
-    }
-  },
   "itemMarkup": "Наценка: {percent}%",
   "@itemMarkup": {
     "placeholders": {
       "percent": {
-        "type": "String"
-      }
-    }
-  },
-  "itemLineTotal": "Сумма: {amount}",
-  "@itemLineTotal": {
-    "placeholders": {
-      "amount": {
         "type": "String"
       }
     }
@@ -723,8 +738,6 @@
     }
   },
   "boardFilteredShopper": "Выбранный сборщик",
-  "boardFilterStatus": "Статус",
-  "boardFilterPayment": "Способ оплаты",
   "boardFilterShopper": "Сборщик",
   "errorOrderStateConflict": "Заказ уже изменился, мы его обновили. Проверьте и попробуйте снова",
   "errorStaffNotActive": "Этот сотрудник заблокирован. Выберите другого",
@@ -1038,6 +1051,14 @@
       }
     }
   },
+  "itemWasEstimate": "было ≈ {price}",
+  "@itemWasEstimate": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "itemBilledPrice": "Цена к оплате: {price}",
   "@itemBilledPrice": {
     "placeholders": {
@@ -1144,7 +1165,6 @@
     }
   },
   "removeExpiredExplained": "Клиент не ответил вовремя. Товар будет убран из заказа; если покупать больше нечего, заказ отменится.",
-  "cancellationRequestsNone": "Запросов на отмену не было",
   "requestStatusPending": "Ждёт решения",
   "requestStatusApproved": "Одобрен",
   "requestStatusRejected": "Отклонён",
@@ -1922,6 +1942,7 @@
   "welcomeButton": "К покупкам",
   "staffPasswordTitle": "Вход для сотрудника",
   "staffPasswordSubtitle": "Номер подтверждён. Введите пароль сотрудника",
+  "panelTagline": "Панель управления",
   "staffPasswordForgot": "Забыли пароль? Обратитесь к администратору",
   "staffPasswordWrong": "Неверный пароль",
   "staffStepExpired": "Подтверждение истекло. Получите новый код",
@@ -2328,5 +2349,41 @@
       }
     }
   },
-  "doneButton": "Готово"
+  "doneButton": "Готово",
+  "itemColumnProduct": "Товар",
+  "itemColumnQuantity": "Количество",
+  "itemColumnPrice": "Цена для клиента",
+  "itemColumnTotal": "Сумма",
+  "itemExpiredHint": "Срок ответа истёк — см. «Вопросы клиенту»",
+  "historyNewestFirst": "новые сверху",
+  "historyShowAll": "Показать всю историю ({count})",
+  "@historyShowAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "historyShowFewer": "Свернуть историю",
+  "dialogOrderLine": "Заказ № {number} · {customer}",
+  "@dialogOrderLine": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "customer": {
+        "type": "String"
+      }
+    }
+  },
+  "pickShopperHint": "Нажмите на сборщика — заказ сразу перейдёт к нему.",
+  "pickCourierHint": "Нажмите на курьера — заказ сразу перейдёт к нему.",
+  "requestCustomerReason": "Причина клиента: «{reason}»",
+  "@requestCustomerReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  }
 }

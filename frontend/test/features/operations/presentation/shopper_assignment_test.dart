@@ -6,6 +6,8 @@ import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/operations/data/operations_api.dart';
 import 'package:baraka_bozor/features/operations/domain/board.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/features/operations/presentation/order_staff.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -101,7 +103,7 @@ void main() {
       .getSize(
         find
             .descendant(
-              of: find.byType(AlertDialog),
+              of: byKey('pick-shopper'),
               matching: find.byType(Material),
             )
             .first,
@@ -149,8 +151,15 @@ void main() {
       await tapAndSettle(tester, byKey('reassign-shopper'));
       // The current Shopper is shown and cannot be chosen again.
       expect(
-        tester.widget<ListTile>(byKey('pick-shopper-$shopperId')).enabled,
-        isFalse,
+        tester
+            .widget<InkWell>(
+              find.descendant(
+                of: byKey('pick-shopper-$shopperId'),
+                matching: find.byType(InkWell),
+              ),
+            )
+            .onTap,
+        isNull,
       );
       await tapAndSettle(tester, byKey('pick-shopper-$otherShopperId'));
 
@@ -279,6 +288,161 @@ void main() {
       expect(byKey('reassign-shopper'), findsNothing);
     },
   );
+
+  testWidgets(
+    'the picker lists each with their orders now, the current one held',
+    (WidgetTester tester) async {
+      operations
+        ..shopperList = <StaffChoice>[
+          OperationsApi.parseStaff(shopperJson()),
+          OperationsApi.parseStaff(<String, Object?>{
+            ...shopperJson(id: otherShopperId, fullName: 'Dilnoza Karimova'),
+            'current_assignment_count': 0,
+          }),
+        ]
+        ..details[orderA] = OperationsApi.parseOrder(
+          orderJson(history: <Object?>[]),
+        );
+      await openOrder(tester, orderA);
+      await tapAndSettle(tester, byKey('reassign-shopper'));
+      final AppLocalizations words = l10n(tester);
+
+      expect(
+        find.text(words.dialogOrderLine('1001', 'Aziza Karimova')),
+        findsOneWidget,
+      );
+      expect(find.text(words.pickShopperHint), findsOneWidget);
+      expect(
+        tester.getSize(byKey('pick-shopper-cancel')).height,
+        48,
+        reason: 'the outlined cancel is 48 high',
+      );
+
+      // The current one: on `card`, at half strength, with its tag.
+      final Material current = tester.widget<Material>(
+        byKey('pick-shopper-$shopperId'),
+      );
+      expect(current.color, KitColors.card);
+      expect(
+        tester
+            .widget<Opacity>(
+              find.ancestor(
+                of: byKey('pick-shopper-$shopperId'),
+                matching: find.byType(Opacity),
+              ),
+            )
+            .opacity,
+        0.5,
+      );
+      expect(
+        find.descendant(
+          of: byKey('pick-shopper-$shopperId'),
+          matching: find.text(words.assignmentCurrent),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .getSize(
+              find.descendant(
+                of: byKey('pick-shopper-$otherShopperId'),
+                matching: find.byType(PersonAvatar),
+              ),
+            )
+            .height,
+        40,
+      );
+      expect(find.text('DK'), findsOneWidget, reason: 'the initials');
+
+      // A free person's tag is green, a busy one's grey.
+      Color? tagColor(String key, String label) {
+        final DecoratedBox tag = tester.widget<DecoratedBox>(
+          find
+              .ancestor(
+                of: find.descendant(of: byKey(key), matching: find.text(label)),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
+        );
+        return (tag.decoration as BoxDecoration).color;
+      }
+
+      expect(
+        tagColor('pick-shopper-$otherShopperId', words.shopperOrdersNow(0)),
+        KitColors.primaryWash,
+      );
+      expect(
+        tagColor('pick-shopper-$shopperId', words.shopperOrdersNow(1)),
+        KitColors.field,
+      );
+    },
+  );
+
+  for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
+    testWidgets(
+      'the picker holds at 820x1180 with text x2 (${locale.languageCode})',
+      (WidgetTester tester) async {
+        const List<String> names = <String>[
+          'Dilnoza Karimova',
+          'Sardor Yusupov',
+          'Botir Aliyev',
+          'Ismoil Abdurahmonov',
+        ];
+        operations.shopperList = <StaffChoice>[
+          for (int i = 0; i < names.length; i++)
+            OperationsApi.parseStaff(
+              shopperJson(
+                id: '0192f0a0-0000-7000-8000-00000000090$i',
+                fullName: names[i],
+              ),
+            ),
+        ];
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        tester.view.physicalSize = const Size(820, 1180);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          appUnderTest(
+            tokens: tokens,
+            repository: auth,
+            surface: Surface.web,
+            operations: operations,
+            device: locale,
+          ),
+        );
+        await tester.pumpAndSettle();
+        GoRouter.of(anywhere(tester)).go('/operations/orders/$orderB');
+        await tester.pumpAndSettle();
+
+        await tapAndSettle(tester, byKey('assign-shopper'));
+
+        expect(byKey('pick-shopper'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('a row of the picker puts its count at the right end', (
+    WidgetTester tester,
+  ) async {
+    await openOrder(tester, orderB);
+    await tapAndSettle(tester, byKey('assign-shopper'));
+
+    final Finder row = byKey('pick-shopper-$otherShopperId');
+    final Finder count = find.descendant(
+      of: row,
+      matching: find.text(
+        AppLocalizations.of(anywhere(tester)).shopperOrdersNow(1),
+      ),
+    );
+    expect(count, findsOneWidget);
+    // The row ends 14 px (its padding) and 8 px (the tag's) after the text.
+    expect(
+      tester.getRect(row).right - tester.getTopRight(count).dx,
+      closeTo(22, 1),
+    );
+  });
 
   testWidgets('the picker fits a phone-wide window with large text', (
     WidgetTester tester,

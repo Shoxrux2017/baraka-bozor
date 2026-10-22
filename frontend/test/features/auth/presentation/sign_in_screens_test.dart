@@ -1,6 +1,10 @@
+import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/widgets/brand_wordmark.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/auth/presentation/phone_field.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -241,4 +245,320 @@ void main() {
       );
     }
   }
+
+  group('the panel sign-in on a card', () {
+    Future<void> openWide(
+      WidgetTester tester, {
+      Size size = const Size(1440, 900),
+      String language = 'ru',
+      double textScale = 1,
+      Surface surface = Surface.web,
+    }) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = textScale;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpWidget(
+        appUnderTest(
+          tokens: tokens,
+          repository: repository,
+          surface: surface,
+          device: Locale(language),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    AppLocalizations l10n(WidgetTester tester) =>
+        AppLocalizations.of(tester.element(find.byType(Scaffold).first));
+
+    final Finder card = find.byKey(key('auth-wide-card'));
+
+    Color? pageColor(WidgetTester tester) =>
+        tester.widget<Scaffold>(find.byType(Scaffold).first).backgroundColor;
+
+    testWidgets('the panel sign-in stands on a card on a wide window', (
+      WidgetTester tester,
+    ) async {
+      await openWide(tester);
+
+      final AppLocalizations t = l10n(tester);
+      expect(pageColor(tester), KitColors.page);
+      expect(find.byType(BrandWordmark), findsOneWidget);
+      expect(find.text(t.panelTagline), findsOneWidget);
+      expect(card, findsOneWidget);
+      expect(tester.getSize(card).width, 440);
+      for (final Finder inside in <Finder>[
+        find.text(t.staffLoginTitle),
+        find.byType(PhoneField),
+        find.byKey(key('password-field')),
+        find.byKey(key('login-button')),
+        find.text(t.staffPasswordForgot),
+      ]) {
+        expect(find.descendant(of: card, matching: inside), findsOneWidget);
+      }
+      expect(
+        find.descendant(of: card, matching: find.byType(BrandWordmark)),
+        findsNothing,
+      );
+      expect(
+        tester.getTopLeft(find.text(t.staffPasswordForgot)).dy,
+        greaterThan(tester.getBottomLeft(find.byKey(key('login-button'))).dy),
+      );
+      expect(tester.getSize(find.byKey(key('login-button'))).height, 52);
+    });
+
+    testWidgets('and fills a phone as before', (WidgetTester tester) async {
+      await openWide(tester, size: const Size(360, 800));
+
+      expect(card, findsNothing);
+      expect(pageColor(tester), Colors.white);
+      expect(find.text(l10n(tester).panelTagline), findsNothing);
+    });
+
+    testWidgets('the card has a window of 720 and none of 719', (
+      WidgetTester tester,
+    ) async {
+      await openWide(tester, size: const Size(720, 900));
+      expect(card, findsOneWidget);
+
+      await openWide(tester, size: const Size(719, 900));
+      expect(card, findsNothing);
+      expect(pageColor(tester), Colors.white);
+    });
+
+    testWidgets('each field has its label above it, the group is centred', (
+      WidgetTester tester,
+    ) async {
+      await openWide(tester);
+
+      final AppLocalizations t = l10n(tester);
+      final Finder phoneLabel = find.descendant(
+        of: card,
+        matching: find.text(t.phoneLabel),
+      );
+      final Finder passwordLabel = find.descendant(
+        of: card,
+        matching: find.text(t.passwordLabel),
+      );
+      expect(phoneLabel, findsOneWidget);
+      expect(passwordLabel.first, findsOneWidget);
+      expect(
+        tester.getBottomLeft(phoneLabel).dy,
+        lessThanOrEqualTo(tester.getTopLeft(find.byType(PhoneField)).dy),
+      );
+      expect(
+        tester.getBottomLeft(passwordLabel.first).dy,
+        lessThanOrEqualTo(
+          tester.getTopLeft(find.byKey(key('password-field'))).dy,
+        ),
+      );
+      final TextStyle style = tester.widget<Text>(phoneLabel).style!;
+      expect(style.fontSize, 12);
+      expect(style.fontWeight, FontWeight.w600);
+
+      // Above the wordmark (and its 24 px) and below the card the same room
+      // stands between the top bar (56) and the page's end (24 padding).
+      final double above =
+          tester.getTopLeft(find.byType(BrandWordmark)).dy - 24 - 56;
+      final double below = 900 - 24 - tester.getBottomLeft(card).dy;
+      expect(above, closeTo(below, 1));
+    });
+
+    testWidgets('a Shopper on a tablet changes the first password without '
+        'the card', (WidgetTester tester) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = user(
+        role: UserRole.shopper,
+        mustChangePassword: true,
+      );
+      await openWide(
+        tester,
+        size: const Size(1024, 1366),
+        surface: Surface.mobile,
+      );
+
+      expect(find.byKey(key('save-password-button')), findsOneWidget);
+      expect(card, findsNothing);
+      expect(pageColor(tester), Colors.white);
+    });
+
+    testWidgets('and an Admin on a desktop changes it on the card', (
+      WidgetTester tester,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = user(
+        role: UserRole.admin,
+        mustChangePassword: true,
+      );
+      await openWide(tester);
+
+      expect(
+        find.descendant(
+          of: card,
+          matching: find.byKey(key('save-password-button')),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a refused sign-in shows in red on the card', (
+      WidgetTester tester,
+    ) async {
+      repository.staffLoginFailure = ApiRefusal(
+        const ApiError(status: 401, code: 'invalid_credentials'),
+      );
+      await openWide(tester);
+
+      await tester.enterText(find.byKey(key('phone-field')), '901234567');
+      await tester.enterText(find.byKey(key('password-field')), 'wrong pass');
+      await tester.tap(find.byKey(key('login-button')));
+      await tester.pumpAndSettle();
+
+      final Finder message = find.byKey(key('failure-message'));
+      expect(find.text(l10n(tester).errorInvalidCredentials), findsOneWidget);
+      final Finder box = find.ancestor(
+        of: message,
+        matching: find.byWidgetPredicate(
+          (Widget w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).color == KitColors.dangerWash,
+        ),
+      );
+      expect(box, findsOneWidget);
+      expect(
+        find.descendant(of: box, matching: find.byIcon(Icons.error)),
+        findsOneWidget,
+      );
+      expect(find.descendant(of: card, matching: box), findsOneWidget);
+    });
+
+    testWidgets('the first-login password change stands on a card', (
+      WidgetTester tester,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = user(
+        role: UserRole.admin,
+        mustChangePassword: true,
+      );
+      await openWide(tester);
+
+      final AppLocalizations t = l10n(tester);
+      expect(pageColor(tester), KitColors.page);
+      for (final Finder inside in <Finder>[
+        find.text(t.changePasswordTitle),
+        find.text(t.changePasswordRequiredIntro),
+        find.byKey(key('current-password-field')),
+        find.byKey(key('new-password-field')),
+        find.byKey(key('confirm-password-field')),
+        find.byKey(key('save-password-button')),
+        find.byKey(key('logout-button')),
+      ]) {
+        expect(find.descendant(of: card, matching: inside), findsOneWidget);
+      }
+    });
+
+    testWidgets('a Shopper on the web is told to open the app, on a card', (
+      WidgetTester tester,
+    ) async {
+      tokens.tokens[SessionSlot.staff] = 's';
+      repository.identities[SessionSlot.staff] = user(role: UserRole.shopper);
+      await openWide(tester);
+
+      final AppLocalizations t = l10n(tester);
+      expect(pageColor(tester), KitColors.page);
+      expect(
+        find.descendant(of: card, matching: find.text(t.wrongSurfaceWebTitle)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: card, matching: find.text(t.wrongSurfaceWeb)),
+        findsOneWidget,
+      );
+      final Finder halo = find.byWidgetPredicate(
+        (Widget w) =>
+            w is Container &&
+            w.constraints?.maxWidth == 110 &&
+            w.decoration is BoxDecoration &&
+            (w.decoration as BoxDecoration).color == KitColors.primaryWash,
+      );
+      expect(halo, findsOneWidget);
+      expect(
+        find.descendant(of: halo, matching: find.byIcon(Icons.smartphone)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: card,
+          matching: find.byWidgetPredicate(
+            (Widget w) => w is OutlinedButton && w.key == key('logout-button'),
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    for (final String language in <String>['uz', 'ru']) {
+      testWidgets(
+        'the sign-in screens hold at 820x1180 with text x2 ($language)',
+        (WidgetTester tester) async {
+          await openWide(
+            tester,
+            size: const Size(820, 1180),
+            language: language,
+            textScale: 2,
+          );
+          expect(find.byKey(key('login-button')), findsOneWidget);
+          expect(tester.takeException(), isNull);
+
+          repository.staffLoginFailure = ApiRefusal(
+            const ApiError(status: 401, code: 'invalid_credentials'),
+          );
+          await tester.enterText(find.byKey(key('phone-field')), '901234567');
+          await tester.enterText(find.byKey(key('password-field')), 'x');
+          await tester.ensureVisible(find.byKey(key('login-button')));
+          await tester.pump();
+          await tester.tap(find.byKey(key('login-button')));
+          await tester.pumpAndSettle();
+          expect(find.byKey(key('failure-message')), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets('the password change holds at 820x1180 x2 ($language)', (
+        WidgetTester tester,
+      ) async {
+        tokens.tokens[SessionSlot.staff] = 's';
+        repository.identities[SessionSlot.staff] = user(
+          role: UserRole.admin,
+          mustChangePassword: true,
+        );
+        await openWide(
+          tester,
+          size: const Size(820, 1180),
+          language: language,
+          textScale: 2,
+        );
+        expect(find.byKey(key('save-password-button')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the wrong-surface card holds at 820x1180 x2 ($language)', (
+        WidgetTester tester,
+      ) async {
+        tokens.tokens[SessionSlot.staff] = 's';
+        repository.identities[SessionSlot.staff] = user(role: UserRole.shopper);
+        await openWide(
+          tester,
+          size: const Size(820, 1180),
+          language: language,
+          textScale: 2,
+        );
+        expect(find.byKey(key('wrong-surface-text')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
 }

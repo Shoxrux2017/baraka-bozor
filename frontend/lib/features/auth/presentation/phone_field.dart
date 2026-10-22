@@ -52,7 +52,9 @@ class PhoneField extends StatelessWidget {
           fontWeight: FontWeight.w500,
           color: KitColors.muted,
         ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 18),
+        contentPadding:
+            Theme.of(context).inputDecorationTheme.contentPadding ??
+            const EdgeInsets.symmetric(vertical: 18),
         prefixIconConstraints: const BoxConstraints(),
         prefixIcon: Padding(
           padding: const EdgeInsets.only(left: 20, right: 12),

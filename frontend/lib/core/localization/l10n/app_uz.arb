@@ -76,6 +76,7 @@
   "shellManager": "Menejer",
   "shellPlaceholder": "Bu bo'lim keyingi bosqichda paydo bo'ladi",
   "panelSectionBoard": "Buyurtmalar",
+  "panelMenuLabel": "Panel",
   "customerModeLabel": "Mijoz rejimi",
   "staffModeLabel": "Xodim rejimi",
   "switchToCustomer": "Mijoz sifatida davom etish",
@@ -216,8 +217,6 @@
   "productImageWrongType": "Faqat JPEG, PNG yoki WebP rasm",
   "productImageUnreadable": "Faylni o'qib bo'lmadi. Boshqa faylni tanlang",
   "productImageAfterSave": "Rasmni mahsulot saqlangandan keyin qo'shish mumkin",
-  "priceModeFixed": "Aniq narx",
-  "priceModeEstimate": "Taxminiy narx",
   "unitKg": "kg",
   "unitGram": "g",
   "unitPiece": "dona",
@@ -383,7 +382,6 @@
   "addressNone": "Hali manzil qo'shilmagan",
   "addressNew": "Yangi manzil",
   "addressEdit": "Manzilni tahrirlash",
-  "addressStreet": "Ko'cha",
   "addressHouse": "Uy",
   "addressApartment": "Xonadon",
   "addressLandmark": "Mo'ljal",
@@ -487,7 +485,6 @@
   "cancelSystem": "Tizim bekor qildi",
   "boardRefresh": "Yangilash",
   "boardSearch": "Raqam, telefon yoki ism",
-  "boardAllStatuses": "Barcha holatlar",
   "boardAllPaymentMethods": "Barcha to'lov usullari",
   "boardAllShoppers": "Barcha yig'uvchilar",
   "boardDays": "Sanalar",
@@ -496,8 +493,23 @@
   "boardClearFilters": "Filtrlarni tozalash",
   "boardEmpty": "Hozircha buyurtma yo'q",
   "boardEmptyFiltered": "Filtrlarga mos buyurtma yo'q",
-  "boardColumnNumber": "Raqam",
-  "boardColumnPlaced": "Vaqt",
+  "boardColumnOrder": "Buyurtma",
+  "boardFilters": "Filtrlar",
+  "boardNoCourier": "Kuryer tayinlanmagan",
+  "boardPageRange": "{total} tadan {from}–{to}",
+  "@boardPageRange": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "boardColumnCustomer": "Mijoz",
   "boardColumnStatus": "Holat",
   "boardColumnPayment": "To'lov",
@@ -524,7 +536,36 @@
   "summaryCompletedToday": "Bugun yakunlangan",
   "summaryCancelledToday": "Bugun bekor qilingan",
   "summarySalesToday": "Bugungi savdo",
-  "summaryAttention": "E'tibor talab",
+  "summaryOpen": "Jarayonda",
+  "boardAllOrders": "Barcha buyurtmalar",
+  "boardUpdatedAt": "{time} da yangilandi",
+  "@boardUpdatedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "attentionLongestFirst": "Uzoq kutganlar — tepada",
+  "attentionWaitingMinutes": "{minutes} daq",
+  "@attentionWaitingMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "attentionWaitingHours": "{hours} soat {minutes} daq",
+  "@attentionWaitingHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "attentionTitle": "E'tibor talab qiladi",
   "attentionEmpty": "Hozircha hech narsa yo'q",
   "attentionApprovalPending": "Mijoz 10 daqiqadan beri javob bermayapti — qo'ng'iroq qiling",
@@ -552,25 +593,28 @@
       }
     }
   },
+  "orderPathCreated": "Yaratildi",
+  "orderPathShopping": "Yig'ish",
+  "orderPathRunning": "{time} dan beri",
+  "@orderPathRunning": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPathWaiting": "{time} dan kutmoqda",
+  "@orderPathWaiting": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderCourierLater": "Buyurtma yetkazishga tayyor bo'lganda tayinlash mumkin",
   "orderBackToBoard": "Buyurtmalarga qaytish",
   "orderPlacedAt": "Qabul qilingan: {time}",
   "@orderPlacedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "orderCompletedAt": "Yakunlangan: {time}",
-  "@orderCompletedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "orderCancelledAt": "Bekor qilingan: {time}",
-  "@orderCancelledAt": {
     "placeholders": {
       "time": {
         "type": "String"
@@ -604,26 +648,10 @@
       }
     }
   },
-  "itemCustomerPrice": "Mijoz narxi: {price}",
-  "@itemCustomerPrice": {
-    "placeholders": {
-      "price": {
-        "type": "String"
-      }
-    }
-  },
   "itemMarkup": "Ustama: {percent}%",
   "@itemMarkup": {
     "placeholders": {
       "percent": {
-        "type": "String"
-      }
-    }
-  },
-  "itemLineTotal": "Summa: {amount}",
-  "@itemLineTotal": {
-    "placeholders": {
-      "amount": {
         "type": "String"
       }
     }
@@ -761,8 +789,6 @@
     }
   },
   "boardFilteredShopper": "Tanlangan yig'uvchi",
-  "boardFilterStatus": "Holat",
-  "boardFilterPayment": "To'lov usuli",
   "boardFilterShopper": "Yig'uvchi",
   "errorOrderStateConflict": "Buyurtma allaqachon o'zgargan va yangilandi. Uni ko'rib chiqib, qayta urinib ko'ring",
   "errorStaffNotActive": "Bu xodim bloklangan. Boshqasini tanlang",
@@ -1083,6 +1109,14 @@
       }
     }
   },
+  "itemWasEstimate": "avval ≈ {price}",
+  "@itemWasEstimate": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
   "itemBilledPrice": "Mijozga narx: {price}",
   "@itemBilledPrice": {
     "placeholders": {
@@ -1189,7 +1223,6 @@
     }
   },
   "removeExpiredExplained": "Mijoz o'z vaqtida javob bermadi. Mahsulot buyurtmadan olib tashlanadi; sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.",
-  "cancellationRequestsNone": "Bekor qilish so'rovi bo'lmagan",
   "requestStatusPending": "Qaror kutilmoqda",
   "requestStatusApproved": "Tasdiqlandi",
   "requestStatusRejected": "Rad etildi",
@@ -1998,6 +2031,7 @@
   "welcomeButton": "Xaridlarga",
   "staffPasswordTitle": "Xodim sifatida kirish",
   "staffPasswordSubtitle": "Raqam tasdiqlandi. Xodim parolini kiriting",
+  "panelTagline": "Boshqaruv paneli",
   "staffPasswordForgot": "Parolni unutdingizmi? Administratorga murojaat qiling",
   "staffPasswordWrong": "Noto'g'ri parol",
   "staffStepExpired": "Tasdiqlash muddati tugadi. Yangi kod oling",
@@ -2614,5 +2648,41 @@
       }
     }
   },
-  "doneButton": "Tayyor"
+  "doneButton": "Tayyor",
+  "itemColumnProduct": "Mahsulot",
+  "itemColumnQuantity": "Miqdor",
+  "itemColumnPrice": "Mijoz uchun narx",
+  "itemColumnTotal": "Summa",
+  "itemExpiredHint": "Javob muddati tugadi — «Mijozga savollar»ga qarang",
+  "historyNewestFirst": "yangilari tepada",
+  "historyShowAll": "Butun tarixni ko'rsatish ({count})",
+  "@historyShowAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "historyShowFewer": "Tarixni yig'ish",
+  "dialogOrderLine": "Buyurtma № {number} · {customer}",
+  "@dialogOrderLine": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "customer": {
+        "type": "String"
+      }
+    }
+  },
+  "pickShopperHint": "Yig'uvchini bosing — buyurtma darhol unga o'tadi.",
+  "pickCourierHint": "Kuryerni bosing — buyurtma darhol unga o'tadi.",
+  "requestCustomerReason": "Mijoz sababi: «{reason}»",
+  "@requestCustomerReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  }
 }

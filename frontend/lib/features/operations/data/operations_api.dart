@@ -621,6 +621,9 @@ class OperationsApi {
       createdAt: timestamps.instant('created_at'),
       completedAt: timestamps.nullableInstant('completed_at'),
       cancelledAt: timestamps.nullableInstant('cancelled_at'),
+      shoppingStartedAt: timestamps.nullableInstant('shopping_started_at'),
+      readyForDeliveryAt: timestamps.nullableInstant('ready_for_delivery_at'),
+      onTheWayAt: timestamps.nullableInstant('on_the_way_at'),
       rating: json.member('rating') == null
           ? null
           : _rating(json.member('rating')),

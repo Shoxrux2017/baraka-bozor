@@ -386,6 +386,12 @@ abstract class AppLocalizations {
   /// **'Buyurtmalar'**
   String get panelSectionBoard;
 
+  /// No description provided for @panelMenuLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Panel'**
+  String get panelMenuLabel;
+
   /// No description provided for @customerModeLabel.
   ///
   /// In uz, this message translates to:
@@ -1082,18 +1088,6 @@ abstract class AppLocalizations {
   /// **'Rasmni mahsulot saqlangandan keyin qo\'shish mumkin'**
   String get productImageAfterSave;
 
-  /// No description provided for @priceModeFixed.
-  ///
-  /// In uz, this message translates to:
-  /// **'Aniq narx'**
-  String get priceModeFixed;
-
-  /// No description provided for @priceModeEstimate.
-  ///
-  /// In uz, this message translates to:
-  /// **'Taxminiy narx'**
-  String get priceModeEstimate;
-
   /// No description provided for @unitKg.
   ///
   /// In uz, this message translates to:
@@ -1712,12 +1706,6 @@ abstract class AppLocalizations {
   /// **'Manzilni tahrirlash'**
   String get addressEdit;
 
-  /// No description provided for @addressStreet.
-  ///
-  /// In uz, this message translates to:
-  /// **'Ko\'cha'**
-  String get addressStreet;
-
   /// No description provided for @addressHouse.
   ///
   /// In uz, this message translates to:
@@ -2192,12 +2180,6 @@ abstract class AppLocalizations {
   /// **'Raqam, telefon yoki ism'**
   String get boardSearch;
 
-  /// No description provided for @boardAllStatuses.
-  ///
-  /// In uz, this message translates to:
-  /// **'Barcha holatlar'**
-  String get boardAllStatuses;
-
   /// No description provided for @boardAllPaymentMethods.
   ///
   /// In uz, this message translates to:
@@ -2246,17 +2228,29 @@ abstract class AppLocalizations {
   /// **'Filtrlarga mos buyurtma yo\'q'**
   String get boardEmptyFiltered;
 
-  /// No description provided for @boardColumnNumber.
+  /// No description provided for @boardColumnOrder.
   ///
   /// In uz, this message translates to:
-  /// **'Raqam'**
-  String get boardColumnNumber;
+  /// **'Buyurtma'**
+  String get boardColumnOrder;
 
-  /// No description provided for @boardColumnPlaced.
+  /// No description provided for @boardFilters.
   ///
   /// In uz, this message translates to:
-  /// **'Vaqt'**
-  String get boardColumnPlaced;
+  /// **'Filtrlar'**
+  String get boardFilters;
+
+  /// No description provided for @boardNoCourier.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer tayinlanmagan'**
+  String get boardNoCourier;
+
+  /// No description provided for @boardPageRange.
+  ///
+  /// In uz, this message translates to:
+  /// **'{total} tadan {from}–{to}'**
+  String boardPageRange(int from, int to, int total);
 
   /// No description provided for @boardColumnCustomer.
   ///
@@ -2330,11 +2324,41 @@ abstract class AppLocalizations {
   /// **'Bugungi savdo'**
   String get summarySalesToday;
 
-  /// No description provided for @summaryAttention.
+  /// No description provided for @summaryOpen.
   ///
   /// In uz, this message translates to:
-  /// **'E\'tibor talab'**
-  String get summaryAttention;
+  /// **'Jarayonda'**
+  String get summaryOpen;
+
+  /// No description provided for @boardAllOrders.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha buyurtmalar'**
+  String get boardAllOrders;
+
+  /// No description provided for @boardUpdatedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'{time} da yangilandi'**
+  String boardUpdatedAt(String time);
+
+  /// No description provided for @attentionLongestFirst.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uzoq kutganlar — tepada'**
+  String get attentionLongestFirst;
+
+  /// No description provided for @attentionWaitingMinutes.
+  ///
+  /// In uz, this message translates to:
+  /// **'{minutes} daq'**
+  String attentionWaitingMinutes(int minutes);
+
+  /// No description provided for @attentionWaitingHours.
+  ///
+  /// In uz, this message translates to:
+  /// **'{hours} soat {minutes} daq'**
+  String attentionWaitingHours(int hours, int minutes);
 
   /// No description provided for @attentionTitle.
   ///
@@ -2414,6 +2438,36 @@ abstract class AppLocalizations {
   /// **'Buyurtma №{number}'**
   String orderTitle(String number);
 
+  /// No description provided for @orderPathCreated.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yaratildi'**
+  String get orderPathCreated;
+
+  /// No description provided for @orderPathShopping.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish'**
+  String get orderPathShopping;
+
+  /// No description provided for @orderPathRunning.
+  ///
+  /// In uz, this message translates to:
+  /// **'{time} dan beri'**
+  String orderPathRunning(String time);
+
+  /// No description provided for @orderPathWaiting.
+  ///
+  /// In uz, this message translates to:
+  /// **'{time} dan kutmoqda'**
+  String orderPathWaiting(String time);
+
+  /// No description provided for @orderCourierLater.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma yetkazishga tayyor bo\'lganda tayinlash mumkin'**
+  String get orderCourierLater;
+
   /// No description provided for @orderBackToBoard.
   ///
   /// In uz, this message translates to:
@@ -2425,18 +2479,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Qabul qilingan: {time}'**
   String orderPlacedAt(String time);
-
-  /// No description provided for @orderCompletedAt.
-  ///
-  /// In uz, this message translates to:
-  /// **'Yakunlangan: {time}'**
-  String orderCompletedAt(String time);
-
-  /// No description provided for @orderCancelledAt.
-  ///
-  /// In uz, this message translates to:
-  /// **'Bekor qilingan: {time}'**
-  String orderCancelledAt(String time);
 
   /// No description provided for @orderSectionCustomer.
   ///
@@ -2498,23 +2540,11 @@ abstract class AppLocalizations {
   /// **'Bozor narxi: {price}'**
   String itemMarketPrice(String price);
 
-  /// No description provided for @itemCustomerPrice.
-  ///
-  /// In uz, this message translates to:
-  /// **'Mijoz narxi: {price}'**
-  String itemCustomerPrice(String price);
-
   /// No description provided for @itemMarkup.
   ///
   /// In uz, this message translates to:
   /// **'Ustama: {percent}%'**
   String itemMarkup(String percent);
-
-  /// No description provided for @itemLineTotal.
-  ///
-  /// In uz, this message translates to:
-  /// **'Summa: {amount}'**
-  String itemLineTotal(String amount);
 
   /// No description provided for @itemNote.
   ///
@@ -2797,18 +2827,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Tanlangan yig\'uvchi'**
   String get boardFilteredShopper;
-
-  /// No description provided for @boardFilterStatus.
-  ///
-  /// In uz, this message translates to:
-  /// **'Holat'**
-  String get boardFilterStatus;
-
-  /// No description provided for @boardFilterPayment.
-  ///
-  /// In uz, this message translates to:
-  /// **'To\'lov usuli'**
-  String get boardFilterPayment;
 
   /// No description provided for @boardFilterShopper.
   ///
@@ -3644,6 +3662,12 @@ abstract class AppLocalizations {
   /// **'Sotib olish narxi: {price}'**
   String itemPricePaid(String price);
 
+  /// No description provided for @itemWasEstimate.
+  ///
+  /// In uz, this message translates to:
+  /// **'avval ≈ {price}'**
+  String itemWasEstimate(String price);
+
   /// No description provided for @itemBilledPrice.
   ///
   /// In uz, this message translates to:
@@ -3787,12 +3811,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Mijoz o\'z vaqtida javob bermadi. Mahsulot buyurtmadan olib tashlanadi; sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.'**
   String get removeExpiredExplained;
-
-  /// No description provided for @cancellationRequestsNone.
-  ///
-  /// In uz, this message translates to:
-  /// **'Bekor qilish so\'rovi bo\'lmagan'**
-  String get cancellationRequestsNone;
 
   /// No description provided for @requestStatusPending.
   ///
@@ -5342,6 +5360,12 @@ abstract class AppLocalizations {
   /// **'Raqam tasdiqlandi. Xodim parolini kiriting'**
   String get staffPasswordSubtitle;
 
+  /// No description provided for @panelTagline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqaruv paneli'**
+  String get panelTagline;
+
   /// No description provided for @staffPasswordForgot.
   ///
   /// In uz, this message translates to:
@@ -6679,6 +6703,78 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Tayyor'**
   String get doneButton;
+
+  /// No description provided for @itemColumnProduct.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulot'**
+  String get itemColumnProduct;
+
+  /// No description provided for @itemColumnQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Miqdor'**
+  String get itemColumnQuantity;
+
+  /// No description provided for @itemColumnPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz uchun narx'**
+  String get itemColumnPrice;
+
+  /// No description provided for @itemColumnTotal.
+  ///
+  /// In uz, this message translates to:
+  /// **'Summa'**
+  String get itemColumnTotal;
+
+  /// No description provided for @itemExpiredHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob muddati tugadi — «Mijozga savollar»ga qarang'**
+  String get itemExpiredHint;
+
+  /// No description provided for @historyNewestFirst.
+  ///
+  /// In uz, this message translates to:
+  /// **'yangilari tepada'**
+  String get historyNewestFirst;
+
+  /// No description provided for @historyShowAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Butun tarixni ko\'rsatish ({count})'**
+  String historyShowAll(int count);
+
+  /// No description provided for @historyShowFewer.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarixni yig\'ish'**
+  String get historyShowFewer;
+
+  /// No description provided for @dialogOrderLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} · {customer}'**
+  String dialogOrderLine(String number, String customer);
+
+  /// No description provided for @pickShopperHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchini bosing — buyurtma darhol unga o\'tadi.'**
+  String get pickShopperHint;
+
+  /// No description provided for @pickCourierHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryerni bosing — buyurtma darhol unga o\'tadi.'**
+  String get pickCourierHint;
+
+  /// No description provided for @requestCustomerReason.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz sababi: «{reason}»'**
+  String requestCustomerReason(String reason);
 }
 
 class _AppLocalizationsDelegate

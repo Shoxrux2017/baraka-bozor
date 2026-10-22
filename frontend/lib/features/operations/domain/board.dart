@@ -299,6 +299,9 @@ final class BoardOrder {
     required this.completedAt,
     required this.cancelledAt,
     required this.rating,
+    this.shoppingStartedAt,
+    this.readyForDeliveryAt,
+    this.onTheWayAt,
   });
 
   final String id;
@@ -339,6 +342,15 @@ final class BoardOrder {
   final DateTime createdAt;
   final DateTime? completedAt;
   final DateTime? cancelledAt;
+
+  /// When shopping began, `null` until it did.
+  final DateTime? shoppingStartedAt;
+
+  /// When the order was last ready for delivery.
+  final DateTime? readyForDeliveryAt;
+
+  /// When the Courier set off; the server clears it after a failed delivery.
+  final DateTime? onTheWayAt;
 
   /// The Customer's rating of the delivered order, `null` until given
   /// (`DL-91`).

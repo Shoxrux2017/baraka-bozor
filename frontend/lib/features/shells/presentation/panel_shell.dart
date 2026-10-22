@@ -4,10 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/localization/generated/app_localizations.dart';
-import '../../../core/localization/language_menu.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/session/session_state.dart';
+import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/brand_wordmark.dart';
+import '../../../core/widgets/panel/panel_layout.dart';
 import '../../auth/domain/app_user.dart';
+import 'panel_menu.dart';
 
 /// One section of the web panel's navigation.
 final class PanelSection {
@@ -68,9 +71,9 @@ List<PanelSection> panelSectionsOf(UserRole role) => <PanelSection>[
 ];
 
 /// The frame of every web panel screen, the Admin's and the Operator's: the
-/// signed-in role's name, the language switch and the way out, and that
-/// role's sections — a rail beside the content on a wide window, a drawer on
-/// a narrow one, and none when the role has a single section.
+/// side menu with the role's sections, the user card, the language and the way
+/// out (`DL-100`). The menu is whole from [fullMenuWidth], folded to icons
+/// from [railWidth], and behind a menu button in a top bar below.
 class PanelShell extends ConsumerWidget {
   const PanelShell({required this.location, required this.child, super.key});
 
@@ -79,87 +82,81 @@ class PanelShell extends ConsumerWidget {
 
   final Widget child;
 
-  static const double railBreakpoint = 840;
+  static const double fullMenuWidth = panelFullMenuWidth;
+  static const double railWidth = panelRailWidth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
     final SessionState? state = ref.watch(sessionControllerProvider).value;
     final UserRole? role = state is SignedIn ? state.activeUser.role : null;
     final List<PanelSection> sections = role == null
         ? const <PanelSection>[]
         : panelSectionsOf(role);
-    final bool navigates = sections.length > 1;
-    final bool wide = MediaQuery.sizeOf(context).width >= railBreakpoint;
+    final double width = MediaQuery.sizeOf(context).width;
     final int selected = _selected(sections);
+    void go(int index) => context.go(sections[index].path);
+
+    if (width >= railWidth) {
+      return Scaffold(
+        backgroundColor: KitColors.page,
+        body: Row(
+          children: <Widget>[
+            PanelMenu(
+              sections: sections,
+              selected: selected,
+              folded: width < fullMenuWidth,
+              onSelect: go,
+            ),
+            Expanded(child: child),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          role == UserRole.admin ? l10n.shellAdmin : l10n.shellOperations,
-        ),
-        actions: <Widget>[
-          const LanguageMenuButton(),
-          if (state is SignedIn)
-            IconButton(
-              key: const ValueKey<String>('logout-button'),
-              icon: const Icon(Icons.logout),
-              tooltip: l10n.logoutButton,
-              onPressed: () => ref
-                  .read(sessionControllerProvider.notifier)
-                  .logout(state.activeMode),
-            ),
-        ],
+      backgroundColor: KitColors.page,
+      drawer: PanelDrawerMenu(
+        sections: sections,
+        selected: selected,
+        onSelect: (int index) {
+          Navigator.of(context).pop();
+          go(index);
+        },
       ),
-      drawer: navigates && !wide
-          ? NavigationDrawer(
-              key: const ValueKey<String>('panel-drawer'),
-              selectedIndex: selected,
-              onDestinationSelected: (int index) {
-                Navigator.of(context).pop();
-                context.go(sections[index].path);
-              },
-              children: <Widget>[
-                const SizedBox(height: 12),
-                for (final PanelSection section in sections)
-                  NavigationDrawerDestination(
-                    icon: Icon(section.icon),
-                    label: Text(
-                      section.label(l10n),
-                      key: ValueKey<String>('panel-section-${section.path}'),
+      body: SafeArea(
+        child: Column(
+          children: <Widget>[
+            Container(
+              height: 60,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(bottom: BorderSide(color: KitColors.line)),
+              ),
+              child: Row(
+                children: <Widget>[
+                  Builder(
+                    builder: (BuildContext context) => IconButton(
+                      icon: const Icon(Icons.menu, color: KitColors.ink2),
+                      tooltip: MaterialLocalizations.of(context)
+                          .openAppDrawerTooltip,
+                      onPressed: () => Scaffold.of(context).openDrawer(),
                     ),
                   ),
-              ],
-            )
-          : null,
-      body: SafeArea(
-        child: navigates && wide
-            ? Row(
-                children: <Widget>[
-                  NavigationRail(
-                    key: const ValueKey<String>('panel-rail'),
-                    selectedIndex: selected,
-                    labelType: NavigationRailLabelType.all,
-                    onDestinationSelected: (int index) =>
-                        context.go(sections[index].path),
-                    destinations: <NavigationRailDestination>[
-                      for (final PanelSection section in sections)
-                        NavigationRailDestination(
-                          icon: Icon(section.icon),
-                          label: Text(
-                            section.label(l10n),
-                            key: ValueKey<String>(
-                              'panel-section-${section.path}',
-                            ),
-                          ),
-                        ),
-                    ],
+                  const SizedBox(width: 4),
+                  const Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: BrandWordmark(size: 19),
+                    ),
                   ),
-                  const VerticalDivider(width: 1),
-                  Expanded(child: child),
                 ],
-              )
-            : child,
+              ),
+            ),
+            Expanded(child: child),
+          ],
+        ),
       ),
     );
   }

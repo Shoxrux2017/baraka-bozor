@@ -43,3 +43,17 @@ String orderAtLower(AppLocalizations l10n, DateTime instant, DateTime now) {
   final String text = orderAt(l10n, instant, now);
   return text.isEmpty ? text : text[0].toLowerCase() + text.substring(1);
 }
+
+/// A moment on the web panel: "18:00" on [now]'s Tashkent day, "21.10 18:00"
+/// on any other (`DL-100` (8)).
+String panelWhen(DateTime instant, DateTime now) {
+  final DateTime day = _tashkent(instant);
+  final DateTime today = _tashkent(now);
+  final String time = TashkentTime.time(instant);
+  if (day.year == today.year &&
+      day.month == today.month &&
+      day.day == today.day) {
+    return time;
+  }
+  return '${_two(day.day)}.${_two(day.month)} $time';
+}

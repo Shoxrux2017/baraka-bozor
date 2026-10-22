@@ -29,11 +29,17 @@ abstract final class KitColors {
   /// Text field background.
   static const Color field = Color(0xFFF9F9F9);
 
+  /// The panel's page behind its cards.
+  static const Color page = Color(0xFFF6F7F6);
+
   /// Card background.
   static const Color card = Color(0xFFFAFAFA);
 
   /// Errors and destructive actions.
   static const Color danger = Color(0xFFF04438);
+
+  /// Red text on the red wash.
+  static const Color dangerDark = Color(0xFFC0362C);
 
   /// Faint red wash behind a destructive notice.
   static const Color dangerWash = Color(0xFFFDECEB);
@@ -50,4 +56,7 @@ abstract final class KitColors {
   /// A step not yet reached on an amber card: the amber at a quarter over
   /// its wash.
   static const Color warningSoft = Color(0xFFFCE9BF);
+
+  /// A filled rating star.
+  static const Color star = Color(0xFFFFB020);
 }

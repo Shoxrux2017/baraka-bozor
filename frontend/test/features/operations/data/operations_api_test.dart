@@ -176,6 +176,26 @@ void main() {
       );
     });
 
+    test('the order reads the instant of every step', () {
+      final BoardOrder full = OperationsApi.parseOrder(
+        orderJson(
+          timestamps: <String, Object?>{
+            'shopping_started_at': '2026-09-27T07:41:00Z',
+            'ready_for_delivery_at': '2026-09-27T08:41:00Z',
+            'on_the_way_at': '2026-09-27T09:41:00Z',
+          },
+        ),
+      );
+      expect(full.shoppingStartedAt, DateTime.utc(2026, 9, 27, 7, 41));
+      expect(full.readyForDeliveryAt, DateTime.utc(2026, 9, 27, 8, 41));
+      expect(full.onTheWayAt, DateTime.utc(2026, 9, 27, 9, 41));
+
+      final BoardOrder bare = OperationsApi.parseOrder(orderJson());
+      expect(bare.shoppingStartedAt, isNull);
+      expect(bare.readyForDeliveryAt, isNull);
+      expect(bare.onTheWayAt, isNull);
+    });
+
     test('the rating of an order, its unknown reasons left out', () {
       expect(OperationsApi.parseOrder(orderJson()).rating, isNull);
 
