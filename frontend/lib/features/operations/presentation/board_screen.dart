@@ -3,150 +3,160 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/formatting/money_format.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/generated/app_localizations.dart';
-import '../../../core/localization/interface_language.dart';
+import '../../../core/platform/clock.dart';
+import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/network/paged.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../application/board_controllers.dart';
 import '../domain/board.dart';
+import 'board_attention.dart';
+import 'board_summary.dart';
 import 'board_widgets.dart';
 import 'operations_paths.dart';
 
 /// The board, the Operator's and the Admin's home (`docs/09` section 38,
-/// `DL-37` (16)): the day's summary above, the orders as a server-paginated
-/// table with its filters and search, and the attention list beside it —
-/// under the summary on a narrow window. An order opens on its own page.
-class BoardScreen extends ConsumerWidget {
+/// `DL-37` (16), `DL-100` (2)): the day's tiles and the status row above,
+/// the orders as a server-paginated table with its filters and search, and
+/// the attention list beside them — above them on a narrow board. An order
+/// opens on its own page.
+class BoardScreen extends ConsumerStatefulWidget {
   const BoardScreen({super.key});
 
-  /// From this width the attention list stands beside the orders and the
-  /// table beside it still shows every column, the Shopper's included: the
-  /// table's usual width, the gap, the list and the board's padding. Below
-  /// it the list goes above the orders, which keep the whole width.
-  static const double sideBySide = _Table.usualWidth + 16 + 320 + 48;
+  /// From this board width — the content, without its padding — the
+  /// attention list stands at the right of the orders, [attentionWidth] wide
+  /// and [attentionGap] apart. Below it the list goes above the orders.
+  static const double attentionBeside = 1140;
+  static const double attentionWidth = 300;
+  static const double attentionGap = 20;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BoardScreen> createState() => _BoardScreenState();
+}
+
+class _BoardScreenState extends ConsumerState<BoardScreen> {
+  /// When the summary last arrived, for "updated at" in the header.
+  DateTime? _loadedAt;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual<AsyncValue<BoardSummary>>(
+      boardSummaryProvider,
+      fireImmediately: true,
+      (AsyncValue<BoardSummary>? _, AsyncValue<BoardSummary> next) {
+        if (next.hasValue && !next.isLoading) {
+          setState(() => _loadedAt = ref.read(clockProvider)());
+        }
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final DateTime? loadedAt = _loadedAt;
+    final bool compact = MediaQuery.sizeOf(context).width < 1200;
+    final EdgeInsets padding = compact
+        ? const EdgeInsets.fromLTRB(24, 20, 24, 24)
+        : const EdgeInsets.fromLTRB(28, 26, 28, 28);
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final bool wide = constraints.maxWidth >= sideBySide;
+        final bool beside =
+            constraints.maxWidth - padding.horizontal >=
+            BoardScreen.attentionBeside;
 
         return ListView(
           key: const ValueKey<String>('operations-board'),
-          padding: const EdgeInsets.all(24),
+          padding: padding,
           children: <Widget>[
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
-                Text(
-                  l10n.panelSectionBoard,
-                  style: Theme.of(context).textTheme.headlineSmall,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        l10n.panelSectionBoard,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: KitColors.ink,
+                        ),
+                      ),
+                      if (loadedAt != null)
+                        Text(
+                          l10n.boardUpdatedAt(TashkentTime.time(loadedAt)),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: KitColors.muted,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                OutlinedButton.icon(
-                  key: const ValueKey<String>('board-refresh'),
-                  icon: const Icon(Icons.refresh),
-                  label: Text(l10n.boardRefresh),
-                  onPressed: () => refreshBoard(ref),
+                const SizedBox(width: 12),
+                Tooltip(
+                  message: l10n.boardRefresh,
+                  child: OutlinedButton(
+                    key: const ValueKey<String>('board-refresh'),
+                    style: kitOutlined(height: 40).copyWith(
+                      minimumSize: const WidgetStatePropertyAll<Size>(
+                        Size(40, 40),
+                      ),
+                      padding: const WidgetStatePropertyAll<EdgeInsets>(
+                        EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                    ),
+                    onPressed: () => refreshBoard(ref),
+                    child: const Icon(Icons.refresh, size: 20),
+                  ),
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+            const BoardSummaryTiles(),
             const SizedBox(height: 16),
-            const _SummaryStrip(),
+            const BoardStatusPills(),
             const SizedBox(height: 16),
-            const _Filters(),
-            const SizedBox(height: 16),
-            if (wide)
+            if (beside)
               const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Expanded(child: _Orders()),
-                  SizedBox(width: 16),
-                  SizedBox(width: 320, child: _AttentionList()),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        _Filters(),
+                        SizedBox(height: 16),
+                        _Orders(),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: BoardScreen.attentionGap),
+                  SizedBox(
+                    width: BoardScreen.attentionWidth,
+                    child: BoardAttention(beside: true),
+                  ),
                 ],
               )
             else ...const <Widget>[
-              _AttentionList(),
+              BoardAttention(beside: false),
+              SizedBox(height: 16),
+              _Filters(),
               SizedBox(height: 16),
               _Orders(),
             ],
           ],
         );
       },
-    );
-  }
-}
-
-/// The day's numbers: the open orders by status — each a way to filter the
-/// board by it — and today's completed, cancelled, sales and attention.
-class _SummaryStrip extends ConsumerWidget {
-  const _SummaryStrip();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<BoardSummary> summary = ref.watch(boardSummaryProvider);
-    final BoardQueryController queries = ref.read(boardQueryProvider.notifier);
-    final OrderStatus? filtered = ref.watch(
-      boardQueryProvider.select((BoardQuery query) => query.status),
-    );
-
-    return summary.when(
-      skipLoadingOnRefresh: !summary.hasError,
-      data: (BoardSummary summary) => Wrap(
-        key: const ValueKey<String>('board-summary'),
-        spacing: 8,
-        runSpacing: 8,
-        children: <Widget>[
-          for (final MapEntry<OrderStatus, int> open
-              in summary.openByStatus.entries)
-            FilterChip(
-              key: ValueKey<String>('summary-${open.key.code}'),
-              label: Text(
-                '${OrderLabels.status(l10n, open.key)}: ${open.value}',
-              ),
-              selected: filtered == open.key,
-              onSelected: (bool selected) =>
-                  queries.filterByStatus(selected ? open.key : null),
-            ),
-          Chip(
-            key: const ValueKey<String>('summary-completed'),
-            label: Text(
-              '${l10n.summaryCompletedToday}: ${summary.completedToday}',
-            ),
-          ),
-          Chip(
-            key: const ValueKey<String>('summary-cancelled'),
-            label: Text(
-              '${l10n.summaryCancelledToday}: ${summary.cancelledToday}',
-            ),
-          ),
-          Chip(
-            key: const ValueKey<String>('summary-sales'),
-            label: Text(
-              '${l10n.summarySalesToday}: '
-              '${MoneyFormat.uzs(summary.salesTodayUzs, interfaceLanguage(context))}',
-            ),
-          ),
-          Chip(
-            key: const ValueKey<String>('summary-attention'),
-            label: Text('${l10n.summaryAttention}: ${summary.attentionCount}'),
-          ),
-        ],
-      ),
-      error: (Object error, StackTrace _) => LoadFailure(
-        error: error,
-        onRetry: () => ref.invalidate(boardSummaryProvider),
-      ),
-      loading: () => const LinearProgressIndicator(),
     );
   }
 }
@@ -689,119 +699,6 @@ class _Card extends StatelessWidget {
       ),
     );
   }
-}
-
-/// What an Operator should look at, the longest-waiting first. It shows its
-/// first [folded] items and folds the rest behind a button, so a long list
-/// never pushes the orders out of sight (`DL-67` (4)).
-class _AttentionList extends ConsumerStatefulWidget {
-  const _AttentionList();
-
-  static const int folded = 5;
-
-  @override
-  ConsumerState<_AttentionList> createState() => _AttentionListState();
-}
-
-class _AttentionListState extends ConsumerState<_AttentionList> {
-  bool _unfolded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<List<AttentionItem>> items = ref.watch(attentionProvider);
-
-    return Card(
-      key: const ValueKey<String>('board-attention'),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
-              l10n.attentionTitle,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            items.when(
-              skipLoadingOnRefresh: !items.hasError,
-              data: (List<AttentionItem> items) => items.isEmpty
-                  ? Text(l10n.attentionEmpty)
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        for (final AttentionItem item
-                            in _unfolded ||
-                                    items.length <= _AttentionList.folded
-                                ? items
-                                : items.take(_AttentionList.folded))
-                          ListTile(
-                            key: ValueKey<String>(
-                              'attention-${item.code}-${item.orderId}',
-                            ),
-                            contentPadding: EdgeInsets.zero,
-                            leading: Icon(
-                              item.type == AttentionType.selfOrder
-                                  ? Icons.person_pin_outlined
-                                  : Icons.notification_important_outlined,
-                            ),
-                            title: Text(
-                              '${l10n.boardOrderNumber('${item.orderNumber}')}'
-                              ' · ${_describe(l10n, item)}',
-                            ),
-                            subtitle: Text(
-                              <String>[
-                                if (item.shopper != null)
-                                  nameOf(l10n, item.shopper!),
-                                if (item.courier != null)
-                                  nameOf(l10n, item.courier!),
-                                l10n.attentionSince(
-                                  TashkentTime.format(item.since),
-                                ),
-                              ].join(' · '),
-                            ),
-                            onTap: () =>
-                                context.go(OperationsPaths.order(item.orderId)),
-                          ),
-                        if (items.length > _AttentionList.folded)
-                          TextButton(
-                            key: const ValueKey<String>('attention-fold'),
-                            onPressed: () =>
-                                setState(() => _unfolded = !_unfolded),
-                            child: Text(
-                              _unfolded
-                                  ? l10n.attentionShowFewer
-                                  : l10n.attentionShowAll(items.length),
-                            ),
-                          ),
-                      ],
-                    ),
-              error: (Object error, StackTrace _) => LoadFailure(
-                error: error,
-                onRetry: () => ref.invalidate(attentionProvider),
-              ),
-              loading: () => const LinearProgressIndicator(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static String _describe(AppLocalizations l10n, AttentionItem item) =>
-      switch (item.type) {
-        AttentionType.selfOrder => l10n.selfOrderExplained,
-        AttentionType.approvalPending => l10n.attentionApprovalPending,
-        AttentionType.approvalExpired => l10n.attentionApprovalExpired,
-        AttentionType.paymentOverdue => l10n.attentionPaymentOverdue,
-        AttentionType.refundOutstanding => l10n.attentionRefundOutstanding,
-        AttentionType.courierDelayed => l10n.attentionCourierDelayed,
-        AttentionType.deliveryFailed => l10n.attentionDeliveryFailed,
-        AttentionType.cancellationRequest => l10n.attentionCancellationRequest,
-        AttentionType.staffBlocked => l10n.attentionStaffBlocked,
-        AttentionType.lowRating => l10n.attentionLowRating,
-        AttentionType.other => l10n.attentionOther,
-      };
 }
 
 /// Who ordered, as a row says it: the name and phone, or that the Customer's

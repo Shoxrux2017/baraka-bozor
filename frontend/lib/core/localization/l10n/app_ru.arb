@@ -487,7 +487,36 @@
   "summaryCompletedToday": "Выполнено сегодня",
   "summaryCancelledToday": "Отменено сегодня",
   "summarySalesToday": "Продажи сегодня",
-  "summaryAttention": "Требуют внимания",
+  "summaryOpen": "В работе",
+  "boardAllOrders": "Все заказы",
+  "boardUpdatedAt": "Обновлено в {time}",
+  "@boardUpdatedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "attentionLongestFirst": "Дольше ждущие — сверху",
+  "attentionWaitingMinutes": "{minutes} мин",
+  "@attentionWaitingMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "attentionWaitingHours": "{hours} ч {minutes} мин",
+  "@attentionWaitingHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "attentionTitle": "Требует внимания",
   "attentionEmpty": "Пока ничего нет",
   "attentionApprovalPending": "Клиент не отвечает 10 минут — позвоните",

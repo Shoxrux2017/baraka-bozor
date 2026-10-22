@@ -1212,7 +1212,28 @@ class AppLocalizationsUz extends AppLocalizations {
   String get summarySalesToday => 'Bugungi savdo';
 
   @override
-  String get summaryAttention => 'E\'tibor talab';
+  String get summaryOpen => 'Jarayonda';
+
+  @override
+  String get boardAllOrders => 'Barcha buyurtmalar';
+
+  @override
+  String boardUpdatedAt(String time) {
+    return '$time da yangilandi';
+  }
+
+  @override
+  String get attentionLongestFirst => 'Uzoq kutganlar — tepada';
+
+  @override
+  String attentionWaitingMinutes(int minutes) {
+    return '$minutes daq';
+  }
+
+  @override
+  String attentionWaitingHours(int hours, int minutes) {
+    return '$hours soat $minutes daq';
+  }
 
   @override
   String get attentionTitle => 'E\'tibor talab qiladi';

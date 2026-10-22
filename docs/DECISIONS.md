@@ -1421,3 +1421,5 @@ Answer to the question `DL-94` item 5 left open. An Admin erases a blocked Custo
 ## DL-100 — The panel's orders, staff stage 3a (2026-10-22, agent)
 
 1. **The frame.** The panel's side menu as drawing 55 shows it: whole from a 1360-wide window, folded to icons that name themselves on hover from 1200, behind a menu button below. The Operator's menu holds the board alone, so every role finds the user card, the language and the way out in one place. The board's entry carries the count of what needs attention.
+
+2. **The day and the attention list.** The board opens with four tiles — the open orders, today's completed and cancelled, today's sales — and a row of the open statuses with their counts. The row replaces the status list: a status is one tap, and today's completed and cancelled tiles filter by those statuses, so every status is still reachable. The attention list stands at the right of the orders from a 1140-wide board and above them below that, showing two before its fold there; each item has the icon and colour of what it asks and says how long it has waited. The header says when the board was loaded rather than the date the tiles already name.

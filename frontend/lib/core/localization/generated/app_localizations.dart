@@ -2336,11 +2336,41 @@ abstract class AppLocalizations {
   /// **'Bugungi savdo'**
   String get summarySalesToday;
 
-  /// No description provided for @summaryAttention.
+  /// No description provided for @summaryOpen.
   ///
   /// In uz, this message translates to:
-  /// **'E\'tibor talab'**
-  String get summaryAttention;
+  /// **'Jarayonda'**
+  String get summaryOpen;
+
+  /// No description provided for @boardAllOrders.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha buyurtmalar'**
+  String get boardAllOrders;
+
+  /// No description provided for @boardUpdatedAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'{time} da yangilandi'**
+  String boardUpdatedAt(String time);
+
+  /// No description provided for @attentionLongestFirst.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uzoq kutganlar — tepada'**
+  String get attentionLongestFirst;
+
+  /// No description provided for @attentionWaitingMinutes.
+  ///
+  /// In uz, this message translates to:
+  /// **'{minutes} daq'**
+  String attentionWaitingMinutes(int minutes);
+
+  /// No description provided for @attentionWaitingHours.
+  ///
+  /// In uz, this message translates to:
+  /// **'{hours} soat {minutes} daq'**
+  String attentionWaitingHours(int hours, int minutes);
 
   /// No description provided for @attentionTitle.
   ///

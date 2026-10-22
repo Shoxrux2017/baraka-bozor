@@ -7,6 +7,7 @@ class KitCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.outline,
+    this.color = Colors.white,
     this.onTap,
     this.semanticLabel,
     super.key,
@@ -15,6 +16,9 @@ class KitCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final Color? outline;
+
+  /// The card's ground: white, or a wash for a selected card.
+  final Color color;
 
   /// Makes the whole card a button whose ripple shows on the white.
   final VoidCallback? onTap;
@@ -29,7 +33,7 @@ class KitCard extends StatelessWidget {
 
     final Widget card = DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: color,
         borderRadius: radius,
         boxShadow: const <BoxShadow>[
           BoxShadow(
@@ -50,7 +54,7 @@ class KitCard extends StatelessWidget {
         child: onTap == null
             ? padded
             : Material(
-                color: Colors.white,
+                color: color,
                 borderRadius: radius,
                 child: InkWell(
                   borderRadius: radius,

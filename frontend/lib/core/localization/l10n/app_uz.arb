@@ -525,7 +525,36 @@
   "summaryCompletedToday": "Bugun yakunlangan",
   "summaryCancelledToday": "Bugun bekor qilingan",
   "summarySalesToday": "Bugungi savdo",
-  "summaryAttention": "E'tibor talab",
+  "summaryOpen": "Jarayonda",
+  "boardAllOrders": "Barcha buyurtmalar",
+  "boardUpdatedAt": "{time} da yangilandi",
+  "@boardUpdatedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "attentionLongestFirst": "Uzoq kutganlar — tepada",
+  "attentionWaitingMinutes": "{minutes} daq",
+  "@attentionWaitingMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "attentionWaitingHours": "{hours} soat {minutes} daq",
+  "@attentionWaitingHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "attentionTitle": "E'tibor talab qiladi",
   "attentionEmpty": "Hozircha hech narsa yo'q",
   "attentionApprovalPending": "Mijoz 10 daqiqadan beri javob bermayapti — qo'ng'iroq qiling",

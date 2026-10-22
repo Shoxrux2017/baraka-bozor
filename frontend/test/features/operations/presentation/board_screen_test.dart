@@ -7,7 +7,12 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
+import 'package:baraka_bozor/core/formatting/tashkent_time.dart';
+import 'package:baraka_bozor/core/localization/order_labels.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_card.dart';
+import 'package:baraka_bozor/features/operations/presentation/board_screen.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/operations/data/operations_api.dart';
 import 'package:baraka_bozor/features/operations/domain/board.dart';
@@ -56,6 +61,7 @@ void main() {
     Size size = const Size(1400, 1200),
     double textScale = 1,
     Locale device = const Locale('uz'),
+    DateTime Function()? clock,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -70,6 +76,7 @@ void main() {
         surface: Surface.web,
         operations: operations,
         device: device,
+        clock: clock,
       ),
     );
     await tester.pumpAndSettle();
@@ -89,6 +96,48 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// The attention items on the board, not the fold button.
+  Finder attentionItems() => find.descendant(
+    of: byKey('board-attention'),
+    matching: find.byWidgetPredicate(
+      (Widget widget) =>
+          widget.key is ValueKey<String> &&
+          RegExp(r'^attention-[a-z_]+-[0-9a-f-]{36}$')
+              .hasMatch((widget.key! as ValueKey<String>).value) &&
+          widget is InkWell,
+    ),
+  );
+
+  List<AttentionItem> waiting(int count, {String type = 'courier_delayed'}) =>
+      <AttentionItem>[
+        for (int i = 1; i <= count; i++)
+          OperationsApi.parseAttention(<String, Object?>{
+            ...attentionJson(order: '0192f0a0-0000-7000-8000-0000000001a$i'),
+            'type': type,
+            'shopper': null,
+          }),
+      ];
+
+  Color? washOf(WidgetTester tester, String key) =>
+      (tester.widget<Container>(byKey(key)).decoration! as BoxDecoration).color;
+
+  BoardSummary summaryOf({int attention = 1}) =>
+      OperationsApi.parseSummary(<String, Object?>{
+        ...summaryJson(attention: attention),
+        'open_by_status': <String, int>{
+          'new': 2,
+          'shopping_assigned': 1,
+          'shopping': 4,
+          'final_payment_pending': 0,
+          'ready_for_delivery': 1,
+          'delivery_assigned': 1,
+          'on_the_way': 2,
+        },
+        'completed_today': 24,
+        'cancelled_today': 2,
+        'sales_today_uzs': 3862400,
+      });
+
   Future<void> choose(WidgetTester tester, String dropdown, String item) async {
     await tapAndSettle(tester, byKey(dropdown));
     await tester.tap(find.text(item).last);
@@ -98,17 +147,9 @@ void main() {
   testWidgets('the board shows the day, the orders and what needs attention', (
     WidgetTester tester,
   ) async {
-    await open(tester);
+    await open(tester, size: const Size(2000, 1200));
 
-    expect(
-      find.text('${l10n(tester).orderStatusNew}: 2'),
-      findsOneWidget,
-      reason: 'the open orders by status',
-    );
-    expect(
-      find.text('${l10n(tester).summaryCompletedToday}: 4'),
-      findsOneWidget,
-    );
+    expect(byKey('summary-open'), findsOneWidget);
     expect(find.byType(DataTable), findsOneWidget);
     expect(byKey('board-row-$orderA'), findsOneWidget);
     expect(byKey('board-row-$orderB'), findsOneWidget);
@@ -116,6 +157,329 @@ void main() {
     expect(byKey('attention-self_order-$orderA'), findsOneWidget);
     expect(lastQuery(), const BoardQuery());
   });
+
+  testWidgets('the tiles count the open orders and today\'s ends', (
+    WidgetTester tester,
+  ) async {
+    operations.summaryAnswer = summaryOf();
+    await open(tester);
+
+    Finder inTile(String key, Finder text) =>
+        find.descendant(of: byKey(key), matching: text);
+    expect(inTile('summary-open', find.text('11')), findsOneWidget);
+    expect(inTile('summary-completed', find.text('24')), findsOneWidget);
+    expect(inTile('summary-cancelled', find.text('2')), findsOneWidget);
+    expect(
+      inTile(
+        'summary-sales',
+        find.text(MoneyFormat.uzs(3862400, AppLanguage.uz)),
+      ),
+      findsOneWidget,
+    );
+    for (final String key in const <String>['summary-open', 'summary-sales']) {
+      expect(
+        inTile(key, find.byType(InkWell)),
+        findsNothing,
+        reason: '$key does nothing',
+      );
+    }
+  });
+
+  testWidgets('today\'s completed and cancelled tiles filter the board', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    KitCard card(String key) => tester.widget<KitCard>(
+      find.descendant(of: byKey(key), matching: find.byType(KitCard)),
+    );
+
+    expect(card('summary-completed').outline, isNull);
+    await tapAndSettle(tester, byKey('summary-completed'));
+    expect(lastQuery().status, OrderStatus.completed);
+    expect(card('summary-completed').color, KitColors.primaryWash);
+    expect(card('summary-completed').outline, KitColors.primary);
+    expect(card('summary-cancelled').outline, isNull);
+
+    await tapAndSettle(tester, byKey('summary-completed'));
+    expect(lastQuery().status, isNull);
+    expect(card('summary-completed').outline, isNull);
+
+    await tapAndSettle(tester, byKey('summary-cancelled'));
+    expect(lastQuery().status, OrderStatus.cancelled);
+    await tapAndSettle(tester, byKey('summary-cancelled'));
+    expect(lastQuery().status, isNull);
+  });
+
+  testWidgets('a status pill filters the board and "Все заказы" clears it', (
+    WidgetTester tester,
+  ) async {
+    operations.summaryAnswer = summaryOf();
+    await open(tester);
+    final AppLocalizations words = l10n(tester);
+    Color? ground(String key) => tester
+        .widget<Material>(
+          find
+              .descendant(of: byKey(key), matching: find.byType(Material))
+              .first,
+        )
+        .color;
+    Color? textOf(String key, String text) => tester
+        .widget<Text>(
+          find.descendant(of: byKey(key), matching: find.text(text)),
+        )
+        .style!
+        .color;
+
+    expect(
+      tester.getTopLeft(byKey('summary-all')).dx,
+      lessThan(tester.getTopLeft(byKey('summary-new')).dx),
+    );
+    expect(
+      find.descendant(of: byKey('summary-shopping'), matching: find.text('4')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: byKey('summary-all'),
+        matching: find.text(words.boardAllOrders),
+      ),
+      findsOneWidget,
+    );
+    expect(ground('summary-all'), KitColors.primary);
+    expect(
+      textOf('summary-final_payment_pending', '0'),
+      KitColors.muted,
+      reason: 'a zero count reads muted',
+    );
+
+    await tapAndSettle(tester, byKey('summary-new'));
+    expect(lastQuery().status, OrderStatus.newOrder);
+    expect(ground('summary-new'), KitColors.primary);
+    expect(
+      textOf('summary-new', OrderLabels.status(words, OrderStatus.newOrder)),
+      Colors.white,
+    );
+    expect(ground('summary-all'), Colors.white);
+
+    await tapAndSettle(tester, byKey('summary-all'));
+    expect(lastQuery().status, isNull);
+    expect(ground('summary-all'), KitColors.primary);
+  });
+
+  testWidgets('the header says when the board was loaded', (
+    WidgetTester tester,
+  ) async {
+    await open(
+      tester,
+      device: const Locale('ru'),
+      clock: () => DateTime.utc(2026, 10, 22, 9, 34),
+    );
+
+    expect(find.text(l10n(tester).boardUpdatedAt('14:34')), findsOneWidget);
+    expect(find.text('Обновлено в 14:34'), findsOneWidget);
+  });
+
+  testWidgets('an attention item says how long it has waited, in its tone', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime.utc(2026, 10, 22, 9, 34);
+    String since(int minutes) =>
+        now.subtract(Duration(minutes: minutes)).toIso8601String();
+    const List<String> orders = <String>[
+      '0192f0a0-0000-7000-8000-0000000001a1',
+      '0192f0a0-0000-7000-8000-0000000001a2',
+      '0192f0a0-0000-7000-8000-0000000001a3',
+      '0192f0a0-0000-7000-8000-0000000001a4',
+    ];
+    operations.attentionAnswer = <AttentionItem>[
+      OperationsApi.parseAttention(<String, Object?>{
+        ...attentionJson(order: orders[0]),
+        'type': 'approval_expired',
+        'since': since(114),
+        'courier': <String, Object?>{
+          'id': courierId,
+          'full_name': 'Kamol Karimov',
+        },
+      }),
+      OperationsApi.parseAttention(<String, Object?>{
+        ...attentionJson(order: orders[1]),
+        'type': 'approval_pending',
+        'since': since(36),
+        'shopper': null,
+      }),
+      OperationsApi.parseAttention(<String, Object?>{
+        ...attentionJson(order: orders[2]),
+        'type': 'low_rating',
+        'since': since(36),
+        'shopper': null,
+      }),
+      OperationsApi.parseAttention(<String, Object?>{
+        ...attentionJson(order: orders[3]),
+        'type': 'self_order',
+        'since': since(61),
+        'shopper': null,
+      }),
+    ];
+    await open(tester, size: const Size(1800, 1600), clock: () => now);
+    final AppLocalizations words = l10n(tester);
+    Color? iconColor(String code, String order) => tester
+        .widget<Icon>(
+          find.descendant(
+            of: byKey('attention-icon-$code-$order'),
+            matching: find.byType(Icon),
+          ),
+        )
+        .color;
+    Color? waitingColor(String code, String order) => tester
+        .widget<Text>(byKey('attention-waiting-$code-$order'))
+        .style!
+        .color;
+
+    expect(
+      find.descendant(
+        of: byKey('attention-approval_expired-${orders[0]}'),
+        matching: find.text(words.attentionWaitingHours(1, 54)),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: byKey('attention-approval_pending-${orders[1]}'),
+        matching: find.text(words.attentionWaitingMinutes(36)),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(words.attentionWaitingHours(1, 1)), findsOneWidget);
+
+    expect(
+      washOf(tester, 'attention-icon-approval_expired-${orders[0]}'),
+      KitColors.dangerWash,
+    );
+    expect(iconColor('approval_expired', orders[0]), KitColors.danger);
+    expect(waitingColor('approval_expired', orders[0]), KitColors.danger);
+
+    expect(
+      washOf(tester, 'attention-icon-approval_pending-${orders[1]}'),
+      KitColors.warningWash,
+    );
+    expect(iconColor('approval_pending', orders[1]), KitColors.warning);
+    expect(waitingColor('approval_pending', orders[1]), KitColors.warningDark);
+
+    for (final (String, String) grey in <(String, String)>[
+      ('low_rating', orders[2]),
+      ('self_order', orders[3]),
+    ]) {
+      expect(
+        washOf(tester, 'attention-icon-${grey.$1}-${grey.$2}'),
+        KitColors.field,
+      );
+      expect(iconColor(grey.$1, grey.$2), KitColors.ink2);
+      expect(waitingColor(grey.$1, grey.$2), KitColors.warningDark);
+    }
+
+    final String time = TashkentTime.time(
+      now.subtract(const Duration(minutes: 114)),
+    );
+    expect(
+      find.text(
+        '${words.historyAssignedTo('Sardor Yusupov')} · '
+        '${words.historyCourierAssignedTo('Kamol Karimov')} · '
+        '${words.attentionSince(time)}',
+      ),
+      findsOneWidget,
+    );
+    expect(byKey('summary-attention'), findsOneWidget);
+  });
+
+  for (final Size size in const <Size>[
+    Size(1440, 900),
+    Size(1280, 800),
+    Size(1188, 800),
+  ]) {
+    testWidgets('a wide board keeps the attention list beside the orders '
+        '(${size.width.toInt()}x${size.height.toInt()})', (
+      WidgetTester tester,
+    ) async {
+      operations.attentionAnswer = waiting(7);
+      await open(tester, size: size);
+
+      final Rect list = tester.getRect(byKey('board-attention'));
+      expect(list.width, BoardScreen.attentionWidth);
+      expect(
+        list.left,
+        greaterThan(tester.getTopRight(byKey('board-row-$orderA')).dx),
+      );
+      expect(attentionItems(), findsNWidgets(5));
+      expect(find.text(l10n(tester).attentionShowAll(7)), findsOneWidget);
+      expect(
+        list.right,
+        lessThanOrEqualTo(tester.getRect(byKey('operations-board')).right),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final Size size in const <Size>[Size(1187, 1180), Size(820, 1180)]) {
+    testWidgets('a narrower board puts the attention list above the orders, '
+        'two items first (${size.width.toInt()})', (WidgetTester tester) async {
+      operations.attentionAnswer = waiting(6);
+      await open(tester, size: size);
+
+      expect(
+        tester.getBottomLeft(byKey('board-attention')).dy,
+        lessThanOrEqualTo(tester.getTopLeft(byKey('board-row-$orderA')).dy),
+      );
+      expect(attentionItems(), findsNWidgets(2));
+      expect(find.text(l10n(tester).attentionShowAll(6)), findsOneWidget);
+
+      await tapAndSettle(tester, byKey('attention-fold'));
+      expect(attentionItems(), findsNWidgets(6));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
+    for (final (String, Size, double) setup in const <(String, Size, double)>[
+      ('820x1180 with text x2', Size(820, 1180), 2),
+      ('1440x900', Size(1440, 900), 1),
+    ]) {
+      testWidgets('the board holds at ${setup.$1} (${language.languageCode})', (
+        WidgetTester tester,
+      ) async {
+        operations.summaryAnswer = summaryOf(attention: 6);
+        operations.attentionAnswer = <AttentionItem>[
+          for (final AttentionItem item in waiting(6, type: 'delivery_failed'))
+            AttentionItem(
+              type: item.type,
+              code: item.code,
+              orderId: item.orderId,
+              orderNumber: item.orderNumber,
+              since: item.since,
+              shopper: const PersonRef(
+                id: shopperId,
+                fullName: 'Abdurakhmonova Shakhnoza Rustamovna',
+              ),
+              courier: const PersonRef(
+                id: courierId,
+                fullName: 'Muhammadjonov Abdulloh Karimovich',
+              ),
+            ),
+        ];
+        await open(
+          tester,
+          size: setup.$2,
+          textScale: setup.$3,
+          device: language,
+        );
+
+        expect(byKey('board-attention'), findsOneWidget);
+        expect(byKey('summary-sales'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tapAndSettle(tester, byKey('attention-fold'));
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
 
   testWidgets(
     'each attention type has its words, and one order may need two things',
@@ -145,7 +509,7 @@ void main() {
         Locale('uz'),
         Locale('ru'),
       ]) {
-        await open(tester, device: language);
+        await open(tester, size: const Size(1800, 1600), device: language);
         final AppLocalizations words = l10n(tester);
 
         expect(byKey('attention-approval_pending-$orderA'), findsOneWidget);
@@ -241,7 +605,7 @@ void main() {
       operations.rows = <BoardRow>[
         OperationsApi.parseRow(rowJson(pendingApprovals: 3)),
       ];
-      await open(tester, size: const Size(1800, 1200));
+      await open(tester, size: const Size(2000, 1200));
       final Finder chip = find.descendant(
         of: find.byType(DataTable),
         matching: find.byType(OrderStatusChip),
@@ -333,10 +697,7 @@ void main() {
         }),
     ];
     await open(tester, size: const Size(1800, 1600));
-    Finder items() => find.descendant(
-      of: byKey('board-attention'),
-      matching: find.byType(ListTile),
-    );
+    Finder items() => attentionItems();
 
     expect(items(), findsNWidgets(5));
     expect(find.text(l10n(tester).attentionShowAll(7)), findsOneWidget);
@@ -401,7 +762,11 @@ void main() {
     WidgetTester tester,
   ) async {
     operations.rows = <BoardRow>[OperationsApi.parseRow(rowJson(erased: true))];
-    await open(tester, device: const Locale('ru'));
+    await open(
+      tester,
+      size: const Size(2000, 1200),
+      device: const Locale('ru'),
+    );
 
     expect(
       tester.widget<Text>(byKey('board-customer-$orderA')).data,
@@ -609,7 +974,7 @@ void main() {
           isSelfOrder: row.isSelfOrder,
         ),
     ];
-    await open(tester, size: const Size(1800, 1600));
+    await open(tester, size: const Size(2000, 1600));
 
     expect(find.byType(DataTable), findsOneWidget);
     expect(
@@ -622,7 +987,7 @@ void main() {
   testWidgets('large text makes a table row taller rather than cutting it', (
     WidgetTester tester,
   ) async {
-    await open(tester, size: const Size(1800, 1600), textScale: 2);
+    await open(tester, size: const Size(2000, 1600), textScale: 2);
 
     expect(find.byType(DataTable), findsOneWidget);
     final Finder customer = find.text(
@@ -639,23 +1004,28 @@ void main() {
   });
 
   testWidgets(
-    'the orders stay a table whether the attention list is above or beside them',
+    'the orders are a table where their room holds every column, beside the attention list',
     (WidgetTester tester) async {
-      // A laptop window keeps the whole width for the orders.
+      // At 1440 the orders beside the list are too narrow for the table.
       await open(tester, size: const Size(1440, 1600));
-      expect(find.byType(DataTable), findsOneWidget);
-      expect(
-        tester.getTopLeft(byKey('board-attention')).dy,
-        lessThan(tester.getTopLeft(find.byType(DataTable)).dy),
-        reason: 'above the orders below the side-by-side width',
-      );
+      expect(find.byType(DataTable), findsNothing);
+      expect(byKey('board-row-$orderA'), findsOneWidget);
 
-      await open(tester, size: const Size(1600, 1600));
+      await open(tester, size: const Size(2000, 1600));
       expect(find.byType(DataTable), findsOneWidget);
       expect(
         tester.getTopLeft(byKey('board-attention')).dx,
-        greaterThan(tester.getTopLeft(find.byType(DataTable)).dx),
-        reason: 'beside them from it',
+        greaterThanOrEqualTo(
+          tester
+              .getTopRight(
+                find.ancestor(
+                  of: find.byType(DataTable),
+                  matching: find.byType(Scrollbar),
+                ),
+              )
+              .dx,
+        ),
+        reason: 'beside the orders',
       );
     },
   );

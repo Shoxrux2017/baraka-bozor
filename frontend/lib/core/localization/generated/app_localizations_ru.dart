@@ -1215,7 +1215,28 @@ class AppLocalizationsRu extends AppLocalizations {
   String get summarySalesToday => 'Продажи сегодня';
 
   @override
-  String get summaryAttention => 'Требуют внимания';
+  String get summaryOpen => 'В работе';
+
+  @override
+  String get boardAllOrders => 'Все заказы';
+
+  @override
+  String boardUpdatedAt(String time) {
+    return 'Обновлено в $time';
+  }
+
+  @override
+  String get attentionLongestFirst => 'Дольше ждущие — сверху';
+
+  @override
+  String attentionWaitingMinutes(int minutes) {
+    return '$minutes мин';
+  }
+
+  @override
+  String attentionWaitingHours(int hours, int minutes) {
+    return '$hours ч $minutes мин';
+  }
 
   @override
   String get attentionTitle => 'Требует внимания';
