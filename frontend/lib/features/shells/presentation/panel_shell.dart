@@ -143,7 +143,13 @@ class PanelShell extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const BrandWordmark(size: 19),
+                  const Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: BrandWordmark(size: 19),
+                    ),
+                  ),
                 ],
               ),
             ),

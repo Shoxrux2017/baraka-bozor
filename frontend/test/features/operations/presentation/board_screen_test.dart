@@ -266,6 +266,44 @@ void main() {
     expect(ground('summary-all'), KitColors.primary);
   });
 
+  testWidgets(
+    'the refresh button is labelled on a wide board, an icon on a narrow one',
+    (WidgetTester tester) async {
+      await open(tester, size: const Size(1440, 900));
+      expect(
+        find.descendant(
+          of: byKey('board-refresh'),
+          matching: find.text(l10n(tester).boardRefresh),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('board-refresh'),
+          matching: find.byIcon(Icons.refresh),
+        ),
+        findsOneWidget,
+      );
+
+      await open(tester, size: const Size(820, 1180), textScale: 2);
+      expect(
+        find.descendant(
+          of: byKey('board-refresh'),
+          matching: find.byType(Text),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: byKey('board-refresh'),
+          matching: find.byIcon(Icons.refresh),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('the header says when the board was loaded', (
     WidgetTester tester,
   ) async {

@@ -68,9 +68,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final bool beside =
-            constraints.maxWidth - padding.horizontal >=
-            BoardScreen.attentionBeside;
+        final double content = constraints.maxWidth - padding.horizontal;
+        final bool beside = content >= BoardScreen.attentionBeside;
+        final bool labelled = content >= boardCompactWidth;
 
         return ListView(
           key: const ValueKey<String>('operations-board'),
@@ -103,22 +103,31 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Tooltip(
-                  message: l10n.boardRefresh,
-                  child: OutlinedButton(
+                if (labelled)
+                  OutlinedButton.icon(
                     key: const ValueKey<String>('board-refresh'),
-                    style: kitOutlined(height: 40).copyWith(
-                      minimumSize: const WidgetStatePropertyAll<Size>(
-                        Size(40, 40),
-                      ),
-                      padding: const WidgetStatePropertyAll<EdgeInsets>(
-                        EdgeInsets.symmetric(horizontal: 12),
-                      ),
-                    ),
+                    style: kitOutlined(height: 40),
+                    icon: const Icon(Icons.refresh, size: 20),
+                    label: Text(l10n.boardRefresh),
                     onPressed: () => refreshBoard(ref),
-                    child: const Icon(Icons.refresh, size: 20),
+                  )
+                else
+                  Tooltip(
+                    message: l10n.boardRefresh,
+                    child: OutlinedButton(
+                      key: const ValueKey<String>('board-refresh'),
+                      style: kitOutlined(height: 40).copyWith(
+                        minimumSize: const WidgetStatePropertyAll<Size>(
+                          Size(40, 40),
+                        ),
+                        padding: const WidgetStatePropertyAll<EdgeInsets>(
+                          EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                      ),
+                      onPressed: () => refreshBoard(ref),
+                      child: const Icon(Icons.refresh, size: 20),
+                    ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 20),

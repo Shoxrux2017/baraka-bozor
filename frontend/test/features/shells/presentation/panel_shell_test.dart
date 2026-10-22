@@ -397,4 +397,16 @@ void main() {
     expect(location(tester), AppPaths.operations);
     expect(staff.queries, isEmpty);
   });
+
+  testWidgets('the top bar holds on a phone with text x2', (
+    WidgetTester tester,
+  ) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await open(tester, UserRole.operator, size: const Size(360, 800));
+
+    expect(find.byTooltip(menuTooltip(tester)), findsOneWidget);
+    expect(find.byType(BrandWordmark), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
