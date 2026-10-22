@@ -1118,6 +1118,24 @@ abstract class AppLocalizations {
   /// **'Mahsulot rasmi o\'chirilsinmi?'**
   String get productRemoveImageConfirm;
 
+  /// No description provided for @productImagePicked.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi rasm · yuklanmagan'**
+  String get productImagePicked;
+
+  /// No description provided for @productRemoveImageExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangisini yuklamaguningizcha mijozlar mahsulotni rasmsiz ko\'radi.'**
+  String get productRemoveImageExplained;
+
+  /// No description provided for @categoryRemoveImageExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi rasm yuklamaguningizcha mijozlar nomning birinchi harfini ko\'radi.'**
+  String get categoryRemoveImageExplained;
+
   /// No description provided for @productImageRules.
   ///
   /// In uz, this message translates to:

@@ -494,6 +494,7 @@ class _ProductImageCard extends ConsumerWidget {
       onRemove: () => images.remove(product.id),
       change: ref.watch(productImageControllerProvider),
       keyPrefix: '',
+      compact: false,
     );
   }
 }

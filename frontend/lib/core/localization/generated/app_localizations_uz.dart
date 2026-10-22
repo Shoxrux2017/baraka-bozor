@@ -561,6 +561,17 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productRemoveImageConfirm => 'Mahsulot rasmi o\'chirilsinmi?';
 
   @override
+  String get productImagePicked => 'Yangi rasm · yuklanmagan';
+
+  @override
+  String get productRemoveImageExplained =>
+      'Yangisini yuklamaguningizcha mijozlar mahsulotni rasmsiz ko\'radi.';
+
+  @override
+  String get categoryRemoveImageExplained =>
+      'Yangi rasm yuklamaguningizcha mijozlar nomning birinchi harfini ko\'radi.';
+
+  @override
   String get productImageRules => 'JPEG, PNG yoki WebP, ko\'pi bilan 5 MB';
 
   @override

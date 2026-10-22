@@ -8,6 +8,7 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
+import 'package:baraka_bozor/core/state/mutation_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/kit/kit_card.dart';
@@ -16,6 +17,7 @@ import 'package:baraka_bozor/features/admin/application/admin_catalog_controller
 import 'package:baraka_bozor/features/admin/application/product_image_picker.dart';
 import 'package:baraka_bozor/features/admin/domain/admin_catalog.dart';
 import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
+import 'package:baraka_bozor/features/admin/presentation/catalog_image_card.dart';
 import 'package:baraka_bozor/features/admin/presentation/products_screen.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:flutter/material.dart';
@@ -968,7 +970,25 @@ void main() {
       );
 
       await tapAndSettle(tester, byKey('category-remove-image'));
-      await tapAndSettle(tester, find.text(l10n(tester).cancelButton).last);
+      expect(byKey('category-remove-image-dialog'), findsOneWidget);
+      expect(
+        find.text(l10n(tester).categoryRemoveImageConfirm),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n(tester).categoryRemoveImageExplained),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(byKey('category-confirm-remove-image'))
+            .style
+            ?.backgroundColor
+            ?.resolve(<WidgetState>{}),
+        KitColors.danger,
+      );
+      await tapAndSettle(tester, byKey('action-cancel'));
+      expect(byKey('category-remove-image-dialog'), findsNothing);
       expect(catalog.removedCategoryImages, isEmpty);
 
       await tapAndSettle(tester, byKey('category-remove-image'));
@@ -1105,7 +1125,22 @@ void main() {
       await open(tester, AdminPaths.product('p-1'));
 
       await tapAndSettle(tester, byKey('remove-image'));
-      await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+      expect(byKey('remove-image-dialog'), findsOneWidget);
+      expect(find.text(l10n(tester).productRemoveImageConfirm), findsOneWidget);
+      expect(
+        find.text(l10n(tester).productRemoveImageExplained),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(byKey('confirm-remove-image'))
+            .style
+            ?.backgroundColor
+            ?.resolve(<WidgetState>{}),
+        KitColors.danger,
+      );
+      await tapAndSettle(tester, byKey('action-cancel'));
+      expect(byKey('remove-image-dialog'), findsNothing);
       expect(catalog.removedImages, isEmpty);
 
       await tapAndSettle(tester, byKey('remove-image'));
@@ -1113,6 +1148,89 @@ void main() {
       expect(catalog.removedImages, <String>['p-1']);
       expect(byKey('remove-image'), findsNothing);
     });
+
+    testWidgets('a picked image waits with its label until it is uploaded', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = <AdminProduct>[
+        adminProduct(imageUrl: 'https://api.test/storage/products/a.webp'),
+      ];
+      await open(tester, AdminPaths.product('p-1'));
+      picker.next = _png();
+
+      await tapAndSettle(tester, byKey('choose-image'));
+
+      expect(
+        find.descendant(
+          of: byKey('picked-image'),
+          matching: find.text(l10n(tester).productImagePicked),
+        ),
+        findsOneWidget,
+      );
+      expect(byKey('remove-image'), findsNothing);
+      expect(
+        tester.getTopLeft(byKey('upload-image')).dy,
+        lessThan(tester.getTopLeft(byKey('choose-image')).dy),
+      );
+
+      await tapAndSettle(tester, byKey('upload-image'));
+      expect(find.text(l10n(tester).productImagePicked), findsNothing);
+    });
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      for (final bool compact in <bool>[false, true]) {
+        for (final double width in <double>[360, 720]) {
+          testWidgets(
+            'the ${compact ? 'compact' : 'square'} card holds at x2 and $width '
+            'px in ${device.languageCode}',
+            (WidgetTester tester) async {
+              tester.platformDispatcher.textScaleFactorTestValue = 2;
+              addTearDown(
+                tester.platformDispatcher.clearTextScaleFactorTestValue,
+              );
+              tester.view.physicalSize = Size(width, 1600);
+              tester.view.devicePixelRatio = 1;
+              addTearDown(tester.view.reset);
+              picker.next = _png(size: PickedImage.maxBytes + 1);
+
+              await tester.pumpWidget(
+                ProviderScope(
+                  overrides: [
+                    productImagePickerProvider.overrideWithValue(picker),
+                  ],
+                  child: MaterialApp(
+                    locale: device,
+                    localizationsDelegates:
+                        AppLocalizations.localizationsDelegates,
+                    supportedLocales: AppLocalizations.supportedLocales,
+                    home: Scaffold(
+                      body: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: CatalogImageCard(
+                          imageUrl: 'https://api.test/storage/products/a.webp',
+                          onUpload: (PickedImage image) async {},
+                          onRemove: () async {},
+                          change: const MutationIdle(),
+                          keyPrefix: '',
+                          compact: compact,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+              await tester.pumpAndSettle();
+              await tester.tap(byKey('choose-image'));
+              await tester.pumpAndSettle();
+
+              expect(byKey('image-problem'), findsOneWidget);
+              expect(byKey('current-image'), findsOneWidget);
+              expect(tester.takeException(), isNull);
+            },
+          );
+        }
+      }
+    }
 
     testWidgets('a product that does not exist says so', (
       WidgetTester tester,

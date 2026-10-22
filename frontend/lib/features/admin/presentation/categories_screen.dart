@@ -411,6 +411,8 @@ class _CategoryDialogState extends ConsumerState<_CategoryDialog> {
                       onRemove: _removeImage,
                       change: imageChange,
                       keyPrefix: 'category-',
+                      compact: true,
+                      removeExplained: l10n.categoryRemoveImageExplained,
                       title: l10n.categoryImage,
                       removeConfirm: l10n.categoryRemoveImageConfirm,
                     ),

@@ -567,6 +567,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get productRemoveImageConfirm => 'Удалить фото товара?';
 
   @override
+  String get productImagePicked => 'Новое фото · не загружено';
+
+  @override
+  String get productRemoveImageExplained =>
+      'Клиенты увидят товар без фото, пока вы не загрузите новое.';
+
+  @override
+  String get categoryRemoveImageExplained =>
+      'Клиенты увидят первую букву названия, пока вы не загрузите новую картинку.';
+
+  @override
   String get productImageRules => 'JPEG, PNG или WebP, не больше 5 МБ';
 
   @override
