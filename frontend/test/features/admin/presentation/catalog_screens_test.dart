@@ -20,6 +20,7 @@ import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
 import 'package:baraka_bozor/core/widgets/kit/kit_note.dart';
 import 'package:baraka_bozor/features/admin/presentation/catalog_image_card.dart';
 import 'package:baraka_bozor/features/admin/presentation/catalog_widgets.dart';
+import 'package:baraka_bozor/features/admin/presentation/categories_screen.dart';
 import 'package:baraka_bozor/features/admin/presentation/product_edit_screen.dart';
 import 'package:baraka_bozor/features/admin/presentation/products_screen.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
@@ -73,7 +74,7 @@ void main() {
       tester.widget<TextFormField>(field(apiKey)).controller!.text;
 
   Finder inDialog(Finder finder) =>
-      find.descendant(of: find.byType(AlertDialog), matching: finder);
+      find.descendant(of: byKey('category-dialog'), matching: finder);
 
   setUp(() {
     tokens = InMemoryTokenStore();
@@ -140,11 +141,15 @@ void main() {
   }
 
   group('categories', () {
+    Finder inRow(String id, Finder finder) =>
+        find.descendant(of: byKey('category-$id'), matching: finder);
+
     testWidgets('a new category is created with both names and shown', (
       WidgetTester tester,
     ) async {
       await open(tester, AdminPaths.categories);
-      expect(find.text('Sabzavotlar · Овощи'), findsOneWidget);
+      expect(inRow('c-1', find.text('Sabzavotlar')), findsOneWidget);
+      expect(inRow('c-1', find.text('Овощи')), findsOneWidget);
 
       await tapAndSettle(tester, byKey('new-category'));
       await tester.enterText(field('name_uz'), '  Mevalar ');
@@ -158,9 +163,10 @@ void main() {
       expect(draft.nameRu, 'Фрукты');
       expect(draft.sortOrder, 5);
       expect(draft.isActive, isTrue);
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(byKey('category-dialog'), findsNothing);
       expect(find.text(l10n(tester).categorySaved), findsOneWidget);
-      expect(find.text('Mevalar · Фрукты'), findsOneWidget);
+      expect(find.text('Mevalar'), findsOneWidget);
+      expect(find.text('Фрукты'), findsOneWidget);
     });
 
     testWidgets('the dialog stays open while it saves, then closes itself', (
@@ -177,13 +183,16 @@ void main() {
       await tester.pump();
       await tester.tapAt(const Offset(5, 5));
       await tester.pump();
-      expect(find.byType(AlertDialog), findsOneWidget);
+      await tester.tap(byKey('category-dialog-close'));
+      await tester.pump();
+      expect(byKey('category-dialog'), findsOneWidget);
 
       catalog.hold!.complete();
       await tester.pumpAndSettle();
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(byKey('category-dialog'), findsNothing);
       expect(find.text(l10n(tester).categorySaved), findsOneWidget);
-      expect(find.text('Sabzavot · Овощи'), findsOneWidget);
+      expect(inRow('c-1', find.text('Sabzavot')), findsOneWidget);
+      expect(inRow('c-1', find.text('Овощи')), findsOneWidget);
     });
 
     testWidgets('a tap outside the dialog does not throw the form away', (
@@ -196,7 +205,7 @@ void main() {
       await tester.tapAt(const Offset(5, 5));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(byKey('category-dialog'), findsOneWidget);
       expect(textOf(tester, 'name_uz'), 'Mevalar');
     });
 
@@ -217,8 +226,16 @@ void main() {
         ApiError(status: 409, code: 'business_conflict'),
       );
       await tapAndSettle(tester, byKey('archive-c-1'));
-      expect(find.text(l10n(tester).errorBusinessConflict), findsOneWidget);
+      await tapAndSettle(tester, byKey('archive-confirm'));
+      expect(
+        find.descendant(
+          of: byKey('archive-dialog'),
+          matching: find.text(l10n(tester).errorBusinessConflict),
+        ),
+        findsOneWidget,
+      );
 
+      await tapAndSettle(tester, byKey('action-cancel'));
       await tapAndSettle(tester, byKey('edit-c-1'));
       expect(
         inDialog(find.text(l10n(tester).errorBusinessConflict)),
@@ -255,7 +272,7 @@ void main() {
         await tapAndSettle(tester, byKey('edit-c-1'));
         await tapAndSettle(tester, byKey('category-save'));
 
-        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(byKey('category-dialog'), findsOneWidget);
         expect(find.text(l10n(tester).fieldRejected), findsOneWidget);
         expect(catalog.savedCategories.single.$1, 'c-1');
       },
@@ -267,15 +284,32 @@ void main() {
         await open(tester, AdminPaths.categories);
 
         await tapAndSettle(tester, byKey('archive-c-1'));
+        Finder inWindow(Finder finder) =>
+            find.descendant(of: byKey('archive-dialog'), matching: finder);
+        expect(
+          inWindow(find.text(l10n(tester).categoryArchiveTitle)),
+          findsOneWidget,
+        );
+        expect(
+          inWindow(find.text(l10n(tester).categoryArchiveExplained)),
+          findsOneWidget,
+        );
+        expect(inWindow(find.text('Sabzavotlar')), findsOneWidget);
+        expect(inWindow(find.text('Овощи')), findsOneWidget);
+        expect(catalog.actions, isEmpty);
+
+        await tapAndSettle(tester, byKey('archive-confirm'));
         expect(catalog.actions, <String>['archive c-1']);
-        expect(find.text('Sabzavotlar · Овощи'), findsNothing);
+        expect(byKey('archive-dialog'), findsNothing);
+        expect(byKey('category-c-1'), findsNothing);
 
         await tapAndSettle(tester, byKey('include-archived'));
-        expect(find.text('Sabzavotlar · Овощи'), findsOneWidget);
+        expect(byKey('category-c-1'), findsOneWidget);
         expect(find.text(l10n(tester).catalogStateArchived), findsOneWidget);
 
         await tapAndSettle(tester, byKey('restore-c-1'));
         expect(catalog.actions, <String>['archive c-1', 'restore c-1']);
+        expect(byKey('archive-dialog'), findsNothing);
         expect(find.text(l10n(tester).catalogStateActive), findsOneWidget);
       },
     );
@@ -297,6 +331,205 @@ void main() {
         expect(catalog.savedCategories.single.$2.isActive, isNull);
       },
     );
+
+    testWidgets('a category row opens its window', (WidgetTester tester) async {
+      await open(tester, AdminPaths.categories);
+
+      await tapAndSettle(tester, byKey('category-c-1'));
+
+      expect(byKey('category-dialog'), findsOneWidget);
+      expect(
+        inDialog(find.text(l10n(tester).categoryEditTitle)),
+        findsOneWidget,
+      );
+      expect(
+        inDialog(
+          find.byWidgetPredicate(
+            (Widget w) => w is Text && w.data == 'Sabzavotlar',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(textOf(tester, 'name_uz'), 'Sabzavotlar');
+    });
+
+    testWidgets('the header counts the categories', (
+      WidgetTester tester,
+    ) async {
+      catalog.categoryRows = <AdminCategory>[
+        adminCategory(),
+        adminCategory(id: 'c-2', nameUz: 'Mevalar', nameRu: 'Фрукты'),
+      ];
+      await open(tester, AdminPaths.categories);
+
+      final Finder title = find.text(l10n(tester).adminSectionCategories);
+      final Finder count = find.text(l10n(tester).catalogCategoryCount(2));
+      expect(count, findsOneWidget);
+      expect(
+        tester.getTopLeft(count).dy,
+        greaterThan(tester.getTopLeft(title.last).dy),
+      );
+      expect(tester.getSize(byKey('new-category')).height, 40);
+      expect(
+        tester.getTopRight(byKey('new-category')).dx,
+        closeTo(tester.getTopRight(find.byType(PanelCard).first).dx, 0.5),
+      );
+    });
+
+    Finder listTable() => find.descendant(
+      of: find.byType(PanelCard),
+      matching: find.byType(Table),
+    );
+
+    testWidgets('a wide card is a table and a narrow one cards', (
+      WidgetTester tester,
+    ) async {
+      expect(CategoriesScreen.tableWidth, 560);
+      await open(tester, AdminPaths.categories, size: const Size(608, 1000));
+
+      expect(tester.getSize(find.byType(PanelCard).first).width, 560);
+      expect(listTable(), findsWidgets);
+      expect(tester.widget(byKey('category-c-1')), isNot(isA<KitCard>()));
+      final AppLocalizations text = l10n(tester);
+      Finder header(String label) => find.text(label.toUpperCase());
+      expect(header(text.productCategory), findsOneWidget);
+      expect(header(text.catalogSortOrder), findsOneWidget);
+      expect(header(text.catalogColumnShown), findsOneWidget);
+      expect(
+        tester.getTopLeft(header(text.catalogSortOrder)).dx,
+        greaterThan(tester.getTopLeft(header(text.productCategory)).dx),
+      );
+      expect(
+        tester.getTopLeft(header(text.catalogColumnShown)).dx,
+        greaterThan(tester.getTopLeft(header(text.catalogSortOrder)).dx),
+      );
+      expect(
+        tester.getTopLeft(byKey('edit-c-1')).dx,
+        greaterThan(tester.getTopLeft(header(text.catalogColumnShown)).dx),
+      );
+      expect(
+        tester.getTopLeft(byKey('archive-c-1')).dx,
+        greaterThan(tester.getTopLeft(byKey('edit-c-1')).dx),
+      );
+
+      await open(tester, AdminPaths.categories, size: const Size(607, 1000));
+
+      expect(tester.getSize(find.byType(PanelCard).first).width, 559);
+      expect(listTable(), findsNothing);
+      expect(tester.widget(byKey('category-c-1')), isA<KitCard>());
+      expect(byKey('edit-c-1'), findsOneWidget);
+      expect(byKey('archive-c-1'), findsOneWidget);
+      expect(inRow('c-1', find.text(text.catalogStateActive)), findsOneWidget);
+      expect(
+        inRow('c-1', find.text('${text.catalogSortOrder}: 0')),
+        findsOneWidget,
+      );
+      await tapAndSettle(tester, byKey('category-c-1'));
+      expect(byKey('category-dialog'), findsOneWidget);
+    });
+
+    testWidgets(
+      'the window is 720 wide and keeps the two languages side by side',
+      (WidgetTester tester) async {
+        await open(tester, AdminPaths.categories, size: const Size(1440, 900));
+        await tapAndSettle(tester, byKey('edit-c-1'));
+
+        expect(tester.getSize(byKey('category-dialog')).width, 720);
+        expect(
+          tester.getTopLeft(field('name_uz')).dx,
+          lessThan(tester.getTopLeft(field('name_ru')).dx),
+        );
+        expect(
+          tester.getTopLeft(field('name_uz')).dy,
+          tester.getTopLeft(field('name_ru')).dy,
+        );
+        expect(tester.getSize(byKey('category-save')).width, 160);
+        expect(tester.getSize(byKey('category-save')).height, 48);
+        expect(tester.getSize(byKey('category-cancel')).width, 160);
+        expect(
+          tester.getTopRight(byKey('category-save')).dx,
+          closeTo(tester.getTopRight(byKey('category-dialog')).dx - 24, 0.5),
+        );
+
+        await open(tester, AdminPaths.categories, size: const Size(400, 900));
+        await tapAndSettle(tester, byKey('edit-c-1'));
+
+        expect(
+          tester.getTopLeft(field('name_ru')).dy,
+          greaterThan(tester.getTopLeft(field('name_uz')).dy),
+        );
+        expect(
+          tester.getTopLeft(field('name_ru')).dx,
+          tester.getTopLeft(field('name_uz')).dx,
+        );
+        expect(tester.getSize(byKey('category-save')).height, 48);
+        expect(
+          tester.getSize(byKey('category-save')).width,
+          lessThan(tester.getSize(byKey('category-dialog')).width / 2),
+        );
+      },
+    );
+
+    testWidgets('the switch row explains what hiding a category does', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, AdminPaths.categories);
+      await tapAndSettle(tester, byKey('edit-c-1'));
+
+      expect(
+        inDialog(find.text(l10n(tester).categoryShownHint)),
+        findsOneWidget,
+      );
+      expect(
+        inDialog(find.text(l10n(tester).catalogShownToCustomers)),
+        findsOneWidget,
+      );
+      expect(tester.widget<Switch>(field('is_active')).value, isTrue);
+
+      await tapAndSettle(tester, field('is_active'));
+      await tapAndSettle(tester, byKey('category-save'));
+      expect(catalog.savedCategories.single.$2.isActive, isFalse);
+    });
+
+    testWidgets('a hidden category is shown as such in its row', (
+      WidgetTester tester,
+    ) async {
+      catalog.categoryRows = <AdminCategory>[adminCategory(isActive: false)];
+      await open(tester, AdminPaths.categories);
+
+      expect(
+        inRow('c-1', find.text(l10n(tester).catalogStateHidden)),
+        findsOneWidget,
+      );
+    });
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      for (final Size size in const <Size>[Size(1440, 900), Size(820, 1180)]) {
+        testWidgets('the categories hold at the extremes '
+            '(${device.languageCode} ${size.width.toInt()})', (
+          WidgetTester tester,
+        ) async {
+          final String long = 'Sabzavot ' * 15;
+          catalog.categoryRows = <AdminCategory>[
+            adminCategory(nameUz: long.trim(), nameRu: long.trim()),
+            adminCategory(id: 'c-2', nameUz: 'Mevalar', nameRu: 'Фрукты'),
+          ];
+          tester.platformDispatcher.textScaleFactorTestValue = 2;
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+          await open(tester, AdminPaths.categories, size: size, device: device);
+          expect(byKey('category-c-1'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+
+          await tapAndSettle(tester, byKey('category-c-1'));
+          expect(byKey('category-dialog'), findsOneWidget);
+          await tester.ensureVisible(byKey('category-save'));
+          await tester.pumpAndSettle();
+          expect(byKey('category-save'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+      }
+    }
   });
 
   group('products', () {
@@ -1190,7 +1423,7 @@ void main() {
       await tapAndSettle(tester, byKey('edit-c-1'));
       await tester.ensureVisible(byKey('category-save'));
       await tester.pumpAndSettle();
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(byKey('category-dialog'), findsOneWidget);
     });
   });
 

@@ -445,6 +445,30 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String catalogCategoryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count категории',
+      many: '$count категорий',
+      few: '$count категории',
+      one: '$count категория',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get categoryShownHint =>
+      'Скрытая категория прячет у клиентов и все свои товары';
+
+  @override
+  String get categoryArchiveTitle => 'Убрать категорию в архив?';
+
+  @override
+  String get categoryArchiveExplained =>
+      'Категория и все её товары пропадут у клиентов. Сами товары не меняются: вернёте категорию — они снова появятся. Пока категория в архиве, новые товары в неё не добавить.';
+
+  @override
   String get catalogColumnProduct => 'Товар';
 
   @override

@@ -896,6 +896,30 @@ abstract class AppLocalizations {
   /// **'{count} ta mahsulot'**
   String catalogProductCount(int count);
 
+  /// No description provided for @catalogCategoryCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta kategoriya'**
+  String catalogCategoryCount(int count);
+
+  /// No description provided for @categoryShownHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yashirilgan kategoriya mijozlardan barcha mahsulotlarini ham yashiradi'**
+  String get categoryShownHint;
+
+  /// No description provided for @categoryArchiveTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kategoriya arxivlansinmi?'**
+  String get categoryArchiveTitle;
+
+  /// No description provided for @categoryArchiveExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kategoriya va uning barcha mahsulotlari mijozlarga ko\'rinmay qoladi. Mahsulotlarning o\'zi o\'zgarmaydi: kategoriyani qaytarsangiz, ular yana chiqadi. Kategoriya arxivda ekan, unga yangi mahsulot qo\'shib bo\'lmaydi.'**
+  String get categoryArchiveExplained;
+
   /// No description provided for @catalogColumnProduct.
   ///
   /// In uz, this message translates to:

@@ -445,7 +445,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
 
     final List<Widget> shownRows = <Widget>[
       if (_archived)
-        _ShownRow(
+        CatalogShownRow(
           child: KitNote(
             icon: Icons.inventory_2_outlined,
             tone: KitTone.grey,
@@ -456,7 +456,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
           ),
         )
       else
-        _SwitchRow(
+        CatalogSwitchRow(
           switchKey: const ValueKey<String>('field-is_active'),
           title: l10n.catalogShownToCustomers,
           hint: l10n.productShownHint,
@@ -466,7 +466,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
               : (bool value) => setState(() => _active = value),
         ),
       if (categoryNote != null)
-        _ShownRow(
+        CatalogShownRow(
           child: KitNote(
             key: const ValueKey<String>('product-category-note'),
             icon: Icons.info_outline,
@@ -480,7 +480,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
             ),
           ),
         ),
-      _SwitchRow(
+      CatalogSwitchRow(
         switchKey: const ValueKey<String>('field-is_featured'),
         title: l10n.productFeatured,
         hint: l10n.productFeaturedHint,
@@ -677,81 +677,6 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
                 onPressed: change.isBusy ? null : _submit,
                 child: Text(l10n.saveButton),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A row of the "shown" card, with the row's padding.
-class _ShownRow extends StatelessWidget {
-  const _ShownRow({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: child,
-    );
-  }
-}
-
-/// A switch row: the title over its hint, the switch at the right.
-class _SwitchRow extends StatelessWidget {
-  const _SwitchRow({
-    required this.switchKey,
-    required this.title,
-    required this.hint,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final Key switchKey;
-  final String title;
-  final String hint;
-  final bool value;
-  final ValueChanged<bool>? onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return _ShownRow(
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: KitColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  hint,
-                  style: const TextStyle(fontSize: 12, color: KitColors.muted),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Switch(
-            key: switchKey,
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: Colors.white,
-            activeTrackColor: KitColors.primary,
-            inactiveThumbColor: Colors.white,
-            inactiveTrackColor: KitColors.line,
-            trackOutlineColor: const WidgetStatePropertyAll<Color>(
-              Colors.transparent,
             ),
           ),
         ],

@@ -175,6 +175,17 @@
       }
     }
   },
+  "catalogCategoryCount": "{count, plural, one{{count} категория} few{{count} категории} many{{count} категорий} other{{count} категории}}",
+  "@catalogCategoryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "categoryShownHint": "Скрытая категория прячет у клиентов и все свои товары",
+  "categoryArchiveTitle": "Убрать категорию в архив?",
+  "categoryArchiveExplained": "Категория и все её товары пропадут у клиентов. Сами товары не меняются: вернёте категорию — они снова появятся. Пока категория в архиве, новые товары в неё не добавить.",
   "catalogColumnProduct": "Товар",
   "catalogColumnCustomerPrice": "Для клиента",
   "catalogColumnShown": "Показ",

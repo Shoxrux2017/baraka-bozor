@@ -6,39 +6,6 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../domain/admin_catalog.dart';
 
-/// Where an entry stands, in words and with an icon, so the state is never
-/// told by colour alone.
-class EntryStateChip extends StatelessWidget {
-  const EntryStateChip(this.state, {super.key});
-
-  final CatalogEntryState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final (IconData icon, String label) = switch (state) {
-      CatalogEntryState.active => (
-        Icons.visibility_outlined,
-        l10n.catalogStateActive,
-      ),
-      CatalogEntryState.hidden => (
-        Icons.visibility_off_outlined,
-        l10n.catalogStateHidden,
-      ),
-      CatalogEntryState.archived => (
-        Icons.inventory_2_outlined,
-        l10n.catalogStateArchived,
-      ),
-    };
-
-    return Chip(
-      avatar: Icon(icon, size: 18),
-      label: Text(label),
-      visualDensity: VisualDensity.compact,
-    );
-  }
-}
-
 /// The fields a `validation_failed` refusal names, by API field name.
 Set<String> rejectedFields(ApiFailure? failure) =>
     failure is ApiRefusal && failure.code == 'validation_failed'
@@ -297,41 +264,77 @@ String? categoryHidesLine(
   };
 }
 
-/// A product's image, or a placeholder when it has none or it cannot be
-/// loaded.
-class ProductThumbnail extends StatelessWidget {
-  const ProductThumbnail({required this.url, required this.size, super.key});
+/// A row of a form's "shown" block, with the row's padding.
+class CatalogShownRow extends StatelessWidget {
+  const CatalogShownRow({required this.child, super.key});
 
-  final String? url;
-  final double size;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final Widget placeholder = SizedBox.square(
-      dimension: size,
-      child: Icon(
-        Icons.image_not_supported_outlined,
-        size: size / 2,
-        semanticLabel: AppLocalizations.of(context).productNoImage,
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: child,
     );
-    final String? url = this.url;
-    if (url == null) {
-      return placeholder;
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        url,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        // The browser loads an image from another origin, one that sends no
-        // CORS headers for its files, only as its own image element: tried
-        // after the ordinary load fails (`DL-34`).
-        webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
-        errorBuilder: (BuildContext context, Object error, StackTrace? _) =>
-            placeholder,
+  }
+}
+
+/// A switch row: the title over its hint, the switch at the right.
+class CatalogSwitchRow extends StatelessWidget {
+  const CatalogSwitchRow({
+    required this.switchKey,
+    required this.title,
+    required this.hint,
+    required this.value,
+    required this.onChanged,
+    super.key,
+  });
+
+  final Key switchKey;
+  final String title;
+  final String hint;
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return CatalogShownRow(
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: KitColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hint,
+                  style: const TextStyle(fontSize: 12, color: KitColors.muted),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Switch(
+            key: switchKey,
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: Colors.white,
+            activeTrackColor: KitColors.primary,
+            inactiveThumbColor: Colors.white,
+            inactiveTrackColor: KitColors.line,
+            trackOutlineColor: const WidgetStatePropertyAll<Color>(
+              Colors.transparent,
+            ),
+          ),
+        ],
       ),
     );
   }

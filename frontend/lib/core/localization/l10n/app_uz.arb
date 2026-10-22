@@ -175,6 +175,17 @@
       }
     }
   },
+  "catalogCategoryCount": "{count} ta kategoriya",
+  "@catalogCategoryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "categoryShownHint": "Yashirilgan kategoriya mijozlardan barcha mahsulotlarini ham yashiradi",
+  "categoryArchiveTitle": "Kategoriya arxivlansinmi?",
+  "categoryArchiveExplained": "Kategoriya va uning barcha mahsulotlari mijozlarga ko'rinmay qoladi. Mahsulotlarning o'zi o'zgarmaydi: kategoriyani qaytarsangiz, ular yana chiqadi. Kategoriya arxivda ekan, unga yangi mahsulot qo'shib bo'lmaydi.",
   "catalogColumnProduct": "Mahsulot",
   "catalogColumnCustomerPrice": "Mijoz uchun",
   "catalogColumnShown": "Ko'rinishi",

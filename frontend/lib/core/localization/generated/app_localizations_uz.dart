@@ -438,6 +438,22 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String catalogCategoryCount(int count) {
+    return '$count ta kategoriya';
+  }
+
+  @override
+  String get categoryShownHint =>
+      'Yashirilgan kategoriya mijozlardan barcha mahsulotlarini ham yashiradi';
+
+  @override
+  String get categoryArchiveTitle => 'Kategoriya arxivlansinmi?';
+
+  @override
+  String get categoryArchiveExplained =>
+      'Kategoriya va uning barcha mahsulotlari mijozlarga ko\'rinmay qoladi. Mahsulotlarning o\'zi o\'zgarmaydi: kategoriyani qaytarsangiz, ular yana chiqadi. Kategoriya arxivda ekan, unga yangi mahsulot qo\'shib bo\'lmaydi.';
+
+  @override
   String get catalogColumnProduct => 'Mahsulot';
 
   @override
