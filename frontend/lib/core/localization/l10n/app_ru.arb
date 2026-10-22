@@ -360,7 +360,6 @@
   "addressNone": "Адресов пока нет",
   "addressNew": "Новый адрес",
   "addressEdit": "Изменить адрес",
-  "addressStreet": "Улица",
   "addressHouse": "Дом",
   "addressApartment": "Квартира",
   "addressLandmark": "Ориентир",
@@ -545,25 +544,28 @@
       }
     }
   },
+  "orderPathCreated": "Создан",
+  "orderPathShopping": "Сборка",
+  "orderPathRunning": "идёт с {time}",
+  "@orderPathRunning": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPathWaiting": "ждёт с {time}",
+  "@orderPathWaiting": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderCourierLater": "Назначить можно, когда заказ будет готов к доставке",
   "orderBackToBoard": "К заказам",
   "orderPlacedAt": "Создан: {time}",
   "@orderPlacedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "orderCompletedAt": "Выполнен: {time}",
-  "@orderCompletedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "orderCancelledAt": "Отменён: {time}",
-  "@orderCancelledAt": {
     "placeholders": {
       "time": {
         "type": "String"
@@ -1173,7 +1175,6 @@
     }
   },
   "removeExpiredExplained": "Клиент не ответил вовремя. Товар будет убран из заказа; если покупать больше нечего, заказ отменится.",
-  "cancellationRequestsNone": "Запросов на отмену не было",
   "requestStatusPending": "Ждёт решения",
   "requestStatusApproved": "Одобрен",
   "requestStatusRejected": "Отклонён",

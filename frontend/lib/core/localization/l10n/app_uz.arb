@@ -384,7 +384,6 @@
   "addressNone": "Hali manzil qo'shilmagan",
   "addressNew": "Yangi manzil",
   "addressEdit": "Manzilni tahrirlash",
-  "addressStreet": "Ko'cha",
   "addressHouse": "Uy",
   "addressApartment": "Xonadon",
   "addressLandmark": "Mo'ljal",
@@ -596,25 +595,28 @@
       }
     }
   },
+  "orderPathCreated": "Yaratildi",
+  "orderPathShopping": "Yig'ish",
+  "orderPathRunning": "{time} dan beri",
+  "@orderPathRunning": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPathWaiting": "{time} dan kutmoqda",
+  "@orderPathWaiting": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "orderCourierLater": "Buyurtma yetkazishga tayyor bo'lganda tayinlash mumkin",
   "orderBackToBoard": "Buyurtmalarga qaytish",
   "orderPlacedAt": "Qabul qilingan: {time}",
   "@orderPlacedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "orderCompletedAt": "Yakunlangan: {time}",
-  "@orderCompletedAt": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "orderCancelledAt": "Bekor qilingan: {time}",
-  "@orderCancelledAt": {
     "placeholders": {
       "time": {
         "type": "String"
@@ -1231,7 +1233,6 @@
     }
   },
   "removeExpiredExplained": "Mijoz o'z vaqtida javob bermadi. Mahsulot buyurtmadan olib tashlanadi; sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.",
-  "cancellationRequestsNone": "Bekor qilish so'rovi bo'lmagan",
   "requestStatusPending": "Qaror kutilmoqda",
   "requestStatusApproved": "Tasdiqlandi",
   "requestStatusRejected": "Rad etildi",

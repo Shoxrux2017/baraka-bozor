@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/formatting/money_format.dart';
-import '../../../core/formatting/phone_format.dart';
 import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
@@ -14,222 +13,298 @@ import '../../../core/localization/role_labels.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/routing/app_paths.dart';
-import '../../../core/state/mutation_state.dart';
-import '../../../core/widgets/failure_message.dart';
+import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../auth/domain/app_user.dart';
 import '../application/board_controllers.dart';
 import '../domain/board.dart';
 import 'board_widgets.dart';
 import 'order_actions.dart';
+import 'order_path.dart';
+import 'order_side.dart';
+import 'order_staff.dart';
 
-/// One order as the Operator and the Admin see it (`docs/09` section 38):
-/// the Customer and the address, the delivery wish, every line with the
-/// prices it was placed at — the market price and markup among them — and
-/// its purchase with the price paid, the questions to the Customer, the
-/// totals and their kind, the payment, the cancellation requests, every
-/// Shopper and Courier assignment with its self-order mark, and the whole
-/// history; with the actions the rules allow on it (`DL-68`).
+/// One order as the Operator and the Admin see it (`docs/09` section 38,
+/// `DL-100` (4)): a path of five steps, then the lines, the questions to the
+/// Customer and the history at the left, and at the right who and where —
+/// a waiting cancellation request and a low rating on top, the Customer
+/// with the address and the wish, every Shopper and Courier assignment with
+/// its self-order mark, the totals and the payment — with the actions the
+/// rules allow on it (`DL-68`). Below [twoColumns] it is one column.
 class OrderDetailScreen extends ConsumerWidget {
   const OrderDetailScreen({required this.orderId, super.key});
 
   final String orderId;
 
+  /// From this width of the page — its content, without the padding — the
+  /// order has two columns; the side column is [sideWidth] wide, [gap] apart.
+  static const double twoColumns = 1100;
+  static const double sideWidth = 372;
+  static const double gap = 20;
+
+  /// From this width the Shopper and Courier cards stand side by side in the
+  /// one column.
+  static const double staffBeside = 640;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<BoardOrder> order = ref.watch(boardOrderProvider(orderId));
+    final bool compact = MediaQuery.sizeOf(context).width < 1200;
+    final EdgeInsets padding = compact
+        ? const EdgeInsets.fromLTRB(24, 20, 24, 24)
+        : const EdgeInsets.fromLTRB(28, 26, 28, 28);
 
-    return ListView(
-      key: const ValueKey<String>('order-detail'),
-      padding: const EdgeInsets.all(24),
-      children: <Widget>[
-        Row(
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double content = constraints.maxWidth - padding.horizontal;
+        final bool labelled = content >= 560;
+        final BoardOrder? loaded = order.value;
+
+        return ListView(
+          key: const ValueKey<String>('order-detail'),
+          padding: padding,
           children: <Widget>[
-            IconButton(
-              key: const ValueKey<String>('order-back'),
-              tooltip: l10n.orderBackToBoard,
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.go(AppPaths.operations),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                order.value == null
-                    ? ''
-                    : l10n.orderTitle('${order.value!.orderNumber}'),
-                style: Theme.of(context).textTheme.headlineSmall,
-                overflow: TextOverflow.ellipsis,
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                key: const ValueKey<String>('order-back'),
+                style: TextButton.styleFrom(
+                  foregroundColor: KitColors.primaryDark,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  minimumSize: const Size(0, 32),
+                  textStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                icon: const Icon(Icons.arrow_back, size: 18),
+                label: Text(l10n.orderBackToBoard),
+                onPressed: () => context.go(AppPaths.operations),
               ),
             ),
-            IconButton(
-              key: const ValueKey<String>('order-refresh'),
-              tooltip: l10n.boardRefresh,
-              icon: const Icon(Icons.refresh),
-              onPressed: () => ref.invalidate(boardOrderProvider(orderId)),
+            const SizedBox(height: 4),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(
+                  child: loaded == null
+                      ? const SizedBox(height: 32)
+                      : _Header(order: loaded),
+                ),
+                const SizedBox(width: 12),
+                if (labelled)
+                  OutlinedButton.icon(
+                    key: const ValueKey<String>('order-refresh'),
+                    style: kitOutlined(
+                      height: 40,
+                    ).copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    icon: const Icon(Icons.refresh, size: 20),
+                    label: Text(l10n.boardRefresh),
+                    onPressed: () =>
+                        ref.invalidate(boardOrderProvider(orderId)),
+                  )
+                else
+                  Tooltip(
+                    message: l10n.boardRefresh,
+                    child: OutlinedButton(
+                      key: const ValueKey<String>('order-refresh'),
+                      style: kitOutlined(height: 40).copyWith(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        minimumSize: const WidgetStatePropertyAll<Size>(
+                          Size(40, 40),
+                        ),
+                        padding: const WidgetStatePropertyAll<EdgeInsets>(
+                          EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                      ),
+                      onPressed: () =>
+                          ref.invalidate(boardOrderProvider(orderId)),
+                      child: const Icon(Icons.refresh, size: 20),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            order.when(
+              skipLoadingOnRefresh: !order.hasError,
+              data: (BoardOrder order) =>
+                  _Order(order: order, twoColumns: content >= twoColumns),
+              error: (Object error, StackTrace _) => LoadFailure(
+                error: error,
+                onRetry: () => ref.invalidate(boardOrderProvider(orderId)),
+              ),
+              loading: () => const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
             ),
           ],
-        ),
-        const SizedBox(height: 16),
-        order.when(
-          skipLoadingOnRefresh: !order.hasError,
-          data: (BoardOrder order) => _Order(order: order),
-          error: (Object error, StackTrace _) => LoadFailure(
-            error: error,
-            onRetry: () => ref.invalidate(boardOrderProvider(orderId)),
-          ),
-          loading: () => const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
 
-class _Order extends StatelessWidget {
-  const _Order({required this.order});
+/// The order's number with its status, and when it was placed and how it is
+/// paid; for a cancelled one, why.
+class _Header extends StatelessWidget {
+  const _Header({required this.order});
 
   final BoardOrder order;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Wrap(
+          spacing: 12,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            Text(
+              l10n.orderTitle('${order.orderNumber}'),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: KitColors.ink,
+              ),
+            ),
+            OrderStatusChip(order.status),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${l10n.orderPlacedAt(TashkentTime.format(order.createdAt))} · '
+          '${OrderLabels.paymentMethod(l10n, order.paymentMethod)}',
+          style: const TextStyle(fontSize: 12, color: KitColors.muted),
+        ),
+        if (order.cancellationReason != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              OrderLabels.cancellationReason(l10n, order.cancellationReason!),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: KitColors.dangerDark,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _Order extends StatelessWidget {
+  const _Order({required this.order, required this.twoColumns});
+
+  final BoardOrder order;
+  final bool twoColumns;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
-    final BoardAddress? address = order.address;
+
+    final Widget items = _Section(
+      title: l10n.orderSectionItems,
+      children: <Widget>[
+        for (final BoardItem item in order.items)
+          _Item(order: order, item: item, language: language),
+      ],
+    );
+    final Widget questions = _Section(
+      title: l10n.orderSectionApprovals,
+      children: <Widget>[
+        if (order.approvals.isEmpty) Text(l10n.approvalsNone),
+        for (final BoardApproval approval in order.approvals.reversed)
+          ApprovalTile(order: order, approval: approval),
+      ],
+    );
+    final Widget history = _Section(
+      title: l10n.orderSectionHistory,
+      children: <Widget>[
+        if (order.history.isEmpty) Text(l10n.historyNone),
+        for (final HistoryEntry entry in order.history.reversed)
+          _History(entry: entry, order: order),
+      ],
+    );
+    final List<Widget> top = <Widget>[
+      if (order.cancellationRequests.isNotEmpty) RequestsCard(order: order),
+      if (order.rating != null) RatingCard(order: order, rating: order.rating!),
+    ];
+    final List<Widget> bottom = <Widget>[
+      TotalsCard(totals: order.totals),
+      PaymentCard(order: order),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            OrderStatusChip(order.status),
-            Text(OrderLabels.paymentMethod(l10n, order.paymentMethod)),
-            Text(l10n.orderPlacedAt(TashkentTime.format(order.createdAt))),
-            if (order.completedAt != null)
-              Text(
-                l10n.orderCompletedAt(TashkentTime.format(order.completedAt!)),
-              ),
-            if (order.cancelledAt != null)
-              Text(
-                l10n.orderCancelledAt(TashkentTime.format(order.cancelledAt!)),
-              ),
-            if (order.cancellationReason != null)
-              Text(
-                OrderLabels.cancellationReason(l10n, order.cancellationReason!),
-              ),
-          ],
-        ),
-        _Section(
-          title: l10n.orderSectionCustomer,
-          children: <Widget>[
-            if (order.customerErased)
-              Text(l10n.orderCustomerErased)
-            else ...<Widget>[
-              Text(order.customer.fullName ?? l10n.customerNoName),
-              if (order.customer.phone != null)
-                Text(formatPhone(order.customer.phone!)),
-            ],
-          ],
-        ),
-        if (address != null)
-          _Section(
-            title: l10n.orderSectionAddress,
+        OrderPath(order: order),
+        const SizedBox(height: 16),
+        if (twoColumns)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text('${l10n.addressStreet}: ${address.street}'),
-              Text('${l10n.addressHouse}: ${address.house}'),
-              if (address.apartment != null)
-                Text('${l10n.addressApartment}: ${address.apartment}'),
-              if (address.landmark != null)
-                Text('${l10n.addressLandmark}: ${address.landmark}'),
-              if (address.deliveryNote != null)
-                Text('${l10n.addressDeliveryNote}: ${address.deliveryNote}'),
-              Text(l10n.orderCoordinates(address.latitude, address.longitude)),
+              Expanded(child: _stack(<Widget>[items, questions, history])),
+              const SizedBox(width: OrderDetailScreen.gap),
+              SizedBox(
+                width: OrderDetailScreen.sideWidth,
+                child: _stack(<Widget>[
+                  ...top,
+                  ClientCard(order: order),
+                  ShopperCard(order: order),
+                  CourierCard(order: order),
+                  ...bottom,
+                ]),
+              ),
             ],
-          ),
-        _Section(
-          title: l10n.orderSectionDeliveryWish,
-          children: <Widget>[
-            Text(order.deliveryTimeNote ?? l10n.orderNoDeliveryWish),
-          ],
-        ),
-        _Section(
-          title: l10n.orderSectionItems,
-          children: <Widget>[
-            for (final BoardItem item in order.items)
-              _Item(order: order, item: item, language: language),
-          ],
-        ),
-        _Section(
-          title: l10n.orderSectionApprovals,
-          children: <Widget>[
-            if (order.approvals.isEmpty) Text(l10n.approvalsNone),
-            for (final BoardApproval approval in order.approvals.reversed)
-              ApprovalTile(order: order, approval: approval),
-          ],
-        ),
-        _Section(
-          title: l10n.orderSectionTotals,
-          children: <Widget>[_Totals(totals: order.totals, language: language)],
-        ),
-        _Section(
-          title: l10n.orderSectionPayment,
-          children: <Widget>[PaymentDetails(order: order)],
-        ),
-        if (order.rating != null)
-          _Section(
-            title: l10n.ratingTitle,
-            children: <Widget>[
-              RatingDetails(order: order, rating: order.rating!),
-            ],
-          ),
-        _Section(
-          title: l10n.orderSectionCancellationRequests,
-          children: <Widget>[
-            if (order.cancellationRequests.isEmpty)
-              Text(l10n.cancellationRequestsNone),
-            for (final BoardCancellationRequest request
-                in order.cancellationRequests.reversed)
-              CancellationRequestTile(order: order, request: request),
-          ],
-        ),
-        _Section(
-          title: l10n.orderSectionShoppers,
-          children: <Widget>[
-            _ShopperActions(order: order),
-            if (order.shopperAssignments.isEmpty) Text(l10n.assignmentsNone),
-            for (final ShopperAssignment assignment
-                in order.shopperAssignments.reversed)
-              _Assignment(assignment: assignment),
-          ],
-        ),
-        _Section(
-          title: l10n.orderSectionCouriers,
-          children: <Widget>[
-            _CourierActions(order: order),
-            FailedDeliveryCancel(order: order),
-            if (order.courierAssignments.isEmpty)
-              Text(l10n.courierAssignmentsNone),
-            for (final CourierAssignment assignment
-                in order.courierAssignments.reversed)
-              _CourierAssignmentTile(assignment: assignment),
-          ],
-        ),
-        _Section(
-          title: l10n.orderSectionHistory,
-          children: <Widget>[
-            if (order.history.isEmpty) Text(l10n.historyNone),
-            for (final HistoryEntry entry in order.history.reversed)
-              _History(entry: entry, order: order),
-          ],
-        ),
+          )
+        else
+          _stack(<Widget>[
+            ...top,
+            ClientCard(order: order),
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) =>
+                  constraints.maxWidth >= OrderDetailScreen.staffBeside
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(child: ShopperCard(order: order)),
+                        const SizedBox(width: 16),
+                        Expanded(child: CourierCard(order: order)),
+                      ],
+                    )
+                  : _stack(<Widget>[
+                      ShopperCard(order: order),
+                      CourierCard(order: order),
+                    ]),
+            ),
+            items,
+            questions,
+            ...bottom,
+            history,
+          ]),
       ],
     );
   }
+
+  /// [children] one above the other, 16 apart.
+  static Widget _stack(List<Widget> children) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: <Widget>[
+      for (int index = 0; index < children.length; index++) ...<Widget>[
+        if (index > 0) const SizedBox(height: 16),
+        children[index],
+      ],
+    ],
+  );
 }
 
 class _Section extends StatelessWidget {
@@ -241,7 +316,7 @@ class _Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(top: 16),
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -357,207 +432,6 @@ class _Item extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Totals extends StatelessWidget {
-  const _Totals({required this.totals, required this.language});
-
-  final BoardTotals totals;
-  final AppLanguage language;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    if (totals.kind == TotalKind.none) {
-      return Text(l10n.totalNothingDue, key: const ValueKey<String>('totals'));
-    }
-
-    Widget line(String label, String amount, {TextStyle? style}) => Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Expanded(child: Text(label, style: style)),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(amount, style: style, textAlign: TextAlign.end),
-        ),
-      ],
-    );
-
-    return Column(
-      key: const ValueKey<String>('totals'),
-      children: <Widget>[
-        line(
-          l10n.totalsMerchandise,
-          MoneyFormat.uzs(totals.merchandiseSubtotalUzs!, language),
-        ),
-        line(
-          l10n.totalsServiceFee,
-          MoneyFormat.uzs(totals.serviceFeeUzs!, language),
-        ),
-        line(
-          l10n.totalsDeliveryFee,
-          MoneyFormat.uzs(totals.deliveryFeeUzs!, language),
-        ),
-        const Divider(),
-        line(
-          l10n.totalsTotal,
-          totalText(context, l10n, totals.totalUzs, totals.kind),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
-}
-
-class _Assignment extends StatelessWidget {
-  const _Assignment({required this.assignment});
-
-  final ShopperAssignment assignment;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final DateTime? endedAt = assignment.endedAt;
-
-    return ListTile(
-      key: ValueKey<String>('assignment-${assignment.id}'),
-      contentPadding: EdgeInsets.zero,
-      title: Wrap(
-        spacing: 12,
-        runSpacing: 4,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          Text(nameOf(l10n, assignment.shopper)),
-          Text(formatPhone(assignment.shopperPhone)),
-          if (endedAt == null)
-            Chip(
-              label: Text(l10n.assignmentCurrent),
-              visualDensity: VisualDensity.compact,
-            ),
-          if (assignment.isSelfOrder) const SelfOrderMark(),
-        ],
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            l10n.assignmentAssignedBy(
-              nameOf(l10n, assignment.assignedBy),
-              TashkentTime.format(assignment.assignedAt),
-            ),
-          ),
-          if (assignment.acceptedAt != null)
-            Text(
-              l10n.assignmentAccepted(
-                TashkentTime.format(assignment.acceptedAt!),
-              ),
-            ),
-          if (assignment.startedAt != null)
-            Text(
-              l10n.assignmentStarted(
-                TashkentTime.format(assignment.startedAt!),
-              ),
-            ),
-          if (endedAt != null)
-            Text(
-              l10n.assignmentEnded(
-                TashkentTime.format(endedAt),
-                _endReason(l10n, assignment.endedReason!),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  static String _endReason(AppLocalizations l10n, AssignmentEndReason reason) =>
-      switch (reason) {
-        AssignmentEndReason.completed => l10n.assignmentEndCompleted,
-        AssignmentEndReason.reassigned => l10n.assignmentEndReassigned,
-        // A Shopper's assignment never ends so, and the parser refuses it;
-        // the case keeps the switch whole.
-        AssignmentEndReason.deliveryFailed => l10n.courierEndDeliveryFailed,
-        AssignmentEndReason.orderCancelled => l10n.assignmentEndOrderCancelled,
-      };
-}
-
-class _CourierAssignmentTile extends StatelessWidget {
-  const _CourierAssignmentTile({required this.assignment});
-
-  final CourierAssignment assignment;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final DateTime? endedAt = assignment.endedAt;
-    final DeliveryFailureReason? failed = assignment.failedReason;
-
-    return ListTile(
-      key: ValueKey<String>('courier-assignment-${assignment.id}'),
-      contentPadding: EdgeInsets.zero,
-      title: Wrap(
-        spacing: 12,
-        runSpacing: 4,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          Text(nameOf(l10n, assignment.courier)),
-          Text(formatPhone(assignment.courierPhone)),
-          if (endedAt == null)
-            Chip(
-              label: Text(l10n.assignmentCurrent),
-              visualDensity: VisualDensity.compact,
-            ),
-          if (assignment.isSelfOrder) const SelfOrderMark(),
-        ],
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            l10n.assignmentAssignedBy(
-              nameOf(l10n, assignment.assignedBy),
-              TashkentTime.format(assignment.assignedAt),
-            ),
-          ),
-          if (assignment.acceptedAt != null)
-            Text(
-              l10n.assignmentAccepted(
-                TashkentTime.format(assignment.acceptedAt!),
-              ),
-            ),
-          if (assignment.deliveryStartedAt != null)
-            Text(
-              l10n.courierStarted(
-                TashkentTime.format(assignment.deliveryStartedAt!),
-              ),
-            ),
-          if (endedAt != null)
-            Text(
-              l10n.assignmentEnded(
-                TashkentTime.format(endedAt),
-                _endReason(l10n, assignment.endedReason!),
-              ),
-            ),
-          if (failed != null)
-            Text(
-              <String>[
-                OrderLabels.deliveryFailure(l10n, failed),
-                if (assignment.failedNote != null) assignment.failedNote!,
-              ].join(': '),
-              key: ValueKey<String>('courier-failure-${assignment.id}'),
-            ),
-        ],
-      ),
-    );
-  }
-
-  static String _endReason(AppLocalizations l10n, AssignmentEndReason reason) =>
-      switch (reason) {
-        AssignmentEndReason.completed => l10n.courierEndCompleted,
-        AssignmentEndReason.reassigned => l10n.courierEndReassigned,
-        AssignmentEndReason.deliveryFailed => l10n.courierEndDeliveryFailed,
-        AssignmentEndReason.orderCancelled => l10n.assignmentEndOrderCancelled,
-      };
 }
 
 class _History extends StatelessWidget {
@@ -721,267 +595,4 @@ class _History extends StatelessWidget {
       l10n.historyEventCancellationRequestDecided,
     OrderHistoryEvent.paymentRecorded => l10n.historyEventPaymentRecorded,
   };
-}
-
-/// The way to assign a Shopper to a `new` order, or to replace the Shopper
-/// before shopping starts (`BR-ASSIGN-001`, `BR-ASSIGN-002`).
-class _ShopperActions extends StatelessWidget {
-  const _ShopperActions({required this.order});
-
-  final BoardOrder order;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final ShopperAssignment? current = order.currentAssignment;
-
-    return _AssignmentActions(
-      order: order,
-      assignment: shopperAssignmentProvider(order.id),
-      options: shopperOptionsProvider,
-      role: 'shopper',
-      assigns: order.status == OrderStatus.newOrder && current == null,
-      reassigns:
-          order.status == OrderStatus.shoppingAssigned &&
-          current != null &&
-          current.startedAt == null,
-      current: current == null
-          ? null
-          : (id: current.id, staffId: current.shopper.id),
-      words: (
-        pickTitle: l10n.pickShopperTitle,
-        pickEmpty: l10n.pickShopperEmpty,
-        assign: l10n.assignShopper,
-        reassign: l10n.reassignShopper,
-        busy: l10n.assigningShopper,
-      ),
-      assignIcon: Icons.person_add_alt_1_outlined,
-    );
-  }
-}
-
-/// The Courier's assignment actions, with the rules of the Shopper's
-/// (`DL-48`, `DL-54` (10)): assign while the order is ready and has no
-/// Courier, reassign while it is assigned and the Courier has not set off.
-class _CourierActions extends StatelessWidget {
-  const _CourierActions({required this.order});
-
-  final BoardOrder order;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final CourierAssignment? current = order.currentCourierAssignment;
-
-    return _AssignmentActions(
-      order: order,
-      assignment: courierAssignmentProvider(order.id),
-      options: courierOptionsProvider,
-      role: 'courier',
-      assigns: order.status == OrderStatus.readyForDelivery && current == null,
-      reassigns:
-          order.status == OrderStatus.deliveryAssigned &&
-          current != null &&
-          current.deliveryStartedAt == null,
-      current: current == null
-          ? null
-          : (id: current.id, staffId: current.courier.id),
-      words: (
-        pickTitle: l10n.pickCourierTitle,
-        pickEmpty: l10n.pickCourierEmpty,
-        assign: l10n.assignCourier,
-        reassign: l10n.reassignCourier,
-        busy: l10n.assigningCourier,
-      ),
-      assignIcon: Icons.delivery_dining_outlined,
-    );
-  }
-}
-
-/// One role's assignment actions and what the last attempt answered. The
-/// buttons follow the order as loaded; the server decides, and a conflict
-/// reloads the order and says why.
-class _AssignmentActions extends ConsumerWidget {
-  const _AssignmentActions({
-    required this.order,
-    required this.assignment,
-    required this.options,
-    required this.role,
-    required this.assigns,
-    required this.reassigns,
-    required this.current,
-    required this.words,
-    required this.assignIcon,
-  });
-
-  final BoardOrder order;
-  final NotifierProvider<StaffAssignmentController, MutationState> assignment;
-  final FutureProvider<List<StaffChoice>> options;
-
-  /// `shopper` or `courier`, as the keys name it.
-  final String role;
-  final bool assigns;
-  final bool reassigns;
-
-  /// The current assignment and the Shopper or the Courier it names.
-  final ({String id, String staffId})? current;
-  final ({
-    String pickTitle,
-    String pickEmpty,
-    String assign,
-    String reassign,
-    String busy,
-  })
-  words;
-  final IconData assignIcon;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final MutationState state = ref.watch(assignment);
-    // Until the order the last change reloaded has arrived, the buttons
-    // would act on the order as it was.
-    final bool busy =
-        state.isBusy || ref.watch(boardOrderProvider(order.id)).isLoading;
-
-    if (!assigns && !reassigns) {
-      return FailureMessage(state.failure);
-    }
-
-    Future<void> pick() async {
-      final StaffChoice? chosen = await showDialog<StaffChoice>(
-        context: context,
-        builder: (BuildContext context) => _StaffPicker(
-          options: options,
-          title: words.pickTitle,
-          empty: words.pickEmpty,
-          keyPrefix: 'pick-$role',
-          currentId: current?.staffId,
-        ),
-      );
-      if (chosen == null || !context.mounted) {
-        return;
-      }
-      final StaffAssignmentController change = ref.read(assignment.notifier);
-      final ({String id, String staffId})? replaced = current;
-      if (replaced == null) {
-        await change.assign(chosen.id);
-      } else {
-        await change.reassign(chosen.id, replaced.id);
-      }
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Wrap(
-            spacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              if (assigns)
-                FilledButton.icon(
-                  key: ValueKey<String>('assign-$role'),
-                  icon: Icon(assignIcon),
-                  label: Text(words.assign),
-                  onPressed: busy ? null : pick,
-                )
-              else
-                OutlinedButton.icon(
-                  key: ValueKey<String>('reassign-$role'),
-                  icon: const Icon(Icons.swap_horiz),
-                  label: Text(words.reassign),
-                  onPressed: busy ? null : pick,
-                ),
-              if (state.isBusy)
-                SizedBox.square(
-                  dimension: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    semanticsLabel: words.busy,
-                  ),
-                ),
-            ],
-          ),
-          FailureMessage(state.failure),
-        ],
-      ),
-    );
-  }
-}
-
-/// The active Shoppers or Couriers to choose from, each with the orders in
-/// their hands now; the current one is shown but not offered.
-class _StaffPicker extends ConsumerWidget {
-  const _StaffPicker({
-    required this.options,
-    required this.title,
-    required this.empty,
-    required this.keyPrefix,
-    required this.currentId,
-  });
-
-  final FutureProvider<List<StaffChoice>> options;
-  final String title;
-  final String empty;
-  final String keyPrefix;
-  final String? currentId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<List<StaffChoice>> choices = ref.watch(options);
-
-    return AlertDialog(
-      title: Text(title),
-      content: SizedBox(
-        width: 420,
-        child: choices.when(
-          skipLoadingOnRefresh: !choices.hasError,
-          data: (List<StaffChoice> choices) => choices.isEmpty
-              ? Text(empty)
-              : ListView(
-                  shrinkWrap: true,
-                  children: <Widget>[
-                    for (final StaffChoice choice in choices)
-                      ListTile(
-                        key: ValueKey<String>('$keyPrefix-${choice.id}'),
-                        enabled: choice.id != currentId,
-                        title: Text(
-                          choice.fullName ?? formatPhone(choice.phone),
-                        ),
-                        subtitle: Text(
-                          '${formatPhone(choice.phone)} · '
-                          '${l10n.shopperOrdersNow(choice.currentAssignmentCount)}',
-                        ),
-                        trailing: choice.id == currentId
-                            ? Text(l10n.assignmentCurrent)
-                            : null,
-                        onTap: () => Navigator.of(context).pop(choice),
-                      ),
-                  ],
-                ),
-          // Both keep the dialog as small as what they show.
-          error: (Object error, StackTrace _) => Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              LoadFailure(error: error, onRetry: () => ref.invalidate(options)),
-            ],
-          ),
-          loading: () => const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(heightFactor: 1, child: CircularProgressIndicator()),
-          ),
-        ),
-      ),
-      actions: <Widget>[
-        TextButton(
-          key: ValueKey<String>('$keyPrefix-cancel'),
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.cancelButton),
-        ),
-      ],
-    );
-  }
 }

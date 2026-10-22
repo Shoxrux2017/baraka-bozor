@@ -1718,12 +1718,6 @@ abstract class AppLocalizations {
   /// **'Manzilni tahrirlash'**
   String get addressEdit;
 
-  /// No description provided for @addressStreet.
-  ///
-  /// In uz, this message translates to:
-  /// **'Ko\'cha'**
-  String get addressStreet;
-
   /// No description provided for @addressHouse.
   ///
   /// In uz, this message translates to:
@@ -2456,6 +2450,36 @@ abstract class AppLocalizations {
   /// **'Buyurtma №{number}'**
   String orderTitle(String number);
 
+  /// No description provided for @orderPathCreated.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yaratildi'**
+  String get orderPathCreated;
+
+  /// No description provided for @orderPathShopping.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish'**
+  String get orderPathShopping;
+
+  /// No description provided for @orderPathRunning.
+  ///
+  /// In uz, this message translates to:
+  /// **'{time} dan beri'**
+  String orderPathRunning(String time);
+
+  /// No description provided for @orderPathWaiting.
+  ///
+  /// In uz, this message translates to:
+  /// **'{time} dan kutmoqda'**
+  String orderPathWaiting(String time);
+
+  /// No description provided for @orderCourierLater.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma yetkazishga tayyor bo\'lganda tayinlash mumkin'**
+  String get orderCourierLater;
+
   /// No description provided for @orderBackToBoard.
   ///
   /// In uz, this message translates to:
@@ -2467,18 +2491,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Qabul qilingan: {time}'**
   String orderPlacedAt(String time);
-
-  /// No description provided for @orderCompletedAt.
-  ///
-  /// In uz, this message translates to:
-  /// **'Yakunlangan: {time}'**
-  String orderCompletedAt(String time);
-
-  /// No description provided for @orderCancelledAt.
-  ///
-  /// In uz, this message translates to:
-  /// **'Bekor qilingan: {time}'**
-  String orderCancelledAt(String time);
 
   /// No description provided for @orderSectionCustomer.
   ///
@@ -3817,12 +3829,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Mijoz o\'z vaqtida javob bermadi. Mahsulot buyurtmadan olib tashlanadi; sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.'**
   String get removeExpiredExplained;
-
-  /// No description provided for @cancellationRequestsNone.
-  ///
-  /// In uz, this message translates to:
-  /// **'Bekor qilish so\'rovi bo\'lmagan'**
-  String get cancellationRequestsNone;
 
   /// No description provided for @requestStatusPending.
   ///

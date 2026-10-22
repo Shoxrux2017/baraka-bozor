@@ -9,6 +9,7 @@ import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/operations/application/board_controllers.dart';
 import 'package:baraka_bozor/features/operations/data/operations_api.dart';
 import 'package:baraka_bozor/features/operations/domain/board.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -219,7 +220,16 @@ void main() {
       await tapAndSettle(tester, byKey('order-refresh'));
       expect(text(tester, 'payment'), words.paymentNone);
       expect(find.text(words.approvalsNone), findsOneWidget);
-      expect(find.text(words.cancellationRequestsNone), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget.key is ValueKey<String> &&
+              (widget.key! as ValueKey<String>).value.startsWith('request-'),
+        ),
+        findsNothing,
+        reason: 'no request, no section',
+      );
+      expect(find.text(words.orderSectionCancellationRequests), findsNothing);
     });
 
     testWidgets('the history says what a price correction changed', (
@@ -668,7 +678,7 @@ void main() {
             matching: find.byType(Icon),
           ),
         )
-        .where((Icon icon) => icon.icon == Icons.star)
+        .where((Icon icon) => icon.color == KitColors.star)
         .length;
 
     testWidgets('is shown with a review button until it is reviewed', (

@@ -341,6 +341,7 @@ Map<String, Object?> orderJson({
   String? cancellationReason,
   Map<String, Object?>? rating,
   bool erased = false,
+  Map<String, Object?> timestamps = const <String, Object?>{},
 }) => <String, Object?>{
   'id': id,
   'order_number': 1001,
@@ -389,6 +390,7 @@ Map<String, Object?> orderJson({
     'on_the_way_at': null,
     'completed_at': null,
     'cancelled_at': status == 'cancelled' ? '2026-09-27T08:00:00Z' : null,
+    ...timestamps,
   },
 };
 

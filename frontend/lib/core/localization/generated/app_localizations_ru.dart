@@ -879,9 +879,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addressEdit => 'Изменить адрес';
 
   @override
-  String get addressStreet => 'Улица';
-
-  @override
   String get addressHouse => 'Дом';
 
   @override
@@ -1291,21 +1288,31 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get orderPathCreated => 'Создан';
+
+  @override
+  String get orderPathShopping => 'Сборка';
+
+  @override
+  String orderPathRunning(String time) {
+    return 'идёт с $time';
+  }
+
+  @override
+  String orderPathWaiting(String time) {
+    return 'ждёт с $time';
+  }
+
+  @override
+  String get orderCourierLater =>
+      'Назначить можно, когда заказ будет готов к доставке';
+
+  @override
   String get orderBackToBoard => 'К заказам';
 
   @override
   String orderPlacedAt(String time) {
     return 'Создан: $time';
-  }
-
-  @override
-  String orderCompletedAt(String time) {
-    return 'Выполнен: $time';
-  }
-
-  @override
-  String orderCancelledAt(String time) {
-    return 'Отменён: $time';
   }
 
   @override
@@ -2155,9 +2162,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get removeExpiredExplained =>
       'Клиент не ответил вовремя. Товар будет убран из заказа; если покупать больше нечего, заказ отменится.';
-
-  @override
-  String get cancellationRequestsNone => 'Запросов на отмену не было';
 
   @override
   String get requestStatusPending => 'Ждёт решения';

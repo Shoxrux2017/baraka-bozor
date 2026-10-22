@@ -56,4 +56,7 @@ abstract final class KitColors {
   /// A step not yet reached on an amber card: the amber at a quarter over
   /// its wash.
   static const Color warningSoft = Color(0xFFFCE9BF);
+
+  /// A filled rating star.
+  static const Color star = Color(0xFFFFB800);
 }

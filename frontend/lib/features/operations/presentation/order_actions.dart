@@ -14,7 +14,9 @@ import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/session/staff_account.dart';
 import '../../../core/state/mutation_state.dart';
+import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../admin/presentation/catalog_form_rules.dart';
 import '../../auth/domain/app_user.dart';
 import '../application/board_controllers.dart';
@@ -188,73 +190,142 @@ class CancellationRequestTile extends ConsumerWidget {
       );
     }
 
-    return ListTile(
+    final bool pending = request.status == CancellationRequestStatus.pending;
+    const TextStyle line = TextStyle(fontSize: 13, color: KitColors.ink2);
+
+    return Column(
       key: ValueKey<String>('request-${request.id}'),
-      contentPadding: EdgeInsets.zero,
-      title: Wrap(
-        spacing: 12,
-        runSpacing: 4,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          Text(OrderLabels.requestOrigin(l10n, request.origin)),
-          Text(
-            OrderLabels.requestStatus(l10n, request.status),
-            key: ValueKey<String>('request-status-${request.id}'),
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            request.reason == null
-                ? l10n.orderCustomerErased
-                : l10n.requestReason(request.reason!),
-          ),
-          Text(
-            l10n.requestFiledBy(
-              nameOf(l10n, request.requestedBy),
-              TashkentTime.format(request.createdAt),
-            ),
-          ),
-          if (resolvedAt != null)
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
             Text(
-              resolvedBy == null
-                  ? l10n.requestClosedAt(TashkentTime.format(resolvedAt))
-                  : l10n.requestDecidedBy(
-                      nameOf(l10n, resolvedBy),
-                      TashkentTime.format(resolvedAt),
-                    ),
+              OrderLabels.requestOrigin(l10n, request.origin),
+              style: line.copyWith(fontWeight: FontWeight.w700),
             ),
-          if (request.resolutionNote != null)
-            Text(l10n.itemNote(request.resolutionNote!)),
-          if (request.status == CancellationRequestStatus.pending)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                children: <Widget>[
-                  FilledButton(
-                    key: ValueKey<String>('approve-request-${request.id}'),
-                    onPressed: reloading
-                        ? null
-                        : () => decide(CancellationDecision.approve),
-                    child: Text(l10n.approveRequest),
+            Text('·', style: line),
+            Text(
+              l10n.requestFiledBy(
+                nameOf(l10n, request.requestedBy),
+                TashkentTime.format(request.createdAt),
+              ),
+              style: line,
+            ),
+            const SizedBox(width: 2),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: switch (request.status) {
+                  CancellationRequestStatus.pending => KitColors.warningWash,
+                  CancellationRequestStatus.approved => KitColors.primaryWash,
+                  _ => KitColors.field,
+                },
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                child: Text(
+                  OrderLabels.requestStatus(l10n, request.status),
+                  key: ValueKey<String>('request-status-${request.id}'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: switch (request.status) {
+                      CancellationRequestStatus.pending =>
+                        KitColors.warningDark,
+                      CancellationRequestStatus.approved =>
+                        KitColors.primaryDark,
+                      _ => KitColors.muted,
+                    },
                   ),
-                  OutlinedButton(
-                    key: ValueKey<String>('reject-request-${request.id}'),
-                    onPressed: reloading
-                        ? null
-                        : () => decide(CancellationDecision.reject),
-                    child: Text(l10n.rejectRequest),
-                  ),
-                ],
+                ),
               ),
             ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          request.reason == null
+              ? l10n.orderCustomerErased
+              : l10n.requestReason(request.reason!),
+          style: line,
+        ),
+        if (resolvedAt != null) ...<Widget>[
+          const SizedBox(height: 6),
+          Text(
+            resolvedBy == null
+                ? l10n.requestClosedAt(TashkentTime.format(resolvedAt))
+                : l10n.requestDecidedBy(
+                    nameOf(l10n, resolvedBy),
+                    TashkentTime.format(resolvedAt),
+                  ),
+            style: const TextStyle(fontSize: 12, color: KitColors.muted),
+          ),
         ],
-      ),
+        if (request.resolutionNote != null) ...<Widget>[
+          const SizedBox(height: 6),
+          Text(
+            l10n.itemNote(request.resolutionNote!),
+            style: const TextStyle(fontSize: 12, color: KitColors.muted),
+          ),
+        ],
+        if (pending)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: _ButtonPair(
+              first: OutlinedButton(
+                key: ValueKey<String>('reject-request-${request.id}'),
+                style: kitOutlined(height: 40)
+                    .copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                onPressed: reloading
+                    ? null
+                    : () => decide(CancellationDecision.reject),
+                child: Text(l10n.rejectRequest),
+              ),
+              second: FilledButton(
+                key: ValueKey<String>('approve-request-${request.id}'),
+                style: kitFilled(
+                  color: KitColors.danger,
+                  height: 40,
+                ).copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                onPressed: reloading
+                    ? null
+                    : () => decide(CancellationDecision.approve),
+                child: Text(l10n.approveRequest),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Two buttons side by side, each half the width; past large text, stacked
+/// with the second first.
+class _ButtonPair extends StatelessWidget {
+  const _ButtonPair({required this.first, required this.second});
+
+  final Widget first;
+  final Widget second;
+
+  @override
+  Widget build(BuildContext context) {
+    if (kitLargeText(context)) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[second, const SizedBox(height: 10), first],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(child: first),
+        const SizedBox(width: 10),
+        Expanded(child: second),
+      ],
     );
   }
 }
@@ -273,29 +344,29 @@ class FailedDeliveryCancel extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: OutlinedButton.icon(
-          key: const ValueKey<String>('cancel-failed-delivery'),
-          icon: const Icon(Icons.cancel_outlined),
-          label: Text(l10n.cancelFailedDelivery),
-          onPressed: _reloading(ref, order)
-              ? null
-              : () => showDialog<void>(
-                  context: context,
-                  builder: (BuildContext context) => OrderActionDialog(
-                    orderId: order.id,
-                    title: l10n.cancelFailedDeliveryTitle,
-                    explanation: l10n.cancelFailedDeliveryExplained,
-                    confirm: l10n.cancelFailedDelivery,
-                    act: (OrderActionController actions, String? note) =>
-                        actions.cancelAfterFailedDelivery(note),
-                  ),
-                ),
+    return OutlinedButton.icon(
+      key: const ValueKey<String>('cancel-failed-delivery'),
+      style: kitOutlined(foreground: KitColors.dangerDark, height: 44).copyWith(
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        side: const WidgetStatePropertyAll<BorderSide>(
+          BorderSide(color: KitColors.danger),
         ),
       ),
+      icon: const Icon(Icons.cancel_outlined, size: 20),
+      label: Text(l10n.cancelFailedDelivery),
+      onPressed: _reloading(ref, order)
+          ? null
+          : () => showDialog<void>(
+              context: context,
+              builder: (BuildContext context) => OrderActionDialog(
+                orderId: order.id,
+                title: l10n.cancelFailedDeliveryTitle,
+                explanation: l10n.cancelFailedDeliveryExplained,
+                confirm: l10n.cancelFailedDelivery,
+                act: (OrderActionController actions, String? note) =>
+                    actions.cancelAfterFailedDelivery(note),
+              ),
+            ),
     );
   }
 }
@@ -352,24 +423,49 @@ class PaymentDetails extends StatelessWidget {
     final AppLanguage language = interfaceLanguage(context);
     final BoardPayment? payment = order.payment;
     if (payment == null) {
-      return Text(l10n.paymentNone, key: const ValueKey<String>('payment'));
+      return Text(
+        l10n.paymentNone,
+        key: const ValueKey<String>('payment'),
+        style: const TextStyle(fontSize: 13, color: KitColors.muted),
+      );
     }
     final DateTime? paidAt = payment.paidAt;
     final PersonRef? recordedBy = payment.recordedBy;
 
+    /// A row of the card: the text as the arb words it, `label: value`, the
+    /// label muted and the value heavier.
+    Widget row(String text) {
+      final int split = text.indexOf(': ');
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text.rich(
+          TextSpan(
+            children: <InlineSpan>[
+              TextSpan(
+                text: split < 0 ? text : text.substring(0, split + 2),
+                style: const TextStyle(color: KitColors.ink2),
+              ),
+              if (split >= 0)
+                TextSpan(
+                  text: text.substring(split + 2),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+            ],
+          ),
+          style: const TextStyle(fontSize: 13, color: KitColors.ink),
+        ),
+      );
+    }
+
     return Column(
       key: const ValueKey<String>('payment'),
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(
-          '${OrderLabels.paymentMethod(l10n, payment.method)} · '
-          '${OrderLabels.paymentStatus(l10n, payment.status)}',
-        ),
-        Text(l10n.paymentAmount(MoneyFormat.uzs(payment.amountUzs, language))),
+        row(l10n.paymentAmount(MoneyFormat.uzs(payment.amountUzs, language))),
         if (paidAt != null)
-          Text(l10n.paymentPaidAt(TashkentTime.format(paidAt))),
+          row(l10n.paymentPaidAt(TashkentTime.format(paidAt))),
         if (recordedBy != null)
-          Text(l10n.paymentRecordedBy(nameOf(l10n, recordedBy))),
+          row(l10n.paymentRecordedBy(nameOf(l10n, recordedBy))),
       ],
     );
   }
@@ -669,6 +765,12 @@ String? _tooLong(AppLocalizations l10n, String text) =>
 /// Only 1 to 3 stars lead to a call to the Customer (`DL-90` item 1).
 const int _lowRatingMaxStars = 3;
 
+/// Whether the order's rating waits for somebody to call the Customer: low,
+/// and not yet reviewed.
+bool ratingWaits(OrderRating rating) =>
+    rating.stars <= _lowRatingMaxStars &&
+    !(rating.reviewedAt != null && rating.reviewedBy != null);
+
 /// The Customer's rating of the order — stars, reasons and comment — with
 /// the way to mark it dealt with until somebody did, and then who did and
 /// when (`docs/09` sections 59 and 60, `DL-91`).
@@ -681,7 +783,6 @@ class RatingDetails extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final Color starColor = Theme.of(context).colorScheme.primary;
     final MutationState change = ref.watch(orderActionProvider(order.id));
     final bool busy = change.isBusy || _reloading(ref, order);
     final DateTime? reviewedAt = rating.reviewedAt;
@@ -689,63 +790,151 @@ class RatingDetails extends ConsumerWidget {
     final String? comment = rating.comment;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Semantics(
-          label: l10n.ratingStars(rating.stars),
-          excludeSemantics: true,
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
           child: Row(
-            key: const ValueKey<String>('rating-stars'),
-            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              for (int star = 1; star <= 5; star++)
-                Icon(
-                  star <= rating.stars ? Icons.star : Icons.star_border,
-                  color: starColor,
+              Semantics(
+                label: l10n.ratingStars(rating.stars),
+                excludeSemantics: true,
+                child: Row(
+                  key: const ValueKey<String>('rating-stars'),
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    for (int star = 1; star <= 5; star++)
+                      Icon(
+                        Icons.star,
+                        size: 22,
+                        color: star <= rating.stars
+                            ? KitColors.star
+                            : KitColors.line,
+                      ),
+                  ],
                 ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n.ratingStars(rating.stars),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: KitColors.ink,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
         if (rating.reasons.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: 12),
             child: Wrap(
               spacing: 8,
-              runSpacing: 4,
+              runSpacing: 6,
               children: <Widget>[
                 for (final RatingReason reason in rating.reasons)
-                  Chip(label: Text(OrderLabels.ratingReason(l10n, reason))),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: KitColors.dangerWash,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      child: Text(
+                        OrderLabels.ratingReason(l10n, reason),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: KitColors.dangerDark,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
         if (comment != null)
-          Padding(padding: const EdgeInsets.only(top: 8), child: Text(comment)),
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: KitColors.field,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const Icon(
+                      Icons.format_quote,
+                      size: 16,
+                      color: KitColors.muted,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        comment,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: KitColors.ink2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         if (reviewedAt != null && reviewedBy != null)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              l10n.ratingReviewed(
-                nameOf(l10n, reviewedBy),
-                TashkentTime.format(reviewedAt),
-              ),
-              key: const ValueKey<String>('rating-reviewed'),
+            padding: const EdgeInsets.only(top: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Icon(
+                  Icons.check_circle,
+                  size: 18,
+                  color: KitColors.primaryDark,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    l10n.ratingReviewed(
+                      nameOf(l10n, reviewedBy),
+                      TashkentTime.format(reviewedAt),
+                    ),
+                    key: const ValueKey<String>('rating-reviewed'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: KitColors.primaryDark,
+                    ),
+                  ),
+                ),
+              ],
             ),
           )
         else if (rating.stars <= _lowRatingMaxStars)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: FilledButton.icon(
-                key: const ValueKey<String>('rating-review'),
-                icon: const Icon(Icons.phone_callback_outlined),
-                label: Text(l10n.ratingReview),
-                onPressed: busy
-                    ? null
-                    : () => ref
-                          .read(orderActionProvider(order.id).notifier)
-                          .reviewRating(),
-              ),
+            padding: const EdgeInsets.only(top: 12),
+            child: FilledButton.icon(
+              key: const ValueKey<String>('rating-review'),
+              style: kitFilled(height: 44)
+                  .copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+              icon: const Icon(Icons.phone_callback_outlined, size: 20),
+              label: Text(l10n.ratingReview),
+              onPressed: busy
+                  ? null
+                  : () => ref
+                        .read(orderActionProvider(order.id).notifier)
+                        .reviewRating(),
             ),
           ),
         FailureMessage(change.failure),

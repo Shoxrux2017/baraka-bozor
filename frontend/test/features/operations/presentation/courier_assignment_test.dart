@@ -453,7 +453,17 @@ void main() {
         '${l10n(tester).deliveryFailureOther}: Podyezd yopiq',
       );
       expect(
-        find.textContaining(l10n(tester).courierEndDeliveryFailed),
+        find.text(l10n(tester).courierEndDeliveryFailed),
+        findsOneWidget,
+        reason: 'the red tag on the failed assignment',
+      );
+      expect(
+        find.textContaining(
+          l10n(tester).assignmentEnded(
+            '27.09.2026 15:00',
+            l10n(tester).courierEndDeliveryFailed,
+          ),
+        ),
         findsOneWidget,
       );
       expect(byKey('assign-courier'), findsOneWidget);

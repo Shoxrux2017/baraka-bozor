@@ -882,9 +882,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get addressEdit => 'Manzilni tahrirlash';
 
   @override
-  String get addressStreet => 'Ko\'cha';
-
-  @override
   String get addressHouse => 'Uy';
 
   @override
@@ -1288,21 +1285,31 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String get orderPathCreated => 'Yaratildi';
+
+  @override
+  String get orderPathShopping => 'Yig\'ish';
+
+  @override
+  String orderPathRunning(String time) {
+    return '$time dan beri';
+  }
+
+  @override
+  String orderPathWaiting(String time) {
+    return '$time dan kutmoqda';
+  }
+
+  @override
+  String get orderCourierLater =>
+      'Buyurtma yetkazishga tayyor bo\'lganda tayinlash mumkin';
+
+  @override
   String get orderBackToBoard => 'Buyurtmalarga qaytish';
 
   @override
   String orderPlacedAt(String time) {
     return 'Qabul qilingan: $time';
-  }
-
-  @override
-  String orderCompletedAt(String time) {
-    return 'Yakunlangan: $time';
-  }
-
-  @override
-  String orderCancelledAt(String time) {
-    return 'Bekor qilingan: $time';
   }
 
   @override
@@ -2125,9 +2132,6 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get removeExpiredExplained =>
       'Mijoz o\'z vaqtida javob bermadi. Mahsulot buyurtmadan olib tashlanadi; sotib olinadigan boshqa narsa qolmasa, buyurtma bekor qilinadi.';
-
-  @override
-  String get cancellationRequestsNone => 'Bekor qilish so\'rovi bo\'lmagan';
 
   @override
   String get requestStatusPending => 'Qaror kutilmoqda';
