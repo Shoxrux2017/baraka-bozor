@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/formatting/phone_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
@@ -12,6 +10,8 @@ import 'package:baraka_bozor/core/localization/order_labels.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/kit/kit_card.dart';
+import 'package:baraka_bozor/features/operations/presentation/board_filters.dart';
+import 'package:baraka_bozor/features/operations/presentation/board_orders.dart';
 import 'package:baraka_bozor/features/operations/presentation/board_screen.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/operations/data/operations_api.dart';
@@ -138,19 +138,28 @@ void main() {
         'sales_today_uzs': 3862400,
       });
 
-  Future<void> choose(WidgetTester tester, String dropdown, String item) async {
-    await tapAndSettle(tester, byKey(dropdown));
-    await tester.tap(find.text(item).last);
+  /// Opens the menu button [button] and takes the item with [item].
+  Future<void> choose(WidgetTester tester, String button, String item) async {
+    await tapAndSettle(tester, byKey(button));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(MenuItemButton),
+        matching: find.text(item),
+      ),
+    );
     await tester.pumpAndSettle();
   }
+
+  Rect ordersCard(WidgetTester tester) =>
+      tester.getRect(find.byType(BoardOrders));
 
   testWidgets('the board shows the day, the orders and what needs attention', (
     WidgetTester tester,
   ) async {
-    await open(tester, size: const Size(2000, 1200));
+    await open(tester, size: const Size(1440, 900));
 
     expect(byKey('summary-open'), findsOneWidget);
-    expect(find.byType(DataTable), findsOneWidget);
+    expect(find.byType(Table), findsWidgets);
     expect(byKey('board-row-$orderA'), findsOneWidget);
     expect(byKey('board-row-$orderB'), findsOneWidget);
     expect(find.text(l10n(tester).boardNoShopper), findsOneWidget);
@@ -620,14 +629,21 @@ void main() {
           ),
         ),
       ];
-      for (final Size size in const <Size>[Size(1400, 1200), Size(420, 1600)]) {
+      for (final Size size in const <Size>[Size(1440, 900), Size(420, 1600)]) {
         await open(tester, size: size);
         final AppLocalizations words = l10n(tester);
 
         expect(
           find.descendant(
-            of: find.byKey(const ValueKey<String>('operations-board')),
-            matching: find.text(words.boardCourierNamed('Kamol Karimov')),
+            of: byKey('board-courier-$orderA'),
+            matching: find.text('Kamol Karimov'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: byKey('board-courier-$orderA'),
+            matching: find.byIcon(Icons.two_wheeler),
           ),
           findsOneWidget,
         );
@@ -638,39 +654,34 @@ void main() {
   );
 
   testWidgets(
-    'the questions go under the status, so the table keeps its width',
+    'the questions go under the status, so the table keeps its columns',
     (WidgetTester tester) async {
       operations.rows = <BoardRow>[
         OperationsApi.parseRow(rowJson(pendingApprovals: 3)),
       ];
-      await open(tester, size: const Size(2000, 1200));
+      await open(tester, size: const Size(1440, 900));
       final Finder chip = find.descendant(
-        of: find.byType(DataTable),
+        of: byKey('board-row-$orderA'),
         matching: find.byType(OrderStatusChip),
       );
       final Finder questions = byKey('board-questions-$orderA');
-      Finder header(String text) => find.descendant(
-        of: find.byType(DataTable),
-        matching: find.text(text),
-      );
       final AppLocalizations words = l10n(tester);
 
       expect(
         tester.getTopLeft(questions).dy,
         greaterThanOrEqualTo(tester.getBottomLeft(chip).dy),
       );
-      expect(tester.getTopLeft(questions).dx, tester.getTopLeft(chip).dx);
-      // The column is as wide as the widest of its lines, not their sum.
-      final double widest = <double>[
-        tester.getSize(chip).width,
-        tester.getSize(questions).width,
-        tester.getSize(header(words.boardColumnStatus)).width,
-      ].reduce(math.max);
       expect(
-        tester.getTopLeft(header(words.boardColumnPayment)).dx -
-            tester.getTopLeft(chip).dx,
-        lessThanOrEqualTo(widest + 24 + 0.5),
+        tester.getTopLeft(find.byIcon(Icons.help_outline).last).dx,
+        tester.getTopLeft(chip).dx,
+        reason: 'the question starts where the status does',
       );
+      expect(
+        tester.getTopLeft(chip).dx,
+        tester.getTopLeft(find.text(words.boardColumnStatus.toUpperCase())).dx,
+        reason: 'under the status header',
+      );
+      expect(tester.takeException(), isNull);
     },
   );
 
@@ -746,70 +757,245 @@ void main() {
     expect(find.text(l10n(tester).attentionShowAll(7)), findsOneWidget);
   });
 
-  testWidgets(
-    'each filter narrows what the board asks for, and one tap clears them',
-    (WidgetTester tester) async {
-      await open(tester);
-      final AppLocalizations words = l10n(tester);
+  testWidgets('the filters keep every way to narrow the board', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, size: const Size(1440, 900));
+    final AppLocalizations words = l10n(tester);
+    bool active(String key) =>
+        tester
+            .widget<OutlinedButton>(byKey(key))
+            .style!
+            .backgroundColor!
+            .resolve(<WidgetState>{}) ==
+        KitColors.primaryWash;
 
-      await choose(
-        tester,
-        'board-status-filter',
-        words.orderStatusShoppingAssigned,
-      );
-      expect(lastQuery().status, OrderStatus.shoppingAssigned);
+    expect(byKey('board-filters'), findsNothing);
+    expect(active('board-payment-filter'), isFalse);
+    await choose(tester, 'board-payment-filter', words.paymentCash);
+    expect(lastQuery().paymentMethod, PaymentMethod.cash);
+    expect(active('board-payment-filter'), isTrue);
 
-      await choose(tester, 'board-payment-filter', words.paymentCash);
-      expect(lastQuery().paymentMethod, PaymentMethod.cash);
+    await tapAndSettle(tester, byKey('board-shopper-filter'));
+    expect(find.text(words.boardAllShoppers), findsOneWidget);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(MenuItemButton),
+        matching: find.text('Sardor Yusupov'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(lastQuery().shopperId, shopperId);
+    expect(
+      find.descendant(
+        of: byKey('board-shopper-filter'),
+        matching: find.text('Sardor Yusupov'),
+      ),
+      findsOneWidget,
+    );
 
-      await choose(tester, 'board-shopper-filter', 'Sardor Yusupov');
-      expect(lastQuery().shopperId, shopperId);
+    await tapAndSettle(tester, byKey('board-courier-filter'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(MenuItemButton),
+        matching: find.text('Kamol Karimov'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(lastQuery().courierId, courierId);
 
-      await choose(tester, 'board-courier-filter', 'Kamol Karimov');
-      expect(lastQuery().courierId, courierId);
+    await tapAndSettle(tester, byKey('board-self-orders'));
+    expect(lastQuery().selfOrdersOnly, isTrue);
+    await tapAndSettle(tester, byKey('board-awaiting-customer'));
+    expect(lastQuery().awaitingCustomerOnly, isTrue);
+    expect(tester.getSize(byKey('board-self-orders')).height, 32);
+    expect(tester.getSize(byKey('board-awaiting-customer')).height, 32);
 
-      await tapAndSettle(tester, byKey('board-self-orders'));
-      expect(lastQuery().selfOrdersOnly, isTrue);
+    await tester.enterText(byKey('board-search'), ' 1001 ');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+    expect(lastQuery().search, '1001');
+    expect(lastQuery().page, 1);
+    expect(tester.getSize(byKey('board-search')).height, 40);
 
-      await tapAndSettle(tester, byKey('board-awaiting-customer'));
-      expect(lastQuery().awaitingCustomerOnly, isTrue);
+    await tapAndSettle(tester, byKey('board-clear-filters'));
+    expect(lastQuery(), const BoardQuery());
+    expect(
+      tester.widget<TextField>(byKey('board-search')).controller!.text,
+      isEmpty,
+    );
+    expect(active('board-payment-filter'), isFalse);
+    expect(byKey('board-clear-filters'), findsNothing);
 
-      await tester.enterText(byKey('board-search'), ' 1001 ');
-      await tester.testTextInput.receiveAction(TextInputAction.search);
-      await tester.pumpAndSettle();
-      expect(lastQuery().search, '1001');
-      expect(lastQuery().page, 1);
+    // A status in the summary filters the board by it, and again clears it.
+    await tapAndSettle(tester, byKey('summary-new'));
+    expect(lastQuery().status, OrderStatus.newOrder);
+    expect(byKey('board-row-$orderA'), findsNothing);
+    await tapAndSettle(tester, byKey('summary-new'));
+    expect(lastQuery().status, isNull);
+  });
 
-      await tapAndSettle(tester, byKey('board-clear-filters'));
-      expect(lastQuery(), const BoardQuery());
+  testWidgets('the days are a range that one tap clears', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, size: const Size(1440, 900));
+    final AppLocalizations words = l10n(tester);
+
+    expect(byKey('board-clear-days'), findsNothing);
+    expect(
+      find.descendant(
+        of: byKey('board-days'),
+        matching: find.byIcon(Icons.calendar_month),
+      ),
+      findsOneWidget,
+    );
+    await tapAndSettle(tester, byKey('board-days'));
+    expect(find.byType(DateRangePickerDialog), findsOneWidget);
+    await tester.tap(find.text('10').first);
+    await tester.tap(find.text('12').first);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(DateRangePickerDialog),
+            matching: find.byType(TextButton),
+          )
+          .last,
+    );
+    await tester.pumpAndSettle();
+
+    expect(lastQuery().from, isNotNull);
+    expect(lastQuery().to, isNotNull);
+    expect(find.text(words.boardDays), findsNothing);
+    expect(byKey('board-clear-days'), findsOneWidget);
+
+    await tapAndSettle(tester, byKey('board-clear-days'));
+    expect(lastQuery().from, isNull);
+    expect(find.text(words.boardDays), findsOneWidget);
+  });
+
+  testWidgets('a narrow board gathers the filters under one button', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, size: const Size(820, 1180));
+    final AppLocalizations words = l10n(tester);
+
+    expect(byKey('board-payment-filter'), findsNothing);
+    expect(byKey('board-self-orders'), findsNothing);
+    expect(
+      find.descendant(
+        of: byKey('board-filters'),
+        matching: find.byIcon(Icons.tune),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: byKey('board-filters'),
+        matching: find.text(words.boardFilters),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopLeft(byKey('board-filters')).dx,
+      greaterThan(tester.getTopRight(byKey('board-search')).dx),
+      reason: 'the search takes the width the button leaves',
+    );
+    expect(byKey('board-clear-filters'), findsNothing);
+
+    await tapAndSettle(tester, byKey('board-filters'));
+    expect(find.byType(Dialog), findsOneWidget);
+    for (final String key in const <String>[
+      'board-payment-filter',
+      'board-shopper-filter',
+      'board-courier-filter',
+      'board-days',
+      'board-self-orders',
+      'board-awaiting-customer',
+    ]) {
       expect(
-        tester.widget<TextField>(byKey('board-search')).controller!.text,
-        isEmpty,
+        find.descendant(of: find.byType(Dialog), matching: byKey(key)),
+        findsOneWidget,
+        reason: key,
       );
+    }
+    expect(byKey('board-clear-filters'), findsNothing);
 
-      // A status in the summary filters the board by it, and again clears it.
-      await tapAndSettle(tester, byKey('summary-new'));
-      expect(lastQuery().status, OrderStatus.newOrder);
-      expect(byKey('board-row-$orderA'), findsNothing);
-      await tapAndSettle(tester, byKey('summary-new'));
-      expect(lastQuery().status, isNull);
-    },
-  );
+    await choose(tester, 'board-payment-filter', words.paymentCash);
+    expect(lastQuery().paymentMethod, PaymentMethod.cash);
+    expect(
+      find.descendant(
+        of: find.byType(Dialog),
+        matching: byKey('board-clear-filters'),
+      ),
+      findsOneWidget,
+    );
+
+    await tapAndSettle(tester, byKey('board-clear-filters'));
+    expect(lastQuery(), const BoardQuery());
+    await tapAndSettle(tester, byKey('board-filters-close'));
+    expect(find.byType(Dialog), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the filters switch to the wide row at a card of 820', (
+    WidgetTester tester,
+  ) async {
+    // Stacked, the orders card is the board's content: window less 48.
+    await open(tester, size: const Size(867, 1180));
+    expect(ordersCard(tester).width, BoardFilters.wideWidth - 1);
+    expect(byKey('board-filters'), findsOneWidget);
+
+    await open(tester, size: const Size(868, 1180));
+    expect(ordersCard(tester).width, BoardFilters.wideWidth);
+    expect(byKey('board-filters'), findsNothing);
+    expect(byKey('board-payment-filter'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a Shopper no longer listed stays the filter', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, size: const Size(1440, 900), device: const Locale('ru'));
+    await choose(tester, 'board-shopper-filter', 'Sardor Yusupov');
+    expect(lastQuery().shopperId, shopperId);
+
+    operations.shopperList = <StaffChoice>[];
+    await tapAndSettle(tester, byKey('board-row-$orderA'));
+    await tapAndSettle(tester, byKey('order-back'));
+
+    expect(lastQuery().shopperId, shopperId);
+    expect(
+      find.descendant(
+        of: byKey('board-shopper-filter'),
+        matching: find.text('Выбранный сборщик'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(byKey('board-shopper-filter'))
+          .style!
+          .backgroundColor!
+          .resolve(<WidgetState>{}),
+      KitColors.primaryWash,
+    );
+  });
 
   testWidgets('an erased row says so instead of a name and phone', (
     WidgetTester tester,
   ) async {
     operations.rows = <BoardRow>[OperationsApi.parseRow(rowJson(erased: true))];
-    await open(
-      tester,
-      size: const Size(2000, 1200),
-      device: const Locale('ru'),
-    );
+    await open(tester, size: const Size(1440, 900), device: const Locale('ru'));
 
-    expect(
-      tester.widget<Text>(byKey('board-customer-$orderA')).data,
-      'Данные покупателя удалены',
+    final Finder erased = find.descendant(
+      of: byKey('board-customer-$orderA'),
+      matching: find.text('Данные покупателя удалены'),
     );
+    expect(erased, findsOneWidget);
+    final TextStyle style = tester.widget<Text>(erased).style!;
+    expect(style.fontStyle, FontStyle.italic);
+    expect(style.color, KitColors.muted);
     expect(find.textContaining('901112233'), findsNothing);
   });
 
@@ -965,7 +1151,7 @@ void main() {
       // Phone-wide, and tall enough that the list builds every row.
       await open(tester, size: const Size(400, 2400));
 
-      expect(find.byType(DataTable), findsNothing);
+      expect(find.byType(Table), findsNothing);
       expect(byKey('board-row-$orderA'), findsOneWidget);
       expect(
         tester.getTopLeft(byKey('board-attention')).dy,
@@ -982,9 +1168,9 @@ void main() {
   testWidgets(
     'a window narrower than the whole table shows cards, not a clipped table',
     (WidgetTester tester) async {
-      await open(tester, size: const Size(1100, 2400));
+      await open(tester, size: const Size(800, 2400));
 
-      expect(find.byType(DataTable), findsNothing);
+      expect(find.byType(Table), findsNothing);
       expect(byKey('board-row-$orderA'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
@@ -1012,12 +1198,25 @@ void main() {
           isSelfOrder: row.isSelfOrder,
         ),
     ];
-    await open(tester, size: const Size(2000, 1600));
+    await open(tester, size: const Size(1440, 1600));
 
-    expect(find.byType(DataTable), findsOneWidget);
+    final Rect card = ordersCard(tester);
+    expect(card.width, greaterThanOrEqualTo(BoardOrders.tableWidth));
     expect(
       tester.getSize(byKey('board-customer-$orderA')).width,
-      lessThanOrEqualTo(180),
+      lessThanOrEqualTo(card.width * 2 / 8.4),
+    );
+    expect(
+      tester.getRect(byKey('board-row-$orderA')).width,
+      card.width,
+      reason: 'the table keeps the card width',
+    );
+    expect(
+      tester
+          .getSize(find.text('Abdurakhmonova Shakhnoza Rustamovna').first)
+          .height,
+      greaterThan(20),
+      reason: 'the name wraps onto a second line',
     );
     expect(tester.takeException(), isNull);
   });
@@ -1025,48 +1224,290 @@ void main() {
   testWidgets('large text makes a table row taller rather than cutting it', (
     WidgetTester tester,
   ) async {
-    await open(tester, size: const Size(2000, 1600), textScale: 2);
+    await open(tester, size: const Size(1440, 1600), textScale: 2);
 
-    expect(find.byType(DataTable), findsOneWidget);
-    final Finder customer = find.text(
-      'Aziza Karimova\n${formatPhone('+998901112233')}',
+    expect(ordersCard(tester).width, greaterThanOrEqualTo(760));
+    final Finder name = find.descendant(
+      of: find.byType(BoardOrders),
+      matching: find.text('Aziza Karimova'),
     );
-    expect(customer, findsNWidgets(2));
-    for (final Element cell in customer.evaluate()) {
-      expect(
-        cut(tester, find.byElementPredicate((Element e) => e == cell)),
-        isFalse,
-      );
+    final Finder phone = find.text(formatPhone('+998901112233'));
+    expect(name, findsNWidgets(2));
+    expect(phone, findsNWidgets(2));
+    for (final Finder finder in <Finder>[name, phone]) {
+      for (final Element cell in finder.evaluate()) {
+        expect(
+          cut(tester, find.byElementPredicate((Element e) => e == cell)),
+          isFalse,
+        );
+      }
     }
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets(
-    'the orders are a table where their room holds every column, beside the attention list',
-    (WidgetTester tester) async {
-      // At 1440 the orders beside the list are too narrow for the table.
-      await open(tester, size: const Size(1440, 1600));
-      expect(find.byType(DataTable), findsNothing);
-      expect(byKey('board-row-$orderA'), findsOneWidget);
-
-      await open(tester, size: const Size(2000, 1600));
-      expect(find.byType(DataTable), findsOneWidget);
-      expect(
-        tester.getTopLeft(byKey('board-attention')).dx,
-        greaterThanOrEqualTo(
-          tester
-              .getTopRight(
-                find.ancestor(
-                  of: find.byType(DataTable),
-                  matching: find.byType(Scrollbar),
-                ),
-              )
-              .dx,
+  testWidgets('a wide board lists the orders in a table', (
+    WidgetTester tester,
+  ) async {
+    operations.rows = <BoardRow>[
+      OperationsApi.parseRow(
+        rowJson(
+          status: 'delivery_assigned',
+          courier: courierId,
+          pendingApprovals: 1,
         ),
-        reason: 'beside the orders',
+      ),
+      OperationsApi.parseRow(rowJson(id: orderB, number: 1002, shopper: null)),
+    ];
+    await open(tester, size: const Size(1440, 900), device: const Locale('ru'));
+    final AppLocalizations words = l10n(tester);
+    final Rect card = ordersCard(tester);
+
+    expect(card.width, greaterThanOrEqualTo(BoardOrders.tableWidth));
+    for (final String header in <String>[
+      words.boardColumnOrder,
+      words.boardColumnCustomer,
+      words.boardColumnStatus,
+      words.boardColumnPayment,
+      words.boardColumnTotal,
+      words.boardColumnPeople,
+    ]) {
+      expect(find.text(header.toUpperCase()), findsOneWidget, reason: header);
+    }
+
+    Finder inRow(Finder matching) =>
+        find.descendant(of: byKey('board-row-$orderA'), matching: matching);
+    final Finder number = inRow(find.text(words.boardOrderNumber('1001')));
+    final Finder time = inRow(
+      find.text(TashkentTime.time(DateTime.utc(2026, 9, 27, 7))),
+    );
+    expect(number, findsOneWidget);
+    expect(time, findsOneWidget);
+    expect(
+      tester.getTopLeft(time).dy,
+      greaterThan(tester.getBottomLeft(number).dy - 1),
+    );
+    final Finder name = find.descendant(
+      of: byKey('board-customer-$orderA'),
+      matching: find.text('Aziza Karimova'),
+    );
+    final Finder phone = find.descendant(
+      of: byKey('board-customer-$orderA'),
+      matching: find.text(formatPhone('+998901112233')),
+    );
+    expect(
+      tester.getTopLeft(phone).dy,
+      greaterThan(tester.getBottomLeft(name).dy - 1),
+    );
+    expect(inRow(find.byType(OrderStatusChip)), findsOneWidget);
+    expect(byKey('board-questions-$orderA'), findsOneWidget);
+    expect(inRow(find.text(words.paymentCash)), findsOneWidget);
+    expect(inRow(find.byIcon(Icons.shopping_basket_outlined)), findsOneWidget);
+    expect(
+      find.descendant(
+        of: byKey('board-courier-$orderA'),
+        matching: find.byIcon(Icons.two_wheeler),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopRight(inRow(find.text(words.boardItemCount(3)))).dx,
+      tester.getTopRight(inRow(find.textContaining('75'))).dx,
+      reason: 'the count sits under the total, both to the right',
+    );
+
+    // Nobody yet: one muted line, not two.
+    final Finder none = find.descendant(
+      of: byKey('board-row-$orderB'),
+      matching: find.text(words.boardNoShopper),
+    );
+    expect(none, findsOneWidget);
+    expect(tester.widget<Text>(none).style!.color, KitColors.muted);
+    expect(byKey('board-courier-$orderB'), findsNothing);
+
+    await tapAndSettle(tester, byKey('board-row-$orderA'));
+    expect(location(tester), '/operations/orders/$orderA');
+  });
+
+  testWidgets('a Shopper without a Courier yet says so in muted words', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, size: const Size(1440, 900), device: const Locale('ru'));
+
+    final Finder none = find.descendant(
+      of: byKey('board-courier-$orderA'),
+      matching: find.text(l10n(tester).boardNoCourier),
+    );
+    expect(none, findsOneWidget);
+    expect(tester.widget<Text>(none).style!.color, KitColors.muted);
+    expect(l10n(tester).boardNoCourier, 'Курьер не назначен');
+  });
+
+  testWidgets('a self-order carries an amber tag in its people cell', (
+    WidgetTester tester,
+  ) async {
+    operations.rows = <BoardRow>[
+      OperationsApi.parseRow(rowJson(selfOrder: true)),
+    ];
+    await open(tester, size: const Size(1440, 900), device: const Locale('ru'));
+
+    final Finder mark = find.descendant(
+      of: byKey('board-row-$orderA'),
+      matching: find.byType(SelfOrderMark),
+    );
+    expect(mark, findsOneWidget);
+    expect(tester.getSize(mark).height, 18);
+    final Text word = tester.widget<Text>(
+      find.descendant(of: mark, matching: find.text('Для себя')),
+    );
+    expect(word.style!.fontSize, 10);
+    expect(word.style!.fontWeight, FontWeight.w700);
+    expect(word.style!.color, KitColors.warningDark);
+  });
+
+  for (final (double, bool) edge in const <(double, bool)>[
+    (807, false),
+    (808, true),
+  ]) {
+    testWidgets('the orders are ${edge.$2 ? 'a table' : 'cards'} at a card of '
+        '${edge.$1.toInt() - 48}', (WidgetTester tester) async {
+      // Stacked, the orders card is the board's content: window less 48.
+      await open(tester, size: Size(edge.$1, 2400));
+
+      expect(ordersCard(tester).width, edge.$1 - 48);
+      expect(
+        find.text(l10n(tester).boardColumnOrder.toUpperCase()),
+        edge.$2 ? findsOneWidget : findsNothing,
       );
-    },
-  );
+      expect(byKey('board-row-$orderA'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('a narrow board lists the orders as cards', (
+    WidgetTester tester,
+  ) async {
+    operations.rows = <BoardRow>[
+      OperationsApi.parseRow(
+        rowJson(
+          status: 'delivery_assigned',
+          courier: courierId,
+          pendingApprovals: 2,
+          selfOrder: true,
+        ),
+      ),
+    ];
+    await open(tester, size: const Size(420, 2400), device: const Locale('ru'));
+    final AppLocalizations words = l10n(tester);
+    Finder inCard(Finder matching) =>
+        find.descendant(of: byKey('board-row-$orderA'), matching: matching);
+
+    expect(find.byType(Table), findsNothing);
+    expect(inCard(find.text(words.boardOrderNumber('1001'))), findsOneWidget);
+    expect(
+      inCard(find.text(TashkentTime.time(DateTime.utc(2026, 9, 27, 7)))),
+      findsOneWidget,
+    );
+    expect(inCard(find.byType(OrderStatusChip)), findsOneWidget);
+    expect(inCard(find.text('Aziza Karimova')), findsOneWidget);
+    expect(inCard(find.textContaining('75')), findsOneWidget);
+    expect(inCard(find.text('Sardor Yusupov')), findsOneWidget);
+    expect(inCard(find.text('Kamol Karimov')), findsOneWidget);
+    expect(inCard(find.byType(SelfOrderMark)), findsOneWidget);
+    expect(inCard(find.text(words.boardPendingQuestions(2))), findsOneWidget);
+    expect(
+      inCard(find.text('${words.paymentCash} · ${words.boardItemCount(3)}')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+
+    await tapAndSettle(tester, byKey('board-row-$orderA'));
+    expect(location(tester), '/operations/orders/$orderA');
+  });
+
+  testWidgets('a status chip takes its tone', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Column(
+            children: <Widget>[
+              for (final OrderStatus status in OrderStatus.values)
+                OrderStatusChip(status, key: ValueKey<String>(status.code)),
+            ],
+          ),
+        ),
+      ),
+    );
+    final AppLocalizations words = AppLocalizations.of(
+      tester.element(find.byType(Scaffold)),
+    );
+    (Color?, Color?) tone(OrderStatus status) {
+      final Finder chip = byKey(status.code);
+      final BoxDecoration box =
+          tester
+                  .widget<DecoratedBox>(
+                    find
+                        .descendant(
+                          of: chip,
+                          matching: find.byType(DecoratedBox),
+                        )
+                        .first,
+                  )
+                  .decoration
+              as BoxDecoration;
+      final Text text = tester.widget<Text>(
+        find.descendant(
+          of: chip,
+          matching: find.text(OrderLabels.status(words, status)),
+        ),
+      );
+      return (box.color, text.style!.color);
+    }
+
+    expect(tone(OrderStatus.newOrder), (KitColors.primary, Colors.white));
+    expect(tone(OrderStatus.completed), (KitColors.field, KitColors.ink2));
+    expect(tone(OrderStatus.cancelled), (
+      KitColors.dangerWash,
+      KitColors.dangerDark,
+    ));
+    expect(tone(OrderStatus.finalPaymentPending), (
+      KitColors.warningWash,
+      KitColors.warningDark,
+    ));
+    expect(tone(OrderStatus.shopping), (
+      KitColors.primaryWash,
+      KitColors.primaryDark,
+    ));
+    expect(tester.getSize(byKey('new')).height, 24);
+  });
+
+  for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
+    for (final Size size in const <Size>[Size(1440, 900), Size(820, 1180)]) {
+      testWidgets('the orders hold at ${size.width.toInt()} with text x2 '
+          '(${language.languageCode})', (WidgetTester tester) async {
+        operations.rows = <BoardRow>[
+          OperationsApi.parseRow(
+            rowJson(
+              status: 'delivery_assigned',
+              courier: courierId,
+              pendingApprovals: 2,
+              selfOrder: true,
+            ),
+          ),
+        ];
+        await open(tester, size: size, textScale: 2, device: language);
+
+        expect(byKey('board-row-$orderA'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        if (size.width < 1200) {
+          await tapAndSettle(tester, byKey('board-filters'));
+          expect(tester.takeException(), isNull);
+        }
+      });
+    }
+  }
 
   for (final Locale language in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets(
@@ -1193,29 +1634,6 @@ void main() {
         find.descendant(
           of: byKey('board-courier-filter'),
           matching: find.text(l10n(tester).boardFilteredCourier),
-        ),
-        findsOneWidget,
-      );
-    },
-  );
-
-  testWidgets(
-    'a Shopper filter the options no longer hold still shows one is chosen',
-    (WidgetTester tester) async {
-      await open(tester);
-      await choose(tester, 'board-shopper-filter', 'Sardor Yusupov');
-      expect(lastQuery().shopperId, shopperId);
-
-      // The Shopper is blocked meanwhile, so the options come back without them.
-      operations.shopperList = <StaffChoice>[];
-      await tapAndSettle(tester, byKey('board-row-$orderA'));
-      await tapAndSettle(tester, byKey('order-back'));
-
-      expect(lastQuery().shopperId, shopperId);
-      expect(
-        find.descendant(
-          of: byKey('board-shopper-filter'),
-          matching: find.text(l10n(tester).boardFilteredShopper),
         ),
         findsOneWidget,
       );

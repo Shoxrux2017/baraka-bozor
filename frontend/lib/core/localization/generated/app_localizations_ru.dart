@@ -1134,9 +1134,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get boardSearch => 'Номер, телефон или имя';
 
   @override
-  String get boardAllStatuses => 'Все статусы';
-
-  @override
   String get boardAllPaymentMethods => 'Все способы оплаты';
 
   @override
@@ -1161,10 +1158,18 @@ class AppLocalizationsRu extends AppLocalizations {
   String get boardEmptyFiltered => 'Нет заказов по этим фильтрам';
 
   @override
-  String get boardColumnNumber => 'Номер';
+  String get boardColumnOrder => 'Заказ';
 
   @override
-  String get boardColumnPlaced => 'Время';
+  String get boardFilters => 'Фильтры';
+
+  @override
+  String get boardNoCourier => 'Курьер не назначен';
+
+  @override
+  String boardPageRange(int from, int to, int total) {
+    return '$from–$to из $total';
+  }
 
   @override
   String get boardColumnCustomer => 'Клиент';
@@ -1516,12 +1521,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get boardFilteredShopper => 'Выбранный сборщик';
-
-  @override
-  String get boardFilterStatus => 'Статус';
-
-  @override
-  String get boardFilterPayment => 'Способ оплаты';
 
   @override
   String get boardFilterShopper => 'Сборщик';

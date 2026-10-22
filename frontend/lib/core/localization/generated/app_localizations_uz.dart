@@ -1139,9 +1139,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get boardSearch => 'Raqam, telefon yoki ism';
 
   @override
-  String get boardAllStatuses => 'Barcha holatlar';
-
-  @override
   String get boardAllPaymentMethods => 'Barcha to\'lov usullari';
 
   @override
@@ -1166,10 +1163,18 @@ class AppLocalizationsUz extends AppLocalizations {
   String get boardEmptyFiltered => 'Filtrlarga mos buyurtma yo\'q';
 
   @override
-  String get boardColumnNumber => 'Raqam';
+  String get boardColumnOrder => 'Buyurtma';
 
   @override
-  String get boardColumnPlaced => 'Vaqt';
+  String get boardFilters => 'Filtrlar';
+
+  @override
+  String get boardNoCourier => 'Kuryer tayinlanmagan';
+
+  @override
+  String boardPageRange(int from, int to, int total) {
+    return '$total tadan $from–$to';
+  }
 
   @override
   String get boardColumnCustomer => 'Mijoz';
@@ -1513,12 +1518,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get boardFilteredShopper => 'Tanlangan yig\'uvchi';
-
-  @override
-  String get boardFilterStatus => 'Holat';
-
-  @override
-  String get boardFilterPayment => 'To\'lov usuli';
 
   @override
   String get boardFilterShopper => 'Yig\'uvchi';

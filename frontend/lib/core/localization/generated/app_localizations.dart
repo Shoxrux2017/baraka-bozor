@@ -2198,12 +2198,6 @@ abstract class AppLocalizations {
   /// **'Raqam, telefon yoki ism'**
   String get boardSearch;
 
-  /// No description provided for @boardAllStatuses.
-  ///
-  /// In uz, this message translates to:
-  /// **'Barcha holatlar'**
-  String get boardAllStatuses;
-
   /// No description provided for @boardAllPaymentMethods.
   ///
   /// In uz, this message translates to:
@@ -2252,17 +2246,29 @@ abstract class AppLocalizations {
   /// **'Filtrlarga mos buyurtma yo\'q'**
   String get boardEmptyFiltered;
 
-  /// No description provided for @boardColumnNumber.
+  /// No description provided for @boardColumnOrder.
   ///
   /// In uz, this message translates to:
-  /// **'Raqam'**
-  String get boardColumnNumber;
+  /// **'Buyurtma'**
+  String get boardColumnOrder;
 
-  /// No description provided for @boardColumnPlaced.
+  /// No description provided for @boardFilters.
   ///
   /// In uz, this message translates to:
-  /// **'Vaqt'**
-  String get boardColumnPlaced;
+  /// **'Filtrlar'**
+  String get boardFilters;
+
+  /// No description provided for @boardNoCourier.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryer tayinlanmagan'**
+  String get boardNoCourier;
+
+  /// No description provided for @boardPageRange.
+  ///
+  /// In uz, this message translates to:
+  /// **'{total} tadan {from}–{to}'**
+  String boardPageRange(int from, int to, int total);
 
   /// No description provided for @boardColumnCustomer.
   ///
@@ -2833,18 +2839,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Tanlangan yig\'uvchi'**
   String get boardFilteredShopper;
-
-  /// No description provided for @boardFilterStatus.
-  ///
-  /// In uz, this message translates to:
-  /// **'Holat'**
-  String get boardFilterStatus;
-
-  /// No description provided for @boardFilterPayment.
-  ///
-  /// In uz, this message translates to:
-  /// **'To\'lov usuli'**
-  String get boardFilterPayment;
 
   /// No description provided for @boardFilterShopper.
   ///

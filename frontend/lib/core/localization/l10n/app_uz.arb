@@ -488,7 +488,6 @@
   "cancelSystem": "Tizim bekor qildi",
   "boardRefresh": "Yangilash",
   "boardSearch": "Raqam, telefon yoki ism",
-  "boardAllStatuses": "Barcha holatlar",
   "boardAllPaymentMethods": "Barcha to'lov usullari",
   "boardAllShoppers": "Barcha yig'uvchilar",
   "boardDays": "Sanalar",
@@ -497,8 +496,23 @@
   "boardClearFilters": "Filtrlarni tozalash",
   "boardEmpty": "Hozircha buyurtma yo'q",
   "boardEmptyFiltered": "Filtrlarga mos buyurtma yo'q",
-  "boardColumnNumber": "Raqam",
-  "boardColumnPlaced": "Vaqt",
+  "boardColumnOrder": "Buyurtma",
+  "boardFilters": "Filtrlar",
+  "boardNoCourier": "Kuryer tayinlanmagan",
+  "boardPageRange": "{total} tadan {from}–{to}",
+  "@boardPageRange": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "boardColumnCustomer": "Mijoz",
   "boardColumnStatus": "Holat",
   "boardColumnPayment": "To'lov",
@@ -791,8 +805,6 @@
     }
   },
   "boardFilteredShopper": "Tanlangan yig'uvchi",
-  "boardFilterStatus": "Holat",
-  "boardFilterPayment": "To'lov usuli",
   "boardFilterShopper": "Yig'uvchi",
   "errorOrderStateConflict": "Buyurtma allaqachon o'zgargan va yangilandi. Uni ko'rib chiqib, qayta urinib ko'ring",
   "errorStaffNotActive": "Bu xodim bloklangan. Boshqasini tanlang",
