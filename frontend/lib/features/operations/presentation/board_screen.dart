@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/platform/clock.dart';
-import '../../../core/theme/kit_colors.dart';
-import '../../../core/widgets/panel/panel_layout.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
+import '../../../core/widgets/panel/panel_layout.dart';
+import '../../../core/widgets/panel/panel_page_header.dart';
 import '../application/board_controllers.dart';
 import '../domain/board.dart';
 import 'board_attention.dart';
@@ -63,10 +63,9 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final DateTime? loadedAt = _loadedAt;
-    final bool compact = MediaQuery.sizeOf(context).width < panelRailWidth;
-    final EdgeInsets padding = compact
-        ? const EdgeInsets.fromLTRB(24, 20, 24, 24)
-        : const EdgeInsets.fromLTRB(28, 26, 28, 28);
+    final EdgeInsets padding = panelPagePadding(
+      MediaQuery.sizeOf(context).width,
+    );
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -78,59 +77,35 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
           key: const ValueKey<String>('operations-board'),
           padding: padding,
           children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        l10n.panelSectionBoard,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: KitColors.ink,
-                        ),
-                      ),
-                      if (loadedAt != null)
-                        Text(
-                          l10n.boardUpdatedAt(TashkentTime.time(loadedAt)),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: KitColors.muted,
+            PanelPageHeader(
+              title: l10n.panelSectionBoard,
+              subtitle: loadedAt == null
+                  ? null
+                  : l10n.boardUpdatedAt(TashkentTime.time(loadedAt)),
+              trailing: labelled
+                  ? OutlinedButton.icon(
+                      key: const ValueKey<String>('board-refresh'),
+                      style: kitOutlined(height: 40),
+                      icon: const Icon(Icons.refresh, size: 20),
+                      label: Text(l10n.boardRefresh),
+                      onPressed: () => refreshBoard(ref),
+                    )
+                  : Tooltip(
+                      message: l10n.boardRefresh,
+                      child: OutlinedButton(
+                        key: const ValueKey<String>('board-refresh'),
+                        style: kitOutlined(height: 40).copyWith(
+                          minimumSize: const WidgetStatePropertyAll<Size>(
+                            Size(40, 40),
+                          ),
+                          padding: const WidgetStatePropertyAll<EdgeInsets>(
+                            EdgeInsets.symmetric(horizontal: 12),
                           ),
                         ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                if (labelled)
-                  OutlinedButton.icon(
-                    key: const ValueKey<String>('board-refresh'),
-                    style: kitOutlined(height: 40),
-                    icon: const Icon(Icons.refresh, size: 20),
-                    label: Text(l10n.boardRefresh),
-                    onPressed: () => refreshBoard(ref),
-                  )
-                else
-                  Tooltip(
-                    message: l10n.boardRefresh,
-                    child: OutlinedButton(
-                      key: const ValueKey<String>('board-refresh'),
-                      style: kitOutlined(height: 40).copyWith(
-                        minimumSize: const WidgetStatePropertyAll<Size>(
-                          Size(40, 40),
-                        ),
-                        padding: const WidgetStatePropertyAll<EdgeInsets>(
-                          EdgeInsets.symmetric(horizontal: 12),
-                        ),
+                        onPressed: () => refreshBoard(ref),
+                        child: const Icon(Icons.refresh, size: 20),
                       ),
-                      onPressed: () => refreshBoard(ref),
-                      child: const Icon(Icons.refresh, size: 20),
                     ),
-                  ),
-              ],
             ),
             const SizedBox(height: 20),
             const BoardSummaryTiles(),
