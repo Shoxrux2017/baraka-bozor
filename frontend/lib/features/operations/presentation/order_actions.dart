@@ -17,6 +17,8 @@ import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
+import '../../../core/widgets/kit/kit_dialog.dart';
+import '../../../core/widgets/kit/kit_fields.dart';
 import '../../admin/presentation/catalog_form_rules.dart';
 import '../../auth/domain/app_user.dart';
 import '../application/board_controllers.dart';
@@ -226,18 +228,17 @@ class ApprovalTile extends ConsumerWidget {
                   label: Text(l10n.removeExpiredLine),
                   onPressed: _reloading(ref, order)
                       ? null
-                      : () => showDialog<void>(
-                          context: context,
-                          builder: (BuildContext context) => OrderActionDialog(
-                            orderId: order.id,
-                            title: l10n.removeExpiredTitle(name),
-                            explanation: l10n.removeExpiredExplained,
-                            confirm: l10n.removeExpiredLine,
-                            act: (
-                              OrderActionController actions,
-                              String? note,
-                            ) => actions.removeExpiredLine(approval.id, note),
-                          ),
+                      : () => OrderActionDialog.show(
+                          context,
+                          title: l10n.removeExpiredTitle(name),
+                          subtitle: orderDialogLine(l10n, order),
+                          orderId: order.id,
+                          explanation: l10n.removeExpiredExplained,
+                          confirm: l10n.removeExpiredLine,
+                          confirmIcon: Icons.remove_shopping_cart,
+                          destructive: true,
+                          act: (OrderActionController actions, String? note) =>
+                              actions.removeExpiredLine(approval.id, note),
                         ),
                 ),
               ),
@@ -270,18 +271,21 @@ class CancellationRequestTile extends ConsumerWidget {
 
     void decide(CancellationDecision decision) {
       final bool approve = decision == CancellationDecision.approve;
-      showDialog<void>(
-        context: context,
-        builder: (BuildContext context) => OrderActionDialog(
-          orderId: order.id,
-          title: approve ? l10n.approveRequestTitle : l10n.rejectRequestTitle,
-          explanation: approve
-              ? l10n.approveRequestExplained
-              : l10n.rejectRequestExplained,
-          confirm: approve ? l10n.approveRequest : l10n.rejectRequest,
-          act: (OrderActionController actions, String? note) =>
-              actions.decide(request.id, decision, note),
-        ),
+      OrderActionDialog.show(
+        context,
+        title: approve ? l10n.approveRequestTitle : l10n.rejectRequestTitle,
+        subtitle: orderDialogLine(l10n, order),
+        orderId: order.id,
+        quote: request.reason == null
+            ? null
+            : l10n.requestCustomerReason(request.reason!),
+        explanation: approve
+            ? l10n.approveRequestExplained
+            : l10n.rejectRequestExplained,
+        confirm: approve ? l10n.approveRequest : l10n.rejectRequest,
+        destructive: approve,
+        act: (OrderActionController actions, String? note) =>
+            actions.decide(request.id, decision, note),
       );
     }
 
@@ -451,16 +455,16 @@ class FailedDeliveryCancel extends ConsumerWidget {
       label: Text(l10n.cancelFailedDelivery),
       onPressed: _reloading(ref, order)
           ? null
-          : () => showDialog<void>(
-              context: context,
-              builder: (BuildContext context) => OrderActionDialog(
-                orderId: order.id,
-                title: l10n.cancelFailedDeliveryTitle,
-                explanation: l10n.cancelFailedDeliveryExplained,
-                confirm: l10n.cancelFailedDelivery,
-                act: (OrderActionController actions, String? note) =>
-                    actions.cancelAfterFailedDelivery(note),
-              ),
+          : () => OrderActionDialog.show(
+              context,
+              title: l10n.cancelFailedDeliveryTitle,
+              subtitle: orderDialogLine(l10n, order),
+              orderId: order.id,
+              explanation: l10n.cancelFailedDeliveryExplained,
+              confirm: l10n.cancelFailedDelivery,
+              destructive: true,
+              act: (OrderActionController actions, String? note) =>
+                  actions.cancelAfterFailedDelivery(note),
             ),
     );
   }
@@ -502,11 +506,7 @@ class PriceCorrectionButton extends ConsumerWidget {
         label: Text(l10n.correctPrice),
         onPressed: _reloading(ref, order)
             ? null
-            : () => showDialog<void>(
-                context: context,
-                builder: (BuildContext context) =>
-                    PriceCorrectionDialog(order: order, item: item),
-              ),
+            : () => PriceCorrectionDialog.show(context, order, item),
       ),
     );
   }
@@ -573,24 +573,174 @@ class PaymentDetails extends StatelessWidget {
   }
 }
 
+/// The line under a window's title: the order's number and its Customer's
+/// name, the number alone once the Customer is erased.
+String orderDialogLine(AppLocalizations l10n, BoardOrder order) {
+  final String? name = order.customerErased ? null : order.customer.fullName;
+  final String number = '${order.orderNumber}';
+
+  return name == null
+      ? l10n.orderTitle(number)
+      : l10n.dialogOrderLine(number, name);
+}
+
+/// The two buttons a window ends with: "Cancel" outlined and the confirming
+/// button, a red one when the action [destructive]ly cancels or removes.
+Widget _dialogButtons({
+  required BuildContext context,
+  required bool busy,
+  required Key confirmKey,
+  required String confirm,
+  required VoidCallback submit,
+  IconData? confirmIcon,
+  bool destructive = false,
+}) {
+  final ButtonStyle style = kitFilled(
+    color: destructive ? KitColors.danger : KitColors.primary,
+    height: 48,
+  );
+  final VoidCallback? onPressed = busy ? null : submit;
+
+  return KitActionPair(
+    secondary: OutlinedButton(
+      key: const ValueKey<String>('action-cancel'),
+      style: kitOutlined(height: 48),
+      onPressed: busy ? null : () => Navigator.of(context).pop(),
+      child: Text(AppLocalizations.of(context).cancelButton),
+    ),
+    primary: confirmIcon == null
+        ? FilledButton(
+            key: confirmKey,
+            style: style,
+            onPressed: onPressed,
+            child: Text(confirm),
+          )
+        : FilledButton.icon(
+            key: confirmKey,
+            style: style,
+            onPressed: onPressed,
+            icon: Icon(confirmIcon, size: 20),
+            label: Text(confirm),
+          ),
+  );
+}
+
+/// A `field` box with rounded corners that holds a short fact of the window.
+Widget _factBox(Widget child) => DecoratedBox(
+  decoration: BoxDecoration(
+    color: KitColors.field,
+    borderRadius: BorderRadius.circular(12),
+  ),
+  child: Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    child: child,
+  ),
+);
+
+const TextStyle _factText = TextStyle(
+  fontSize: 13,
+  color: KitColors.ink,
+  height: 1.5,
+);
+
+/// `label: value` as the arb words it, the label plain and the value heavier.
+Widget _labelledLine(String text) {
+  final int split = text.indexOf(': ');
+
+  return Text.rich(
+    TextSpan(
+      children: <InlineSpan>[
+        TextSpan(text: split < 0 ? text : text.substring(0, split + 2)),
+        if (split >= 0)
+          TextSpan(
+            text: text.substring(split + 2),
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+      ],
+    ),
+    style: _factText,
+  );
+}
+
+/// The Customer's words with the quoted part heavier.
+Widget _quoted(String text) {
+  final int split = text.indexOf('«');
+
+  return Text.rich(
+    TextSpan(
+      children: <InlineSpan>[
+        TextSpan(text: split < 0 ? text : text.substring(0, split)),
+        if (split >= 0)
+          TextSpan(
+            text: text.substring(split),
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+      ],
+    ),
+    style: _factText,
+  );
+}
+
 /// A confirmation of one action on an order, with an optional note the
-/// server keeps (`docs/09` sections 40 and 41). It stays open while the
-/// action runs, says a refusal in its own words, and closes once the server
-/// has done it (`DL-28` (10), `DL-68`).
+/// server keeps (`docs/09` sections 40 and 41), in the kit's window
+/// ([show]). It stays open while the action runs, says a refusal in its own
+/// words, and closes once the server has done it (`DL-28` (10), `DL-68`).
 class OrderActionDialog extends ConsumerStatefulWidget {
   const OrderActionDialog({
     required this.orderId,
-    required this.title,
     required this.explanation,
     required this.confirm,
     required this.act,
+    this.quote,
+    this.confirmIcon,
+    this.destructive = false,
     super.key,
   });
 
+  /// Opens the window: [title] with [subtitle] under it, then the body.
+  static Future<void> show(
+    BuildContext context, {
+    required String title,
+    String? subtitle,
+    required String orderId,
+    required String explanation,
+    required String confirm,
+    required Future<BoardOrder?> Function(
+      OrderActionController actions,
+      String? note,
+    )
+    act,
+    String? quote,
+    IconData? confirmIcon,
+    bool destructive = false,
+  }) {
+    return showKitDialog<void>(
+      context: context,
+      dialogKey: 'order-action',
+      title: title,
+      subtitle: subtitle,
+      builder: (BuildContext context) => OrderActionDialog(
+        orderId: orderId,
+        explanation: explanation,
+        confirm: confirm,
+        act: act,
+        quote: quote,
+        confirmIcon: confirmIcon,
+        destructive: destructive,
+      ),
+    );
+  }
+
   final String orderId;
-  final String title;
   final String explanation;
   final String confirm;
+
+  /// What the Customer said, shown in a box above the explanation.
+  final String? quote;
+  final IconData? confirmIcon;
+
+  /// The action cancels the order or removes a product: its button is red.
+  final bool destructive;
 
   /// Runs the action with the note, `null` when there is none; the order
   /// the server answers, or `null` when it did not act.
@@ -631,51 +781,49 @@ class _OrderActionDialogState extends ConsumerState<OrderActionDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final MutationState change = ref.watch(orderActionProvider(widget.orderId));
+    final String? quote = widget.quote;
 
     return PopScope(
       canPop: !change.isBusy,
-      child: AlertDialog(
-        scrollable: true,
-        title: Text(widget.title),
-        content: SizedBox(
-          width: 480,
-          child: Form(
-            key: _form,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Text(widget.explanation),
-                const SizedBox(height: 16),
-                TextFormField(
-                  key: const ValueKey<String>('action-note'),
-                  controller: _note,
-                  enabled: !change.isBusy,
-                  minLines: 1,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: l10n.actionNote,
-                    border: const OutlineInputBorder(),
-                  ),
-                  validator: (String? text) => _tooLong(l10n, text ?? ''),
-                ),
-                FailureMessage(change.failure),
-              ],
+      child: Form(
+        key: _form,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (quote != null) ...<Widget>[
+              _factBox(_quoted(quote)),
+              const SizedBox(height: 14),
+            ],
+            Text(
+              widget.explanation,
+              style: const TextStyle(
+                fontSize: 13,
+                color: KitColors.ink2,
+                height: 1.5,
+              ),
             ),
-          ),
+            const SizedBox(height: 16),
+            KitNoteField(
+              fieldKey: 'action-note',
+              controller: _note,
+              label: l10n.actionNote,
+              hint: '',
+              enabled: !change.isBusy,
+            ),
+            FailureMessage(change.failure),
+            const SizedBox(height: 20),
+            _dialogButtons(
+              context: context,
+              busy: change.isBusy,
+              confirmKey: const ValueKey<String>('action-confirm'),
+              confirm: widget.confirm,
+              submit: _submit,
+              confirmIcon: widget.confirmIcon,
+              destructive: widget.destructive,
+            ),
+          ],
         ),
-        actions: <Widget>[
-          TextButton(
-            key: const ValueKey<String>('action-cancel'),
-            onPressed: change.isBusy ? null : () => Navigator.of(context).pop(),
-            child: Text(l10n.cancelButton),
-          ),
-          FilledButton(
-            key: const ValueKey<String>('action-confirm'),
-            onPressed: change.isBusy ? null : _submit,
-            child: Text(widget.confirm),
-          ),
-        ],
       ),
     );
   }
@@ -683,7 +831,7 @@ class _OrderActionDialogState extends ConsumerState<OrderActionDialog> {
 
 /// The Admin's price correction of one bought line: the new price paid per
 /// unit and the reason, both required. A price whose customer price would
-/// pass the line's bound is refused with the bound, said in the dialog
+/// pass the line's bound is refused with the bound, said in the window
 /// (`docs/09` section 45, `DL-66`).
 class PriceCorrectionDialog extends ConsumerStatefulWidget {
   const PriceCorrectionDialog({
@@ -691,6 +839,29 @@ class PriceCorrectionDialog extends ConsumerStatefulWidget {
     required this.item,
     super.key,
   });
+
+  /// Opens the correction window of [item].
+  static Future<void> show(
+    BuildContext context,
+    BoardOrder order,
+    BoardItem item,
+  ) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLanguage language = interfaceLanguage(context);
+    final NamedProduct? replacement = item.replacement;
+    final String name = replacement == null
+        ? _name(language, item.nameUz, item.nameRu)
+        : _name(language, replacement.nameUz, replacement.nameRu);
+
+    return showKitDialog<void>(
+      context: context,
+      dialogKey: 'price-correction',
+      title: l10n.correctPriceTitle(name),
+      subtitle: orderDialogLine(l10n, order),
+      builder: (BuildContext context) =>
+          PriceCorrectionDialog(order: order, item: item),
+    );
+  }
 
   final BoardOrder order;
   final BoardItem item;
@@ -736,80 +907,98 @@ class _PriceCorrectionDialogState extends ConsumerState<PriceCorrectionDialog> {
       orderActionProvider(widget.order.id),
     );
     final BoardItem item = widget.item;
-    final NamedProduct? replacement = item.replacement;
-    final String name = replacement == null
-        ? _name(language, item.nameUz, item.nameRu)
-        : _name(language, replacement.nameUz, replacement.nameRu);
     final int? paid = item.actualMarketPriceUzs;
+    final InputDecoration plain = kitFieldDecoration();
+    final InputDecoration priceDecoration = _ceilingOf(change.failure) != null
+        ? plain.copyWith(
+            enabledBorder: plain.errorBorder,
+            focusedBorder: plain.errorBorder,
+          )
+        : plain;
+    const TextStyle fieldText = TextStyle(fontSize: 15, color: KitColors.ink);
 
     return PopScope(
       canPop: !change.isBusy,
-      child: AlertDialog(
-        scrollable: true,
-        title: Text(l10n.correctPriceTitle(name)),
-        content: SizedBox(
-          width: 480,
-          child: Form(
-            key: _form,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                if (paid != null)
-                  Text(l10n.itemPricePaid(MoneyFormat.uzs(paid, language))),
-                Text(
-                  l10n.itemBilledPrice(
-                    MoneyFormat.uzs(item.billableUnitPriceUzs!, language),
+      child: Form(
+        key: _form,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            _factBox(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  if (paid != null)
+                    _labelledLine(
+                      l10n.itemPricePaid(MoneyFormat.uzs(paid, language)),
+                    ),
+                  _labelledLine(
+                    l10n.itemBilledPrice(
+                      MoneyFormat.uzs(item.billableUnitPriceUzs!, language),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  key: const ValueKey<String>('correction-price'),
-                  controller: _price,
-                  enabled: !change.isBusy,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: l10n.correctPriceNew,
-                    border: const OutlineInputBorder(),
-                  ),
-                  validator: (String? text) =>
-                      CatalogFormRules.marketPrice(l10n, text ?? ''),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  key: const ValueKey<String>('correction-reason'),
-                  controller: _reason,
-                  enabled: !change.isBusy,
-                  minLines: 1,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: l10n.correctPriceReason,
-                    border: const OutlineInputBorder(),
-                  ),
-                  validator: (String? text) => _optional(text ?? '') == null
-                      ? l10n.fieldRequired
-                      : _tooLong(l10n, text ?? ''),
-                ),
-                _CorrectionFailure(change.failure),
-              ],
+                ],
+              ),
             ),
-          ),
+            const SizedBox(height: 16),
+            KitLabeledField(
+              label: l10n.correctPriceNew,
+              field: TextFormField(
+                key: const ValueKey<String>('correction-price'),
+                controller: _price,
+                enabled: !change.isBusy,
+                keyboardType: TextInputType.number,
+                style: fieldText,
+                decoration: priceDecoration,
+                validator: (String? text) =>
+                    CatalogFormRules.marketPrice(l10n, text ?? ''),
+              ),
+            ),
+            const SizedBox(height: 16),
+            KitLabeledField(
+              label: l10n.correctPriceReason,
+              field: TextFormField(
+                key: const ValueKey<String>('correction-reason'),
+                controller: _reason,
+                enabled: !change.isBusy,
+                minLines: 1,
+                maxLines: 3,
+                style: fieldText,
+                decoration: plain,
+                validator: (String? text) => _optional(text ?? '') == null
+                    ? l10n.fieldRequired
+                    : _tooLong(l10n, text ?? ''),
+              ),
+            ),
+            _CorrectionFailure(change.failure),
+            const SizedBox(height: 20),
+            _dialogButtons(
+              context: context,
+              busy: change.isBusy,
+              confirmKey: const ValueKey<String>('correction-save'),
+              confirm: l10n.saveButton,
+              submit: _submit,
+            ),
+          ],
         ),
-        actions: <Widget>[
-          TextButton(
-            key: const ValueKey<String>('action-cancel'),
-            onPressed: change.isBusy ? null : () => Navigator.of(context).pop(),
-            child: Text(l10n.cancelButton),
-          ),
-          FilledButton(
-            key: const ValueKey<String>('correction-save'),
-            onPressed: change.isBusy ? null : _submit,
-            child: Text(l10n.saveButton),
-          ),
-        ],
       ),
     );
   }
+}
+
+/// The bound a refused correction names, `null` for any other outcome.
+int? _ceilingOf(ApiFailure? failure) {
+  if (failure is ApiRefusal &&
+      failure.code == 'price_correction_above_ceiling') {
+    final Object? ceiling =
+        failure.error.details['ceiling_customer_unit_price_uzs'];
+    if (ceiling is int) {
+      return ceiling;
+    }
+  }
+
+  return null;
 }
 
 /// A refused correction, saying the bound when the price passed it.
@@ -820,28 +1009,40 @@ class _CorrectionFailure extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ApiFailure? failure = this.failure;
-    if (failure is ApiRefusal &&
-        failure.code == 'price_correction_above_ceiling') {
-      final Object? ceiling =
-          failure.error.details['ceiling_customer_unit_price_uzs'];
-      if (ceiling is int) {
-        return Semantics(
-          liveRegion: true,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(
-              AppLocalizations.of(context).errorPriceAboveCeiling(
-                MoneyFormat.uzs(ceiling, interfaceLanguage(context)),
-              ),
-              key: const ValueKey<String>('failure-message'),
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        );
-      }
+    final int? ceiling = _ceilingOf(failure);
+    if (ceiling == null) {
+      return FailureMessage(failure);
     }
-    return FailureMessage(failure);
+
+    return Semantics(
+      liveRegion: true,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Padding(
+              padding: EdgeInsets.only(top: 1),
+              child: Icon(Icons.error, size: 16, color: KitColors.danger),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context).errorPriceAboveCeiling(
+                  MoneyFormat.uzs(ceiling, interfaceLanguage(context)),
+                ),
+                key: const ValueKey<String>('failure-message'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: KitColors.danger,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

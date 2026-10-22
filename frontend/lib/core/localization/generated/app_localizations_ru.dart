@@ -3962,4 +3962,22 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get historyShowFewer => 'Свернуть историю';
+
+  @override
+  String dialogOrderLine(String number, String customer) {
+    return 'Заказ № $number · $customer';
+  }
+
+  @override
+  String get pickShopperHint =>
+      'Нажмите на сборщика — заказ сразу перейдёт к нему.';
+
+  @override
+  String get pickCourierHint =>
+      'Нажмите на курьера — заказ сразу перейдёт к нему.';
+
+  @override
+  String requestCustomerReason(String reason) {
+    return 'Причина клиента: «$reason»';
+  }
 }

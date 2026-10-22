@@ -933,7 +933,7 @@ void main() {
 
     await tapAndSettle(tester, byKey('board-clear-filters'));
     expect(lastQuery(), const BoardQuery());
-    await tapAndSettle(tester, byKey('board-filters-close'));
+    await tapAndSettle(tester, byKey('board-filters-dialog-close'));
     expect(find.byType(Dialog), findsNothing);
     expect(tester.takeException(), isNull);
   });

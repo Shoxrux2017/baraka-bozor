@@ -10,6 +10,7 @@ import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
+import '../../../core/widgets/kit/kit_dialog.dart';
 import '../../../core/widgets/kit/kit_note.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/panel/panel_card.dart';
@@ -20,9 +21,10 @@ import 'order_actions.dart';
 
 /// A round avatar with the initials of [name], green on its wash.
 class PersonAvatar extends StatelessWidget {
-  const PersonAvatar(this.name, {super.key});
+  const PersonAvatar(this.name, {this.size = 42, super.key});
 
   final String? name;
+  final double size;
 
   String get _initials {
     final List<String> words = (name ?? '')
@@ -43,8 +45,8 @@ class PersonAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 42,
-      height: 42,
+      width: size,
+      height: size,
       alignment: Alignment.center,
       decoration: const BoxDecoration(
         color: KitColors.primarySoft,
@@ -198,6 +200,8 @@ class ShopperCard extends StatelessWidget {
       words: (
         pickTitle: l10n.pickShopperTitle,
         pickEmpty: l10n.pickShopperEmpty,
+        pickEmptyIcon: Icons.shopping_basket_outlined,
+        pickHint: l10n.pickShopperHint,
         assign: l10n.assignShopper,
         reassign: l10n.reassignShopper,
         busy: l10n.assigningShopper,
@@ -330,6 +334,8 @@ class CourierCard extends StatelessWidget {
       words: (
         pickTitle: l10n.pickCourierTitle,
         pickEmpty: l10n.pickCourierEmpty,
+        pickEmptyIcon: Icons.two_wheeler,
+        pickHint: l10n.pickCourierHint,
         assign: l10n.assignCourier,
         reassign: l10n.reassignCourier,
         busy: l10n.assigningCourier,
@@ -512,6 +518,8 @@ class AssignmentActions extends ConsumerWidget {
   final ({
     String pickTitle,
     String pickEmpty,
+    IconData pickEmptyIcon,
+    String pickHint,
     String assign,
     String reassign,
     String busy,
@@ -528,12 +536,16 @@ class AssignmentActions extends ConsumerWidget {
         state.isBusy || ref.watch(boardOrderProvider(order.id)).isLoading;
 
     Future<void> pick() async {
-      final StaffChoice? chosen = await showDialog<StaffChoice>(
+      final StaffChoice? chosen = await showKitDialog<StaffChoice>(
         context: context,
+        dialogKey: 'pick-$role',
+        title: words.pickTitle,
+        subtitle: orderDialogLine(AppLocalizations.of(context), order),
         builder: (BuildContext context) => StaffPicker(
           options: options,
-          title: words.pickTitle,
           empty: words.pickEmpty,
+          emptyIcon: words.pickEmptyIcon,
+          hint: words.pickHint,
           keyPrefix: 'pick-$role',
           currentId: current?.staffId,
         ),
@@ -605,21 +617,25 @@ class AssignmentActions extends ConsumerWidget {
   }
 }
 
-/// The active Shoppers or Couriers to choose from, each with the orders in
-/// their hands now; the current one is shown but not offered.
+/// The body of the picking window: the active Shoppers or Couriers to choose
+/// from, each with the orders in their hands now (a free one in green); the
+/// current one is shown held, not offered. Tapping a person closes the
+/// window with them.
 class StaffPicker extends ConsumerWidget {
   const StaffPicker({
     required this.options,
-    required this.title,
     required this.empty,
+    required this.emptyIcon,
+    required this.hint,
     required this.keyPrefix,
     required this.currentId,
     super.key,
   });
 
   final FutureProvider<List<StaffChoice>> options;
-  final String title;
   final String empty;
+  final IconData emptyIcon;
+  final String hint;
   final String keyPrefix;
   final String? currentId;
 
@@ -628,56 +644,194 @@ class StaffPicker extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<List<StaffChoice>> choices = ref.watch(options);
 
-    return AlertDialog(
-      title: Text(title),
-      content: SizedBox(
-        width: 420,
-        child: choices.when(
-          skipLoadingOnRefresh: !choices.hasError,
-          data: (List<StaffChoice> choices) => choices.isEmpty
-              ? Text(empty)
-              : ListView(
-                  shrinkWrap: true,
+    final Widget list = choices.when(
+      skipLoadingOnRefresh: !choices.hasError,
+      data: (List<StaffChoice> choices) => choices.isEmpty
+          ? DecoratedBox(
+              decoration: BoxDecoration(
+                color: KitColors.field,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 28,
+                ),
+                child: Column(
                   children: <Widget>[
-                    for (final StaffChoice choice in choices)
-                      ListTile(
-                        key: ValueKey<String>('$keyPrefix-${choice.id}'),
-                        enabled: choice.id != currentId,
-                        title: Text(
-                          choice.fullName ?? formatPhone(choice.phone),
-                        ),
-                        subtitle: Text(
-                          '${formatPhone(choice.phone)} · '
-                          '${l10n.shopperOrdersNow(choice.currentAssignmentCount)}',
-                        ),
-                        trailing: choice.id == currentId
-                            ? Text(l10n.assignmentCurrent)
-                            : null,
-                        onTap: () => Navigator.of(context).pop(choice),
+                    Icon(emptyIcon, size: 28, color: KitColors.muted),
+                    const SizedBox(height: 8),
+                    Text(
+                      empty,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: KitColors.muted,
                       ),
+                    ),
                   ],
                 ),
-          // Both keep the dialog as small as what they show.
-          error: (Object error, StackTrace _) => Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              LoadFailure(error: error, onRetry: () => ref.invalidate(options)),
-            ],
-          ),
-          loading: () => const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(heightFactor: 1, child: CircularProgressIndicator()),
-          ),
-        ),
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                for (final StaffChoice choice in choices)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _StaffPickerRow(
+                      rowKey: '$keyPrefix-${choice.id}',
+                      choice: choice,
+                      current: choice.id == currentId,
+                      l10n: l10n,
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    hint,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: KitColors.muted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+      // Both keep the dialog as small as what they show.
+      error: (Object error, StackTrace _) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          LoadFailure(error: error, onRetry: () => ref.invalidate(options)),
+        ],
       ),
-      actions: <Widget>[
-        TextButton(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(heightFactor: 1, child: CircularProgressIndicator()),
+      ),
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        list,
+        const SizedBox(height: 16),
+        OutlinedButton(
           key: ValueKey<String>('$keyPrefix-cancel'),
+          style: kitOutlined(height: 48),
           onPressed: () => Navigator.of(context).pop(),
           child: Text(l10n.cancelButton),
         ),
       ],
     );
+  }
+}
+
+/// One person of the picker: avatar, name, phone and the orders now; the
+/// [current] one is on `card` at half strength and cannot be tapped.
+class _StaffPickerRow extends StatelessWidget {
+  const _StaffPickerRow({
+    required this.rowKey,
+    required this.choice,
+    required this.current,
+    required this.l10n,
+  });
+
+  final String rowKey;
+  final StaffChoice choice;
+  final bool current;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool free = choice.currentAssignmentCount == 0;
+    final String name = choice.fullName ?? formatPhone(choice.phone);
+
+    final Widget row = Material(
+      key: ValueKey<String>(rowKey),
+      color: current ? KitColors.card : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: KitColors.line),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: current ? null : () => Navigator.of(context).pop(choice),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: <Widget>[
+              PersonAvatar(name, size: 40),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Wrap(
+                      spacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: <Widget>[
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: KitColors.ink,
+                          ),
+                        ),
+                        if (current)
+                          Text(
+                            l10n.assignmentCurrent,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: KitColors.primaryDark,
+                            ),
+                          ),
+                      ],
+                    ),
+                    Text(
+                      formatPhone(choice.phone),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: KitColors.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: free ? KitColors.primaryWash : KitColors.field,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: Text(
+                      l10n.shopperOrdersNow(choice.currentAssignmentCount),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: free ? KitColors.primaryDark : KitColors.ink,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    return current ? Opacity(opacity: 0.5, child: row) : row;
   }
 }

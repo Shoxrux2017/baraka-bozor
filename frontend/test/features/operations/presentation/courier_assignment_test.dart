@@ -89,6 +89,37 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('no one to assign says so', (WidgetTester tester) async {
+    operations
+      ..courierList = <StaffChoice>[]
+      ..details[orderA] = order('ready_for_delivery', <Object?>[]);
+    await openOrder(tester);
+
+    await tapAndSettle(tester, byKey('assign-courier'));
+
+    expect(find.text(l10n(tester).pickCourierEmpty), findsOneWidget);
+    expect(find.byIcon(Icons.two_wheeler), findsOneWidget);
+    expect(find.text(l10n(tester).pickCourierHint), findsNothing);
+    expect(byKey('pick-courier-cancel'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the Courier picker names the order and tells what a tap does', (
+    WidgetTester tester,
+  ) async {
+    operations.details[orderA] = order('ready_for_delivery', <Object?>[]);
+    await openOrder(tester);
+
+    await tapAndSettle(tester, byKey('assign-courier'));
+
+    expect(byKey('pick-courier'), findsOneWidget);
+    expect(
+      find.text(l10n(tester).dialogOrderLine('1001', 'Aziza Karimova')),
+      findsOneWidget,
+    );
+    expect(find.text(l10n(tester).pickCourierHint), findsOneWidget);
+  });
+
   testWidgets('a ready order gets its Courier from the picker', (
     WidgetTester tester,
   ) async {
@@ -133,10 +164,13 @@ void main() {
 
       await tapAndSettle(tester, byKey('reassign-courier'));
       // The current Courier is shown, not offered.
-      final ListTile current = tester.widget<ListTile>(
-        byKey('pick-courier-$courierId'),
+      final InkWell current = tester.widget<InkWell>(
+        find.descendant(
+          of: byKey('pick-courier-$courierId'),
+          matching: find.byType(InkWell),
+        ),
       );
-      expect(current.enabled, isFalse);
+      expect(current.onTap, isNull);
       await tapAndSettle(tester, byKey('pick-courier-$otherCourierId'));
 
       expect(operations.changes, <String>[

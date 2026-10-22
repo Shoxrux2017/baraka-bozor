@@ -2355,5 +2355,26 @@
       }
     }
   },
-  "historyShowFewer": "Свернуть историю"
+  "historyShowFewer": "Свернуть историю",
+  "dialogOrderLine": "Заказ № {number} · {customer}",
+  "@dialogOrderLine": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "customer": {
+        "type": "String"
+      }
+    }
+  },
+  "pickShopperHint": "Нажмите на сборщика — заказ сразу перейдёт к нему.",
+  "pickCourierHint": "Нажмите на курьера — заказ сразу перейдёт к нему.",
+  "requestCustomerReason": "Причина клиента: «{reason}»",
+  "@requestCustomerReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -2654,5 +2654,26 @@
       }
     }
   },
-  "historyShowFewer": "Tarixni yig'ish"
+  "historyShowFewer": "Tarixni yig'ish",
+  "dialogOrderLine": "Buyurtma № {number} · {customer}",
+  "@dialogOrderLine": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "customer": {
+        "type": "String"
+      }
+    }
+  },
+  "pickShopperHint": "Yig'uvchini bosing — buyurtma darhol unga o'tadi.",
+  "pickCourierHint": "Kuryerni bosing — buyurtma darhol unga o'tadi.",
+  "requestCustomerReason": "Mijoz sababi: «{reason}»",
+  "@requestCustomerReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  }
 }

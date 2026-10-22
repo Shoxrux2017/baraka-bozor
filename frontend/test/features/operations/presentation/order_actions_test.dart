@@ -722,7 +722,7 @@ void main() {
       expect(operations.actions, <String>[
         'remove-expired:$orderA:$approvalId:Javob kelmadi',
       ]);
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(byKey('order-action'), findsNothing);
       expect(byKey('remove-expired-$approvalId'), findsNothing);
       expect(find.text(l10n(tester).approvalLineRemoved), findsOneWidget);
     });
@@ -841,10 +841,10 @@ void main() {
         await tapAndSettle(tester, byKey('approve-request-$requestId'));
         await tapAndSettle(tester, byKey('action-confirm'));
 
-        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(byKey('order-action'), findsOneWidget);
         expect(
           find.descendant(
-            of: find.byType(AlertDialog),
+            of: byKey('order-action'),
             matching: find.text(l10n(tester).errorRequestAlreadyDecided),
           ),
           findsOneWidget,
@@ -874,18 +874,24 @@ void main() {
         isNull,
       );
       expect(
-        tester.widget<TextButton>(byKey('action-cancel')).onPressed,
+        tester.widget<OutlinedButton>(byKey('action-cancel')).onPressed,
         isNull,
       );
+      await tester.tap(byKey('order-action-close'));
+      await tester.pump();
+      expect(byKey('order-action'), findsOneWidget, reason: 'the × holds');
       await tester.tapAt(const Offset(4, 4));
       await tester.pump();
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(byKey('order-action'), findsOneWidget, reason: 'the scrim holds');
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(byKey('order-action'), findsOneWidget, reason: 'back holds');
 
       operations.hold = null;
       hold.complete();
       await tester.pumpAndSettle();
       expect(operations.actions, hasLength(1));
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(byKey('order-action'), findsNothing);
     });
 
     testWidgets('a note over 300 characters is refused before sending', (
@@ -1215,7 +1221,7 @@ void main() {
       expect(operations.actions, <String>[
         'correct:$orderA:$itemId:17000:Chek bo\'yicha',
       ]);
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(byKey('price-correction'), findsNothing);
       expect(
         text(tester, 'order-item-paid-$itemId'),
         words.itemPricePaid(money(17000)),
@@ -1253,18 +1259,28 @@ void main() {
         isNull,
       );
       expect(
-        tester.widget<TextButton>(byKey('action-cancel')).onPressed,
+        tester.widget<OutlinedButton>(byKey('action-cancel')).onPressed,
         isNull,
       );
+      await tester.tap(byKey('price-correction-close'));
+      await tester.pump();
+      expect(byKey('price-correction'), findsOneWidget, reason: 'the × holds');
       await tester.tapAt(const Offset(4, 4));
       await tester.pump();
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(
+        byKey('price-correction'),
+        findsOneWidget,
+        reason: 'the scrim holds',
+      );
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(byKey('price-correction'), findsOneWidget, reason: 'back holds');
 
       operations.hold = null;
       hold.complete();
       await tester.pumpAndSettle();
       expect(operations.actions, hasLength(1));
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(byKey('price-correction'), findsNothing);
     });
 
     testWidgets('a price above the bound is refused with the bound, in the '
@@ -1291,7 +1307,7 @@ void main() {
       await tester.enterText(byKey('correction-reason'), 'Chek');
       await tapAndSettle(tester, byKey('correction-save'));
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(byKey('price-correction'), findsOneWidget);
       expect(
         text(tester, 'failure-message'),
         l10n(tester).errorPriceAboveCeiling(money(20000)),
@@ -1420,6 +1436,291 @@ void main() {
     expect(find.textContaining('Причина'), findsNothing);
     expect(find.text('Данные покупателя удалены'), findsWidgets);
     expect(tester.takeException(), isNull);
+  });
+
+  group('the kit\'s action windows', () {
+    Color? confirmColor(WidgetTester tester, String key) => tester
+        .widget<FilledButton>(byKey(key))
+        .style!
+        .backgroundColor!
+        .resolve(<WidgetState>{});
+
+    Color? boxColorOf(WidgetTester tester, Finder inner) {
+      final DecoratedBox box = tester.widget<DecoratedBox>(
+        find.ancestor(of: inner, matching: find.byType(DecoratedBox)).first,
+      );
+      return (box.decoration as BoxDecoration).color;
+    }
+
+    Map<String, Object?> failed() => courierAssignmentJson(
+      acceptedAt: '2026-09-27T09:05:00Z',
+      startedAt: '2026-09-27T09:30:00Z',
+      endedAt: '2026-09-27T10:00:00Z',
+      endedReason: 'delivery_failed',
+      failedReason: 'no_answer',
+    );
+
+    testWidgets('a confirming window names the order', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        approvals: <Object?>[approvalJson(status: 'expired')],
+      );
+      await openOrder(tester);
+      final AppLocalizations words = l10n(tester);
+
+      await tapAndSettle(tester, byKey('remove-expired-$approvalId'));
+
+      expect(byKey('order-action'), findsOneWidget);
+      expect(find.text(words.removeExpiredTitle('Pomidor')), findsOneWidget);
+      expect(
+        find.text(words.dialogOrderLine('1001', 'Aziza Karimova')),
+        findsOneWidget,
+      );
+      expect(find.text(words.removeExpiredExplained), findsOneWidget);
+      expect(find.text(words.actionNote), findsOneWidget);
+      expect(find.text('0 / 300'), findsOneWidget);
+      await tester.enterText(byKey('action-note'), 'abcd');
+      await tester.pump();
+      expect(find.text('4 / 300'), findsOneWidget);
+      expect(tester.getSize(byKey('action-cancel')).height, 48);
+      expect(tester.getSize(byKey('action-confirm')).height, 48);
+      expect(
+        tester.widget<OutlinedButton>(byKey('action-cancel')).onPressed,
+        isNotNull,
+      );
+      expect(confirmColor(tester, 'action-confirm'), KitColors.danger);
+      expect(
+        find.descendant(
+          of: byKey('action-confirm'),
+          matching: find.byIcon(Icons.remove_shopping_cart),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an erased Customer leaves the order number alone', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = OperationsApi.parseOrder(
+        orderJson(
+          status: 'shopping',
+          approvals: <Object?>[approvalJson(status: 'expired')],
+          history: <Object?>[],
+          erased: true,
+        ),
+      );
+      await openOrder(tester);
+
+      await tapAndSettle(tester, byKey('remove-expired-$approvalId'));
+
+      expect(find.text(l10n(tester).orderTitle('1001')), findsWidgets);
+      expect(
+        find.descendant(
+          of: byKey('order-action'),
+          matching: find.text(l10n(tester).orderTitle('1001')),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('order-action'),
+          matching: find.textContaining('Aziza'),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('a cancellation decision shows the Customer\'s reason', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        requests: <Object?>[cancellationRequestJson()],
+      );
+      await openOrder(tester);
+      final AppLocalizations words = l10n(tester);
+      final String reason = words.requestCustomerReason('Rejalar o\'zgardi');
+
+      await tapAndSettle(tester, byKey('approve-request-$requestId'));
+      expect(find.text(words.approveRequestTitle), findsWidgets);
+      expect(find.text(reason), findsOneWidget);
+      expect(boxColorOf(tester, find.text(reason)), KitColors.field);
+      expect(find.text(words.approveRequestExplained), findsOneWidget);
+      expect(confirmColor(tester, 'action-confirm'), KitColors.danger);
+      await tapAndSettle(tester, byKey('action-cancel'));
+
+      await tapAndSettle(tester, byKey('reject-request-$requestId'));
+      expect(find.text(words.rejectRequestTitle), findsWidgets);
+      expect(find.text(reason), findsOneWidget);
+      expect(confirmColor(tester, 'action-confirm'), KitColors.primary);
+    });
+
+    testWidgets('a request without a reason shows no box', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        requests: <Object?>[cancellationRequestJson(erased: true)],
+      );
+      await openOrder(tester);
+
+      await tapAndSettle(tester, byKey('approve-request-$requestId'));
+
+      expect(find.textContaining('Mijoz sababi'), findsNothing);
+      expect(byKey('order-action'), findsOneWidget);
+    });
+
+    testWidgets('cancelling after a failed delivery is red', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        status: 'ready_for_delivery',
+        items: <Object?>[bought()],
+        couriers: <Object?>[failed()],
+      );
+      await openOrder(tester);
+
+      await tapAndSettle(tester, byKey('cancel-failed-delivery'));
+
+      expect(find.text(l10n(tester).cancelFailedDeliveryTitle), findsOneWidget);
+      expect(confirmColor(tester, 'action-confirm'), KitColors.danger);
+    });
+
+    testWidgets('the correction shows the prices and refuses over the bound', (
+      WidgetTester tester,
+    ) async {
+      auth.identities[SessionSlot.staff] = user(role: UserRole.admin);
+      operations
+        ..details[orderA] = order(
+          status: 'ready_for_delivery',
+          items: <Object?>[bought()],
+        )
+        ..actionFailure = const ApiRefusal(
+          ApiError(
+            status: 409,
+            code: 'price_correction_above_ceiling',
+            details: <String, Object?>{
+              'ceiling_customer_unit_price_uzs': 20000,
+            },
+          ),
+        );
+      await openOrder(tester);
+      final AppLocalizations words = l10n(tester);
+
+      await tapAndSettle(tester, byKey('correct-price-$itemId'));
+
+      expect(find.text(words.correctPriceTitle('Pomidor')), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('price-correction'),
+          matching: find.text(words.itemBilledPrice(money(18400))),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        boxColorOf(
+          tester,
+          find.descendant(
+            of: byKey('price-correction'),
+            matching: find.text(words.itemBilledPrice(money(18400))),
+          ),
+        ),
+        KitColors.field,
+      );
+      expect(confirmColor(tester, 'correction-save'), KitColors.primary);
+      expect(find.byIcon(Icons.error), findsNothing);
+
+      await tester.enterText(byKey('correction-price'), '20000');
+      await tester.enterText(byKey('correction-reason'), 'Chek');
+      await tapAndSettle(tester, byKey('correction-save'));
+
+      expect(
+        tester.widget<Text>(byKey('failure-message')).style?.color,
+        KitColors.danger,
+      );
+      expect(find.byIcon(Icons.error), findsOneWidget);
+      final InputDecorator price = tester.widget<InputDecorator>(
+        find.descendant(
+          of: byKey('correction-price'),
+          matching: find.byType(InputDecorator),
+        ),
+      );
+      expect(
+        (price.decoration.enabledBorder! as OutlineInputBorder)
+            .borderSide
+            .color,
+        KitColors.danger,
+      );
+    });
+
+    testWidgets('a running action holds its dialog, × included', (
+      WidgetTester tester,
+    ) async {
+      operations.details[orderA] = order(
+        requests: <Object?>[cancellationRequestJson()],
+      );
+      operations.afterAction[orderA] = order(
+        requests: <Object?>[cancellationRequestJson(status: 'rejected')],
+      );
+      await openOrder(tester);
+      await tapAndSettle(tester, byKey('reject-request-$requestId'));
+      final Completer<void> hold = Completer<void>();
+      operations.hold = hold;
+
+      await tester.tap(byKey('action-confirm'));
+      await tester.pump();
+
+      expect(
+        tester.widget<FilledButton>(byKey('action-confirm')).onPressed,
+        isNull,
+      );
+      expect(
+        tester.widget<OutlinedButton>(byKey('action-cancel')).onPressed,
+        isNull,
+      );
+      await tester.tap(byKey('order-action-close'));
+      await tester.pump();
+      expect(byKey('order-action'), findsOneWidget);
+      await tester.tapAt(const Offset(4, 4));
+      await tester.pump();
+      expect(byKey('order-action'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(byKey('order-action'), findsOneWidget);
+
+      operations.hold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('order-action'), findsNothing);
+    });
+
+    for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets(
+        'the windows hold at 820x1180 with text x2 (${locale.languageCode})',
+        (WidgetTester tester) async {
+          auth.identities[SessionSlot.staff] = user(role: UserRole.admin);
+          operations.details[orderA] = order(
+            status: 'ready_for_delivery',
+            items: <Object?>[bought()],
+            requests: <Object?>[cancellationRequestJson()],
+          );
+          await openOrder(
+            tester,
+            size: const Size(820, 1180),
+            textScale: 2,
+            device: locale,
+          );
+
+          await tapAndSettle(tester, byKey('approve-request-$requestId'));
+          expect(byKey('order-action'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          await tapAndSettle(tester, byKey('action-cancel'));
+
+          await tapAndSettle(tester, byKey('correct-price-$itemId'));
+          expect(byKey('price-correction'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
   });
 }
 

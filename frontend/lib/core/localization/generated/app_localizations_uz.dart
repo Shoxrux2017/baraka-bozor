@@ -3935,4 +3935,22 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get historyShowFewer => 'Tarixni yig\'ish';
+
+  @override
+  String dialogOrderLine(String number, String customer) {
+    return 'Buyurtma № $number · $customer';
+  }
+
+  @override
+  String get pickShopperHint =>
+      'Yig\'uvchini bosing — buyurtma darhol unga o\'tadi.';
+
+  @override
+  String get pickCourierHint =>
+      'Kuryerni bosing — buyurtma darhol unga o\'tadi.';
+
+  @override
+  String requestCustomerReason(String reason) {
+    return 'Mijoz sababi: «$reason»';
+  }
 }

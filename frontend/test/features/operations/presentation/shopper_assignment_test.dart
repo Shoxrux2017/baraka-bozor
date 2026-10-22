@@ -6,6 +6,8 @@ import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/operations/data/operations_api.dart';
 import 'package:baraka_bozor/features/operations/domain/board.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/features/operations/presentation/order_staff.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -101,7 +103,7 @@ void main() {
       .getSize(
         find
             .descendant(
-              of: find.byType(AlertDialog),
+              of: byKey('pick-shopper'),
               matching: find.byType(Material),
             )
             .first,
@@ -149,8 +151,15 @@ void main() {
       await tapAndSettle(tester, byKey('reassign-shopper'));
       // The current Shopper is shown and cannot be chosen again.
       expect(
-        tester.widget<ListTile>(byKey('pick-shopper-$shopperId')).enabled,
-        isFalse,
+        tester
+            .widget<InkWell>(
+              find.descendant(
+                of: byKey('pick-shopper-$shopperId'),
+                matching: find.byType(InkWell),
+              ),
+            )
+            .onTap,
+        isNull,
       );
       await tapAndSettle(tester, byKey('pick-shopper-$otherShopperId'));
 
@@ -279,6 +288,136 @@ void main() {
       expect(byKey('reassign-shopper'), findsNothing);
     },
   );
+
+  testWidgets(
+    'the picker lists each with their orders now, the current one held',
+    (WidgetTester tester) async {
+      operations
+        ..shopperList = <StaffChoice>[
+          OperationsApi.parseStaff(shopperJson()),
+          OperationsApi.parseStaff(<String, Object?>{
+            ...shopperJson(id: otherShopperId, fullName: 'Dilnoza Karimova'),
+            'current_assignment_count': 0,
+          }),
+        ]
+        ..details[orderA] = OperationsApi.parseOrder(
+          orderJson(history: <Object?>[]),
+        );
+      await openOrder(tester, orderA);
+      await tapAndSettle(tester, byKey('reassign-shopper'));
+      final AppLocalizations words = l10n(tester);
+
+      expect(
+        find.text(words.dialogOrderLine('1001', 'Aziza Karimova')),
+        findsOneWidget,
+      );
+      expect(find.text(words.pickShopperHint), findsOneWidget);
+      expect(
+        tester.getSize(byKey('pick-shopper-cancel')).height,
+        48,
+        reason: 'the outlined cancel is 48 high',
+      );
+
+      // The current one: on `card`, at half strength, with its tag.
+      final Material current = tester.widget<Material>(
+        byKey('pick-shopper-$shopperId'),
+      );
+      expect(current.color, KitColors.card);
+      expect(
+        tester
+            .widget<Opacity>(
+              find.ancestor(
+                of: byKey('pick-shopper-$shopperId'),
+                matching: find.byType(Opacity),
+              ),
+            )
+            .opacity,
+        0.5,
+      );
+      expect(
+        find.descendant(
+          of: byKey('pick-shopper-$shopperId'),
+          matching: find.text(words.assignmentCurrent),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .getSize(
+              find.descendant(
+                of: byKey('pick-shopper-$otherShopperId'),
+                matching: find.byType(PersonAvatar),
+              ),
+            )
+            .height,
+        40,
+      );
+      expect(find.text('DK'), findsOneWidget, reason: 'the initials');
+
+      // A free person's tag is green, a busy one's grey.
+      Color? tagColor(String key, String label) {
+        final DecoratedBox tag = tester.widget<DecoratedBox>(
+          find
+              .ancestor(
+                of: find.descendant(of: byKey(key), matching: find.text(label)),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
+        );
+        return (tag.decoration as BoxDecoration).color;
+      }
+
+      expect(
+        tagColor('pick-shopper-$otherShopperId', words.shopperOrdersNow(0)),
+        KitColors.primaryWash,
+      );
+      expect(
+        tagColor('pick-shopper-$shopperId', words.shopperOrdersNow(1)),
+        KitColors.field,
+      );
+    },
+  );
+
+  for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
+    testWidgets(
+      'the picker holds at 820x1180 with text x2 (${locale.languageCode})',
+      (WidgetTester tester) async {
+        operations.shopperList = <StaffChoice>[
+          for (final String name in <String>[
+            'Dilnoza Karimova',
+            'Sardor Yusupov',
+            'Botir Aliyev',
+            'Ismoil Abdurahmonov',
+          ])
+            OperationsApi.parseStaff(
+              shopperJson(id: shopperId, fullName: name),
+            ),
+        ];
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        tester.view.physicalSize = const Size(820, 1180);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          appUnderTest(
+            tokens: tokens,
+            repository: auth,
+            surface: Surface.web,
+            operations: operations,
+            device: locale,
+          ),
+        );
+        await tester.pumpAndSettle();
+        GoRouter.of(anywhere(tester)).go('/operations/orders/$orderB');
+        await tester.pumpAndSettle();
+
+        await tapAndSettle(tester, byKey('assign-shopper'));
+
+        expect(byKey('pick-shopper'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets('the picker fits a phone-wide window with large text', (
     WidgetTester tester,

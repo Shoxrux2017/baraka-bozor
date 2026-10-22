@@ -6739,6 +6739,30 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Tarixni yig\'ish'**
   String get historyShowFewer;
+
+  /// No description provided for @dialogOrderLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} · {customer}'**
+  String dialogOrderLine(String number, String customer);
+
+  /// No description provided for @pickShopperHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchini bosing — buyurtma darhol unga o\'tadi.'**
+  String get pickShopperHint;
+
+  /// No description provided for @pickCourierHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryerni bosing — buyurtma darhol unga o\'tadi.'**
+  String get pickCourierHint;
+
+  /// No description provided for @requestCustomerReason.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz sababi: «{reason}»'**
+  String requestCustomerReason(String reason);
 }
 
 class _AppLocalizationsDelegate

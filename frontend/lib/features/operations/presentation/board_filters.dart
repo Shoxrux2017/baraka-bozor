@@ -7,6 +7,7 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/kit/kit_dialog.dart';
 import '../../../core/widgets/panel/panel_menu_button.dart';
 import '../application/board_controllers.dart';
 import '../domain/board.dart';
@@ -62,60 +63,23 @@ class _BoardFiltersState extends ConsumerState<BoardFilters> {
   }
 
   Future<void> _openDialog() {
-    return showDialog<void>(
+    return showKitDialog<void>(
       context: context,
-      builder: (BuildContext dialog) {
-        final AppLocalizations l10n = AppLocalizations.of(dialog);
-
-        return Dialog(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Consumer(
-                builder: (BuildContext context, WidgetRef ref, Widget? _) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              l10n.boardFilters,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: KitColors.ink,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            key: const ValueKey<String>('board-filters-close'),
-                            tooltip: MaterialLocalizations.of(context)
-                                .closeButtonTooltip,
-                            icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.of(dialog).pop(),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _menus(context, ref),
-                      const SizedBox(height: 12),
-                      _chips(context, ref),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-        );
-      },
+      dialogKey: 'board-filters-dialog',
+      title: AppLocalizations.of(context).boardFilters,
+      builder: (BuildContext dialog) => Consumer(
+        builder: (BuildContext context, WidgetRef ref, Widget? _) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _menus(context, ref),
+              const SizedBox(height: 12),
+              _chips(context, ref),
+            ],
+          );
+        },
+      ),
     );
   }
 
