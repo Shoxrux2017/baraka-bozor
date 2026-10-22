@@ -11,6 +11,7 @@ import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/operations/data/operations_api.dart';
 import 'package:baraka_bozor/features/shells/presentation/panel_menu.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -82,6 +83,7 @@ void main() {
     String? reload,
     Completer<void>? hold,
     FakeOperationsRepository? operations,
+    Locale device = const Locale('uz'),
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -102,6 +104,7 @@ void main() {
         repository: auth,
         surface: Surface.web,
         operations: operations,
+        device: device,
         overrides: [adminStaffRepositoryProvider.overrideWithValue(staff)],
       ),
     );
@@ -168,22 +171,53 @@ void main() {
     expect(find.byType(AppBar), findsNothing);
   });
 
-  testWidgets('the whole menu puts the language and the way out side by side', (
+  testWidgets('the whole menu stacks the language above the way out', (
     WidgetTester tester,
   ) async {
     await open(tester, UserRole.admin, size: const Size(1440, 900));
 
     final Finder language = find.byType(PanelLanguageButton);
+    // The rail's 1 px right border and the 16 px gutters on both sides.
+    final double footerWidth = tester.getSize(rail).width - 1 - 32;
     expect(tester.getSize(language).height, 38);
     expect(tester.getSize(logout).height, 38);
-    expect(tester.getSize(language).width, tester.getSize(logout).width);
-    expect(tester.getTopLeft(language).dy, tester.getTopLeft(logout).dy);
+    expect(tester.getSize(language).width, footerWidth);
+    expect(tester.getSize(logout).width, footerWidth);
     expect(
-      tester.getTopLeft(logout).dx,
-      greaterThan(tester.getTopRight(language).dx),
+      tester.getTopLeft(logout).dy,
+      greaterThan(tester.getBottomLeft(language).dy),
     );
+    expect(tester.getTopLeft(logout).dy - tester.getBottomLeft(language).dy, 8);
     expect(tester.takeException(), isNull);
   });
+
+  for (final (Locale locale, String name) in <(Locale, String)>[
+    (const Locale('uz'), "O'zbekcha"),
+    (const Locale('ru'), 'Русский'),
+  ]) {
+    testWidgets(
+      'the whole menu shows the language name whole in ${locale.languageCode}',
+      (WidgetTester tester) async {
+        await open(
+          tester,
+          UserRole.admin,
+          size: const Size(1440, 900),
+          device: locale,
+        );
+
+        final Finder text = find.descendant(
+          of: find.byType(PanelLanguageButton),
+          matching: find.text(name),
+        );
+        expect(text, findsOneWidget);
+        expect(
+          tester.renderObject<RenderParagraph>(text).didExceedMaxLines,
+          isFalse,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets('the whole menu holds with text x2', (WidgetTester tester) async {
     tester.platformDispatcher.textScaleFactorTestValue = 2;
