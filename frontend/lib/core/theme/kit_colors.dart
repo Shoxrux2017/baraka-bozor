@@ -29,6 +29,9 @@ abstract final class KitColors {
   /// Text field background.
   static const Color field = Color(0xFFF9F9F9);
 
+  /// The panel's page behind its cards.
+  static const Color page = Color(0xFFF6F7F6);
+
   /// Card background.
   static const Color card = Color(0xFFFAFAFA);
 

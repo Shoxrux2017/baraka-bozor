@@ -85,7 +85,7 @@ void main() {
     (WidgetTester tester) async {
       await openPanel(tester);
 
-      expect(find.text(l10n(tester).shellAdmin), findsOneWidget);
+      expect(find.text(l10n(tester).roleAdmin), findsOneWidget);
       expect(find.byKey(const ValueKey<String>('panel-rail')), findsOneWidget);
       expect(repository.loads, 0, reason: 'the landing page loads nothing');
 
@@ -389,7 +389,7 @@ void main() {
           .go(AdminPaths.settings);
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n(tester).shellOperations), findsOneWidget);
+      expect(find.text(l10n(tester).roleOperator), findsOneWidget);
       expect(find.text(l10n(tester).settingsTitle), findsNothing);
       expect(repository.loads, 0);
     },

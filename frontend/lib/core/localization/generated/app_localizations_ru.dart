@@ -166,6 +166,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get panelSectionBoard => 'Заказы';
 
   @override
+  String get panelMenuLabel => 'Панель';
+
+  @override
   String get customerModeLabel => 'Режим клиента';
 
   @override

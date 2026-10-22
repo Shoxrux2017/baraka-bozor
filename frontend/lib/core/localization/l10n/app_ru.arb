@@ -76,6 +76,7 @@
   "shellManager": "Менеджер",
   "shellPlaceholder": "Этот раздел появится на следующем этапе",
   "panelSectionBoard": "Заказы",
+  "panelMenuLabel": "Панель",
   "customerModeLabel": "Режим клиента",
   "staffModeLabel": "Режим сотрудника",
   "switchToCustomer": "Продолжить как клиент",

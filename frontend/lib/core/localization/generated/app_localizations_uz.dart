@@ -166,6 +166,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get panelSectionBoard => 'Buyurtmalar';
 
   @override
+  String get panelMenuLabel => 'Panel';
+
+  @override
   String get customerModeLabel => 'Mijoz rejimi';
 
   @override

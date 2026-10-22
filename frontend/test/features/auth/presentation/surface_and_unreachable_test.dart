@@ -47,7 +47,7 @@ void main() {
 
       expect(wrongSurfaceText, findsOneWidget);
       expect(find.text(l10n(tester).wrongSurfaceMobile), findsOneWidget);
-      expect(find.text(l10n(tester).shellAdmin), findsNothing);
+      expect(find.text(l10n(tester).roleAdmin), findsNothing);
     });
 
     testWidgets(

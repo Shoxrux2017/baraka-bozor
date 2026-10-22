@@ -45,6 +45,14 @@ void main() {
     await tester.tap(finder);
   }
 
+  /// The panel shows the user card, with the role, in its side menu from
+  /// 1200 wide; the default test window is narrower.
+  void useWidePanelWindow(WidgetTester tester) {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+  }
+
   setUp(() {
     tokens = InMemoryTokenStore();
     repository = FakeAuthRepository();
@@ -54,6 +62,9 @@ void main() {
     WidgetTester tester, {
     Surface surface = Surface.mobile,
   }) async {
+    if (surface == Surface.web) {
+      useWidePanelWindow(tester);
+    }
     await tester.pumpWidget(
       appUnderTest(tokens: tokens, repository: repository, surface: surface),
     );
@@ -107,7 +118,7 @@ void main() {
 
     expect(repository.calls, contains('login:+998901234567'));
     expect(tokens.tokens[SessionSlot.staff], 's');
-    expect(find.text(l10n(tester).shellAdmin), findsOneWidget);
+    expect(find.text(l10n(tester).roleAdmin), findsOneWidget);
   });
 
   testWidgets(
@@ -231,7 +242,7 @@ void main() {
 
     repository.holdAnswers!.complete();
     await tester.pumpAndSettle();
-    expect(find.text(l10n(tester).shellAdmin), findsOneWidget);
+    expect(find.text(l10n(tester).roleAdmin), findsOneWidget);
   });
 
   testWidgets('a stored staff session opens its shell without a login', (
@@ -239,6 +250,7 @@ void main() {
   ) async {
     tokens.tokens[SessionSlot.staff] = 's';
     repository.identities[SessionSlot.staff] = user(role: UserRole.operator);
+    useWidePanelWindow(tester);
 
     await tester.pumpWidget(
       appUnderTest(
@@ -249,7 +261,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text(l10n(tester).shellOperations), findsOneWidget);
+    expect(find.text(l10n(tester).roleOperator), findsOneWidget);
     expect(phoneField, findsNothing);
   });
 

@@ -386,6 +386,12 @@ abstract class AppLocalizations {
   /// **'Buyurtmalar'**
   String get panelSectionBoard;
 
+  /// No description provided for @panelMenuLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Panel'**
+  String get panelMenuLabel;
+
   /// No description provided for @customerModeLabel.
   ///
   /// In uz, this message translates to:

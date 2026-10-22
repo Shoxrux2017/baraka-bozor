@@ -76,6 +76,7 @@
   "shellManager": "Menejer",
   "shellPlaceholder": "Bu bo'lim keyingi bosqichda paydo bo'ladi",
   "panelSectionBoard": "Buyurtmalar",
+  "panelMenuLabel": "Panel",
   "customerModeLabel": "Mijoz rejimi",
   "staffModeLabel": "Xodim rejimi",
   "switchToCustomer": "Mijoz sifatida davom etish",
