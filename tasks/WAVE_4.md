@@ -194,6 +194,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | Carried from Wave 2: a build whose MapKit key Yandex refuses aborts at launch | Closed: the map is Google's since `DL-86`, and its SDK starts only when a map is shown |
 | Carried from Wave 3: the handoff point at launch | Owner question 2, W4-5 |
 | Carried from Wave 3, P3: a list under a page; Customer mode's app bar | W4-10 |
+| `composer audit` (found at W4-1) reports three advisories in packages the app already had: `symfony/http-foundation` (a ReDoS through the `Cache-Control` request header) and `league/commonmark` (two). They are updated before the first deployment | W4-2 |
 
 ## Independent-review findings not acted on
 

@@ -164,6 +164,36 @@ creates its own two Couriers, so the seeded Courier keeps its first-login
 gate. Each script takes the API's address as its argument when it is not
 `http://127.0.0.1:8000/api/v1`.
 
+## Laravel Boost for the agent
+
+`laravel/boost`, a dev dependency on trial (`DL-103`, `DL-106`), gives the
+implementing agent an MCP server that reads the running app: the schema, read-only
+queries, absolute URLs, the application log, the last error, and Laravel's
+documentation for the exact installed versions. It runs inside the `app`
+container, so the stack must be up. Claude Code starts it from a registration in
+the developer's own Claude configuration, never from a file in this repository:
+
+```text
+claude mcp add --scope local laravel-boost -- docker compose -f <repository>/docker/compose.yaml exec -T app php artisan boost:mcp
+```
+
+Never run `boost:install` or `boost:update`. They write `AGENTS.md`, `CLAUDE.md`,
+`.mcp.json`, guidelines and skills over the project's own rules. Two lines of
+`backend/.env.example`, which `backend/.env` must carry too, switch off two
+features: the browser log watcher, because Laravel serves no
+JavaScript page and the watcher adds a route that takes writes without a sign-in,
+and the rule recorder, because project rules live in `AGENTS.md` and
+`docs/DECISIONS.md`. Its `tinker` tool stays off, as it is by default.
+`database-query` runs in a read-only transaction that is always rolled back.
+`search-docs` sends the question and the list of installed packages to
+boost.laravel.com, so a question must never carry data from the database.
+
+Boost and `laravel/mcp` are kept out of package discovery, because `laravel/mcp`
+would add a global middleware to every request, the test suite's too.
+`AppServiceProvider` loads them only for console commands in the `local`
+environment, so served requests and the tests run the production stack, and
+the production image installs no dev dependencies.
+
 ## Stop
 
 ```text
