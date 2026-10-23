@@ -36,6 +36,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // refusal is the API envelope's `401`.
         $middleware->redirectGuestsTo(null);
 
+        // Only the three forwarded headers Caddy overwrites are believed
+        // (`DL-107`); it passes a client's X-Forwarded-Port and -Prefix
+        // through, and the framework's default trusts those as well.
+        $middleware->trustProxies(
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_HOST
+                | Request::HEADER_X_FORWARDED_PROTO,
+        );
+
         // The framework's default global stack, with the input check placed
         // after CORS, maintenance and the body-size check — so its `400` is
         // readable cross-origin and a too-large body stays a `413` — and

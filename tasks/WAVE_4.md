@@ -40,7 +40,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | # | Task | Gate | Status |
 |---|---|---|---|
 | W4-1 | Laravel Boost trial (`DL-103`, `DL-106`) | — | Merged (#110) |
-| W4-2 | Production runtime: images, `docker/compose.prod.yaml`, Caddy, CORS, proxies, the worker, the scheduler and its pruning | — | Planned |
+| W4-2 | Production runtime: images, `docker/compose.prod.yaml`, Caddy, CORS, proxies, the worker, the scheduler and its pruning | — | Merged (#111) |
 | W4-3 | Backups: nightly encrypted copies off the host, the restore script | — | Planned |
 | W4-4 | Login codes through Telegram Gateway | Telegram (verification) | Planned |
 | W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
@@ -68,8 +68,31 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 - The Caddyfile: `api.<domain>` serves PHP, the public pages and `/storage` with long cache headers and the panel's origin for images (`DL-34`); `panel.<domain>` serves the static build with `index.html` uncached.
 - `config/cors.php` allows only `CORS_ALLOWED_ORIGINS` on `api/*`. `TRUSTED_PROXIES` names Caddy's network, and a test proves that the per-IP login limit sees the client's address behind it.
 - `docker/production.env.example` lists every variable the server needs, with no values. The boot refuses a production environment that lacks the database password, the app key or the code driver.
-- The scheduler's entries (`DL-104` (8)), each with a test that a second run changes nothing.
+- The scheduler's entries (`DL-104` (8)), each with a test that a second run changes nothing. Now: idempotency keys, login challenges and failed jobs, daily at 04:00 Tashkent (`DL-107` (7)). With W4-7 and W4-8: the notification deliveries and the devices.
 - Verified on the development machine: the production stack comes up under its own Compose project name and its own ports, with Caddy's internal certificates, and the Wave 3 walkthrough passes against it. No container or volume of another project is touched (`AGENTS.md` section 11).
+- **Rehearsal, 2026-10-23** (project `bb-prod-local`, `127.0.0.1:8443`, API `https://localhost:8443`, panel `https://panel.localhost:8443`):
+  - With the production env file:
+    - only Caddy publishes a port;
+    - the worker and the scheduler run, and `approvals:expire` runs every minute;
+    - no `laravel.log` exists in any container;
+    - the database is `UTF8` with `en_US.utf8`;
+    - FPM keeps the environment, writes no access log and has 12 children; PHP has 256M and opcache without timestamp checks;
+    - the code and `vendor/` belong to root, `storage/` and `bootstrap/cache` to `www-data`.
+  - The boot check:
+    - a blank key, an `http://` URL and an empty driver are refused by name;
+    - an eleventh code request in a minute with a forged `X-Forwarded-For` is answered `429`.
+  - The edge:
+    - `/up` and `/account-deletion` answer `200`. `/legal/privacy` answers `404` until the Admin publishes it.
+    - A preflight from the panel's origin is allowed, cached for two hours and carries no credentials. `Retry-After` is exposed.
+    - No `Server` or `X-Powered-By` header is sent.
+    - The panel's files revalidate, and a deep link serves `index.html`.
+    - A `502` for a search with phone digits is logged as `?redacted`.
+    - The services came back by themselves after Docker Desktop restarted.
+  - With `APP_ENV=local` on the same image and stack:
+    - the Wave 1 walkthrough passes 40 of 41 steps. The one failure is the script's own rewrite of `localhost` to `127.0.0.1`, over which TLS has no name. The image is written by `www-data` and served with a year's cache and the panel's origin.
+    - The Wave 3 walkthrough with `WALKTHROUGH_SCHEDULER=1` passes 72 of 72, the scheduler writing the expiry.
+    - The panel, built for `https://localhost:8443/api/v1`, signs the Admin in across origins and shows the board.
+  - The base `php:8.4-fpm` (Debian 13) could not run on this machine: Docker Desktop's store holds a broken copy of its PHP layer since a crash. The rehearsal image was built on Debian 12. CI's job "Production image builds" builds the committed base on every pull request.
 
 **W4-3. Backups** (`DL-104` (6)).
 
@@ -102,6 +125,8 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 - The Telegram token is restricted to the server's address.
 - The Owner is offered an external check that alerts on a downed server and on a night without a backup.
 - Checked on the live server:
+  - Caddy and the app see public client addresses, not the Docker bridge gateway: a Docker userland proxy would make every client one address and share the per-IP limits. The fix is in Docker's configuration or host networking for Caddy, not `TRUSTED_PROXIES`. In that gateway case a client could also send `X_Forwarded_For` with underscores, which Caddy's FastCGI transport maps onto the same variable as its own header (W4-2 security review, below the bar). If the gateway case is ever accepted, Caddy drops the underscore spellings with `header_up -X_Forwarded_For`, `-X_Forwarded_Host` and `-X_Forwarded_Proto`;
+  - the panel's `current` link inside `PANEL_ROOT` is relative, since an absolute host path does not resolve inside Caddy's `/srv/panel` mount;
   - TLS on both hosts;
   - the public pages `/legal/privacy` and `/account-deletion`, which W4-6 needs;
   - a sign-in by a Telegram code;
@@ -191,11 +216,14 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | A disk-full or downed server is noticed only by people. An external uptime check is an Owner account | Open; offered at W4-5 |
 | iOS push: the code is written and the configuration waits for a Mac and an Apple account (`docs/06`) | Open until a Mac exists |
 | Carried from Wave 3: the scheduler runs nowhere until Wave 4 deploys one (`DL-54` (8)) | Closes with W4-5 |
-| Carried from Wave 2: CORS in production, device pruning, the push token change stream | Close with W4-2, W4-8 and W4-9 |
+| `worker` and `scheduler` do not mount the images volume; a future job that writes images must get it (W4-2 review) | Open, note |
+| The other Symfony components stay on 8.0, past its maintenance, while `symfony/http-foundation` is on 8.1 (`DL-107` (10)). Move `symfony/*` to 8.1 before W4-5 | Open, W4-5 |
+| Carried from Wave 2: CORS in production | Closed by W4-2 (`DL-107` (6)) |
+| Carried from Wave 2: device pruning, the push token change stream | Close with W4-8 and W4-9 |
 | Carried from Wave 2: a build whose MapKit key Yandex refuses aborts at launch | Closed: the map is Google's since `DL-86`, and its SDK starts only when a map is shown |
 | Carried from Wave 3: the handoff point at launch | Owner question 2, W4-5 |
 | Carried from Wave 3, P3: a list under a page; Customer mode's app bar | W4-10 |
-| `composer audit` (found at W4-1) reports three advisories in packages the app already had: `symfony/http-foundation` (a ReDoS through the `Cache-Control` request header) and `league/commonmark` (two). They are updated before the first deployment | W4-2 |
+| `composer audit` (found at W4-1) reports three advisories in packages the app already had: `symfony/http-foundation` (a ReDoS through the `Cache-Control` request header) and `league/commonmark` (two). They are updated before the first deployment | Closed by W4-2 (`DL-107` (10)) |
 
 ## Independent-review findings not acted on
 

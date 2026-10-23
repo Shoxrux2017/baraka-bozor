@@ -18,6 +18,9 @@ thirty minutes after it is asked, and an approval's instants cannot be moved
 an order of its own, and the rest of the scenario runs while it waits
 (`DL-73` (1)). The expiry command runs through `docker compose exec`, as the
 stack has no scheduler yet; the order's history proves it wrote the expiry.
+With WALKTHROUGH_SCHEDULER=1 the script runs no command: it waits for the
+stack's scheduler to write the expiry within 150 seconds. The production
+stack (`docker/README.md`) has a scheduler and uses this mode.
 
 The Admin completes the settings and a catalog and creates two Couriers, who
 pass their first-login gate. The Customer places three cash orders; the
@@ -576,13 +579,22 @@ def walk():
     wait_until(expires_at, "for the question to expire")
     check("Past its expiry the question is an attention item",
           await_attention(operator, ("approval_expired", third["id"])), "")
-    check("Nothing has written the expiry yet",
-          "approval_expired" not in (history_events(operator, third["id"]) or ["approval_expired"]), "")
-    returned, output = artisan("approvals:expire")
-    written = re.search(r"Expired (\d+) approval", output)
-    check("The expiry command writes it", returned == 0 and written and int(written.group(1)) >= 1
-          and (history_events(operator, third["id"]) or []).count("approval_expired") == 1,
-          (written.group(0) if written else "no count"))
+    if os.environ.get("WALKTHROUGH_SCHEDULER") == "1":
+        deadline = time.monotonic() + 150
+        while True:
+            written = (history_events(operator, third["id"]) or []).count("approval_expired")
+            if written == 1 or time.monotonic() > deadline:
+                break
+            time.sleep(10)
+        check("The scheduler writes the expiry", written == 1, f"{written} approval_expired events")
+    else:
+        check("Nothing has written the expiry yet",
+              "approval_expired" not in (history_events(operator, third["id"]) or ["approval_expired"]), "")
+        returned, output = artisan("approvals:expire")
+        written = re.search(r"Expired (\d+) approval", output)
+        check("The expiry command writes it", returned == 0 and written and int(written.group(1)) >= 1
+              and (history_events(operator, third["id"]) or []).count("approval_expired") == 1,
+              (written.group(0) if written else "no count"))
     status, answer = call("POST", f"/customer/approvals/{question.get('id')}/decision", customer,
                           {"decision": "approve"}, str(uuid.uuid4()))
     check("The Customer can no longer answer it", status == 409 and code(answer) == "approval_expired",

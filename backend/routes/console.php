@@ -14,3 +14,10 @@ use Illuminate\Support\Facades\Schedule;
 */
 
 Schedule::command('approvals:expire')->everyMinute();
+
+// Daily pruning at 04:00 Tashkent, after the 03:00 backup of W4-3 (DL-104 (8)).
+// The notification deliveries' and the devices' pruning arrive with W4-7 and
+// W4-8.
+Schedule::command('idempotency-keys:prune')->dailyAt('04:00')->timezone('Asia/Tashkent');
+Schedule::command('login-challenges:prune')->dailyAt('04:00')->timezone('Asia/Tashkent');
+Schedule::command('queue:prune-failed', ['--hours=720'])->dailyAt('04:00')->timezone('Asia/Tashkent');

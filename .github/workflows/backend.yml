@@ -20,6 +20,20 @@ permissions:
   contents: read
 
 jobs:
+  image:
+    name: Production image builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # A runner pulls the current php:8.4-fpm, so the committed base is proven
+      # on every pull request. Nothing is tagged or pushed (DL-107).
+      - name: Build the production image
+        run: docker build -f docker/app.prod.Dockerfile --build-context runtime=docker backend
+
   backend:
     name: Tests, Pint, PHPStan on PostgreSQL
     runs-on: ubuntu-latest

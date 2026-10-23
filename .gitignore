@@ -52,3 +52,6 @@ Desktop.ini
 
 # Bytecode of the walkthrough scripts under tasks/scripts/
 __pycache__/
+
+# Production env files; only the .env.example beside them is committed
+/docker/*.env

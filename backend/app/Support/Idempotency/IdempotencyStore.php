@@ -7,6 +7,7 @@ namespace App\Support\Idempotency;
 use App\Exceptions\ApiException;
 use App\Models\Enums\IdempotencyState;
 use App\Models\IdempotencyKey;
+use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -262,6 +263,25 @@ final class IdempotencyStore
             ->whereKey($attempt->id)
             ->where('state', IdempotencyState::Processing->value)
             ->where('attempt_token', $attempt->attemptToken)
+            ->delete();
+    }
+
+    /**
+     * Deletes the keys that can no longer serve a retry: completed before the
+     * cutoff, or still `processing` with a lease that ran out before it — a
+     * dead attempt, which a retry would take over anyway. Returns the count.
+     */
+    public function prune(CarbonInterface $cutoff): int
+    {
+        return DB::table('idempotency_keys')
+            ->where(function ($query) use ($cutoff): void {
+                $query->where('state', IdempotencyState::Completed->value)
+                    ->where('completed_at', '<', $cutoff);
+            })
+            ->orWhere(function ($query) use ($cutoff): void {
+                $query->where('state', IdempotencyState::Processing->value)
+                    ->where('lease_expires_at', '<', $cutoff);
+            })
             ->delete();
     }
 }
