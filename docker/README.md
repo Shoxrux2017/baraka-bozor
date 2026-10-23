@@ -191,8 +191,9 @@ boost.laravel.com, so a question must never carry data from the database.
 Boost and `laravel/mcp` are kept out of package discovery, because `laravel/mcp`
 would add a global middleware to every request, the test suite's too.
 `AppServiceProvider` loads them only for console commands in the `local`
-environment, so served requests and the tests run the production stack, and
-the production image installs no dev dependencies.
+environment, so served requests and the tests run the same global
+middleware stack as production, and the production image installs no dev
+dependencies.
 
 ## Stop
 

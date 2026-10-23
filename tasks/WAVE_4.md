@@ -44,7 +44,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | W4-3 | Backups: nightly encrypted copies off the host, the restore script | — | Planned |
 | W4-4 | Login codes through Telegram Gateway | Telegram (verification) | Planned |
 | W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
-| W4-6 | Android release build and closed testing | Google Play, the reviewers' question, W4-5 | Planned |
+| W4-6 | Android release build and closed testing | Google Play, W4-5 | Planned |
 | W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | Planned |
 | W4-8 | Firebase Cloud Messaging sender; device pruning | Firebase (verification) | Planned |
 | W4-9 | Push in the app: Firebase token, permission, banners, opening the order | Firebase | Planned |
@@ -201,6 +201,8 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 
 | Task | Finding | Why not acted on |
 |---|---|---|
+| W4-1 | P3: the two Boost switches live in `backend/.env`, so a checkout whose `.env` predates W4-1 would offer `record-rule` | Every `.env` is copied from `.env.example`, which carries them, and this machine's `.env` has them. Forcing them in code is taken up if Boost stays after the trial |
+| W4-1 | P3: the console-and-local gate in `AppServiceProvider` has no test of its own | `GlobalMiddlewareTest` guards what matters, that tests and CI never load Boost or `laravel/mcp`; the gate is removed with Boost if the trial ends |
 
 ## Closure
 
