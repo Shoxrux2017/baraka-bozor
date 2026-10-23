@@ -20,6 +20,7 @@ import '../../../core/widgets/panel/panel_filter_chip.dart';
 import '../../../core/widgets/panel/panel_layout.dart';
 import '../../../core/widgets/panel/panel_page_header.dart';
 import '../../../core/widgets/panel/panel_pager.dart';
+import '../../../core/widgets/panel/panel_table.dart';
 import '../application/admin_catalog_controllers.dart';
 import '../domain/admin_catalog.dart';
 import 'catalog_archive_dialog.dart';
@@ -187,9 +188,7 @@ TextStyle _nameStyle(bool archived) => TextStyle(
 
 const TextStyle _small = TextStyle(fontSize: 12, color: KitColors.muted);
 
-/// The table: a header on `card` between two `line` rules, then a row per
-/// category, each a table of its own under the same column widths, so a row
-/// takes a hover and a tap as a whole and grows with its text.
+/// The table: rows of [PanelTable] under the categories' column widths.
 class _CategoriesTable extends StatelessWidget {
   const _CategoriesTable({required this.categories, required this.busy});
 
@@ -199,108 +198,46 @@ class _CategoriesTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    const BorderSide line = BorderSide(color: KitColors.line);
 
-    Widget header(String text) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Text(
-        text.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: KitColors.muted,
-        ),
-      ),
-    );
-
-    return Material(
-      type: MaterialType.transparency,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          DecoratedBox(
-            decoration: const BoxDecoration(
-              color: KitColors.card,
-              border: Border.symmetric(horizontal: line),
-            ),
-            child: Table(
-              columnWidths: _columns,
-              children: <TableRow>[
-                TableRow(
-                  children: <Widget>[
-                    header(l10n.productCategory),
-                    header(l10n.catalogSortOrder),
-                    header(l10n.catalogColumnShown),
-                    const SizedBox.shrink(),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          for (final AdminCategory category in categories)
-            _CategoryRow(category: category, busy: busy),
-        ],
-      ),
+    return PanelTable(
+      columns: <PanelColumn>[
+        (label: l10n.productCategory, width: _columns[0]!, end: false),
+        (label: l10n.catalogSortOrder, width: _columns[1]!, end: false),
+        (label: l10n.catalogColumnShown, width: _columns[2]!, end: false),
+        (label: '', width: _columns[3]!, end: true),
+      ],
+      rows: <PanelTableRow>[
+        for (final AdminCategory category in categories)
+          _categoryRow(context, category, busy),
+      ],
     );
   }
 }
 
-class _CategoryRow extends StatelessWidget {
-  const _CategoryRow({required this.category, required this.busy});
+PanelTableRow _categoryRow(
+  BuildContext context,
+  AdminCategory category,
+  bool busy,
+) {
+  final bool archived = category.state == CatalogEntryState.archived;
 
-  final AdminCategory category;
-  final bool busy;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool archived = category.state == CatalogEntryState.archived;
-
-    Widget cell(
-      Widget child, {
-      EdgeInsets padding = const EdgeInsets.all(12),
-      Alignment align = Alignment.centerLeft,
-    }) => Padding(
-      padding: padding,
-      child: Align(alignment: align, child: child),
-    );
-
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: KitColors.line)),
-      ),
-      child: InkWell(
-        key: ValueKey<String>('category-${category.id}'),
-        hoverColor: KitColors.field,
-        onTap: busy ? null : () => showCategoryForm(context, category),
-        child: Table(
-          columnWidths: _columns,
-          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-          children: <TableRow>[
-            TableRow(
-              children: <Widget>[
-                cell(_CategoryIdentity(category: category, size: 44)),
-                cell(
-                  Text(
-                    '${category.sortOrder}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: archived ? KitColors.muted : KitColors.ink2,
-                    ),
-                  ),
-                ),
-                cell(CatalogStateChip(category.state)),
-                cell(
-                  _CategoryActions(category: category, busy: busy),
-                  padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
-                  align: Alignment.centerRight,
-                ),
-              ],
-            ),
-          ],
+  return PanelTableRow(
+    key: ValueKey<String>('category-${category.id}'),
+    onTap: busy ? null : () => showCategoryForm(context, category),
+    lastCellPadding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+    cells: <Widget>[
+      _CategoryIdentity(category: category, size: 44),
+      Text(
+        '${category.sortOrder}',
+        style: TextStyle(
+          fontSize: 13,
+          color: archived ? KitColors.muted : KitColors.ink2,
         ),
       ),
-    );
-  }
+      CatalogStateChip(category.state),
+      _CategoryActions(category: category, busy: busy),
+    ],
+  );
 }
 
 class _CategoryCard extends StatelessWidget {

@@ -7,7 +7,7 @@ import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/operations/data/operations_api.dart';
 import 'package:baraka_bozor/features/operations/domain/board.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
-import 'package:baraka_bozor/features/operations/presentation/order_staff.dart';
+import 'package:baraka_bozor/core/widgets/panel/panel_person.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';

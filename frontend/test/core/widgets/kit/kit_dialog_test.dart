@@ -191,4 +191,50 @@ void main() {
       );
     },
   );
+
+  testWidgets('a badge stands above the title', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: KitDialogFrame(
+            dialogKey: 'frame',
+            title: 'Dialog title',
+            badge: KitDialogBadge(Icons.lock, key: ValueKey<String>('badge')),
+            child: Text('body'),
+          ),
+        ),
+      ),
+    );
+
+    final Rect badge = tester.getRect(byKey('badge'));
+    expect(badge.size, const Size(52, 52));
+    final DecoratedBox circle = tester.widget<DecoratedBox>(
+      find.descendant(of: byKey('badge'), matching: find.byType(DecoratedBox)),
+    );
+    expect((circle.decoration as BoxDecoration).color, KitColors.primaryWash);
+    final Rect title = tester.getRect(find.text('Dialog title'));
+    expect(badge.bottom + 14, title.top);
+  });
+
+  testWidgets('a frame that is not closable has no ×', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: KitDialogFrame(
+            dialogKey: 'frame',
+            title: 'Dialog title',
+            closable: false,
+            child: Text('body'),
+          ),
+        ),
+      ),
+    );
+
+    expect(byKey('frame'), findsOneWidget);
+    expect(byKey('frame-close'), findsNothing);
+  });
 }

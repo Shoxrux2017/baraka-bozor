@@ -14,55 +14,11 @@ import '../../../core/widgets/kit/kit_dialog.dart';
 import '../../../core/widgets/kit/kit_note.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/panel/panel_card.dart';
+import '../../../core/widgets/panel/panel_person.dart';
 import '../application/board_controllers.dart';
 import '../domain/board.dart';
 import 'board_widgets.dart';
 import 'order_actions.dart';
-
-/// A round avatar with the initials of [name], green on its wash.
-class PersonAvatar extends StatelessWidget {
-  const PersonAvatar(this.name, {this.size = 42, super.key});
-
-  final String? name;
-  final double size;
-
-  String get _initials {
-    final List<String> words = (name ?? '')
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((String word) => word.isNotEmpty)
-        .toList();
-    if (words.isEmpty) {
-      return '?';
-    }
-    final String first = String.fromCharCode(words.first.runes.first);
-    final String second = words.length > 1
-        ? String.fromCharCode(words[1].runes.first)
-        : '';
-    return (first + second).toUpperCase();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: KitColors.primarySoft,
-        shape: BoxShape.circle,
-      ),
-      child: Text(
-        _initials,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: KitColors.primaryDark,
-        ),
-      ),
-    );
-  }
-}
 
 /// One assignment as a person: avatar, name with its tags, phone, and the
 /// lines of who assigned it and what became of it, in muted 12.
