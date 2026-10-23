@@ -4,17 +4,20 @@ import '../../theme/kit_colors.dart';
 import '../kit/kit_buttons.dart';
 
 /// The head of a panel page: its [title], a muted [subtitle] line under it,
-/// and a [trailing] widget (a button) at the end, centred vertically.
+/// and a [trailing] widget (a button) at the end, centred vertically. A page
+/// that needs to find its subtitle gives it a [subtitleKey].
 class PanelPageHeader extends StatelessWidget {
   const PanelPageHeader({
     super.key,
     required this.title,
     this.subtitle,
+    this.subtitleKey,
     this.trailing,
   });
 
   final String title;
   final String? subtitle;
+  final Key? subtitleKey;
   final Widget? trailing;
 
   @override
@@ -40,6 +43,7 @@ class PanelPageHeader extends StatelessWidget {
               if (subtitle != null)
                 Text(
                   subtitle,
+                  key: subtitleKey,
                   style: const TextStyle(fontSize: 12, color: KitColors.muted),
                 ),
             ],

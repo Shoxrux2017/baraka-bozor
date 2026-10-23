@@ -692,12 +692,6 @@ abstract class AppLocalizations {
   /// **'Saqlanmoqda'**
   String get settingsSaving;
 
-  /// No description provided for @settingsTashkentTimeHint.
-  ///
-  /// In uz, this message translates to:
-  /// **'Toshkent vaqti bilan'**
-  String get settingsTashkentTimeHint;
-
   /// No description provided for @settingsUpdatedAt.
   ///
   /// In uz, this message translates to:
@@ -715,6 +709,60 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Yoqilgan tizimlar mijozga to\'lov usuli sifatida taklif qilinadi'**
   String get providersIntro;
+
+  /// No description provided for @settingsHoursHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Toshkent vaqti bilan. Bo\'sh qoldirilsa, o\'rnatilmagan'**
+  String get settingsHoursHint;
+
+  /// No description provided for @settingsAreaHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Markaz atrofidagi doira: radiusdan uzoqroq manzilni mijoz saqlay olmaydi'**
+  String get settingsAreaHint;
+
+  /// No description provided for @settingsShowOnMap.
+  ///
+  /// In uz, this message translates to:
+  /// **'Markazni xaritada ko\'rsatish'**
+  String get settingsShowOnMap;
+
+  /// No description provided for @settingsMapFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaritani ochib bo\'lmadi'**
+  String get settingsMapFailed;
+
+  /// No description provided for @settingsSaveNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi narx va yig\'imlar yangi buyurtmalarga amal qiladi — rasmiylashtirilganlari o\'zgarmaydi'**
+  String get settingsSaveNote;
+
+  /// No description provided for @providersCashOnlyNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha mijozlar faqat naqd to\'laydi: ilovada onlayn to\'lov ko\'rinadi, lekin yopiq. Bu yerda yoqilgan tizimlar ular bilan shartnomalar ulanganda mijozga chiqadi.'**
+  String get providersCashOnlyNote;
+
+  /// No description provided for @providerOn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yoqilgan'**
+  String get providerOn;
+
+  /// No description provided for @providerOff.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chirilgan'**
+  String get providerOff;
+
+  /// No description provided for @providersInstant.
+  ///
+  /// In uz, this message translates to:
+  /// **'Almashtirgich darhol ishlaydi, «Saqlash»siz'**
+  String get providersInstant;
 
   /// No description provided for @fieldRequired.
   ///

@@ -49,6 +49,34 @@ class YandexRouteLinks implements MapLinks {
   }
 }
 
+/// A point shown on Google Maps in a new tab or the device's map app (`DL-102`
+/// (6)): a plain search link, with no key and no embedded map.
+class GoogleMapsPointLinks implements MapLinks {
+  const GoogleMapsPointLinks({this.launch = _launchExternal});
+
+  /// Opens a link on the device, outside the app; for tests it is injected.
+  final Future<bool> Function(Uri url) launch;
+
+  @override
+  Future<bool> open(String latitude, String longitude) async {
+    try {
+      return await launch(
+        Uri.parse(
+          'https://www.google.com/maps/search/?api=1'
+          '&query=$latitude%2C$longitude',
+        ),
+      );
+    } on PlatformException {
+      return false;
+    }
+  }
+}
+
 final Provider<MapLinks> mapLinksProvider = Provider<MapLinks>(
   (Ref ref) => const YandexRouteLinks(),
+);
+
+/// How the Admin's settings show the service centre on a map.
+final Provider<MapLinks> mapPointLinksProvider = Provider<MapLinks>(
+  (Ref ref) => const GoogleMapsPointLinks(),
 );

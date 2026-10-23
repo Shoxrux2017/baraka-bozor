@@ -324,9 +324,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get settingsSaving => 'Saqlanmoqda';
 
   @override
-  String get settingsTashkentTimeHint => 'Toshkent vaqti bilan';
-
-  @override
   String settingsUpdatedAt(String when) {
     return 'Oxirgi o\'zgarish: $when';
   }
@@ -337,6 +334,37 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get providersIntro =>
       'Yoqilgan tizimlar mijozga to\'lov usuli sifatida taklif qilinadi';
+
+  @override
+  String get settingsHoursHint =>
+      'Toshkent vaqti bilan. Bo\'sh qoldirilsa, o\'rnatilmagan';
+
+  @override
+  String get settingsAreaHint =>
+      'Markaz atrofidagi doira: radiusdan uzoqroq manzilni mijoz saqlay olmaydi';
+
+  @override
+  String get settingsShowOnMap => 'Markazni xaritada ko\'rsatish';
+
+  @override
+  String get settingsMapFailed => 'Xaritani ochib bo\'lmadi';
+
+  @override
+  String get settingsSaveNote =>
+      'Yangi narx va yig\'imlar yangi buyurtmalarga amal qiladi — rasmiylashtirilganlari o\'zgarmaydi';
+
+  @override
+  String get providersCashOnlyNote =>
+      'Hozircha mijozlar faqat naqd to\'laydi: ilovada onlayn to\'lov ko\'rinadi, lekin yopiq. Bu yerda yoqilgan tizimlar ular bilan shartnomalar ulanganda mijozga chiqadi.';
+
+  @override
+  String get providerOn => 'Yoqilgan';
+
+  @override
+  String get providerOff => 'O\'chirilgan';
+
+  @override
+  String get providersInstant => 'Almashtirgich darhol ishlaydi, «Saqlash»siz';
 
   @override
   String get fieldRequired => 'Maydonni to\'ldiring';

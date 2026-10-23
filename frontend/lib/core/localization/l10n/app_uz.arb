@@ -127,7 +127,6 @@
   "settingsSaved": "Sozlamalar saqlandi",
   "settingsNoChanges": "O'zgarish yo'q",
   "settingsSaving": "Saqlanmoqda",
-  "settingsTashkentTimeHint": "Toshkent vaqti bilan",
   "settingsUpdatedAt": "Oxirgi o'zgarish: {when}",
   "@settingsUpdatedAt": {
     "placeholders": {
@@ -138,6 +137,15 @@
   },
   "providersTitle": "Onlayn to'lov",
   "providersIntro": "Yoqilgan tizimlar mijozga to'lov usuli sifatida taklif qilinadi",
+  "settingsHoursHint": "Toshkent vaqti bilan. Bo'sh qoldirilsa, o'rnatilmagan",
+  "settingsAreaHint": "Markaz atrofidagi doira: radiusdan uzoqroq manzilni mijoz saqlay olmaydi",
+  "settingsShowOnMap": "Markazni xaritada ko'rsatish",
+  "settingsMapFailed": "Xaritani ochib bo'lmadi",
+  "settingsSaveNote": "Yangi narx va yig'imlar yangi buyurtmalarga amal qiladi — rasmiylashtirilganlari o'zgarmaydi",
+  "providersCashOnlyNote": "Hozircha mijozlar faqat naqd to'laydi: ilovada onlayn to'lov ko'rinadi, lekin yopiq. Bu yerda yoqilgan tizimlar ular bilan shartnomalar ulanganda mijozga chiqadi.",
+  "providerOn": "Yoqilgan",
+  "providerOff": "O'chirilgan",
+  "providersInstant": "Almashtirgich darhol ishlaydi, «Saqlash»siz",
   "fieldRequired": "Maydonni to'ldiring",
   "fieldPercent": "0 dan 999.99 gacha son, nuqtadan keyin ko'pi bilan 2 raqam",
   "fieldAmount": "0 dan 1 000 000 000 gacha butun son",

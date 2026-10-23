@@ -325,9 +325,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsSaving => 'Сохранение';
 
   @override
-  String get settingsTashkentTimeHint => 'По времени Ташкента';
-
-  @override
   String settingsUpdatedAt(String when) {
     return 'Последнее изменение: $when';
   }
@@ -338,6 +335,37 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get providersIntro =>
       'Включённые системы предлагаются клиенту как способ оплаты';
+
+  @override
+  String get settingsHoursHint => 'По времени Ташкента. Пусто — не задано';
+
+  @override
+  String get settingsAreaHint =>
+      'Круг вокруг центра: адрес дальше радиуса клиент сохранить не сможет';
+
+  @override
+  String get settingsShowOnMap => 'Показать центр на карте';
+
+  @override
+  String get settingsMapFailed => 'Не удалось открыть карту';
+
+  @override
+  String get settingsSaveNote =>
+      'Новые цены и сборы действуют для новых заказов — оформленные не меняются';
+
+  @override
+  String get providersCashOnlyNote =>
+      'Пока клиенты платят только наличными: онлайн-оплата в приложении видна, но закрыта. Включённые здесь системы появятся у клиента, когда подключим договоры с ними.';
+
+  @override
+  String get providerOn => 'Включено';
+
+  @override
+  String get providerOff => 'Выключено';
+
+  @override
+  String get providersInstant =>
+      'Переключатель срабатывает сразу, без «Сохранить»';
 
   @override
   String get fieldRequired => 'Заполните поле';
