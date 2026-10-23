@@ -1598,6 +1598,17 @@ Taken while planning `tasks/WAVE_4.md`. Each task records anything finer.
     - **The keys.** The Maps key gains the SHA-1s of the upload key and of Play's app-signing key, and the Geocoding key is restricted to the VPS's address.
     - **The store.** The listing, in Uzbek and Russian, points at `https://api.<domain>/legal/privacy` and `/account-deletion`. The agent prepares the data-safety answers, and the Owner submits them in the Play Console. They are redone when the push build ships (W4-9), since push adds a device identifier.
 
+## DL-105 — The store reviewers' sign-in (2026-10-23, Owner)
+
+Google asks an app with a one-time-code login for reusable sign-in details that bypass the code, and checks every build, a closed test's too. Interview 7.2 made test phones both the reviewers' way in and empty in production. The Owner chose option А (`tasks/WAVE_4.md`, question 1):
+
+1. **One reviewer phone in production.** It sits in the server's environment, apart from the development list of test phones, with a fixed code of its own that differs from the development code. The boot guard that refuses test phones in production stays as it is.
+2. **A Customer only.** The phone opens a Customer account and never a Shopper's or a Courier's: no staff account may sit on it, and no staff step is issued for it.
+3. **Recognised on the board.** The account is created before the first upload with the name "Проверка Google", so a reviewer's order is plain to the Operator, who cancels it.
+4. **Changed in a minute.** A leaked code is replaced by editing the environment and restarting. The attempt limit of `DL-87` applies to it as to any phone.
+
+This settles the contradiction inside interview 7.2 and supersedes the "empty in production" half of `BR-ROLE-011`, `DL-2` topic 7 and `AGENTS.md` section 5 for this one phone. Those texts change with the code, in W4-4.
+
 ## DL-106 — Laravel Boost set-up (2026-10-23, agent)
 
 How the trial of `DL-103` is installed. The runbook is `docker/README.md`, "Laravel Boost for the agent".
