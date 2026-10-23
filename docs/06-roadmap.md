@@ -44,7 +44,7 @@ Courier assignment and reassignment; Shopper accept and start; purchase recordin
 
 ### Wave 4 — Pilot readiness
 
-Notification events and templates, FCM adapter, Shopper polling; history (reorder was delivered in kit stage 6, `DL-91`); Telegram Gateway adapter; production configuration, deployment scripts, backups, TLS; Android release build into closed testing; web panel hosting; the end-to-end scenario on the real stack; the Owner's pilot checklist.
+Notification events and templates, FCM adapter, Shopper polling; Telegram Gateway adapter; production configuration, deployment scripts, backups, TLS; Android release build into closed testing; web panel hosting; the end-to-end scenario on the real stack; the Owner's pilot checklist. History and reorder were delivered in kit stage 6 (`DL-91`, `DL-92`). Planned in `tasks/WAVE_4.md`, decisions in `DL-104`; the Android release goes early, since Google Play's closed test takes fourteen days.
 
 ### Wave 5 — Online payment
 
@@ -62,6 +62,7 @@ The wave's behaviour is implemented with tests; backend rules are enforced serve
 | Firebase project, Android app registration | 4 | Owner |
 | Telegram Gateway account and funding | 4 | Owner |
 | Hosting in Uzbekistan, domain, TLS | 4 | Owner |
+| Backup storage in Uzbekistan, apart from the server (`DL-104` (6)) | 4 | Owner |
 | Google Play personal account, twelve closed testers | 4 | Owner |
 | Legal entity | 5 | Owner |
 | Payme and Click merchant agreements and credentials | 5 | Owner |

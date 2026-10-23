@@ -48,7 +48,7 @@ Phone: E.164 `+998` plus nine digits. Policy: six digits, five-minute lifetime, 
 {"data":{"channel":"telegram","expires_in_seconds":300,"resend_available_in_seconds":0}}
 ```
 
-`channel` ∈ `telegram, sms, fake, test`. `fake` is what the development gateway reports; `test` means a configured test phone that needs no delivery. The client shows channel-specific text for `telegram` and `sms` and a generic "code sent" otherwise. Codes: `code_locked` (`429`, `Retry-After`), `rate_limited`, `provider_unavailable`, `validation_failed`.
+`channel` ∈ `telegram, sms, fake, test`. `fake` is what the development gateway reports; `test` means a configured test phone that needs no delivery. The client shows channel-specific text for `telegram` and `sms` and a generic "code sent" otherwise. Codes: `code_locked` (`429`, `Retry-After`), `rate_limited` (also twenty requests an hour per IP address), `code_delivery_unavailable` (`409`: no channel reaches the number — Telegram cannot and no SMS provider exists yet; no challenge is created), `provider_unavailable` (also above the daily ceiling of sends), `validation_failed` (`DL-104` (9)).
 
 ## 7. Verify Customer Login Code
 
@@ -336,7 +336,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 52. Auth
 
-`invalid_credentials`, `account_blocked`, `password_change_required`, `code_invalid`, `code_expired`, `code_attempts_exhausted`, `code_locked` (`429`), `staff_code_required` (`403`), `staff_step_invalid`, `staff_step_expired`.
+`invalid_credentials`, `account_blocked`, `password_change_required`, `code_invalid`, `code_expired`, `code_attempts_exhausted`, `code_locked` (`429`), `code_delivery_unavailable` (`409`), `staff_code_required` (`403`), `staff_step_invalid`, `staff_step_expired`.
 
 ## 53. Catalog, Cart, Checkout, Editing
 
@@ -404,7 +404,7 @@ Web pages for the store listing (not the JSON API; no session, no cookie, thrott
 
 ## 64. Account Deletion Code
 
-`POST /customer/account/deletion-code` — Customer only, no body (any field is `422`). Answers `200` with the same `data` as `POST /auth/customer/code/request` (`channel`, `expires_in_seconds`, `resend_available_in_seconds`); the code is a login code of the purpose `account_deletion` (`BR-ROLE-012`), so it shares the phone's send window, attempt limit and lock with sign-in, and requesting it leaves an open sign-in code alone. While an order of the Customer is neither completed nor cancelled the answer is `409 account_has_unfinished_orders` with `details: {order_id, order_number}` of the oldest such order, and no code is sent. Any other role is `403`.
+`POST /customer/account/deletion-code` — Customer only, no body (any field is `422`). Answers `200` with the same `data` as `POST /auth/customer/code/request` (`channel`, `expires_in_seconds`, `resend_available_in_seconds`); the code is a login code of the purpose `account_deletion` (`BR-ROLE-012`), so it shares the phone's send window, attempt limit and lock with sign-in, and requesting it leaves an open sign-in code alone. While an order of the Customer is neither completed nor cancelled the answer is `409 account_has_unfinished_orders` with `details: {order_id, order_number}` of the oldest such order, and no code is sent. The delivery refusals of section 6 apply as at sign-in, `code_delivery_unavailable` among them (`DL-104` (9)). Any other role is `403`.
 
 ## 65. Account Deletion
 

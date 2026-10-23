@@ -55,6 +55,7 @@ Some steps need the Owner:
 | Firebase project and Android app registration | Wave 4 push |
 | Telegram Gateway account and funding | Wave 4 login codes |
 | Hosting in Uzbekistan, domain, TLS | Wave 4 deployment |
+| Backup storage in Uzbekistan, apart from the server | Wave 4 deployment (`DL-104` (6)) |
 | Google Play personal account, twelve closed testers | Wave 4 Android distribution |
 | Legal entity | Wave 5 payment contracts, Eskiz SMS contract |
 | Payme and Click merchant agreements, credentials | Wave 5 |

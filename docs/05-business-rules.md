@@ -288,7 +288,7 @@ Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pendin
 
 # 18. Notifications
 
-Customer: `order_accepted`, `approval_required`, `payment_required`, `courier_started`, `order_delivered`, `order_cancelled`. Shopper: `shopping_assigned`, `approval_answered`, `shopping_order_cancelled`. Courier: `delivery_assigned`, `delivery_cancelled`. For a cash order the Customer also gets the final amount when shopping completes (`DL-78`, Wave 4).
+Customer: `order_accepted`, `approval_required`, `payment_required`, `courier_started`, `order_delivered`, `order_cancelled`. Shopper: `shopping_assigned`, `approval_answered`, `shopping_order_cancelled`. Courier: `delivery_assigned`, `delivery_cancelled`. For a cash order the Customer also gets the final amount when shopping completes, `shopping_completed` (`DL-78`, `DL-104` (10)). Nobody is notified of their own action, and one action sends a person one push (`DL-104` (10)).
 
 **BR-NOTIF-001** — Delivery is best-effort and never changes state.
 
