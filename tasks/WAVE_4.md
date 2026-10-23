@@ -40,7 +40,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | # | Task | Gate | Status |
 |---|---|---|---|
 | W4-1 | Laravel Boost trial (`DL-103`, `DL-106`) | — | Merged (#110) |
-| W4-2 | Production runtime: images, `docker/compose.prod.yaml`, Caddy, CORS, proxies, the worker, the scheduler and its pruning | — | Planned |
+| W4-2 | Production runtime: images, `docker/compose.prod.yaml`, Caddy, CORS, proxies, the worker, the scheduler and its pruning | — | In progress |
 | W4-3 | Backups: nightly encrypted copies off the host, the restore script | — | Planned |
 | W4-4 | Login codes through Telegram Gateway | Telegram (verification) | Planned |
 | W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
@@ -68,7 +68,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 - The Caddyfile: `api.<domain>` serves PHP, the public pages and `/storage` with long cache headers and the panel's origin for images (`DL-34`); `panel.<domain>` serves the static build with `index.html` uncached.
 - `config/cors.php` allows only `CORS_ALLOWED_ORIGINS` on `api/*`. `TRUSTED_PROXIES` names Caddy's network, and a test proves that the per-IP login limit sees the client's address behind it.
 - `docker/production.env.example` lists every variable the server needs, with no values. The boot refuses a production environment that lacks the database password, the app key or the code driver.
-- The scheduler's entries (`DL-104` (8)), each with a test that a second run changes nothing.
+- The scheduler's entries (`DL-104` (8)), each with a test that a second run changes nothing. Now: idempotency keys, login challenges and failed jobs, daily at 04:00 Tashkent (`DL-107` (7)). With W4-7 and W4-8: the notification deliveries and the devices.
 - Verified on the development machine: the production stack comes up under its own Compose project name and its own ports, with Caddy's internal certificates, and the Wave 3 walkthrough passes against it. No container or volume of another project is touched (`AGENTS.md` section 11).
 
 **W4-3. Backups** (`DL-104` (6)).
@@ -191,11 +191,12 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | A disk-full or downed server is noticed only by people. An external uptime check is an Owner account | Open; offered at W4-5 |
 | iOS push: the code is written and the configuration waits for a Mac and an Apple account (`docs/06`) | Open until a Mac exists |
 | Carried from Wave 3: the scheduler runs nowhere until Wave 4 deploys one (`DL-54` (8)) | Closes with W4-5 |
-| Carried from Wave 2: CORS in production, device pruning, the push token change stream | Close with W4-2, W4-8 and W4-9 |
+| Carried from Wave 2: CORS in production | Closed by W4-2 (`DL-107` (6)) |
+| Carried from Wave 2: device pruning, the push token change stream | Close with W4-8 and W4-9 |
 | Carried from Wave 2: a build whose MapKit key Yandex refuses aborts at launch | Closed: the map is Google's since `DL-86`, and its SDK starts only when a map is shown |
 | Carried from Wave 3: the handoff point at launch | Owner question 2, W4-5 |
 | Carried from Wave 3, P3: a list under a page; Customer mode's app bar | W4-10 |
-| `composer audit` (found at W4-1) reports three advisories in packages the app already had: `symfony/http-foundation` (a ReDoS through the `Cache-Control` request header) and `league/commonmark` (two). They are updated before the first deployment | W4-2 |
+| `composer audit` (found at W4-1) reports three advisories in packages the app already had: `symfony/http-foundation` (a ReDoS through the `Cache-Control` request header) and `league/commonmark` (two). They are updated before the first deployment | Closed by W4-2 (`DL-107` (10)) |
 
 ## Independent-review findings not acted on
 

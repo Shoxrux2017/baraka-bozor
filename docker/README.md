@@ -8,8 +8,9 @@ no loadable extension directory and cannot provide `pdo_pgsql`. Running in the
 container also keeps local runs, CI and production on the same Linux PHP, which
 is what makes a green check on a pull request mean something.
 
-This stack is for development and tests only. It is not a deployment target; see
-`docs/07-architecture.md` Section 34 for production topology.
+This stack is for development and tests only. The production stack is a separate
+file set, described in "The production stack" below; `docs/07-architecture.md`
+Section 34 gives the topology.
 
 ## PHP configuration is set explicitly
 
@@ -194,6 +195,50 @@ would add a global middleware to every request, the test suite's too.
 environment, so served requests and the tests run the same global
 middleware stack as production, and the production image installs no dev
 dependencies.
+
+## The production stack
+
+`DL-107` records the decisions. The files:
+
+| File | Role |
+|---|---|
+| `docker/app.prod.Dockerfile` | The production image, built from `backend/`: PHP 8.4 FPM, no dev dependencies, runs as `www-data` |
+| `backend/.dockerignore` | Keeps `vendor/`, `.env*`, tests and `storage/` contents out of the image |
+| `docker/php.prod.ini` | Opcache without timestamp checks; hides the PHP version |
+| `docker/php-fpm.prod.conf` | The FPM pool: the container's environment, no access log, 12 workers |
+| `docker/entrypoint.prod.sh` | Runs `php artisan optimize`, then the container's process |
+| `docker/compose.prod.yaml` | `caddy`, `app`, `worker`, `scheduler` and `db`; only Caddy publishes ports |
+| `docker/caddy/Caddyfile` | The API host, the panel host and the images |
+| `docker/production.env.example` | Every variable the server needs, with no values |
+
+The development `app.Dockerfile` and `compose.yaml` stay for development and CI.
+The production image holds no Composer and no tests.
+
+Run it from the repository root with one env file, kept outside the repository:
+
+```text
+docker compose --env-file <file> -f docker/compose.prod.yaml up -d --build
+```
+
+In production the boot refuses an incomplete configuration and names the
+settings that are wrong, never their values (`DL-107` (3)).
+
+**The rehearsal on this machine.** The project is `bb-prod-local`
+(`COMPOSE_PROJECT_NAME=bb-prod-local`), with Caddy on `127.0.0.1:8080` and
+`8443`, the API at `https://localhost:8443` and the panel at
+`https://127.0.0.1:8443`. The env files live outside the repository. Caddy signs
+with its own internal CA. To trust it, export its root certificate from
+`/data/caddy/pki/authorities/local/root.crt` in the `caddy` container and point
+`SSL_CERT_FILE` at the copy.
+
+A production env file proves the boot, the edge and the processes. The Wave 3
+walkthrough runs on the same image and stack with `APP_ENV=local`, since test
+phones are refused in production. Start it with `WALKTHROUGH_SCHEDULER=1`: the
+script then waits for the stack's scheduler to write the expiry instead of
+running `approvals:expire` itself. Remove the rehearsal only with
+`down -v -p bb-prod-local`.
+
+`docker/DEPLOY.md` (W4-5) will be the server runbook.
 
 ## Stop
 

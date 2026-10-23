@@ -190,7 +190,7 @@ Telegram Gateway carries the backend's own code: `checkSendAbility` for the phon
 
 ## 25. Queue and Scheduler
 
-Laravel database queue in PostgreSQL, worked by its own container. Scheduler jobs, in a container running `schedule:work`: approval expiry every minute; daily pruning of completed idempotency keys after 30 days, of notification deliveries after 90 days, of push devices unseen for 60 days, and of failed jobs after 30 days (`DL-104` (8)); from Wave 5, payment reconciliation. Attention items and delay are derived on read. Correctness never depends on scheduler latency alone: every read path reconciles what it shows.
+Laravel database queue in PostgreSQL, worked by its own container. Scheduler jobs, in a container running `schedule:work`: approval expiry every minute; daily pruning at 04:00 Tashkent, after the backup, of completed idempotency keys after 30 days, of login challenges after 30 days, of notification deliveries after 90 days, of push devices unseen for 60 days, and of failed jobs after 30 days (`DL-104` (8), `DL-107` (7)); the deliveries' and the devices' pruning come with W4-7 and W4-8; from Wave 5, payment reconciliation. Attention items and delay are derived on read. Correctness never depends on scheduler latency alone: every read path reconciles what it shows.
 
 ## 26. Time
 
@@ -259,7 +259,7 @@ Internet → Caddy (TLS) ─ api.<domain>   → Laravel (php-fpm) → PostgreSQL
            queue worker and scheduler: the same image, their own containers
 ```
 
-One Ubuntu VPS in Uzbekistan running Docker Compose (`docker/compose.prod.yaml`); only the proxy publishes ports. Nightly backups of the database and the images, encrypted with restic, go to the Owner's second storage in Uzbekistan, and the restore is a script that has been tried (`DL-104` (3)–(7)). The API allows the panel's origin by CORS (`CORS_ALLOWED_ORIGINS`). The application logs to stderr under Docker's rotation, and the proxy keeps no access log, since a query string can carry phone digits. The proxy is named in `TRUSTED_PROXIES` so the application sees the client's address; without that, the per-IP login limit would count every client as the proxy.
+One Ubuntu VPS in Uzbekistan running Docker Compose (`docker/compose.prod.yaml`); only the proxy publishes ports. Nightly backups of the database and the images, encrypted with restic, go to the Owner's second storage in Uzbekistan, and the restore is a script that has been tried (`DL-104` (3)–(7)). The API allows the panel's origin by CORS (`CORS_ALLOWED_ORIGINS`). The application logs to stderr under Docker's rotation, and the proxy keeps no access log, since a query string can carry phone digits. Caddy and the application alone share the `edge` network. Its subnet, `EDGE_SUBNET`, is also the value of `TRUSTED_PROXIES`, so the application trusts the proxy's range and nothing else, and Caddy replaces any `X-Forwarded-For` a client sends (`DL-107` (4)). The proxy is named in `TRUSTED_PROXIES` so the application sees the client's address; without that, the per-IP login limit would count every client as the proxy.
 
 ## 35. Non-Goals
 
