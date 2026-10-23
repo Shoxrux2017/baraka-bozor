@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +9,7 @@ import '../../../core/orders/order_values.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/kit/kit_card.dart';
 import '../../../core/widgets/list_widgets.dart';
+import '../../../core/widgets/panel/panel_pills.dart';
 import '../application/board_controllers.dart';
 import '../domain/board.dart';
 
@@ -233,14 +233,14 @@ class BoardStatusPills extends ConsumerWidget {
     // The pills stand and filter while the summary loads or fails; only the
     // counts wait for it.
     final List<Widget> pills = <Widget>[
-      _Pill(
+      PanelPill(
         key: const ValueKey<String>('summary-all'),
         label: l10n.boardAllOrders,
         selected: filtered == null,
         onTap: () => queries.filterByStatus(null),
       ),
       for (final OrderStatus status in OrderStatus.open)
-        _Pill(
+        PanelPill(
           key: ValueKey<String>('summary-${status.code}'),
           label: OrderLabels.status(l10n, status),
           count: summary?.openByStatus[status],
@@ -252,137 +252,11 @@ class BoardStatusPills extends ConsumerWidget {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        if (constraints.maxWidth >= boardCompactWidth) {
-          return Wrap(spacing: 6, runSpacing: 6, children: pills);
-        }
-
-        return _ScrollingPills(pills: pills);
+        return PanelPillRow(
+          pills: pills,
+          wrap: constraints.maxWidth >= boardCompactWidth,
+        );
       },
-    );
-  }
-}
-
-/// One row of pills that scrolls sideways — by finger, by mouse drag, by
-/// wheel or by the scroll bar under it — and fades at its right edge.
-class _ScrollingPills extends StatefulWidget {
-  const _ScrollingPills({required this.pills});
-
-  final List<Widget> pills;
-
-  @override
-  State<_ScrollingPills> createState() => _ScrollingPillsState();
-}
-
-class _ScrollingPillsState extends State<_ScrollingPills> {
-  final ScrollController _controller = ScrollController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ScrollConfiguration(
-      behavior: ScrollConfiguration.of(context).copyWith(
-        dragDevices: const <PointerDeviceKind>{
-          PointerDeviceKind.touch,
-          PointerDeviceKind.mouse,
-          PointerDeviceKind.stylus,
-          PointerDeviceKind.trackpad,
-        },
-        scrollbars: false,
-      ),
-      child: Scrollbar(
-        controller: _controller,
-        thumbVisibility: true,
-        child: ShaderMask(
-          blendMode: BlendMode.dstIn,
-          shaderCallback: (Rect bounds) => const LinearGradient(
-            colors: <Color>[Colors.white, Colors.white, Colors.transparent],
-            stops: <double>[0, 0.9, 1],
-          ).createShader(bounds),
-          child: SingleChildScrollView(
-            controller: _controller,
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.only(right: 32, bottom: 12),
-            child: Row(
-              children: <Widget>[
-                for (int i = 0; i < widget.pills.length; i++) ...<Widget>[
-                  if (i > 0) const SizedBox(width: 6),
-                  widget.pills[i],
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Pill extends StatelessWidget {
-  const _Pill({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.count,
-    super.key,
-  });
-
-  final String label;
-  final int? count;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color text = selected
-        ? Colors.white
-        : count == 0
-        ? KitColors.muted
-        : KitColors.ink;
-
-    return Material(
-      color: selected ? KitColors.primary : Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 36),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Flexible(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                      color: text,
-                    ),
-                  ),
-                ),
-                if (count != null) ...<Widget>[
-                  const SizedBox(width: 8),
-                  Text(
-                    '$count',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: text,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

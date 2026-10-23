@@ -9,6 +9,9 @@ import 'kit_buttons.dart';
 /// The widest a kit dialog gets; a narrower window gives it its width less 32.
 const double kitDialogWidth = 480;
 
+/// The dim scrim behind a kit window.
+const Color kitDialogBarrier = Color(0x61151D16);
+
 /// A centred window of the kit for the panel: a white card of radius 20 over
 /// a dim scrim, its [title] with a x at the right, an optional muted
 /// [subtitle], then the [builder] body, which scrolls above the keyboard.
@@ -26,6 +29,7 @@ Future<T?> showKitDialog<T>({
   required String dialogKey,
   required String title,
   String? subtitle,
+  Widget? badge,
   required WidgetBuilder builder,
   double maxWidth = kitDialogWidth,
   bool barrierDismissible = true,
@@ -33,35 +37,45 @@ Future<T?> showKitDialog<T>({
   return showDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
-    barrierColor: const Color(0x61151D16),
-    builder: (BuildContext dialog) => _KitDialog(
+    barrierColor: kitDialogBarrier,
+    builder: (BuildContext dialog) => KitDialogFrame(
       dialogKey: dialogKey,
       title: title,
       subtitle: subtitle,
-      builder: builder,
+      badge: badge,
       maxWidth: maxWidth,
+      child: Builder(builder: builder),
     ),
   );
 }
 
-class _KitDialog extends StatelessWidget {
-  const _KitDialog({
+/// The body of a kit dialog: the card with its [title], an optional muted
+/// [subtitle], an optional [badge] above the title and the [child]. A frame
+/// that is not [closable] leaves out the x.
+class KitDialogFrame extends StatelessWidget {
+  const KitDialogFrame({
     required this.dialogKey,
     required this.title,
-    required this.subtitle,
-    required this.builder,
-    required this.maxWidth,
+    this.subtitle,
+    this.badge,
+    this.closable = true,
+    this.maxWidth = kitDialogWidth,
+    required this.child,
+    super.key,
   });
 
   final String dialogKey;
   final String title;
   final String? subtitle;
-  final WidgetBuilder builder;
+  final Widget? badge;
+  final bool closable;
   final double maxWidth;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final String? subtitle = this.subtitle;
+    final Widget? badge = this.badge;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -94,6 +108,14 @@ class _KitDialog extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
+                  if (badge != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: badge,
+                      ),
+                    ),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
@@ -113,30 +135,31 @@ class _KitDialog extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Semantics(
-                        button: true,
-                        label: MaterialLocalizations.of(context)
-                            .closeButtonLabel,
-                        child: InkResponse(
-                          key: ValueKey<String>('$dialogKey-close'),
-                          onTap: () => Navigator.of(context).maybePop(),
-                          radius: 20,
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            alignment: Alignment.center,
-                            decoration: const BoxDecoration(
-                              color: KitColors.field,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.close,
-                              size: 18,
-                              color: KitColors.ink,
+                      if (closable)
+                        Semantics(
+                          button: true,
+                          label: MaterialLocalizations.of(context)
+                              .closeButtonLabel,
+                          child: InkResponse(
+                            key: ValueKey<String>('$dialogKey-close'),
+                            onTap: () => Navigator.of(context).maybePop(),
+                            radius: 20,
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              alignment: Alignment.center,
+                              decoration: const BoxDecoration(
+                                color: KitColors.field,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                size: 18,
+                                color: KitColors.ink,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                   if (subtitle != null)
@@ -151,12 +174,39 @@ class _KitDialog extends StatelessWidget {
                       ),
                     ),
                   const SizedBox(height: 16),
-                  builder(context),
+                  child,
                 ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A 52 circle with an [icon] 26 big, on the green wash or — [danger] — the
+/// red one; it stands above a window's title.
+class KitDialogBadge extends StatelessWidget {
+  const KitDialogBadge(this.icon, {this.danger = false, super.key});
+
+  final IconData icon;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 52,
+      height: 52,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: danger ? KitColors.dangerWash : KitColors.primaryWash,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        icon,
+        size: 26,
+        color: danger ? KitColors.dangerDark : KitColors.primaryDark,
       ),
     );
   }

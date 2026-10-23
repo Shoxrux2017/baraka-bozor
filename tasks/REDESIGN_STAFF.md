@@ -7,8 +7,8 @@ The Shopper's, the Courier's and the panel's screens take the screen kit's style
 | 1 | Сборщик (kit/08-sborshchik) | Merged (PR #103) |
 | 2 | Курьер (kit/09-kurer) | Merged (PR #105) |
 | 3a | Панель: заказы (kit/10–10d) | Merged (PR #106) |
-| 3b | Панель: каталог (kit/11) | Coded (PR #107) |
-| 3c | Панель: сотрудники, покупатели, документы, настройки (kit/12) | Planned |
+| 3b | Панель: каталог (kit/11) | Merged (PR #107) |
+| 3c | Панель: сотрудники, покупатели, документы, настройки (kit/12) | Coded (PR #108) |
 
 ## Risks
 
@@ -28,5 +28,7 @@ The Shopper's, the Courier's and the panel's screens take the screen kit's style
 - Stage 3a final re-review, P3: `panel_layout.dart` is imported before `kit/kit_buttons.dart` in `board_screen.dart` and `order_detail_screen.dart`. Ruling: analyze and format are clean and no import-order lint is enabled; cosmetic; kept.
 - Stage 3a walk, pre-existing: a panel dialog left open stays over the next page when the URL changes (browser back or forward); choosing in it does nothing, since the old page is gone. As on `main`. Ruling: no wrong assignment can happen; left for a later panel change.
 - Stage 3a final review, P3: the "Выполнено сегодня" and "Отменено сегодня" tiles filter by status over every day, not by today. Ruling: the board's day filter is on the placing date, so it would miss orders completed today but placed earlier; named in `DL-100` item 2; kept.
-- Stage 3b re-review, P3: `products_screen.dart` computes the prices' maximum width without clamping it at zero, so a product card narrower than 124 would assert in debug. Ruling: a card is never that narrow (a 320 window gives about 164); clamp it when the file is next touched.
-- Stage 3b final review, P3: the products and categories tables repeat their header and row scaffolding. Ruling: stage 3c adds four more tables; a shared panel table pays for itself there.
+- Stage 3b re-review, P3: `products_screen.dart` computes the prices' maximum width without clamping it at zero, so a product card narrower than 124 would assert in debug. Ruling: a card is never that narrow (a 320 window gives about 164); clamp it when the file is next touched. Done in 3c.
+- Stage 3b final review, P3: the products and categories tables repeat their header and row scaffolding. Ruling: stage 3c adds four more tables; a shared panel table pays for itself there. Done in 3c.
+- Stage 3c re-review, P3: the staff test "a role name never breaks mid-word in a narrow table" passes through the role chip's one-line ellipsis, not through the 170 role-column minimum, because the test font is wider than Montserrat. Ruling: the walk at 1440 and 820 showed "Администратор" whole in Montserrat; the ellipsis is the fallback; kept.
+- Stage 3c re-review, P3: while the malformed-phone error shows under the Customer search field, the field grows and "Найти" stretches with it. Ruling: the button keeps the field's height by design (walk W2) and the error is short-lived; kept.

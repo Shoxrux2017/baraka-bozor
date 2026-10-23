@@ -67,4 +67,36 @@ void main() {
       isFalse,
     );
   });
+
+  group('the service centre', () {
+    test('the centre opens as a Google Maps search of the point', () async {
+      final List<Uri> opened = <Uri>[];
+      final GoogleMapsPointLinks links = GoogleMapsPointLinks(
+        launch: (Uri url) async {
+          opened.add(url);
+          return true;
+        },
+      );
+
+      expect(await links.open('41.311081', '69.240562'), isTrue);
+      expect(opened.map((Uri url) => url.toString()), <String>[
+        'https://www.google.com/maps/search/?api=1&query=41.311081%2C69.240562',
+      ]);
+    });
+
+    test('a link that does not open answers false', () async {
+      expect(
+        await GoogleMapsPointLinks(launch: (Uri _) async => false)
+            .open('41.311081', '69.240562'),
+        isFalse,
+      );
+      expect(
+        await GoogleMapsPointLinks(
+          launch: (Uri _) async =>
+              throw PlatformException(code: 'ACTIVITY_NOT_FOUND'),
+        ).open('41.311081', '69.240562'),
+        isFalse,
+      );
+    });
+  });
 }

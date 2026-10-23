@@ -127,7 +127,6 @@
   "settingsSaved": "Sozlamalar saqlandi",
   "settingsNoChanges": "O'zgarish yo'q",
   "settingsSaving": "Saqlanmoqda",
-  "settingsTashkentTimeHint": "Toshkent vaqti bilan",
   "settingsUpdatedAt": "Oxirgi o'zgarish: {when}",
   "@settingsUpdatedAt": {
     "placeholders": {
@@ -138,6 +137,15 @@
   },
   "providersTitle": "Onlayn to'lov",
   "providersIntro": "Yoqilgan tizimlar mijozga to'lov usuli sifatida taklif qilinadi",
+  "settingsHoursHint": "Toshkent vaqti bilan. Bo'sh qoldirilsa, o'rnatilmagan",
+  "settingsAreaHint": "Markaz atrofidagi doira: radiusdan uzoqroq manzilni mijoz saqlay olmaydi",
+  "settingsShowOnMap": "Markazni xaritada ko'rsatish",
+  "settingsMapFailed": "Xaritani ochib bo'lmadi",
+  "settingsSaveNote": "Yangi narx va yig'imlar yangi buyurtmalarga amal qiladi — rasmiylashtirilganlari o'zgarmaydi",
+  "providersCashOnlyNote": "Hozircha mijozlar faqat naqd to'laydi: ilovada onlayn to'lov ko'rinadi, lekin yopiq. Bu yerda yoqilgan tizimlar ular bilan shartnomalar ulanganda mijozga chiqadi.",
+  "providerOn": "Yoqilgan",
+  "providerOff": "O'chirilgan",
+  "providersInstant": "Almashtirgich darhol ishlaydi, «Saqlash»siz",
   "fieldRequired": "Maydonni to'ldiring",
   "fieldPercent": "0 dan 999.99 gacha son, nuqtadan keyin ko'pi bilan 2 raqam",
   "fieldAmount": "0 dan 1 000 000 000 gacha butun son",
@@ -308,6 +316,26 @@
   "errorPayloadTooLarge": "Fayl juda katta",
   "adminSectionStaff": "Xodimlar",
   "legalDocumentsTitle": "Hujjatlar",
+  "legalDocumentsSubtitle": "Mijozlar ularni ilovada va saytda o'qiydi",
+  "legalPreviewTitle": "Mijoz qanday ko'radi",
+  "legalPreviewEmpty": "Hozircha bo'sh. Mijoz profilida «{title}» qatori yo'q.",
+  "@legalPreviewEmpty": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "legalUnsaved": "E'lon qilinmagan o'zgarishlar bor — mijozlar hozircha avvalgi matnni ko'radi",
+  "legalUnpublishExplained": "Matn bo'sh. «{title}» qatori shu tilda ilovadan yo'qoladi.",
+  "@legalUnpublishExplained": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "legalUnpublish": "E'londan olib tashlash",
   "legalTerms": "Foydalanish shartlari",
   "legalPrivacy": "Maxfiylik siyosati",
   "legalFormatHint": "## — sarlavha, - — ro'yxat bandi, har bir qator — xatboshi",
@@ -323,10 +351,28 @@
     }
   },
   "legalNotPublished": "E'lon qilinmagan — ilovada qator ko'rinmaydi",
+  "legalLanguagePublished": "e'lon qilingan",
+  "legalLanguageNotPublished": "e'lon qilinmagan",
   "legalPublish": "E'lon qilish",
   "legalUnpublishConfirm": "Hujjatni e'londan olib tashlaysizmi?",
   "legalSaved": "Hujjat e'lon qilindi",
   "customersTitle": "Xaridorlar",
+  "customersSubtitle": "Telefon raqami bo'yicha qidirish",
+  "customersPhoneLabel": "Xaridor raqami",
+  "customersPhoneHelper": "To'liq raqam: +998 dan keyin 9 raqam",
+  "customersStartTitle": "Xaridorni raqami bo'yicha toping",
+  "customersStartText": "Raqamni to'liq kiriting va «Topish»ni bosing.",
+  "customersNoneHint": "Raqamni tekshiring.",
+  "customerOrdersLabel": "Buyurtmalar",
+  "customerSince": "Biz bilan",
+  "customerLastLoginLabel": "Oxirgi kirish",
+  "customerUnfinishedExplained": "Buyurtma tugagach, akkauntni o'chirish mumkin.",
+  "customerEraseFinal": "O'chirishni qaytarib bo'lmaydi.",
+  "customersHelpTitle": "So'rov bo'yicha akkauntni qanday o'chirish kerak",
+  "customersHelpStep1": "Ilovasi yo'q xaridor qo'llab-quvvatlashga qo'ng'iroq qiladi — saytdagi «Akkauntni o'chirish» sahifasida shunday yozilgan.",
+  "customersHelpStep2": "Uni bu yerda raqami bo'yicha toping.",
+  "customersHelpStep3": "«Akkauntni o'chirish»ni bosing — darhol va qaytarib bo'lmaydi. Tugallanmagan buyurtma bor ekan, o'chirib bo'lmaydi.",
+  "customersHelpPrivacy": "Panel barcha xaridorlar ro'yxatini ko'rsatmaydi — faqat raqami kiritilganini.",
   "customersPhoneHint": "+998 va 9 raqam",
   "customersFind": "Topish",
   "customersNone": "Bu raqamli xaridor yo'q",
@@ -362,6 +408,17 @@
   "statusActive": "Faol",
   "statusBlocked": "Bloklangan",
   "staffNew": "Yangi xodim",
+  "staffNewSubtitle": "Vaqtinchalik parol saqlangandan keyin chiqadi — u bir marta ko'rsatiladi",
+  "staffRoleShopperHint": "Ilova: buyurtmalarni bozordan xarid qiladi",
+  "staffRoleCourierHint": "Ilova: buyurtmalarni mijozlarga yetkazadi",
+  "staffRoleOperatorHint": "Panel: buyurtmalar, savollar va bekor qilishlar",
+  "staffRoleAdminHint": "Panel: hammasi, katalog va sozlamalar ham",
+  "staffRoleManagerHint": "Faqat ko'rish",
+  "staffRoleFixedNote": "Rol keyin o'zgarmaydi. Rolni almashtirish uchun xodimni bloklang va o'sha raqamga yangi akkaunt yarating.",
+  "staffBlockTitle": "Xodim bloklansinmi?",
+  "staffBlockSessions": "Bu xodimning barcha seanslari darhol tugaydi.",
+  "staffResetTitle": "Parol tiklansinmi?",
+  "staffResetExplained": "Yangi vaqtinchalik parol yaratamiz, bu xodimning barcha seanslari tugaydi.",
   "staffFullName": "To'liq ism",
   "staffRole": "Rol",
   "staffAllRoles": "Barcha rollar",
@@ -372,22 +429,6 @@
   "staffBlock": "Bloklash",
   "staffActivate": "Blokdan chiqarish",
   "staffResetPassword": "Parolni tiklash",
-  "staffBlockConfirm": "{name} bloklansinmi? Bu xodimning barcha seanslari darhol yopiladi.",
-  "@staffBlockConfirm": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "staffResetConfirm": "{name} uchun yangi vaqtinchalik parol yaratilsinmi? Bu xodimning barcha seanslari yopiladi.",
-  "@staffResetConfirm": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "staffTemporaryPasswordTitle": "Vaqtinchalik parol",
   "staffTemporaryPasswordWarning": "Parolni hozir nusxalab, xodimga bering. U boshqa ko'rsatilmaydi. Birinchi kirishda xodim o'z parolini o'rnatadi.",
   "staffCopy": "Nusxalash",
@@ -403,6 +444,23 @@
     }
   },
   "staffNeverLoggedIn": "Hali kirmagan",
+  "staffCount": "{count} ta xodim",
+  "@staffCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "staffRoleShoppers": "Yig'uvchilar",
+  "staffRoleCouriers": "Kuryerlar",
+  "staffRoleOperators": "Operatorlar",
+  "staffRoleAdmins": "Administratorlar",
+  "staffRoleManagers": "Menejerlar",
+  "staffColumnMember": "Xodim",
+  "staffColumnStatus": "Holati",
+  "staffColumnLastLogin": "Oxirgi kirish",
+  "staffEmptyHint": "Boshqa rolni yoki «Barcha holatlar»ni tanlang.",
   "staffSaved": "Saqlandi",
   "errorSelfBlockNotAllowed": "O'zingizni bloklay olmaysiz",
   "errorLastActiveAdminRequired": "Oxirgi faol administratorni bloklab bo'lmaydi",

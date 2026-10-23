@@ -692,12 +692,6 @@ abstract class AppLocalizations {
   /// **'Saqlanmoqda'**
   String get settingsSaving;
 
-  /// No description provided for @settingsTashkentTimeHint.
-  ///
-  /// In uz, this message translates to:
-  /// **'Toshkent vaqti bilan'**
-  String get settingsTashkentTimeHint;
-
   /// No description provided for @settingsUpdatedAt.
   ///
   /// In uz, this message translates to:
@@ -715,6 +709,60 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Yoqilgan tizimlar mijozga to\'lov usuli sifatida taklif qilinadi'**
   String get providersIntro;
+
+  /// No description provided for @settingsHoursHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Toshkent vaqti bilan. Bo\'sh qoldirilsa, o\'rnatilmagan'**
+  String get settingsHoursHint;
+
+  /// No description provided for @settingsAreaHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Markaz atrofidagi doira: radiusdan uzoqroq manzilni mijoz saqlay olmaydi'**
+  String get settingsAreaHint;
+
+  /// No description provided for @settingsShowOnMap.
+  ///
+  /// In uz, this message translates to:
+  /// **'Markazni xaritada ko\'rsatish'**
+  String get settingsShowOnMap;
+
+  /// No description provided for @settingsMapFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaritani ochib bo\'lmadi'**
+  String get settingsMapFailed;
+
+  /// No description provided for @settingsSaveNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi narx va yig\'imlar yangi buyurtmalarga amal qiladi — rasmiylashtirilganlari o\'zgarmaydi'**
+  String get settingsSaveNote;
+
+  /// No description provided for @providersCashOnlyNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha mijozlar faqat naqd to\'laydi: ilovada onlayn to\'lov ko\'rinadi, lekin yopiq. Bu yerda yoqilgan tizimlar ular bilan shartnomalar ulanganda mijozga chiqadi.'**
+  String get providersCashOnlyNote;
+
+  /// No description provided for @providerOn.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yoqilgan'**
+  String get providerOn;
+
+  /// No description provided for @providerOff.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chirilgan'**
+  String get providerOff;
+
+  /// No description provided for @providersInstant.
+  ///
+  /// In uz, this message translates to:
+  /// **'Almashtirgich darhol ishlaydi, «Saqlash»siz'**
+  String get providersInstant;
 
   /// No description provided for @fieldRequired.
   ///
@@ -1340,6 +1388,42 @@ abstract class AppLocalizations {
   /// **'Hujjatlar'**
   String get legalDocumentsTitle;
 
+  /// No description provided for @legalDocumentsSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozlar ularni ilovada va saytda o\'qiydi'**
+  String get legalDocumentsSubtitle;
+
+  /// No description provided for @legalPreviewTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz qanday ko\'radi'**
+  String get legalPreviewTitle;
+
+  /// No description provided for @legalPreviewEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha bo\'sh. Mijoz profilida «{title}» qatori yo\'q.'**
+  String legalPreviewEmpty(String title);
+
+  /// No description provided for @legalUnsaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'E\'lon qilinmagan o\'zgarishlar bor — mijozlar hozircha avvalgi matnni ko\'radi'**
+  String get legalUnsaved;
+
+  /// No description provided for @legalUnpublishExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Matn bo\'sh. «{title}» qatori shu tilda ilovadan yo\'qoladi.'**
+  String legalUnpublishExplained(String title);
+
+  /// No description provided for @legalUnpublish.
+  ///
+  /// In uz, this message translates to:
+  /// **'E\'londan olib tashlash'**
+  String get legalUnpublish;
+
   /// No description provided for @legalTerms.
   ///
   /// In uz, this message translates to:
@@ -1370,6 +1454,18 @@ abstract class AppLocalizations {
   /// **'E\'lon qilinmagan — ilovada qator ko\'rinmaydi'**
   String get legalNotPublished;
 
+  /// No description provided for @legalLanguagePublished.
+  ///
+  /// In uz, this message translates to:
+  /// **'e\'lon qilingan'**
+  String get legalLanguagePublished;
+
+  /// No description provided for @legalLanguageNotPublished.
+  ///
+  /// In uz, this message translates to:
+  /// **'e\'lon qilinmagan'**
+  String get legalLanguageNotPublished;
+
   /// No description provided for @legalPublish.
   ///
   /// In uz, this message translates to:
@@ -1393,6 +1489,102 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Xaridorlar'**
   String get customersTitle;
+
+  /// No description provided for @customersSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefon raqami bo\'yicha qidirish'**
+  String get customersSubtitle;
+
+  /// No description provided for @customersPhoneLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaridor raqami'**
+  String get customersPhoneLabel;
+
+  /// No description provided for @customersPhoneHelper.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'liq raqam: +998 dan keyin 9 raqam'**
+  String get customersPhoneHelper;
+
+  /// No description provided for @customersStartTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaridorni raqami bo\'yicha toping'**
+  String get customersStartTitle;
+
+  /// No description provided for @customersStartText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqamni to\'liq kiriting va «Topish»ni bosing.'**
+  String get customersStartText;
+
+  /// No description provided for @customersNoneHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqamni tekshiring.'**
+  String get customersNoneHint;
+
+  /// No description provided for @customerOrdersLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar'**
+  String get customerOrdersLabel;
+
+  /// No description provided for @customerSince.
+  ///
+  /// In uz, this message translates to:
+  /// **'Biz bilan'**
+  String get customerSince;
+
+  /// No description provided for @customerLastLoginLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi kirish'**
+  String get customerLastLoginLabel;
+
+  /// No description provided for @customerUnfinishedExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma tugagach, akkauntni o\'chirish mumkin.'**
+  String get customerUnfinishedExplained;
+
+  /// No description provided for @customerEraseFinal.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chirishni qaytarib bo\'lmaydi.'**
+  String get customerEraseFinal;
+
+  /// No description provided for @customersHelpTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'rov bo\'yicha akkauntni qanday o\'chirish kerak'**
+  String get customersHelpTitle;
+
+  /// No description provided for @customersHelpStep1.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilovasi yo\'q xaridor qo\'llab-quvvatlashga qo\'ng\'iroq qiladi — saytdagi «Akkauntni o\'chirish» sahifasida shunday yozilgan.'**
+  String get customersHelpStep1;
+
+  /// No description provided for @customersHelpStep2.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uni bu yerda raqami bo\'yicha toping.'**
+  String get customersHelpStep2;
+
+  /// No description provided for @customersHelpStep3.
+  ///
+  /// In uz, this message translates to:
+  /// **'«Akkauntni o\'chirish»ni bosing — darhol va qaytarib bo\'lmaydi. Tugallanmagan buyurtma bor ekan, o\'chirib bo\'lmaydi.'**
+  String get customersHelpStep3;
+
+  /// No description provided for @customersHelpPrivacy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Panel barcha xaridorlar ro\'yxatini ko\'rsatmaydi — faqat raqami kiritilganini.'**
+  String get customersHelpPrivacy;
 
   /// No description provided for @customersPhoneHint.
   ///
@@ -1520,6 +1712,72 @@ abstract class AppLocalizations {
   /// **'Yangi xodim'**
   String get staffNew;
 
+  /// No description provided for @staffNewSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Vaqtinchalik parol saqlangandan keyin chiqadi — u bir marta ko\'rsatiladi'**
+  String get staffNewSubtitle;
+
+  /// No description provided for @staffRoleShopperHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilova: buyurtmalarni bozordan xarid qiladi'**
+  String get staffRoleShopperHint;
+
+  /// No description provided for @staffRoleCourierHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilova: buyurtmalarni mijozlarga yetkazadi'**
+  String get staffRoleCourierHint;
+
+  /// No description provided for @staffRoleOperatorHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Panel: buyurtmalar, savollar va bekor qilishlar'**
+  String get staffRoleOperatorHint;
+
+  /// No description provided for @staffRoleAdminHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Panel: hammasi, katalog va sozlamalar ham'**
+  String get staffRoleAdminHint;
+
+  /// No description provided for @staffRoleManagerHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faqat ko\'rish'**
+  String get staffRoleManagerHint;
+
+  /// No description provided for @staffRoleFixedNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rol keyin o\'zgarmaydi. Rolni almashtirish uchun xodimni bloklang va o\'sha raqamga yangi akkaunt yarating.'**
+  String get staffRoleFixedNote;
+
+  /// No description provided for @staffBlockTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xodim bloklansinmi?'**
+  String get staffBlockTitle;
+
+  /// No description provided for @staffBlockSessions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu xodimning barcha seanslari darhol tugaydi.'**
+  String get staffBlockSessions;
+
+  /// No description provided for @staffResetTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Parol tiklansinmi?'**
+  String get staffResetTitle;
+
+  /// No description provided for @staffResetExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi vaqtinchalik parol yaratamiz, bu xodimning barcha seanslari tugaydi.'**
+  String get staffResetExplained;
+
   /// No description provided for @staffFullName.
   ///
   /// In uz, this message translates to:
@@ -1580,18 +1838,6 @@ abstract class AppLocalizations {
   /// **'Parolni tiklash'**
   String get staffResetPassword;
 
-  /// No description provided for @staffBlockConfirm.
-  ///
-  /// In uz, this message translates to:
-  /// **'{name} bloklansinmi? Bu xodimning barcha seanslari darhol yopiladi.'**
-  String staffBlockConfirm(String name);
-
-  /// No description provided for @staffResetConfirm.
-  ///
-  /// In uz, this message translates to:
-  /// **'{name} uchun yangi vaqtinchalik parol yaratilsinmi? Bu xodimning barcha seanslari yopiladi.'**
-  String staffResetConfirm(String name);
-
   /// No description provided for @staffTemporaryPasswordTitle.
   ///
   /// In uz, this message translates to:
@@ -1639,6 +1885,66 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Hali kirmagan'**
   String get staffNeverLoggedIn;
+
+  /// No description provided for @staffCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta xodim'**
+  String staffCount(int count);
+
+  /// No description provided for @staffRoleShoppers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchilar'**
+  String get staffRoleShoppers;
+
+  /// No description provided for @staffRoleCouriers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryerlar'**
+  String get staffRoleCouriers;
+
+  /// No description provided for @staffRoleOperators.
+  ///
+  /// In uz, this message translates to:
+  /// **'Operatorlar'**
+  String get staffRoleOperators;
+
+  /// No description provided for @staffRoleAdmins.
+  ///
+  /// In uz, this message translates to:
+  /// **'Administratorlar'**
+  String get staffRoleAdmins;
+
+  /// No description provided for @staffRoleManagers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Menejerlar'**
+  String get staffRoleManagers;
+
+  /// No description provided for @staffColumnMember.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xodim'**
+  String get staffColumnMember;
+
+  /// No description provided for @staffColumnStatus.
+  ///
+  /// In uz, this message translates to:
+  /// **'Holati'**
+  String get staffColumnStatus;
+
+  /// No description provided for @staffColumnLastLogin.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi kirish'**
+  String get staffColumnLastLogin;
+
+  /// No description provided for @staffEmptyHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa rolni yoki «Barcha holatlar»ni tanlang.'**
+  String get staffEmptyHint;
 
   /// No description provided for @staffSaved.
   ///

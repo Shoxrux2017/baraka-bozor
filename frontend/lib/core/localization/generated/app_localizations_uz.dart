@@ -324,9 +324,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get settingsSaving => 'Saqlanmoqda';
 
   @override
-  String get settingsTashkentTimeHint => 'Toshkent vaqti bilan';
-
-  @override
   String settingsUpdatedAt(String when) {
     return 'Oxirgi o\'zgarish: $when';
   }
@@ -337,6 +334,37 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get providersIntro =>
       'Yoqilgan tizimlar mijozga to\'lov usuli sifatida taklif qilinadi';
+
+  @override
+  String get settingsHoursHint =>
+      'Toshkent vaqti bilan. Bo\'sh qoldirilsa, o\'rnatilmagan';
+
+  @override
+  String get settingsAreaHint =>
+      'Markaz atrofidagi doira: radiusdan uzoqroq manzilni mijoz saqlay olmaydi';
+
+  @override
+  String get settingsShowOnMap => 'Markazni xaritada ko\'rsatish';
+
+  @override
+  String get settingsMapFailed => 'Xaritani ochib bo\'lmadi';
+
+  @override
+  String get settingsSaveNote =>
+      'Yangi narx va yig\'imlar yangi buyurtmalarga amal qiladi — rasmiylashtirilganlari o\'zgarmaydi';
+
+  @override
+  String get providersCashOnlyNote =>
+      'Hozircha mijozlar faqat naqd to\'laydi: ilovada onlayn to\'lov ko\'rinadi, lekin yopiq. Bu yerda yoqilgan tizimlar ular bilan shartnomalar ulanganda mijozga chiqadi.';
+
+  @override
+  String get providerOn => 'Yoqilgan';
+
+  @override
+  String get providerOff => 'O\'chirilgan';
+
+  @override
+  String get providersInstant => 'Almashtirgich darhol ishlaydi, «Saqlash»siz';
 
   @override
   String get fieldRequired => 'Maydonni to\'ldiring';
@@ -691,6 +719,30 @@ class AppLocalizationsUz extends AppLocalizations {
   String get legalDocumentsTitle => 'Hujjatlar';
 
   @override
+  String get legalDocumentsSubtitle =>
+      'Mijozlar ularni ilovada va saytda o\'qiydi';
+
+  @override
+  String get legalPreviewTitle => 'Mijoz qanday ko\'radi';
+
+  @override
+  String legalPreviewEmpty(String title) {
+    return 'Hozircha bo\'sh. Mijoz profilida «$title» qatori yo\'q.';
+  }
+
+  @override
+  String get legalUnsaved =>
+      'E\'lon qilinmagan o\'zgarishlar bor — mijozlar hozircha avvalgi matnni ko\'radi';
+
+  @override
+  String legalUnpublishExplained(String title) {
+    return 'Matn bo\'sh. «$title» qatori shu tilda ilovadan yo\'qoladi.';
+  }
+
+  @override
+  String get legalUnpublish => 'E\'londan olib tashlash';
+
+  @override
   String get legalTerms => 'Foydalanish shartlari';
 
   @override
@@ -710,6 +762,12 @@ class AppLocalizationsUz extends AppLocalizations {
       'E\'lon qilinmagan — ilovada qator ko\'rinmaydi';
 
   @override
+  String get legalLanguagePublished => 'e\'lon qilingan';
+
+  @override
+  String get legalLanguageNotPublished => 'e\'lon qilinmagan';
+
+  @override
   String get legalPublish => 'E\'lon qilish';
 
   @override
@@ -720,6 +778,60 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get customersTitle => 'Xaridorlar';
+
+  @override
+  String get customersSubtitle => 'Telefon raqami bo\'yicha qidirish';
+
+  @override
+  String get customersPhoneLabel => 'Xaridor raqami';
+
+  @override
+  String get customersPhoneHelper => 'To\'liq raqam: +998 dan keyin 9 raqam';
+
+  @override
+  String get customersStartTitle => 'Xaridorni raqami bo\'yicha toping';
+
+  @override
+  String get customersStartText =>
+      'Raqamni to\'liq kiriting va «Topish»ni bosing.';
+
+  @override
+  String get customersNoneHint => 'Raqamni tekshiring.';
+
+  @override
+  String get customerOrdersLabel => 'Buyurtmalar';
+
+  @override
+  String get customerSince => 'Biz bilan';
+
+  @override
+  String get customerLastLoginLabel => 'Oxirgi kirish';
+
+  @override
+  String get customerUnfinishedExplained =>
+      'Buyurtma tugagach, akkauntni o\'chirish mumkin.';
+
+  @override
+  String get customerEraseFinal => 'O\'chirishni qaytarib bo\'lmaydi.';
+
+  @override
+  String get customersHelpTitle =>
+      'So\'rov bo\'yicha akkauntni qanday o\'chirish kerak';
+
+  @override
+  String get customersHelpStep1 =>
+      'Ilovasi yo\'q xaridor qo\'llab-quvvatlashga qo\'ng\'iroq qiladi — saytdagi «Akkauntni o\'chirish» sahifasida shunday yozilgan.';
+
+  @override
+  String get customersHelpStep2 => 'Uni bu yerda raqami bo\'yicha toping.';
+
+  @override
+  String get customersHelpStep3 =>
+      '«Akkauntni o\'chirish»ni bosing — darhol va qaytarib bo\'lmaydi. Tugallanmagan buyurtma bor ekan, o\'chirib bo\'lmaydi.';
+
+  @override
+  String get customersHelpPrivacy =>
+      'Panel barcha xaridorlar ro\'yxatini ko\'rsatmaydi — faqat raqami kiritilganini.';
 
   @override
   String get customersPhoneHint => '+998 va 9 raqam';
@@ -791,6 +903,46 @@ class AppLocalizationsUz extends AppLocalizations {
   String get staffNew => 'Yangi xodim';
 
   @override
+  String get staffNewSubtitle =>
+      'Vaqtinchalik parol saqlangandan keyin chiqadi — u bir marta ko\'rsatiladi';
+
+  @override
+  String get staffRoleShopperHint =>
+      'Ilova: buyurtmalarni bozordan xarid qiladi';
+
+  @override
+  String get staffRoleCourierHint =>
+      'Ilova: buyurtmalarni mijozlarga yetkazadi';
+
+  @override
+  String get staffRoleOperatorHint =>
+      'Panel: buyurtmalar, savollar va bekor qilishlar';
+
+  @override
+  String get staffRoleAdminHint => 'Panel: hammasi, katalog va sozlamalar ham';
+
+  @override
+  String get staffRoleManagerHint => 'Faqat ko\'rish';
+
+  @override
+  String get staffRoleFixedNote =>
+      'Rol keyin o\'zgarmaydi. Rolni almashtirish uchun xodimni bloklang va o\'sha raqamga yangi akkaunt yarating.';
+
+  @override
+  String get staffBlockTitle => 'Xodim bloklansinmi?';
+
+  @override
+  String get staffBlockSessions =>
+      'Bu xodimning barcha seanslari darhol tugaydi.';
+
+  @override
+  String get staffResetTitle => 'Parol tiklansinmi?';
+
+  @override
+  String get staffResetExplained =>
+      'Yangi vaqtinchalik parol yaratamiz, bu xodimning barcha seanslari tugaydi.';
+
+  @override
   String get staffFullName => 'To\'liq ism';
 
   @override
@@ -821,16 +973,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get staffResetPassword => 'Parolni tiklash';
 
   @override
-  String staffBlockConfirm(String name) {
-    return '$name bloklansinmi? Bu xodimning barcha seanslari darhol yopiladi.';
-  }
-
-  @override
-  String staffResetConfirm(String name) {
-    return '$name uchun yangi vaqtinchalik parol yaratilsinmi? Bu xodimning barcha seanslari yopiladi.';
-  }
-
-  @override
   String get staffTemporaryPasswordTitle => 'Vaqtinchalik parol';
 
   @override
@@ -856,6 +998,38 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get staffNeverLoggedIn => 'Hali kirmagan';
+
+  @override
+  String staffCount(int count) {
+    return '$count ta xodim';
+  }
+
+  @override
+  String get staffRoleShoppers => 'Yig\'uvchilar';
+
+  @override
+  String get staffRoleCouriers => 'Kuryerlar';
+
+  @override
+  String get staffRoleOperators => 'Operatorlar';
+
+  @override
+  String get staffRoleAdmins => 'Administratorlar';
+
+  @override
+  String get staffRoleManagers => 'Menejerlar';
+
+  @override
+  String get staffColumnMember => 'Xodim';
+
+  @override
+  String get staffColumnStatus => 'Holati';
+
+  @override
+  String get staffColumnLastLogin => 'Oxirgi kirish';
+
+  @override
+  String get staffEmptyHint => 'Boshqa rolni yoki «Barcha holatlar»ni tanlang.';
 
   @override
   String get staffSaved => 'Saqlandi';

@@ -23,6 +23,7 @@ import '../../../core/widgets/panel/panel_layout.dart';
 import '../../../core/widgets/panel/panel_menu_button.dart';
 import '../../../core/widgets/panel/panel_page_header.dart';
 import '../../../core/widgets/panel/panel_pager.dart';
+import '../../../core/widgets/panel/panel_table.dart';
 import '../application/admin_catalog_controllers.dart';
 import '../domain/admin_catalog.dart';
 import 'admin_paths.dart';
@@ -370,9 +371,7 @@ TextStyle _nameStyle(bool archived) => TextStyle(
 
 const TextStyle _small = TextStyle(fontSize: 12, color: KitColors.muted);
 
-/// The table: a header on `card` between two `line` rules, then a row per
-/// product, each a table of its own under the same column widths, so a row
-/// takes a hover and a tap as a whole and grows with its text.
+/// The table: rows of [PanelTable] under the products' column widths.
 class _ProductsTable extends StatelessWidget {
   const _ProductsTable({required this.products, required this.byId});
 
@@ -382,155 +381,83 @@ class _ProductsTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    const BorderSide line = BorderSide(color: KitColors.line);
 
-    Widget header(String text, {TextAlign align = TextAlign.start}) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Text(
-        text.toUpperCase(),
-        textAlign: align,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: KitColors.muted,
+    return PanelTable(
+      columns: <PanelColumn>[
+        (label: l10n.catalogColumnProduct, width: _columns[0]!, end: false),
+        (label: l10n.productCategory, width: _columns[1]!, end: false),
+        (label: l10n.productMarketPrice, width: _columns[2]!, end: true),
+        (
+          label: l10n.catalogColumnCustomerPrice,
+          width: _columns[3]!,
+          end: true,
         ),
-      ),
-    );
-
-    return Material(
-      type: MaterialType.transparency,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          DecoratedBox(
-            decoration: const BoxDecoration(
-              color: KitColors.card,
-              border: Border.symmetric(horizontal: line),
-            ),
-            child: Table(
-              columnWidths: _columns,
-              children: <TableRow>[
-                TableRow(
-                  children: <Widget>[
-                    header(l10n.catalogColumnProduct),
-                    header(l10n.productCategory),
-                    header(l10n.productMarketPrice, align: TextAlign.end),
-                    header(
-                      l10n.catalogColumnCustomerPrice,
-                      align: TextAlign.end,
-                    ),
-                    header(l10n.catalogColumnShown),
-                    const SizedBox.shrink(),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          for (final AdminProduct product in products)
-            _ProductRow(product: product, category: byId[product.categoryId]),
-        ],
-      ),
+        (label: l10n.catalogColumnShown, width: _columns[4]!, end: false),
+        (label: '', width: _columns[5]!, end: true),
+      ],
+      rows: <PanelTableRow>[
+        for (final AdminProduct product in products)
+          _productRow(context, product, byId[product.categoryId]),
+      ],
     );
   }
 }
 
-class _ProductRow extends StatelessWidget {
-  const _ProductRow({required this.product, required this.category});
+PanelTableRow _productRow(
+  BuildContext context,
+  AdminProduct product,
+  AdminCategory? category,
+) {
+  final AppLocalizations l10n = AppLocalizations.of(context);
+  final AppLanguage language =
+      AppLanguage.tryParse(Localizations.localeOf(context).languageCode) ??
+      AppLanguage.uz;
+  final bool archived = product.state == CatalogEntryState.archived;
+  final TextStyle price = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: archived ? KitColors.muted : KitColors.ink,
+  );
 
-  final AdminProduct product;
-  final AdminCategory? category;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language =
-        AppLanguage.tryParse(Localizations.localeOf(context).languageCode) ??
-        AppLanguage.uz;
-    final bool archived = product.state == CatalogEntryState.archived;
-    final AdminCategory? category = this.category;
-    final TextStyle price = TextStyle(
-      fontSize: 13,
-      fontWeight: FontWeight.w600,
-      color: archived ? KitColors.muted : KitColors.ink,
-    );
-
-    Widget cell(Widget child, {Alignment align = Alignment.centerLeft}) =>
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Align(alignment: align, child: child),
-        );
-
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: KitColors.line)),
-      ),
-      child: InkWell(
-        key: ValueKey<String>('product-${product.id}'),
-        hoverColor: KitColors.field,
-        onTap: () => context.go(AdminPaths.product(product.id)),
-        child: Table(
-          columnWidths: _columns,
-          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-          children: <TableRow>[
-            TableRow(
-              children: <Widget>[
-                cell(_ProductIdentity(product: product, size: 44)),
-                cell(
-                  Text(
-                    category == null
-                        ? ''
-                        : catalogName(
-                            context,
-                            uz: category.nameUz,
-                            ru: category.nameRu,
-                          ),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: archived ? KitColors.muted : KitColors.ink2,
-                    ),
-                  ),
-                ),
-                cell(
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: <Widget>[
-                      Text(
-                        MoneyFormat.uzs(product.marketPriceUzs, language),
-                        textAlign: TextAlign.end,
-                        style: price,
-                      ),
-                      Text(
-                        l10n.catalogPerUnit(
-                          CatalogLabels.unit(l10n, product.unitCode),
-                        ),
-                        textAlign: TextAlign.end,
-                        style: _small,
-                      ),
-                    ],
-                  ),
-                  align: Alignment.centerRight,
-                ),
-                cell(
-                  Text(
-                    MoneyFormat.uzs(product.customerUnitPriceUzs, language),
-                    textAlign: TextAlign.end,
-                    style: price,
-                  ),
-                  align: Alignment.centerRight,
-                ),
-                cell(_StateAndLine(product: product, category: category)),
-                cell(
-                  _RowAction(product: product),
-                  align: Alignment.centerRight,
-                ),
-              ],
-            ),
-          ],
+  return PanelTableRow(
+    key: ValueKey<String>('product-${product.id}'),
+    onTap: () => context.go(AdminPaths.product(product.id)),
+    cells: <Widget>[
+      _ProductIdentity(product: product, size: 44),
+      Text(
+        category == null
+            ? ''
+            : catalogName(context, uz: category.nameUz, ru: category.nameRu),
+        style: TextStyle(
+          fontSize: 13,
+          color: archived ? KitColors.muted : KitColors.ink2,
         ),
       ),
-    );
-  }
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: <Widget>[
+          Text(
+            MoneyFormat.uzs(product.marketPriceUzs, language),
+            textAlign: TextAlign.end,
+            style: price,
+          ),
+          Text(
+            l10n.catalogPerUnit(CatalogLabels.unit(l10n, product.unitCode)),
+            textAlign: TextAlign.end,
+            style: _small,
+          ),
+        ],
+      ),
+      Text(
+        MoneyFormat.uzs(product.customerUnitPriceUzs, language),
+        textAlign: TextAlign.end,
+        style: price,
+      ),
+      _StateAndLine(product: product, category: category),
+      _RowAction(product: product),
+    ],
+  );
 }
 
 class _ProductCard extends StatelessWidget {
@@ -559,7 +486,10 @@ class _ProductCard extends StatelessWidget {
           // button: the prices take the width they need up to half of it, or
           // all but 260 for the names, so that they stand against the button.
           final double free = constraints.maxWidth - 56 - 12 - 12 - 8 - 36;
-          final double pricesWidth = math.max(free / 2, free - 260);
+          final double pricesWidth = math.max(
+            0,
+            math.max(free / 2, free - 260),
+          );
 
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,

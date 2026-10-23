@@ -325,9 +325,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsSaving => 'Сохранение';
 
   @override
-  String get settingsTashkentTimeHint => 'По времени Ташкента';
-
-  @override
   String settingsUpdatedAt(String when) {
     return 'Последнее изменение: $when';
   }
@@ -338,6 +335,37 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get providersIntro =>
       'Включённые системы предлагаются клиенту как способ оплаты';
+
+  @override
+  String get settingsHoursHint => 'По времени Ташкента. Пусто — не задано';
+
+  @override
+  String get settingsAreaHint =>
+      'Круг вокруг центра: адрес дальше радиуса клиент сохранить не сможет';
+
+  @override
+  String get settingsShowOnMap => 'Показать центр на карте';
+
+  @override
+  String get settingsMapFailed => 'Не удалось открыть карту';
+
+  @override
+  String get settingsSaveNote =>
+      'Новые цены и сборы действуют для новых заказов — оформленные не меняются';
+
+  @override
+  String get providersCashOnlyNote =>
+      'Пока клиенты платят только наличными: онлайн-оплата в приложении видна, но закрыта. Включённые здесь системы появятся у клиента, когда подключим договоры с ними.';
+
+  @override
+  String get providerOn => 'Включено';
+
+  @override
+  String get providerOff => 'Выключено';
+
+  @override
+  String get providersInstant =>
+      'Переключатель срабатывает сразу, без «Сохранить»';
 
   @override
   String get fieldRequired => 'Заполните поле';
@@ -705,6 +733,30 @@ class AppLocalizationsRu extends AppLocalizations {
   String get legalDocumentsTitle => 'Документы';
 
   @override
+  String get legalDocumentsSubtitle =>
+      'Клиенты читают их в приложении и на сайте';
+
+  @override
+  String get legalPreviewTitle => 'Как увидит клиент';
+
+  @override
+  String legalPreviewEmpty(String title) {
+    return 'Пока пусто. В профиле клиента строки «$title» нет.';
+  }
+
+  @override
+  String get legalUnsaved =>
+      'Есть неопубликованные изменения — клиенты пока видят прежний текст';
+
+  @override
+  String legalUnpublishExplained(String title) {
+    return 'Текст пустой. Строка «$title» на этом языке исчезнет из приложения.';
+  }
+
+  @override
+  String get legalUnpublish => 'Снять с публикации';
+
+  @override
   String get legalTerms => 'Условия использования';
 
   @override
@@ -723,6 +775,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get legalNotPublished => 'Не опубликовано — в приложении строки нет';
 
   @override
+  String get legalLanguagePublished => 'опубликовано';
+
+  @override
+  String get legalLanguageNotPublished => 'не опубликовано';
+
+  @override
   String get legalPublish => 'Опубликовать';
 
   @override
@@ -733,6 +791,58 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get customersTitle => 'Покупатели';
+
+  @override
+  String get customersSubtitle => 'Поиск по номеру телефона';
+
+  @override
+  String get customersPhoneLabel => 'Номер покупателя';
+
+  @override
+  String get customersPhoneHelper => 'Весь номер: 9 цифр после +998';
+
+  @override
+  String get customersStartTitle => 'Найдите покупателя по номеру';
+
+  @override
+  String get customersStartText => 'Введите номер полностью и нажмите «Найти».';
+
+  @override
+  String get customersNoneHint => 'Проверьте номер.';
+
+  @override
+  String get customerOrdersLabel => 'Заказов';
+
+  @override
+  String get customerSince => 'С нами с';
+
+  @override
+  String get customerLastLoginLabel => 'Последний вход';
+
+  @override
+  String get customerUnfinishedExplained =>
+      'Удалить аккаунт можно, когда заказ закончится.';
+
+  @override
+  String get customerEraseFinal => 'Отменить удаление нельзя.';
+
+  @override
+  String get customersHelpTitle => 'Как удалить аккаунт по просьбе';
+
+  @override
+  String get customersHelpStep1 =>
+      'Покупатель без приложения звонит в поддержку — так сказано на странице «Удаление аккаунта» на сайте.';
+
+  @override
+  String get customersHelpStep2 => 'Найдите его здесь по номеру.';
+
+  @override
+  String get customersHelpStep3 =>
+      'Нажмите «Удалить аккаунт» — сразу и без возврата. Пока есть незавершённый заказ, удалить нельзя.';
+
+  @override
+  String get customersHelpPrivacy =>
+      'Список всех покупателей панель не показывает — только того, чей номер ввели.';
 
   @override
   String get customersPhoneHint => '+998 и 9 цифр';
@@ -804,6 +914,43 @@ class AppLocalizationsRu extends AppLocalizations {
   String get staffNew => 'Новый сотрудник';
 
   @override
+  String get staffNewSubtitle =>
+      'Временный пароль появится после сохранения — покажем его один раз';
+
+  @override
+  String get staffRoleShopperHint => 'Приложение: покупает заказы на базаре';
+
+  @override
+  String get staffRoleCourierHint => 'Приложение: привозит заказы клиентам';
+
+  @override
+  String get staffRoleOperatorHint => 'Панель: заказы, вопросы и отмены';
+
+  @override
+  String get staffRoleAdminHint => 'Панель: всё, включая каталог и настройки';
+
+  @override
+  String get staffRoleManagerHint => 'Только просмотр';
+
+  @override
+  String get staffRoleFixedNote =>
+      'Роль потом не меняется. Чтобы сменить роль, заблокируйте сотрудника и создайте новый аккаунт на тот же номер.';
+
+  @override
+  String get staffBlockTitle => 'Заблокировать сотрудника?';
+
+  @override
+  String get staffBlockSessions =>
+      'Все сеансы этого сотрудника сразу завершатся.';
+
+  @override
+  String get staffResetTitle => 'Сбросить пароль?';
+
+  @override
+  String get staffResetExplained =>
+      'Создадим новый временный пароль, все сеансы этого сотрудника завершатся.';
+
+  @override
   String get staffFullName => 'Имя и фамилия';
 
   @override
@@ -834,16 +981,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get staffResetPassword => 'Сбросить пароль';
 
   @override
-  String staffBlockConfirm(String name) {
-    return 'Заблокировать: $name? Все сеансы этого сотрудника сразу завершатся.';
-  }
-
-  @override
-  String staffResetConfirm(String name) {
-    return 'Создать новый временный пароль: $name? Все сеансы этого сотрудника завершатся.';
-  }
-
-  @override
   String get staffTemporaryPasswordTitle => 'Временный пароль';
 
   @override
@@ -869,6 +1006,46 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get staffNeverLoggedIn => 'Входов ещё не было';
+
+  @override
+  String staffCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count сотрудника',
+      many: '$count сотрудников',
+      few: '$count сотрудника',
+      one: '$count сотрудник',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get staffRoleShoppers => 'Сборщики';
+
+  @override
+  String get staffRoleCouriers => 'Курьеры';
+
+  @override
+  String get staffRoleOperators => 'Операторы';
+
+  @override
+  String get staffRoleAdmins => 'Администраторы';
+
+  @override
+  String get staffRoleManagers => 'Менеджеры';
+
+  @override
+  String get staffColumnMember => 'Сотрудник';
+
+  @override
+  String get staffColumnStatus => 'Статус';
+
+  @override
+  String get staffColumnLastLogin => 'Последний вход';
+
+  @override
+  String get staffEmptyHint => 'Выберите другую роль или «Все статусы».';
 
   @override
   String get staffSaved => 'Сохранено';

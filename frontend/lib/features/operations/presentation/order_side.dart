@@ -11,9 +11,9 @@ import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../../core/widgets/kit/kit_note.dart';
 import '../../../core/widgets/panel/panel_card.dart';
+import '../../../core/widgets/panel/panel_person.dart';
 import '../domain/board.dart';
 import 'order_actions.dart';
-import 'order_staff.dart';
 
 /// The cancellation requests, in one card that is amber while one waits for
 /// a decision. Shown only when there is a request.

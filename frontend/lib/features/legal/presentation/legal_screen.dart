@@ -9,6 +9,7 @@ import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../application/legal_providers.dart';
 import '../domain/legal.dart';
+import 'legal_blocks.dart';
 
 /// The terms of use or the privacy policy (kit drawings 34 and 35), read
 /// signed in or out: the published document in the interface language, its
@@ -80,64 +81,8 @@ class _Body extends StatelessWidget {
             style: const TextStyle(fontSize: 13, color: KitColors.muted),
           ),
         ),
-        for (int i = 0; i < blocks.length; i++)
-          _Block(
-            block: blocks[i],
-            first: i == 0,
-            afterParagraph:
-                i > 0 && blocks[i - 1].type == LegalBlockType.paragraph,
-          ),
+        LegalBlocks(blocks),
       ],
     );
-  }
-}
-
-class _Block extends StatelessWidget {
-  const _Block({
-    required this.block,
-    required this.first,
-    required this.afterParagraph,
-  });
-
-  final LegalBlock block;
-  final bool first;
-  final bool afterParagraph;
-
-  static const TextStyle _text = TextStyle(
-    fontSize: 14,
-    height: 22 / 14,
-    color: KitColors.ink2,
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    return switch (block.type) {
-      LegalBlockType.heading => Padding(
-        padding: EdgeInsets.only(top: first ? 4 : 22, bottom: 6),
-        child: Semantics(
-          header: true,
-          child: Text(
-            block.text,
-            style: const TextStyle(
-              fontSize: 15,
-              height: 22 / 15,
-              fontWeight: FontWeight.w700,
-              color: KitColors.primaryDark,
-            ),
-          ),
-        ),
-      ),
-      LegalBlockType.paragraph => Padding(
-        padding: EdgeInsets.only(top: afterParagraph ? 6 : 0),
-        child: Text(block.text, style: _text),
-      ),
-      LegalBlockType.item => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          const SizedBox(width: 18, child: Text('•', style: _text)),
-          Expanded(child: Text(block.text, style: _text)),
-        ],
-      ),
-    };
   }
 }

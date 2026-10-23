@@ -127,7 +127,6 @@
   "settingsSaved": "Настройки сохранены",
   "settingsNoChanges": "Изменений нет",
   "settingsSaving": "Сохранение",
-  "settingsTashkentTimeHint": "По времени Ташкента",
   "settingsUpdatedAt": "Последнее изменение: {when}",
   "@settingsUpdatedAt": {
     "placeholders": {
@@ -138,6 +137,15 @@
   },
   "providersTitle": "Онлайн-оплата",
   "providersIntro": "Включённые системы предлагаются клиенту как способ оплаты",
+  "settingsHoursHint": "По времени Ташкента. Пусто — не задано",
+  "settingsAreaHint": "Круг вокруг центра: адрес дальше радиуса клиент сохранить не сможет",
+  "settingsShowOnMap": "Показать центр на карте",
+  "settingsMapFailed": "Не удалось открыть карту",
+  "settingsSaveNote": "Новые цены и сборы действуют для новых заказов — оформленные не меняются",
+  "providersCashOnlyNote": "Пока клиенты платят только наличными: онлайн-оплата в приложении видна, но закрыта. Включённые здесь системы появятся у клиента, когда подключим договоры с ними.",
+  "providerOn": "Включено",
+  "providerOff": "Выключено",
+  "providersInstant": "Переключатель срабатывает сразу, без «Сохранить»",
   "fieldRequired": "Заполните поле",
   "fieldPercent": "Число от 0 до 999.99, не более 2 знаков после точки",
   "fieldAmount": "Целое число от 0 до 1 000 000 000",
@@ -280,15 +288,39 @@
   "errorPayloadTooLarge": "Файл слишком большой",
   "adminSectionStaff": "Сотрудники",
   "legalDocumentsTitle": "Документы",
+  "legalDocumentsSubtitle": "Клиенты читают их в приложении и на сайте",
+  "legalPreviewTitle": "Как увидит клиент",
+  "legalPreviewEmpty": "Пока пусто. В профиле клиента строки «{title}» нет.",
+  "legalUnsaved": "Есть неопубликованные изменения — клиенты пока видят прежний текст",
+  "legalUnpublishExplained": "Текст пустой. Строка «{title}» на этом языке исчезнет из приложения.",
+  "legalUnpublish": "Снять с публикации",
   "legalTerms": "Условия использования",
   "legalPrivacy": "Политика конфиденциальности",
   "legalFormatHint": "## — заголовок, - — пункт списка, каждая строка — абзац",
   "legalPublishedBy": "Опубликовано {date}, {name}",
   "legalNotPublished": "Не опубликовано — в приложении строки нет",
+  "legalLanguagePublished": "опубликовано",
+  "legalLanguageNotPublished": "не опубликовано",
   "legalPublish": "Опубликовать",
   "legalUnpublishConfirm": "Снять документ с публикации?",
   "legalSaved": "Документ опубликован",
   "customersTitle": "Покупатели",
+  "customersSubtitle": "Поиск по номеру телефона",
+  "customersPhoneLabel": "Номер покупателя",
+  "customersPhoneHelper": "Весь номер: 9 цифр после +998",
+  "customersStartTitle": "Найдите покупателя по номеру",
+  "customersStartText": "Введите номер полностью и нажмите «Найти».",
+  "customersNoneHint": "Проверьте номер.",
+  "customerOrdersLabel": "Заказов",
+  "customerSince": "С нами с",
+  "customerLastLoginLabel": "Последний вход",
+  "customerUnfinishedExplained": "Удалить аккаунт можно, когда заказ закончится.",
+  "customerEraseFinal": "Отменить удаление нельзя.",
+  "customersHelpTitle": "Как удалить аккаунт по просьбе",
+  "customersHelpStep1": "Покупатель без приложения звонит в поддержку — так сказано на странице «Удаление аккаунта» на сайте.",
+  "customersHelpStep2": "Найдите его здесь по номеру.",
+  "customersHelpStep3": "Нажмите «Удалить аккаунт» — сразу и без возврата. Пока есть незавершённый заказ, удалить нельзя.",
+  "customersHelpPrivacy": "Список всех покупателей панель не показывает — только того, чей номер ввели.",
   "customersPhoneHint": "+998 и 9 цифр",
   "customersFind": "Найти",
   "customersNone": "Покупателей с этим номером нет",
@@ -310,6 +342,17 @@
   "statusActive": "Активен",
   "statusBlocked": "Заблокирован",
   "staffNew": "Новый сотрудник",
+  "staffNewSubtitle": "Временный пароль появится после сохранения — покажем его один раз",
+  "staffRoleShopperHint": "Приложение: покупает заказы на базаре",
+  "staffRoleCourierHint": "Приложение: привозит заказы клиентам",
+  "staffRoleOperatorHint": "Панель: заказы, вопросы и отмены",
+  "staffRoleAdminHint": "Панель: всё, включая каталог и настройки",
+  "staffRoleManagerHint": "Только просмотр",
+  "staffRoleFixedNote": "Роль потом не меняется. Чтобы сменить роль, заблокируйте сотрудника и создайте новый аккаунт на тот же номер.",
+  "staffBlockTitle": "Заблокировать сотрудника?",
+  "staffBlockSessions": "Все сеансы этого сотрудника сразу завершатся.",
+  "staffResetTitle": "Сбросить пароль?",
+  "staffResetExplained": "Создадим новый временный пароль, все сеансы этого сотрудника завершатся.",
   "staffFullName": "Имя и фамилия",
   "staffRole": "Роль",
   "staffAllRoles": "Все роли",
@@ -320,22 +363,6 @@
   "staffBlock": "Заблокировать",
   "staffActivate": "Разблокировать",
   "staffResetPassword": "Сбросить пароль",
-  "staffBlockConfirm": "Заблокировать: {name}? Все сеансы этого сотрудника сразу завершатся.",
-  "@staffBlockConfirm": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "staffResetConfirm": "Создать новый временный пароль: {name}? Все сеансы этого сотрудника завершатся.",
-  "@staffResetConfirm": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "staffTemporaryPasswordTitle": "Временный пароль",
   "staffTemporaryPasswordWarning": "Скопируйте пароль сейчас и передайте сотруднику. Больше он показан не будет. При первом входе сотрудник задаст свой пароль.",
   "staffCopy": "Копировать",
@@ -351,6 +378,23 @@
     }
   },
   "staffNeverLoggedIn": "Входов ещё не было",
+  "staffCount": "{count, plural, one{{count} сотрудник} few{{count} сотрудника} many{{count} сотрудников} other{{count} сотрудника}}",
+  "@staffCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "staffRoleShoppers": "Сборщики",
+  "staffRoleCouriers": "Курьеры",
+  "staffRoleOperators": "Операторы",
+  "staffRoleAdmins": "Администраторы",
+  "staffRoleManagers": "Менеджеры",
+  "staffColumnMember": "Сотрудник",
+  "staffColumnStatus": "Статус",
+  "staffColumnLastLogin": "Последний вход",
+  "staffEmptyHint": "Выберите другую роль или «Все статусы».",
   "staffSaved": "Сохранено",
   "errorSelfBlockNotAllowed": "Нельзя заблокировать себя",
   "errorLastActiveAdminRequired": "Нельзя заблокировать последнего активного администратора",

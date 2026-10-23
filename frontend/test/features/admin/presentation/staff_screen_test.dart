@@ -4,13 +4,26 @@ import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
+import 'package:baraka_bozor/core/formatting/phone_format.dart';
+import 'package:baraka_bozor/core/formatting/tashkent_time.dart';
 import 'package:baraka_bozor/core/state/mutation_state.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/localization/role_labels.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_card.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_dialog.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_note.dart';
+import 'package:baraka_bozor/core/widgets/panel/panel_card.dart';
+import 'package:baraka_bozor/core/widgets/panel/panel_page_header.dart';
+import 'package:baraka_bozor/core/widgets/panel/panel_person.dart';
+import 'package:baraka_bozor/core/widgets/panel/panel_pills.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/admin/application/admin_staff_controllers.dart';
 import 'package:baraka_bozor/features/admin/domain/admin_staff.dart';
 import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
+import 'package:baraka_bozor/features/admin/presentation/staff_widgets.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/operations/domain/board.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,7 +47,7 @@ void main() {
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
   Finder inDialog(Finder finder) =>
-      find.descendant(of: find.byType(AlertDialog), matching: finder);
+      find.descendant(of: find.byType(KitDialogFrame), matching: finder);
 
   AppLocalizations l10n(WidgetTester tester) =>
       AppLocalizations.of(tester.element(find.byType(Scaffold).first));
@@ -52,6 +65,7 @@ void main() {
     WidgetTester tester, {
     Size size = const Size(1400, 1600),
     FakeOperationsRepository? operations,
+    Locale device = const Locale('uz'),
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -79,6 +93,7 @@ void main() {
         tokens: tokens,
         repository: auth,
         surface: Surface.web,
+        device: device,
         operations: operations,
         overrides: [adminStaffRepositoryProvider.overrideWithValue(staff)],
       ),
@@ -90,6 +105,10 @@ void main() {
   }
 
   Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
+    // A field that still has the focus scrolls its window back to its caret,
+    // so the button the test scrolls to would slide away again.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
     await tester.ensureVisible(finder);
     await tester.pumpAndSettle();
     await tester.tap(finder);
@@ -119,10 +138,14 @@ void main() {
       await open(tester);
 
       await tapAndSettle(tester, byKey('new-staff'));
+      expect(byKey('staff-dialog'), findsOneWidget);
+      expect(
+        inDialog(find.text(l10n(tester).staffNewSubtitle)),
+        findsOneWidget,
+      );
       await tester.enterText(byKey('field-full_name'), '  Aziz Rahimov ');
       await tester.enterText(byKey('field-phone'), '90 765 43 21');
-      await tapAndSettle(tester, byKey('field-role'));
-      await tapAndSettle(tester, find.text(l10n(tester).roleCourier).last);
+      await tapAndSettle(tester, byKey('role-courier'));
       await tapAndSettle(tester, byKey('staff-save'));
 
       final NewStaffMember sent = staff.created.single;
@@ -131,10 +154,44 @@ void main() {
       expect(sent.role, UserRole.courier);
 
       final String password = staff.issued.single;
+      // The password replaces the form in the same window.
+      expect(byKey('staff-dialog'), findsNothing);
+      expect(byKey('password-dialog'), findsOneWidget);
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(inDialog(find.byType(KitDialogBadge)), findsOneWidget);
+      expect(
+        inDialog(find.text(l10n(tester).staffTemporaryPasswordTitle)),
+        findsOneWidget,
+      );
+      expect(
+        inDialog(find.text('Aziz Rahimov · ${formatPhone('+998907654321')}')),
+        findsOneWidget,
+      );
       expect(find.text(password), findsOneWidget);
       expect(
-        find.text(l10n(tester).staffTemporaryPasswordWarning),
-        findsOneWidget,
+        find.ancestor(
+          of: byKey('temporary-password'),
+          matching: find.byWidgetPredicate(
+            (Widget w) =>
+                w is DecoratedBox &&
+                w.decoration is BoxDecoration &&
+                (w.decoration as BoxDecoration).color == KitColors.field,
+          ),
+        ),
+        findsWidgets,
+      );
+      expect(byKey('copy-password'), findsOneWidget);
+      final Finder warning = find.text(
+        l10n(tester).staffTemporaryPasswordWarning,
+      );
+      expect(warning, findsOneWidget);
+      expect(
+        tester
+            .widget<KitNote>(
+              find.ancestor(of: warning, matching: find.byType(KitNote)),
+            )
+            .tone,
+        KitTone.amber,
       );
       // While the password shows, the controller that answered it holds
       // nothing but its state.
@@ -145,9 +202,18 @@ void main() {
       await tapAndSettle(tester, byKey('copy-password'));
       expect(clipboard, <String>[password]);
       expect(find.text(l10n(tester).staffCopied), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('copy-password'),
+          matching: find.byIcon(Icons.check),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(SnackBar), findsNothing);
 
       await tapAndSettle(tester, byKey('password-done'));
 
+      expect(byKey('password-dialog'), findsNothing);
       expect(find.text(password), findsNothing);
       expect(find.textContaining('Aziz Rahimov'), findsOneWidget);
       expect(find.text(l10n(tester).staffMustChangePassword), findsOneWidget);
@@ -164,17 +230,22 @@ void main() {
       await tester.tap(byKey('staff-save'));
       await tester.pump();
       await tryToDismiss(tester);
+      await tester.tap(byKey('staff-dialog-close'));
+      await tester.pump();
+      expect(byKey('staff-dialog'), findsOneWidget);
       expect(byKey('staff-save'), findsOneWidget);
 
       staff.hold!.complete();
       await tester.pumpAndSettle();
       final String password = staff.issued.single;
+      expect(byKey('password-dialog-close'), findsNothing);
       await tryToDismiss(tester);
       await tester.pumpAndSettle();
       expect(find.text(password), findsOneWidget);
 
       await tapAndSettle(tester, byKey('password-done'));
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(byKey('staff-dialog'), findsNothing);
+      expect(byKey('password-dialog'), findsNothing);
     },
   );
 
@@ -243,7 +314,7 @@ void main() {
   });
 
   testWidgets(
-    'a phone another active staff account holds is explained, and the form stays',
+    'a number held by another active member is marked on the phone field',
     (WidgetTester tester) async {
       staff.changeFailure = const ApiRefusal(
         ApiError(status: 409, code: 'phone_already_active'),
@@ -255,9 +326,63 @@ void main() {
       await tester.enterText(byKey('field-phone'), '901112233');
       await tapAndSettle(tester, byKey('staff-save'));
 
-      expect(find.text(l10n(tester).errorPhoneAlreadyActive), findsWidgets);
+      expect(
+        find.descendant(
+          of: byKey('field-phone'),
+          matching: find.text(l10n(tester).errorPhoneAlreadyActive),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(l10n(tester).errorPhoneAlreadyActive), findsOneWidget);
+      expect(byKey('failure-message'), findsNothing);
+      expect(find.text(l10n(tester).fieldRequired), findsNothing);
+      expect(find.text(l10n(tester).phoneInvalid), findsNothing);
+      expect(byKey('staff-dialog'), findsOneWidget);
       expect(byKey('staff-save'), findsOneWidget);
       expect(staff.issued, isEmpty);
+
+      // Editing the number clears the mark.
+      await tester.enterText(byKey('field-phone'), '901112234');
+      await tester.pumpAndSettle();
+      expect(find.text(l10n(tester).errorPhoneAlreadyActive), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'the role tiles explain each role and the role cannot change later',
+    (WidgetTester tester) async {
+      await open(tester);
+      await tapAndSettle(tester, byKey('new-staff'));
+      final AppLocalizations text = l10n(tester);
+
+      for (final String hint in <String>[
+        text.staffRoleShopperHint,
+        text.staffRoleCourierHint,
+        text.staffRoleOperatorHint,
+        text.staffRoleAdminHint,
+        text.staffRoleManagerHint,
+      ]) {
+        expect(inDialog(find.text(hint)), findsOneWidget);
+      }
+      for (final UserRole role in staffRoles) {
+        expect(byKey('role-${role.name}'), findsOneWidget);
+        expect(inDialog(find.text(roleLabel(text, role))), findsOneWidget);
+      }
+      expect(inDialog(find.text(text.staffRoleFixedNote)), findsOneWidget);
+
+      Color? tile(String code) =>
+          tester.widget<Material>(byKey('role-$code')).color;
+      expect(tile('shopper'), KitColors.primaryWash);
+      expect(tile('admin'), Colors.white);
+
+      await tapAndSettle(tester, byKey('role-admin'));
+      expect(tile('admin'), KitColors.primaryWash);
+      expect(tile('shopper'), Colors.white);
+
+      await tester.enterText(byKey('field-full_name'), 'Aziz Rahimov');
+      await tester.enterText(byKey('field-phone'), '90 765 43 21');
+      await tapAndSettle(tester, byKey('staff-save'));
+      expect(staff.created.single.role, UserRole.admin);
     },
   );
 
@@ -324,6 +449,17 @@ void main() {
           tester.widget<Text>(byKey('block-current-orders')).data,
           l10n(tester).staffBlockCurrentOrders(count),
         );
+        expect(
+          tester
+              .widget<KitNote>(
+                find.ancestor(
+                  of: byKey('block-current-orders'),
+                  matching: find.byType(KitNote),
+                ),
+              )
+              .tone,
+          KitTone.amber,
+        );
         await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
       }
 
@@ -387,8 +523,19 @@ void main() {
     await open(tester);
 
     await tapAndSettle(tester, byKey('block-s-1'));
+    expect(byKey('block-dialog'), findsOneWidget);
+    expect(inDialog(find.text(l10n(tester).staffBlockTitle)), findsOneWidget);
+    expect(inDialog(find.text('Dilnoza Karimova')), findsOneWidget);
     expect(
-      find.text(l10n(tester).staffBlockConfirm('Dilnoza Karimova')),
+      inDialog(
+        find.text(
+          '${l10n(tester).roleShopper} · ${formatPhone('+998901112233')}',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      inDialog(find.text(l10n(tester).staffBlockSessions)),
       findsOneWidget,
     );
     expect(
@@ -397,6 +544,14 @@ void main() {
         matching: find.text(l10n(tester).staffBlock),
       ),
       findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<FilledButton>(byKey('confirm-action'))
+          .style!
+          .backgroundColor!
+          .resolve(<WidgetState>{}),
+      KitColors.danger,
     );
     await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
     expect(staff.actions, isEmpty);
@@ -417,8 +572,11 @@ void main() {
     await open(tester);
 
     await tapAndSettle(tester, byKey('reset-s-1'));
+    expect(byKey('reset-dialog'), findsOneWidget);
+    expect(inDialog(find.text(l10n(tester).staffResetTitle)), findsOneWidget);
+    expect(inDialog(find.text('Dilnoza Karimova')), findsOneWidget);
     expect(
-      find.text(l10n(tester).staffResetConfirm('Dilnoza Karimova')),
+      inDialog(find.text(l10n(tester).staffResetExplained)),
       findsOneWidget,
     );
     await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
@@ -435,8 +593,12 @@ void main() {
     await tester.pumpAndSettle();
     final String password = staff.issued.single;
     expect(staff.actions, <String>['reset s-1']);
+    expect(byKey('reset-dialog'), findsNothing);
+    expect(byKey('password-dialog'), findsOneWidget);
+    expect(find.byType(Dialog), findsOneWidget);
     expect(find.text(password), findsOneWidget);
     await tapAndSettle(tester, byKey('password-done'));
+    expect(byKey('password-dialog'), findsNothing);
     expect(find.text(password), findsNothing);
   });
 
@@ -451,6 +613,7 @@ void main() {
     await tapAndSettle(tester, byKey('reset-s-1'));
     await tapAndSettle(tester, byKey('confirm-action'));
 
+    expect(byKey('reset-dialog'), findsOneWidget);
     expect(
       inDialog(find.text(l10n(tester).errorSelfResetNotAllowed)),
       findsOneWidget,
@@ -477,16 +640,32 @@ void main() {
     await open(tester);
 
     await tapAndSettle(tester, byKey('rename-s-1'));
+    expect(byKey('rename-dialog'), findsOneWidget);
+    expect(inDialog(find.text(l10n(tester).staffEditName)), findsOneWidget);
+    expect(
+      inDialog(
+        find.text(
+          '${l10n(tester).roleShopper} · ${formatPhone('+998901112233')}',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('16/120'), findsOneWidget);
     await tester.enterText(
       byKey('field-full_name'),
       'Dilnoza Karimova-Aliyeva',
     );
+    await tester.pump();
+    expect(find.text('24/120'), findsOneWidget);
     await tapAndSettle(tester, byKey('rename-save'));
 
     expect(staff.actions, <String>['rename s-1 Dilnoza Karimova-Aliyeva']);
     expect(find.textContaining('Dilnoza Karimova-Aliyeva'), findsOneWidget);
     expect(find.text(l10n(tester).staffSaved), findsOneWidget);
   });
+
+  bool pillSelected(WidgetTester tester, String key) =>
+      tester.widget<PanelPill>(byKey(key)).selected;
 
   testWidgets('the role and status filters narrow the list', (
     WidgetTester tester,
@@ -502,17 +681,41 @@ void main() {
     ];
     await open(tester);
     expect(find.textContaining('Aziz Rahimov'), findsOneWidget);
+    expect(pillSelected(tester, 'staff-role-all'), isTrue);
 
-    await tapAndSettle(tester, byKey('staff-role-filter'));
-    await tapAndSettle(tester, find.text(l10n(tester).roleShopper).last);
-    expect(staff.queries.last.role, UserRole.shopper);
-    expect(find.textContaining('Aziz Rahimov'), findsNothing);
+    await tapAndSettle(tester, byKey('staff-role-courier'));
+    expect(staff.queries.last.role, UserRole.courier);
+    expect(pillSelected(tester, 'staff-role-courier'), isTrue);
+    expect(pillSelected(tester, 'staff-role-all'), isFalse);
+    expect(find.textContaining('Dilnoza'), findsNothing);
+    expect(find.textContaining('Aziz Rahimov'), findsOneWidget);
 
-    await tapAndSettle(tester, byKey('staff-role-filter'));
-    await tapAndSettle(tester, find.text(l10n(tester).staffAllRoles).last);
+    await tapAndSettle(tester, byKey('staff-role-all'));
+    expect(staff.queries.last.role, isNull);
+    expect(pillSelected(tester, 'staff-role-all'), isTrue);
+    expect(find.textContaining('Dilnoza'), findsOneWidget);
+
+    final String blocked = l10n(tester).statusBlocked;
+    OutlinedButton statusButton() =>
+        tester.widget<OutlinedButton>(byKey('staff-status-filter'));
+    expect(
+      statusButton().style!.backgroundColor!.resolve(<WidgetState>{}),
+      Colors.white,
+    );
     await tapAndSettle(tester, byKey('staff-status-filter'));
-    await tapAndSettle(tester, find.text(l10n(tester).statusBlocked).last);
+    await tapAndSettle(tester, byKey('staff-status-filter-2'));
     expect(staff.queries.last.status, AccountStatus.blocked);
+    expect(
+      find.descendant(
+        of: byKey('staff-status-filter'),
+        matching: find.text(blocked),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      statusButton().style!.backgroundColor!.resolve(<WidgetState>{}),
+      KitColors.primaryWash,
+    );
     expect(find.textContaining('Dilnoza'), findsNothing);
     expect(find.textContaining('Aziz Rahimov'), findsOneWidget);
   });
@@ -521,8 +724,9 @@ void main() {
     WidgetTester tester,
   ) async {
     await open(tester);
-    await tapAndSettle(tester, byKey('staff-role-filter'));
-    await tapAndSettle(tester, find.text(l10n(tester).roleShopper).last);
+    await tapAndSettle(tester, byKey('staff-role-courier'));
+    await tapAndSettle(tester, byKey('staff-status-filter'));
+    await tapAndSettle(tester, byKey('staff-status-filter-2'));
 
     final GoRouter router = GoRouter.of(
       tester.element(find.byType(Scaffold).first),
@@ -532,8 +736,438 @@ void main() {
     router.go(AdminPaths.staff);
     await tester.pumpAndSettle();
 
-    expect(staff.queries.last.role, UserRole.shopper);
+    expect(staff.queries.last.role, UserRole.courier);
+    expect(staff.queries.last.status, AccountStatus.blocked);
+    expect(pillSelected(tester, 'staff-role-courier'), isTrue);
   });
+
+  testWidgets('the header counts the staff', (WidgetTester tester) async {
+    staff.members = <StaffMember>[
+      staffMember(),
+      staffMember(id: 's-2', fullName: 'Aziz Rahimov'),
+      staffMember(id: 's-3', fullName: 'Kamol Karimov'),
+    ];
+    await open(tester);
+
+    final Finder header = find.byType(PanelPageHeader);
+    final Finder title = find.descendant(
+      of: header,
+      matching: find.text(l10n(tester).adminSectionStaff),
+    );
+    final Finder count = find.descendant(
+      of: header,
+      matching: find.text(l10n(tester).staffCount(3)),
+    );
+    expect(title, findsOneWidget);
+    expect(count, findsOneWidget);
+    expect(
+      tester.getTopLeft(count).dy,
+      greaterThan(tester.getTopLeft(title).dy),
+    );
+
+    final Rect button = tester.getRect(byKey('new-staff'));
+    expect(button.height, 40);
+    expect(button.center.dx, greaterThan(tester.getCenter(title).dx));
+    expect(tester.getRect(header).right - button.right, lessThan(1));
+    expect(
+      find.descendant(
+        of: byKey('new-staff'),
+        matching: find.text(l10n(tester).staffNew),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  group('a wide card is a table and a narrow one cards', () {
+    // The card is the window less the page padding (24 either side) below
+    // the icon rail, so 848 makes it 800 and 847 makes it 799.
+    for (final (double width, bool table) in <(double, bool)>[
+      (848, true),
+      (1440, true),
+      (847, false),
+      (820, false),
+    ]) {
+      testWidgets('at ${width.toInt()}', (WidgetTester tester) async {
+        staff.members = <StaffMember>[
+          staffMember(),
+          staffMember(id: 's-2', fullName: 'Aziz Rahimov'),
+        ];
+        await open(tester, size: Size(width, width == 1440 ? 900 : 1000));
+        final AppLocalizations text = l10n(tester);
+        final Finder inCard = find.descendant(
+          of: find.byType(PanelCard),
+          matching: find.byType(Table),
+        );
+
+        if (table) {
+          expect(inCard, findsWidgets);
+          for (final String header in <String>[
+            text.staffColumnMember,
+            text.staffRole,
+            text.staffColumnStatus,
+            text.staffColumnLastLogin,
+          ]) {
+            expect(find.text(header.toUpperCase()), findsOneWidget);
+          }
+          expect(tester.widget(byKey('staff-s-1')), isNot(isA<KitCard>()));
+        } else {
+          expect(find.byType(Table), findsNothing);
+          expect(tester.widget(byKey('staff-s-1')), isA<KitCard>());
+          expect(tester.widget(byKey('staff-s-2')), isA<KitCard>());
+          expect(find.text(text.staffColumnMember.toUpperCase()), findsNothing);
+        }
+
+        final Finder wrapped = find.ancestor(
+          of: byKey('staff-role-all'),
+          matching: find.byType(Wrap),
+        );
+        final Finder scrolling = find.ancestor(
+          of: byKey('staff-role-all'),
+          matching: find.byWidgetPredicate(
+            (Widget w) =>
+                w is SingleChildScrollView &&
+                w.scrollDirection == Axis.horizontal,
+          ),
+        );
+        expect(wrapped, table ? findsOneWidget : findsNothing);
+        expect(scrolling, table ? findsNothing : findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
+
+  testWidgets('a role name never breaks mid-word in a narrow table', (
+    WidgetTester tester,
+  ) async {
+    staff.members = <StaffMember>[
+      staffMember(id: 's-9', role: UserRole.admin, fullName: 'Aziz Rahimov'),
+    ];
+    await open(tester, size: const Size(848, 1000), device: const Locale('ru'));
+
+    expect(find.byType(Table), findsWidgets);
+    final Finder chip = find.descendant(
+      of: byKey('staff-s-9'),
+      matching: find.byType(StaffRoleChip),
+    );
+    expect(
+      find.descendant(of: chip, matching: find.text('Администратор')),
+      findsOneWidget,
+    );
+    // One line of 12 px text is about 16 high; a broken name is two or more.
+    expect(
+      tester
+          .getSize(
+            find.descendant(of: chip, matching: find.text('Администратор')),
+          )
+          .height,
+      lessThan(20),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the role tiles stand two to a row, one at large text', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, size: const Size(1440, 900), device: const Locale('ru'));
+    await tapAndSettle(tester, byKey('new-staff'));
+
+    expect(
+      tester.getTopLeft(byKey('role-courier')).dy,
+      tester.getTopLeft(byKey('role-shopper')).dy,
+    );
+    await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('new-staff'));
+
+    expect(
+      tester.getTopLeft(byKey('role-courier')).dx,
+      tester.getTopLeft(byKey('role-shopper')).dx,
+    );
+    expect(
+      tester.getTopLeft(byKey('role-courier')).dy,
+      greaterThan(tester.getTopLeft(byKey('role-shopper')).dy),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the staff windows type their fields at 13 in ink', (
+    WidgetTester tester,
+  ) async {
+    staff.members = <StaffMember>[staffMember(id: 's-4')];
+    await open(tester);
+
+    await tapAndSettle(tester, byKey('new-staff'));
+    EditableText typed(String key) => tester.widget<EditableText>(
+      find.descendant(of: byKey(key), matching: find.byType(EditableText)),
+    );
+    expect(typed('field-full_name').style.fontSize, 13);
+    expect(typed('field-full_name').style.color, KitColors.ink);
+    expect(typed('field-phone').style.fontSize, 13);
+    expect(typed('field-phone').style.color, KitColors.ink);
+    await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+
+    await tapAndSettle(tester, byKey('rename-s-4'));
+    expect(typed('field-full_name').style.fontSize, 13);
+    expect(typed('field-full_name').style.color, KitColors.ink);
+  });
+
+  testWidgets('a row says who, what, where and when', (
+    WidgetTester tester,
+  ) async {
+    final DateTime seen = DateTime.utc(2026, 10, 1, 7, 30);
+    staff.members = <StaffMember>[
+      staffMember(
+        id: 's-1',
+        role: UserRole.courier,
+        fullName: 'Kamol Karimov',
+        phone: '+998905554433',
+        mustChangePassword: true,
+      ),
+      staffMember(id: 's-2', fullName: 'Aziz Rahimov', lastLoginAt: seen),
+      staffMember(
+        id: 's-3',
+        role: UserRole.operator,
+        fullName: 'Olim Operator',
+        status: AccountStatus.blocked,
+      ),
+      staffMember(id: 'u-1', role: UserRole.admin, fullName: 'Admin'),
+    ];
+    await open(tester);
+    final AppLocalizations text = l10n(tester);
+    Finder inRow(String id, Finder finder) =>
+        find.descendant(of: byKey('staff-$id'), matching: finder);
+
+    expect(inRow('s-1', find.text('Kamol Karimov')), findsOneWidget);
+    expect(
+      inRow('s-1', find.text(formatPhone('+998905554433'))),
+      findsOneWidget,
+    );
+    expect(
+      inRow(
+        's-1',
+        find.byWidgetPredicate(
+          (Widget w) => w is StaffRoleChip && w.role == UserRole.courier,
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(inRow('s-1', find.text(text.roleCourier)), findsOneWidget);
+    expect(
+      inRow(
+        's-1',
+        find.byWidgetPredicate(
+          (Widget w) => w is AccountStatusChip && !w.blocked,
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(inRow('s-1', find.byType(MustChangePasswordTag)), findsOneWidget);
+    expect(inRow('s-1', find.text(text.staffNeverLoggedIn)), findsOneWidget);
+    expect(inRow('s-2', find.byType(MustChangePasswordTag)), findsNothing);
+    expect(inRow('s-2', find.text(TashkentTime.format(seen))), findsOneWidget);
+    expect(inRow('s-2', find.text(text.staffNeverLoggedIn)), findsNothing);
+
+    // A blocked row is faded, with a grey avatar and the way back.
+    DecoratedBox box(String id) =>
+        tester.widget<DecoratedBox>(byKey('staff-$id'));
+    expect((box('s-3').decoration as BoxDecoration).color, KitColors.card);
+    expect((box('s-2').decoration as BoxDecoration).color, isNull);
+    expect(
+      tester
+          .widget<PersonAvatar>(inRow('s-3', find.byType(PersonAvatar)))
+          .muted,
+      isTrue,
+    );
+    expect(
+      tester
+          .widget<PersonAvatar>(inRow('s-2', find.byType(PersonAvatar)))
+          .muted,
+      isFalse,
+    );
+    expect(
+      inRow(
+        's-3',
+        find.byWidgetPredicate(
+          (Widget w) => w is AccountStatusChip && w.blocked,
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(byKey('activate-s-3'), findsOneWidget);
+    expect(byKey('block-s-3'), findsNothing);
+
+    // The own row keeps the rename alone.
+    expect(inRow('u-1', byKey('own-u-1')), findsOneWidget);
+    expect(inRow('u-1', find.text(text.staffYou)), findsOneWidget);
+    expect(byKey('rename-u-1'), findsOneWidget);
+    expect(byKey('reset-u-1'), findsNothing);
+    expect(byKey('block-u-1'), findsNothing);
+    expect(byKey('activate-u-1'), findsNothing);
+  });
+
+  testWidgets('a card says the same as a row', (WidgetTester tester) async {
+    final DateTime seen = DateTime.utc(2026, 10, 1, 7, 30);
+    staff.members = <StaffMember>[
+      staffMember(
+        id: 's-1',
+        role: UserRole.courier,
+        fullName: 'Kamol Karimov',
+        mustChangePassword: true,
+      ),
+      staffMember(id: 's-2', fullName: 'Aziz Rahimov', lastLoginAt: seen),
+    ];
+    await open(tester, size: const Size(820, 1180));
+    final AppLocalizations text = l10n(tester);
+    Finder inCard(String id, Finder finder) =>
+        find.descendant(of: byKey('staff-$id'), matching: finder);
+
+    expect(inCard('s-1', find.byType(StaffRoleChip)), findsOneWidget);
+    expect(inCard('s-1', find.byType(AccountStatusChip)), findsOneWidget);
+    expect(inCard('s-1', find.byType(MustChangePasswordTag)), findsOneWidget);
+    expect(inCard('s-1', find.text(text.staffNeverLoggedIn)), findsOneWidget);
+    expect(
+      inCard('s-2', find.text(text.staffLastLogin(TashkentTime.format(seen)))),
+      findsOneWidget,
+    );
+    expect(inCard('s-1', byKey('block-s-1')), findsOneWidget);
+    expect(inCard('s-1', byKey('reset-s-1')), findsOneWidget);
+    expect(inCard('s-1', byKey('rename-s-1')), findsOneWidget);
+  });
+
+  testWidgets('the actions name themselves', (WidgetTester tester) async {
+    staff.members = <StaffMember>[
+      staffMember(),
+      staffMember(
+        id: 's-2',
+        fullName: 'Aziz Rahimov',
+        status: AccountStatus.blocked,
+      ),
+    ];
+    await open(tester);
+    final AppLocalizations text = l10n(tester);
+
+    String tooltip(String key) => tester
+        .widget<Tooltip>(
+          find.ancestor(of: byKey(key), matching: find.byType(Tooltip)),
+        )
+        .message!;
+    expect(tooltip('rename-s-1'), text.staffEditName);
+    expect(tooltip('reset-s-1'), text.staffResetPassword);
+    expect(tooltip('block-s-1'), text.staffBlock);
+    expect(tooltip('activate-s-2'), text.staffActivate);
+
+    final TestGesture mouse = await tester.createGesture(
+      kind: PointerDeviceKind.mouse,
+    );
+    addTearDown(mouse.removePointer);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(tester.getCenter(byKey('block-s-1')));
+    await tester.pump(const Duration(seconds: 1));
+    expect(
+      find.descendant(
+        of: find.byType(Overlay),
+        matching: find.text(text.staffBlock),
+      ),
+      findsWidgets,
+    );
+  });
+
+  testWidgets('nothing found says how to widen it', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    expect(find.text(l10n(tester).staffEmptyHint), findsNothing);
+
+    await tapAndSettle(tester, byKey('staff-role-courier'));
+
+    expect(find.text(l10n(tester).catalogEmpty), findsOneWidget);
+    expect(find.text(l10n(tester).staffEmptyHint), findsOneWidget);
+  });
+
+  for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+    for (final Size size in const <Size>[Size(1440, 900), Size(820, 1180)]) {
+      testWidgets('the staff list holds at the extremes '
+          '(${device.languageCode} ${size.width.toInt()})', (
+        WidgetTester tester,
+      ) async {
+        staff.members = <StaffMember>[
+          staffMember(fullName: 'Dilnoza ' * 15),
+          staffMember(
+            id: 's-2',
+            role: UserRole.courier,
+            fullName: 'Aziz Rahimov',
+            mustChangePassword: true,
+            status: AccountStatus.blocked,
+          ),
+          staffMember(id: 'u-1', role: UserRole.admin, fullName: 'Admin'),
+        ];
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+        await open(tester, size: size, device: device);
+
+        expect(byKey('staff-s-1'), findsOneWidget);
+        expect(byKey('new-staff'), findsOneWidget);
+        expect(byKey('staff-role-manager'), findsOneWidget);
+        expect(byKey('staff-status-filter'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        for (final String key in <String>[
+          'block-s-1',
+          'reset-s-1',
+          'rename-s-1',
+          'activate-s-2',
+        ]) {
+          await tester.ensureVisible(byKey(key));
+          await tester.pumpAndSettle();
+          expect(byKey(key), findsOneWidget);
+        }
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
+  for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+    for (final Size size in const <Size>[Size(1440, 900), Size(820, 1180)]) {
+      testWidgets('every staff window holds at x2 '
+          '(${device.languageCode} ${size.width.toInt()})', (
+        WidgetTester tester,
+      ) async {
+        staff.members = <StaffMember>[
+          staffMember(fullName: 'Dilnoza Karimova-Aliyeva Rustamovna'),
+        ];
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await open(tester, size: size, device: device);
+
+        // The form, and the password in the same window.
+        await tapAndSettle(tester, byKey('new-staff'));
+        expect(byKey('staff-dialog'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.enterText(byKey('field-full_name'), 'Aziz Rahimov');
+        await tester.enterText(byKey('field-phone'), '90 765 43 21');
+        await tapAndSettle(tester, byKey('staff-save'));
+        expect(byKey('password-dialog'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tapAndSettle(tester, byKey('password-done'));
+
+        for (final (String key, String dialog) in <(String, String)>[
+          ('block-s-1', 'block-dialog'),
+          ('reset-s-1', 'reset-dialog'),
+          ('rename-s-1', 'rename-dialog'),
+        ]) {
+          await tapAndSettle(tester, byKey(key));
+          expect(byKey(dialog), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+          expect(byKey(dialog), findsNothing);
+        }
+      });
+    }
+  }
 
   testWidgets('after signing out the list asks for nothing more', (
     WidgetTester tester,
@@ -641,7 +1275,14 @@ void main() {
     await tester.enterText(byKey('field-full_name'), 'Dilnoza K.');
     await tapAndSettle(tester, byKey('rename-save'));
 
-    expect(find.text(l10n(tester).fieldRejected), findsOneWidget);
+    expect(byKey('rename-dialog'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: byKey('field-full_name'),
+        matching: find.text(l10n(tester).fieldRejected),
+      ),
+      findsOneWidget,
+    );
     expect(byKey('rename-save'), findsOneWidget);
   });
 
