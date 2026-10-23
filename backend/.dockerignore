@@ -1,0 +1,15 @@
+# Keeps the production image's build context to the source the image needs
+# (docker/app.prod.Dockerfile). Secrets and dev tooling never enter a layer.
+vendor/
+.env
+.env.*
+tests/
+phpunit.xml
+.phpunit*
+storage/*
+bootstrap/cache/*.php
+node_modules/
+.ai/
+*.log
+# A host symlink to storage/app/public; it points outside the context.
+public/storage
