@@ -125,7 +125,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 - The Telegram token is restricted to the server's address.
 - The Owner is offered an external check that alerts on a downed server and on a night without a backup.
 - Checked on the live server:
-  - Caddy and the app see public client addresses, not the Docker bridge gateway: a Docker userland proxy would make every client one address and share the per-IP limits. The fix is in Docker's configuration or host networking for Caddy, not `TRUSTED_PROXIES`;
+  - Caddy and the app see public client addresses, not the Docker bridge gateway: a Docker userland proxy would make every client one address and share the per-IP limits. The fix is in Docker's configuration or host networking for Caddy, not `TRUSTED_PROXIES`. In that gateway case a client could also send `X_Forwarded_For` with underscores, which Caddy's FastCGI transport maps onto the same variable as its own header (W4-2 security review, below the bar). If the gateway case is ever accepted, Caddy drops the underscore spellings with `header_up -X_Forwarded_For`, `-X_Forwarded_Host` and `-X_Forwarded_Proto`;
   - the panel's `current` link inside `PANEL_ROOT` is relative, since an absolute host path does not resolve inside Caddy's `/srv/panel` mount;
   - TLS on both hosts;
   - the public pages `/legal/privacy` and `/account-deletion`, which W4-6 needs;
