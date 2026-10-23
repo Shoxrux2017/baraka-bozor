@@ -29,7 +29,7 @@ Each gate is the Owner's external action (`AGENTS.md` section 14). Work that nee
 
 **Owner questions in this wave**, each put on its own when its task reaches it (`AGENTS.md` section 3):
 
-1. **The store reviewers' sign-in.** Interview 7.2 says that test numbers are both how app-store reviewers sign in and empty in production, and `BR-ROLE-011`, `DL-11` and `AGENTS.md` section 5 hold the second half. Google asks an app with a one-time-code login for "reusable login credentials that can bypass" the code. W4-6 cannot upload before this is settled, and the fourteen days wait on W4-6, so this is asked at once, with the plan.
+1. **The store reviewers' sign-in.** Interview 7.2 says that test numbers are both how app-store reviewers sign in and empty in production, and `BR-ROLE-011`, `DL-11` and `AGENTS.md` section 5 hold the second half. Google asks an app with a one-time-code login for "reusable login credentials that can bypass" the code. W4-6 cannot upload before this is settled, and the fourteen days wait on W4-6, so this is asked at once, with the plan. **Answered on 2026-10-23: option А, one reviewer phone in production (`DL-105`).**
 2. **The handoff point at launch.** Does it exist (`delivery.handoff_point`, on by default, interview 1.1)? Asked at the deployment, W4-5 (Wave 3 risk list).
 3. **A rejected cancellation request.** Should the Customer get a push when the Operator rejects it? `docs/05` section 18 has no such event. Asked at W4-7.
 
@@ -39,12 +39,12 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 
 | # | Task | Gate | Status |
 |---|---|---|---|
-| W4-1 | Laravel Boost trial (`DL-103`) | — | Planned |
+| W4-1 | Laravel Boost trial (`DL-103`, `DL-106`) | — | Merged (#110) |
 | W4-2 | Production runtime: images, `docker/compose.prod.yaml`, Caddy, CORS, proxies, the worker, the scheduler and its pruning | — | Planned |
 | W4-3 | Backups: nightly encrypted copies off the host, the restore script | — | Planned |
 | W4-4 | Login codes through Telegram Gateway | Telegram (verification) | Planned |
 | W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
-| W4-6 | Android release build and closed testing | Google Play, the reviewers' question, W4-5 | Planned |
+| W4-6 | Android release build and closed testing | Google Play, W4-5 | Planned |
 | W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | Planned |
 | W4-8 | Firebase Cloud Messaging sender; device pruning | Firebase (verification) | Planned |
 | W4-9 | Push in the app: Firebase token, permission, banners, opening the order | Firebase | Planned |
@@ -85,6 +85,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 - The refusal `409 code_delivery_unavailable` for a number Telegram cannot reach (`docs/09` sections 6 and 52), with no challenge left behind. The app's sign-in, Customer-mode and account-deletion code screens show words for it.
 - The cost guard of `DL-104` (9): the existing per-address limit counting an IPv6 address by its /64, and the daily ceiling of paid checks for phones that hold no active account, with warnings at half and at the ceiling. A test proves that an existing Customer and a Shopper still receive codes above the ceiling.
 - Tests against a fake HTTP server, including the provider's refusals, a timeout, and proof that neither the code nor the token reaches a log or an exception message.
+- The reviewer phone of `DL-105`: its own setting and fixed code beside the test phones, allowed in production and refused at boot when its code is the development code; it never receives a staff step, and no Shopper or Courier account can be created on it. `BR-ROLE-011`, `docs/09` section 6 and `AGENTS.md` section 5 are updated with it.
 - Verified with the Owner's token on the Owner's own number, which costs nothing. Until then the driver stays `fake` locally.
 
 **W4-5. First deployment.**
@@ -107,14 +108,14 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
   - `approvals:expire` running from the scheduler;
   - the first nightly backup, then a restore of it into a scratch stack on the server.
 - The Owner's question 2 is asked here, and the answer is set in the server's environment.
-- The test-phone list is empty in production (`BR-ROLE-011`) until the Owner answers question 1.
+- The test-phone list is empty in production (`BR-ROLE-011`). The reviewer phone and its code of `DL-105` are set in the server's environment, and its account "Проверка Google" is created.
 
 **W4-6. Android release and closed testing** (`DL-104` (13)).
 
 - The release signing from `frontend/android/key.properties`, which is gitignored, with the upload key kept outside the repository and handed to the Owner. A release build without it fails, and the debug-key fallback and its TODO go.
 - The version code taken from `pubspec.yaml`, raised on every upload. `tasks/scripts/build_release.ps1` builds the bundle with `--dart-define-from-file`.
 - The launcher icon and the store graphics, drawn and approved earlier (Owner questions above), go into the build and the listing. The listing in Uzbek and Russian, the data-safety answers and the content rating are prepared in `docs/store/`. The data-safety answers and the public deletion page say that backups keep erased data for up to six months (`DL-104` (6)); the answers are redone when push ships (W4-9).
-- The Owner uploads to the closed track and invites the testers; the agent gives the exact clicks. The reviewers' access follows the answer to question 1.
+- The Owner uploads to the closed track and invites the testers; the agent gives the exact clicks. The reviewer phone and its code go into Play Console's App access (`DL-105`).
 - The release keys' SHA-1s are added to the Maps key, and the address map is checked on a release build.
 
 **W4-7. Notifications on the server** (`DL-104` (10)).
@@ -194,11 +195,14 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | Carried from Wave 2: a build whose MapKit key Yandex refuses aborts at launch | Closed: the map is Google's since `DL-86`, and its SDK starts only when a map is shown |
 | Carried from Wave 3: the handoff point at launch | Owner question 2, W4-5 |
 | Carried from Wave 3, P3: a list under a page; Customer mode's app bar | W4-10 |
+| `composer audit` (found at W4-1) reports three advisories in packages the app already had: `symfony/http-foundation` (a ReDoS through the `Cache-Control` request header) and `league/commonmark` (two). They are updated before the first deployment | W4-2 |
 
 ## Independent-review findings not acted on
 
 | Task | Finding | Why not acted on |
 |---|---|---|
+| W4-1 | P3: the two Boost switches live in `backend/.env`, so a checkout whose `.env` predates W4-1 would offer `record-rule` | Every `.env` is copied from `.env.example`, which carries them, and this machine's `.env` has them. Forcing them in code is taken up if Boost stays after the trial |
+| W4-1 | P3: the console-and-local gate in `AppServiceProvider` has no test of its own | `GlobalMiddlewareTest` guards what matters, that tests and CI never load Boost or `laravel/mcp`; the gate is removed with Boost if the trial ends |
 
 ## Closure
 

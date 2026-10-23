@@ -1597,3 +1597,27 @@ Taken while planning `tasks/WAVE_4.md`. Each task records anything finer.
     - **Building.** The bundle is built on the development machine with `--dart-define-from-file`: the API address, the Maps key and the Firebase options. CI goes on building the web target only, so the signing key never reaches CI.
     - **The keys.** The Maps key gains the SHA-1s of the upload key and of Play's app-signing key, and the Geocoding key is restricted to the VPS's address.
     - **The store.** The listing, in Uzbek and Russian, points at `https://api.<domain>/legal/privacy` and `/account-deletion`. The agent prepares the data-safety answers, and the Owner submits them in the Play Console. They are redone when the push build ships (W4-9), since push adds a device identifier.
+
+## DL-105 — The store reviewers' sign-in (2026-10-23, Owner)
+
+Google asks an app with a one-time-code login for reusable sign-in details that bypass the code, and checks every build, a closed test's too. Interview 7.2 made test phones both the reviewers' way in and empty in production. The Owner chose option А (`tasks/WAVE_4.md`, question 1):
+
+1. **One reviewer phone in production.** It sits in the server's environment, apart from the development list of test phones, with a fixed code of its own that differs from the development code. The boot guard that refuses test phones in production stays as it is.
+2. **A Customer only.** The phone opens a Customer account and never a Shopper's or a Courier's: no staff account may sit on it, and no staff step is issued for it.
+3. **Recognised on the board.** The account is created before the first upload with the name "Проверка Google", so a reviewer's order is plain to the Operator, who cancels it.
+4. **Changed in a minute.** A leaked code is replaced by editing the environment and restarting. The attempt limit of `DL-87` applies to it as to any phone.
+
+This settles the contradiction inside interview 7.2 and supersedes the "empty in production" half of `BR-ROLE-011`, `DL-2` topic 7 and `AGENTS.md` section 5 for this one phone. Those texts change with the code, in W4-4.
+
+## DL-106 — Laravel Boost set-up (2026-10-23, agent)
+
+How the trial of `DL-103` is installed. The runbook is `docker/README.md`, "Laravel Boost for the agent".
+
+1. **The check.** `laravel/boost` 2.10.3 requires `illuminate/*` `^13.0`, and its MCP server answered inside the `app` container. Installing it added only Boost, `laravel/mcp`, `laravel/roster`, `symfony/yaml` and `composer/semver`.
+2. **No `boost:install`.** The installer writes `AGENTS.md`, `CLAUDE.md`, `.mcp.json`, guidelines and skills, which would overwrite the project's own rules. Claude Code starts `php artisan boost:mcp` through `docker compose exec`, from a local-scope registration in the developer's Claude configuration. Nothing in the repository names it.
+3. **Two features off.** `BOOST_BROWSER_LOGS_WATCHER=false` and `BOOST_RULES_ENABLED=false` in `backend/.env.example`.
+   - The browser log watcher serves no purpose here, since Laravel serves no JavaScript page. It also adds `POST /_boost/browser-logs`, which writes a log without a sign-in.
+   - The rule recorder writes `.ai/rules`, a second place for rules beside `AGENTS.md` and `docs/DECISIONS.md`.
+4. **Left as shipped.** The `tinker` tool stays off, its default: it runs any code against the development database (the wipe of 2026-10-19). `database-query` refuses writing statements and runs in a PostgreSQL `READ ONLY` transaction that is always rolled back.
+5. **Documentation search.** `search-docs` sends the question and the list of installed packages to boost.laravel.com, and in the `local` environment it skips TLS verification. Accepted, since it carries only documentation text. A question never carries data from the database.
+6. **Only for local console commands.** Discovered, `laravel/mcp` adds a global middleware to every HTTP request in each environment that has it, the test suite's included, which `GlobalMiddlewareTest` caught. Boost itself switches off only under PHPUnit and outside `local` unless `APP_DEBUG` is true, which `.env.example` sets. So both packages are in `dont-discover`, and `AppServiceProvider` registers them only when the environment is `local`, the process is a console command, and the package is installed. `boost:mcp` is a console command. Served requests and the test suite therefore run the same global middleware stack as production; `laravel/roster` stays discovered and is inert (one lazy singleton and a console command). The production image of W4-2 installs no dev dependencies.
