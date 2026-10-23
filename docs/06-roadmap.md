@@ -16,7 +16,7 @@ Build toward a **cash-first pilot** in the order below, one implementing agent, 
 | 1 | Catalog and account | Admin catalog in the web panel, Customer catalog and search, profile and language, addresses with the map picker and service-area check, staff management, business settings, push device registration | Yandex MapKit key |
 | 2 | Cart and order on cash | cart, checkout with cash (online shown as unavailable), order creation, editing and direct cancellation, Shopper assignment, the Admin and Operator board with the summary strip, the Customer-mode switch for Shoppers and Couriers | none |
 | 3 | Fulfilment | Courier assignment (`DL-37` (12)), shopping with fixed and estimate items, unavailability, substitution, approvals with timers, Operator attention, Courier delivery with cash collection and not-delivered, cancellation requests, the Admin's price correction (`DL-54` (1)) | none |
-| 4 | Pilot readiness | real FCM push and every notification event (with the final-amount notice of a cash order, `DL-78`), history, Telegram Gateway login with the fixed-code test numbers kept, deployment to the Owner's VPS with backups, Android closed testing, web panel hosting, end-to-end check on cash, the pilot | Firebase, Telegram Gateway, hosting, Google Play |
+| 4 | Pilot readiness | real FCM push and every notification event (with the final-amount notice of a cash order, `DL-78`), Telegram Gateway login with the fixed-code test numbers kept, deployment to the Owner's VPS with backups, Android closed testing, web panel hosting, end-to-end check on cash, the pilot | Firebase, Telegram Gateway, hosting, Google Play |
 | 5 | Online payment | Payme and Click adapters from published protocols, the online flow with its 30-minute window and the Operator switch, provider reconciliation, manual refund tracking, Eskiz SMS fallback | legal entity, merchant agreements, Eskiz contract |
 | later | — | Manager figures, Paynet and xazna, automated refunds, iOS release, delivery zones and tariffs, spreadsheet import, chat, product reviews and ratings (`DL-82`) | Apple, a Mac |
 
@@ -44,7 +44,7 @@ Courier assignment and reassignment; Shopper accept and start; purchase recordin
 
 ### Wave 4 — Pilot readiness
 
-Notification events and templates, FCM adapter, Shopper polling; Telegram Gateway adapter; production configuration, deployment scripts, backups, TLS; Android release build into closed testing; web panel hosting; the end-to-end scenario on the real stack; the Owner's pilot checklist. History and reorder were delivered in kit stage 6 (`DL-91`, `DL-92`). Planned in `tasks/WAVE_4.md`, decisions in `DL-104`; the Android release goes early, since Google Play's closed test takes fourteen days.
+Notification events and templates, FCM adapter; Telegram Gateway adapter; production configuration, deployment scripts, backups, TLS; Android release build into closed testing; web panel hosting; the end-to-end scenario on the real stack; the Owner's pilot checklist. History and reorder were delivered in kit stage 6 (`DL-91`, `DL-92`), and the screens' own refresh, the Shopper's polling among them, in Wave 3 (`DL-54` (15)). Planned in `tasks/WAVE_4.md`, decisions in `DL-104`; the Android release goes early, since Google Play's closed test takes fourteen days.
 
 ### Wave 5 — Online payment
 

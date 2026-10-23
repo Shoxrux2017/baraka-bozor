@@ -188,7 +188,7 @@ Partial unique `(order_id) WHERE status <> 'cancelled'`: one live payment per or
 
 ## 26. `notification_deliveries`
 
-`id, user_id, push_device_id?, order_id?, approval_id?, type, status (queued|sent|failed), attempt_count, sent_at?, last_error_code?, timestamps`. `type` in the twelve values of `05` Section 18, `shopping_completed` among them (`DL-104` (10)). A row is written `queued` in the transaction of the action that causes it and pruned after 90 days (`DL-104` (8)). Index `(user_id, created_at)`, `(status, created_at)`.
+`id, user_id, push_device_id?, order_id?, approval_id?, type, status (queued|sent|failed), attempt_count, sent_at?, last_error_code?, timestamps`. `type` in the twelve values of `05` Section 18, `shopping_completed` among them (`DL-104` (10)). The queued job writes a row per device, `queued` before the send and `sent` or `failed` after it, or one row without a device, `skipped`, when nothing is sent (`no_device`, `account_inactive`, `expired` in `last_error_code`); `status` therefore also takes `skipped`. `push_device_id` is `ON DELETE SET NULL`, so erasing a Customer, which deletes the devices, is never blocked. Rows are pruned after 90 days (`DL-104` (8), (10)). Index `(user_id, created_at)`, `(status, created_at)`.
 
 ## 27. `idempotency_keys`
 

@@ -48,7 +48,7 @@ Phone: E.164 `+998` plus nine digits. Policy: six digits, five-minute lifetime, 
 {"data":{"channel":"telegram","expires_in_seconds":300,"resend_available_in_seconds":0}}
 ```
 
-`channel` ∈ `telegram, sms, fake, test`. `fake` is what the development gateway reports; `test` means a configured test phone that needs no delivery. The client shows channel-specific text for `telegram` and `sms` and a generic "code sent" otherwise. Codes: `code_locked` (`429`, `Retry-After`), `rate_limited` (also twenty requests an hour per IP address), `code_delivery_unavailable` (`409`: no channel reaches the number — Telegram cannot and no SMS provider exists yet; no challenge is created), `provider_unavailable` (also above the daily ceiling of sends), `validation_failed` (`DL-104` (9)).
+`channel` ∈ `telegram, sms, fake, test`. `fake` is what the development gateway reports; `test` means a configured test phone that needs no delivery. The client shows channel-specific text for `telegram` and `sms` and a generic "code sent" otherwise. Codes: `code_locked` (`429`, `Retry-After`), `rate_limited`, `code_delivery_unavailable` (`409`: no channel reaches the number — Telegram cannot and no SMS provider exists yet; no challenge is created), `provider_unavailable` (also, for a phone holding no active account, above the daily ceiling of paid sends — which, while it lasts, tells such a phone from one with an account), `validation_failed` (`DL-104` (9)).
 
 ## 7. Verify Customer Login Code
 

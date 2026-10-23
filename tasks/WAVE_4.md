@@ -22,15 +22,18 @@ Each gate is the Owner's external action (`AGENTS.md` section 14). Work that nee
 |---|---|---|
 | VPS in Uzbekistan and a domain | W4-5 | Picks the provider (interview 10.2). Ubuntu 24.04 LTS, 2 vCPU, 4 GB RAM, 40 GB SSD or more, a public IPv4 address, ports 80 and 443 open. Adds the agent's SSH public key. Registers a domain and points `api.` and `panel.` at the server's address |
 | Backup storage in Uzbekistan | W4-5 | A second place, apart from the VPS: an SFTP account or an S3-compatible bucket at another provider or another data centre, about 20 GB. The copies hold Customer data, so they stay in Uzbekistan (ZRU-547 art. 27-1) |
-| Telegram Gateway | W4-4 (verification), W4-5 | Signs in at gateway.telegram.org with their Telegram account and fills in the business details. Copies the API token from the account's API page and restricts it to the server's IP address. Funds the balance through "Add Funds on Fragment"; a code costs $0.01 and an undelivered one is refunded. Codes sent to the account's own number are free, which is how W4-4 is verified |
-| Google Play | W4-6 | A personal developer account ($25 once, identity check by document). Twelve testers with Google accounts who keep the app installed for fourteen days without a break. The Owner submits what the agent prepares: the listing, the data-safety answers, the content rating, the reviewers' access |
+| Telegram Gateway | W4-4 (verification), W4-5 | Signs in at gateway.telegram.org with their Telegram account and fills in the business details. Copies the API token from the account's API page and, at W4-5, restricts it to the server's IP address. Funds the balance through "Add Funds on Fragment", the only way Telegram's guide names; Fragment probably takes TON, which the Owner checks with their accountant. A code costs $0.01 and an undelivered one is refunded. Codes sent to the account's own number are free, which is how W4-4 is verified |
+| Google Play | W4-6 | A personal developer account ($25 once, identity check by document); the store shows the Owner's own name as the developer until the account moves to the legal entity. Twelve testers with Google accounts who stay opted in for fourteen days without a break; below twelve, the count starts again. The Owner submits what the agent prepares: the listing, the data-safety answers, the content rating, the reviewers' access |
 | Firebase | W4-8 (verification), W4-9 | A Firebase project on the Owner's Google account (the free plan is enough). An Android app registered with the package `uz.barakabozor.app`, and a service-account key for the server. Both files are saved outside the repository, never sent in chat |
 | Google Maps keys for the release | W4-6 | The app's key from kit stage 4b (`DL-86`) gains the SHA-1 of the upload key and of Play's app-signing key; the server's Geocoding key is restricted to the VPS's address |
 
 **Owner questions in this wave**, each put on its own when its task reaches it (`AGENTS.md` section 3):
 
-1. **The store reviewers' sign-in.** Interview 7.2 says that test numbers are both how app-store reviewers sign in and empty in production. Google reviews every closed-testing release of an app with a login, so W4-6 cannot upload before this is settled.
+1. **The store reviewers' sign-in.** Interview 7.2 says that test numbers are both how app-store reviewers sign in and empty in production, and `BR-ROLE-011`, `DL-11` and `AGENTS.md` section 5 hold the second half. Google asks an app with a one-time-code login for "reusable login credentials that can bypass" the code. W4-6 cannot upload before this is settled, and the fourteen days wait on W4-6, so this is asked at once, with the plan.
 2. **The handoff point at launch.** Does it exist (`delivery.handoff_point`, on by default, interview 1.1)? Asked at the deployment, W4-5 (Wave 3 risk list).
+3. **A rejected cancellation request.** Should the Customer get a push when the Operator rejects it? `docs/05` section 18 has no such event. Asked at W4-7.
+
+The launcher icon and the store graphics are drawn in Claude Design while W4-2 to W4-5 run, so the Owner's approval of them never holds W4-6.
 
 ## Tasks
 
@@ -61,7 +64,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 **W4-2. Production runtime** (`DL-104` (3) to (5), (8)).
 
 - A production image: PHP 8.4 FPM with opcache, no dev dependencies, no source mounted; the same image runs the app, the worker (`queue:work`) and the scheduler (`schedule:work`).
-- `docker/compose.prod.yaml` with `caddy`, `app`, `worker`, `scheduler` and `db` (`postgres:17-alpine` with the UTF-8 type `DL-20` requires). Only Caddy publishes ports. Every service restarts on failure, and Docker rotates the logs.
+- `docker/compose.prod.yaml` with `caddy`, `app`, `worker`, `scheduler` and `db` (`postgres:17-alpine` with the UTF-8 type `DL-20` requires). Only Caddy publishes ports. Every service restarts on failure, and Docker rotates the logs. The application logs to stderr and Caddy keeps no access log (`DL-104` (3)). Each container builds its caches when it starts.
 - The Caddyfile: `api.<domain>` serves PHP, the public pages and `/storage` with long cache headers and the panel's origin for images (`DL-34`); `panel.<domain>` serves the static build with `index.html` uncached.
 - `config/cors.php` allows only `CORS_ALLOWED_ORIGINS` on `api/*`. `TRUSTED_PROXIES` names Caddy's network, and a test proves that the per-IP login limit sees the client's address behind it.
 - `docker/production.env.example` lists every variable the server needs, with no values. The boot refuses a production environment that lacks the database password, the app key or the code driver.
@@ -70,7 +73,8 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 
 **W4-3. Backups** (`DL-104` (6)).
 
-- A nightly job at 03:00 Tashkent: `pg_dump` in custom format and the images volume, into a restic repository on the backup storage; retention 7 daily, 4 weekly, 6 monthly; `restic check` weekly.
+- A `backup` container runs a nightly job at 03:00 Tashkent: `pg_dump` in custom format and the images volume, into a restic repository on the backup storage; retention 7 daily, 4 weekly, 6 monthly; `restic check` weekly. Its credentials and password are its own, not the app's.
+- Each run records its outcome, which `docker/deploy.sh` and the Owner's checklist read.
 - `docker/backup/restore.sh` restores a chosen snapshot into a scratch stack.
 - The restic password lives on the server and with the Owner, who stores it in a password manager or on paper; a lost password means the copies cannot be read.
 - Verified locally against a local restic repository: back up, wipe the scratch stack, restore, and the walkthrough passes on the restored data.
@@ -79,7 +83,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 
 - `TelegramGatewayCodeDelivery` behind `CodeDeliveryGateway`, selected by `LOGIN_CODE_DRIVER=telegram`, with `TELEGRAM_GATEWAY_TOKEN`.
 - The refusal `409 code_delivery_unavailable` for a number Telegram cannot reach (`docs/09` sections 6 and 52), with no challenge left behind. The app's sign-in, Customer-mode and account-deletion code screens show words for it.
-- The per-IP limit and the daily ceiling, with their answers.
+- The cost guard of `DL-104` (9): the existing per-address limit counting an IPv6 address by its /64, and the daily ceiling of paid checks for phones that hold no active account, with warnings at half and at the ceiling. A test proves that an existing Customer and a Shopper still receive codes above the ceiling.
 - Tests against a fake HTTP server, including the provider's refusals, a timeout, and proof that neither the code nor the token reaches a log or an exception message.
 - Verified with the Owner's token on the Owner's own number, which costs nothing. Until then the driver stays `fake` locally.
 
@@ -92,7 +96,10 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
   - unattended security upgrades;
   - Docker;
   - a read-only deploy key for the repository.
-- A tagged release deployed by `docker/deploy.sh`. The first Admin is made by the one-time command (`BR-ROLE-009`), whose temporary password goes to the Owner directly. The Owner then enters the business settings in the panel.
+- A tagged release deployed by `docker/deploy.sh` (`DL-104` (7)): a dump before the migrations, a `503` with `Retry-After` while the app is replaced, the previous image kept for a rollback. The first Admin is made by the one-time command (`BR-ROLE-009`), whose temporary password goes to the Owner directly. The Owner then enters the business settings in the panel.
+- Every Shopper's and Courier's number is checked to reach Telegram, since staff sign in with a code first (`DL-77`).
+- The Telegram token is restricted to the server's address.
+- The Owner is offered an external check that alerts on a downed server and on a night without a backup.
 - Checked on the live server:
   - TLS on both hosts;
   - the public pages `/legal/privacy` and `/account-deletion`, which W4-6 needs;
@@ -106,26 +113,28 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 
 - The release signing from `frontend/android/key.properties`, which is gitignored, with the upload key kept outside the repository and handed to the Owner. A release build without it fails, and the debug-key fallback and its TODO go.
 - The version code taken from `pubspec.yaml`, raised on every upload. `tasks/scripts/build_release.ps1` builds the bundle with `--dart-define-from-file`.
-- The launcher icon and the store graphics are drawn in Claude Design and approved by the Owner before code (design-first). The listing in Uzbekistan Uzbek and Russian, the data-safety answers and the content rating are prepared in `docs/store/`.
+- The launcher icon and the store graphics, drawn and approved earlier (Owner questions above), go into the build and the listing. The listing in Uzbek and Russian, the data-safety answers and the content rating are prepared in `docs/store/`. The data-safety answers and the public deletion page say that backups keep erased data for up to six months (`DL-104` (6)); the answers are redone when push ships (W4-9).
 - The Owner uploads to the closed track and invites the testers; the agent gives the exact clicks. The reviewers' access follows the answer to question 1.
 - The release keys' SHA-1s are added to the Maps key, and the address map is checked on a release build.
 
 **W4-7. Notifications on the server** (`DL-104` (10)).
 
-- A migration for `notification_deliveries` (`docs/08` section 26) with the twelve types, and `push_devices` index changes if the sender needs them.
-- `NotificationService::notify` is called in the transaction of each action of the trigger table in `DL-104` (10), beside the history row the action writes. Each call writes a `queued` delivery and a job on the database queue.
+- A migration for `notification_deliveries` (`docs/08` section 26): the twelve types, the status `skipped`, and `push_device_id` `ON DELETE SET NULL`.
+- `NotificationService::notify` is called by each action of the trigger table in `DL-104` (10), beside the history row it writes, and dispatches the job after the commit (`DL-39`). An Admin's price correction on a shopped cash order sends `shopping_completed` again with the new amount.
 - The job:
   - renders the text from `lang/uz/notifications.php` and `lang/ru/notifications.php`;
   - skips an account no longer active;
   - sends through the `PushSender` port, which has a fake for now;
-  - records the outcome;
+  - writes a delivery row per device, or one `skipped` row with its reason;
   - retries a transient failure.
+- Owner question 3 is asked here; a yes adds a thirteenth event in this task.
 - Tests:
-  - every trigger notifies the right person once;
+  - every trigger notifies the right person once, and the Customer receives `order_accepted` for their own order;
   - a rolled-back action notifies nobody;
   - a replay or a natural repeat notifies nobody again;
-  - an actor is not notified of their own action;
+  - no other actor is notified of their own action;
   - a blocked Shopper gets nothing;
+  - erasing a Customer who has delivery rows succeeds;
   - the texts in both languages carry no name, phone or address;
   - the payload carries the event and the order's id only.
 
@@ -133,7 +142,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 
 - An HTTP v1 sender with the service account's OAuth token, through `google/auth` (a dependency; the reason goes in the commit).
 - Answers mapped:
-  - `UNREGISTERED`, or an invalid token: the device is revoked;
+  - `UNREGISTERED`, or `INVALID_ARGUMENT` about the token field alone: the device is revoked; an `INVALID_ARGUMENT` about the message revokes nothing;
   - `429` and `5xx`: retried with backoff, honouring `Retry-After`;
   - anything else: recorded as failed.
 - `push-devices:prune` revokes devices unseen for 60 days.
@@ -142,6 +151,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 **W4-9. Push in the app** (`DL-104` (12)).
 
 - `firebase_core`, `firebase_messaging` and `flutter_local_notifications` (dependencies; reasons in the commit). The Firebase options come from the gitignored `frontend/.env.firebase` through dart-defines. A build without them keeps `NoPushTokenSource`, and the web build always does.
+- First, before the rest: a push must reach a phone whose app was killed. If the options alone do not do it, the gitignored `google-services.json` and a Gradle plugin applied only when it exists do (`DL-104` (12)).
 - `FcmPushTokenSource`. The token change stream re-registers every signed-in account. A registration at each start refreshes `last_seen_at`.
 - The permission is asked once, after the first sign-in into a role that receives pushes, on Android 13 and later.
 - One notification channel. In the foreground, a banner shows unless the visible screen is that order. A tap opens the order in the event's mode, switching mode when the phone holds both sessions; this works from a cold start too.
@@ -171,9 +181,11 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | Item | Status |
 |---|---|
 | Customers without Telegram cannot sign in until Eskiz arrives with the legal entity (interview 10.1). The refusal says so | Accepted for the pilot |
+| Staff sign in with a code too (`DL-77`), so a Shopper or Courier whose number has no Telegram cannot work. W4-5 checks every staff number; the pilot checklist repeats it for new staff | Open, W4-5 |
+| Funding Telegram Gateway goes through Fragment, which probably takes TON. Paying in cryptocurrency may have accounting and legal sides in Uzbekistan | Open, Owner |
 | A Shopper or Courier replaced before starting is not notified; `docs/05` section 18 has no such event. They see the order leave their list on the next refresh | Accepted; the pilot shows whether it matters |
 | A push is best-effort (`BR-NOTIF-001`). A phone that is off, or that has notifications disabled, learns at the next opening, and the screens keep refreshing themselves | Accepted |
-| Push texts pass through Google, and phone numbers through Telegram. The texts carry no personal data beyond the order number and the amount (`DL-104` (10)); whether the phone sent to Telegram needs the Customer's consent under ZRU-547 is a question for the Owner's lawyer, with the privacy policy | Open, Owner, before the pilot |
+| Push texts pass through Google, and phone numbers through Telegram. The texts carry no personal data beyond the order number and the amount (`DL-104` (10)). Two questions for the Owner's lawyer, with the privacy policy: does sending the phone to Telegram need the Customer's consent, and must the personal-data database be registered under ZRU-547 | Open, Owner, before the pilot |
 | A disk-full or downed server is noticed only by people. An external uptime check is an Owner account | Open; offered at W4-5 |
 | iOS push: the code is written and the configuration waits for a Mac and an Apple account (`docs/06`) | Open until a Mac exists |
 | Carried from Wave 3: the scheduler runs nowhere until Wave 4 deploys one (`DL-54` (8)) | Closes with W4-5 |
