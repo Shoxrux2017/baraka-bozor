@@ -111,16 +111,19 @@ class _DocumentsState extends State<_Documents> {
         ),
         const SizedBox(height: 16),
         // Every document stays built, so a text typed in one survives a look
-        // at the other; only the shown one takes any height.
+        // at the other; only the shown one takes any height or the focus.
         for (final LegalDocumentKind kind in LegalDocumentKind.values)
           Offstage(
             offstage: kind != _kind,
-            child: _DocumentSection(
-              kind: kind,
-              entries: <LegalDocumentEntry>[
-                for (final LegalDocumentEntry entry in widget.entries)
-                  if (entry.kind == kind) entry,
-              ],
+            child: ExcludeFocus(
+              excluding: kind != _kind,
+              child: _DocumentSection(
+                kind: kind,
+                entries: <LegalDocumentEntry>[
+                  for (final LegalDocumentEntry entry in widget.entries)
+                    if (entry.kind == kind) entry,
+                ],
+              ),
             ),
           ),
       ],
@@ -145,27 +148,30 @@ class _DocumentSectionState extends State<_DocumentSection> {
   @override
   Widget build(BuildContext context) {
     // Both editors stay built, so a text typed in one language survives a
-    // look at the other; only the shown one takes any height.
+    // look at the other; only the shown one takes any height or the focus.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         for (final AppLanguage language in AppLanguage.values)
           Offstage(
             offstage: language != _language,
-            child: _DocumentEditor(
-              key: ValueKey<String>(
-                'legal-editor-${widget.kind.code}-${language.code}',
+            child: ExcludeFocus(
+              excluding: language != _language,
+              child: _DocumentEditor(
+                key: ValueKey<String>(
+                  'legal-editor-${widget.kind.code}-${language.code}',
+                ),
+                entry: widget.entries.firstWhere(
+                  (LegalDocumentEntry e) => e.language == language,
+                ),
+                published: <AppLanguage, bool>{
+                  for (final LegalDocumentEntry e in widget.entries)
+                    e.language: e.body != null,
+                },
+                language: _language,
+                onLanguage: (AppLanguage chosen) =>
+                    setState(() => _language = chosen),
               ),
-              entry: widget.entries.firstWhere(
-                (LegalDocumentEntry e) => e.language == language,
-              ),
-              published: <AppLanguage, bool>{
-                for (final LegalDocumentEntry e in widget.entries)
-                  e.language: e.body != null,
-              },
-              language: _language,
-              onLanguage: (AppLanguage chosen) =>
-                  setState(() => _language = chosen),
             ),
           ),
       ],

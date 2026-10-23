@@ -80,8 +80,8 @@ class _ScrollingPillsState extends State<_ScrollingPills> {
   }
 }
 
-/// A filter pill: white with a 1 px outline, or — [selected] — green; with an optional [count]
-/// after the label, muted when it is zero.
+/// A filter pill: white with a 1 px outline, or — [selected] — green; with
+/// an optional [count] after the label, muted when it is zero.
 class PanelPill extends StatelessWidget {
   const PanelPill({
     required this.label,

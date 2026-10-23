@@ -413,6 +413,30 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('a hidden editor cannot take the keyboard focus', (
+    WidgetTester tester,
+  ) async {
+    await openDocuments(tester, size: const Size(1440, 900));
+
+    // Uzbek terms show first; the Russian privacy policy is hidden twice over.
+    for (final (LegalDocumentKind kind, AppLanguage language)
+        in <(LegalDocumentKind, AppLanguage)>[(terms, ru), (privacy, ru)]) {
+      final EditableText hidden = tester.widget<EditableText>(
+        find.descendant(
+          of: find.byKey(
+            ValueKey<String>('legal-${kind.code}-${language.code}'),
+            skipOffstage: false,
+          ),
+          matching: find.byType(EditableText, skipOffstage: false),
+          skipOffstage: false,
+        ),
+      );
+      hidden.focusNode.requestFocus();
+      await tester.pump();
+      expect(hidden.focusNode.hasFocus, isFalse);
+    }
+  });
+
   testWidgets('the preview lays out only what fits', (
     WidgetTester tester,
   ) async {
