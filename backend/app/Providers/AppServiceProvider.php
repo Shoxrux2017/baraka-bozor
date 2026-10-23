@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Support\Routing\UuidRouteParameters;
+use App\Support\Runtime\ProductionConfiguration;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Boost\BoostServiceProvider;
@@ -34,5 +35,11 @@ class AppServiceProvider extends ServiceProvider
     {
         // Before any route is registered: patterns apply at registration time.
         UuidRouteParameters::register($router);
+
+        // An incomplete production configuration stops the boot, not the first
+        // request that needs the missing setting (`DL-107`).
+        if ($this->app->environment('production')) {
+            ProductionConfiguration::assertComplete($this->app);
+        }
     }
 }
