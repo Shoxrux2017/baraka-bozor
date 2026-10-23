@@ -735,6 +735,58 @@ class AppLocalizationsRu extends AppLocalizations {
   String get customersTitle => 'Покупатели';
 
   @override
+  String get customersSubtitle => 'Поиск по номеру телефона';
+
+  @override
+  String get customersPhoneLabel => 'Номер покупателя';
+
+  @override
+  String get customersPhoneHelper => 'Весь номер: 9 цифр после +998';
+
+  @override
+  String get customersStartTitle => 'Найдите покупателя по номеру';
+
+  @override
+  String get customersStartText => 'Введите номер полностью и нажмите «Найти».';
+
+  @override
+  String get customersNoneHint => 'Проверьте номер.';
+
+  @override
+  String get customerOrdersLabel => 'Заказов';
+
+  @override
+  String get customerSince => 'С нами с';
+
+  @override
+  String get customerLastLoginLabel => 'Последний вход';
+
+  @override
+  String get customerUnfinishedExplained =>
+      'Удалить аккаунт можно, когда заказ закончится.';
+
+  @override
+  String get customerEraseFinal => 'Отменить удаление нельзя.';
+
+  @override
+  String get customersHelpTitle => 'Как удалить аккаунт по просьбе';
+
+  @override
+  String get customersHelpStep1 =>
+      'Покупатель без приложения звонит в поддержку — так сказано на странице «Удаление аккаунта» на сайте.';
+
+  @override
+  String get customersHelpStep2 => 'Найдите его здесь по номеру.';
+
+  @override
+  String get customersHelpStep3 =>
+      'Нажмите «Удалить аккаунт» — сразу и без возврата. Пока есть незавершённый заказ, удалить нельзя.';
+
+  @override
+  String get customersHelpPrivacy =>
+      'Список всех покупателей панель не показывает — только того, чей номер ввели.';
+
+  @override
   String get customersPhoneHint => '+998 и 9 цифр';
 
   @override

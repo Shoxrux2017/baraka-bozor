@@ -722,6 +722,60 @@ class AppLocalizationsUz extends AppLocalizations {
   String get customersTitle => 'Xaridorlar';
 
   @override
+  String get customersSubtitle => 'Telefon raqami bo\'yicha qidirish';
+
+  @override
+  String get customersPhoneLabel => 'Xaridor raqami';
+
+  @override
+  String get customersPhoneHelper => 'To\'liq raqam: +998 dan keyin 9 raqam';
+
+  @override
+  String get customersStartTitle => 'Xaridorni raqami bo\'yicha toping';
+
+  @override
+  String get customersStartText =>
+      'Raqamni to\'liq kiriting va «Topish»ni bosing.';
+
+  @override
+  String get customersNoneHint => 'Raqamni tekshiring.';
+
+  @override
+  String get customerOrdersLabel => 'Buyurtmalar';
+
+  @override
+  String get customerSince => 'Biz bilan';
+
+  @override
+  String get customerLastLoginLabel => 'Oxirgi kirish';
+
+  @override
+  String get customerUnfinishedExplained =>
+      'Buyurtma tugagach, akkauntni o\'chirish mumkin.';
+
+  @override
+  String get customerEraseFinal => 'O\'chirishni qaytarib bo\'lmaydi.';
+
+  @override
+  String get customersHelpTitle =>
+      'So\'rov bo\'yicha akkauntni qanday o\'chirish kerak';
+
+  @override
+  String get customersHelpStep1 =>
+      'Ilovasi yo\'q xaridor qo\'llab-quvvatlashga qo\'ng\'iroq qiladi — saytdagi «Akkauntni o\'chirish» sahifasida shunday yozilgan.';
+
+  @override
+  String get customersHelpStep2 => 'Uni bu yerda raqami bo\'yicha toping.';
+
+  @override
+  String get customersHelpStep3 =>
+      '«Akkauntni o\'chirish»ni bosing — darhol va qaytarib bo\'lmaydi. Tugallanmagan buyurtma bor ekan, o\'chirib bo\'lmaydi.';
+
+  @override
+  String get customersHelpPrivacy =>
+      'Panel barcha xaridorlar ro\'yxatini ko\'rsatmaydi — faqat raqami kiritilganini.';
+
+  @override
   String get customersPhoneHint => '+998 va 9 raqam';
 
   @override

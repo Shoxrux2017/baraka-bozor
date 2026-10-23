@@ -1394,6 +1394,102 @@ abstract class AppLocalizations {
   /// **'Xaridorlar'**
   String get customersTitle;
 
+  /// No description provided for @customersSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Telefon raqami bo\'yicha qidirish'**
+  String get customersSubtitle;
+
+  /// No description provided for @customersPhoneLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaridor raqami'**
+  String get customersPhoneLabel;
+
+  /// No description provided for @customersPhoneHelper.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'liq raqam: +998 dan keyin 9 raqam'**
+  String get customersPhoneHelper;
+
+  /// No description provided for @customersStartTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xaridorni raqami bo\'yicha toping'**
+  String get customersStartTitle;
+
+  /// No description provided for @customersStartText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqamni to\'liq kiriting va «Topish»ni bosing.'**
+  String get customersStartText;
+
+  /// No description provided for @customersNoneHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Raqamni tekshiring.'**
+  String get customersNoneHint;
+
+  /// No description provided for @customerOrdersLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar'**
+  String get customerOrdersLabel;
+
+  /// No description provided for @customerSince.
+  ///
+  /// In uz, this message translates to:
+  /// **'Biz bilan'**
+  String get customerSince;
+
+  /// No description provided for @customerLastLoginLabel.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi kirish'**
+  String get customerLastLoginLabel;
+
+  /// No description provided for @customerUnfinishedExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma tugagach, akkauntni o\'chirish mumkin.'**
+  String get customerUnfinishedExplained;
+
+  /// No description provided for @customerEraseFinal.
+  ///
+  /// In uz, this message translates to:
+  /// **'O\'chirishni qaytarib bo\'lmaydi.'**
+  String get customerEraseFinal;
+
+  /// No description provided for @customersHelpTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'rov bo\'yicha akkauntni qanday o\'chirish kerak'**
+  String get customersHelpTitle;
+
+  /// No description provided for @customersHelpStep1.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilovasi yo\'q xaridor qo\'llab-quvvatlashga qo\'ng\'iroq qiladi — saytdagi «Akkauntni o\'chirish» sahifasida shunday yozilgan.'**
+  String get customersHelpStep1;
+
+  /// No description provided for @customersHelpStep2.
+  ///
+  /// In uz, this message translates to:
+  /// **'Uni bu yerda raqami bo\'yicha toping.'**
+  String get customersHelpStep2;
+
+  /// No description provided for @customersHelpStep3.
+  ///
+  /// In uz, this message translates to:
+  /// **'«Akkauntni o\'chirish»ni bosing — darhol va qaytarib bo\'lmaydi. Tugallanmagan buyurtma bor ekan, o\'chirib bo\'lmaydi.'**
+  String get customersHelpStep3;
+
+  /// No description provided for @customersHelpPrivacy.
+  ///
+  /// In uz, this message translates to:
+  /// **'Panel barcha xaridorlar ro\'yxatini ko\'rsatmaydi — faqat raqami kiritilganini.'**
+  String get customersHelpPrivacy;
+
   /// No description provided for @customersPhoneHint.
   ///
   /// In uz, this message translates to:

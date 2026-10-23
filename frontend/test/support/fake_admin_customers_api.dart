@@ -25,6 +25,7 @@ class FakeAdminCustomersApi extends AdminCustomersApi {
     String phone = '+998901234567',
     String? fullName = 'Aziza Karimova',
     String status = 'active',
+    DateTime? lastLoginAt,
     ({String id, int number})? unfinishedOrder,
   }) => AdminCustomer(
     id: id,
@@ -32,7 +33,7 @@ class FakeAdminCustomersApi extends AdminCustomersApi {
     fullName: fullName,
     status: status,
     createdAt: DateTime.utc(2026, 9, 1, 7),
-    lastLoginAt: null,
+    lastLoginAt: lastLoginAt,
     orderCount: 3,
     unfinishedOrder: unfinishedOrder,
   );

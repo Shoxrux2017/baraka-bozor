@@ -1,12 +1,20 @@
+import 'package:baraka_bozor/core/formatting/phone_format.dart';
+import 'package:baraka_bozor/core/formatting/tashkent_time.dart';
+import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_note.dart';
+import 'package:baraka_bozor/core/widgets/panel/panel_person.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/admin/application/admin_customers_controllers.dart';
 import 'package:baraka_bozor/features/admin/domain/admin_customers.dart';
 import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
 import 'package:baraka_bozor/features/admin/presentation/customers_screen.dart';
+import 'package:baraka_bozor/features/admin/presentation/staff_widgets.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../support/app_harness.dart';
 import '../../../support/fake_admin_customers_api.dart';
@@ -30,10 +38,6 @@ void main() {
   bool enabled(WidgetTester tester, String key) =>
       tester.widget<OutlinedButton>(byKey(key)).onPressed != null;
 
-  /// The shell's user card shows the staff user's own name and number.
-  Finder inScreen(Finder finder) =>
-      find.descendant(of: find.byType(CustomersScreen), matching: finder);
-
   setUp(() {
     tokens = InMemoryTokenStore();
     auth = FakeAuthRepository();
@@ -50,8 +54,34 @@ void main() {
     ];
   });
 
-  Future<void> openCustomers(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1400, 2600);
+  AppLocalizations l10n(WidgetTester tester) =>
+      AppLocalizations.of(tester.element(find.byType(CustomersScreen)));
+
+  Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
+    // A field that still has the focus scrolls its window back to its caret,
+    // so the button the test scrolls to would slide away again.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.ensureVisible(finder);
+    await tester.pumpAndSettle();
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
+  }
+
+  /// The note of the given tone that holds [text].
+  Finder note(KitTone tone, String text) => find.ancestor(
+    of: find.text(text),
+    matching: find.byWidgetPredicate(
+      (Widget widget) => widget is KitNote && widget.tone == tone,
+    ),
+  );
+
+  Future<void> openCustomers(
+    WidgetTester tester, {
+    Size size = const Size(1400, 2600),
+    Locale device = const Locale('ru'),
+  }) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
@@ -60,61 +90,135 @@ void main() {
         tokens: tokens,
         repository: auth,
         surface: Surface.web,
-        device: const Locale('ru'),
+        device: device,
         overrides: [adminCustomersApiProvider.overrideWithValue(api)],
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(byKey('panel-section-${AdminPaths.customers}'));
+    GoRouter.of(tester.element(find.byType(Scaffold).first))
+        .go(AdminPaths.customers);
     await tester.pumpAndSettle();
   }
 
   Future<void> search(WidgetTester tester, String text) async {
     await tester.enterText(byKey('customers-phone'), text);
-    await tester.tap(byKey('customers-find'));
-    await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('customers-find'));
   }
 
-  testWidgets(
-    'a malformed phone shows the hint as an error and sends nothing',
-    (WidgetTester tester) async {
-      await openCustomers(tester);
+  testWidgets('the search takes nine digits or a whole pasted number', (
+    WidgetTester tester,
+  ) async {
+    for (final String text in <String>[
+      '901234567',
+      '90 123 45 67',
+      '+998 90 123 45 67',
+      '+998901234567',
+    ]) {
+      expect(customerPhoneOf(text), '+998901234567', reason: text);
+    }
+    for (final String text in <String>['90123456', '+7 901 234 56 78', '']) {
+      expect(customerPhoneOf(text), isNull, reason: text);
+    }
 
-      await search(tester, '90 123');
+    await openCustomers(tester);
+    await search(tester, '90 123');
 
-      expect(
-        tester
-            .widget<TextField>(byKey('customers-phone'))
-            .decoration!
-            .errorText,
-        '+998 и 9 цифр',
-      );
-      expect(api.finds, isEmpty);
-    },
-  );
+    expect(
+      tester.widget<TextField>(byKey('customers-phone')).decoration!.errorText,
+      l10n(tester).customersPhoneHint,
+    );
+    expect(find.text('+998 и 9 цифр'), findsOneWidget);
+    expect(api.finds, isEmpty);
 
-  testWidgets('the accounts on a phone show as cards', (
+    await search(tester, '90 123 45 67');
+
+    expect(api.finds, <String>[phone]);
+    expect(
+      tester.widget<TextField>(byKey('customers-phone')).decoration!.errorText,
+      isNull,
+    );
+  });
+
+  testWidgets('before a search the page says what to do', (
     WidgetTester tester,
   ) async {
     await openCustomers(tester);
 
-    await search(tester, phone);
-
-    expect(api.finds, <String>[phone]);
-    expect(inScreen(find.text('Aziza Karimova')), findsOneWidget);
-    expect(inScreen(find.text('Без имени')), findsOneWidget);
-    expect(inScreen(find.text('+998 90 123 45 67')), findsNWidgets(2));
-    expect(inScreen(find.text('Заказов: 3')), findsNWidgets(2));
-    expect(inScreen(find.text('Активен')), findsNWidgets(2));
-    expect(inScreen(find.text('Незавершённый заказ № 1042')), findsOneWidget);
+    expect(find.text(l10n(tester).customersStartTitle), findsOneWidget);
+    expect(find.text(l10n(tester).customersStartText), findsOneWidget);
+    expect(find.text(l10n(tester).customersNone), findsNothing);
   });
 
-  testWidgets('a phone with no account says so', (WidgetTester tester) async {
+  testWidgets('a phone with no account says so and what to check', (
+    WidgetTester tester,
+  ) async {
     await openCustomers(tester);
 
     await search(tester, '+998909999999');
 
     expect(find.text('Покупателей с этим номером нет'), findsOneWidget);
+    expect(find.text(l10n(tester).customersNoneHint), findsOneWidget);
+    expect(find.text(l10n(tester).customersStartTitle), findsNothing);
+  });
+
+  testWidgets('the accounts on a phone show as cards', (
+    WidgetTester tester,
+  ) async {
+    final DateTime lastLogin = DateTime.utc(2026, 10, 20, 8, 30);
+    api.byPhone[phone] = <AdminCustomer>[
+      FakeAdminCustomersApi.customer(id: idA, lastLoginAt: lastLogin),
+      FakeAdminCustomersApi.customer(
+        id: idB,
+        fullName: null,
+        status: 'blocked',
+      ),
+    ];
+    await openCustomers(tester);
+
+    await search(tester, phone);
+
+    expect(api.finds, <String>[phone]);
+    final Finder cardA = byKey('customer-$idA');
+    final Finder cardB = byKey('customer-$idB');
+    Finder within(Finder card, Finder finder) =>
+        find.descendant(of: card, matching: finder);
+
+    final Text name = tester.widget<Text>(
+      within(cardA, find.text('Aziza Karimova')),
+    );
+    expect(name.style?.fontSize, 20);
+    expect(name.style?.fontWeight, FontWeight.w700);
+    expect(within(cardA, find.byType(AccountStatusChip)), findsOneWidget);
+    expect(within(cardA, find.text('Активен')), findsOneWidget);
+    expect(within(cardA, find.text(formatPhone(phone))), findsOneWidget);
+    expect(
+      within(cardA, find.text(l10n(tester).customerOrdersLabel.toUpperCase())),
+      findsOneWidget,
+    );
+    expect(within(cardA, find.text('3')), findsOneWidget);
+    expect(
+      within(cardA, find.text(l10n(tester).customerSince.toUpperCase())),
+      findsOneWidget,
+    );
+    expect(
+      within(cardA, find.text(TashkentTime.date(DateTime.utc(2026, 9, 1, 7)))),
+      findsOneWidget,
+    );
+    expect(
+      within(
+        cardA,
+        find.text(l10n(tester).customerLastLoginLabel.toUpperCase()),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      within(cardA, find.text(TashkentTime.format(lastLogin))),
+      findsOneWidget,
+    );
+
+    expect(within(cardB, find.text('Без имени')), findsOneWidget);
+    expect(within(cardB, find.text('Заблокирован')), findsOneWidget);
+    expect(within(cardB, find.text('—')), findsOneWidget);
   });
 
   testWidgets('the erase button is disabled while an order is unfinished', (
@@ -125,36 +229,47 @@ void main() {
 
     expect(enabled(tester, 'customer-erase-$idA'), isTrue);
     expect(enabled(tester, 'customer-erase-$idB'), isFalse);
+    expect(
+      note(KitTone.amber, l10n(tester).customerUnfinished('1042')),
+      findsOneWidget,
+    );
+    expect(
+      note(KitTone.amber, l10n(tester).customerUnfinishedExplained),
+      findsOneWidget,
+    );
   });
 
-  testWidgets(
-    'a blocked account can be erased: the card and the dialog say the number stays blocked',
-    (WidgetTester tester) async {
-      const String note =
-          'Аккаунт заблокирован: номер останется в чёрном списке, '
-          'зарегистрироваться с ним снова будет нельзя.';
-      api.byPhone[phone] = <AdminCustomer>[
-        FakeAdminCustomersApi.customer(id: idA, status: 'blocked'),
-      ];
-      await openCustomers(tester);
-      await search(tester, phone);
+  testWidgets('a blocked account says its number stays blocked', (
+    WidgetTester tester,
+  ) async {
+    const String text =
+        'Аккаунт заблокирован: номер останется в чёрном списке, '
+        'зарегистрироваться с ним снова будет нельзя.';
+    api.byPhone[phone] = <AdminCustomer>[
+      FakeAdminCustomersApi.customer(id: idA, status: 'blocked'),
+    ];
+    await openCustomers(tester);
+    await search(tester, phone);
 
-      expect(enabled(tester, 'customer-erase-$idA'), isTrue);
-      expect(find.text(note), findsOneWidget);
+    expect(enabled(tester, 'customer-erase-$idA'), isTrue);
+    expect(note(KitTone.amber, text), findsOneWidget);
 
-      await tester.tap(byKey('customer-erase-$idA'));
-      await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('customer-erase-$idA'));
 
-      expect(find.text(note), findsNWidgets(2));
-      expect(api.erased, isEmpty);
+    expect(
+      find.descendant(
+        of: byKey('customer-erase-dialog'),
+        matching: note(KitTone.amber, text),
+      ),
+      findsOneWidget,
+    );
+    expect(api.erased, isEmpty);
 
-      await tester.tap(byKey('customer-erase-confirm'));
-      await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('customer-erase-confirm'));
 
-      expect(api.erased, <String>[idA]);
-      expect(byKey('customer-$idA'), findsNothing);
-    },
-  );
+    expect(api.erased, <String>[idA]);
+    expect(byKey('customer-$idA'), findsNothing);
+  });
 
   testWidgets('erasing asks, sends once, removes the card and confirms', (
     WidgetTester tester,
@@ -162,21 +277,35 @@ void main() {
     await openCustomers(tester);
     await search(tester, phone);
 
-    await tester.tap(byKey('customer-erase-$idA'));
-    await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('customer-erase-$idA'));
 
-    expect(find.text('Удалить аккаунт покупателя?'), findsOneWidget);
+    final Finder dialog = byKey('customer-erase-dialog');
+    expect(dialog, findsOneWidget);
+    Finder inDialog(Finder finder) =>
+        find.descendant(of: dialog, matching: finder);
+    expect(inDialog(find.text('Удалить аккаунт покупателя?')), findsOneWidget);
+    expect(inDialog(find.byType(PanelPersonLine)), findsOneWidget);
+    expect(inDialog(find.text('Aziza Karimova')), findsOneWidget);
     expect(
-      find.text(
-        'Сотрём имя, номер, адреса, избранное и корзину. '
-        'История заказов останется без имени и телефона.',
+      inDialog(find.text('${formatPhone(phone)} · Заказов: 3')),
+      findsOneWidget,
+    );
+    expect(
+      inDialog(
+        find.text(
+          'Сотрём имя, номер, адреса, избранное и корзину. '
+          'История заказов останется без имени и телефона.',
+        ),
       ),
+      findsOneWidget,
+    );
+    expect(
+      inDialog(find.text(l10n(tester).customerEraseFinal)),
       findsOneWidget,
     );
     expect(api.erased, isEmpty);
 
-    await tester.tap(byKey('customer-erase-confirm'));
-    await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('customer-erase-confirm'));
 
     expect(api.erased, <String>[idA]);
     expect(byKey('customer-$idA'), findsNothing);
@@ -189,23 +318,32 @@ void main() {
   ) async {
     await openCustomers(tester);
     await search(tester, phone);
-    final ColorScheme scheme = Theme.of(
-      tester.element(byKey('customer-erase-$idA')),
-    ).colorScheme;
 
     final ButtonStyle? card = tester
         .widget<OutlinedButton>(byKey('customer-erase-$idA'))
         .style;
-    expect(card?.foregroundColor?.resolve(<WidgetState>{}), scheme.error);
+    expect(
+      card?.foregroundColor?.resolve(<WidgetState>{}),
+      KitColors.dangerDark,
+    );
+    expect(card?.side?.resolve(<WidgetState>{})?.color, KitColors.danger);
+    expect(
+      find.descendant(
+        of: byKey('customer-erase-$idA'),
+        matching: find.byIcon(Icons.person_remove_outlined),
+      ),
+      findsOneWidget,
+    );
 
-    await tester.tap(byKey('customer-erase-$idA'));
-    await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('customer-erase-$idA'));
 
     final ButtonStyle? confirm = tester
         .widget<FilledButton>(byKey('customer-erase-confirm'))
         .style;
-    expect(confirm?.backgroundColor?.resolve(<WidgetState>{}), scheme.error);
-    expect(confirm?.foregroundColor?.resolve(<WidgetState>{}), scheme.onError);
+    expect(
+      confirm?.backgroundColor?.resolve(<WidgetState>{}),
+      KitColors.danger,
+    );
   });
 
   testWidgets('cancelling the question sends nothing', (
@@ -214,11 +352,10 @@ void main() {
     await openCustomers(tester);
     await search(tester, phone);
 
-    await tester.tap(byKey('customer-erase-$idA'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Отмена'));
-    await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('customer-erase-$idA'));
+    await tapAndSettle(tester, find.text('Отмена'));
 
+    expect(byKey('customer-erase-dialog'), findsNothing);
     expect(api.erased, isEmpty);
     expect(byKey('customer-$idA'), findsOneWidget);
     expect(find.text('Аккаунт удалён'), findsNothing);
@@ -237,13 +374,77 @@ void main() {
       ),
     );
 
-    await tester.tap(byKey('customer-erase-$idA'));
-    await tester.pumpAndSettle();
-    await tester.tap(byKey('customer-erase-confirm'));
-    await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('customer-erase-$idA'));
+    await tapAndSettle(tester, byKey('customer-erase-confirm'));
 
     expect(find.text('Незавершённый заказ № 1050'), findsOneWidget);
     expect(byKey('customer-$idA'), findsOneWidget);
     expect(find.text('Аккаунт удалён'), findsNothing);
   });
+
+  testWidgets('the help card stands beside from 1000 and under below', (
+    WidgetTester tester,
+  ) async {
+    await openCustomers(tester, size: const Size(1048, 1000));
+
+    final Rect search = tester.getRect(byKey('customers-search'));
+    final Rect help = tester.getRect(byKey('customers-help'));
+    expect(help.left, greaterThanOrEqualTo(search.right));
+    expect(help.top, search.top);
+    expect(help.width, 372);
+
+    final AppLocalizations text = l10n(tester);
+    expect(find.text(text.customersHelpTitle), findsOneWidget);
+    expect(find.text(text.customersHelpStep1), findsOneWidget);
+    expect(find.text(text.customersHelpStep2), findsOneWidget);
+    expect(find.text(text.customersHelpStep3), findsOneWidget);
+    expect(find.text(text.customersHelpPrivacy), findsOneWidget);
+
+    await openCustomers(tester, size: const Size(1047, 1000));
+
+    final Rect results = tester.getRect(byKey('customers-results'));
+    final Rect under = tester.getRect(byKey('customers-help'));
+    expect(under.top, greaterThanOrEqualTo(results.bottom));
+    expect(under.left, tester.getRect(byKey('customers-search')).left);
+  });
+
+  for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+    for (final Size size in const <Size>[Size(1440, 900), Size(820, 1180)]) {
+      testWidgets('the customers page holds at the extremes '
+          '(${device.languageCode} ${size.width.toInt()})', (
+        WidgetTester tester,
+      ) async {
+        api.byPhone[phone] = <AdminCustomer>[
+          FakeAdminCustomersApi.customer(
+            id: idA,
+            fullName: 'Dilnoza ' * 20,
+            status: 'blocked',
+          ),
+          FakeAdminCustomersApi.customer(
+            id: idB,
+            unfinishedOrder: (id: orderId, number: 1042),
+          ),
+        ];
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+        await openCustomers(tester, size: size, device: device);
+        expect(tester.takeException(), isNull);
+        await search(tester, phone);
+
+        expect(byKey('customer-$idA'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.ensureVisible(byKey('customer-erase-$idB'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+
+        await tapAndSettle(tester, byKey('customer-erase-$idA'));
+        expect(byKey('customer-erase-dialog'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tapAndSettle(tester, byKey('customer-erase-confirm'));
+        expect(api.erased, <String>[idA]);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
 }
