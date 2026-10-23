@@ -1340,6 +1340,42 @@ abstract class AppLocalizations {
   /// **'Hujjatlar'**
   String get legalDocumentsTitle;
 
+  /// No description provided for @legalDocumentsSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijozlar ularni ilovada va saytda o\'qiydi'**
+  String get legalDocumentsSubtitle;
+
+  /// No description provided for @legalPreviewTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mijoz qanday ko\'radi'**
+  String get legalPreviewTitle;
+
+  /// No description provided for @legalPreviewEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozircha bo\'sh. Mijoz profilida «{title}» qatori yo\'q.'**
+  String legalPreviewEmpty(String title);
+
+  /// No description provided for @legalUnsaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'E\'lon qilinmagan o\'zgarishlar bor — mijozlar hozircha avvalgi matnni ko\'radi'**
+  String get legalUnsaved;
+
+  /// No description provided for @legalUnpublishExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Matn bo\'sh. «{title}» qatori shu tilda ilovadan yo\'qoladi.'**
+  String legalUnpublishExplained(String title);
+
+  /// No description provided for @legalUnpublish.
+  ///
+  /// In uz, this message translates to:
+  /// **'E\'londan olib tashlash'**
+  String get legalUnpublish;
+
   /// No description provided for @legalTerms.
   ///
   /// In uz, this message translates to:

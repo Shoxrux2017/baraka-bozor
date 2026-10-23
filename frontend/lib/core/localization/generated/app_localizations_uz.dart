@@ -691,6 +691,30 @@ class AppLocalizationsUz extends AppLocalizations {
   String get legalDocumentsTitle => 'Hujjatlar';
 
   @override
+  String get legalDocumentsSubtitle =>
+      'Mijozlar ularni ilovada va saytda o\'qiydi';
+
+  @override
+  String get legalPreviewTitle => 'Mijoz qanday ko\'radi';
+
+  @override
+  String legalPreviewEmpty(String title) {
+    return 'Hozircha bo\'sh. Mijoz profilida «$title» qatori yo\'q.';
+  }
+
+  @override
+  String get legalUnsaved =>
+      'E\'lon qilinmagan o\'zgarishlar bor — mijozlar hozircha avvalgi matnni ko\'radi';
+
+  @override
+  String legalUnpublishExplained(String title) {
+    return 'Matn bo\'sh. «$title» qatori shu tilda ilovadan yo\'qoladi.';
+  }
+
+  @override
+  String get legalUnpublish => 'E\'londan olib tashlash';
+
+  @override
   String get legalTerms => 'Foydalanish shartlari';
 
   @override

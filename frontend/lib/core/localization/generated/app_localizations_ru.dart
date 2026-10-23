@@ -705,6 +705,30 @@ class AppLocalizationsRu extends AppLocalizations {
   String get legalDocumentsTitle => 'Документы';
 
   @override
+  String get legalDocumentsSubtitle =>
+      'Клиенты читают их в приложении и на сайте';
+
+  @override
+  String get legalPreviewTitle => 'Как увидит клиент';
+
+  @override
+  String legalPreviewEmpty(String title) {
+    return 'Пока пусто. В профиле клиента строки «$title» нет.';
+  }
+
+  @override
+  String get legalUnsaved =>
+      'Есть неопубликованные изменения — клиенты пока видят прежний текст';
+
+  @override
+  String legalUnpublishExplained(String title) {
+    return 'Текст пустой. Строка «$title» на этом языке исчезнет из приложения.';
+  }
+
+  @override
+  String get legalUnpublish => 'Снять с публикации';
+
+  @override
   String get legalTerms => 'Условия использования';
 
   @override

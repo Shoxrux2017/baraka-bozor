@@ -308,6 +308,26 @@
   "errorPayloadTooLarge": "Fayl juda katta",
   "adminSectionStaff": "Xodimlar",
   "legalDocumentsTitle": "Hujjatlar",
+  "legalDocumentsSubtitle": "Mijozlar ularni ilovada va saytda o'qiydi",
+  "legalPreviewTitle": "Mijoz qanday ko'radi",
+  "legalPreviewEmpty": "Hozircha bo'sh. Mijoz profilida «{title}» qatori yo'q.",
+  "@legalPreviewEmpty": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "legalUnsaved": "E'lon qilinmagan o'zgarishlar bor — mijozlar hozircha avvalgi matnni ko'radi",
+  "legalUnpublishExplained": "Matn bo'sh. «{title}» qatori shu tilda ilovadan yo'qoladi.",
+  "@legalUnpublishExplained": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "legalUnpublish": "E'londan olib tashlash",
   "legalTerms": "Foydalanish shartlari",
   "legalPrivacy": "Maxfiylik siyosati",
   "legalFormatHint": "## — sarlavha, - — ro'yxat bandi, har bir qator — xatboshi",
