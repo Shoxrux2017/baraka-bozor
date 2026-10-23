@@ -871,6 +871,46 @@ class AppLocalizationsRu extends AppLocalizations {
   String get staffNeverLoggedIn => 'Входов ещё не было';
 
   @override
+  String staffCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count сотрудника',
+      many: '$count сотрудников',
+      few: '$count сотрудника',
+      one: '$count сотрудник',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get staffRoleShoppers => 'Сборщики';
+
+  @override
+  String get staffRoleCouriers => 'Курьеры';
+
+  @override
+  String get staffRoleOperators => 'Операторы';
+
+  @override
+  String get staffRoleAdmins => 'Администраторы';
+
+  @override
+  String get staffRoleManagers => 'Менеджеры';
+
+  @override
+  String get staffColumnMember => 'Сотрудник';
+
+  @override
+  String get staffColumnStatus => 'Статус';
+
+  @override
+  String get staffColumnLastLogin => 'Последний вход';
+
+  @override
+  String get staffEmptyHint => 'Выберите другую роль или «Все статусы».';
+
+  @override
   String get staffSaved => 'Сохранено';
 
   @override

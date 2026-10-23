@@ -9,8 +9,20 @@ import '../../../core/localization/role_labels.dart';
 import '../../../core/network/paged.dart';
 import '../../../core/session/staff_account.dart';
 import '../../../core/state/mutation_state.dart';
+import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/kit/kit_buttons.dart';
+import '../../../core/widgets/kit/kit_card.dart';
 import '../../../core/widgets/list_widgets.dart';
+import '../../../core/widgets/panel/panel_action_button.dart';
+import '../../../core/widgets/panel/panel_card.dart';
+import '../../../core/widgets/panel/panel_layout.dart';
+import '../../../core/widgets/panel/panel_menu_button.dart';
+import '../../../core/widgets/panel/panel_page_header.dart';
+import '../../../core/widgets/panel/panel_pager.dart';
+import '../../../core/widgets/panel/panel_person.dart';
+import '../../../core/widgets/panel/panel_pills.dart';
+import '../../../core/widgets/panel/panel_table.dart';
 import '../../auth/domain/app_user.dart';
 import '../../operations/application/board_controllers.dart';
 import '../../operations/domain/board.dart';
@@ -18,22 +30,30 @@ import '../application/admin_staff_controllers.dart';
 import '../domain/admin_staff.dart';
 import 'catalog_form_rules.dart';
 import 'catalog_widgets.dart';
+import 'staff_widgets.dart';
 
-/// The staff roles an Admin creates, in the order the form offers them.
+/// The staff roles an Admin creates and filters by, in the order the pills
+/// and the form offer them.
 const List<UserRole> staffRoles = <UserRole>[
   UserRole.shopper,
   UserRole.courier,
   UserRole.operator,
-  UserRole.manager,
   UserRole.admin,
+  UserRole.manager,
 ];
 
 /// The Admin's staff accounts (`docs/09-api-contracts.md` section 43,
 /// `docs/04-user-flows.md` section 32): the list with its role and status
 /// filters, creation with a temporary password shown once, the name, block
-/// and activate, and a password reset.
+/// and activate, and a password reset (`DL-102` (2)). It is a table from a
+/// card [tableWidth] wide and cards below it.
 class StaffScreen extends ConsumerWidget {
   const StaffScreen({super.key});
+
+  /// From this card width the staff are a table whose columns all show, and
+  /// the role pills wrap beside the status menu; below it, cards, a row of
+  /// pills that scrolls and the menu under it.
+  static const double tableWidth = 800;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -42,126 +62,394 @@ class StaffScreen extends ConsumerWidget {
     final StaffQueryController queries = ref.read(staffQueryProvider.notifier);
     final AsyncValue<Paged<StaffMember>> page = ref.watch(staffPageProvider);
     final MutationState actions = ref.watch(staffListActionsProvider);
+    final EdgeInsets padding = panelPagePadding(
+      MediaQuery.sizeOf(context).width,
+    );
+    final bool filtered = query.role != null || query.status != null;
 
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: <Widget>[
-        Wrap(
-          spacing: 16,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool labelled =
+            constraints.maxWidth - padding.horizontal >= 480 &&
+            !kitLargeText(context);
+
+        return ListView(
+          padding: padding,
           children: <Widget>[
-            Text(
-              l10n.adminSectionStaff,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            FilledButton.icon(
-              key: const ValueKey<String>('new-staff'),
-              icon: const Icon(Icons.person_add_alt),
-              label: Text(l10n.staffNew),
-              onPressed: () => showDialog<void>(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext context) => const _NewStaffDialog(),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 16,
-          runSpacing: 8,
-          children: <Widget>[
-            SizedBox(
-              width: 240,
-              child: DropdownButton<UserRole?>(
-                key: const ValueKey<String>('staff-role-filter'),
-                isExpanded: true,
-                value: query.role,
-                items: <DropdownMenuItem<UserRole?>>[
-                  DropdownMenuItem<UserRole?>(
-                    child: Text(
-                      l10n.staffAllRoles,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  for (final UserRole role in staffRoles)
-                    DropdownMenuItem<UserRole?>(
-                      value: role,
-                      child: Text(
-                        roleLabel(l10n, role),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                ],
-                onChanged: queries.filterByRole,
-              ),
-            ),
-            SizedBox(
-              width: 240,
-              child: DropdownButton<AccountStatus?>(
-                key: const ValueKey<String>('staff-status-filter'),
-                isExpanded: true,
-                value: query.status,
-                items: <DropdownMenuItem<AccountStatus?>>[
-                  DropdownMenuItem<AccountStatus?>(
-                    child: Text(
-                      l10n.staffAllStatuses,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  DropdownMenuItem<AccountStatus?>(
-                    value: AccountStatus.active,
-                    child: Text(l10n.statusActive),
-                  ),
-                  DropdownMenuItem<AccountStatus?>(
-                    value: AccountStatus.blocked,
-                    child: Text(l10n.statusBlocked),
-                  ),
-                ],
-                onChanged: queries.filterByStatus,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        FailureMessage(actions.failure),
-        page.when(
-          skipLoadingOnReload: false,
-          skipLoadingOnRefresh: !page.hasError,
-          data: (Paged<StaffMember> page) => Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              if (page.items.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(l10n.catalogEmpty),
+            PanelPageHeader(
+              title: l10n.adminSectionStaff,
+              subtitle: page.hasValue
+                  ? l10n.staffCount(page.requireValue.total)
+                  : null,
+              trailing: PanelHeaderButton(
+                buttonKey: const ValueKey<String>('new-staff'),
+                icon: Icons.person_add_alt,
+                label: l10n.staffNew,
+                labelled: labelled,
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (BuildContext context) => const _NewStaffDialog(),
                 ),
-              for (final StaffMember member in page.items)
-                _StaffRow(member: member, busy: actions.isBusy),
-              PaginationBar(page: page, onPage: queries.goToPage),
+              ),
+            ),
+            const SizedBox(height: 20),
+            PanelCard(
+              flush: true,
+              children: <Widget>[
+                LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints card) {
+                    final bool table = card.maxWidth >= tableWidth;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        _StaffFilters(
+                          query: query,
+                          queries: queries,
+                          beside: table,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: FailureMessage(actions.failure),
+                        ),
+                        page.when(
+                          skipLoadingOnReload: false,
+                          skipLoadingOnRefresh: !page.hasError,
+                          data: (Paged<StaffMember> page) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              if (page.items.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Text(l10n.catalogEmpty),
+                                      if (filtered)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 4,
+                                          ),
+                                          child: Text(
+                                            l10n.staffEmptyHint,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: KitColors.muted,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                )
+                              else if (table)
+                                _StaffTable(
+                                  members: page.items,
+                                  busy: actions.isBusy,
+                                )
+                              else
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    0,
+                                    16,
+                                    6,
+                                  ),
+                                  child: Column(
+                                    children: <Widget>[
+                                      for (final StaffMember member
+                                          in page.items)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 10,
+                                          ),
+                                          child: _StaffCard(
+                                            member: member,
+                                            busy: actions.isBusy,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              PanelPager(page: page, onPage: queries.goToPage),
+                            ],
+                          ),
+                          error: (Object error, StackTrace _) => LoadFailure(
+                            error: error,
+                            onRetry: () => ref.invalidate(staffPageProvider),
+                          ),
+                          loading: () => const Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+String _roleFilterLabel(AppLocalizations l10n, UserRole role) => switch (role) {
+  UserRole.shopper => l10n.staffRoleShoppers,
+  UserRole.courier => l10n.staffRoleCouriers,
+  UserRole.operator => l10n.staffRoleOperators,
+  UserRole.admin => l10n.staffRoleAdmins,
+  UserRole.manager => l10n.staffRoleManagers,
+  UserRole.customer => l10n.shellCustomer,
+};
+
+/// The role pills and the status menu: side by side from a card
+/// [StaffScreen.tableWidth] wide (the pills wrap), the menu under a scrolling
+/// row of pills below it.
+class _StaffFilters extends StatelessWidget {
+  const _StaffFilters({
+    required this.query,
+    required this.queries,
+    required this.beside,
+  });
+
+  final StaffQuery query;
+  final StaffQueryController queries;
+  final bool beside;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    final Widget pills = PanelPillRow(
+      wrap: beside,
+      pills: <Widget>[
+        PanelPill(
+          key: const ValueKey<String>('staff-role-all'),
+          label: l10n.staffAllRoles,
+          selected: query.role == null,
+          onTap: () => queries.filterByRole(null),
+        ),
+        for (final UserRole role in staffRoles)
+          PanelPill(
+            key: ValueKey<String>('staff-role-${role.name}'),
+            label: _roleFilterLabel(l10n, role),
+            selected: query.role == role,
+            onTap: () => queries.filterByRole(role),
+          ),
+      ],
+    );
+
+    final AccountStatus? status = query.status;
+    final Widget menu = SizedBox(
+      width: 200,
+      child: PanelMenuButton<AccountStatus?>(
+        buttonKey: 'staff-status-filter',
+        label: switch (status) {
+          null => l10n.staffAllStatuses,
+          AccountStatus.active => l10n.statusActive,
+          AccountStatus.blocked => l10n.statusBlocked,
+        },
+        active: status != null,
+        items: <PanelMenuItem<AccountStatus?>>[
+          (value: null, label: l10n.staffAllStatuses),
+          (value: AccountStatus.active, label: l10n.statusActive),
+          (value: AccountStatus.blocked, label: l10n.statusBlocked),
+        ],
+        onSelected: queries.filterByStatus,
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+      child: beside
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(child: pills),
+                const SizedBox(width: 16),
+                menu,
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                pills,
+                const SizedBox(height: 4),
+                Align(alignment: Alignment.centerLeft, child: menu),
+              ],
+            ),
+    );
+  }
+}
+
+/// The staff as a table: the member, the role, the status and the last
+/// sign-in, then the actions.
+class _StaffTable extends StatelessWidget {
+  const _StaffTable({required this.members, required this.busy});
+
+  final List<StaffMember> members;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    return PanelTable(
+      columns: <PanelColumn>[
+        (
+          label: l10n.staffColumnMember,
+          width: const FlexColumnWidth(3),
+          end: false,
+        ),
+        (label: l10n.staffRole, width: const FlexColumnWidth(1.6), end: false),
+        (
+          label: l10n.staffColumnStatus,
+          width: const FlexColumnWidth(1.6),
+          end: false,
+        ),
+        (
+          label: l10n.staffColumnLastLogin,
+          width: const FlexColumnWidth(1.6),
+          end: false,
+        ),
+        (label: '', width: const FixedColumnWidth(140), end: true),
+      ],
+      rows: <PanelTableRow>[
+        for (final StaffMember member in members) _row(context, l10n, member),
+      ],
+    );
+  }
+
+  PanelTableRow _row(
+    BuildContext context,
+    AppLocalizations l10n,
+    StaffMember member,
+  ) {
+    final bool blocked = member.status == AccountStatus.blocked;
+    final DateTime? lastLogin = member.lastLoginAt;
+
+    return PanelTableRow(
+      key: ValueKey<String>('staff-${member.id}'),
+      faded: blocked,
+      lastCellPadding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+      cells: <Widget>[
+        _StaffPerson(member: member),
+        StaffRoleChip(member.role),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            AccountStatusChip(blocked: blocked),
+            if (member.mustChangePassword) ...<Widget>[
+              const SizedBox(height: 6),
+              const MustChangePasswordTag(),
             ],
-          ),
-          error: (Object error, StackTrace _) => LoadFailure(
-            error: error,
-            onRetry: () => ref.invalidate(staffPageProvider),
-          ),
-          loading: () => const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
+          ],
+        ),
+        Text(
+          lastLogin == null
+              ? l10n.staffNeverLoggedIn
+              : TashkentTime.format(lastLogin),
+          style: TextStyle(
+            fontSize: 13,
+            color: lastLogin == null ? KitColors.muted : KitColors.ink2,
           ),
         ),
+        _StaffActions(member: member, busy: busy),
       ],
     );
   }
 }
 
-class _StaffRow extends ConsumerWidget {
-  const _StaffRow({required this.member, required this.busy});
+/// The member as a person line, with the "you" tag on the Admin's own.
+class _StaffPerson extends ConsumerWidget {
+  const _StaffPerson({required this.member});
 
-  /// Below this width the actions go under the account instead of beside
-  /// it, which would leave the text a narrow column.
-  static const double narrowWidth = 600;
+  final StaffMember member;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    return PanelPersonLine(
+      name: member.fullName ?? l10n.staffNoName,
+      detail: formatPhone(member.phone),
+      muted: member.status == AccountStatus.blocked,
+      tags: member.id == ref.watch(staffAccountProvider)
+          ? <Widget>[OwnTag(key: ValueKey<String>('own-${member.id}'))]
+          : const <Widget>[],
+    );
+  }
+}
+
+/// A member as a card: the person and the actions, and under them the role,
+/// the status, the tag and the last sign-in.
+class _StaffCard extends StatelessWidget {
+  const _StaffCard({required this.member, required this.busy});
+
+  final StaffMember member;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool blocked = member.status == AccountStatus.blocked;
+    final DateTime? lastLogin = member.lastLoginAt;
+
+    return KitCard(
+      key: ValueKey<String>('staff-${member.id}'),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      color: blocked ? KitColors.card : Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(child: _StaffPerson(member: member)),
+              const SizedBox(width: 8),
+              _StaffActions(member: member, busy: busy),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: KitColors.line)),
+            ),
+            child: SizedBox(height: 12),
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              StaffRoleChip(member.role),
+              AccountStatusChip(blocked: blocked),
+              if (member.mustChangePassword) const MustChangePasswordTag(),
+              Text(
+                lastLogin == null
+                    ? l10n.staffNeverLoggedIn
+                    : l10n.staffLastLogin(TashkentTime.format(lastLogin)),
+                style: const TextStyle(fontSize: 12, color: KitColors.muted),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The member's actions, 6 apart: the rename, and — not for the Admin's own
+/// account, which the server refuses to block or reset
+/// (`self_block_not_allowed`, `self_reset_not_allowed`) — the password reset
+/// and the block or the way back.
+class _StaffActions extends ConsumerWidget {
+  const _StaffActions({required this.member, required this.busy});
 
   final StaffMember member;
   final bool busy;
@@ -170,65 +458,45 @@ class _StaffRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final bool blocked = member.status == AccountStatus.blocked;
-    final String name = member.fullName ?? l10n.staffNoName;
-    final DateTime? lastLogin = member.lastLoginAt;
-    // The Admin's own account is not blocked or reset here: the server
-    // refuses both (`self_block_not_allowed`, `self_reset_not_allowed`).
     final bool own = member.id == ref.watch(staffAccountProvider);
+    final String name = member.fullName ?? l10n.staffNoName;
 
-    final Widget details = Wrap(
-      spacing: 12,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: <Widget>[
-        Text(roleLabel(l10n, member.role)),
-        Chip(
-          avatar: Icon(
-            blocked ? Icons.block : Icons.check_circle_outline,
-            size: 18,
-          ),
-          label: Text(blocked ? l10n.statusBlocked : l10n.statusActive),
-          visualDensity: VisualDensity.compact,
-        ),
-        if (own)
-          Chip(
-            key: ValueKey<String>('own-${member.id}'),
-            avatar: const Icon(Icons.person_outline, size: 18),
-            label: Text(l10n.staffYou),
-            visualDensity: VisualDensity.compact,
-          ),
-        if (member.mustChangePassword) Text(l10n.staffMustChangePassword),
-        Text(
-          lastLogin == null
-              ? l10n.staffNeverLoggedIn
-              : l10n.staffLastLogin(TashkentTime.format(lastLogin)),
-        ),
-      ],
-    );
-
-    final List<Widget> actions = <Widget>[
-      IconButton(
-        key: ValueKey<String>('rename-${member.id}'),
+    final List<Widget> buttons = <Widget>[
+      PanelActionButton(
+        buttonKey: ValueKey<String>('rename-${member.id}'),
+        icon: Icons.edit_outlined,
         tooltip: l10n.staffEditName,
-        icon: const Icon(Icons.edit_outlined),
-        onPressed: () => _rename(context, member),
+        onTap: () => _rename(context, member),
       ),
+      if (!own)
+        PanelActionButton(
+          buttonKey: ValueKey<String>('reset-${member.id}'),
+          icon: Icons.lock_reset,
+          tooltip: l10n.staffResetPassword,
+          onTap: () => showDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) =>
+                _ResetPasswordDialog(member: member),
+          ),
+        ),
       if (!own && blocked)
-        IconButton(
-          key: ValueKey<String>('activate-${member.id}'),
+        PanelActionButton(
+          buttonKey: ValueKey<String>('activate-${member.id}'),
+          icon: Icons.lock_open,
           tooltip: l10n.staffActivate,
-          icon: const Icon(Icons.lock_open),
-          onPressed: busy
+          onTap: busy
               ? null
               : () => ref
                     .read(staffListActionsProvider.notifier)
                     .activate(member.id),
         ),
       if (!own && !blocked)
-        IconButton(
-          key: ValueKey<String>('block-${member.id}'),
+        PanelActionButton(
+          buttonKey: ValueKey<String>('block-${member.id}'),
+          icon: Icons.block,
           tooltip: l10n.staffBlock,
-          icon: const Icon(Icons.block),
-          onPressed: busy
+          onTap: busy
               ? null
               : () async {
                   final bool confirmed = await _confirmBlock(
@@ -246,40 +514,16 @@ class _StaffRow extends ConsumerWidget {
                       .block(member.id);
                 },
         ),
-      if (!own)
-        IconButton(
-          key: ValueKey<String>('reset-${member.id}'),
-          tooltip: l10n.staffResetPassword,
-          icon: const Icon(Icons.password),
-          onPressed: () => showDialog<void>(
-            context: context,
-            barrierDismissible: false,
-            builder: (BuildContext context) =>
-                _ResetPasswordDialog(member: member),
-          ),
-        ),
     ];
 
-    return Card(
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final bool narrow = constraints.maxWidth < narrowWidth;
-          return ListTile(
-            key: ValueKey<String>('staff-${member.id}'),
-            title: Text('$name · ${formatPhone(member.phone)}'),
-            subtitle: narrow
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      details,
-                      Wrap(children: actions),
-                    ],
-                  )
-                : details,
-            trailing: narrow ? null : Wrap(children: actions),
-          );
-        },
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        for (int i = 0; i < buttons.length; i++) ...<Widget>[
+          if (i > 0) const SizedBox(width: 6),
+          buttons[i],
+        ],
+      ],
     );
   }
 

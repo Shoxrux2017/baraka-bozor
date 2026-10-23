@@ -403,6 +403,23 @@
     }
   },
   "staffNeverLoggedIn": "Hali kirmagan",
+  "staffCount": "{count} ta xodim",
+  "@staffCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "staffRoleShoppers": "Yig'uvchilar",
+  "staffRoleCouriers": "Kuryerlar",
+  "staffRoleOperators": "Operatorlar",
+  "staffRoleAdmins": "Administratorlar",
+  "staffRoleManagers": "Menejerlar",
+  "staffColumnMember": "Xodim",
+  "staffColumnStatus": "Holati",
+  "staffColumnLastLogin": "Oxirgi kirish",
+  "staffEmptyHint": "Boshqa rolni yoki «Barcha holatlar»ni tanlang.",
   "staffSaved": "Saqlandi",
   "errorSelfBlockNotAllowed": "O'zingizni bloklay olmaysiz",
   "errorLastActiveAdminRequired": "Oxirgi faol administratorni bloklab bo'lmaydi",

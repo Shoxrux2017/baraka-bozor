@@ -1640,6 +1640,66 @@ abstract class AppLocalizations {
   /// **'Hali kirmagan'**
   String get staffNeverLoggedIn;
 
+  /// No description provided for @staffCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count} ta xodim'**
+  String staffCount(int count);
+
+  /// No description provided for @staffRoleShoppers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchilar'**
+  String get staffRoleShoppers;
+
+  /// No description provided for @staffRoleCouriers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kuryerlar'**
+  String get staffRoleCouriers;
+
+  /// No description provided for @staffRoleOperators.
+  ///
+  /// In uz, this message translates to:
+  /// **'Operatorlar'**
+  String get staffRoleOperators;
+
+  /// No description provided for @staffRoleAdmins.
+  ///
+  /// In uz, this message translates to:
+  /// **'Administratorlar'**
+  String get staffRoleAdmins;
+
+  /// No description provided for @staffRoleManagers.
+  ///
+  /// In uz, this message translates to:
+  /// **'Menejerlar'**
+  String get staffRoleManagers;
+
+  /// No description provided for @staffColumnMember.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xodim'**
+  String get staffColumnMember;
+
+  /// No description provided for @staffColumnStatus.
+  ///
+  /// In uz, this message translates to:
+  /// **'Holati'**
+  String get staffColumnStatus;
+
+  /// No description provided for @staffColumnLastLogin.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi kirish'**
+  String get staffColumnLastLogin;
+
+  /// No description provided for @staffEmptyHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Boshqa rolni yoki «Barcha holatlar»ni tanlang.'**
+  String get staffEmptyHint;
+
   /// No description provided for @staffSaved.
   ///
   /// In uz, this message translates to:

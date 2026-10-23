@@ -1453,3 +1453,5 @@ Answer to the question `DL-94` item 5 left open. An Admin erases a blocked Custo
 ## DL-102 — The panel's staff, customers, documents and settings, staff stage 3c (2026-10-22, agent)
 
 1. **Shared pieces.** The panel has one table, one row of pills, one segmented switch, one row of fields and one person line, and its window frame can change its title and drop its ×; the products and categories tables, the board's status pills and the order page's avatar use them, so the four screens of this stage are built from the same parts.
+
+2. **The staff list.** The staff are a table — the person with name and phone, the role with its icon, the status with 'Нужна смена пароля' under it, the last sign-in, and the actions as icons that name themselves — from an 800-wide card, cards below; the roles are pills and the status a menu, and the header counts the list. The Admin's own row keeps only the rename, and a blocked row is faded, so the list reads at a glance. A refusal stays a line in the card, as in the catalog, so it does not vanish before it is read.

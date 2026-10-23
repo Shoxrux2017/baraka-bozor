@@ -858,6 +858,38 @@ class AppLocalizationsUz extends AppLocalizations {
   String get staffNeverLoggedIn => 'Hali kirmagan';
 
   @override
+  String staffCount(int count) {
+    return '$count ta xodim';
+  }
+
+  @override
+  String get staffRoleShoppers => 'Yig\'uvchilar';
+
+  @override
+  String get staffRoleCouriers => 'Kuryerlar';
+
+  @override
+  String get staffRoleOperators => 'Operatorlar';
+
+  @override
+  String get staffRoleAdmins => 'Administratorlar';
+
+  @override
+  String get staffRoleManagers => 'Menejerlar';
+
+  @override
+  String get staffColumnMember => 'Xodim';
+
+  @override
+  String get staffColumnStatus => 'Holati';
+
+  @override
+  String get staffColumnLastLogin => 'Oxirgi kirish';
+
+  @override
+  String get staffEmptyHint => 'Boshqa rolni yoki «Barcha holatlar»ni tanlang.';
+
+  @override
   String get staffSaved => 'Saqlandi';
 
   @override

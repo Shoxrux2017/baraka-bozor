@@ -351,6 +351,23 @@
     }
   },
   "staffNeverLoggedIn": "Входов ещё не было",
+  "staffCount": "{count, plural, one{{count} сотрудник} few{{count} сотрудника} many{{count} сотрудников} other{{count} сотрудника}}",
+  "@staffCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "staffRoleShoppers": "Сборщики",
+  "staffRoleCouriers": "Курьеры",
+  "staffRoleOperators": "Операторы",
+  "staffRoleAdmins": "Администраторы",
+  "staffRoleManagers": "Менеджеры",
+  "staffColumnMember": "Сотрудник",
+  "staffColumnStatus": "Статус",
+  "staffColumnLastLogin": "Последний вход",
+  "staffEmptyHint": "Выберите другую роль или «Все статусы».",
   "staffSaved": "Сохранено",
   "errorSelfBlockNotAllowed": "Нельзя заблокировать себя",
   "errorLastActiveAdminRequired": "Нельзя заблокировать последнего активного администратора",
