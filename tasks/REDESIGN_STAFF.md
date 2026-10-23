@@ -8,7 +8,7 @@ The Shopper's, the Courier's and the panel's screens take the screen kit's style
 | 2 | Курьер (kit/09-kurer) | Merged (PR #105) |
 | 3a | Панель: заказы (kit/10–10d) | Merged (PR #106) |
 | 3b | Панель: каталог (kit/11) | Merged (PR #107) |
-| 3c | Панель: сотрудники, покупатели, документы, настройки (kit/12) | In progress |
+| 3c | Панель: сотрудники, покупатели, документы, настройки (kit/12) | Coded (PR #108) |
 
 ## Risks
 
