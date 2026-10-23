@@ -26,7 +26,8 @@ RUN set -eux; \
         | awk '/=>/ { so = $(NF-1); if (index(so, "/usr/local/") == 1) { next }; gsub("^/(usr/)?", "", so); print so }' \
         | sort -u \
         | xargs -r dpkg-query --search \
-        | cut -d: -f1 \
+        # Only "package: path" lines name a package; Debian 13 usrmerge diversions print "diversion by ..." lines.
+        | awk 'sub(":$", "", $1) { print $1 }' \
         | sort -u \
         | xargs -r apt-mark manual; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \

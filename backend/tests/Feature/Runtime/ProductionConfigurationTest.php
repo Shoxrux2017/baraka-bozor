@@ -114,4 +114,30 @@ final class ProductionConfigurationTest extends TestCase
             $this->app['env'] = $original;
         }
     }
+
+    public function test_package_discovery_is_not_checked(): void
+    {
+        config(['app.key' => '']);
+        $provider = new AppServiceProvider($this->app);
+        $originalEnv = $this->app['env'];
+        $originalArgv = $_SERVER['argv'] ?? null;
+
+        try {
+            $this->app['env'] = 'production';
+
+            $_SERVER['argv'] = ['artisan', 'package:discover'];
+            $provider->boot($this->app->make(Router::class));
+
+            $_SERVER['argv'] = ['artisan', 'optimize'];
+            try {
+                $provider->boot($this->app->make(Router::class));
+                $this->fail('The incomplete configuration was accepted.');
+            } catch (RuntimeException $e) {
+                $this->assertStringContainsString('APP_KEY', $e->getMessage());
+            }
+        } finally {
+            $this->app['env'] = $originalEnv;
+            $_SERVER['argv'] = $originalArgv;
+        }
+    }
 }

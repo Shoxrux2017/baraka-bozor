@@ -37,8 +37,10 @@ class AppServiceProvider extends ServiceProvider
         UuidRouteParameters::register($router);
 
         // An incomplete production configuration stops the boot, not the first
-        // request that needs the missing setting (`DL-107`).
-        if ($this->app->environment('production')) {
+        // request that needs the missing setting (`DL-107`). Package discovery
+        // is exempt: Composer runs it before any env file exists, and it only
+        // writes the package manifest.
+        if ($this->app->environment('production') && ! $this->app->runningConsoleCommand('package:discover')) {
             ProductionConfiguration::assertComplete($this->app);
         }
     }
