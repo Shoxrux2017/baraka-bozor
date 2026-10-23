@@ -182,6 +182,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 |---|---|
 | Customers without Telegram cannot sign in until Eskiz arrives with the legal entity (interview 10.1). The refusal says so | Accepted for the pilot |
 | Staff sign in with a code too (`DL-77`), so a Shopper or Courier whose number has no Telegram cannot work. W4-5 checks every staff number; the pilot checklist repeats it for new staff | Open, W4-5 |
+| A flood of code requests to random numbers can reach the daily ceiling and block new Customers' sign-up for the rest of that day; Customers and staff with an account are never blocked (`DL-104` (9)). The ceiling is raised in the server's configuration in minutes, and the warning at half of it gives time to | Accepted for the pilot; the Owner may ask for a higher ceiling |
 | Funding Telegram Gateway goes through Fragment, which probably takes TON. Paying in cryptocurrency may have accounting and legal sides in Uzbekistan | Open, Owner |
 | A Shopper or Courier replaced before starting is not notified; `docs/05` section 18 has no such event. They see the order leave their list on the next refresh | Accepted; the pilot shows whether it matters |
 | A push is best-effort (`BR-NOTIF-001`). A phone that is off, or that has notifications disabled, learns at the next opening, and the screens keep refreshing themselves | Accepted |

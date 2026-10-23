@@ -1539,7 +1539,7 @@ Taken while planning `tasks/WAVE_4.md`. Each task records anything finer.
    - **No delivery-report endpoint.** Nothing in the product reads one, and it would be one more public endpoint.
    - **Cost guard.** Every code costs money, and real verification services cap sends for that reason (Firebase Authentication's SMS quotas, Twilio Verify's fraud guard).
      - **The limits that exist stay:** ten requests a minute per IP address and five sends per phone an hour (`DL-11` (2), `docs/07` section 8). An IPv6 address is counted by its /64, which one subscriber holds whole. No hourly limit per address is added: mobile carriers put many phones behind one address.
-     - **A daily ceiling,** `LOGIN_CODE_DAILY_LIMIT` (500 by default), counts the paid checks of phones that hold no active account. Above it such a phone is answered `503 provider_unavailable`, while Customers and staff who already have an account still get their codes. A flood of codes to random numbers thus costs at most the ceiling and never locks the business out.
+     - **A daily ceiling,** `LOGIN_CODE_DAILY_LIMIT` (500 by default), counts the paid checks of phones that hold no active account. Above it such a phone is answered `503 provider_unavailable`, while Customers and staff who already have an account still get their codes. A flood of codes to random numbers thus costs at most the ceiling, and Customers and staff with an account can always sign in; what the flood can block, for the rest of that day, is the sign-up of a new Customer. The ceiling is server configuration, raised in minutes, and the risk is in `tasks/WAVE_4.md`.
      - **The price of that.** While the ceiling is reached, the refusal tells a phone with no account from one with an account, against `docs/09` section 6. This lasts only during an attack, and a stranger's code request is the lesser harm. A warning is logged at half the ceiling and at the ceiling.
 10. **Notifications on the server.**
     - **Intent.** The action that writes an event's history row dispatches the notification job after its commit, as every effect that cannot roll back is (`DL-39`).
@@ -1563,7 +1563,7 @@ Taken while planning `tasks/WAVE_4.md`. Each task records anything finer.
       | `shopping_assigned` | the assigned Shopper | an assignment or reassignment of the Shopper |
       | `approval_required` | the Customer | a question about a price, a replacement or a smaller quantity |
       | `approval_answered` | the current Shopper | the Customer's decision |
-      | `shopping_completed` | the Customer of a cash order | shopping completion, with the final amount (`DL-78`); again after an Admin's price correction changes it, so the amount the Courier asks for is the one the Customer was told |
+      | `shopping_completed` | the Customer of a cash order | shopping completion, with the final amount (`DL-78`); again after an Admin's price correction changes it, which can happen only before the Courier sets off (`DL-54` (18)), so the amount the Courier asks for is the one the Customer was told |
       | `payment_required` | the Customer of an online order | shopping completion, from Wave 5 |
       | `courier_started` | the Customer | the Courier setting off |
       | `order_delivered` | the Customer | delivered |
