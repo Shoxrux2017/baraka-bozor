@@ -1465,3 +1465,135 @@ Answer to the question `DL-94` item 5 left open. An Admin erases a blocked Custo
 6. **The settings.** The settings stand in four cards — prices and fees, hours, area, delivery control — with the payment systems in a card beside them from a 1000-wide page and last below it; the form keeps what was typed when the page changes width. The save bar says that a change applies to new orders, as orders keep their snapshots (AGENTS.md §6). The saved service centre opens as a Google Maps search of the point in a new tab — a link, no key and no embedded map. The payment card says that Customers pay in cash until the providers are connected (Wave 5), because the checkout shows online payment closed whatever the switches say (`DL-37` (3)).
 
 7. **After the review and the walk.** Only the shown document takes the page's height, and its preview lays out only what fits; a language's published state is told by a filled or hollow dot and, to a screen reader, in words; a role name never breaks mid-word and the role tiles stand one per row at large text; the help card stands apart from the card above it; unselected pills are outlined; the search button matches its field; the fields of these screens type at 13 like the catalog's; the preview's frame is drawn over its bar.
+
+## DL-103 — Laravel Boost on trial at the start of Wave 4 (2026-10-14, Owner)
+
+The Owner chose to try the official Laravel Boost (`laravel/boost`, a dev dependency) as the first small task of Wave 4, on its own branch and pull request. Wave 4 is mostly backend, and Boost offers the routes, the schema, the logs and documentation for the exact Laravel version. The Owner wants proof that it helps, as with the Dart MCP trial, which was removed unused. It is installed only if it supports Laravel 13 and runs inside the `app` container, and it must never write `AGENTS.md`, `CLAUDE.md` or `.mcp.json`. If the first backend task after it does not use it, it is removed (`tasks/WAVE_4.md`, W4-1).
+
+## DL-104 — Wave 4 engineering decisions (2026-10-23, agent)
+
+Taken while planning `tasks/WAVE_4.md`. Each task records anything finer.
+
+1. **Scope.** The wave is `docs/06`'s Wave 4 with three adjustments.
+   - Order history is already built: "Мои заказы" with its past tab, and reorder (`DL-91`, `DL-92`).
+   - The Laravel Boost trial (`DL-103`) is added.
+   - So are the carried risk rows: the scheduler, CORS in production, device pruning, the push token change stream, and two P3 rows of Wave 3.
+   - `payment_required` gets its template now and its trigger in Wave 5, since no online order can exist before then (`DL-37` (3)).
+   - iOS push is written but configured only once a Mac exists.
+2. **Order of work.** Google Play's closed test, twelve testers for fourteen days, is the longest wait of the wave. It needs a public privacy-policy address, and testers need real login codes. So the order is: the runtime, the backups, Telegram, the deployment, the Android release, and then push, which testers receive as later builds. A task held by an Owner gate lets the next task free of gates go first.
+3. **Production runtime.** Built as `docs/07` section 34 describes.
+   - **Host and services.** One Ubuntu VPS runs Docker Compose (`docker/compose.prod.yaml`) with five services:
+     - `caddy`, the reverse proxy, with automatic TLS from Let's Encrypt;
+     - `app`, PHP 8.4 FPM with opcache and no dev dependencies;
+     - `worker`, `queue:work` on the database queue;
+     - `scheduler`, `schedule:work`;
+     - `db`, PostgreSQL 17 with the UTF-8 type of `DL-20`.
+   - **Hostnames.** The Owner's domain carries two names. `api.` serves the API, the public pages of `DL-94` item 2 and the images. `panel.` serves the panel's static build.
+   - **Exposure and secrets.** Only Caddy publishes ports, 80 and 443. Secrets live in a server-only environment file and in mounted files, never in the repository, an image or a log.
+   - **Logs.** The application logs to stderr in production, so Docker's rotation holds every line and no `laravel.log` grows inside a container. Caddy keeps no access log: a query string such as a board search can carry phone digits (`docs/07` section 31).
+   - **Why Caddy:** certificates are issued and renewed with no cron and no certbot.
+   - **Why two names:** the panel's static files and the API keep separate cache and security rules, and the panel's origin is the one the API allows ((4)).
+4. **CORS and the proxy.**
+   - **CORS.** `config/cors.php` allows only the origins in `CORS_ALLOWED_ORIGINS`, the panel's, on `api/*`, without credentials, since every surface uses bearer tokens (`docs/07` section 8). Caddy gives `/storage` images the same origin header (`DL-34`).
+   - **The proxy.** `TRUSTED_PROXIES` names Caddy's network, so the per-IP limits count clients and not the proxy (`docs/07` section 34).
+   - This closes the Wave 1 and Wave 2 risk row about CORS in production.
+5. **Images stay on the server.** The public disk lives on a volume of the VPS, Caddy serves it with long cache headers, and the backups include it.
+   - This supersedes the S3-compatible storage in production that `docs/07` section 10, `DL-3` (S-15), `DL-17` (5) and `DL-34` assumed; the CORS header for images of `DL-34` stays, now given by Caddy ((4)).
+   - **Why:** one server, a catalog under 300 products (interview 2.4) and the localisation of personal data in Uzbekistan (ZRU-547 art. 27-1) all favour one place in Uzbekistan. The Laravel filesystem keeps S3 a change of configuration.
+6. **Backups.**
+   - **What and when.** Every night at 03:00 Tashkent, a `backup` container of its own takes a `pg_dump` in custom format and the images volume into a restic repository on the Owner's backup storage in Uzbekistan, away from the VPS. Its credentials and the restic password are that container's alone, never the app's environment; where the storage allows it, the server's credentials may add snapshots but not delete them.
+   - **A failed backup is seen.** Each run records its outcome where the agent's deploy check and the Owner's checklist read it, and W4-5 offers the Owner an external check that alerts when a night passes without a success.
+   - **How long.** 7 daily, 4 weekly and 6 monthly copies are kept, and `restic check` runs weekly.
+   - **The restore** is a script, tried at the deployment and again at the closure.
+   - **Why:**
+     - restic encrypts, deduplicates and prunes by itself;
+     - a dump holds Customer data, so it leaves the host only encrypted, and stays in the country;
+     - a backup never restored is not yet a backup.
+   - **The password.** The restic password is kept by the server and by the Owner; without it the copies cannot be read.
+   - **Erased accounts.** A copy keeps an erased Customer's data until the copy itself expires, at most six months. The public deletion page and the data-safety answers say so (`BR-ROLE-013`).
+7. **Deployment.**
+   - **A release is a git tag.** The agent deploys over SSH with `docker/deploy.sh`. The server checks out the tag through a read-only deploy key and builds the image, tagged with the release. Then:
+     - a `pg_dump` is taken;
+     - the worker and the scheduler stop, and Caddy answers `503 service_unavailable` with `Retry-After` while the app is replaced (`docs/09` section 3), a short planned outage;
+     - `migrate --force` runs from the new image;
+     - the new containers start; each builds its config, route and view caches at start, since a cache in an old container dies with it.
+   - **The panel** is built on the development machine with the production API address, and uploaded into a versioned directory that a symbolic link switches.
+   - **Rolling back.** The previous image stays tagged, so a rollback is one restart. Migrations only go forward, so a rollback past a migration is a fix forward, with the dump taken before it as the last resort.
+   - **The server** has a deploy user, key-only SSH, a firewall open on 22, 80 and 443, unattended security upgrades and Docker's log rotation.
+   - The runbook is `docker/DEPLOY.md`.
+8. **The scheduler** runs these entries:
+   - `approvals:expire` every minute, as before (`DL-54` (8));
+   - daily pruning of the completed idempotency keys older than 30 days (`docs/08` section 27);
+   - daily pruning of the notification deliveries older than 90 days;
+   - daily pruning of login challenges older than 30 days, which hold the phones of people who never became Customers;
+   - daily `push-devices:prune` ((11));
+   - daily `queue:prune-failed` at 30 days.
+
+   Every entry is idempotent, and the reads keep reconciling, so a late scheduler never shows a wrong state (`docs/07` section 25).
+9. **Login codes through Telegram Gateway** (interview 10.1). `TelegramGatewayCodeDelivery` sits behind `CodeDeliveryGateway`.
+   - **The code stays ours.** It is generated, hashed and checked by the backend under the existing policy (`docs/07` section 8). The adapter asks Telegram `checkSendAbility` for the phone, then `sendVerificationMessage` with the returned `request_id`, our `code` and `ttl` 300. Telegram charges at the check, when it confirms the phone can be reached; the send under that `request_id` is then free, and a code sent but not delivered within the `ttl` is refunded. A failure between the two calls is paid for nothing, so the adapter keeps them back to back.
+   - **A number Telegram cannot reach** is refused with the new `409 code_delivery_unavailable` while no SMS provider exists (Wave 5), and no challenge is created. The client says that sign-in needs Telegram for now.
+   - **A provider failure or timeout** answers `503 provider_unavailable`.
+   - **The token** is the configuration `TELEGRAM_GATEWAY_TOKEN`. The Owner restricts it to the server's address in the Gateway account at the deployment (W4-5), after W4-4 has been verified from the development machine. Neither the code nor the token is ever logged, and the HTTP client logs no bodies.
+   - **Staff too.** Shoppers and Couriers sign in with a login code first (`DL-77`), so a staff phone without Telegram cannot work until SMS arrives; W4-5 checks every staff number.
+   - **No delivery-report endpoint.** Nothing in the product reads one, and it would be one more public endpoint.
+   - **Cost guard.** Every code costs money, and real verification services cap sends for that reason (Firebase Authentication's SMS quotas, Twilio Verify's fraud guard).
+     - **The limits that exist stay:** ten requests a minute per IP address and five sends per phone an hour (`DL-11` (2), `docs/07` section 8). An IPv6 address is counted by its /64, which one subscriber holds whole. No hourly limit per address is added: mobile carriers put many phones behind one address.
+     - **A daily ceiling,** `LOGIN_CODE_DAILY_LIMIT` (500 by default), counts the paid checks of phones that hold no active account. Above it such a phone is answered `503 provider_unavailable`, while Customers and staff who already have an account still get their codes. A flood of codes to random numbers thus costs at most the ceiling, and Customers and staff with an account can always sign in; what the flood can block, for the rest of that day, is the sign-up of a new Customer. The ceiling is server configuration, raised in minutes, and the risk is in `tasks/WAVE_4.md`.
+     - **The price of that.** While the ceiling is reached, the refusal tells a phone with no account from one with an account, against `docs/09` section 6. This lasts only during an attack, and a stranger's code request is the lesser harm. A warning is logged at half the ceiling and at the ceiling.
+10. **Notifications on the server.**
+    - **Intent.** The action that writes an event's history row dispatches the notification job after its commit, as every effect that cannot roll back is (`DL-39`).
+      - An action that rolls back dispatches nothing.
+      - One that commits queues the job on the database queue, and the push is sent outside the request. A crash between the commit and the dispatch loses that push, which best-effort delivery accepts (`BR-NOTIF-001`).
+      - A replay or a natural repeat writes no history, so it notifies nobody again (`BR-CON-005`).
+    - **Sending.** The job checks the account first: one no longer active (blocked, or erased) gets nothing. Otherwise it:
+      - sends to every active device of the recipient;
+      - renders the title and body in the recipient's `preferred_language` from the backend's templates;
+      - retries a transient failure three times with backoff;
+      - drops a push that has become older than an hour.
+
+      Nothing it does touches the order (`BR-NOTIF-001`).
+    - **The record.** The job writes one `notification_deliveries` row per device it sends to, `queued` before the send and `sent` or `failed` after it, with the attempts and the last error code. When nothing is sent, it writes one row without a device, `skipped`, whose error code says why: `no_device`, `account_inactive` or `expired`. `status` therefore gains `skipped`. `push_device_id` is `ON DELETE SET NULL`, because an erasure deletes the Customer's devices (`BR-ROLE-013`), and a delivery row must never block it.
+    - **Payload.** The title, the body and the data `{event, order_id}` (`BR-NOTIF-002`). Texts carry the order number, and for a final amount the amount. They never carry a name, a phone or an address, because they pass through Google.
+    - **Triggers:**
+
+      | Event | To | Written by |
+      |---|---|---|
+      | `order_accepted` | the Customer | order creation |
+      | `shopping_assigned` | the assigned Shopper | an assignment or reassignment of the Shopper |
+      | `approval_required` | the Customer | a question about a price, a replacement or a smaller quantity |
+      | `approval_answered` | the current Shopper | the Customer's decision |
+      | `shopping_completed` | the Customer of a cash order | shopping completion, with the final amount (`DL-78`); again after an Admin's price correction changes it, which can happen only before the Courier sets off (`DL-54` (18)), so the amount the Courier asks for is the one the Customer was told |
+      | `payment_required` | the Customer of an online order | shopping completion, from Wave 5 |
+      | `courier_started` | the Customer | the Courier setting off |
+      | `order_delivered` | the Customer | delivered |
+      | `order_cancelled` | the Customer | every cancellation the Customer did not make |
+      | `shopping_order_cancelled` | the current Shopper | a cancellation while a Shopper holds the order, other than one the Shopper's own action caused |
+      | `delivery_assigned` | the assigned Courier | an assignment or reassignment of the Courier |
+      | `delivery_cancelled` | the current Courier | a cancellation while a Courier holds the order |
+
+    - **One push per person per action.** An actor is not notified of their own action, except by `order_accepted`, which confirms the Customer's own order (interview 7.0). When one action ends in a cancellation (`DL-54` (7)), a person gets the cancellation alone; a Shopper whose Customer rejects the last line gets `shopping_order_cancelled`, not `approval_answered`.
+    - **The new type.** `shopping_completed` is the final amount of a cash order that `DL-78` promised. `notification_deliveries.type` therefore holds twelve values (`docs/08` section 26).
+11. **Firebase Cloud Messaging.**
+    - **The sender** uses the HTTP v1 API with the Owner's service account. Its OAuth token comes from `google/auth`, Google's own library: signing and caching the token is not ours to write.
+    - **Answers:**
+      - `UNREGISTERED`, or `INVALID_ARGUMENT` whose details name the token field alone, revokes the device. Any other `INVALID_ARGUMENT` is our message's fault, so it is recorded as failed and revokes nothing: one bad template must not revoke every device;
+      - `429` and `5xx` are retried, honouring `Retry-After`;
+      - anything else is recorded as failed.
+    - **Pruning.** `push-devices:prune` revokes a device unseen for 60 days. This is our margin over Firebase's advice, which treats a token not refreshed for about a month as likely stale. The app registers at every start, so a phone in use stays fresh.
+    - The fake sender serves the tests and the local stack, and never reports a delivery as real (`docs/07` section 33).
+12. **Push in the app.**
+    - **Packages.** `firebase_core` and `firebase_messaging`, plus `flutter_local_notifications` for a banner while the app is open.
+    - **Options.** The Firebase options come from dart-defines in the gitignored `frontend/.env.firebase`, as the Maps key does (`DL-86`), and no Firebase file is committed. W4-9 first proves that a push reaches a phone whose app was killed. If that needs Firebase's native setup, `google-services.json` stays gitignored beside `.env.firebase`, and the Gradle plugin applies only when the file is present.
+    - **No push without them.** A build without the options keeps `NoPushTokenSource`, and the web build always does: the panel's roles receive no push.
+    - **The token.** The token change stream re-registers every signed-in account, which closes the Wave 1 risk row.
+    - **Permission.** On Android 13 and later, the permission is asked once, after the first sign-in into a role that receives pushes. Asking at launch, before the person knows the app, is the usual way to be refused.
+    - **A tap** opens the order in the mode the event belongs to: Customer events in Customer mode, the Shopper's and the Courier's in the staff mode, switching mode when the phone holds both sessions (`DL-32`).
+    - **The foreground.** A banner shows unless the visible screen is that order, which refreshes itself (`docs/07` section 24).
+13. **The Android release.**
+    - **The package** `uz.barakabozor.app` stays; Play makes it permanent at the first upload.
+    - **Signing.** The release is signed with an upload key from the gitignored `frontend/android/key.properties`. The keystore is kept outside the repository and handed to the Owner, and Play App Signing holds the app's key. A release build without the file fails instead of falling back to the debug key.
+    - **Versions.** The version code is the build number in `pubspec.yaml`, raised on every upload.
+    - **Building.** The bundle is built on the development machine with `--dart-define-from-file`: the API address, the Maps key and the Firebase options. CI goes on building the web target only, so the signing key never reaches CI.
+    - **The keys.** The Maps key gains the SHA-1s of the upload key and of Play's app-signing key, and the Geocoding key is restricted to the VPS's address.
+    - **The store.** The listing, in Uzbek and Russian, points at `https://api.<domain>/legal/privacy` and `/account-deletion`. The agent prepares the data-safety answers, and the Owner submits them in the Play Console. They are redone when the push build ships (W4-9), since push adds a device identifier.

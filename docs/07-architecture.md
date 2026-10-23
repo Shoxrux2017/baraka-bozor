@@ -86,7 +86,7 @@ Not multi-tenant. No tenant, market or city ownership columns.
 
 ## 8. Identity and Authentication
 
-**Customer:** `phone → login code → customer → Sanctum token`. The code is six digits, hashed at rest, valid five minutes, three failed verifications lock the phone for sixty seconds, no wait between sends, five sends per phone per hour. Delivery goes through the `CodeDeliveryGateway` abstraction with three implementations: Telegram Gateway, SMS (Eskiz), and a fake that records codes in a test-only in-process sink. The gateway selection: Telegram when the provider reports the number has a Telegram account, otherwise SMS when configured, otherwise (development) the fake. **Test phone numbers:** configuration lists phone numbers and one fixed code; a listed number verifies with that code and no delivery is attempted; the list is empty in production and is never an Admin setting.
+**Customer:** `phone → login code → customer → Sanctum token`. The code is six digits, hashed at rest, valid five minutes, three failed verifications lock the phone for sixty seconds, no wait between sends, five sends per phone per hour. Delivery goes through the `CodeDeliveryGateway` abstraction with three implementations: Telegram Gateway, SMS (Eskiz), and a fake that records codes in a test-only in-process sink. The gateway selection: Telegram when the provider reports the number has a Telegram account, otherwise SMS when configured, otherwise (development) the fake. In production before an SMS provider exists, a number Telegram cannot reach is refused with `code_delivery_unavailable` (`DL-104` (9)). Since every delivered code costs money, a daily ceiling (`LOGIN_CODE_DAILY_LIMIT`) counts the paid sends to phones that hold no active account and answers such a phone `provider_unavailable` above it, while existing Customers and staff still get their codes; the per-address limit counts an IPv6 address by its /64. **Test phone numbers:** configuration lists phone numbers and one fixed code; a listed number verifies with that code and no delivery is attempted; the list is empty in production and is never an Admin setting.
 
 **Staff:** `phone + password → role → Sanctum token`, with the first-login gate. Rate limits: five failed logins per phone per minute and twenty per IP per minute; five failed `current_password` checks per token per minute on password change. No account lockout.
 
@@ -100,7 +100,7 @@ Not multi-tenant. No tenant, market or city ownership columns.
 
 ## 10. Catalog and Media
 
-Relational catalog with paired language columns. Server-side PostgreSQL search over `lower(name_uz)` and `lower(name_ru)`. Product image metadata in PostgreSQL, bytes on the Laravel public disk in development and S3-compatible storage in production, served from public URLs with long cache headers; the URL changes when the image changes. The image host allows the web panel's origin (CORS for GET), which a panel on another origin needs to draw an image; without it the panel falls back to the browser's own image element (`DL-34`).
+Relational catalog with paired language columns. Server-side PostgreSQL search over `lower(name_uz)` and `lower(name_ru)`. Product image metadata in PostgreSQL, bytes on the Laravel public disk — in production on a volume of the server, served by the proxy and included in the backups (`DL-104` (5)) — served from public URLs with long cache headers; the URL changes when the image changes. The image host allows the web panel's origin (CORS for GET), which a panel on another origin needs to draw an image; without it the panel falls back to the browser's own image element (`DL-34`).
 
 ## 11. Address and Map
 
@@ -181,13 +181,15 @@ A `refunds` row is created when a paid online order is cancelled. Completion is 
 
 `CodeDeliveryGateway` with `TelegramGatewayCodeDelivery`, `EskizSmsCodeDelivery` and `FakeCodeDelivery`. No code value is ever logged or returned. Provider credentials are configuration.
 
+Telegram Gateway carries the backend's own code: `checkSendAbility` for the phone, which Telegram charges when it confirms the phone, then `sendVerificationMessage` with that request's id, the code and a five-minute `ttl`, free under that id and refunded when the code is not delivered in time. No delivery-report endpoint exists (`DL-104` (9)).
+
 ## 24. Notifications
 
-`NotificationService` with an FCM adapter and a fake. The domain emits intents (`event type`, `user`, `order or approval ID`); a queued job renders the title and body from the two-language template set by `users.preferred_language` and sends a push whose data carries the event type and the ID only. Delivery rows are recorded; failure never rolls anything back. A device registers its token once per signed-in account, past the first-login password change, and revokes it at that account's logout (`DL-26`, `DL-32`); the Shopper's order screen polls every few seconds in the foreground and the client suppresses foreground banners for events the screen already shows.
+`NotificationService` with an FCM adapter and a fake. The action that writes an event's history row dispatches the notification job after its commit (`DL-39`), so a rolled-back action notifies nobody and a replay or natural repeat notifies nobody again. The queued job skips an account no longer active, renders the title and body from the two-language template set by `users.preferred_language`, and sends a push whose data carries the event type and the order's ID only; texts carry the order number and an amount, never a name, phone or address. A delivery row is recorded per device, or one `skipped` row when nothing is sent; failure never rolls anything back. Nobody is notified of their own action except by `order_accepted`, and one action sends a person one push (`DL-104` (10)). The FCM adapter uses the HTTP v1 API with a service account; a token FCM reports as unregistered revokes its device, and a device unseen for 60 days is pruned (`DL-104` (11)). A device registers its token once per signed-in account, past the first-login password change, and revokes it at that account's logout (`DL-26`, `DL-32`); the Shopper's order screen polls every few seconds in the foreground and the client suppresses foreground banners for events the screen already shows.
 
 ## 25. Queue and Scheduler
 
-Laravel database queue in PostgreSQL. Scheduler jobs: approval attention and expiry, unpaid-online attention, payment reconciliation, delay attention refresh. Correctness never depends on scheduler latency alone: every read path reconciles what it shows.
+Laravel database queue in PostgreSQL, worked by its own container. Scheduler jobs, in a container running `schedule:work`: approval expiry every minute; daily pruning of completed idempotency keys after 30 days, of notification deliveries after 90 days, of push devices unseen for 60 days, and of failed jobs after 30 days (`DL-104` (8)); from Wave 5, payment reconciliation. Attention items and delay are derived on read. Correctness never depends on scheduler latency alone: every read path reconciles what it shows.
 
 ## 26. Time
 
@@ -249,15 +251,14 @@ No code path may present a fake provider result as real.
 ## 34. Production Topology
 
 ```text
-Internet → reverse proxy with TLS → Laravel (php-fpm) → PostgreSQL
-                                  ├─ queue worker
-                                  ├─ scheduler
-                                  ├─ object storage (images)
-                                  └─ Telegram / SMS / FCM / payment APIs
-web panel: static build behind the same proxy
+Internet → Caddy (TLS) ─ api.<domain>   → Laravel (php-fpm) → PostgreSQL
+                       │                  ├─ /storage images on a server volume
+                       │                  └─ Telegram / SMS / FCM / payment APIs
+                       └ panel.<domain> → the web panel's static build
+           queue worker and scheduler: the same image, their own containers
 ```
 
-One Ubuntu VPS in Uzbekistan running Docker Compose, nightly database backups off the host. The proxy is named in `TRUSTED_PROXIES` so the application sees the client's address; without that, the per-IP login limit would count every client as the proxy.
+One Ubuntu VPS in Uzbekistan running Docker Compose (`docker/compose.prod.yaml`); only the proxy publishes ports. Nightly backups of the database and the images, encrypted with restic, go to the Owner's second storage in Uzbekistan, and the restore is a script that has been tried (`DL-104` (3)–(7)). The API allows the panel's origin by CORS (`CORS_ALLOWED_ORIGINS`). The application logs to stderr under Docker's rotation, and the proxy keeps no access log, since a query string can carry phone digits. The proxy is named in `TRUSTED_PROXIES` so the application sees the client's address; without that, the per-IP login limit would count every client as the proxy.
 
 ## 35. Non-Goals
 

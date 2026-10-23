@@ -119,7 +119,7 @@ Web panel. Order board with filters and the summary strip; attention list (appro
 
 ## 23. Notifications
 
-Push through FCM behind an abstraction: Customer `order_accepted`, `approval_required`, `payment_required`, `courier_started`, `order_delivered`, `order_cancelled` and, for a cash order, the final amount at shopping completion (`DL-78`, Wave 4); Shopper `shopping_assigned`, `approval_answered`, `shopping_order_cancelled`; Courier `delivery_assigned`, `delivery_cancelled`. Texts in the user's language from backend templates; payloads carry the event and an ID only. Delivery is best-effort and never changes order state. The Shopper's order screen also polls while the app is open.
+Push through FCM behind an abstraction: Customer `order_accepted`, `approval_required`, `payment_required`, `courier_started`, `order_delivered`, `order_cancelled` and, for a cash order, `shopping_completed` with the final amount (`DL-78`, `DL-104` (10)); Shopper `shopping_assigned`, `approval_answered`, `shopping_order_cancelled`; Courier `delivery_assigned`, `delivery_cancelled`. Texts in the user's language from backend templates; payloads carry the event and an ID only. Delivery is best-effort and never changes order state. The Shopper's order screen also polls while the app is open.
 
 ## 24. History and Reorder
 
