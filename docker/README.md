@@ -81,6 +81,10 @@ that will execute it.
 Dockerfile and runs the same commands as below — `composer install`, the `.env`
 and key steps, `migrate`, then `php artisan test`, `vendor/bin/pint --test` and
 `vendor/bin/phpstan analyse` — with the non-interactive flags a runner needs.
+A second job, `Production image builds`, runs
+`docker build -f docker/app.prod.Dockerfile --build-context runtime=docker backend`
+so the production image is proven against the current `php:8.4-fpm` on every
+pull request.
 
 That is deliberate. It keeps local, CI and production on one runtime, and it
 makes this document continuously tested. **A change here and a change in that
@@ -220,13 +224,20 @@ Run it from the repository root with one env file, kept outside the repository:
 docker compose --env-file <file> -f docker/compose.prod.yaml up -d --build
 ```
 
+A fresh stack has an empty database; migrate it once:
+
+```text
+docker compose --env-file <file> -f docker/compose.prod.yaml run --rm app php artisan migrate --force
+```
+
 In production the boot refuses an incomplete configuration and names the
 settings that are wrong, never their values (`DL-107` (3)).
 
 **The rehearsal on this machine.** The project is `bb-prod-local`
 (`COMPOSE_PROJECT_NAME=bb-prod-local`), with Caddy on `127.0.0.1:8080` and
 `8443`, the API at `https://localhost:8443` and the panel at
-`https://127.0.0.1:8443`. The env files live outside the repository. Caddy signs
+`https://panel.localhost:8443` (with `CORS_ALLOWED_ORIGINS=https://panel.localhost:8443`;
+a client sends no SNI for an IP address, so the panel needs a host name). The env files live outside the repository. Caddy signs
 with its own internal CA. To trust it, export its root certificate from
 `/data/caddy/pki/authorities/local/root.crt` in the `caddy` container and point
 `SSL_CERT_FILE` at the copy.
@@ -236,7 +247,7 @@ walkthrough runs on the same image and stack with `APP_ENV=local`, since test
 phones are refused in production. Start it with `WALKTHROUGH_SCHEDULER=1`: the
 script then waits for the stack's scheduler to write the expiry instead of
 running `approvals:expire` itself. Remove the rehearsal only with
-`down -v -p bb-prod-local`.
+`docker compose -p bb-prod-local -f docker/compose.prod.yaml down -v`.
 
 `docker/DEPLOY.md` (W4-5) will be the server runbook.
 

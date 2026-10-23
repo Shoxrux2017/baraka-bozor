@@ -102,6 +102,8 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 - The Telegram token is restricted to the server's address.
 - The Owner is offered an external check that alerts on a downed server and on a night without a backup.
 - Checked on the live server:
+  - Caddy and the app see public client addresses, not the Docker bridge gateway: a Docker userland proxy would make every client one address and share the per-IP limits. The fix is in Docker's configuration or host networking for Caddy, not `TRUSTED_PROXIES`;
+  - the panel's `current` link inside `PANEL_ROOT` is relative, since an absolute host path does not resolve inside Caddy's `/srv/panel` mount;
   - TLS on both hosts;
   - the public pages `/legal/privacy` and `/account-deletion`, which W4-6 needs;
   - a sign-in by a Telegram code;
@@ -191,6 +193,8 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | A disk-full or downed server is noticed only by people. An external uptime check is an Owner account | Open; offered at W4-5 |
 | iOS push: the code is written and the configuration waits for a Mac and an Apple account (`docs/06`) | Open until a Mac exists |
 | Carried from Wave 3: the scheduler runs nowhere until Wave 4 deploys one (`DL-54` (8)) | Closes with W4-5 |
+| `worker` and `scheduler` do not mount the images volume; a future job that writes images must get it (W4-2 review) | Open, note |
+| The other Symfony components stay on 8.0, past its maintenance, while `symfony/http-foundation` is on 8.1 (`DL-107` (10)). Move `symfony/*` to 8.1 before W4-5 | Open, W4-5 |
 | Carried from Wave 2: CORS in production | Closed by W4-2 (`DL-107` (6)) |
 | Carried from Wave 2: device pruning, the push token change stream | Close with W4-8 and W4-9 |
 | Carried from Wave 2: a build whose MapKit key Yandex refuses aborts at launch | Closed: the map is Google's since `DL-86`, and its SDK starts only when a map is shown |
