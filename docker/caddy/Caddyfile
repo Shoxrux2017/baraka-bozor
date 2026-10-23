@@ -1,0 +1,71 @@
+{
+	# No access log: a query string such as a board search can carry phone
+	# digits (docs/07 section 31). The error log still names the request, so
+	# every logged URI loses its query string.
+	log {
+		output stderr
+		format filter {
+			wrap json
+			fields {
+				request>uri regexp \?.*$ ?redacted
+			}
+		}
+	}
+	# UDP 443 is not opened, so HTTP/3 is not offered.
+	servers {
+		protocols h1 h2
+	}
+	skip_install_trust
+}
+
+{$API_HOST} {
+	encode zstd gzip
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+	}
+	# Above PHP's post_max_size (8M), so an oversized upload still meets
+	# Laravel's 413 envelope up to this bound.
+	request_body {
+		max_size 10MB
+	}
+
+	# Product images, straight from the volume. A new image gets a new URL
+	# (docs/07 section 10), so a year's cache is safe; the panel draws them
+	# from another origin (DL-34).
+	handle_path /storage/* {
+		root * /srv/storage
+		header Cache-Control "public, max-age=31536000, immutable"
+		header Access-Control-Allow-Origin {$CORS_ALLOWED_ORIGINS}
+		file_server
+	}
+
+	handle {
+		rewrite * /index.php
+		reverse_proxy app:9000 {
+			transport fastcgi {
+				root /app/public
+				split .php
+			}
+		}
+	}
+}
+
+{$PANEL_HOST} {
+	root * /srv/panel/current
+	encode zstd gzip
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		# Flutter's file names are not content-hashed: index.html,
+		# flutter_bootstrap.js and main.dart.js keep their names across
+		# releases, so every file revalidates (ETag) instead of being cached.
+		Cache-Control no-cache
+	}
+	try_files {path} /index.html
+	file_server
+}
