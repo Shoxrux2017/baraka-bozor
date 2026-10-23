@@ -804,6 +804,43 @@ class AppLocalizationsRu extends AppLocalizations {
   String get staffNew => 'Новый сотрудник';
 
   @override
+  String get staffNewSubtitle =>
+      'Временный пароль появится после сохранения — покажем его один раз';
+
+  @override
+  String get staffRoleShopperHint => 'Приложение: покупает заказы на базаре';
+
+  @override
+  String get staffRoleCourierHint => 'Приложение: привозит заказы клиентам';
+
+  @override
+  String get staffRoleOperatorHint => 'Панель: заказы, вопросы и отмены';
+
+  @override
+  String get staffRoleAdminHint => 'Панель: всё, включая каталог и настройки';
+
+  @override
+  String get staffRoleManagerHint => 'Только просмотр';
+
+  @override
+  String get staffRoleFixedNote =>
+      'Роль потом не меняется. Чтобы сменить роль, заблокируйте сотрудника и создайте новый аккаунт на тот же номер.';
+
+  @override
+  String get staffBlockTitle => 'Заблокировать сотрудника?';
+
+  @override
+  String get staffBlockSessions =>
+      'Все сеансы этого сотрудника сразу завершатся.';
+
+  @override
+  String get staffResetTitle => 'Сбросить пароль?';
+
+  @override
+  String get staffResetExplained =>
+      'Создадим новый временный пароль, все сеансы этого сотрудника завершатся.';
+
+  @override
   String get staffFullName => 'Имя и фамилия';
 
   @override
@@ -832,16 +869,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get staffResetPassword => 'Сбросить пароль';
-
-  @override
-  String staffBlockConfirm(String name) {
-    return 'Заблокировать: $name? Все сеансы этого сотрудника сразу завершатся.';
-  }
-
-  @override
-  String staffResetConfirm(String name) {
-    return 'Создать новый временный пароль: $name? Все сеансы этого сотрудника завершатся.';
-  }
 
   @override
   String get staffTemporaryPasswordTitle => 'Временный пароль';

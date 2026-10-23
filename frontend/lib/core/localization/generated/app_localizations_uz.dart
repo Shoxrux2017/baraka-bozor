@@ -791,6 +791,46 @@ class AppLocalizationsUz extends AppLocalizations {
   String get staffNew => 'Yangi xodim';
 
   @override
+  String get staffNewSubtitle =>
+      'Vaqtinchalik parol saqlangandan keyin chiqadi — u bir marta ko\'rsatiladi';
+
+  @override
+  String get staffRoleShopperHint =>
+      'Ilova: buyurtmalarni bozordan xarid qiladi';
+
+  @override
+  String get staffRoleCourierHint =>
+      'Ilova: buyurtmalarni mijozlarga yetkazadi';
+
+  @override
+  String get staffRoleOperatorHint =>
+      'Panel: buyurtmalar, savollar va bekor qilishlar';
+
+  @override
+  String get staffRoleAdminHint => 'Panel: hammasi, katalog va sozlamalar ham';
+
+  @override
+  String get staffRoleManagerHint => 'Faqat ko\'rish';
+
+  @override
+  String get staffRoleFixedNote =>
+      'Rol keyin o\'zgarmaydi. Rolni almashtirish uchun xodimni bloklang va o\'sha raqamga yangi akkaunt yarating.';
+
+  @override
+  String get staffBlockTitle => 'Xodim bloklansinmi?';
+
+  @override
+  String get staffBlockSessions =>
+      'Bu xodimning barcha seanslari darhol tugaydi.';
+
+  @override
+  String get staffResetTitle => 'Parol tiklansinmi?';
+
+  @override
+  String get staffResetExplained =>
+      'Yangi vaqtinchalik parol yaratamiz, bu xodimning barcha seanslari tugaydi.';
+
+  @override
   String get staffFullName => 'To\'liq ism';
 
   @override
@@ -819,16 +859,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get staffResetPassword => 'Parolni tiklash';
-
-  @override
-  String staffBlockConfirm(String name) {
-    return '$name bloklansinmi? Bu xodimning barcha seanslari darhol yopiladi.';
-  }
-
-  @override
-  String staffResetConfirm(String name) {
-    return '$name uchun yangi vaqtinchalik parol yaratilsinmi? Bu xodimning barcha seanslari yopiladi.';
-  }
 
   @override
   String get staffTemporaryPasswordTitle => 'Vaqtinchalik parol';

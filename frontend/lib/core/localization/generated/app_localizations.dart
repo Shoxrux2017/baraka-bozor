@@ -1520,6 +1520,72 @@ abstract class AppLocalizations {
   /// **'Yangi xodim'**
   String get staffNew;
 
+  /// No description provided for @staffNewSubtitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Vaqtinchalik parol saqlangandan keyin chiqadi — u bir marta ko\'rsatiladi'**
+  String get staffNewSubtitle;
+
+  /// No description provided for @staffRoleShopperHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilova: buyurtmalarni bozordan xarid qiladi'**
+  String get staffRoleShopperHint;
+
+  /// No description provided for @staffRoleCourierHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ilova: buyurtmalarni mijozlarga yetkazadi'**
+  String get staffRoleCourierHint;
+
+  /// No description provided for @staffRoleOperatorHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Panel: buyurtmalar, savollar va bekor qilishlar'**
+  String get staffRoleOperatorHint;
+
+  /// No description provided for @staffRoleAdminHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Panel: hammasi, katalog va sozlamalar ham'**
+  String get staffRoleAdminHint;
+
+  /// No description provided for @staffRoleManagerHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'Faqat ko\'rish'**
+  String get staffRoleManagerHint;
+
+  /// No description provided for @staffRoleFixedNote.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rol keyin o\'zgarmaydi. Rolni almashtirish uchun xodimni bloklang va o\'sha raqamga yangi akkaunt yarating.'**
+  String get staffRoleFixedNote;
+
+  /// No description provided for @staffBlockTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Xodim bloklansinmi?'**
+  String get staffBlockTitle;
+
+  /// No description provided for @staffBlockSessions.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu xodimning barcha seanslari darhol tugaydi.'**
+  String get staffBlockSessions;
+
+  /// No description provided for @staffResetTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Parol tiklansinmi?'**
+  String get staffResetTitle;
+
+  /// No description provided for @staffResetExplained.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi vaqtinchalik parol yaratamiz, bu xodimning barcha seanslari tugaydi.'**
+  String get staffResetExplained;
+
   /// No description provided for @staffFullName.
   ///
   /// In uz, this message translates to:
@@ -1579,18 +1645,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Parolni tiklash'**
   String get staffResetPassword;
-
-  /// No description provided for @staffBlockConfirm.
-  ///
-  /// In uz, this message translates to:
-  /// **'{name} bloklansinmi? Bu xodimning barcha seanslari darhol yopiladi.'**
-  String staffBlockConfirm(String name);
-
-  /// No description provided for @staffResetConfirm.
-  ///
-  /// In uz, this message translates to:
-  /// **'{name} uchun yangi vaqtinchalik parol yaratilsinmi? Bu xodimning barcha seanslari yopiladi.'**
-  String staffResetConfirm(String name);
 
   /// No description provided for @staffTemporaryPasswordTitle.
   ///

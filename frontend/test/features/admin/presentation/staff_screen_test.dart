@@ -8,7 +8,10 @@ import 'package:baraka_bozor/core/formatting/phone_format.dart';
 import 'package:baraka_bozor/core/formatting/tashkent_time.dart';
 import 'package:baraka_bozor/core/state/mutation_state.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/localization/role_labels.dart';
 import 'package:baraka_bozor/core/widgets/kit/kit_card.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_dialog.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_note.dart';
 import 'package:baraka_bozor/core/widgets/panel/panel_card.dart';
 import 'package:baraka_bozor/core/widgets/panel/panel_page_header.dart';
 import 'package:baraka_bozor/core/widgets/panel/panel_person.dart';
@@ -44,7 +47,7 @@ void main() {
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
   Finder inDialog(Finder finder) =>
-      find.descendant(of: find.byType(AlertDialog), matching: finder);
+      find.descendant(of: find.byType(KitDialogFrame), matching: finder);
 
   AppLocalizations l10n(WidgetTester tester) =>
       AppLocalizations.of(tester.element(find.byType(Scaffold).first));
@@ -102,6 +105,10 @@ void main() {
   }
 
   Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
+    // A field that still has the focus scrolls its window back to its caret,
+    // so the button the test scrolls to would slide away again.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
     await tester.ensureVisible(finder);
     await tester.pumpAndSettle();
     await tester.tap(finder);
@@ -131,10 +138,14 @@ void main() {
       await open(tester);
 
       await tapAndSettle(tester, byKey('new-staff'));
+      expect(byKey('staff-dialog'), findsOneWidget);
+      expect(
+        inDialog(find.text(l10n(tester).staffNewSubtitle)),
+        findsOneWidget,
+      );
       await tester.enterText(byKey('field-full_name'), '  Aziz Rahimov ');
       await tester.enterText(byKey('field-phone'), '90 765 43 21');
-      await tapAndSettle(tester, byKey('field-role'));
-      await tapAndSettle(tester, find.text(l10n(tester).roleCourier).last);
+      await tapAndSettle(tester, byKey('role-courier'));
       await tapAndSettle(tester, byKey('staff-save'));
 
       final NewStaffMember sent = staff.created.single;
@@ -143,10 +154,44 @@ void main() {
       expect(sent.role, UserRole.courier);
 
       final String password = staff.issued.single;
+      // The password replaces the form in the same window.
+      expect(byKey('staff-dialog'), findsNothing);
+      expect(byKey('password-dialog'), findsOneWidget);
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(inDialog(find.byType(KitDialogBadge)), findsOneWidget);
+      expect(
+        inDialog(find.text(l10n(tester).staffTemporaryPasswordTitle)),
+        findsOneWidget,
+      );
+      expect(
+        inDialog(find.text('Aziz Rahimov · ${formatPhone('+998907654321')}')),
+        findsOneWidget,
+      );
       expect(find.text(password), findsOneWidget);
       expect(
-        find.text(l10n(tester).staffTemporaryPasswordWarning),
-        findsOneWidget,
+        find.ancestor(
+          of: byKey('temporary-password'),
+          matching: find.byWidgetPredicate(
+            (Widget w) =>
+                w is DecoratedBox &&
+                w.decoration is BoxDecoration &&
+                (w.decoration as BoxDecoration).color == KitColors.field,
+          ),
+        ),
+        findsWidgets,
+      );
+      expect(byKey('copy-password'), findsOneWidget);
+      final Finder warning = find.text(
+        l10n(tester).staffTemporaryPasswordWarning,
+      );
+      expect(warning, findsOneWidget);
+      expect(
+        tester
+            .widget<KitNote>(
+              find.ancestor(of: warning, matching: find.byType(KitNote)),
+            )
+            .tone,
+        KitTone.amber,
       );
       // While the password shows, the controller that answered it holds
       // nothing but its state.
@@ -157,9 +202,18 @@ void main() {
       await tapAndSettle(tester, byKey('copy-password'));
       expect(clipboard, <String>[password]);
       expect(find.text(l10n(tester).staffCopied), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('copy-password'),
+          matching: find.byIcon(Icons.check),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(SnackBar), findsNothing);
 
       await tapAndSettle(tester, byKey('password-done'));
 
+      expect(byKey('password-dialog'), findsNothing);
       expect(find.text(password), findsNothing);
       expect(find.textContaining('Aziz Rahimov'), findsOneWidget);
       expect(find.text(l10n(tester).staffMustChangePassword), findsOneWidget);
@@ -176,17 +230,22 @@ void main() {
       await tester.tap(byKey('staff-save'));
       await tester.pump();
       await tryToDismiss(tester);
+      await tester.tap(byKey('staff-dialog-close'));
+      await tester.pump();
+      expect(byKey('staff-dialog'), findsOneWidget);
       expect(byKey('staff-save'), findsOneWidget);
 
       staff.hold!.complete();
       await tester.pumpAndSettle();
       final String password = staff.issued.single;
+      expect(byKey('password-dialog-close'), findsNothing);
       await tryToDismiss(tester);
       await tester.pumpAndSettle();
       expect(find.text(password), findsOneWidget);
 
       await tapAndSettle(tester, byKey('password-done'));
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(byKey('staff-dialog'), findsNothing);
+      expect(byKey('password-dialog'), findsNothing);
     },
   );
 
@@ -255,7 +314,7 @@ void main() {
   });
 
   testWidgets(
-    'a phone another active staff account holds is explained, and the form stays',
+    'a number held by another active member is marked on the phone field',
     (WidgetTester tester) async {
       staff.changeFailure = const ApiRefusal(
         ApiError(status: 409, code: 'phone_already_active'),
@@ -267,9 +326,63 @@ void main() {
       await tester.enterText(byKey('field-phone'), '901112233');
       await tapAndSettle(tester, byKey('staff-save'));
 
-      expect(find.text(l10n(tester).errorPhoneAlreadyActive), findsWidgets);
+      expect(
+        find.descendant(
+          of: byKey('field-phone'),
+          matching: find.text(l10n(tester).errorPhoneAlreadyActive),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(l10n(tester).errorPhoneAlreadyActive), findsOneWidget);
+      expect(byKey('failure-message'), findsNothing);
+      expect(find.text(l10n(tester).fieldRequired), findsNothing);
+      expect(find.text(l10n(tester).phoneInvalid), findsNothing);
+      expect(byKey('staff-dialog'), findsOneWidget);
       expect(byKey('staff-save'), findsOneWidget);
       expect(staff.issued, isEmpty);
+
+      // Editing the number clears the mark.
+      await tester.enterText(byKey('field-phone'), '901112234');
+      await tester.pumpAndSettle();
+      expect(find.text(l10n(tester).errorPhoneAlreadyActive), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'the role tiles explain each role and the role cannot change later',
+    (WidgetTester tester) async {
+      await open(tester);
+      await tapAndSettle(tester, byKey('new-staff'));
+      final AppLocalizations text = l10n(tester);
+
+      for (final String hint in <String>[
+        text.staffRoleShopperHint,
+        text.staffRoleCourierHint,
+        text.staffRoleOperatorHint,
+        text.staffRoleAdminHint,
+        text.staffRoleManagerHint,
+      ]) {
+        expect(inDialog(find.text(hint)), findsOneWidget);
+      }
+      for (final UserRole role in staffRoles) {
+        expect(byKey('role-${role.name}'), findsOneWidget);
+        expect(inDialog(find.text(roleLabel(text, role))), findsOneWidget);
+      }
+      expect(inDialog(find.text(text.staffRoleFixedNote)), findsOneWidget);
+
+      Color? tile(String code) =>
+          tester.widget<Material>(byKey('role-$code')).color;
+      expect(tile('shopper'), KitColors.primaryWash);
+      expect(tile('admin'), Colors.white);
+
+      await tapAndSettle(tester, byKey('role-admin'));
+      expect(tile('admin'), KitColors.primaryWash);
+      expect(tile('shopper'), Colors.white);
+
+      await tester.enterText(byKey('field-full_name'), 'Aziz Rahimov');
+      await tester.enterText(byKey('field-phone'), '90 765 43 21');
+      await tapAndSettle(tester, byKey('staff-save'));
+      expect(staff.created.single.role, UserRole.admin);
     },
   );
 
@@ -336,6 +449,17 @@ void main() {
           tester.widget<Text>(byKey('block-current-orders')).data,
           l10n(tester).staffBlockCurrentOrders(count),
         );
+        expect(
+          tester
+              .widget<KitNote>(
+                find.ancestor(
+                  of: byKey('block-current-orders'),
+                  matching: find.byType(KitNote),
+                ),
+              )
+              .tone,
+          KitTone.amber,
+        );
         await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
       }
 
@@ -399,8 +523,19 @@ void main() {
     await open(tester);
 
     await tapAndSettle(tester, byKey('block-s-1'));
+    expect(byKey('block-dialog'), findsOneWidget);
+    expect(inDialog(find.text(l10n(tester).staffBlockTitle)), findsOneWidget);
+    expect(inDialog(find.text('Dilnoza Karimova')), findsOneWidget);
     expect(
-      find.text(l10n(tester).staffBlockConfirm('Dilnoza Karimova')),
+      inDialog(
+        find.text(
+          '${l10n(tester).roleShopper} · ${formatPhone('+998901112233')}',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      inDialog(find.text(l10n(tester).staffBlockSessions)),
       findsOneWidget,
     );
     expect(
@@ -409,6 +544,14 @@ void main() {
         matching: find.text(l10n(tester).staffBlock),
       ),
       findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<FilledButton>(byKey('confirm-action'))
+          .style!
+          .backgroundColor!
+          .resolve(<WidgetState>{}),
+      KitColors.danger,
     );
     await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
     expect(staff.actions, isEmpty);
@@ -429,8 +572,11 @@ void main() {
     await open(tester);
 
     await tapAndSettle(tester, byKey('reset-s-1'));
+    expect(byKey('reset-dialog'), findsOneWidget);
+    expect(inDialog(find.text(l10n(tester).staffResetTitle)), findsOneWidget);
+    expect(inDialog(find.text('Dilnoza Karimova')), findsOneWidget);
     expect(
-      find.text(l10n(tester).staffResetConfirm('Dilnoza Karimova')),
+      inDialog(find.text(l10n(tester).staffResetExplained)),
       findsOneWidget,
     );
     await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
@@ -447,8 +593,12 @@ void main() {
     await tester.pumpAndSettle();
     final String password = staff.issued.single;
     expect(staff.actions, <String>['reset s-1']);
+    expect(byKey('reset-dialog'), findsNothing);
+    expect(byKey('password-dialog'), findsOneWidget);
+    expect(find.byType(Dialog), findsOneWidget);
     expect(find.text(password), findsOneWidget);
     await tapAndSettle(tester, byKey('password-done'));
+    expect(byKey('password-dialog'), findsNothing);
     expect(find.text(password), findsNothing);
   });
 
@@ -463,6 +613,7 @@ void main() {
     await tapAndSettle(tester, byKey('reset-s-1'));
     await tapAndSettle(tester, byKey('confirm-action'));
 
+    expect(byKey('reset-dialog'), findsOneWidget);
     expect(
       inDialog(find.text(l10n(tester).errorSelfResetNotAllowed)),
       findsOneWidget,
@@ -489,10 +640,23 @@ void main() {
     await open(tester);
 
     await tapAndSettle(tester, byKey('rename-s-1'));
+    expect(byKey('rename-dialog'), findsOneWidget);
+    expect(inDialog(find.text(l10n(tester).staffEditName)), findsOneWidget);
+    expect(
+      inDialog(
+        find.text(
+          '${l10n(tester).roleShopper} · ${formatPhone('+998901112233')}',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('16/120'), findsOneWidget);
     await tester.enterText(
       byKey('field-full_name'),
       'Dilnoza Karimova-Aliyeva',
     );
+    await tester.pump();
+    expect(find.text('24/120'), findsOneWidget);
     await tapAndSettle(tester, byKey('rename-save'));
 
     expect(staff.actions, <String>['rename s-1 Dilnoza Karimova-Aliyeva']);
@@ -888,6 +1052,45 @@ void main() {
     }
   }
 
+  for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+    for (final Size size in const <Size>[Size(1440, 900), Size(820, 1180)]) {
+      testWidgets('every staff window holds at x2 '
+          '(${device.languageCode} ${size.width.toInt()})', (
+        WidgetTester tester,
+      ) async {
+        staff.members = <StaffMember>[
+          staffMember(fullName: 'Dilnoza Karimova-Aliyeva Rustamovna'),
+        ];
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await open(tester, size: size, device: device);
+
+        // The form, and the password in the same window.
+        await tapAndSettle(tester, byKey('new-staff'));
+        expect(byKey('staff-dialog'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.enterText(byKey('field-full_name'), 'Aziz Rahimov');
+        await tester.enterText(byKey('field-phone'), '90 765 43 21');
+        await tapAndSettle(tester, byKey('staff-save'));
+        expect(byKey('password-dialog'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tapAndSettle(tester, byKey('password-done'));
+
+        for (final (String key, String dialog) in <(String, String)>[
+          ('block-s-1', 'block-dialog'),
+          ('reset-s-1', 'reset-dialog'),
+          ('rename-s-1', 'rename-dialog'),
+        ]) {
+          await tapAndSettle(tester, byKey(key));
+          expect(byKey(dialog), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+          expect(byKey(dialog), findsNothing);
+        }
+      });
+    }
+  }
+
   testWidgets('after signing out the list asks for nothing more', (
     WidgetTester tester,
   ) async {
@@ -994,7 +1197,14 @@ void main() {
     await tester.enterText(byKey('field-full_name'), 'Dilnoza K.');
     await tapAndSettle(tester, byKey('rename-save'));
 
-    expect(find.text(l10n(tester).fieldRejected), findsOneWidget);
+    expect(byKey('rename-dialog'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: byKey('field-full_name'),
+        matching: find.text(l10n(tester).fieldRejected),
+      ),
+      findsOneWidget,
+    );
     expect(byKey('rename-save'), findsOneWidget);
   });
 

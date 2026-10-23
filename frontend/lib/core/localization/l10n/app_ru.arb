@@ -310,6 +310,17 @@
   "statusActive": "Активен",
   "statusBlocked": "Заблокирован",
   "staffNew": "Новый сотрудник",
+  "staffNewSubtitle": "Временный пароль появится после сохранения — покажем его один раз",
+  "staffRoleShopperHint": "Приложение: покупает заказы на базаре",
+  "staffRoleCourierHint": "Приложение: привозит заказы клиентам",
+  "staffRoleOperatorHint": "Панель: заказы, вопросы и отмены",
+  "staffRoleAdminHint": "Панель: всё, включая каталог и настройки",
+  "staffRoleManagerHint": "Только просмотр",
+  "staffRoleFixedNote": "Роль потом не меняется. Чтобы сменить роль, заблокируйте сотрудника и создайте новый аккаунт на тот же номер.",
+  "staffBlockTitle": "Заблокировать сотрудника?",
+  "staffBlockSessions": "Все сеансы этого сотрудника сразу завершатся.",
+  "staffResetTitle": "Сбросить пароль?",
+  "staffResetExplained": "Создадим новый временный пароль, все сеансы этого сотрудника завершатся.",
   "staffFullName": "Имя и фамилия",
   "staffRole": "Роль",
   "staffAllRoles": "Все роли",
@@ -320,22 +331,6 @@
   "staffBlock": "Заблокировать",
   "staffActivate": "Разблокировать",
   "staffResetPassword": "Сбросить пароль",
-  "staffBlockConfirm": "Заблокировать: {name}? Все сеансы этого сотрудника сразу завершатся.",
-  "@staffBlockConfirm": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "staffResetConfirm": "Создать новый временный пароль: {name}? Все сеансы этого сотрудника завершатся.",
-  "@staffResetConfirm": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "staffTemporaryPasswordTitle": "Временный пароль",
   "staffTemporaryPasswordWarning": "Скопируйте пароль сейчас и передайте сотруднику. Больше он показан не будет. При первом входе сотрудник задаст свой пароль.",
   "staffCopy": "Копировать",
