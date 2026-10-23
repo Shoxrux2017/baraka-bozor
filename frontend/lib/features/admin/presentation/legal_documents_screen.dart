@@ -13,7 +13,6 @@ import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../../core/widgets/kit/kit_card.dart';
 import '../../../core/widgets/kit/kit_dialog.dart';
-import '../../../core/widgets/panel/panel_card.dart';
 import '../../../core/widgets/panel/panel_fields.dart';
 import '../../../core/widgets/panel/panel_layout.dart';
 import '../../../core/widgets/panel/panel_page_header.dart';
@@ -112,20 +111,18 @@ class _DocumentsState extends State<_Documents> {
         ),
         const SizedBox(height: 16),
         // Every document stays built, so a text typed in one survives a look
-        // at the other.
-        IndexedStack(
-          index: LegalDocumentKind.values.indexOf(_kind),
-          children: <Widget>[
-            for (final LegalDocumentKind kind in LegalDocumentKind.values)
-              _DocumentSection(
-                kind: kind,
-                entries: <LegalDocumentEntry>[
-                  for (final LegalDocumentEntry entry in widget.entries)
-                    if (entry.kind == kind) entry,
-                ],
-              ),
-          ],
-        ),
+        // at the other; only the shown one takes any height.
+        for (final LegalDocumentKind kind in LegalDocumentKind.values)
+          Offstage(
+            offstage: kind != _kind,
+            child: _DocumentSection(
+              kind: kind,
+              entries: <LegalDocumentEntry>[
+                for (final LegalDocumentEntry entry in widget.entries)
+                  if (entry.kind == kind) entry,
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -148,25 +145,28 @@ class _DocumentSectionState extends State<_DocumentSection> {
   @override
   Widget build(BuildContext context) {
     // Both editors stay built, so a text typed in one language survives a
-    // look at the other.
-    return IndexedStack(
-      index: AppLanguage.values.indexOf(_language),
+    // look at the other; only the shown one takes any height.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         for (final AppLanguage language in AppLanguage.values)
-          _DocumentEditor(
-            key: ValueKey<String>(
-              'legal-editor-${widget.kind.code}-${language.code}',
+          Offstage(
+            offstage: language != _language,
+            child: _DocumentEditor(
+              key: ValueKey<String>(
+                'legal-editor-${widget.kind.code}-${language.code}',
+              ),
+              entry: widget.entries.firstWhere(
+                (LegalDocumentEntry e) => e.language == language,
+              ),
+              published: <AppLanguage, bool>{
+                for (final LegalDocumentEntry e in widget.entries)
+                  e.language: e.body != null,
+              },
+              language: _language,
+              onLanguage: (AppLanguage chosen) =>
+                  setState(() => _language = chosen),
             ),
-            entry: widget.entries.firstWhere(
-              (LegalDocumentEntry e) => e.language == language,
-            ),
-            published: <AppLanguage, bool>{
-              for (final LegalDocumentEntry e in widget.entries)
-                e.language: e.body != null,
-            },
-            language: _language,
-            onLanguage: (AppLanguage chosen) =>
-                setState(() => _language = chosen),
           ),
       ],
     );
@@ -286,45 +286,52 @@ class _DocumentEditorState extends ConsumerState<_DocumentEditor> {
             final bool beside =
                 constraints.maxWidth >= LegalDocumentsScreen.previewBesideWidth;
 
-            return PanelCard(
-              flush: true,
-              children: <Widget>[
-                _Header(
-                  entry: entry,
-                  published: widget.published,
-                  language: widget.language,
-                  onLanguage: widget.onLanguage,
-                ),
-                const Divider(height: 1, thickness: 1, color: KitColors.line),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-                  child: beside
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Expanded(child: _editor(l10n)),
-                            const SizedBox(width: 20),
-                            SizedBox(width: 380, child: _preview(l10n, title)),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            _editor(l10n),
-                            const SizedBox(height: 20),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 380,
-                                ),
+            return KitCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  _Header(
+                    entry: entry,
+                    published: widget.published,
+                    language: widget.language,
+                    onLanguage: widget.onLanguage,
+                  ),
+                  const Divider(height: 1, thickness: 1, color: KitColors.line),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                    child: beside
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Expanded(child: _editor(l10n)),
+                              const SizedBox(width: 20),
+                              SizedBox(
+                                width: 380,
                                 child: _preview(l10n, title),
                               ),
-                            ),
-                          ],
-                        ),
-                ),
-              ],
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              _editor(l10n),
+                              const SizedBox(height: 20),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 380,
+                                  ),
+                                  child: _preview(l10n, title),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ],
+              ),
             );
           },
         ),
@@ -449,83 +456,92 @@ class _DocumentEditorState extends ConsumerState<_DocumentEditor> {
           ],
         ),
         const SizedBox(height: 10),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: KitColors.ink, width: 6),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                SizedBox(
-                  height: 52,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: Row(
-                      children: <Widget>[
-                        const Icon(
-                          Icons.arrow_back,
-                          size: 20,
-                          color: KitColors.ink,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+        // The ring is drawn over the content, so the bar never covers it.
+        ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: KitColors.ink, width: 6),
+            ),
+            child: ColoredBox(
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    SizedBox(
+                      height: 52,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: Row(
+                          children: <Widget>[
+                            const Icon(
+                              Icons.arrow_back,
+                              size: 20,
                               color: KitColors.ink,
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const Divider(height: 1, thickness: 1, color: KitColors.line),
-                SizedBox(
-                  height: 452,
-                  child: blank
-                      ? Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                const Icon(
-                                  Icons.description_outlined,
-                                  size: 34,
-                                  color: KitColors.muted,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: KitColors.ink,
                                 ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  l10n.legalPreviewEmpty(title),
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: KitColors.muted,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                        )
-                      : SingleChildScrollView(
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
-                          child: LegalBlocks(
-                            legalBlocksOf(_text.text),
-                            scale: 0.86,
-                          ),
+                          ],
                         ),
+                      ),
+                    ),
+                    const Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: KitColors.line,
+                    ),
+                    SizedBox(
+                      height: 452,
+                      child: blank
+                          ? Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    const Icon(
+                                      Icons.description_outlined,
+                                      size: 34,
+                                      color: KitColors.muted,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      l10n.legalPreviewEmpty(title),
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: KitColors.muted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : LegalBlockList(
+                              legalBlocksOf(_text.text),
+                              scale: 0.86,
+                              padding: const EdgeInsets.all(16),
+                              physics: const NeverScrollableScrollPhysics(),
+                            ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -582,6 +598,16 @@ class _Header extends StatelessWidget {
                       : KitColors.warning,
                 ),
             ],
+            hollowDots: <AppLanguage>{
+              for (final AppLanguage option in AppLanguage.values)
+                if (published[option] != true) option,
+            },
+            hints: <AppLanguage, String>{
+              for (final AppLanguage option in AppLanguage.values)
+                option: published[option] == true
+                    ? l10n.legalLanguagePublished
+                    : l10n.legalLanguageNotPublished,
+            },
           ),
           Row(
             mainAxisSize: MainAxisSize.min,

@@ -305,7 +305,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           keyboardType: keyboard,
           textInputAction: TextInputAction.done,
           onFieldSubmitted: (String _) => _submit(),
-          style: const TextStyle(fontSize: 14, color: KitColors.ink),
+          style: panelFieldTextStyle,
           decoration: panelFieldDecoration(
             hint: hint,
             suffix: suffix,

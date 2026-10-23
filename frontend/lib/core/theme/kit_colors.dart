@@ -57,6 +57,10 @@ abstract final class KitColors {
   /// its wash.
   static const Color warningSoft = Color(0xFFFCE9BF);
 
+  /// The soft shadow of a raised white piece on a grey one, such as the
+  /// chosen segment of a switch.
+  static const Color shadow = Color(0x1F151D16);
+
   /// A filled rating star.
   static const Color star = Color(0xFFFFB020);
 }

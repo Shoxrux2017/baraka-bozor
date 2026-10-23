@@ -762,6 +762,12 @@ class AppLocalizationsUz extends AppLocalizations {
       'E\'lon qilinmagan — ilovada qator ko\'rinmaydi';
 
   @override
+  String get legalLanguagePublished => 'e\'lon qilingan';
+
+  @override
+  String get legalLanguageNotPublished => 'e\'lon qilinmagan';
+
+  @override
   String get legalPublish => 'E\'lon qilish';
 
   @override

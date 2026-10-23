@@ -30,6 +30,38 @@ class LegalBlocks extends StatelessWidget {
   }
 }
 
+/// The same blocks as a lazy list, so a long text lays out only the blocks
+/// that show. The Admin's preview uses it in its fixed frame.
+class LegalBlockList extends StatelessWidget {
+  const LegalBlockList(
+    this.blocks, {
+    this.scale = 1,
+    this.padding,
+    this.physics,
+    super.key,
+  });
+
+  final List<LegalBlock> blocks;
+  final double scale;
+  final EdgeInsetsGeometry? padding;
+  final ScrollPhysics? physics;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: padding,
+      physics: physics,
+      itemCount: blocks.length,
+      itemBuilder: (BuildContext context, int i) => _Block(
+        block: blocks[i],
+        scale: scale,
+        first: i == 0,
+        afterParagraph: i > 0 && blocks[i - 1].type == LegalBlockType.paragraph,
+      ),
+    );
+  }
+}
+
 class _Block extends StatelessWidget {
   const _Block({
     required this.block,

@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../theme/kit_colors.dart';
 
+/// What a panel form field types in: 13 px `ink`, like the hint beside it.
+const TextStyle panelFieldTextStyle = TextStyle(
+  fontSize: 13,
+  color: KitColors.ink,
+);
+
 /// The decoration of a panel list's search: a filled `field` box of radius 12,
 /// 40 high, with a search icon at the start and an optional [suffix].
 InputDecoration panelSearchDecoration({required String hint, Widget? suffix}) {

@@ -299,6 +299,8 @@
   "legalFormatHint": "## — заголовок, - — пункт списка, каждая строка — абзац",
   "legalPublishedBy": "Опубликовано {date}, {name}",
   "legalNotPublished": "Не опубликовано — в приложении строки нет",
+  "legalLanguagePublished": "опубликовано",
+  "legalLanguageNotPublished": "не опубликовано",
   "legalPublish": "Опубликовать",
   "legalUnpublishConfirm": "Снять документ с публикации?",
   "legalSaved": "Документ опубликован",

@@ -114,38 +114,54 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
           children: <Widget>[
             KitLabeledField(
               label: l10n.customersPhoneLabel,
-              field: Row(
+              field: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Flexible(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 420),
-                      child: TextField(
-                        key: const ValueKey<String>('customers-phone'),
-                        controller: _phoneField,
-                        keyboardType: TextInputType.phone,
-                        textInputAction: TextInputAction.search,
-                        onSubmitted: (String _) => _find(),
-                        decoration:
-                            panelFieldDecoration(
-                              prefix: phoneCountryCode,
-                              hint: l10n.phoneHint,
-                              helper: l10n.customersPhoneHelper,
-                            ).copyWith(
-                              errorText: _malformed
-                                  ? l10n.customersPhoneHint
-                                  : null,
+                  // The button is as high as the field, so the two line up.
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        Flexible(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 420),
+                            child: TextField(
+                              key: const ValueKey<String>('customers-phone'),
+                              controller: _phoneField,
+                              keyboardType: TextInputType.phone,
+                              textInputAction: TextInputAction.search,
+                              style: panelFieldTextStyle,
+                              onSubmitted: (String _) => _find(),
+                              decoration:
+                                  panelFieldDecoration(
+                                    prefix: phoneCountryCode,
+                                    hint: l10n.phoneHint,
+                                  ).copyWith(
+                                    errorText: _malformed
+                                        ? l10n.customersPhoneHint
+                                        : null,
+                                  ),
                             ),
-                      ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        FilledButton.icon(
+                          key: const ValueKey<String>('customers-find'),
+                          style: kitFilled(height: 44),
+                          onPressed: _find,
+                          icon: const Icon(Icons.search, size: 20),
+                          label: Text(l10n.customersFind),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  FilledButton.icon(
-                    key: const ValueKey<String>('customers-find'),
-                    style: kitFilled(height: 48),
-                    onPressed: _find,
-                    icon: const Icon(Icons.search, size: 20),
-                    label: Text(l10n.customersFind),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.customersPhoneHelper,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: KitColors.muted,
+                    ),
                   ),
                 ],
               ),
@@ -241,7 +257,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
             else
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[left, help],
+                children: <Widget>[left, const SizedBox(height: 16), help],
               ),
           ],
         );

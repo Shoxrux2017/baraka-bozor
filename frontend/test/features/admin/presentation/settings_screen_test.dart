@@ -6,6 +6,7 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/platform/map_links.dart';
 import 'package:baraka_bozor/core/formatting/tashkent_time.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/kit/kit_note.dart';
 import 'package:baraka_bozor/core/widgets/panel/panel_card.dart';
 import 'package:baraka_bozor/core/widgets/panel/panel_segmented.dart';
@@ -167,6 +168,21 @@ void main() {
       expect(find.text(l10n(tester).settingsSaved), findsOneWidget);
     },
   );
+
+  testWidgets('the settings fields type at 13 in ink', (
+    WidgetTester tester,
+  ) async {
+    await openSettings(tester);
+
+    final EditableText typed = tester.widget<EditableText>(
+      find.descendant(
+        of: field('markup_percent'),
+        matching: find.byType(EditableText),
+      ),
+    );
+    expect(typed.style.fontSize, 13);
+    expect(typed.style.color, KitColors.ink);
+  });
 
   testWidgets('the form refuses what the API would refuse and sends nothing', (
     WidgetTester tester,

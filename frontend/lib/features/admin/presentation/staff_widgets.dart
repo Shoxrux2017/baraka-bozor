@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/role_labels.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../auth/domain/app_user.dart';
 
 /// The staff roles an Admin creates and filters by, in the order the pills
@@ -51,6 +52,8 @@ class StaffRoleChip extends StatelessWidget {
               Flexible(
                 child: Text(
                   roleLabel(AppLocalizations.of(context), role),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -171,7 +174,8 @@ class OwnTag extends StatelessWidget {
   }
 }
 
-/// The roles as tiles, two to a row from [twoColumnsWidth] wide and one below,
+/// The roles as tiles, two to a row from [twoColumnsWidth] wide at normal text
+/// and one below that or at large text,
 /// 10 apart: each says where the role works, and the chosen one is outlined in
 /// `primary`. A null [onSelected] holds the choice.
 class StaffRoleTiles extends StatelessWidget {
@@ -190,7 +194,10 @@ class StaffRoleTiles extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final int columns = constraints.maxWidth >= twoColumnsWidth ? 2 : 1;
+        final int columns =
+            constraints.maxWidth >= twoColumnsWidth && !kitLargeText(context)
+            ? 2
+            : 1;
         Widget tile(int index) => _RoleTile(
           role: staffRoles[index],
           selected: staffRoles[index] == selected,

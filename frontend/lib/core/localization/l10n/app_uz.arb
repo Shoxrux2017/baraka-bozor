@@ -351,6 +351,8 @@
     }
   },
   "legalNotPublished": "E'lon qilinmagan — ilovada qator ko'rinmaydi",
+  "legalLanguagePublished": "e'lon qilingan",
+  "legalLanguageNotPublished": "e'lon qilinmagan",
   "legalPublish": "E'lon qilish",
   "legalUnpublishConfirm": "Hujjatni e'londan olib tashlaysizmi?",
   "legalSaved": "Hujjat e'lon qilindi",

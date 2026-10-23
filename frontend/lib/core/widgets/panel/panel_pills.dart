@@ -80,7 +80,7 @@ class _ScrollingPillsState extends State<_ScrollingPills> {
   }
 }
 
-/// A filter pill: white, or — [selected] — green; with an optional [count]
+/// A filter pill: white with a 1 px outline, or — [selected] — green; with an optional [count]
 /// after the label, muted when it is zero.
 class PanelPill extends StatelessWidget {
   const PanelPill({
@@ -106,7 +106,12 @@ class PanelPill extends StatelessWidget {
 
     return Material(
       color: selected ? KitColors.primary : Colors.white,
-      borderRadius: BorderRadius.circular(18),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: selected
+            ? BorderSide.none
+            : const BorderSide(color: KitColors.line),
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,

@@ -9,6 +9,9 @@ import 'kit_buttons.dart';
 /// The widest a kit dialog gets; a narrower window gives it its width less 32.
 const double kitDialogWidth = 480;
 
+/// The dim scrim behind a kit window.
+const Color kitDialogBarrier = Color(0x61151D16);
+
 /// A centred window of the kit for the panel: a white card of radius 20 over
 /// a dim scrim, its [title] with a x at the right, an optional muted
 /// [subtitle], then the [builder] body, which scrolls above the keyboard.
@@ -34,7 +37,7 @@ Future<T?> showKitDialog<T>({
   return showDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
-    barrierColor: const Color(0x61151D16),
+    barrierColor: kitDialogBarrier,
     builder: (BuildContext dialog) => KitDialogFrame(
       dialogKey: dialogKey,
       title: title,

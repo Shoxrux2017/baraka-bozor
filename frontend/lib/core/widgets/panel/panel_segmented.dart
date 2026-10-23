@@ -8,17 +8,25 @@ typedef PanelSegment<T> = ({T value, String label, Key key, Color? dot});
 
 /// A switch of a few choices in a `field` box: the selected one stands white
 /// with a soft shadow. A null [onSelected] disables every segment.
+///
+/// A value in [hollowDots] shows its dot as a ring instead of a filled disc,
+/// so the state a dot tells is not told by colour alone; a value's [hints]
+/// entry is read after its label by a screen reader.
 class PanelSegmented<T> extends StatelessWidget {
   const PanelSegmented({
     required this.segments,
     required this.selected,
     required this.onSelected,
+    this.hollowDots = const <Never>{},
+    this.hints = const <Never, String>{},
     super.key,
   });
 
   final List<PanelSegment<T>> segments;
   final T selected;
   final ValueChanged<T>? onSelected;
+  final Set<T> hollowDots;
+  final Map<T, String> hints;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +49,8 @@ class PanelSegmented<T> extends StatelessWidget {
                 key: segment.key,
                 label: segment.label,
                 dot: segment.dot,
+                hollow: hollowDots.contains(segment.value),
+                hint: hints[segment.value],
                 selected: segment.value == selected,
                 onTap: onSelected == null
                     ? null
@@ -57,6 +67,8 @@ class _Segment extends StatelessWidget {
   const _Segment({
     required this.label,
     required this.dot,
+    required this.hollow,
+    required this.hint,
     required this.selected,
     required this.onTap,
     super.key,
@@ -64,6 +76,8 @@ class _Segment extends StatelessWidget {
 
   final String label;
   final Color? dot;
+  final bool hollow;
+  final String? hint;
   final bool selected;
   final VoidCallback? onTap;
 
@@ -77,7 +91,7 @@ class _Segment extends StatelessWidget {
       selected: selected,
       enabled: onTap != null,
       excludeSemantics: true,
-      label: label,
+      label: hint == null ? label : '$label, $hint',
       onTap: onTap,
       child: Material(
         type: MaterialType.transparency,
@@ -93,7 +107,7 @@ class _Segment extends StatelessWidget {
               boxShadow: selected
                   ? const <BoxShadow>[
                       BoxShadow(
-                        color: Color(0x1F151D16),
+                        color: KitColors.shadow,
                         blurRadius: 4,
                         offset: Offset(0, 1),
                       ),
@@ -107,8 +121,11 @@ class _Segment extends StatelessWidget {
                 if (dot != null) ...<Widget>[
                   DecoratedBox(
                     decoration: BoxDecoration(
-                      color: dot,
+                      color: hollow ? null : dot,
                       shape: BoxShape.circle,
+                      border: hollow
+                          ? Border.all(color: dot, width: 1.5)
+                          : null,
                     ),
                     child: const SizedBox(width: 8, height: 8),
                   ),

@@ -34,6 +34,41 @@ void main() {
     expect(taps, 1);
   });
 
+  testWidgets('an unselected pill is outlined and a selected one is not', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Row(
+            children: <Widget>[
+              PanelPill(label: 'On', selected: true, onTap: () {}),
+              PanelPill(label: 'Off', selected: false, onTap: () {}),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    BorderSide? outline(String label) {
+      final ShapeBorder? shape = tester
+          .widget<Material>(
+            find
+                .ancestor(of: find.text(label), matching: find.byType(Material))
+                .first,
+          )
+          .shape;
+      return shape is RoundedRectangleBorder ? shape.side : null;
+    }
+
+    expect(outline('Off')?.color, KitColors.line);
+    expect(outline('Off')?.width, 1);
+    expect(
+      outline('On') == null || outline('On')!.style == BorderStyle.none,
+      isTrue,
+    );
+  });
+
   testWidgets('a narrow row scrolls instead of wrapping', (
     WidgetTester tester,
   ) async {

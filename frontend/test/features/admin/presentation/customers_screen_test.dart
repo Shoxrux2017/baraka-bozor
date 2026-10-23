@@ -408,6 +408,38 @@ void main() {
     expect(under.left, tester.getRect(byKey('customers-search')).left);
   });
 
+  testWidgets('the stacked help card stands 16 under the results', (
+    WidgetTester tester,
+  ) async {
+    await openCustomers(tester, size: const Size(1047, 1000));
+
+    final Rect results = tester.getRect(byKey('customers-results'));
+    final Rect under = tester.getRect(byKey('customers-help'));
+    expect(under.top - results.bottom, 16);
+  });
+
+  testWidgets('the search button is as high as its field and aligned', (
+    WidgetTester tester,
+  ) async {
+    await openCustomers(tester);
+
+    final Rect field = tester.getRect(byKey('customers-phone'));
+    final Rect button = tester.getRect(byKey('customers-find'));
+    expect(button.height, field.height);
+    expect(button.top, field.top);
+  });
+
+  testWidgets('the search field types at 13 in ink', (
+    WidgetTester tester,
+  ) async {
+    await openCustomers(tester);
+
+    expect(
+      tester.widget<TextField>(byKey('customers-phone')).style,
+      const TextStyle(fontSize: 13, color: KitColors.ink),
+    );
+  });
+
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
     for (final Size size in const <Size>[Size(1440, 900), Size(820, 1180)]) {
       testWidgets('the customers page holds at the extremes '

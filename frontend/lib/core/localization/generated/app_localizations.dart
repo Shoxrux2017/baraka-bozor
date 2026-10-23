@@ -1454,6 +1454,18 @@ abstract class AppLocalizations {
   /// **'E\'lon qilinmagan — ilovada qator ko\'rinmaydi'**
   String get legalNotPublished;
 
+  /// No description provided for @legalLanguagePublished.
+  ///
+  /// In uz, this message translates to:
+  /// **'e\'lon qilingan'**
+  String get legalLanguagePublished;
+
+  /// No description provided for @legalLanguageNotPublished.
+  ///
+  /// In uz, this message translates to:
+  /// **'e\'lon qilinmagan'**
+  String get legalLanguageNotPublished;
+
   /// No description provided for @legalPublish.
   ///
   /// In uz, this message translates to:

@@ -1,8 +1,11 @@
 import 'package:baraka_bozor/core/legal/legal_document_kind.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
+import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_card.dart';
 import 'package:baraka_bozor/core/widgets/panel/panel_pills.dart';
+import 'package:baraka_bozor/core/widgets/panel/panel_segmented.dart';
 import 'package:baraka_bozor/features/admin/application/legal_documents_controllers.dart';
 import 'package:baraka_bozor/features/admin/presentation/admin_paths.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
@@ -63,7 +66,9 @@ void main() {
     for (final DecoratedBox box in boxes) {
       final Decoration decoration = box.decoration;
       if (decoration is BoxDecoration && decoration.shape == BoxShape.circle) {
-        return decoration.color;
+        // A filled dot has its colour; a hollow one has it as its ring.
+        final BoxBorder? ring = decoration.border;
+        return decoration.color ?? (ring is Border ? ring.top.color : null);
       }
     }
     return null;
@@ -380,6 +385,159 @@ void main() {
     );
     expect(editor.controller.text, '<script>alert(1)</script>');
   });
+
+  testWidgets('only the shown document takes the page height', (
+    WidgetTester tester,
+  ) async {
+    api.set(
+      terms,
+      ru,
+      List<String>.generate(300, (int i) => 'Строка $i').join('\n'),
+    );
+    await openDocuments(tester, size: const Size(1440, 900));
+    await tester.tap(pill(privacy));
+    await tester.pumpAndSettle();
+
+    final ScrollableState page = tester.state<ScrollableState>(
+      find.ancestor(of: pill(privacy), matching: find.byType(Scrollable)).first,
+    );
+    expect(page.position.maxScrollExtent, lessThan(1500));
+    // The long text is still there, only not shown.
+    expect(
+      find.byKey(
+        const ValueKey<String>('legal-editor-terms-ru'),
+        skipOffstage: false,
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the preview lays out only what fits', (
+    WidgetTester tester,
+  ) async {
+    api.set(
+      terms,
+      uz,
+      List<String>.generate(1000, (int i) => '- Qator $i').join('\n'),
+    );
+    await openDocuments(tester);
+
+    final Finder built = find.descendant(
+      of: preview(terms, uz),
+      matching: find.byType(Text),
+    );
+    expect(built, findsWidgets);
+    expect(built.evaluate().length, lessThan(120));
+  });
+
+  testWidgets('a language segment says in words whether it is published', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    api.set(terms, ru, '## Условия');
+    await openDocuments(tester);
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(Scaffold).first),
+    );
+
+    expect(
+      tester.getSemantics(tab(terms, uz)).label,
+      contains(l10n.legalLanguageNotPublished),
+    );
+    expect(
+      tester.getSemantics(tab(terms, ru)).label,
+      '${l10n.languageRussian}, ${l10n.legalLanguagePublished}',
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('an unpublished language is a hollow ring, a published a dot', (
+    WidgetTester tester,
+  ) async {
+    api.set(terms, ru, '## Условия');
+    await openDocuments(tester);
+
+    BoxDecoration dot(AppLanguage language) {
+      final Iterable<DecoratedBox> boxes = tester.widgetList<DecoratedBox>(
+        find.descendant(
+          of: tab(terms, language),
+          matching: find.byType(DecoratedBox),
+        ),
+      );
+      return boxes
+          .map((DecoratedBox b) => b.decoration)
+          .whereType<BoxDecoration>()
+          .firstWhere((BoxDecoration d) => d.shape == BoxShape.circle);
+    }
+
+    expect(dot(ru).color, KitColors.primary);
+    expect(dot(ru).border, isNull);
+    expect(dot(uz).color, isNull);
+    expect((dot(uz).border! as Border).top.color, KitColors.warning);
+    expect((dot(uz).border! as Border).top.width, 1.5);
+  });
+
+  testWidgets('the language row starts 16 under the top of its card', (
+    WidgetTester tester,
+  ) async {
+    await openDocuments(tester);
+
+    final Rect card = tester.getRect(
+      find.ancestor(of: tab(terms, uz), matching: find.byType(KitCard)).first,
+    );
+    final Rect row = tester.getRect(
+      find.byType(PanelSegmented<AppLanguage>).first,
+    );
+    expect(row.top - card.top, 16);
+  });
+
+  testWidgets('the preview frame is drawn over its bar', (
+    WidgetTester tester,
+  ) async {
+    api.set(terms, uz, '## Sarlavha');
+    await openDocuments(tester);
+
+    final Iterable<DecoratedBox> rings = tester
+        .widgetList<DecoratedBox>(
+          find.descendant(
+            of: preview(terms, uz),
+            matching: find.byType(DecoratedBox),
+          ),
+        )
+        .where((DecoratedBox box) {
+          final Decoration d = box.decoration;
+          return d is BoxDecoration &&
+              d.border is Border &&
+              (d.border! as Border).top.color == KitColors.ink;
+        });
+    expect(rings, hasLength(1));
+    expect(rings.single.position, DecorationPosition.foreground);
+  });
+
+  for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+    for (final Size size in const <Size>[Size(1440, 900), Size(820, 1180)]) {
+      testWidgets('the unpublish window holds at x2 '
+          '(${device.languageCode} ${size.width.toInt()})', (
+        WidgetTester tester,
+      ) async {
+        api.set(privacy, ru, 'Текст');
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+        await openDocuments(tester, size: size, device: device);
+        await openRussian(tester, privacy);
+        await tester.enterText(field(privacy, ru), '');
+        await tester.pump();
+        await tapAndSettle(tester, save(privacy, ru));
+
+        expect(byKey('legal-unpublish-dialog'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tapAndSettle(tester, byKey('legal-unpublish-confirm'));
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
 
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
     for (final Size size in const <Size>[Size(1440, 900), Size(820, 1180)]) {

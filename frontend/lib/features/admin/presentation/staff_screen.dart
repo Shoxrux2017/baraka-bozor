@@ -299,7 +299,15 @@ class _StaffTable extends StatelessWidget {
           width: const FlexColumnWidth(3),
           end: false,
         ),
-        (label: l10n.staffRole, width: const FlexColumnWidth(1.6), end: false),
+        (
+          label: l10n.staffRole,
+          // A role's name never breaks mid-word.
+          width: const MaxColumnWidth(
+            FixedColumnWidth(170),
+            FlexColumnWidth(1.6),
+          ),
+          end: false,
+        ),
         (
           label: l10n.staffColumnStatus,
           width: const FlexColumnWidth(1.6),
@@ -601,7 +609,7 @@ Future<void> _showStaffWindow(BuildContext context, WidgetBuilder builder) {
   return showDialog<void>(
     context: context,
     barrierDismissible: false,
-    barrierColor: const Color(0x61151D16),
+    barrierColor: kitDialogBarrier,
     builder: builder,
   );
 }
@@ -893,6 +901,7 @@ class _NewStaffDialogState extends ConsumerState<_NewStaffDialog> {
                   key: const ValueKey<String>('field-full_name'),
                   controller: _name,
                   enabled: !change.isBusy,
+                  style: panelFieldTextStyle,
                   decoration: panelFieldDecoration(),
                   onChanged: (String _) => _rejected.remove('full_name'),
                   validator: (String? text) =>
@@ -908,6 +917,7 @@ class _NewStaffDialogState extends ConsumerState<_NewStaffDialog> {
                   controller: _phone,
                   enabled: !change.isBusy,
                   keyboardType: TextInputType.phone,
+                  style: panelFieldTextStyle,
                   decoration: panelFieldDecoration(
                     prefix: phoneCountryCode,
                     hint: l10n.phoneHint,
@@ -1089,6 +1099,7 @@ class _RenameFormState extends ConsumerState<_RenameForm> {
                 enabled: !change.isBusy,
                 maxLength: 120,
                 maxLengthEnforcement: MaxLengthEnforcement.none,
+                style: panelFieldTextStyle,
                 decoration: panelFieldDecoration(),
                 onChanged: (String _) => _rejected = false,
                 validator: (String? text) =>

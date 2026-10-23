@@ -775,6 +775,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get legalNotPublished => 'Не опубликовано — в приложении строки нет';
 
   @override
+  String get legalLanguagePublished => 'опубликовано';
+
+  @override
+  String get legalLanguageNotPublished => 'не опубликовано';
+
+  @override
   String get legalPublish => 'Опубликовать';
 
   @override

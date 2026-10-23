@@ -836,6 +836,84 @@ void main() {
     }
   });
 
+  testWidgets('a role name never breaks mid-word in a narrow table', (
+    WidgetTester tester,
+  ) async {
+    staff.members = <StaffMember>[
+      staffMember(id: 's-9', role: UserRole.admin, fullName: 'Aziz Rahimov'),
+    ];
+    await open(tester, size: const Size(848, 1000), device: const Locale('ru'));
+
+    expect(find.byType(Table), findsWidgets);
+    final Finder chip = find.descendant(
+      of: byKey('staff-s-9'),
+      matching: find.byType(StaffRoleChip),
+    );
+    expect(
+      find.descendant(of: chip, matching: find.text('Администратор')),
+      findsOneWidget,
+    );
+    // One line of 12 px text is about 16 high; a broken name is two or more.
+    expect(
+      tester
+          .getSize(
+            find.descendant(of: chip, matching: find.text('Администратор')),
+          )
+          .height,
+      lessThan(20),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the role tiles stand two to a row, one at large text', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, size: const Size(1440, 900), device: const Locale('ru'));
+    await tapAndSettle(tester, byKey('new-staff'));
+
+    expect(
+      tester.getTopLeft(byKey('role-courier')).dy,
+      tester.getTopLeft(byKey('role-shopper')).dy,
+    );
+    await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.pumpAndSettle();
+    await tapAndSettle(tester, byKey('new-staff'));
+
+    expect(
+      tester.getTopLeft(byKey('role-courier')).dx,
+      tester.getTopLeft(byKey('role-shopper')).dx,
+    );
+    expect(
+      tester.getTopLeft(byKey('role-courier')).dy,
+      greaterThan(tester.getTopLeft(byKey('role-shopper')).dy),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the staff windows type their fields at 13 in ink', (
+    WidgetTester tester,
+  ) async {
+    staff.members = <StaffMember>[staffMember(id: 's-4')];
+    await open(tester);
+
+    await tapAndSettle(tester, byKey('new-staff'));
+    EditableText typed(String key) => tester.widget<EditableText>(
+      find.descendant(of: byKey(key), matching: find.byType(EditableText)),
+    );
+    expect(typed('field-full_name').style.fontSize, 13);
+    expect(typed('field-full_name').style.color, KitColors.ink);
+    expect(typed('field-phone').style.fontSize, 13);
+    expect(typed('field-phone').style.color, KitColors.ink);
+    await tapAndSettle(tester, find.text(l10n(tester).cancelButton));
+
+    await tapAndSettle(tester, byKey('rename-s-4'));
+    expect(typed('field-full_name').style.fontSize, 13);
+    expect(typed('field-full_name').style.color, KitColors.ink);
+  });
+
   testWidgets('a row says who, what, where and when', (
     WidgetTester tester,
   ) async {
