@@ -236,11 +236,12 @@ settings that are wrong, never their values (`DL-107` (3)).
 **The rehearsal on this machine.** The project is `bb-prod-local`
 (`COMPOSE_PROJECT_NAME=bb-prod-local`), with Caddy on `127.0.0.1:8080` and
 `8443`, the API at `https://localhost:8443` and the panel at
-`https://panel.localhost:8443` (with `CORS_ALLOWED_ORIGINS=https://panel.localhost:8443`;
-a client sends no SNI for an IP address, so the panel needs a host name). The env files live outside the repository. Caddy signs
-with its own internal CA. To trust it, export its root certificate from
-`/data/caddy/pki/authorities/local/root.crt` in the `caddy` container and point
-`SSL_CERT_FILE` at the copy.
+`https://panel.localhost:8443` (with
+`CORS_ALLOWED_ORIGINS=https://panel.localhost:8443`; a client sends no SNI for
+an IP address, so the panel needs a host name). The env files live outside the
+repository. Caddy signs with its own internal CA. To trust it, export its root
+certificate from `/data/caddy/pki/authorities/local/root.crt` in the `caddy`
+container and point `SSL_CERT_FILE` at the copy.
 
 A production env file proves the boot, the edge and the processes. The Wave 3
 walkthrough runs on the same image and stack with `APP_ENV=local`, since test

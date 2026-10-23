@@ -11,9 +11,10 @@ use RuntimeException;
 
 /**
  * The production boot check (`DL-107`): a production box with a missing secret
- * or an unsafe setting must not start serving in silence. Exactly one CORS origin:
- * Caddy copies the variable verbatim into a header that takes one. It names the
- * settings that are wrong and never their values (`AGENTS.md` §5).
+ * or an unsafe setting must not start serving in silence. It names the settings
+ * that are wrong and never their values (`AGENTS.md` §5). Exactly one CORS
+ * origin is required: Caddy copies the variable verbatim into a header that
+ * takes one.
  */
 final class ProductionConfiguration
 {

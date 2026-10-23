@@ -55,10 +55,11 @@ RUN composer dump-autoload --no-dev --optimize --no-scripts
 FROM base
 
 # The shared file is the same one the development image uses, so a value set
-# there reaches production unchanged; the production file after it wins by name.
+# there reaches production unchanged. conf.d/ is read in byte order and zzz-
+# sorts after the shared zz- file, so the production values win.
 # See docker/README.md for why conf.d/ and the zz- prefix.
 COPY --from=runtime php.ini /usr/local/etc/php/conf.d/zz-baraka-bozor.ini
-COPY --from=runtime php.prod.ini /usr/local/etc/php/conf.d/zz-baraka-bozor-prod.ini
+COPY --from=runtime php.prod.ini /usr/local/etc/php/conf.d/zzz-baraka-bozor-prod.ini
 COPY --from=runtime php-fpm.prod.conf /usr/local/etc/php-fpm.d/zz-baraka-bozor.conf
 COPY --from=runtime entrypoint.prod.sh /usr/local/bin/entrypoint.prod.sh
 

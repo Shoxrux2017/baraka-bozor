@@ -15,12 +15,15 @@
 # scheduler are unreachable from outside the stack.
 #
 # Two networks. `edge` joins Caddy and the app, and has a fixed subnet: that
-# subnet is TRUSTED_PROXIES, so the application trusts a forwarded client address
-# only from that range. Caddy's FastCGI transport already passes the client's own
-# address; the trust matters when the peer is the edge network's gateway (Docker
-# Desktop, a Docker userland proxy) or an HTTP proxy hop (DL-107 (4)). `internal` joins the PHP services and the database;
-# the app and the worker also reach Telegram and Firebase through it. Caddy is
-# not on it, so a compromised proxy cannot reach the database.
+# subnet is TRUSTED_PROXIES, so the application trusts a forwarded client
+# address only from that range. Caddy's FastCGI transport already passes the
+# client's own address; the trust matters when the peer is the edge network's
+# gateway (Docker Desktop, a Docker userland proxy) or an HTTP proxy hop
+# (DL-107 (4)).
+#
+# `internal` joins the PHP services and the database; the app and the worker
+# also reach Telegram and Firebase through it. Caddy is not on it, so a
+# compromised proxy cannot reach the database.
 name: ${COMPOSE_PROJECT_NAME:-barakabozor}
 
 x-logging: &logging
