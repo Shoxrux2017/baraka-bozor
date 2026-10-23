@@ -63,10 +63,12 @@ COPY --from=runtime php-fpm.prod.conf /usr/local/etc/php-fpm.d/zz-baraka-bozor.c
 COPY --from=runtime entrypoint.prod.sh /usr/local/bin/entrypoint.prod.sh
 
 WORKDIR /app
-COPY --from=vendor --chown=www-data:www-data /app /app
+# Root-owned: the unprivileged user that runs FPM cannot rewrite its own code.
+COPY --from=vendor /app /app
 
 # .dockerignore keeps the runtime directories' contents out of the image, so
 # they are recreated here, writable by the unprivileged user that runs FPM.
+# bootstrap/cache stays writable for `php artisan optimize` at start.
 RUN chmod +x /usr/local/bin/entrypoint.prod.sh \
     && mkdir -p storage/framework/cache/data storage/framework/sessions \
         storage/framework/views storage/logs storage/app/public bootstrap/cache \

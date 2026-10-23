@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace Tests\Feature\Http;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 /**
- * The per-IP limit counts the real client behind the trusted proxy and cannot
- * be dodged by a sender that is not trusted (`config/trustedproxy.php`,
- * `DL-104` (4)).
+ * The per-IP limit counts the client a trusted sender names and cannot be
+ * dodged by a sender that is not trusted (`config/trustedproxy.php`,
+ * `DL-104` (4)). This guards the configuration, not the topology: whether the
+ * sender is the edge network's gateway or a proxy hop is the deployment's
+ * (`DL-107`).
  */
 final class TrustedProxyTest extends TestCase
 {
@@ -49,6 +53,19 @@ final class TrustedProxyTest extends TestCase
         $this->requestCode('198.51.100.7', '203.0.113.99', 11)
             ->assertStatus(429)
             ->assertJsonPath('code', 'rate_limited');
+    }
+
+    public function test_a_forwarded_port_from_a_trusted_sender_is_not_believed(): void
+    {
+        Route::get('/probe-port', fn (Request $request) => (string) $request->getPort());
+
+        $own = $this->withServerVariables(['REMOTE_ADDR' => self::PROXY])->get('/probe-port')->assertOk()->getContent();
+
+        $this->withServerVariables(['REMOTE_ADDR' => self::PROXY])
+            ->withHeader('X-Forwarded-Port', '1234')
+            ->get('/probe-port')
+            ->assertOk()
+            ->assertContent((string) $own);
     }
 
     /**

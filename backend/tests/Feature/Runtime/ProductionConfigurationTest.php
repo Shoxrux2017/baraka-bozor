@@ -24,6 +24,7 @@ final class ProductionConfigurationTest extends TestCase
         config([
             'app.key' => 'base64:'.base64_encode(str_repeat('k', 32)),
             'app.debug' => false,
+            'app.url' => 'https://api.example.test',
             'database.connections.pgsql.password' => 'db-secret-value',
             'login_codes.driver' => 'fake',
             'cors.allowed_origins' => ['https://panel.example.test'],
@@ -48,6 +49,9 @@ final class ProductionConfigurationTest extends TestCase
             'debug on' => ['app.debug', true, 'APP_DEBUG'],
             'empty password' => ['database.connections.pgsql.password', '', 'DB_PASSWORD'],
             'no driver' => ['login_codes.driver', null, 'LOGIN_CODE_DRIVER'],
+            'empty url' => ['app.url', '', 'APP_URL'],
+            'http url' => ['app.url', 'http://api.example.test', 'APP_URL'],
+            'two origins' => ['cors.allowed_origins', ['https://a.example.test', 'https://b.example.test'], 'CORS_ALLOWED_ORIGINS'],
             'no origins' => ['cors.allowed_origins', [], 'CORS_ALLOWED_ORIGINS'],
             'wildcard origin' => ['cors.allowed_origins', ['*'], 'CORS_ALLOWED_ORIGINS'],
             'no proxies' => ['trustedproxy.proxies', null, 'TRUSTED_PROXIES'],
@@ -84,7 +88,7 @@ final class ProductionConfigurationTest extends TestCase
 
     public function test_an_unknown_driver_fails_at_the_check(): void
     {
-        config(['login_codes.driver' => 'telegram']);
+        config(['login_codes.driver' => 'carrier-pigeon']);
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('LOGIN_CODE_DRIVER');
@@ -104,6 +108,7 @@ final class ProductionConfigurationTest extends TestCase
 
             $this->app['env'] = 'production';
             $this->expectException(RuntimeException::class);
+            $this->expectExceptionMessage('APP_KEY');
             $provider->boot($this->app->make(Router::class));
         } finally {
             $this->app['env'] = $original;

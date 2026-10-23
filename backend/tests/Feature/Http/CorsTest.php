@@ -6,6 +6,7 @@ namespace Tests\Feature\Http;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 /**
@@ -35,7 +36,7 @@ final class CorsTest extends TestCase
         $this->assertFalse($response->headers->has('Access-Control-Allow-Credentials'));
     }
 
-    public function test_another_origin_gets_no_allow_header(): void
+    public function test_another_origin_is_never_granted(): void
     {
         // With a single allowed origin the CORS library answers with that
         // origin whoever asks; the browser then refuses the mismatch. What
@@ -56,9 +57,32 @@ final class CorsTest extends TestCase
         $this->assertStringContainsString('Retry-After', (string) $response->headers->get('Access-Control-Expose-Headers'));
     }
 
+    public function test_retry_after_is_readable_on_the_refused_request(): void
+    {
+        for ($attempt = 1; $attempt <= 10; $attempt++) {
+            $this->requestCodeFromPanel(sprintf('+99890%07d', $attempt))->assertOk();
+        }
+
+        $response = $this->requestCodeFromPanel('+998900000011')->assertStatus(429);
+
+        $this->assertStringContainsString('Retry-After', (string) $response->headers->get('Access-Control-Expose-Headers'));
+    }
+
     public function test_the_public_pages_are_not_under_cors(): void
     {
         $this->get('/legal/privacy', ['Origin' => self::PANEL])->assertHeaderMissing('Access-Control-Allow-Origin');
+    }
+
+    /**
+     * @return TestResponse<Response>
+     */
+    private function requestCodeFromPanel(string $phone): TestResponse
+    {
+        return $this->call('POST', '/api/v1/auth/customer/code/request', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_ORIGIN' => self::PANEL,
+        ], json_encode(['phone' => $phone], JSON_THROW_ON_ERROR));
     }
 
     private function preflight(string $origin): TestResponse

@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Storage;
  * Where product images live and how they are reached (`DL-17` (5)): the
  * `public` disk, under `products/<uuid>.<ext>`, a fresh key per upload so the
  * public URL changes whenever the image does. In development the disk is
- * served from `/storage` after `php artisan storage:link`; at deployment an
- * S3-compatible disk replaces it through the same configuration.
+ * served from `/storage` after `php artisan storage:link`; in production the
+ * same disk lives on a server volume that Caddy serves (`DL-104` (5)).
  */
 final class ProductImages
 {

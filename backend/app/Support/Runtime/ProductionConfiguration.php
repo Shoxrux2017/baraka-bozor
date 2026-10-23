@@ -11,7 +11,8 @@ use RuntimeException;
 
 /**
  * The production boot check (`DL-107`): a production box with a missing secret
- * or an unsafe setting must not start serving in silence. It names the
+ * or an unsafe setting must not start serving in silence. Exactly one CORS origin:
+ * Caddy copies the variable verbatim into a header that takes one. It names the
  * settings that are wrong and never their values (`AGENTS.md` §5).
  */
 final class ProductionConfiguration
@@ -31,6 +32,12 @@ final class ProductionConfiguration
             $problems[] = 'APP_DEBUG';
         }
 
+        $url = config('app.url');
+
+        if (! is_string($url) || ! str_starts_with($url, 'https://')) {
+            $problems[] = 'APP_URL';
+        }
+
         $connection = config('database.default');
 
         if (! is_string($connection) || self::blank(config("database.connections.{$connection}.password"))) {
@@ -43,7 +50,7 @@ final class ProductionConfiguration
 
         $origins = config('cors.allowed_origins');
 
-        if (! is_array($origins) || $origins === [] || in_array('*', $origins, true)) {
+        if (! is_array($origins) || count($origins) !== 1 || in_array('*', $origins, true)) {
             $problems[] = 'CORS_ALLOWED_ORIGINS';
         }
 

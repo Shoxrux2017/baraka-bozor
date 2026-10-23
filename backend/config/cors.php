@@ -15,7 +15,8 @@ declare(strict_types=1);
 | allowed_origins   CORS_ALLOWED_ORIGINS: comma-separated origins. Defaults to
 |                   "*" everywhere except production, which must name the
 |                   panel's origin: a production box missing the variable
-|                   allows no origin rather than every one.
+|                   allows no origin rather than every one (an unset
+|                   APP_ENV counts as production, as it does for the framework).
 | exposed_headers   Retry-After: the panel reads it for its countdown after a
 |                   429, and a browser hides it from a cross-origin script
 |                   unless it is exposed.
@@ -23,7 +24,7 @@ declare(strict_types=1);
 |
 */
 
-$origins = env('CORS_ALLOWED_ORIGINS', env('APP_ENV') === 'production' ? null : '*');
+$origins = env('CORS_ALLOWED_ORIGINS', env('APP_ENV', 'production') === 'production' ? null : '*');
 
 return [
     'paths' => ['api/*'],
