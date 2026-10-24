@@ -19,6 +19,7 @@ interface CodeDeliveryGateway
      * `telegram`, `sms` or `fake`.
      *
      * @throws CodeDeliveryFailed when the provider could not be reached or refused
+     * @throws CodeUndeliverable when no channel the gateway has reaches the number
      */
     public function deliver(string $phone, #[\SensitiveParameter] string $code): string;
 }

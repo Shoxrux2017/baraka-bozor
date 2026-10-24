@@ -16,6 +16,7 @@ use App\Modules\Auth\LoginCodeRefused;
 use App\Modules\Auth\Models\LoginChallenge;
 use App\Modules\Auth\Models\StaffLoginStep;
 use App\Modules\Auth\StaffAccounts;
+use App\Modules\Auth\TestPhones;
 use App\Modules\Legal\LegalDocuments;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +41,7 @@ final class VerifyCustomerLoginCode
     public function __construct(
         private readonly LoginCodeCheck $check,
         private readonly LegalDocuments $documents,
+        private readonly TestPhones $testPhones,
     ) {}
 
     public function __invoke(string $phone, #[\SensitiveParameter] string $code): VerifiedLogin
@@ -95,6 +97,12 @@ final class VerifyCustomerLoginCode
      */
     private function withStaffStep(IssuedSession $session, string $phone): VerifiedLogin
     {
+        // The store reviewer's phone is a Customer only (`DL-105`), even if a
+        // staff account came to sit on it after the setting was made.
+        if ($this->testPhones->isReviewer($phone)) {
+            return new VerifiedLogin($session, null, null);
+        }
+
         // The same account the password login resolves: a Shopper or Courier
         // that is not the phone's current staff account gets no step.
         $staff = StaffAccounts::currentFor($phone);

@@ -8,6 +8,7 @@ use App\Models\Enums\Role;
 use App\Models\User;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryFailed;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryGateway;
+use App\Modules\Auth\CodeDelivery\CodeUndeliverable;
 use App\Modules\Auth\CodeDelivery\FakeCodeSink;
 use App\Modules\Auth\Models\LoginChallenge;
 use App\Modules\Auth\TestPhones;
@@ -28,6 +29,10 @@ final class CustomerLoginCodeTest extends TestCase
     private const TEST_PHONE = '+998900000099';
 
     private const TEST_CODE = '000000';
+
+    private const REVIEWER_PHONE = '+998900000077';
+
+    private const REVIEWER_CODE = '482913';
 
     public function test_requesting_a_code_reports_the_channel_and_the_timers_and_never_the_code(): void
     {
@@ -326,6 +331,24 @@ final class CustomerLoginCodeTest extends TestCase
             ->assertOk();
     }
 
+    public function test_ten_requests_per_ipv6_prefix_per_minute(): void
+    {
+        foreach (range(1, 10) as $attempt) {
+            $this->withServerVariables(['REMOTE_ADDR' => '2001:db8:5:6::'.dechex($attempt)])
+                ->postJson('/api/v1/auth/customer/code/request', ['phone' => sprintf('+99890%07d', $attempt)])
+                ->assertOk();
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => '2001:db8:5:6:ffff::1'])
+            ->postJson('/api/v1/auth/customer/code/request', ['phone' => '+998901111111'])
+            ->assertStatus(429)
+            ->assertJsonPath('code', 'rate_limited');
+
+        $this->withServerVariables(['REMOTE_ADDR' => '2001:db8:5:7::1'])
+            ->postJson('/api/v1/auth/customer/code/request', ['phone' => '+998901111111'])
+            ->assertOk();
+    }
+
     public function test_a_resend_is_sent_at_once(): void
     {
         $this->request(self::PHONE)->assertOk()->assertJsonPath('data.resend_available_in_seconds', 0);
@@ -381,6 +404,35 @@ final class CustomerLoginCodeTest extends TestCase
         $this->verify(self::TEST_PHONE, self::TEST_CODE)->assertOk()->assertJsonPath('data.user.phone', self::TEST_PHONE);
     }
 
+    public function test_the_reviewer_phone_signs_in_with_its_own_code_and_receives_nothing(): void
+    {
+        $this->configureReviewer();
+
+        $this->request(self::REVIEWER_PHONE)->assertOk()->assertJsonPath('data.channel', 'test');
+
+        $this->assertNull($this->sink()->codeFor(self::REVIEWER_PHONE), 'nothing was delivered');
+        $this->assertSame('test', LoginChallenge::query()->sole()->channel);
+
+        $this->assertRefused($this->verify(self::REVIEWER_PHONE, '123456'), 'code_invalid');
+
+        $this->verify(self::REVIEWER_PHONE, self::REVIEWER_CODE)
+            ->assertOk()
+            ->assertJsonPath('data.user.role', 'customer')
+            ->assertJsonPath('data.user.phone', self::REVIEWER_PHONE);
+    }
+
+    public function test_the_reviewer_phone_never_receives_a_staff_step(): void
+    {
+        $this->configureReviewer();
+        User::factory()->role(Role::Shopper)->create(['phone' => self::REVIEWER_PHONE]);
+
+        $this->request(self::REVIEWER_PHONE)->assertOk();
+
+        $this->verify(self::REVIEWER_PHONE, self::REVIEWER_CODE)
+            ->assertOk()
+            ->assertJsonPath('data.staff_step', null);
+    }
+
     public function test_the_fixed_code_does_not_open_a_phone_that_is_not_a_test_phone(): void
     {
         $this->configureTestPhone();
@@ -388,6 +440,24 @@ final class CustomerLoginCodeTest extends TestCase
         $this->request(self::PHONE)->assertOk()->assertJsonPath('data.channel', 'fake');
 
         $this->assertRefused($this->verify(self::PHONE, self::TEST_CODE), 'code_invalid');
+    }
+
+    public function test_an_unreachable_number_is_409_and_still_costs_the_send_slot(): void
+    {
+        $this->app->instance(CodeDeliveryGateway::class, new class implements CodeDeliveryGateway
+        {
+            public function deliver(string $phone, string $code): string
+            {
+                throw new CodeUndeliverable('No channel reaches this number.');
+            }
+        });
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->request(self::PHONE)->assertStatus(409)->assertJsonPath('code', 'code_delivery_unavailable');
+        }
+        $this->request(self::PHONE)->assertStatus(429)->assertJsonPath('code', 'rate_limited');
+
+        $this->assertSame(0, LoginChallenge::query()->count());
     }
 
     public function test_a_delivery_failure_is_provider_unavailable_and_stores_nothing(): void
@@ -426,6 +496,16 @@ final class CustomerLoginCodeTest extends TestCase
     private function configureTestPhone(): void
     {
         config(['login_codes.test_phones' => [self::TEST_PHONE], 'login_codes.test_code' => self::TEST_CODE]);
+
+        $this->app->forgetInstance(TestPhones::class);
+    }
+
+    private function configureReviewer(): void
+    {
+        config([
+            'login_codes.reviewer_phone' => self::REVIEWER_PHONE,
+            'login_codes.reviewer_code' => self::REVIEWER_CODE,
+        ]);
 
         $this->app->forgetInstance(TestPhones::class);
     }

@@ -1065,6 +1065,14 @@ class AppLocalizationsRu extends AppLocalizations {
       'Этот номер уже у другого активного сотрудника';
 
   @override
+  String get errorCodeDeliveryUnavailable =>
+      'Код отправляется в Telegram, но этот номер в Telegram не найден. Пока без Telegram код получить нельзя';
+
+  @override
+  String get errorPhoneReserved =>
+      'Этот номер отведён для проверки приложения в Google Play';
+
+  @override
   String get catalogSearchHint => 'Найти: огурцы, лепёшки…';
 
   @override

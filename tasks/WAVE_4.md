@@ -42,7 +42,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | W4-1 | Laravel Boost trial (`DL-103`, `DL-106`) | — | Merged (#110); removed unused (#112, `DL-108`) |
 | W4-2 | Production runtime: images, `docker/compose.prod.yaml`, Caddy, CORS, proxies, the worker, the scheduler and its pruning | — | Merged (#111) |
 | W4-3 | Backups: nightly encrypted copies off the host, the restore script | — | Merged (#113) |
-| W4-4 | Login codes through Telegram Gateway | Telegram (verification) | Planned |
+| W4-4 | Login codes through Telegram Gateway | Telegram (verification) | In progress |
 | W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
 | W4-6 | Android release build and closed testing | Google Play, W4-5 | Planned |
 | W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | Planned |
@@ -131,7 +131,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 - A tagged release deployed by `docker/deploy.sh` (`DL-104` (7)): a dump before the migrations, a `503` with `Retry-After` while the app is replaced, the previous image kept for a rollback. The first Admin is made by the one-time command (`BR-ROLE-009`), whose temporary password goes to the Owner directly. The Owner then enters the business settings in the panel.
 - Every Shopper's and Courier's number is checked to reach Telegram, since staff sign in with a code first (`DL-77`).
 - The Telegram token is restricted to the server's address.
-- The Owner is offered an external check that alerts on a downed server and on a night without a backup.
+- The Owner is offered an external check that alerts on a downed server and on a night without a backup, and that watches the log for the two ceiling messages (`Login code daily ceiling half used.`, `Login code daily ceiling reached.`); the ceiling's warnings reach the Owner only through it or a log alert.
 - Checked on the live server:
   - Caddy and the app see public client addresses, not the Docker bridge gateway: a Docker userland proxy would make every client one address and share the per-IP limits. The fix is in Docker's configuration or host networking for Caddy, not `TRUSTED_PROXIES`. In that gateway case a client could also send `X_Forwarded_For` with underscores, which Caddy's FastCGI transport maps onto the same variable as its own header (W4-2 security review, below the bar). If the gateway case is ever accepted, Caddy drops the underscore spellings with `header_up -X_Forwarded_For`, `-X_Forwarded_Host` and `-X_Forwarded_Proto`;
   - the panel's `current` link inside `PANEL_ROOT` is relative, since an absolute host path does not resolve inside Caddy's `/srv/panel` mount;
@@ -139,7 +139,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
   - the public pages `/legal/privacy` and `/account-deletion`, which W4-6 needs;
   - a sign-in by a Telegram code;
   - `approvals:expire` running from the scheduler;
-  - the first nightly backup, then a restore of it into a scratch stack on the server. That scratch env file uses `localhost` hosts, fake drivers and blank provider keys (Telegram, FCM, payments), because `restore.sh` ends with `up -d`, which starts a worker and a scheduler on a copy of production data. Write this into `docker/DEPLOY.md`.
+  - the first nightly backup, then a restore of it into a scratch stack on the server. That scratch env file uses `APP_ENV=local` (the production boot check refuses the fake driver, `DL-110` (7)), `localhost` hosts, fake drivers and blank provider keys (Telegram, FCM, payments), because `restore.sh` ends with `up -d`, which starts a worker and a scheduler on a copy of production data. Write this into `docker/DEPLOY.md`.
 - The Owner's question 2 is asked here, and the answer is set in the server's environment.
 - The test-phone list is empty in production (`BR-ROLE-011`). The reviewer phone and its code of `DL-105` are set in the server's environment, and its account "Проверка Google" is created.
 
@@ -216,7 +216,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 |---|---|
 | Customers without Telegram cannot sign in until Eskiz arrives with the legal entity (interview 10.1). The refusal says so | Accepted for the pilot |
 | Staff sign in with a code too (`DL-77`), so a Shopper or Courier whose number has no Telegram cannot work. W4-5 checks every staff number; the pilot checklist repeats it for new staff | Open, W4-5 |
-| A flood of code requests to random numbers can reach the daily ceiling and block new Customers' sign-up for the rest of that day; Customers and staff with an account are never blocked (`DL-104` (9)). The ceiling is raised in the server's configuration in minutes, and the warning at half of it gives time to raise it | Accepted for the pilot; the Owner may ask for a higher ceiling |
+| A flood of code requests to random numbers can reach the daily ceiling and block new Customers' sign-up for the rest of that day; Customers and staff with an account are never blocked (`DL-104` (9)). The ceiling is raised in the server's configuration in minutes, and the warning at half of it gives time to raise it, but it reaches the Owner only once W4-5's external check or a log alert watches for the two ceiling log messages | Accepted for the pilot; the Owner may ask for a higher ceiling |
 | Funding Telegram Gateway goes through Fragment, which probably takes TON. Paying in cryptocurrency may have accounting and legal sides in Uzbekistan | Open, Owner |
 | A Shopper or Courier replaced before starting is not notified; `docs/05` section 18 has no such event. They see the order leave their list on the next refresh | Accepted; the pilot shows whether it matters |
 | A push is best-effort (`BR-NOTIF-001`). A phone that is off, or that has notifications disabled, learns at the next opening, and the screens keep refreshing themselves | Accepted |
@@ -226,6 +226,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | The stack's env file (`APP_KEY`, `PHONE_FINGERPRINT_KEY`) is in no backup. The Owner keeps it with the restic password; W4-5's Owner checklist says so | Open, W4-5 |
 | A stale `success`: a stopped container or a killed run leaves the previous status. The deploy check and the external check of W4-5 test the age of `finished_at` | Open, W4-5 |
 | A restore from an older snapshot brings back Customers who erased their accounts after it (`BR-ROLE-013`). The promise stands; the restore runbook of W4-5 re-applies erasures made after the snapshot, the mechanism decided there | Open, W4-5 |
+| A staff account made on the reviewer phone before `LOGIN_CODE_REVIEWER_PHONE` was set keeps its password sign-in: the code paths refuse that phone, `AuthenticateStaff` does not. W4-6 checks, when the "Проверка Google" Customer account is created, that no staff account holds that phone | Open, W4-6 |
 | iOS push: the code is written and the configuration waits for a Mac and an Apple account (`docs/06`) | Open until a Mac exists |
 | Carried from Wave 3: the scheduler runs nowhere until Wave 4 deploys one (`DL-54` (8)) | Closes with W4-5 |
 | `worker` and `scheduler` do not mount the images volume; a future job that writes images must get it (W4-2 review) | Open, note |

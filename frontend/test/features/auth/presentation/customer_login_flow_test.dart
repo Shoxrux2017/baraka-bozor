@@ -202,6 +202,30 @@ void main() {
     },
   );
 
+  testWidgets('a code that cannot be delivered shows its Russian text', (
+    WidgetTester tester,
+  ) async {
+    repository.requestFailure = refusal(409, 'code_delivery_unavailable');
+    await openApp(tester);
+    await tester.tap(find.byIcon(Icons.language));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(CheckedPopupMenuItem<AppLanguage>).last);
+    await tester.pumpAndSettle();
+
+    await requestCode(tester, '901234567');
+
+    expect(failure, findsOneWidget);
+    expect(
+      find.text(
+        'Код отправляется в Telegram, но этот номер в Telegram не найден. '
+        'Пока без Telegram код получить нельзя',
+      ),
+      findsOneWidget,
+    );
+    expect(codeField, findsNothing);
+    expect(phoneField, findsOneWidget);
+  });
+
   testWidgets('a resend waits for the server timer, then sends again', (
     WidgetTester tester,
   ) async {

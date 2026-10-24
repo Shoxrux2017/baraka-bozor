@@ -49,4 +49,20 @@ final class LoginCodePolicy
     {
         return preg_match(self::CODE_PATTERN, $code) === 1;
     }
+
+    /**
+     * Six identical digits, or each digit one more than the one before, or one
+     * less: a fixed code that anyone would try first (`DL-105`).
+     */
+    public static function isGuessable(#[\SensitiveParameter] string $code): bool
+    {
+        $digits = array_map('intval', str_split($code));
+        $steps = [];
+
+        for ($i = 1; $i < count($digits); $i++) {
+            $steps[] = $digits[$i] - $digits[$i - 1];
+        }
+
+        return count(array_unique($steps)) === 1 && in_array($steps[0] ?? null, [0, 1, -1], true);
+    }
 }

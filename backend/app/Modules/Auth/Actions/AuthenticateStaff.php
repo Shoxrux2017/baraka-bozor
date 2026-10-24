@@ -8,6 +8,7 @@ use App\Exceptions\ApiException;
 use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Modules\Auth\StaffAccounts;
+use App\Support\Http\ClientAddress;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -44,7 +45,7 @@ final class AuthenticateStaff
     public function __invoke(string $phone, #[\SensitiveParameter] string $password, string $ip): IssuedSession
     {
         $phoneKey = "staff-login:phone:{$phone}";
-        $ipKey = "staff-login:ip:{$ip}";
+        $ipKey = 'staff-login:ip:'.ClientAddress::limiterKey($ip);
 
         foreach ([[$phoneKey, self::PHONE_ATTEMPTS], [$ipKey, self::IP_ATTEMPTS]] as [$key, $maxAttempts]) {
             if ($this->limiter->tooManyAttempts($key, $maxAttempts)) {

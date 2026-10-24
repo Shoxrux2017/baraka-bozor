@@ -8,6 +8,7 @@ use App\Exceptions\ApiException;
 use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Models\User;
+use App\Modules\Auth\TestPhones;
 use App\Modules\Staff\StaffDirectory;
 use App\Modules\Staff\TemporaryCredentials;
 use App\Modules\Staff\TemporaryPassword;
@@ -18,12 +19,19 @@ use Illuminate\Support\Facades\DB;
  * Admin creates a staff account (`docs/04` section 32, `BR-ROLE-004`,
  * `BR-ROLE-005`, `BR-ROLE-010`): no other active staff account may hold the
  * phone, the server generates a temporary password, and the gate is set so
- * the holder must choose their own before doing anything else.
+ * the holder must choose their own before doing anything else. The store
+ * reviewer's phone takes none (`DL-105`): `409 phone_reserved`.
  */
 final class CreateStaff
 {
+    public function __construct(private readonly TestPhones $testPhones) {}
+
     public function __invoke(User $admin, string $fullName, string $phone, Role $role): TemporaryCredentials
     {
+        if ($this->testPhones->isReviewer($phone)) {
+            throw ApiException::conflict('phone_reserved');
+        }
+
         if (StaffDirectory::activeHolderExists($phone)) {
             throw ApiException::conflict('phone_already_active');
         }

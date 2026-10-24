@@ -7,6 +7,7 @@ namespace App\Modules\Auth;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryGateway;
 use App\Modules\Auth\CodeDelivery\FakeCodeDelivery;
 use App\Modules\Auth\CodeDelivery\FakeCodeSink;
+use App\Modules\Auth\CodeDelivery\TelegramGatewayCodeDelivery;
 use App\Modules\Auth\Http\Middleware\EnsureAccountActive;
 use App\Modules\Auth\Http\Middleware\EnsurePasswordChanged;
 use App\Modules\Auth\Http\Middleware\RequireRole;
@@ -47,12 +48,24 @@ final class AuthServiceProvider extends ServiceProvider
 
             return match ($driver) {
                 'fake' => $app->make(FakeCodeDelivery::class),
-                // `telegram` arrives with Wave 4 and `sms` with Wave 5.
+                'telegram' => new TelegramGatewayCodeDelivery(self::telegramToken()),
+                // `sms` arrives with Wave 5.
                 default => throw new RuntimeException(
-                    'LOGIN_CODE_DRIVER is '.json_encode($driver).'; only "fake" exists yet, and production must set it explicitly.'
+                    'LOGIN_CODE_DRIVER is '.json_encode($driver).'; only "fake" and "telegram" exist yet, and production must set it explicitly.'
                 ),
             };
         });
+    }
+
+    private static function telegramToken(): string
+    {
+        $token = config('services.telegram_gateway.token');
+
+        if (! is_string($token) || trim($token) === '') {
+            throw new RuntimeException('LOGIN_CODE_DRIVER is "telegram" but TELEGRAM_GATEWAY_TOKEN is empty.');
+        }
+
+        return $token;
     }
 
     public function boot(Router $router): void

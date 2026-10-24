@@ -7,6 +7,7 @@ namespace App\Modules\Auth\Actions;
 use App\Exceptions\ApiException;
 use App\Models\Enums\UserStatus;
 use App\Modules\Auth\Models\StaffLoginStep;
+use App\Support\Http\ClientAddress;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -34,7 +35,7 @@ final class AuthenticateStaffStep
         #[\SensitiveParameter] string $password,
         string $ip,
     ): IssuedSession {
-        $ipKey = "staff-step:ip:{$ip}";
+        $ipKey = 'staff-step:ip:'.ClientAddress::limiterKey($ip);
 
         if ($this->limiter->tooManyAttempts($ipKey, self::IP_ATTEMPTS)) {
             throw ApiException::rateLimited($this->limiter->availableIn($ipKey));

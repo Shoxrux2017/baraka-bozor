@@ -90,6 +90,9 @@ void main() {
               l.errorOrderEditingLocked,
           'order_cancellation_not_allowed': (AppLocalizations l) =>
               l.errorOrderCancellationNotAllowed,
+          'code_delivery_unavailable': (AppLocalizations l) =>
+              l.errorCodeDeliveryUnavailable,
+          'phone_reserved': (AppLocalizations l) => l.errorPhoneReserved,
         };
 
     for (final MapEntry<String, String Function(AppLocalizations)> entry
@@ -112,6 +115,27 @@ void main() {
         reason: '${entry.key} must be translated, not copied',
       );
     }
+  });
+
+  test('the two Telegram Gateway refusals have their own texts', () {
+    expect(
+      failureText(ru, refusal(409, 'code_delivery_unavailable')),
+      'Код отправляется в Telegram, но этот номер в Telegram не найден. '
+      'Пока без Telegram код получить нельзя',
+    );
+    expect(
+      failureText(uz, refusal(409, 'code_delivery_unavailable')),
+      "Kod Telegramga yuboriladi, lekin bu raqam Telegramda topilmadi. "
+      "Hozircha Telegramsiz kod olib bo'lmaydi",
+    );
+    expect(
+      failureText(ru, refusal(409, 'phone_reserved')),
+      'Этот номер отведён для проверки приложения в Google Play',
+    );
+    expect(
+      failureText(uz, refusal(409, 'phone_reserved')),
+      "Bu raqam ilovani Google Play'da tekshirish uchun ajratilgan",
+    );
   });
 
   test('a code without a text of its own falls back on its status', () {

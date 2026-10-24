@@ -26,7 +26,8 @@ final class ProductionConfigurationTest extends TestCase
             'app.debug' => false,
             'app.url' => 'https://api.example.test',
             'database.connections.pgsql.password' => 'db-secret-value',
-            'login_codes.driver' => 'fake',
+            'login_codes.driver' => 'telegram',
+            'services.telegram_gateway.token' => 'tg-test-token',
             'cors.allowed_origins' => ['https://panel.example.test'],
             'trustedproxy.proxies' => ['172.30.250.0/28'],
         ]);
@@ -49,6 +50,7 @@ final class ProductionConfigurationTest extends TestCase
             'debug on' => ['app.debug', true, 'APP_DEBUG'],
             'empty password' => ['database.connections.pgsql.password', '', 'DB_PASSWORD'],
             'no driver' => ['login_codes.driver', null, 'LOGIN_CODE_DRIVER'],
+            'fake driver' => ['login_codes.driver', 'fake', 'LOGIN_CODE_DRIVER'],
             'empty url' => ['app.url', '', 'APP_URL'],
             'http url' => ['app.url', 'http://api.example.test', 'APP_URL'],
             'two origins' => ['cors.allowed_origins', ['https://a.example.test', 'https://b.example.test'], 'CORS_ALLOWED_ORIGINS'],
@@ -84,6 +86,47 @@ final class ProductionConfigurationTest extends TestCase
             $this->assertStringContainsString('APP_KEY', $e->getMessage());
             $this->assertStringNotContainsString('db-secret-value', $e->getMessage());
         }
+    }
+
+    public function test_the_telegram_driver_without_a_token_is_named(): void
+    {
+        config(['login_codes.driver' => 'telegram', 'services.telegram_gateway.token' => '']);
+
+        $this->assertSame(['TELEGRAM_GATEWAY_TOKEN'], ProductionConfiguration::problems());
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('TELEGRAM_GATEWAY_TOKEN');
+
+        ProductionConfiguration::assertComplete($this->app);
+    }
+
+    public function test_the_telegram_driver_with_a_token_passes(): void
+    {
+        config(['login_codes.driver' => 'telegram', 'services.telegram_gateway.token' => 'tg-test-token']);
+        $this->assertSame([], ProductionConfiguration::problems());
+        ProductionConfiguration::assertComplete($this->app);
+    }
+
+    /**
+     * @return array<string, array{mixed, bool}>
+     */
+    public static function dailyLimits(): array
+    {
+        return [
+            'zero' => [0, true],
+            'negative' => [-1, true],
+            'text' => ['abc', true],
+            'five hundred' => [500, false],
+            'default' => [null, false],
+        ];
+    }
+
+    #[DataProvider('dailyLimits')]
+    public function test_the_daily_limit_must_be_a_positive_integer(mixed $value, bool $named): void
+    {
+        config(['login_codes.daily_limit' => $value ?? config('login_codes.daily_limit')]);
+
+        $this->assertSame($named ? ['LOGIN_CODE_DAILY_LIMIT'] : [], ProductionConfiguration::problems());
     }
 
     public function test_an_unknown_driver_fails_at_the_check(): void

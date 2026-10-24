@@ -6,6 +6,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\Enums\Role;
 use App\Models\User;
+use App\Modules\Auth\Actions\AuthenticateStaff;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -210,6 +211,19 @@ final class StaffLoginTest extends TestCase
 
         // A different address walks in unaffected.
         $this->assertRefused($this->login('+998901111111', 'wrong', '203.0.113.11'), 401, 'invalid_credentials');
+    }
+
+    public function test_the_address_limit_counts_an_ipv6_prefix(): void
+    {
+        for ($attempt = 1; $attempt <= AuthenticateStaff::IP_ATTEMPTS; $attempt++) {
+            $this->assertRefused(
+                $this->login(sprintf('+99890%07d', $attempt), 'wrong', '2001:db8:5:6::'.dechex($attempt)),
+                401,
+                'invalid_credentials'
+            );
+        }
+
+        $this->assertRefused($this->login('+998901111111', 'wrong', '2001:db8:5:6:ffff::1'), 429, 'rate_limited');
     }
 
     public function test_a_successful_login_does_not_clear_the_address_counter(): void

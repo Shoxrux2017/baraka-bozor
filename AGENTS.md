@@ -50,7 +50,7 @@ The backend is authoritative for identity and role, active or blocked state and 
 
 A valid UUID never grants access. Scope every protected record to the actor before returning or mutating it. Where the API contract requires scope-safe not-found behaviour, do not reveal whether an inaccessible record exists.
 
-Never expose or log passwords, login codes, bearer tokens, merchant credentials, payment secrets, private keys, raw provider payloads, or Customer PII beyond what a screen needs. A login code is never emitted to a client, a log or a header in any environment. The configured test phone numbers use a fixed code that is never generated or delivered (`DL-2`, topic 7); that is not an emission, and the list is empty in production.
+Never expose or log passwords, login codes, bearer tokens, merchant credentials, payment secrets, private keys, raw provider payloads, or Customer PII beyond what a screen needs. A login code is never emitted to a client, a log or a header in any environment. The configured test phone numbers use a fixed code that is never generated or delivered (`DL-2`, topic 7); that is not an emission, and the list is empty in production. The one exception is the store reviewer's phone with its own fixed code (`DL-105`, `DL-110` (6)).
 
 ## 6. Financial and Historical Integrity
 

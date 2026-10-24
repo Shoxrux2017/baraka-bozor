@@ -400,6 +400,8 @@
   "errorLastActiveAdminRequired": "Нельзя заблокировать последнего активного администратора",
   "errorSelfResetNotAllowed": "Свой пароль здесь сбросить нельзя",
   "errorPhoneAlreadyActive": "Этот номер уже у другого активного сотрудника",
+  "errorCodeDeliveryUnavailable": "Код отправляется в Telegram, но этот номер в Telegram не найден. Пока без Telegram код получить нельзя",
+  "errorPhoneReserved": "Этот номер отведён для проверки приложения в Google Play",
   "catalogSearchHint": "Найти: огурцы, лепёшки…",
   "deliveryAddressEmptyHint": "Куда привезти заказ",
   "homeCategories": "Категории",

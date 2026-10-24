@@ -45,8 +45,16 @@ final class ProductionConfiguration
             $problems[] = 'DB_PASSWORD';
         }
 
-        if (! is_string(config('login_codes.driver')) || self::blank(config('login_codes.driver'))) {
+        if (! is_string(config('login_codes.driver')) || self::blank(config('login_codes.driver')) || config('login_codes.driver') === 'fake') {
             $problems[] = 'LOGIN_CODE_DRIVER';
+        }
+
+        if (config('login_codes.driver') === 'telegram' && self::blank(config('services.telegram_gateway.token'))) {
+            $problems[] = 'TELEGRAM_GATEWAY_TOKEN';
+        }
+
+        if (filter_var(config('login_codes.daily_limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
+            $problems[] = 'LOGIN_CODE_DAILY_LIMIT';
         }
 
         $origins = config('cors.allowed_origins');

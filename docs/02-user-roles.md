@@ -22,7 +22,7 @@ The backend is authoritative for role, account status, record ownership, assignm
 
 ### Mobile app (Customer, Shopper, Courier)
 
-Everyone enters with phone number plus a six-digit login code (`DL-76`). The code is delivered to the Telegram account when the number has one, otherwise by SMS once an SMS provider exists; until then a number without Telegram cannot sign in (`DL-104` (9)). The Customer account is created on the first verified login, and a new Customer gives a name once. A Shopper or Courier, after the code, gives the staff password (`staff_step`); the password alone never signs them in. Configured test phone numbers accept a fixed code without any delivery; the list is empty in production.
+Everyone enters with phone number plus a six-digit login code (`DL-76`). The code is delivered to the Telegram account when the number has one, otherwise by SMS once an SMS provider exists; until then a number without Telegram cannot sign in (`DL-104` (9)). The Customer account is created on the first verified login, and a new Customer gives a name once. A Shopper or Courier, after the code, gives the staff password (`staff_step`); the password alone never signs them in. Configured test phone numbers accept a fixed code without any delivery; the list is empty in production, apart from the one store reviewer's phone, which has its own fixed code and opens a Customer account only (`DL-105`, `DL-110` (6)).
 
 ### Web panel (Operator, Admin, Manager)
 

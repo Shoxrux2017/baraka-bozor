@@ -7,9 +7,12 @@ namespace App\Modules\Auth\Actions;
 use App\Exceptions\ApiException;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryFailed;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryGateway;
+use App\Modules\Auth\CodeDelivery\CodeUndeliverable;
+use App\Modules\Auth\LoginCodeCeiling;
 use App\Modules\Auth\LoginCodePolicy;
 use App\Modules\Auth\Models\LoginChallenge;
 use App\Modules\Auth\TestPhones;
+use App\Support\Http\ClientAddress;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -20,7 +23,8 @@ use Illuminate\Support\Facades\Log;
  *
  * Creates a challenge for the phone and hands the code to the delivery
  * gateway. Nothing in the response, the log or the database says whether an
- * account exists for the phone, and nothing anywhere carries the code except
+ * account exists for the phone (except the daily ceiling's refusal, `docs/09`
+ * Section 6), and nothing anywhere carries the code except
  * the gateway call and the hash.
  *
  * The counters are incremented before anything else happens and the new count
@@ -34,7 +38,8 @@ use Illuminate\Support\Facades\Log;
  * would end the lock early.
  *
  * A configured test phone gets a challenge for the fixed test code and no
- * delivery at all; the counters apply to it like to any other phone.
+ * delivery at all; the counters apply to it like to any other phone, except
+ * the daily ceiling of paid checks, which only a real delivery can spend.
  */
 final class RequestCustomerLoginCode
 {
@@ -44,13 +49,14 @@ final class RequestCustomerLoginCode
         private readonly RateLimiter $limiter,
         private readonly CodeDeliveryGateway $gateway,
         private readonly TestPhones $testPhones,
+        private readonly LoginCodeCeiling $ceiling,
     ) {}
 
     public function __invoke(string $phone, string $ip, string $purpose = LoginChallenge::PURPOSE_CUSTOMER_LOGIN): RequestedLoginCode
     {
         // Broadest first: a request refused on the address alone charges the
         // phone nothing, so one noisy source cannot use up a phone's window.
-        $this->reserve("login-code:ip:{$ip}", self::IP_REQUESTS_PER_MINUTE, 60, 'rate_limited');
+        $this->reserve('login-code:ip:'.ClientAddress::limiterKey($ip), self::IP_REQUESTS_PER_MINUTE, 60, 'rate_limited');
 
         // A locked phone gets no new code: a resend would end the lock early.
         // Checked before the hour slot, so a refused request costs the phone
@@ -64,6 +70,10 @@ final class RequestCustomerLoginCode
 
         $testCode = $this->testPhones->codeFor($phone);
         $code = $testCode ?? self::generate();
+
+        if ($testCode === null) {
+            $this->ceiling->reserve($phone);
+        }
 
         $channel = $testCode !== null ? TestPhones::CHANNEL : $this->deliver($phone, $code);
 
@@ -119,6 +129,10 @@ final class RequestCustomerLoginCode
             Log::warning('Login code delivery failed.', ['gateway' => $this->gateway::class]);
 
             throw ApiException::unavailable('provider_unavailable');
+        } catch (CodeUndeliverable) {
+            // Not an outage and nothing to debug: the number has no channel.
+            // The send slot is spent, so asking again and again is bounded.
+            throw ApiException::conflict('code_delivery_unavailable');
         }
     }
 
