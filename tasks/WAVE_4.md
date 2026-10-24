@@ -48,7 +48,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | Merged (#116) |
 | W4-8 | Firebase Cloud Messaging sender; device pruning | Firebase (verification) | Planned |
 | W4-9 | Push in the app: Firebase token, permission, banners, opening the order | Firebase | Planned |
-| W4-10 | Carried P3 fixes | — | Done |
+| W4-10 | Carried P3 fixes | — | Merged (#117) |
 | W4-11 | Wave closure and the pilot checklist | all | Planned |
 
 The order of work is the table's. W4-6 starts as soon as W4-5 is live, because its fourteen days run while W4-7 to W4-10 are built; testers then receive the later builds through the track. W4-6's preparation (release signing, version code, build script, store texts) may run before W4-5; the upload waits for it (`DL-112` (8)).
