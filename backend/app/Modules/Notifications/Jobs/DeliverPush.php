@@ -16,6 +16,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -93,7 +94,7 @@ final class DeliverPush implements ShouldQueue
             );
 
             if ($expiresAt->getTimestamp() <= now()->getTimestamp() + $delay) {
-                $this->finish($row, NotificationDeliveryStatus::Failed, $result->errorCode);
+                $this->giveUp($row, $result->errorCode);
 
                 return;
             }
@@ -102,6 +103,12 @@ final class DeliverPush implements ShouldQueue
             $row->save();
 
             $this->release($delay);
+
+            return;
+        }
+
+        if ($result->retryable) {
+            $this->giveUp($row, $result->errorCode);
 
             return;
         }
@@ -116,6 +123,16 @@ final class DeliverPush implements ShouldQueue
         if ($row !== null && $row->status === NotificationDeliveryStatus::Queued) {
             $this->finish($row, NotificationDeliveryStatus::Failed, 'exception');
         }
+    }
+
+    /**
+     * A transient failure that ends the row: the only trace of a blocked
+     * network or a persistent refusal is this reason, never an id or a token.
+     */
+    private function giveUp(NotificationDelivery $row, ?string $errorCode): void
+    {
+        Log::warning('A push was given up.', ['reason' => $errorCode]);
+        $this->finish($row, NotificationDeliveryStatus::Failed, $errorCode);
     }
 
     private function finish(NotificationDelivery $row, NotificationDeliveryStatus $status, ?string $errorCode): void

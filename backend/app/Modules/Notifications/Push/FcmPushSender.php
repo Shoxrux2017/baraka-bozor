@@ -21,9 +21,10 @@ use Psr\Http\Message\ResponseInterface;
  * Section 24, `DL-104`.
  *
  * Google's library signs the service-account JWT and caches the OAuth token
- * for its hour; its HTTP calls go through Laravel's `Http` so a test can fake
- * them. The sender is a container singleton, so a worker fetches one token an
- * hour. A `401` that is not a third-party (APNs) failure drops the cached
+ * for the library's default lifetime; its HTTP calls go through Laravel's
+ * `Http` so a test can fake them. The sender is a container singleton, so a
+ * worker fetches a token about every 25 minutes, the library's default cache
+ * lifetime. A `401` that is not a third-party (APNs) failure drops the cached
  * token and asks for a retry.
  *
  * Answers map onto `PushSendResult`: an unregistered or malformed registration
@@ -75,7 +76,14 @@ final class FcmPushSender implements PushSender
         $accessToken = $answer['access_token'] ?? null;
 
         if (! is_string($accessToken) || $accessToken === '') {
-            return $this->failed('auth_failed');
+            $oauthError = $answer['error'] ?? null;
+
+            return $this->failed(
+                'auth_failed',
+                is_string($oauthError) && preg_match('/^[a-z_]{1,64}\z/', $oauthError) === 1
+                    ? ['oauth_error' => $oauthError]
+                    : [],
+            );
         }
 
         try {
@@ -216,9 +224,12 @@ final class FcmPushSender implements PushSender
         return $date === false ? null : max(0, $date->getTimestamp() - now()->getTimestamp());
     }
 
-    private function failed(string $code): PushSendResult
+    /**
+     * @param  array<string, string>  $context
+     */
+    private function failed(string $code, array $context = []): PushSendResult
     {
-        Log::warning(self::LOG_MESSAGE, ['reason' => $code]);
+        Log::warning(self::LOG_MESSAGE, ['reason' => $code, ...$context]);
 
         return PushSendResult::failed($code);
     }

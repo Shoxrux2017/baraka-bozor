@@ -11,7 +11,9 @@ use App\Modules\Notifications\Jobs\DeliverPush;
 use App\Modules\Notifications\Push\FakePushSender;
 use App\Modules\Notifications\Push\PushSendResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Queue\Jobs\FakeJob;
+use Illuminate\Support\Facades\Event;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -21,11 +23,34 @@ final class DeliverPushTest extends TestCase
 
     private FakePushSender $push;
 
+    /** @var list<array{level: string, message: string, context: array<string, mixed>}> */
+    private array $logs = [];
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->push = $this->app->make(FakePushSender::class);
+        $this->logs = [];
+
+        Event::listen(MessageLogged::class, function (MessageLogged $event): void {
+            $this->logs[] = ['level' => $event->level, 'message' => $event->message, 'context' => $event->context];
+        });
+    }
+
+    /**
+     * @return list<array<string, mixed>> the contexts of the "given up" warnings
+     */
+    private function givenUp(): array
+    {
+        $contexts = [];
+        foreach ($this->logs as $log) {
+            if ($log['level'] === 'warning' && $log['message'] === 'A push was given up.') {
+                $contexts[] = $log['context'];
+            }
+        }
+
+        return $contexts;
     }
 
     /**
@@ -236,6 +261,47 @@ final class DeliverPushTest extends TestCase
         $this->assertSame(NotificationDeliveryStatus::Failed, $row->status);
         $this->assertSame('UNAVAILABLE', $row->last_error_code);
         $job->assertNotReleased();
+    }
+
+    public function test_a_push_given_up_after_its_retries_is_logged(): void
+    {
+        [$row] = $this->queuedRow([], ['attempt_count' => 3]);
+        $this->push->answerNext(PushSendResult::retry('UNAVAILABLE'));
+
+        $this->job($row, 4)->handle($this->push);
+
+        $this->assertSame([['reason' => 'UNAVAILABLE']], $this->givenUp());
+    }
+
+    public function test_a_retry_past_the_hour_is_logged_as_given_up(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        [$row] = $this->queuedRow();
+        $this->push->answerNext(PushSendResult::retry('UNAVAILABLE', 3700));
+
+        $this->job($row)->handle($this->push);
+
+        $this->assertSame([['reason' => 'UNAVAILABLE']], $this->givenUp());
+    }
+
+    public function test_a_released_retry_logs_nothing(): void
+    {
+        [$row] = $this->queuedRow();
+        $this->push->answerNext(PushSendResult::retry('UNAVAILABLE'));
+
+        $this->job($row)->handle($this->push);
+
+        $this->assertSame([], $this->givenUp());
+    }
+
+    public function test_a_permanent_failure_is_not_logged_by_the_job(): void
+    {
+        [$row] = $this->queuedRow();
+        $this->push->answerNext(PushSendResult::failed('INVALID_ARGUMENT'));
+
+        $this->job($row)->handle($this->push);
+
+        $this->assertSame([], $this->givenUp());
     }
 
     public function test_a_retry_near_the_end_of_the_hour_fits_only_while_the_delay_does(): void

@@ -298,8 +298,20 @@ final class FcmPushSenderTest extends TestCase
 
         $this->assertFalse($result->retryable);
         $this->assertSame('auth_failed', $result->errorCode);
-        $this->assertSame([['reason' => 'auth_failed']], $this->warnings());
+        $this->assertSame([['reason' => 'auth_failed', 'oauth_error' => 'invalid_grant']], $this->warnings());
         Http::assertSentCount(1);
+    }
+
+    public function test_a_token_endpoint_error_that_is_not_a_code_is_not_logged(): void
+    {
+        Http::fake([
+            self::TOKEN_URL => Http::response(['error' => 'Not A Code!', 'error_description' => 'Invalid JWT Signature.'], 400),
+        ]);
+
+        $result = $this->sender()->send($this->pushToken, $this->message());
+
+        $this->assertSame('auth_failed', $result->errorCode);
+        $this->assertSame([['reason' => 'auth_failed']], $this->warnings());
     }
 
     public function test_an_unavailable_token_endpoint_is_retried(): void
