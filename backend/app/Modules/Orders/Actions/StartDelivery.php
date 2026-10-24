@@ -7,11 +7,13 @@ namespace App\Modules\Orders\Actions;
 use App\Exceptions\ApiException;
 use App\Models\Enums\CancellationRequestStatus;
 use App\Models\Enums\HistoryActorType;
+use App\Models\Enums\NotificationType;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 use App\Modules\Orders\CourierOrders;
 use Illuminate\Support\Facades\DB;
 
@@ -33,12 +35,15 @@ use Illuminate\Support\Facades\DB;
  *   records `delivery_started_at` and `delay_at`, the threshold snapshotted
  *   on the order after it, past which the order needs the Operator's
  *   attention (`courier_delayed`);
- * - one `status_changed` row records the move (`DL-54` (23)).
+ * - one `status_changed` row records the move (`DL-54` (23)), and the Customer
+ *   is told the Courier has set off (`courier_started`).
  *
  * A started delivery started again is a natural repeat (`BR-CON-005`).
  */
 final class StartDelivery
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function start(User $courier, string $orderId): Order
     {
         return DB::transaction(function () use ($courier, $orderId): Order {
@@ -73,6 +78,8 @@ final class StartDelivery
                 'actor_user_id' => $courier->id,
                 'details' => ['assignment_id' => $assignment->id],
             ])->save();
+
+            $this->notifications->notify(NotificationType::CourierStarted, $order->customer_id, $order, $courier->id);
 
             return $order;
         });

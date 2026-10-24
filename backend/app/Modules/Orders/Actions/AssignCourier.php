@@ -7,6 +7,7 @@ namespace App\Modules\Orders\Actions;
 use App\Exceptions\ApiException;
 use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\HistoryActorType;
+use App\Models\Enums\NotificationType;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\Role;
@@ -15,6 +16,7 @@ use App\Models\Order;
 use App\Models\OrderCourierAssignment;
 use App\Models\OrderHistory;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 use App\Support\Scope\ScopedLookup;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -43,10 +45,13 @@ use Illuminate\Validation\ValidationException;
  *   `delivery_assigned` or `courier_reassigned`, carries the assignment in
  *   its `details`.
  *
- * No push is sent in this wave (`DL-37` (15)).
+ * The new courier is told (`delivery_assigned`) right after that row, in the same
+ * transaction; a natural repeat returns earlier and tells nobody.
  */
 final class AssignCourier
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function assign(User $staff, string $orderId, string $courierId): Order
     {
         return $this->change($staff, $orderId, $courierId, replaces: null);
@@ -127,6 +132,8 @@ final class AssignCourier
                 'actor_user_id' => $staff->id,
                 'details' => $details,
             ])->save();
+
+            $this->notifications->notify(NotificationType::DeliveryAssigned, $courier->id, $order, $staff->id);
 
             return $order->unsetRelation('currentCourierAssignment');
         });

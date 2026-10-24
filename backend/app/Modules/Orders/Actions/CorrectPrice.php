@@ -6,6 +6,7 @@ namespace App\Modules\Orders\Actions;
 
 use App\Exceptions\ApiException;
 use App\Models\Enums\HistoryActorType;
+use App\Models\Enums\NotificationType;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
@@ -16,6 +17,7 @@ use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\OrderItemPriceCorrection;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 use App\Modules\Orders\FinalAmounts;
 use App\Modules\Orders\PriceBound;
 use App\Support\Money\MoneyCalculator;
@@ -47,13 +49,16 @@ use Illuminate\Support\Facades\DB;
  *
  * One transaction writes the correction row, the line's new price and total,
  * the final amounts once shopping has completed, and one `price_corrected`
- * history row with the reason (`DL-54` (23)). The order answers as the board
- * shows it.
+ * history row with the reason (`DL-54` (23)). When the final total was set
+ * and changes, the Customer is told the new amount (`shopping_completed`).
+ * The order answers as the board shows it.
  */
 final class CorrectPrice
 {
     /** The states in which the Courier carries the amount or it is settled. */
     private const LOCKED = [OrderStatus::OnTheWay, OrderStatus::Completed, OrderStatus::Cancelled];
+
+    public function __construct(private readonly NotificationService $notifications) {}
 
     public function correct(User $admin, string $orderId, string $itemId, int $actualMarketPriceUzs, string $reason): Order
     {
@@ -115,7 +120,8 @@ final class CorrectPrice
                 'new_billable_unit_price_uzs' => $billable,
                 'line_total_uzs' => $line->line_total_uzs,
             ];
-            if ($order->final_total_uzs !== null) {
+            $totalBefore = $order->final_total_uzs;
+            if ($totalBefore !== null) {
                 FinalAmounts::fill($order);
                 $order->save();
                 $details['final_total_uzs'] = $order->final_total_uzs;
@@ -130,6 +136,10 @@ final class CorrectPrice
                 'note' => $reason,
                 'details' => $details,
             ])->save();
+
+            if ($totalBefore !== null && $order->final_total_uzs !== $totalBefore) {
+                $this->notifications->notify(NotificationType::ShoppingCompleted, $order->customer_id, $order, $admin->id);
+            }
 
             return $order;
         });

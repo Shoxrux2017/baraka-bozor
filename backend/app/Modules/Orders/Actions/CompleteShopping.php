@@ -8,6 +8,7 @@ use App\Exceptions\ApiException;
 use App\Models\Enums\ApprovalStatus;
 use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\HistoryActorType;
+use App\Models\Enums\NotificationType;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
@@ -15,6 +16,7 @@ use App\Models\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 use App\Modules\Orders\FinalAmounts;
 use App\Modules\Orders\ShopperLine;
 use App\Modules\Orders\ShopperOrders;
@@ -38,7 +40,8 @@ use Illuminate\Database\Eloquent\Builder;
  *   exists before it (`DL-54` (1)); one met here is refused rather than sent
  *   out unpaid;
  * - the assignment ends `completed`, so the order leaves the Shopper's list;
- * - one `status_changed` row records the move with the amounts (`DL-54` (23)).
+ * - one `status_changed` row records the move with the amounts (`DL-54` (23)),
+ *   and the Customer is told with the final total (`shopping_completed`).
  *
  * An order with nothing bought never reaches completion: the action that
  * removed its last line cancelled it (`DL-54` (7)). One met here is refused
@@ -51,7 +54,10 @@ final class CompleteShopping
 {
     public const OPERATION = 'shopper.complete';
 
-    public function __construct(private readonly IdempotencyStore $idempotency) {}
+    public function __construct(
+        private readonly IdempotencyStore $idempotency,
+        private readonly NotificationService $notifications,
+    ) {}
 
     public function complete(User $shopper, string $orderId, string $idempotencyKey): Order
     {
@@ -121,6 +127,8 @@ final class CompleteShopping
                 'final_total_uzs' => $order->final_total_uzs,
             ],
         ])->save();
+
+        $this->notifications->notify(NotificationType::ShoppingCompleted, $order->customer_id, $order, $shopper->id);
 
         return $order;
     }
