@@ -126,6 +126,7 @@ final class TelegramGatewayCodeDeliveryTest extends TestCase
         return [
             'token invalid' => [['ok' => false, 'error' => 'ACCESS_TOKEN_INVALID'], 401, 'ACCESS_TOKEN_INVALID'],
             'balance' => [['ok' => false, 'error' => 'BALANCE_NOT_ENOUGH'], 400, 'BALANCE_NOT_ENOUGH'],
+            'balance under a 200' => [['ok' => false, 'error' => 'BALANCE_NOT_ENOUGH'], 200, 'BALANCE_NOT_ENOUGH'],
             'flood' => [['ok' => false, 'error' => 'FLOOD_WAIT'], 429, 'FLOOD_WAIT'],
             'error with digits' => [['ok' => false, 'error' => 'CODE_123456'], 400, 'unreadable'],
             'html 502' => ['<html>Bad gateway</html>', 502, 'http_502'],
