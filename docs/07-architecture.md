@@ -181,7 +181,7 @@ A `refunds` row is created when a paid online order is cancelled. Completion is 
 
 `CodeDeliveryGateway` with `TelegramGatewayCodeDelivery`, `EskizSmsCodeDelivery` and `FakeCodeDelivery`. No code value is ever logged or returned. Provider credentials are configuration.
 
-Telegram Gateway carries the backend's own code: `checkSendAbility` for the phone, which Telegram charges when it confirms the phone, then `sendVerificationMessage` with that request's id, the code and a five-minute `ttl`, free under that id and refunded when the code is not delivered in time. Each call has a 3-second connect and a 5-second total timeout and is not retried: a confirmed check followed by a failed send is paid for nothing, so a retry would only pay again (`DL-110` (1), (2)). No delivery-report endpoint exists and no `sender_username` is set (`DL-104` (9), `DL-110` (7)).
+Telegram Gateway carries the backend's own code: `checkSendAbility` for the phone, which Telegram charges when it confirms the phone, then `sendVerificationMessage` with that request's id, the code and a five-minute `ttl`, free under that id and refunded when the code is not delivered in time. Each call has a 3-second connect and a 5-second total timeout and is not retried: a confirmed check followed by a failed send is paid for nothing, so a retry would only pay again (`DL-110` (1), (2)). No delivery-report endpoint exists and no `sender_username` is set (`DL-104` (9), `DL-110` (8)).
 
 ## 24. Notifications
 
