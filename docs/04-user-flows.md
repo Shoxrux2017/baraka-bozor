@@ -162,7 +162,7 @@ Thirty minutes after `final_payment_pending` began with no payment, the order be
 
 ## 25. Cancellation Request During Fulfilment
 
-From `shopping` up to and including `delivery_assigned`, the Customer files a cancellation request with a reason; at most one pending request per order. An Operator or Admin approves or rejects it. Approve: the order becomes `cancelled`, the current assignment ends, the assignee is notified, and if an online payment was paid a manual refund obligation for the paid amount is created. Reject: the order continues. From `on_the_way` the request is refused with `order_cancellation_not_allowed`.
+From `shopping` up to and including `delivery_assigned`, the Customer files a cancellation request with a reason; at most one pending request per order. An Operator or Admin approves or rejects it. Approve: the order becomes `cancelled`, the current assignment ends, the assignee is notified, and if an online payment was paid a manual refund obligation for the paid amount is created. Reject: the order continues, and the Customer is told. From `on_the_way` the request is refused with `order_cancellation_not_allowed`.
 
 The order's page shows the request with the Customer's reason and where it stands: waiting, approved, rejected, or closed when the order ended otherwise first (`DL-71`).
 

@@ -6,6 +6,7 @@ namespace App\Modules\Orders\Actions;
 
 use App\Models\Enums\CartStatus;
 use App\Models\Enums\HistoryActorType;
+use App\Models\Enums\NotificationType;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
@@ -14,6 +15,7 @@ use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\User;
 use App\Modules\Customer\CustomerAddresses;
+use App\Modules\Notifications\NotificationService;
 use App\Modules\Orders\CartLine;
 use App\Modules\Orders\Checkout\CheckoutState;
 use App\Modules\Orders\Checkout\CheckoutToken;
@@ -44,13 +46,17 @@ use Illuminate\Support\Str;
  *    lines, the first history row, converts the cart and opens a new empty
  *    one (`BR-CHK-008`).
  *
- * No push is sent in this wave (`DL-37` (15)).
+ * The Customer is told the order is accepted (`order_accepted`) from inside
+ * the same transaction, so a replay tells nobody again.
  */
 final class CreateOrder
 {
     public const OPERATION = 'orders.create';
 
-    public function __construct(private readonly IdempotencyStore $idempotency) {}
+    public function __construct(
+        private readonly IdempotencyStore $idempotency,
+        private readonly NotificationService $notifications,
+    ) {}
 
     public function create(User $customer, string $token, string $idempotencyKey): Order
     {
@@ -113,7 +119,11 @@ final class CreateOrder
 
         // The order number comes from its sequence; the insert does not
         // return it.
-        return $order->refresh();
+        $order->refresh();
+
+        $this->notifications->notify(NotificationType::OrderAccepted, $customer->id, $order, $customer->id);
+
+        return $order;
     }
 
     private function order(CheckoutState $state): Order

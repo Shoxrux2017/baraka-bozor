@@ -169,6 +169,11 @@ creates its own two Couriers, so the seeded Courier keeps its first-login
 gate. Each script takes the API's address as its argument when it is not
 `http://127.0.0.1:8000/api/v1`.
 
+Queued jobs, the pushes of W4-7 among them, need a worker locally. During a
+walk run `docker compose -f docker/compose.yaml exec -T app php artisan
+queue:work --stop-when-empty` whenever the queue should drain; a push older
+than an hour is recorded as `expired`.
+
 ## The production stack
 
 `DL-107` records the decisions. The files:

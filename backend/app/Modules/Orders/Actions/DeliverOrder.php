@@ -7,6 +7,7 @@ namespace App\Modules\Orders\Actions;
 use App\Exceptions\ApiException;
 use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\HistoryActorType;
+use App\Models\Enums\NotificationType;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\PaymentMethod;
@@ -15,6 +16,7 @@ use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\Payment;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 use App\Modules\Orders\CourierOrders;
 use App\Support\Idempotency\IdempotencyStore;
 use App\Support\Idempotency\RequestFingerprint;
@@ -35,6 +37,8 @@ use Illuminate\Validation\ValidationException;
  *   `completed`; and one `payment_recorded` history row carrying the move
  *   (`DL-54` (23)).
  *
+ * The Customer is told right after that row (`order_delivered`).
+ *
  * The online branch is Wave 5's: an online order cannot be on the way before
  * it (`DL-54` (1)), and one met here is refused rather than completed unpaid.
  *
@@ -48,7 +52,10 @@ final class DeliverOrder
 {
     public const OPERATION = 'courier.delivered';
 
-    public function __construct(private readonly IdempotencyStore $idempotency) {}
+    public function __construct(
+        private readonly IdempotencyStore $idempotency,
+        private readonly NotificationService $notifications,
+    ) {}
 
     public function deliver(User $courier, string $orderId, ?int $cashReceivedUzs, string $idempotencyKey): Order
     {
@@ -121,6 +128,8 @@ final class DeliverOrder
                 'amount_uzs' => $payment->amount_uzs,
             ],
         ])->save();
+
+        $this->notifications->notify(NotificationType::OrderDelivered, $order->customer_id, $order, $courier->id);
 
         return $order;
     }

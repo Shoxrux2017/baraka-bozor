@@ -18,6 +18,7 @@ use App\Models\Order;
 use App\Models\OrderCancellationRequest;
 use App\Models\OrderHistory;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 use App\Modules\Orders\CustomerOrders;
 use App\Modules\Orders\OrderPermissions;
 use App\Support\Idempotency\IdempotencyStore;
@@ -51,7 +52,10 @@ final class CancelOrder
 {
     public const OPERATION = 'orders.cancel';
 
-    public function __construct(private readonly IdempotencyStore $idempotency) {}
+    public function __construct(
+        private readonly IdempotencyStore $idempotency,
+        private readonly NotificationService $notifications,
+    ) {}
 
     public function cancel(User $customer, string $orderId, ?string $reason, string $idempotencyKey): Order
     {
@@ -92,6 +96,7 @@ final class CancelOrder
             ]);
 
         $assignment = $order->currentShopperAssignment;
+        $shopperId = $assignment?->shopper_id;
         if ($assignment !== null) {
             $assignment->forceFill(['ended_at' => now(), 'ended_reason' => AssignmentEndReason::OrderCancelled])->save();
         }
@@ -113,6 +118,8 @@ final class CancelOrder
             'reason_code' => CancellationReason::CustomerCancelled,
             'note' => $reason,
         ])->save();
+
+        $this->notifications->notifyCancellation($order, $customer->id, $shopperId, null);
 
         return $order;
     }

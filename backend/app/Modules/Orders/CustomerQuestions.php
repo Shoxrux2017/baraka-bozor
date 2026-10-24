@@ -8,12 +8,14 @@ use App\Models\CustomerApproval;
 use App\Models\Enums\ApprovalStatus;
 use App\Models\Enums\ApprovalType;
 use App\Models\Enums\HistoryActorType;
+use App\Models\Enums\NotificationType;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 
 /**
  * A question the Shopper puts to the Customer about one line (`docs/04`
@@ -37,8 +39,15 @@ final class CustomerQuestions
     /**
      * @param  array<string, mixed>  $proposal  the proposal's columns for its type
      */
-    public static function ask(Order $order, OrderItem $line, User $shopper, ApprovalType $type, array $proposal, ?string $note): CustomerApproval
-    {
+    public static function ask(
+        NotificationService $notifications,
+        Order $order,
+        OrderItem $line,
+        User $shopper,
+        ApprovalType $type,
+        array $proposal,
+        ?string $note,
+    ): CustomerApproval {
         $now = now();
 
         $approval = new CustomerApproval;
@@ -66,6 +75,8 @@ final class CustomerQuestions
             'actor_user_id' => $shopper->id,
             'details' => ['approval_id' => $approval->id, 'item_id' => $line->id, 'type' => $type->value],
         ])->save();
+
+        $notifications->notify(NotificationType::ApprovalRequired, $order->customer_id, $order, $shopper->id, $approval->id);
 
         return $approval;
     }
