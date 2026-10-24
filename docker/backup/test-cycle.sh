@@ -12,6 +12,17 @@
 set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
+# Absolute before the cd below; pwd -W gives Windows paths in Git Bash.
+if [ -n "${BACKUP_TEST_DIR:-}" ]; then
+  case "$BACKUP_TEST_DIR" in
+    /*|[A-Za-z]:*) ;;
+    *)
+      mkdir -p "$BACKUP_TEST_DIR"
+      BACKUP_TEST_DIR="$(cd "$BACKUP_TEST_DIR" && { pwd -W 2>/dev/null || pwd; })"
+      ;;
+  esac
+fi
+
 cd "$(dirname "$0")/../.."
 
 CREATED_DIR=0
@@ -174,6 +185,11 @@ fi
 status_has backup '"step":"backup"' || fail "backup.json does not name the backup step"
 bexec test ! -e /backup/db/barakabozor.dump || fail "a dump file was left after a repository failure"
 
+if bexec env -u PGHOST backup.sh > /dev/null 2>&1; then
+  fail "backup.sh succeeded without PGHOST"
+fi
+status_has backup '"step":"config"' || fail "backup.json does not name the config step"
+
 bexec check.sh || fail "check.sh failed on a healthy repository"
 status_has check '"result":"success"' || fail "check.json is not a success"
 
@@ -196,6 +212,16 @@ bexec test -f /status/check.json || fail "check.json did not survive a container
 FINGERPRINT="$(fingerprint)"
 [ "$(printf '%s\n' "$FINGERPRINT" | wc -l)" -gt 10 ] || fail "the fingerprint covers too few tables"
 
+# One-off runs must not keep their output in Docker's log (DL-109), and the
+# helper must not start with the backup profile.
+TOOL_ID="$(compose run -d --no-deps backup-tool sleep 60)"
+TOOL_LOG="$(docker inspect -f '{{.HostConfig.LogConfig.Type}}' "$TOOL_ID" | tr -d '\r')"
+docker rm -f "$TOOL_ID" > /dev/null
+[ "$TOOL_LOG" = none ] || fail "backup-tool logs to $TOOL_LOG, not none"
+if compose config --services | grep -qx backup-tool; then
+  fail "backup-tool is active under COMPOSE_PROFILES=backup"
+fi
+
 compose down -v --remove-orphans > /dev/null
 
 set +e
@@ -205,11 +231,16 @@ set -e
 [ "$NO_ID_CODE" = 2 ] || fail "restore.sh without a snapshot id exited $NO_ID_CODE, not 2"
 printf '%s\n' "$NO_ID_OUTPUT" | grep -q "$SNAPSHOT" || fail "restore.sh without an id did not list the snapshot"
 
-bash docker/backup/restore.sh "$W/stack.env" "$SNAPSHOT" || fail "restore.sh failed"
+bash docker/backup/restore.sh "$W/stack.env" "$SNAPSHOT" > "$W/restore.out" || fail "restore.sh failed"
+grep -q 'create-role.sh' "$W/restore.out" || fail "restore.sh did not remind about create-role.sh"
+bash docker/backup/create-role.sh "$W/stack.env"
 [ "$(fingerprint)" = "$FINGERPRINT" ] || fail "the database differs after the restore"
 
 bexec backup.sh || fail "the night backup fails in the restored stack"
 status_has backup '"result":"success"' || fail "backup.json is not a success in the restored stack"
+
+[ "$(bexec stat -c %u /backup/images | tr -d '\r')" = 33 ] \
+  || fail "the images volume is not owned by www-data after the restore"
 
 RESTORED="$(compose run --rm --no-deps -T --entrypoint sh app -c "sha256sum $MARKER; stat -c %U $MARKER" | tr -d '\r')"
 [ "$(printf '%s\n' "$RESTORED" | sed -n 1p | cut -d' ' -f1)" = "$MARKER_SHA" ] \

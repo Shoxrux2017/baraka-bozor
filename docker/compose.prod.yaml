@@ -33,6 +33,31 @@ x-logging: &logging
     max-size: "10m"
     max-file: "5"
 
+x-backup: &backup
+  build:
+    context: ./backup
+  image: barakabozor-backup:${BB_RELEASE:-latest}
+  env_file: ${BACKUP_ENV_FILE:?BACKUP_ENV_FILE must name the backup env file (docker/backup.env.example)}
+  environment:
+    PGHOST: db
+    # The role create-role.sh makes; fixed here so the env file cannot rename it.
+    PGUSER: barakabozor_backup
+    PGDATABASE: ${DB_DATABASE:?DB_DATABASE is required}
+  volumes:
+    # nocopy: Docker gives an empty volume the owner of the mounting image's
+    # directory, and only the app's image may set it (www-data), or uploads
+    # fail.
+    - type: volume
+      source: public-images
+      target: /backup/images
+      read_only: true
+      volume:
+        nocopy: true
+    # The last result of each job.
+    - backup-status:/status
+  networks:
+    - internal
+
 x-php: &php
   build:
     # The backend as the context, the runtime files of docker/ as the named
@@ -140,36 +165,26 @@ services:
   # application. The images mount is read-only, so a fault here cannot alter
   # them.
   backup:
+    <<: *backup
     profiles: [backup]
-    build:
-      context: ./backup
-    image: barakabozor-backup:${BB_RELEASE:-latest}
-    env_file: ${BACKUP_ENV_FILE:?BACKUP_ENV_FILE must name the backup env file (docker/backup.env.example)}
-    environment:
-      PGHOST: db
-      # The role create-role.sh makes; fixed here so the env file cannot rename it.
-      PGUSER: barakabozor_backup
-      PGDATABASE: ${DB_DATABASE:?DB_DATABASE is required}
-    volumes:
-      # nocopy: Docker gives an empty volume the owner of the mounting image's
-      # directory, and only the app's image may set it (www-data), or uploads
-      # fail.
-      - type: volume
-        source: public-images
-        target: /backup/images
-        read_only: true
-        volume:
-          nocopy: true
-      # The last result of each job.
-      - backup-status:/status
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - internal
     restart: unless-stopped
     init: true
     logging: *logging
+
+  # The backup image for one-off runs of restore.sh and create-role.sh (DL-109).
+  # A `compose run` container's stdout also lands in the service's json-file log,
+  # which would keep the plaintext dump and the database password on disk; this
+  # service logs nowhere. Its own profile: it must not start under
+  # COMPOSE_PROFILES=backup and run a second supercronic. Built from the anchor,
+  # not `extends`, which would union the profiles.
+  backup-tool:
+    <<: *backup
+    profiles: [tools]
+    logging:
+      driver: none
 
 networks:
   edge:
