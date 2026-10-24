@@ -310,9 +310,10 @@ A scratch stack uses fake drivers and no production credentials
 not in the dump, so `restore.sh` ends by printing a reminder and does not run
 `create-role.sh` itself: a scratch stack that kept `COMPOSE_PROFILES=backup` would
 otherwise write snapshots into the production repository. After a real recovery run
-`docker/backup/create-role.sh <env file>`, and the restored stack's nights work. If a restore fails after the database
-committed (the images or the migration), a rerun is refused as "not empty": run
-`down -v` on that stack, with its `--env-file`, and restore again.
+`docker/backup/create-role.sh <env file>`, and the restored stack's nights work.
+If a restore fails after the database committed (the images or the migration), a
+rerun is refused as "not empty": run `down -v` on that stack, with its
+`--env-file`, and restore again.
 
 **The test cycle.** `docker/backup/test-cycle.sh` runs the whole path in the project
 `bb-backup-test` against a repository on a host directory: a failing night, a good
