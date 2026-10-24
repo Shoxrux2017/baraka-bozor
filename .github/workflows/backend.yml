@@ -21,9 +21,9 @@ permissions:
 
 jobs:
   image:
-    name: Production image builds
+    name: Production image, backup and restore
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Check out the repository
@@ -33,6 +33,11 @@ jobs:
       # on every pull request. Nothing is tagged or pushed (DL-107).
       - name: Build the production image
         run: docker build -f docker/app.prod.Dockerfile --build-context runtime=docker backend
+
+      # Backs up a scratch stack, wipes it and restores it from the snapshot
+      # (DL-104 (6)). Not a required check.
+      - name: Backup, wipe and restore
+        run: bash docker/backup/test-cycle.sh
 
   backend:
     name: Tests, Pint, PHPStan on PostgreSQL

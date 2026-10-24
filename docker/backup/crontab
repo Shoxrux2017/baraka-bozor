@@ -1,0 +1,4 @@
+# Tashkent time (TZ in the image). The dump runs before Laravel's pruning at
+# 04:00 (docs/07 section 28).
+0 3 * * * backup.sh
+0 5 * * 0 check.sh

@@ -41,7 +41,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 |---|---|---|---|
 | W4-1 | Laravel Boost trial (`DL-103`, `DL-106`) | — | Merged (#110); removed unused (#112, `DL-108`) |
 | W4-2 | Production runtime: images, `docker/compose.prod.yaml`, Caddy, CORS, proxies, the worker, the scheduler and its pruning | — | Merged (#111) |
-| W4-3 | Backups: nightly encrypted copies off the host, the restore script | — | Planned |
+| W4-3 | Backups: nightly encrypted copies off the host, the restore script | — | Merged (#113) |
 | W4-4 | Login codes through Telegram Gateway | Telegram (verification) | Planned |
 | W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
 | W4-6 | Android release build and closed testing | Google Play, W4-5 | Planned |
@@ -102,6 +102,13 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 - `docker/backup/restore.sh` restores a chosen snapshot into a scratch stack.
 - The restic password lives on the server and with the Owner, who stores it in a password manager or on paper; a lost password means the copies cannot be read.
 - Verified locally against a local restic repository: back up, wipe the scratch stack, restore, and the walkthrough passes on the restored data.
+- Done on 2026-10-24 (#113, `DL-109`). The rehearsal on `bb-prod-local`:
+  - a night's backup, then `down -v` and `restore.sh`;
+  - every table's fingerprint and the uploaded image byte for byte equal;
+  - an Admin's upload works on the restored stack;
+  - the Wave 3 walkthrough passes on the restored data, 72 of 72;
+  - a run scheduled by supercronic fired at 09:42 +05:00 and, as documented, failed at the dump until `create-role.sh` ran, then succeeded.
+  - It found one defect that the tests had missed: the backup's mount made the empty images volume root's, so uploads failed (`DL-109` (2)).
 
 **W4-4. Login codes through Telegram Gateway** (`DL-104` (9)).
 
@@ -132,7 +139,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
   - the public pages `/legal/privacy` and `/account-deletion`, which W4-6 needs;
   - a sign-in by a Telegram code;
   - `approvals:expire` running from the scheduler;
-  - the first nightly backup, then a restore of it into a scratch stack on the server.
+  - the first nightly backup, then a restore of it into a scratch stack on the server. That scratch env file uses `localhost` hosts, fake drivers and blank provider keys (Telegram, FCM, payments), because `restore.sh` ends with `up -d`, which starts a worker and a scheduler on a copy of production data. Write this into `docker/DEPLOY.md`.
 - The Owner's question 2 is asked here, and the answer is set in the server's environment.
 - The test-phone list is empty in production (`BR-ROLE-011`). The reviewer phone and its code of `DL-105` are set in the server's environment, and its account "Проверка Google" is created.
 
@@ -215,6 +222,10 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | A push is best-effort (`BR-NOTIF-001`). A phone that is off, or that has notifications disabled, learns at the next opening, and the screens keep refreshing themselves | Accepted |
 | Push texts pass through Google, and phone numbers through Telegram. The texts carry no personal data beyond the order number and the amount (`DL-104` (10)). Two questions for the Owner's lawyer, with the privacy policy: does sending the phone to Telegram need the Customer's consent, and must the personal-data database be registered under ZRU-547 | Open, Owner, before the pilot |
 | A disk-full or downed server is noticed only by people. An external uptime check is an Owner account | Open; offered at W4-5 |
+| The backup job cannot prune with append-only storage credentials, and an SFTP repository needs `openssh-client` in the backup image and the key mounted (`DL-109`). W4-5 decides the storage and settles both | Open, W4-5 |
+| The stack's env file (`APP_KEY`, `PHONE_FINGERPRINT_KEY`) is in no backup. The Owner keeps it with the restic password; W4-5's Owner checklist says so | Open, W4-5 |
+| A stale `success`: a stopped container or a killed run leaves the previous status. The deploy check and the external check of W4-5 test the age of `finished_at` | Open, W4-5 |
+| A restore from an older snapshot brings back Customers who erased their accounts after it (`BR-ROLE-013`). The promise stands; the restore runbook of W4-5 re-applies erasures made after the snapshot, the mechanism decided there | Open, W4-5 |
 | iOS push: the code is written and the configuration waits for a Mac and an Apple account (`docs/06`) | Open until a Mac exists |
 | Carried from Wave 3: the scheduler runs nowhere until Wave 4 deploys one (`DL-54` (8)) | Closes with W4-5 |
 | `worker` and `scheduler` do not mount the images volume; a future job that writes images must get it (W4-2 review) | Open, note |
@@ -232,6 +243,11 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 |---|---|---|
 | W4-1 | P3: the two Boost switches live in `backend/.env`, so a checkout whose `.env` predates W4-1 would offer `record-rule` | Every `.env` is copied from `.env.example`, which carries them, and this machine's `.env` has them. Forcing them in code is taken up if Boost stays after the trial. Moot: Boost removed (`DL-108`) |
 | W4-1 | P3: the console-and-local gate in `AppServiceProvider` has no test of its own | `GlobalMiddlewareTest` guards what matters, that tests and CI never load Boost or `laravel/mcp`; the gate is removed with Boost if the trial ends. Removed with Boost (`DL-108`) |
+| W4-3 | P2 (the first final review): `restore.sh` should recreate the backup role itself | The second final review advised the opposite, and the lead ruled reminder only (`DL-109` (8)). An automatic role would let a scratch stack that kept `COMPOSE_PROFILES=backup` write restored-copy snapshots into the production repository, where `forget` would thin out real nights unseen. A missing role fails loudly: a failure status, no ping, and W4-5's external check |
+| W4-3 | P3: an optional `running` status written at the start of a night | The age check of `finished_at` (W4-5, risk row above) already shows a killed run |
+| W4-3 | P3: `nocopy` on Caddy's images mount too | Caddy's image has no `/srv/storage`; the probe kept the volume's uid 33 |
+| W4-3 | P3: nothing asserts that the backup role is absent right after `restore.sh`, before `create-role.sh` | The role is cluster-wide and the dump holds none (`pg_dump` of one database). The rehearsal saw the scheduled night fail at the dump on the restored stack, which is that absence |
+| W4-3 | P3: the cycle exercises no `forget` failure | A forget-only failure needs a repository that breaks between two calls. Its step name comes from the same trap that the dump, backup and config failures prove |
 
 ## Closure
 
