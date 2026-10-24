@@ -1357,6 +1357,47 @@ void main() {
       expect(byKey('courier-order-$courierOrderA'), findsNothing);
       expect(byKey('courier-order-$courierOrderB'), findsOneWidget);
     });
+
+    testWidgets(
+      'a delivery accepted and set off before its handover leaves the list '
+      'with one load',
+      (WidgetTester tester) async {
+        courier.details[courierOrderA] = courierOrder();
+        await open(tester);
+        await tapAndSettle(tester, byKey('courier-order-$courierOrderA'));
+
+        courier.afterAction[courierOrderA] = courierOrder(accepted: true);
+        await tapAndSettle(tester, byKey('courier-accept'));
+        courier.afterAction[courierOrderA] = courierOrder(status: 'on_the_way');
+        await tapAndSettle(tester, byKey('courier-start'));
+
+        courier.afterAction[courierOrderA] = courierOrder(
+          status: 'completed',
+          ended: true,
+        );
+        await tapAndSettle(tester, byKey('courier-delivered'));
+        await tester.enterText(byKey('courier-cash'), '55600');
+        final Completer<void> hold = Completer<void>();
+        courier.holdList = hold;
+        final int loads = count('orders:1');
+        await tapAndSettle(tester, byKey('courier-delivered-confirm'));
+
+        expect(location(tester), AppPaths.courier);
+        expect(byKey('courier-order-$courierOrderA'), findsNothing);
+        expect(byKey('courier-order-$courierOrderB'), findsOneWidget);
+        expect(count('orders:1'), loads + 1, reason: 'one load, not two');
+
+        courier.details[courierOrderC] = courierOrder(
+          id: courierOrderC,
+          number: 1003,
+          status: 'on_the_way',
+        );
+        hold.complete();
+        await tester.pumpAndSettle();
+        expect(byKey('courier-order-$courierOrderC'), findsOneWidget);
+        expect(byKey('courier-order-$courierOrderA'), findsNothing);
+      },
+    );
   });
 
   group('not delivered', () {

@@ -9,11 +9,22 @@ import 'package:flutter_test/flutter_test.dart';
 int _builds = 0;
 Completer<Paged<String>> _answer = Completer<Paged<String>>();
 
+class _PageNumber extends Notifier<int> {
+  @override
+  int build() => 1;
+
+  void change() => state++;
+}
+
+final NotifierProvider<_PageNumber, int> _pageNumber =
+    NotifierProvider<_PageNumber, int>(_PageNumber.new);
+
 class _Rows extends ListPageController<String> {
   @override
   Future<Paged<String>> build() {
+    ref.watch(_pageNumber);
     _builds++;
-    return _answer.future;
+    return _builds == 1 ? _answer.future : Completer<Paged<String>>().future;
   }
 
   @override
@@ -101,5 +112,19 @@ void main() {
     await hold();
     container.read(_dropA)();
     expect(container.read(_rows).value!.items, <String>['b', 'c']);
+  });
+
+  test("a page change's load is left as it is", () async {
+    await hold();
+    container.read(_pageNumber.notifier).change();
+    final AsyncValue<Paged<String>> loading = container.read(_rows);
+    expect(loading.isLoading, isTrue);
+    expect(loading.isReloading, isTrue);
+
+    container.read(_rows.notifier).drop('a');
+    final AsyncValue<Paged<String>> after = container.read(_rows);
+    expect(after.isLoading, isTrue);
+    expect(after.isReloading, isTrue);
+    expect(after, isNot(isA<AsyncData<Paged<String>>>()));
   });
 }

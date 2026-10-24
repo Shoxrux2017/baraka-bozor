@@ -266,10 +266,11 @@ class ShopperLineController extends AccountMutation {
   void _reload(ShopperOrder? answered) {
     if (answered == null || answered.assignment != null) {
       ref.invalidate(shopperOrderProvider(line.orderId));
-    } else {
-      dropRow(ref, shopperOrdersProvider, line.orderId);
     }
     ref.invalidate(shopperOrdersProvider);
+    if (answered != null && answered.assignment == null) {
+      dropRow(ref, shopperOrdersProvider, line.orderId);
+    }
   }
 }
 
@@ -311,10 +312,10 @@ class ShopperCompleteController extends AccountMutation {
     final ShopperOrder? order = await perform(
       () => ref.read(shopperOrdersRepositoryProvider).complete(orderId, key),
       reload: (ShopperOrder? done) {
+        ref.invalidate(shopperOrdersProvider);
         if (done != null) {
           dropRow(ref, shopperOrdersProvider, orderId);
         }
-        ref.invalidate(shopperOrdersProvider);
       },
     );
     if (ref.mounted) {

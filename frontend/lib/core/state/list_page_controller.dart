@@ -16,11 +16,12 @@ abstract class ListPageController<T> extends AsyncNotifier<Paged<T>> {
 
   /// Takes the rows with [id] off the page it holds, whatever the case of
   /// the id. The page keeps its place and the total goes down by the rows
-  /// removed; before the first answer, after a failed one, or when no row
-  /// matches, nothing changes.
+  /// removed; before the first answer, after a failed one, while a page
+  /// change loads another page, or when no row matches, nothing changes.
+  /// A reload after an invalidation is acted on.
   void drop(String id) {
     final Paged<T>? page = state.value;
-    if (page == null || state.hasError) {
+    if (page == null || state.hasError || state.isReloading) {
       return;
     }
     final String wanted = id.toLowerCase();
@@ -44,7 +45,8 @@ abstract class ListPageController<T> extends AsyncNotifier<Paged<T>> {
 }
 
 /// Drops the row [id] from [list] when a screen holds it; a list nobody
-/// holds is not loaded for a drop (`DL-113`).
+/// holds is not loaded for a drop (`DL-113`). It is called after the list is
+/// invalidated, so the read that drops is the list's one reload.
 void dropRow<T>(
   Ref ref,
   AsyncNotifierProvider<ListPageController<T>, Paged<T>> list,

@@ -183,10 +183,10 @@ class OrderCancelController extends OrderMutation {
     final CustomerOrder? order = await perform(
       () => orders.cancel(orderId, sent, key),
       reload: (CustomerOrder? cancelled) {
+        reload(cancelled);
         if (cancelled?.status == OrderStatus.cancelled) {
           dropRow(ref, customerOrdersProvider(OrdersTab.current), orderId);
         }
-        reload(cancelled);
       },
     );
     if (!_uncertain(ref.mounted ? state.failure : null)) {

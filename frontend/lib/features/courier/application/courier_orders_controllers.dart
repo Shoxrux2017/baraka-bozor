@@ -209,10 +209,10 @@ class CourierOutcomeController extends AccountMutation {
   }
 
   void _reload(CourierOrder? answered) {
+    ref.invalidate(courierOrdersProvider);
     if (answered != null) {
       dropRow(ref, courierOrdersProvider, orderId);
     }
-    ref.invalidate(courierOrdersProvider);
   }
 
   /// A conflict or the order gone: the order has moved on meanwhile —
