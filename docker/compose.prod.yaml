@@ -147,6 +147,8 @@ services:
     env_file: ${BACKUP_ENV_FILE:?BACKUP_ENV_FILE must name the backup env file (docker/backup.env.example)}
     environment:
       PGHOST: db
+      # The role create-role.sh makes; fixed here so the env file cannot rename it.
+      PGUSER: barakabozor_backup
       PGDATABASE: ${DB_DATABASE:?DB_DATABASE is required}
     volumes:
       # nocopy: Docker gives an empty volume the owner of the mounting image's

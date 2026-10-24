@@ -7,7 +7,8 @@
 #
 # Without BACKUP_TEST_DIR the work directory is a fresh `mktemp -d` and is
 # removed at the end. A given directory is emptied of its generated files first
-# and kept. On Windows pass a path Docker Desktop can bind-mount (G:/...).
+# and kept; it must be empty or carry the marker `.bb-backup-test` of an earlier
+# run, so a mistyped path never loses files. On Windows pass a path Docker Desktop can bind-mount (G:/...).
 set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
@@ -20,6 +21,11 @@ if [ -z "${BACKUP_TEST_DIR:-}" ]; then
 fi
 W="$BACKUP_TEST_DIR"
 mkdir -p "$W"
+if [ "$CREATED_DIR" = 0 ] && [ -n "$(ls -A "$W")" ] && [ ! -e "$W/.bb-backup-test" ]; then
+  echo "test-cycle: $W is not empty and has no .bb-backup-test marker; refusing to delete files in it" >&2
+  exit 2
+fi
+touch "$W/.bb-backup-test"
 
 BB_COMPOSE_OVERRIDE=docker/backup/compose.local-repo.yaml
 export BB_COMPOSE_OVERRIDE
@@ -93,7 +99,6 @@ STACK
 cat > "$W/backup.env" <<BACKUP
 RESTIC_REPOSITORY=/repository
 RESTIC_PASSWORD=$(random_hex 16)
-PGUSER=barakabozor_backup
 PGPASSWORD=$(random_hex 16)
 BACKUP_PING_URL=http://127.0.0.1:9/
 BACKUP
@@ -121,7 +126,8 @@ compose up -d --build --wait
 # Checked from the backup container, since mounting the volume in the app would
 # set the owner right again.
 compose up -d --force-recreate backup
-[ "$(bexec stat -c %u /backup/images | tr -d '')" = 33 ]   || fail "the images volume is not owned by www-data"
+[ "$(bexec stat -c %u /backup/images | tr -d '\r')" = 33 ] \
+  || fail "the images volume is not owned by www-data"
 
 compose run --rm app php artisan migrate --force
 compose run --rm app php artisan db:seed --class=WalkthroughSeeder --force
@@ -136,9 +142,13 @@ MARKER_SHA="$(compose run --rm --no-deps -T --entrypoint sh app -c "sha256sum $M
 
 bexec restic init > /dev/null || fail "restic init failed"
 
-if bexec psql -c 'create table backup_probe ()' > /dev/null 2>&1; then
-  fail "the backup role could write to the database"
-fi
+for probe in 'create table backup_probe ()' 'delete from migrations'; do
+  if probe_output="$(bexec psql -c "$probe" 2>&1)"; then
+    fail "the backup role could run: $probe"
+  fi
+  printf '%s\n' "$probe_output" | grep -q 'permission denied' \
+    || fail "the backup role was refused for another reason than permissions: $probe"
+done
 
 bexec backup.sh || fail "backup.sh failed on a healthy stack"
 status_has backup '"result":"success"' || fail "backup.json is not a success"
@@ -167,6 +177,19 @@ bexec test ! -e /backup/db/barakabozor.dump || fail "a dump file was left after 
 bexec check.sh || fail "check.sh failed on a healthy repository"
 status_has check '"result":"success"' || fail "check.json is not a success"
 
+# A second run while one holds the lock must stop without touching the status.
+STATUS_BEFORE="$(bexec cat /status/backup.json)"
+compose exec -T -d backup sh -c 'exec 9> /backup/db/.lock; flock 9; touch /tmp/lock-held; sleep 20'
+# shellcheck disable=SC2016
+bexec sh -c 'i=0; while [ ! -e /tmp/lock-held ] && [ "$i" -lt 50 ]; do sleep 0.2; i=$((i+1)); done; [ -e /tmp/lock-held ]' \
+  || fail "the lock holder did not start"
+if bexec backup.sh > /dev/null 2>&1; then
+  fail "backup.sh ran while another run held the lock"
+fi
+[ "$(bexec cat /status/backup.json)" = "$STATUS_BEFORE" ] || fail "a refused second run changed backup.json"
+bexec pkill -f 'sleep 20' || true
+bexec rm -f /tmp/lock-held
+
 compose up -d --force-recreate backup
 bexec test -f /status/check.json || fail "check.json did not survive a container recreate"
 
@@ -184,6 +207,9 @@ printf '%s\n' "$NO_ID_OUTPUT" | grep -q "$SNAPSHOT" || fail "restore.sh without 
 
 bash docker/backup/restore.sh "$W/stack.env" "$SNAPSHOT" || fail "restore.sh failed"
 [ "$(fingerprint)" = "$FINGERPRINT" ] || fail "the database differs after the restore"
+
+bexec backup.sh || fail "the night backup fails in the restored stack"
+status_has backup '"result":"success"' || fail "backup.json is not a success in the restored stack"
 
 RESTORED="$(compose run --rm --no-deps -T --entrypoint sh app -c "sha256sum $MARKER; stat -c %U $MARKER" | tr -d '\r')"
 [ "$(printf '%s\n' "$RESTORED" | sed -n 1p | cut -d' ' -f1)" = "$MARKER_SHA" ] \
