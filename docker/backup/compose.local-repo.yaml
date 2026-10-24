@@ -1,0 +1,8 @@
+# An override for a restic repository on a directory of the host: the scratch
+# test stack (test-cycle.sh) and a disk-only setup. The host sets
+# BB_COMPOSE_OVERRIDE to this file's path; restore.sh and create-role.sh add it
+# to their compose calls.
+services:
+  backup:
+    volumes:
+      - ${BACKUP_LOCAL_REPOSITORY:?BACKUP_LOCAL_REPOSITORY must be a host directory the backup user (uid 10001) can write}:/repository

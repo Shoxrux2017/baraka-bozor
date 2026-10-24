@@ -133,6 +133,34 @@ services:
     restart: unless-stopped
     logging: *logging
 
+  # The nightly encrypted backup (DL-104 (6)). A profile, so a scratch or
+  # development stack that reuses this file never writes the production
+  # repository; production turns it on with COMPOSE_PROFILES=backup. Its own env
+  # file, never the app's: a leaked backup credential must not open the
+  # application. The images mount is read-only, so a fault here cannot alter
+  # them.
+  backup:
+    profiles: [backup]
+    build:
+      context: ./backup
+    image: barakabozor-backup:${BB_RELEASE:-latest}
+    env_file: ${BACKUP_ENV_FILE:?BACKUP_ENV_FILE must name the backup env file (docker/backup.env.example)}
+    environment:
+      PGHOST: db
+      PGDATABASE: ${DB_DATABASE:?DB_DATABASE is required}
+    volumes:
+      - public-images:/backup/images:ro
+      # The last result of each job.
+      - backup-status:/status
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    restart: unless-stopped
+    init: true
+    logging: *logging
+
 networks:
   edge:
     ipam:
@@ -145,3 +173,4 @@ volumes:
   public-images:
   caddy-data:
   caddy-config:
+  backup-status:
