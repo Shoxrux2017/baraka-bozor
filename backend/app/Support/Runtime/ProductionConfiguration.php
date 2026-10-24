@@ -49,6 +49,10 @@ final class ProductionConfiguration
             $problems[] = 'LOGIN_CODE_DRIVER';
         }
 
+        if (config('login_codes.driver') === 'telegram' && self::blank(config('services.telegram_gateway.token'))) {
+            $problems[] = 'TELEGRAM_GATEWAY_TOKEN';
+        }
+
         $origins = config('cors.allowed_origins');
 
         if (! is_array($origins) || count($origins) !== 1 || in_array('*', $origins, true)) {

@@ -21,6 +21,8 @@ use App\Models\OrderRating;
 use App\Models\PushDevice;
 use App\Models\User;
 use App\Modules\Accounts\Actions\EraseCustomer;
+use App\Modules\Auth\CodeDelivery\CodeDeliveryGateway;
+use App\Modules\Auth\CodeDelivery\CodeUndeliverable;
 use App\Modules\Auth\Models\LoginChallenge;
 use App\Modules\Auth\TestPhones;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -265,6 +267,29 @@ final class AccountDeletionApiTest extends TestCase
         $this->deleteWith($token, self::CODE)->assertStatus(422)->assertJsonPath('code', 'code_attempts_exhausted');
 
         $this->assertSame(UserStatus::Active, User::query()->findOrFail($customer->id)->status);
+    }
+
+    public function test_the_deletion_code_is_refused_when_the_number_cannot_be_reached(): void
+    {
+        $phone = '+998901234567';
+        $customer = $this->customer($phone);
+        $token = $customer->createToken('customer')->plainTextToken;
+        $this->postJson('/api/v1/auth/customer/code/request', ['phone' => $phone])->assertOk();
+        $this->app->instance(CodeDeliveryGateway::class, new class implements CodeDeliveryGateway
+        {
+            public function deliver(string $phone, string $code): string
+            {
+                throw new CodeUndeliverable('No channel reaches this number.');
+            }
+        });
+        $this->flushHeaders();
+
+        $this->withToken($token)->postJson('/api/v1/customer/account/deletion-code')
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'code_delivery_unavailable');
+
+        $this->assertSame(0, LoginChallenge::query()->where('purpose', LoginChallenge::PURPOSE_ACCOUNT_DELETION)->count());
+        $this->assertNull(LoginChallenge::query()->openFor($phone)->sole()->invalidated_at);
     }
 
     public function test_a_sign_in_code_never_deletes_an_account(): void

@@ -86,6 +86,28 @@ final class ProductionConfigurationTest extends TestCase
         }
     }
 
+    public function test_the_telegram_driver_without_a_token_is_named(): void
+    {
+        config(['login_codes.driver' => 'telegram', 'services.telegram_gateway.token' => '']);
+
+        $this->assertSame(['TELEGRAM_GATEWAY_TOKEN'], ProductionConfiguration::problems());
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('TELEGRAM_GATEWAY_TOKEN');
+
+        ProductionConfiguration::assertComplete($this->app);
+    }
+
+    public function test_the_telegram_driver_with_a_token_passes_and_other_drivers_never_need_one(): void
+    {
+        config(['login_codes.driver' => 'telegram', 'services.telegram_gateway.token' => 'tg-test-token']);
+        $this->assertSame([], ProductionConfiguration::problems());
+        ProductionConfiguration::assertComplete($this->app);
+
+        config(['login_codes.driver' => 'fake', 'services.telegram_gateway.token' => '']);
+        $this->assertSame([], ProductionConfiguration::problems());
+    }
+
     public function test_an_unknown_driver_fails_at_the_check(): void
     {
         config(['login_codes.driver' => 'carrier-pigeon']);

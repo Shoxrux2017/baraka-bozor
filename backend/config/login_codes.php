@@ -10,8 +10,9 @@ declare(strict_types=1);
 | docs/07-architecture.md Section 8 and docs/09-api-contracts.md Section 6.
 |
 | driver       which CodeDeliveryGateway carries the code: `fake` records it
-|              in a test-only in-process sink; `telegram` and `sms` arrive
-|              with Waves 4 and 5.
+|              in a test-only in-process sink; `telegram` sends through
+|              Telegram Gateway (needs TELEGRAM_GATEWAY_TOKEN); `sms` arrives
+|              with Wave 5.
 | test_phones  phone numbers that never receive a code and verify with
 |              `test_code` instead. Empty in production. This is server
 |              configuration on purpose: an Admin-editable list would be a

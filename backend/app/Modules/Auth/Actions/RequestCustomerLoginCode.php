@@ -7,6 +7,7 @@ namespace App\Modules\Auth\Actions;
 use App\Exceptions\ApiException;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryFailed;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryGateway;
+use App\Modules\Auth\CodeDelivery\CodeUndeliverable;
 use App\Modules\Auth\LoginCodePolicy;
 use App\Modules\Auth\Models\LoginChallenge;
 use App\Modules\Auth\TestPhones;
@@ -120,6 +121,10 @@ final class RequestCustomerLoginCode
             Log::warning('Login code delivery failed.', ['gateway' => $this->gateway::class]);
 
             throw ApiException::unavailable('provider_unavailable');
+        } catch (CodeUndeliverable) {
+            // Not an outage and nothing to debug: the number has no channel.
+            // The send slot is spent, so asking again and again is bounded.
+            throw ApiException::conflict('code_delivery_unavailable');
         }
     }
 

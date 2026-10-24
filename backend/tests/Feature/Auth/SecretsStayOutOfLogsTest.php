@@ -10,8 +10,10 @@ use App\Models\User;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryGateway;
 use App\Modules\Auth\CodeDelivery\FakeCodeSink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 use RuntimeException;
 use Tests\TestCase;
 use Throwable;
@@ -151,6 +153,29 @@ final class SecretsStayOutOfLogsTest extends TestCase
 
         $this->assertSame(6, strlen($gateway->code));
         $this->assertLoggedWithout($gateway->code);
+    }
+
+    public function test_a_login_code_and_the_telegram_token_stay_out_of_the_log_when_telegram_echoes_them(): void
+    {
+        config(['login_codes.driver' => 'telegram', 'services.telegram_gateway.token' => 'tg-secret-token']);
+        Http::preventStrayRequests();
+        $captured = '';
+        Http::fake(static function (Request $request) use (&$captured) {
+            if (str_ends_with($request->url(), '/checkSendAbility')) {
+                return Http::response(['ok' => true, 'result' => ['request_id' => 'req-1']]);
+            }
+
+            $captured = (string) ($request->data()['code'] ?? '');
+
+            return Http::response('echo '.$request->body().' '.($request->header('Authorization')[0] ?? ''), 500);
+        });
+
+        $response = $this->postJson('/api/v1/auth/customer/code/request', ['phone' => self::PHONE])->assertStatus(503);
+
+        $this->assertSame(6, strlen($captured));
+        $this->assertLoggedWithout($captured, 'tg-secret-token');
+        $this->assertStringNotContainsString($captured, (string) $response->getContent());
+        $this->assertStringNotContainsString('tg-secret-token', (string) $response->getContent());
     }
 
     public function test_a_failed_query_names_the_statement_and_the_constraint_but_not_the_row(): void

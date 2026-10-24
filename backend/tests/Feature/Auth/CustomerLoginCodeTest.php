@@ -8,6 +8,7 @@ use App\Models\Enums\Role;
 use App\Models\User;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryFailed;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryGateway;
+use App\Modules\Auth\CodeDelivery\CodeUndeliverable;
 use App\Modules\Auth\CodeDelivery\FakeCodeSink;
 use App\Modules\Auth\Models\LoginChallenge;
 use App\Modules\Auth\TestPhones;
@@ -406,6 +407,24 @@ final class CustomerLoginCodeTest extends TestCase
         $this->request(self::PHONE)->assertOk()->assertJsonPath('data.channel', 'fake');
 
         $this->assertRefused($this->verify(self::PHONE, self::TEST_CODE), 'code_invalid');
+    }
+
+    public function test_an_unreachable_number_is_409_and_still_costs_the_send_slot(): void
+    {
+        $this->app->instance(CodeDeliveryGateway::class, new class implements CodeDeliveryGateway
+        {
+            public function deliver(string $phone, string $code): string
+            {
+                throw new CodeUndeliverable('No channel reaches this number.');
+            }
+        });
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->request(self::PHONE)->assertStatus(409)->assertJsonPath('code', 'code_delivery_unavailable');
+        }
+        $this->request(self::PHONE)->assertStatus(429)->assertJsonPath('code', 'rate_limited');
+
+        $this->assertSame(0, LoginChallenge::query()->count());
     }
 
     public function test_a_delivery_failure_is_provider_unavailable_and_stores_nothing(): void
