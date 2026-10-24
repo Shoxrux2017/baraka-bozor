@@ -258,6 +258,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | W4-3 | P3: the cycle exercises no `forget` failure | A forget-only failure needs a repository that breaks between two calls. Its step name comes from the same trap that the dump, backup and config failures prove |
 | W4-4 | P3: one docblock line in `LoginCodeCeiling.php` runs longer than its neighbours | Cosmetic; Pint passes and nothing reads differently. Reflowing it alone would be formatting churn (`AGENTS.md` section 7) |
 | W4-7 | P3 (re-review): no test resolves `PushSender` under a non-testing environment to prove the non-reporting fake is bound | The provider's choice is one expression on `$app->environment('testing')`; the testing binding and the flag-false fake are each tested, and W4-8 replaces the fake in production with FCM and a boot check. Closed by W4-8: the boot check refuses the fake push driver and resolves the sender (`DL-114` (8)) |
+| W4-8 | P3: a send that times out after Firebase accepted it is resent 30 s later, so the phone can show two identical banners | W4-9 owns how notifications show (the channel, a tag such as the delivery id in `android.notification.tag` and `apns-collapse-id`, the foreground banner); the tag is chosen there. Until then a duplicate needs a 10-second timeout after Firebase accepted the push |
 
 ## Closure
 
