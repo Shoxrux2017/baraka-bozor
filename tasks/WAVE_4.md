@@ -256,6 +256,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | W4-3 | P3: nothing asserts that the backup role is absent right after `restore.sh`, before `create-role.sh` | The role is cluster-wide and the dump holds none (`pg_dump` of one database). The rehearsal saw the scheduled night fail at the dump on the restored stack, which is that absence |
 | W4-3 | P3: the cycle exercises no `forget` failure | A forget-only failure needs a repository that breaks between two calls. Its step name comes from the same trap that the dump, backup and config failures prove |
 | W4-4 | P3: one docblock line in `LoginCodeCeiling.php` runs longer than its neighbours | Cosmetic; Pint passes and nothing reads differently. Reflowing it alone would be formatting churn (`AGENTS.md` section 7) |
+| W4-7 | P3 (re-review): no test resolves `PushSender` under a non-testing environment to prove the non-reporting fake is bound | The provider's choice is one expression on `$app->environment('testing')`; the testing binding and the flag-false fake are each tested, and W4-8 replaces the fake in production with FCM and a boot check |
 
 ## Closure
 
