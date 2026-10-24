@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\Log;
  * The daily ceiling of paid login-code checks for phones that hold no active
  * account (`DL-104` (9), `docs/09` Section 6).
  *
- * Telegram Gateway charges for every check, and a phone that is not a customer
- * yet costs money without being anyone's sign-in. The ceiling bounds that
+ * Telegram Gateway charges for a check that confirms the number, and a phone
+ * that is not a customer yet costs money without being anyone's sign-in. The ceiling bounds that
  * spending for a day counted in Tashkent time. A phone with an active account,
  * of any role, is never counted and never refused by it, so existing people can
  * always sign in or erase their account.
@@ -24,8 +24,8 @@ use Illuminate\Support\Facades\Log;
  * from a phone with one (`docs/09` Section 6). The counter is taken before the
  * gateway call, as every login-code counter is (`DL-11` (1)), so it also counts
  * checks that Telegram did not charge; it errs toward spending less. A warning
- * at half and at the ceiling reaches the Owner before the refusals do; neither
- * line carries a phone.
+ * at half and at the ceiling is a log line that an external check or a log
+ * alert can watch (W4-5); neither line carries a phone.
  */
 final class LoginCodeCeiling
 {

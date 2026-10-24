@@ -26,7 +26,8 @@ final class ProductionConfigurationTest extends TestCase
             'app.debug' => false,
             'app.url' => 'https://api.example.test',
             'database.connections.pgsql.password' => 'db-secret-value',
-            'login_codes.driver' => 'fake',
+            'login_codes.driver' => 'telegram',
+            'services.telegram_gateway.token' => 'tg-test-token',
             'cors.allowed_origins' => ['https://panel.example.test'],
             'trustedproxy.proxies' => ['172.30.250.0/28'],
         ]);
@@ -49,6 +50,7 @@ final class ProductionConfigurationTest extends TestCase
             'debug on' => ['app.debug', true, 'APP_DEBUG'],
             'empty password' => ['database.connections.pgsql.password', '', 'DB_PASSWORD'],
             'no driver' => ['login_codes.driver', null, 'LOGIN_CODE_DRIVER'],
+            'fake driver' => ['login_codes.driver', 'fake', 'LOGIN_CODE_DRIVER'],
             'empty url' => ['app.url', '', 'APP_URL'],
             'http url' => ['app.url', 'http://api.example.test', 'APP_URL'],
             'two origins' => ['cors.allowed_origins', ['https://a.example.test', 'https://b.example.test'], 'CORS_ALLOWED_ORIGINS'],
@@ -98,14 +100,11 @@ final class ProductionConfigurationTest extends TestCase
         ProductionConfiguration::assertComplete($this->app);
     }
 
-    public function test_the_telegram_driver_with_a_token_passes_and_other_drivers_never_need_one(): void
+    public function test_the_telegram_driver_with_a_token_passes(): void
     {
         config(['login_codes.driver' => 'telegram', 'services.telegram_gateway.token' => 'tg-test-token']);
         $this->assertSame([], ProductionConfiguration::problems());
         ProductionConfiguration::assertComplete($this->app);
-
-        config(['login_codes.driver' => 'fake', 'services.telegram_gateway.token' => '']);
-        $this->assertSame([], ProductionConfiguration::problems());
     }
 
     /**

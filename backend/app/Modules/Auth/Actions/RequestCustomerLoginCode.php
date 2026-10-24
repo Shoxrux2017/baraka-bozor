@@ -23,7 +23,8 @@ use Illuminate\Support\Facades\Log;
  *
  * Creates a challenge for the phone and hands the code to the delivery
  * gateway. Nothing in the response, the log or the database says whether an
- * account exists for the phone, and nothing anywhere carries the code except
+ * account exists for the phone (except the daily ceiling's refusal, `docs/09`
+ * Section 6), and nothing anywhere carries the code except
  * the gateway call and the hash.
  *
  * The counters are incremented before anything else happens and the new count

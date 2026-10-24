@@ -45,7 +45,7 @@ final class ProductionConfiguration
             $problems[] = 'DB_PASSWORD';
         }
 
-        if (! is_string(config('login_codes.driver')) || self::blank(config('login_codes.driver'))) {
+        if (! is_string(config('login_codes.driver')) || self::blank(config('login_codes.driver')) || config('login_codes.driver') === 'fake') {
             $problems[] = 'LOGIN_CODE_DRIVER';
         }
 
