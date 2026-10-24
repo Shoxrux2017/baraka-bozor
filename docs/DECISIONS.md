@@ -1648,3 +1648,22 @@ How `DL-104` (3) to (5) and (8) are built. The runbook is `docker/README.md`, "T
 Closes the trial of `DL-103` and supersedes `DL-106`. In W4-2, the first backend task after the installation, Boost's tools never reached the agent's session in VS Code, although `claude mcp list` reported the server as connected, so Boost was not used. The Owner asked for proof rather than another try: if the tools were still absent at the start of the next session, Boost would go the same day, without a new question. They were absent at the start of W4-3.
 
 Removed: `laravel/boost` and the four packages it brought (`laravel/mcp`, `laravel/roster`, `symfony/yaml`, `composer/semver`), no other package moving; their discovery exclusions in `backend/composer.json`; the console-and-local gate in `AppServiceProvider`; the two switches in `backend/.env.example`; the runbook section in `docker/README.md`; the line in `docs/07` section 2. The local-scope registration in the developer's Claude configuration is removed by hand with `claude mcp remove laravel-boost -s local`. `GlobalMiddlewareTest` stays: it still proves that no package adds a global middleware.
+
+## DL-109 — Backups from W4-3 (2026-10-24, agent)
+
+How `DL-104` (6) is built. The runbook is `docker/README.md`, "Backups".
+
+1. **A profile.** The `backup` service is in `docker/compose.prod.yaml` under the profile `backup`, which production turns on with `COMPOSE_PROFILES=backup`. A scratch stack, a restore rehearsal and CI then carry no job that writes to a repository.
+2. **The image.** Alpine 3.24 with `restic`, `supercronic`, `postgresql17-client` and `tzdata`; it runs as uid 10001.
+   - `postgresql17-client` is the server's major (`postgres:17-alpine`), so `pg_dump` and `pg_restore` match it.
+   - supercronic hands the container's environment to the job, which classic cron does not, and writes the job's output to stdout, where Docker's log keeps it.
+3. **Its own credentials.** The service reads its own env file (`BACKUP_ENV_FILE`, outside the repository), never the app's. It connects as the role `barakabozor_backup`, which holds `pg_read_all_data` and nothing that writes. `create-role.sh` creates or refreshes it; the password reaches `psql` through stdin, never a command line.
+4. **The night.** An uncompressed custom dump and the read-only images go into one snapshot under the fixed host `barakabozor`. A recreated container changes its hostname, which would split restic's retention groups. Then `forget` keeps 7 daily, 4 weekly and 6 monthly with `--prune`; every restic call that takes the repository lock has `--retry-lock 30m`.
+   - The dump is taken before the images, so an image replaced between the two may be missing from that night's copy. Accepted at 03:00, since only an Admin uploads images.
+5. **The check.** On Sundays at 05:00 `restic check` reads 10% of the data.
+6. **The outcome.** Each run writes `/status/backup.json` or `/status/check.json` in the `backup-status` volume: the result, the time, the snapshot or the failed step. An optional `BACKUP_PING_URL` is pinged after a success; a failed ping is logged and never fails the night. A failed night leaves a non-zero exit, no ping and no dump file.
+7. **The repository is made by hand.** `restic init` is run once by a person. The job never runs it, so a mistyped address fails the night instead of starting a new, empty repository.
+8. **The restore.** `restore.sh` refuses a database that holds tables, restores the dump in one transaction, extracts the images as `www-data` so the app can replace them later, and then migrates. It reaches the repository through the backup image.
+9. **Proven on every pull request.** `docker/backup/test-cycle.sh` runs in CI (the job `Production image, backup and restore`): failing and good nights, the role refused a write, a restore compared table by table and image by image, and the refusal of a second restore.
+
+Open for W4-5: an SFTP storage needs `openssh-client` in the image and the key mounted. Append-only credentials on the storage would move the prune out of the job.
