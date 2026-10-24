@@ -219,7 +219,11 @@ repository. Caddy signs with its own internal CA. To trust it, export its root
 certificate from `/data/caddy/pki/authorities/local/root.crt` in the `caddy`
 container and point `SSL_CERT_FILE` at the copy.
 
-A production env file proves the boot, the edge and the processes. The Wave 3
+A production env file proves the boot, the edge and the processes. It now
+needs `PUSH_DRIVER=fcm` and a well-formed `FCM_SERVICE_ACCOUNT` (`DL-114` (8)).
+For a rehearsal a throwaway key of the right shape (any `service_account` JSON
+with a fresh RSA key) passes the boot check; pushes then fail as `auth_failed`,
+which is harmless with no devices. The Wave 3
 walkthrough runs on the same image and stack with `APP_ENV=local`, since test
 phones are refused in production. Start it with `WALKTHROUGH_SCHEDULER=1`: the
 script then waits for the stack's scheduler to write the expiry instead of

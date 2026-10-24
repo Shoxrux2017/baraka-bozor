@@ -11,7 +11,9 @@ use App\Modules\Notifications\Jobs\DeliverPush;
 use App\Modules\Notifications\Push\FakePushSender;
 use App\Modules\Notifications\Push\PushSendResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Queue\Jobs\FakeJob;
+use Illuminate\Support\Facades\Event;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -21,11 +23,34 @@ final class DeliverPushTest extends TestCase
 
     private FakePushSender $push;
 
+    /** @var list<array{level: string, message: string, context: array<string, mixed>}> */
+    private array $logs = [];
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->push = $this->app->make(FakePushSender::class);
+        $this->logs = [];
+
+        Event::listen(MessageLogged::class, function (MessageLogged $event): void {
+            $this->logs[] = ['level' => $event->level, 'message' => $event->message, 'context' => $event->context];
+        });
+    }
+
+    /**
+     * @return list<array<string, mixed>> the contexts of the "given up" warnings
+     */
+    private function givenUp(): array
+    {
+        $contexts = [];
+        foreach ($this->logs as $log) {
+            if ($log['level'] === 'warning' && $log['message'] === 'A push was given up.') {
+                $contexts[] = $log['context'];
+            }
+        }
+
+        return $contexts;
     }
 
     /**
@@ -179,6 +204,143 @@ final class DeliverPushTest extends TestCase
         $row->refresh();
         $this->assertSame(NotificationDeliveryStatus::Failed, $row->status);
         $this->assertSame('exception', $row->last_error_code);
+    }
+
+    public function test_a_rejected_token_revokes_its_device_and_fails_the_row(): void
+    {
+        [$row, $device] = $this->queuedRow();
+        $other = PushDevice::factory()->create(['user_id' => $device->user_id]);
+        $this->push->answerNext(PushSendResult::rejectedToken('UNREGISTERED'));
+
+        $job = $this->job($row);
+        $job->handle($this->push);
+
+        $row->refresh();
+        $this->assertSame(NotificationDeliveryStatus::Failed, $row->status);
+        $this->assertSame('UNREGISTERED', $row->last_error_code);
+        $this->assertSame(1, $row->attempt_count);
+        $this->assertNotNull($device->refresh()->revoked_at);
+        $this->assertNull($other->refresh()->revoked_at);
+        $job->assertNotReleased();
+    }
+
+    public function test_a_retry_after_longer_than_the_backoff_is_honoured(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        [$row] = $this->queuedRow();
+        $this->push->answerNext(PushSendResult::retry('QUOTA_EXCEEDED', 300));
+
+        $job = $this->job($row);
+        $job->handle($this->push);
+
+        $job->assertReleased(delay: 300);
+    }
+
+    public function test_a_retry_after_shorter_than_the_backoff_keeps_the_backoff(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        [$row] = $this->queuedRow([], ['attempt_count' => 1]);
+        $this->push->answerNext(PushSendResult::retry('UNAVAILABLE', 5));
+
+        $job = $this->job($row, 2);
+        $job->handle($this->push);
+
+        $job->assertReleased(delay: 120);
+    }
+
+    public function test_a_retry_that_would_land_past_the_hour_fails_now(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        [$row] = $this->queuedRow();
+        $this->push->answerNext(PushSendResult::retry('UNAVAILABLE', 3700));
+
+        $job = $this->job($row);
+        $job->handle($this->push);
+
+        $row->refresh();
+        $this->assertSame(NotificationDeliveryStatus::Failed, $row->status);
+        $this->assertSame('UNAVAILABLE', $row->last_error_code);
+        $job->assertNotReleased();
+    }
+
+    public function test_a_push_given_up_after_its_retries_is_logged(): void
+    {
+        [$row] = $this->queuedRow([], ['attempt_count' => 3]);
+        $this->push->answerNext(PushSendResult::retry('UNAVAILABLE'));
+
+        $this->job($row, 4)->handle($this->push);
+
+        $this->assertSame([['reason' => 'UNAVAILABLE']], $this->givenUp());
+    }
+
+    public function test_a_retry_past_the_hour_is_logged_as_given_up(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        [$row] = $this->queuedRow();
+        $this->push->answerNext(PushSendResult::retry('UNAVAILABLE', 3700));
+
+        $this->job($row)->handle($this->push);
+
+        $this->assertSame([['reason' => 'UNAVAILABLE']], $this->givenUp());
+    }
+
+    public function test_a_released_retry_logs_nothing(): void
+    {
+        [$row] = $this->queuedRow();
+        $this->push->answerNext(PushSendResult::retry('UNAVAILABLE'));
+
+        $this->job($row)->handle($this->push);
+
+        $this->assertSame([], $this->givenUp());
+    }
+
+    public function test_a_permanent_failure_is_not_logged_by_the_job(): void
+    {
+        [$row] = $this->queuedRow();
+        $this->push->answerNext(PushSendResult::failed('INVALID_ARGUMENT'));
+
+        $this->job($row)->handle($this->push);
+
+        $this->assertSame([], $this->givenUp());
+    }
+
+    public function test_a_retry_near_the_end_of_the_hour_fits_only_while_the_delay_does(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        [$row] = $this->queuedRow();
+        [$late] = $this->queuedRow([], ['attempt_count' => 2]);
+        $job = $this->job($row);
+        $lateJob = $this->job($late, 3);
+
+        $this->travel(55)->minutes();
+        $this->push->answerNext(PushSendResult::retry('UNAVAILABLE'));
+        $job->handle($this->push);
+
+        $job->assertReleased(delay: 30);
+        $this->assertSame(NotificationDeliveryStatus::Queued, $row->refresh()->status);
+
+        $this->travel(4)->minutes();
+        $this->push->answerNext(PushSendResult::retry('UNAVAILABLE'));
+        $lateJob->handle($this->push);
+
+        $lateJob->assertNotReleased();
+        $this->assertSame(NotificationDeliveryStatus::Failed, $late->refresh()->status);
+    }
+
+    public function test_the_push_carries_its_remaining_lifetime(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        [$row] = $this->queuedRow();
+        [$later] = $this->queuedRow();
+        $job = $this->job($row);
+        $laterJob = $this->job($later);
+
+        $job->handle($this->push);
+        $this->travel(10)->minutes();
+        $laterJob->handle($this->push);
+
+        $this->assertSame(3600, $this->push->sent()[0]['message']->ttlSeconds);
+        $this->assertSame(3000, $this->push->sent()[1]['message']->ttlSeconds);
     }
 
     public function test_a_fake_that_does_not_report_delivery_marks_the_row_failed_without_sent_at(): void

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Notifications;
 
 use App\Modules\Notifications\Push\FakePushSender;
+use App\Modules\Notifications\Push\FcmPushSender;
+use App\Modules\Notifications\Push\FcmServiceAccount;
 use App\Modules\Notifications\Push\PushSender;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
@@ -29,9 +31,9 @@ final class NotificationsServiceProvider extends ServiceProvider
 
             return match ($driver) {
                 'fake' => $app->make(FakePushSender::class),
-                // `fcm` arrives with W4-8.
+                'fcm' => new FcmPushSender(FcmServiceAccount::fromConfig(config('services.fcm.service_account'))),
                 default => throw new RuntimeException(
-                    'PUSH_DRIVER is '.json_encode($driver).'; only "fake" exists yet.'
+                    'PUSH_DRIVER is '.json_encode($driver).'; it must be "fake" or "fcm".'
                 ),
             };
         });

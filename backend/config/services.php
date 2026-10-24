@@ -36,6 +36,10 @@ return [
         'token' => env('TELEGRAM_GATEWAY_TOKEN'),
     ],
 
+    'fcm' => [
+        'service_account' => env('FCM_SERVICE_ACCOUNT'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

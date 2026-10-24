@@ -24,7 +24,7 @@ Each gate is the Owner's external action (`AGENTS.md` section 14). Work that nee
 | Backup storage in Uzbekistan | W4-5 | A second place, apart from the VPS: an SFTP account or an S3-compatible bucket at another provider or another data centre, about 20 GB. The copies hold Customer data, so they stay in Uzbekistan (ZRU-547 art. 27-1) |
 | Telegram Gateway | W4-4 (verification), W4-5 | Signs in at gateway.telegram.org with their Telegram account and fills in the business details. Copies the API token from the account's API page and, at W4-5, restricts it to the server's IP address. Funds the balance through "Add Funds on Fragment", the only way Telegram's guide names; Fragment probably takes TON, which the Owner checks with their accountant. A code costs $0.01 and an undelivered one is refunded. Codes sent to the account's own number are free, which is how W4-4 is verified |
 | Google Play | W4-6 | A personal developer account ($25 once, identity check by document); the store shows the Owner's own name as the developer until the account moves to the legal entity. Twelve testers with Google accounts who stay opted in for fourteen days without a break; below twelve, the count starts again. The Owner submits what the agent prepares: the listing, the data-safety answers, the content rating, the reviewers' access |
-| Firebase | W4-8 (verification), W4-9 | A Firebase project on the Owner's Google account (the free plan is enough). An Android app registered with the package `uz.barakabozor.app`, and a service-account key for the server. Both files are saved outside the repository, never sent in chat |
+| Firebase | W4-8 (verification), W4-5, W4-9 | A Firebase project on the Owner's Google account (the free plan is enough). An Android app registered with the package `uz.barakabozor.app`, and a service-account key for the server. Both files are saved outside the repository, never sent in chat. W4-5 needs the service-account key too: its base64 goes into the server's env file as `FCM_SERVICE_ACCOUNT` (`DL-114` (8)) |
 | Google Maps keys for the release | W4-6 | The app's key from kit stage 4b (`DL-86`) gains the SHA-1 of the upload key and of Play's app-signing key; the server's Geocoding key is restricted to the VPS's address |
 
 **Owner questions in this wave**, each put on its own when its task reaches it (`AGENTS.md` section 3):
@@ -46,7 +46,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
 | W4-6 | Android release build and closed testing | Google Play, W4-5 | Planned |
 | W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | Merged (#116) |
-| W4-8 | Firebase Cloud Messaging sender; device pruning | Firebase (verification) | Planned |
+| W4-8 | Firebase Cloud Messaging sender; device pruning | Firebase (verification) | Merged (#118); verified on the Owner's project (`DL-114` (4)) |
 | W4-9 | Push in the app: Firebase token, permission, banners, opening the order | Firebase | Planned |
 | W4-10 | Carried P3 fixes | — | Merged (#117) |
 | W4-11 | Wave closure and the pilot checklist | all | Planned |
@@ -142,6 +142,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
   - `approvals:expire` running from the scheduler;
   - the first nightly backup, then a restore of it into a scratch stack on the server. That scratch env file uses `APP_ENV=local` (the production boot check refuses the fake driver, `DL-110` (7)), `localhost` hosts, fake drivers and blank provider keys (Telegram, FCM, payments), because `restore.sh` ends with `up -d`, which starts a worker and a scheduler on a copy of production data. Write this into `docker/DEPLOY.md`.
 - The Owner's question 2 is asked here, and the answer is set in the server's environment.
+- `FCM_SERVICE_ACCOUNT` in the server's env file, the base64 of the Firebase key (`DL-114` (8)); the production boot check refuses the fake push driver and a missing or malformed key.
 - The test-phone list is empty in production (`BR-ROLE-011`). The reviewer phone and its code of `DL-105` are set in the server's environment, and its account "Проверка Google" is created.
 
 **W4-6. Android release and closed testing** (`DL-104` (13)).
@@ -177,7 +178,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 
 - An HTTP v1 sender with the service account's OAuth token, through `google/auth` (a dependency; the reason goes in the commit).
 - Answers mapped:
-  - `UNREGISTERED`, or `INVALID_ARGUMENT` about the token field alone: the device is revoked; an `INVALID_ARGUMENT` about the message revokes nothing;
+  - `UNREGISTERED`, or `INVALID_ARGUMENT` about the token: the device is revoked; an `INVALID_ARGUMENT` about the message revokes nothing. Correction (`DL-114` (4)): Firebase's documented invalid-token answer is `400 INVALID_ARGUMENT` with the message "The registration token is not a valid FCM registration token" and no field violation; the Owner's project answered with that message and a violation on `message.token`. Either form revokes;
   - `429` and `5xx`: retried with backoff, honouring `Retry-After`;
   - anything else: recorded as failed.
 - `push-devices:prune` revokes devices unseen for 60 days.
@@ -238,7 +239,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | `worker` and `scheduler` do not mount the images volume; a future job that writes images must get it (W4-2 review) | Open, note |
 | The other Symfony components stay on 8.0, past its maintenance, while `symfony/http-foundation` is on 8.1 (`DL-107` (10)). Move `symfony/*` to 8.1 before W4-5 | Open, W4-5 |
 | Carried from Wave 2: CORS in production | Closed by W4-2 (`DL-107` (6)) |
-| Carried from Wave 2: device pruning, the push token change stream | Close with W4-8 and W4-9 |
+| Carried from Wave 2: device pruning, the push token change stream | Pruning closed by W4-8 (`DL-114` (7)); the stream closes with W4-9 |
 | Carried from Wave 2: a build whose MapKit key Yandex refuses aborts at launch | Closed: the map is Google's since `DL-86`, and its SDK starts only when a map is shown |
 | Carried from Wave 3: the handoff point at launch | Owner question 2, W4-5 |
 | Carried from Wave 3, P3: a list under a page; Customer mode's app bar | Closed by W4-10 (`DL-113`) |
@@ -256,7 +257,8 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | W4-3 | P3: nothing asserts that the backup role is absent right after `restore.sh`, before `create-role.sh` | The role is cluster-wide and the dump holds none (`pg_dump` of one database). The rehearsal saw the scheduled night fail at the dump on the restored stack, which is that absence |
 | W4-3 | P3: the cycle exercises no `forget` failure | A forget-only failure needs a repository that breaks between two calls. Its step name comes from the same trap that the dump, backup and config failures prove |
 | W4-4 | P3: one docblock line in `LoginCodeCeiling.php` runs longer than its neighbours | Cosmetic; Pint passes and nothing reads differently. Reflowing it alone would be formatting churn (`AGENTS.md` section 7) |
-| W4-7 | P3 (re-review): no test resolves `PushSender` under a non-testing environment to prove the non-reporting fake is bound | The provider's choice is one expression on `$app->environment('testing')`; the testing binding and the flag-false fake are each tested, and W4-8 replaces the fake in production with FCM and a boot check |
+| W4-7 | P3 (re-review): no test resolves `PushSender` under a non-testing environment to prove the non-reporting fake is bound | The provider's choice is one expression on `$app->environment('testing')`; the testing binding and the flag-false fake are each tested, and W4-8 replaces the fake in production with FCM and a boot check. Closed by W4-8: the boot check refuses the fake push driver and resolves the sender (`DL-114` (8)) |
+| W4-8 | P3: a send that times out after Firebase accepted it is resent 30 s later, so the phone can show two identical banners | W4-9 owns how notifications show (the channel, a tag such as the delivery id in `android.notification.tag` and `apns-collapse-id`, the foreground banner); the tag is chosen there. Until then a duplicate needs a 10-second timeout after Firebase accepted the push |
 
 ## Closure
 

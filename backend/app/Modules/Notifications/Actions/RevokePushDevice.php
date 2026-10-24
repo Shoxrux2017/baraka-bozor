@@ -7,6 +7,7 @@ namespace App\Modules\Notifications\Actions;
 use App\Models\PushDevice;
 use App\Models\User;
 use App\Support\Scope\ScopedLookup;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -42,6 +43,31 @@ final class RevokePushDevice
     {
         self::own($user)
             ->whereNull('revoked_at')
+            ->update(['revoked_at' => now(), 'updated_at' => now()]);
+    }
+
+    /**
+     * The provider refused this device's token for good: one conditional
+     * statement revokes the live row, so a repeat or a racing revoke changes
+     * nothing.
+     */
+    public static function refusedByProvider(string $deviceId): void
+    {
+        PushDevice::query()
+            ->whereKey($deviceId)
+            ->whereNull('revoked_at')
+            ->update(['revoked_at' => now(), 'updated_at' => now()]);
+    }
+
+    /**
+     * Revokes every live device not seen since [$cutoff]; a device never seen
+     * counts from the day it was registered. Returns how many it revoked.
+     */
+    public static function unseenSince(CarbonInterface $cutoff): int
+    {
+        return PushDevice::query()
+            ->whereNull('revoked_at')
+            ->whereRaw('coalesce(last_seen_at, created_at) < ?', [$cutoff])
             ->update(['revoked_at' => now(), 'updated_at' => now()]);
     }
 

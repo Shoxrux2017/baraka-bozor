@@ -59,6 +59,8 @@
         <env name="LOGIN_CODE_REVIEWER_CODE" value="" force="true"/>
         <env name="LOGIN_CODE_DAILY_LIMIT" value="500" force="true"/>
         <env name="TELEGRAM_GATEWAY_TOKEN" value="" force="true"/>
+        <env name="PUSH_DRIVER" value="fake" force="true"/>
+        <env name="FCM_SERVICE_ACCOUNT" value="" force="true"/>
         <server name="LOGIN_CODE_DRIVER" value="fake"/>
         <server name="LOGIN_CODE_TEST_PHONES" value=""/>
         <server name="LOGIN_CODE_TEST_CODE" value=""/>
@@ -66,6 +68,8 @@
         <server name="LOGIN_CODE_REVIEWER_CODE" value=""/>
         <server name="LOGIN_CODE_DAILY_LIMIT" value="500"/>
         <server name="TELEGRAM_GATEWAY_TOKEN" value=""/>
+        <server name="PUSH_DRIVER" value="fake"/>
+        <server name="FCM_SERVICE_ACCOUNT" value=""/>
         <!-- Pinned so a developer's .env without a handoff point cannot change
              what the Courier's tests observe; they set it off where they mean to. -->
         <env name="DELIVERY_HANDOFF_POINT" value="true" force="true"/>
