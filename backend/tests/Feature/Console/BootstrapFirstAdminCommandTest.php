@@ -7,6 +7,7 @@ namespace Tests\Feature\Console;
 use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Models\User;
+use App\Modules\Auth\TestPhones;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -57,6 +58,18 @@ final class BootstrapFirstAdminCommandTest extends TestCase
 
         $this->assertNull($admin->created_by_user_id, 'Nobody created the first Admin.');
         $this->assertTrue(Hash::check(self::PASSWORD, (string) $admin->password));
+    }
+
+    public function test_it_refuses_the_store_reviewers_phone(): void
+    {
+        config(['login_codes.reviewer_phone' => self::PHONE, 'login_codes.reviewer_code' => '482913']);
+        $this->app->forgetInstance(TestPhones::class);
+
+        $this->artisan(self::COMMAND, ['phone' => self::PHONE])
+            ->expectsOutputToContain('LOGIN_CODE_REVIEWER_PHONE')
+            ->assertExitCode(Command::FAILURE);
+
+        $this->assertSame(0, User::query()->count());
     }
 
     public function test_it_refuses_when_an_admin_already_exists(): void

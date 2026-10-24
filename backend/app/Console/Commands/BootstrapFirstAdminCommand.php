@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Models\Enums\Role;
 use App\Models\Enums\UserStatus;
 use App\Models\User;
+use App\Modules\Auth\TestPhones;
 use Illuminate\Console\Command;
 use Throwable;
 
@@ -71,6 +72,14 @@ final class BootstrapFirstAdminCommand extends Command
 
         if (preg_match(self::PHONE_PATTERN, $phone) !== 1) {
             $this->error("\"{$phone}\" is not a valid phone. Expected +998 followed by nine digits.");
+
+            return self::FAILURE;
+        }
+
+        if (app(TestPhones::class)->isReviewer($phone)) {
+            $this->error(
+                "That phone is the store reviewer's (LOGIN_CODE_REVIEWER_PHONE); no staff account may sit on it."
+            );
 
             return self::FAILURE;
         }

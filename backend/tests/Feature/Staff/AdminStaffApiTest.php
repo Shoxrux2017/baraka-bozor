@@ -10,6 +10,7 @@ use App\Models\Enums\UserStatus;
 use App\Models\PushDevice;
 use App\Models\User;
 use App\Modules\Auth\CodeDelivery\FakeCodeSink;
+use App\Modules\Auth\TestPhones;
 use App\Modules\Staff\Actions\BlockStaff;
 use App\Modules\Staff\StaffDirectory;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -36,6 +37,8 @@ final class AdminStaffApiTest extends TestCase
     private const URL = '/api/v1/admin/staff';
 
     private const PHONE = '+998901112233';
+
+    private const REVIEWER_PHONE = '+998900000077';
 
     private User $admin;
 
@@ -391,6 +394,27 @@ final class AdminStaffApiTest extends TestCase
         $this->asAdmin()->postJson(self::URL.'/'.$blockedOnCustomerPhone->id.'/activate')->assertOk();
     }
 
+    public function test_the_reviewer_phone_takes_no_staff_account(): void
+    {
+        $this->configureReviewer();
+
+        $this->asAdmin()->postJson(self::URL, $this->body(['phone' => self::REVIEWER_PHONE]))
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'phone_reserved');
+        $this->assertSame(0, User::query()->where('phone', self::REVIEWER_PHONE)->count());
+    }
+
+    public function test_activate_is_refused_on_the_reviewer_phone(): void
+    {
+        $blocked = User::factory()->role(Role::Shopper)->blocked()->create(['phone' => self::REVIEWER_PHONE]);
+        $this->configureReviewer();
+
+        $this->asAdmin()->postJson(self::URL.'/'.$blocked->id.'/activate')
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'phone_reserved');
+        $this->assertSame(UserStatus::Blocked, $blocked->fresh()?->status);
+    }
+
     public function test_reset_issues_a_new_temporary_password_sets_the_gate_and_ends_every_session(): void
     {
         $staff = User::factory()->role(Role::Operator)->create([
@@ -506,6 +530,16 @@ final class AdminStaffApiTest extends TestCase
             ->json('data.staff_step.token');
 
         return $this->postJson('/api/v1/auth/staff/step', ['staff_step' => $step, 'password' => $password]);
+    }
+
+    private function configureReviewer(): void
+    {
+        config([
+            'login_codes.reviewer_phone' => self::REVIEWER_PHONE,
+            'login_codes.reviewer_code' => '482913',
+        ]);
+
+        $this->app->forgetInstance(TestPhones::class);
     }
 
     private function asAdmin(): self

@@ -30,6 +30,10 @@ final class CustomerLoginCodeTest extends TestCase
 
     private const TEST_CODE = '000000';
 
+    private const REVIEWER_PHONE = '+998900000077';
+
+    private const REVIEWER_CODE = '482913';
+
     public function test_requesting_a_code_reports_the_channel_and_the_timers_and_never_the_code(): void
     {
         $response = $this->request(self::PHONE);
@@ -400,6 +404,35 @@ final class CustomerLoginCodeTest extends TestCase
         $this->verify(self::TEST_PHONE, self::TEST_CODE)->assertOk()->assertJsonPath('data.user.phone', self::TEST_PHONE);
     }
 
+    public function test_the_reviewer_phone_signs_in_with_its_own_code_and_receives_nothing(): void
+    {
+        $this->configureReviewer();
+
+        $this->request(self::REVIEWER_PHONE)->assertOk()->assertJsonPath('data.channel', 'test');
+
+        $this->assertNull($this->sink()->codeFor(self::REVIEWER_PHONE), 'nothing was delivered');
+        $this->assertSame('test', LoginChallenge::query()->sole()->channel);
+
+        $this->assertRefused($this->verify(self::REVIEWER_PHONE, '123456'), 'code_invalid');
+
+        $this->verify(self::REVIEWER_PHONE, self::REVIEWER_CODE)
+            ->assertOk()
+            ->assertJsonPath('data.user.role', 'customer')
+            ->assertJsonPath('data.user.phone', self::REVIEWER_PHONE);
+    }
+
+    public function test_the_reviewer_phone_never_receives_a_staff_step(): void
+    {
+        $this->configureReviewer();
+        User::factory()->role(Role::Shopper)->create(['phone' => self::REVIEWER_PHONE]);
+
+        $this->request(self::REVIEWER_PHONE)->assertOk();
+
+        $this->verify(self::REVIEWER_PHONE, self::REVIEWER_CODE)
+            ->assertOk()
+            ->assertJsonPath('data.staff_step', null);
+    }
+
     public function test_the_fixed_code_does_not_open_a_phone_that_is_not_a_test_phone(): void
     {
         $this->configureTestPhone();
@@ -463,6 +496,16 @@ final class CustomerLoginCodeTest extends TestCase
     private function configureTestPhone(): void
     {
         config(['login_codes.test_phones' => [self::TEST_PHONE], 'login_codes.test_code' => self::TEST_CODE]);
+
+        $this->app->forgetInstance(TestPhones::class);
+    }
+
+    private function configureReviewer(): void
+    {
+        config([
+            'login_codes.reviewer_phone' => self::REVIEWER_PHONE,
+            'login_codes.reviewer_code' => self::REVIEWER_CODE,
+        ]);
 
         $this->app->forgetInstance(TestPhones::class);
     }

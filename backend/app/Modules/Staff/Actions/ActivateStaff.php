@@ -7,6 +7,7 @@ namespace App\Modules\Staff\Actions;
 use App\Exceptions\ApiException;
 use App\Models\Enums\UserStatus;
 use App\Models\User;
+use App\Modules\Auth\TestPhones;
 use App\Modules\Staff\StaffDirectory;
 use App\Support\Scope\ScopedLookup;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -19,9 +20,13 @@ use Illuminate\Support\Facades\DB;
  * blocked and a new one created on the same phone (`BR-ROLE-002`). The
  * password and the gate are left as they were; the tokens went at the block.
  * Activating an active account is a natural repeat (`docs/09` section 49).
+ * The store reviewer's phone takes no staff account (`DL-105`):
+ * `409 phone_reserved`.
  */
 final class ActivateStaff
 {
+    public function __construct(private readonly TestPhones $testPhones) {}
+
     public function __invoke(string $staffId): User
     {
         return DB::transaction(function () use ($staffId): User {
@@ -29,6 +34,10 @@ final class ActivateStaff
 
             if ($staff->status === UserStatus::Active) {
                 return $staff;
+            }
+
+            if ($this->testPhones->isReviewer($staff->phone)) {
+                throw ApiException::conflict('phone_reserved');
             }
 
             if (StaffDirectory::activeHolderExists($staff->phone, $staff->id)) {
