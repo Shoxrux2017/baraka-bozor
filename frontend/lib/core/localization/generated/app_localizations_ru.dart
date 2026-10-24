@@ -13,6 +13,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get appTitle => 'BarakaBozor';
 
   @override
+  String get pushChannelName => 'Заказы';
+
+  @override
+  String get pushChannelDescription =>
+      'Новые заказы, вопросы и изменения статуса';
+
+  @override
   String get customerLoginTitle => 'Вход';
 
   @override

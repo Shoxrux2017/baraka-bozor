@@ -8,6 +8,7 @@ import '../../../core/errors/report_unexpected_error.dart';
 import '../application/push_ports.dart';
 import '../domain/push.dart';
 import 'fcm_push_messaging.dart';
+import 'local_banner_display.dart';
 import 'firebase_push_config.dart';
 
 /// Starts Firebase before the app runs and answers the providers that bring
@@ -35,7 +36,12 @@ Future<List<Override>> startPush() async {
       FirebaseMessaging.instance,
       platform,
     );
-    return <Override>[pushTokenSourceProvider.overrideWithValue(source)];
+    final LocalBannerDisplay display = await LocalBannerDisplay.start();
+    return <Override>[
+      pushTokenSourceProvider.overrideWithValue(source),
+      pushInboxProvider.overrideWithValue(source),
+      bannerDisplayProvider.overrideWithValue(display),
+    ];
   } catch (error, stackTrace) {
     reportUnexpectedError(error, stackTrace, 'while starting push');
     return const <Override>[];

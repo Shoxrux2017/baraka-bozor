@@ -1,6 +1,8 @@
 {
   "@@locale": "uz",
   "appTitle": "BarakaBozor",
+  "pushChannelName": "Buyurtmalar",
+  "pushChannelDescription": "Yangi buyurtmalar, savollar va holat o'zgarishlari",
   "customerLoginTitle": "Kirish",
   "customerLoginIntro": "Telefon raqamingizni kiriting — kirish kodini yuboramiz",
   "phoneLabel": "Telefon raqami",

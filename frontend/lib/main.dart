@@ -8,6 +8,7 @@ import 'core/localization/app_language.dart';
 import 'core/localization/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/font_licenses.dart';
+import 'features/notifications/application/push_presenter.dart';
 import 'features/notifications/application/push_registrar.dart';
 import 'features/notifications/data/push_setup.dart';
 
@@ -37,6 +38,8 @@ class BarakaBozorApp extends ConsumerWidget {
     final GoRouter router = ref.watch(routerProvider);
     // Registers the device for push while any account is signed in.
     ref.watch(pushRegistrarProvider);
+    // Shows a push that arrives while the app is open.
+    ref.watch(pushPresenterProvider);
     final AppLanguage? language = ref.watch(languageControllerProvider).value;
 
     return MaterialApp.router(

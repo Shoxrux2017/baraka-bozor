@@ -104,6 +104,18 @@ abstract class AppLocalizations {
   /// **'BarakaBozor'**
   String get appTitle;
 
+  /// No description provided for @pushChannelName.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar'**
+  String get pushChannelName;
+
+  /// No description provided for @pushChannelDescription.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangi buyurtmalar, savollar va holat o\'zgarishlari'**
+  String get pushChannelDescription;
+
   /// No description provided for @customerLoginTitle.
   ///
   /// In uz, this message translates to:
