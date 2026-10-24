@@ -326,6 +326,24 @@ final class CustomerLoginCodeTest extends TestCase
             ->assertOk();
     }
 
+    public function test_ten_requests_per_ipv6_prefix_per_minute(): void
+    {
+        foreach (range(1, 10) as $attempt) {
+            $this->withServerVariables(['REMOTE_ADDR' => '2001:db8:5:6::'.dechex($attempt)])
+                ->postJson('/api/v1/auth/customer/code/request', ['phone' => sprintf('+99890%07d', $attempt)])
+                ->assertOk();
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => '2001:db8:5:6:ffff::1'])
+            ->postJson('/api/v1/auth/customer/code/request', ['phone' => '+998901111111'])
+            ->assertStatus(429)
+            ->assertJsonPath('code', 'rate_limited');
+
+        $this->withServerVariables(['REMOTE_ADDR' => '2001:db8:5:7::1'])
+            ->postJson('/api/v1/auth/customer/code/request', ['phone' => '+998901111111'])
+            ->assertOk();
+    }
+
     public function test_a_resend_is_sent_at_once(): void
     {
         $this->request(self::PHONE)->assertOk()->assertJsonPath('data.resend_available_in_seconds', 0);

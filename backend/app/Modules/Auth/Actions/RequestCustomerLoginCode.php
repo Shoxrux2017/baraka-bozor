@@ -10,6 +10,7 @@ use App\Modules\Auth\CodeDelivery\CodeDeliveryGateway;
 use App\Modules\Auth\LoginCodePolicy;
 use App\Modules\Auth\Models\LoginChallenge;
 use App\Modules\Auth\TestPhones;
+use App\Support\Http\ClientAddress;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -50,7 +51,7 @@ final class RequestCustomerLoginCode
     {
         // Broadest first: a request refused on the address alone charges the
         // phone nothing, so one noisy source cannot use up a phone's window.
-        $this->reserve("login-code:ip:{$ip}", self::IP_REQUESTS_PER_MINUTE, 60, 'rate_limited');
+        $this->reserve('login-code:ip:'.ClientAddress::limiterKey($ip), self::IP_REQUESTS_PER_MINUTE, 60, 'rate_limited');
 
         // A locked phone gets no new code: a resend would end the lock early.
         // Checked before the hour slot, so a refused request costs the phone
