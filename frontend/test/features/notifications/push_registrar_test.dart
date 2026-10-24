@@ -8,6 +8,7 @@ import 'package:baraka_bozor/core/session/session_end_hook.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/notifications/application/push_ports.dart';
 import 'package:baraka_bozor/features/notifications/application/push_registrar.dart';
 import 'package:baraka_bozor/features/notifications/domain/push.dart';
 import 'package:flutter/foundation.dart';
@@ -25,6 +26,22 @@ class _FakeSource implements PushTokenSource {
 
   /// While set, the token is given only once it completes.
   Completer<void>? hold;
+
+  final StreamController<PushToken> _changes =
+      StreamController<PushToken>.broadcast();
+
+  @override
+  Stream<PushToken> get changes => _changes.stream;
+
+  /// The device's token becomes [value] and the source says so.
+  void rotate(String value) {
+    final PushToken next = PushToken(
+      platform: PushPlatform.android,
+      value: value,
+    );
+    token = next;
+    _changes.add(next);
+  }
 
   @override
   Future<PushToken?> current() async {
@@ -375,6 +392,59 @@ void main() {
       );
     },
   );
+
+  test('a token change registers every signed-in account again', () async {
+    tokens.tokens[SessionSlot.staff] = 's';
+    tokens.tokens[SessionSlot.customer] = 'c';
+    auth.identities[SessionSlot.staff] = user(id: 's', role: UserRole.shopper);
+    auth.identities[SessionSlot.customer] = user(id: 'c');
+    await start();
+
+    source.rotate('fcm-token-2');
+    await pumpEventQueue();
+
+    expect(
+      pushCalls().sublist(2),
+      unorderedEquals(<String>[
+        'register:staff:fcm-token-2:d-2',
+        'register:customer:fcm-token-2:d-3',
+      ]),
+    );
+  });
+
+  test('a token change while signed out registers nothing', () async {
+    await start();
+
+    source.rotate('fcm-token-2');
+    await pumpEventQueue();
+
+    expect(pushCalls(), isEmpty);
+  });
+
+  test('a logout after a token change revokes the newer device', () async {
+    signInCustomer('c');
+    final ProviderContainer container = await start();
+
+    source.rotate('fcm-token-2');
+    await pumpEventQueue();
+    await container
+        .read(sessionControllerProvider.notifier)
+        .logout(SessionMode.customer);
+
+    expect(revokes(), <String>['revoke:customer:d-1']);
+  });
+
+  test('a failed registration is tried again at a token change', () async {
+    signInCustomer('c');
+    devices.registerFailures[SessionSlot.customer] = const NetworkFailure();
+    await start();
+    expect(pushCalls(), <String>['register-failed:customer']);
+
+    source.rotate('fcm-token-2');
+    await pumpEventQueue();
+
+    expect(pushCalls().last, 'register:customer:fcm-token-2:d-0');
+  });
 
   test(
     'an account that replaces another in a slot is registered anew',

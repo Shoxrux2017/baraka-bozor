@@ -25,6 +25,9 @@ final class PushToken {
 abstract interface class PushTokenSource {
   /// The token, or `null` while the device has none to give.
   Future<PushToken?> current();
+
+  /// The token each time the platform replaces it.
+  Stream<PushToken> get changes;
 }
 
 /// The source until Wave 4 brings FCM: no token, so nothing is registered.
@@ -33,6 +36,9 @@ final class NoPushTokenSource implements PushTokenSource {
 
   @override
   Future<PushToken?> current() async => null;
+
+  @override
+  Stream<PushToken> get changes => const Stream<PushToken>.empty();
 }
 
 /// Registering and revoking a device (`docs/09` section 27), each on the

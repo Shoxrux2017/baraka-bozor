@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:go_router/go_router.dart';
 
 import 'app/providers.dart';
@@ -8,10 +9,18 @@ import 'core/localization/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/font_licenses.dart';
 import 'features/notifications/application/push_registrar.dart';
+import 'features/notifications/data/push_setup.dart';
 
-void main() {
+Future<void> main() async {
   registerFontLicenses();
-  runApp(const ProviderScope(retry: noAutomaticRetry, child: BarakaBozorApp()));
+  final List<Override> pushOverrides = await startPush();
+  runApp(
+    ProviderScope(
+      retry: noAutomaticRetry,
+      overrides: pushOverrides,
+      child: const BarakaBozorApp(),
+    ),
+  );
 }
 
 /// Riverpod retries a failed provider on its own unless told otherwise. The

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
@@ -9,9 +11,7 @@ import '../../../core/storage/token_store.dart';
 import '../../auth/domain/app_user.dart';
 import '../data/push_devices_api.dart';
 import '../domain/push.dart';
-
-final Provider<PushTokenSource> pushTokenSourceProvider =
-    Provider<PushTokenSource>((Ref ref) => const NoPushTokenSource());
+import 'push_ports.dart';
 
 final Provider<PushDevicesRepository> pushDevicesRepositoryProvider =
     Provider<PushDevicesRepository>(
@@ -44,6 +44,11 @@ class PushRegistrar implements SessionEndHook {
           _follow(next.value),
       fireImmediately: true,
     );
+    final StreamSubscription<PushToken> changes = _ref
+        .read(pushTokenSourceProvider)
+        .changes
+        .listen((PushToken token) => _registerAgain());
+    _ref.onDispose(changes.cancel);
   }
 
   final Ref _ref;
@@ -82,6 +87,20 @@ class PushRegistrar implements SessionEndHook {
         _registrations[slot] = registration;
         registration.deviceId = _register(slot, registration);
       }
+    }
+  }
+
+  /// The platform replaced the token: every account holding a registration,
+  /// a failed one included, registers the new token, and a later logout
+  /// revokes that newer device. A slot without one is signed out or behind
+  /// the password gate, and registers when it passes.
+  void _registerAgain() {
+    for (final SessionSlot slot in _registrations.keys.toList()) {
+      final _Registration registration = _Registration(
+        _registrations[slot]!.accountId,
+      );
+      _registrations[slot] = registration;
+      registration.deviceId = _register(slot, registration);
     }
   }
 
