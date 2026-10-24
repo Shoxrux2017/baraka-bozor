@@ -1049,6 +1049,14 @@ class AppLocalizationsUz extends AppLocalizations {
   String get errorPhoneAlreadyActive => 'Bu raqam boshqa faol xodimga tegishli';
 
   @override
+  String get errorCodeDeliveryUnavailable =>
+      'Kod Telegramga yuboriladi, lekin bu raqam Telegramda topilmadi. Hozircha Telegramsiz kod olib bo\'lmaydi';
+
+  @override
+  String get errorPhoneReserved =>
+      'Bu raqam ilovani Google Play\'da tekshirish uchun ajratilgan';
+
+  @override
   String get catalogSearchHint => 'Qidirish: bodring, non…';
 
   @override

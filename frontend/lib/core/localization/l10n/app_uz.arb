@@ -466,6 +466,8 @@
   "errorLastActiveAdminRequired": "Oxirgi faol administratorni bloklab bo'lmaydi",
   "errorSelfResetNotAllowed": "O'z parolingizni bu yerda tiklab bo'lmaydi",
   "errorPhoneAlreadyActive": "Bu raqam boshqa faol xodimga tegishli",
+  "errorCodeDeliveryUnavailable": "Kod Telegramga yuboriladi, lekin bu raqam Telegramda topilmadi. Hozircha Telegramsiz kod olib bo'lmaydi",
+  "errorPhoneReserved": "Bu raqam ilovani Google Play'da tekshirish uchun ajratilgan",
   "catalogSearchHint": "Qidirish: bodring, non…",
   "deliveryAddressEmptyHint": "Buyurtmani qayerga olib borish kerak",
   "homeCategories": "Kategoriyalar",

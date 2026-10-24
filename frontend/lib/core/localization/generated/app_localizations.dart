@@ -1976,6 +1976,18 @@ abstract class AppLocalizations {
   /// **'Bu raqam boshqa faol xodimga tegishli'**
   String get errorPhoneAlreadyActive;
 
+  /// No description provided for @errorCodeDeliveryUnavailable.
+  ///
+  /// In uz, this message translates to:
+  /// **'Kod Telegramga yuboriladi, lekin bu raqam Telegramda topilmadi. Hozircha Telegramsiz kod olib bo\'lmaydi'**
+  String get errorCodeDeliveryUnavailable;
+
+  /// No description provided for @errorPhoneReserved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Bu raqam ilovani Google Play\'da tekshirish uchun ajratilgan'**
+  String get errorPhoneReserved;
+
   /// No description provided for @catalogSearchHint.
   ///
   /// In uz, this message translates to:
