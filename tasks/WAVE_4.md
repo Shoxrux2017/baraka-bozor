@@ -42,7 +42,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | W4-1 | Laravel Boost trial (`DL-103`, `DL-106`) | — | Merged (#110); removed unused (#112, `DL-108`) |
 | W4-2 | Production runtime: images, `docker/compose.prod.yaml`, Caddy, CORS, proxies, the worker, the scheduler and its pruning | — | Merged (#111) |
 | W4-3 | Backups: nightly encrypted copies off the host, the restore script | — | Merged (#113) |
-| W4-4 | Login codes through Telegram Gateway | Telegram (verification) | Planned |
+| W4-4 | Login codes through Telegram Gateway | Telegram (verification) | In progress |
 | W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
 | W4-6 | Android release build and closed testing | Google Play, W4-5 | Planned |
 | W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | Planned |

@@ -26,7 +26,7 @@ Customer login → catalog → cart → checkout preview → order
 6. A Customer token is issued, with `staff_step` when the phone also holds a Shopper or Courier account (section 3); the app bootstraps identity through `/auth/me`.
 7. A Customer without a name gives one on the name step and sees a welcome; then the home opens.
 
-A configured test phone number verifies with the configured fixed code and skips step 2's delivery. No cart is created here; the cart is created on first cart access.
+A configured test phone number verifies with the configured fixed code and skips step 2's delivery; so does the store reviewer's phone with its own code, the one such number allowed in production, and it never gets a staff step (`DL-105`, `DL-110` (6)). No cart is created here; the cart is created on first cart access.
 
 ## 3. Staff Sign-In and First Password Change
 

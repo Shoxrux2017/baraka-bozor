@@ -48,7 +48,7 @@ Phone: E.164 `+998` plus nine digits. Policy: six digits, five-minute lifetime, 
 {"data":{"channel":"telegram","expires_in_seconds":300,"resend_available_in_seconds":0}}
 ```
 
-`channel` ∈ `telegram, sms, fake, test`. `fake` is what the development gateway reports; `test` means a configured test phone that needs no delivery. The client shows channel-specific text for `telegram` and `sms` and a generic "code sent" otherwise. Codes: `code_locked` (`429`, `Retry-After`), `rate_limited`, `code_delivery_unavailable` (`409`: no channel reaches the number — Telegram cannot and no SMS provider exists yet; no challenge is created), `provider_unavailable` (also, for a phone holding no active account, above the daily ceiling of paid sends — which, while it lasts, tells such a phone from one with an account), `validation_failed` (`DL-104` (9)).
+`channel` ∈ `telegram, sms, fake, test`. `fake` is what the development gateway reports; `test` means a configured test phone, or the store reviewer's phone (`DL-105`), that needs no delivery. The client shows channel-specific text for `telegram` and `sms` and a generic "code sent" otherwise. Codes: `code_locked` (`429`, `Retry-After`), `rate_limited`, `code_delivery_unavailable` (`409`: no channel reaches the number — Telegram cannot and no SMS provider exists yet; no challenge is created), `provider_unavailable` (also, for a phone holding no active account, above the daily ceiling of paid sends — which, while it lasts, tells such a phone from one with an account), `validation_failed` (`DL-104` (9)).
 
 ## 7. Verify Customer Login Code
 
@@ -60,7 +60,7 @@ Resolves the active Customer account or creates one when none is active, records
 {"data":{"token":"...","user":{"id":"...","role":"customer","phone":"+998901234567","full_name":null,"status":"active","must_change_password":false,"preferred_language":"uz"},"staff_step":null}}
 ```
 
-`staff_step` is `null`, or `{"token":"<64 characters>","expires_at":"2026-10-15T09:05:00Z"}` when the phone also holds an active or blocked Shopper or Courier account (`DL-77`). Codes: `code_invalid`, `code_expired`, `code_attempts_exhausted`, `account_blocked` (evaluated only after the code is valid, `401`; it also answers a phone whose blocked account was erased, which gets no new account, `DL-95`). Never issues a staff session; for a phone that also holds a Shopper or Courier account it returns a single-use `staff_step` (5 minutes, 5 wrong passwords) for `POST /auth/staff/step`, and a new verification closes the earlier open step. A configured test phone accepts the configured fixed code. The third wrong code answers `429 code_locked` with `Retry-After: 60` and locks the phone; while locked, verify and request answer `code_locked` with the seconds left (`DL-87`).
+`staff_step` is `null`, or `{"token":"<64 characters>","expires_at":"2026-10-15T09:05:00Z"}` when the phone also holds an active or blocked Shopper or Courier account (`DL-77`). Codes: `code_invalid`, `code_expired`, `code_attempts_exhausted`, `account_blocked` (evaluated only after the code is valid, `401`; it also answers a phone whose blocked account was erased, which gets no new account, `DL-95`). Never issues a staff session; for a phone that also holds a Shopper or Courier account it returns a single-use `staff_step` (5 minutes, 5 wrong passwords) for `POST /auth/staff/step`, and a new verification closes the earlier open step. A configured test phone accepts the configured fixed code, and the store reviewer's phone its own fixed code (`DL-105`); the reviewer's phone never receives a `staff_step` (`DL-110` (6)). The third wrong code answers `429 code_locked` with `Retry-After: 60` and locks the phone; while locked, verify and request answer `code_locked` with the seconds left (`DL-87`).
 
 ## 8. Staff Login
 
@@ -290,7 +290,7 @@ Approval resource (`status` also `cancelled` once its order is cancelled, `DL-54
 
 ## 43. Staff
 
-`GET|POST /admin/staff` (the list takes `role`, `status`, `page`, `per_page`), `GET|PATCH /admin/staff/{user}`, `POST .../block`, `POST .../activate`, `POST .../reset-password`. Create body `{"full_name":"...","phone":"+998...","role":"shopper"}` with `full_name` 1–120 characters; create and reset return the temporary password once. Block and reset-password delete every token of the account (`DL-17`). PATCH accepts `full_name` only, never `role`. Codes: `self_block_not_allowed`, `last_active_admin_required`, `self_reset_not_allowed`, `phone_already_active`.
+`GET|POST /admin/staff` (the list takes `role`, `status`, `page`, `per_page`), `GET|PATCH /admin/staff/{user}`, `POST .../block`, `POST .../activate`, `POST .../reset-password`. Create body `{"full_name":"...","phone":"+998...","role":"shopper"}` with `full_name` 1–120 characters; create and reset return the temporary password once. Block and reset-password delete every token of the account (`DL-17`). PATCH accepts `full_name` only, never `role`. Codes: `self_block_not_allowed`, `last_active_admin_required`, `self_reset_not_allowed`, `phone_already_active`, `phone_reserved` (`409`: the phone is the store reviewer's, which takes no staff account; it refuses create and activate, `DL-110` (6)).
 
 A staff account is `{"id":"...","role":"shopper","phone":"+998901112233","full_name":"Dilnoza Karimova","status":"active","must_change_password":true,"last_login_at":null,"blocked_at":null,"created_at":"...","updated_at":"..."}`. Create (`201`) and reset-password (`200`) answer `{"data":{"user":{...},"temporary_password":"7pQx9KmT3wZe"}}` with `Cache-Control: no-store`; every other endpoint answers the account. The role is any staff role, never `customer`; the phone is `+998` and nine digits. The list is newest first. A Customer's id is the scope-safe `404`. Blocking a blocked account and activating an active one are natural repeats (Section 49). An Admin cannot reset their own password here (`409 self_reset_not_allowed`); they use `POST /auth/change-password` (`DL-25`).
 
@@ -352,7 +352,7 @@ The backend decides from locked state; a stale client receives a `409` with a st
 
 ## 56. Delivery and Admin
 
-`courier_not_assigned` and `delivery_not_ready` (not answered, `DL-63` (4)), `delivery_state_conflict`, `last_active_admin_required`, `self_block_not_allowed`, `self_reset_not_allowed`, `phone_already_active`, `price_correction_locked`, `price_correction_not_applicable`, `price_correction_above_ceiling`.
+`courier_not_assigned` and `delivery_not_ready` (not answered, `DL-63` (4)), `delivery_state_conflict`, `last_active_admin_required`, `self_block_not_allowed`, `self_reset_not_allowed`, `phone_already_active`, `phone_reserved`, `price_correction_locked`, `price_correction_not_applicable`, `price_correction_above_ceiling`.
 
 ## 57. Provider Safety
 
