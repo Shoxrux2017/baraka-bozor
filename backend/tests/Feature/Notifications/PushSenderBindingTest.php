@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Tests\Feature\Notifications;
 
 use App\Modules\Notifications\Push\FakePushSender;
+use App\Modules\Notifications\Push\FcmPushSender;
 use App\Modules\Notifications\Push\PushMessage;
 use App\Modules\Notifications\Push\PushSender;
 use App\Modules\Notifications\Push\PushSendResult;
 use RuntimeException;
+use Tests\Support\FcmTestKey;
 use Tests\TestCase;
 
 final class PushSenderBindingTest extends TestCase
@@ -29,6 +31,29 @@ final class PushSenderBindingTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('PUSH_DRIVER');
+
+        $this->app->make(PushSender::class);
+    }
+
+    public function test_the_fcm_driver_binds_the_fcm_sender(): void
+    {
+        config(['notifications.push_driver' => 'fcm', 'services.fcm.service_account' => FcmTestKey::encoded()]);
+        $this->app->forgetInstance(PushSender::class);
+
+        $first = $this->app->make(PushSender::class);
+        $second = $this->app->make(PushSender::class);
+
+        $this->assertSame($first, $second);
+        $this->assertInstanceOf(FcmPushSender::class, $first);
+    }
+
+    public function test_the_fcm_driver_without_a_key_fails_naming_the_setting(): void
+    {
+        config(['notifications.push_driver' => 'fcm', 'services.fcm.service_account' => null]);
+        $this->app->forgetInstance(PushSender::class);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('FCM_SERVICE_ACCOUNT');
 
         $this->app->make(PushSender::class);
     }
