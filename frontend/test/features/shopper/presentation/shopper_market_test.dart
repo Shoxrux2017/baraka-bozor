@@ -708,6 +708,62 @@ void main() {
     expect(find.text(l10n(tester).myOrders), findsOneWidget);
   });
 
+  testWidgets('an order the last line\'s answer cancelled leaves the list '
+      'under it at once', (WidgetTester tester) async {
+    shopper.rows.add(
+      ShopperOrdersApi.parseRow(
+        shopperRowJson(
+          id: shopperOrderB,
+          number: 1002,
+          status: 'shopping',
+          accepted: true,
+        ),
+      ),
+    );
+    shopper.afterAction[shopperOrderA] = ShopperOrdersApi.parseOrder(
+      <String, Object?>{
+        ...shopperOrderJson(
+          status: 'cancelled',
+          items: <Object?>[
+            tomato(status: 'removed'),
+            bread(status: 'removed'),
+          ],
+        ),
+        'assignment': null,
+        'can_accept': false,
+        'can_start': false,
+      },
+    );
+    await openOrder(tester);
+
+    await tapAndSettle(tester, byKey('unavailable-$shopperLineTomato'));
+    shopper.holdList = Completer<void>();
+    await tapAndSettle(tester, byKey('unavailable-confirm'));
+
+    expect(byKey('shopper-order'), findsNothing);
+    expect(byKey('shopper-order-$shopperOrderA'), findsNothing);
+    expect(byKey('shopper-order-$shopperOrderB'), findsOneWidget);
+  });
+
+  testWidgets('a line answer that keeps the order keeps its row', (
+    WidgetTester tester,
+  ) async {
+    shopper.afterAction[shopperOrderA] = shopping(<Object?>[
+      tomato(status: 'removed'),
+      bread(),
+    ]);
+    await openOrder(tester);
+
+    await tapAndSettle(tester, byKey('unavailable-$shopperLineTomato'));
+    shopper.holdList = Completer<void>();
+    await tapAndSettle(tester, byKey('unavailable-confirm'));
+    expect(byKey('shopper-order'), findsOneWidget);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    expect(byKey('shopper-order-$shopperOrderA'), findsOneWidget);
+  });
+
   testWidgets('a running "not found" holds its sheet', (
     WidgetTester tester,
   ) async {
@@ -1208,6 +1264,45 @@ void main() {
     expect(byKey('shopper-done-title'), findsNothing);
     expect(find.text(l10n(tester).doneTitle('1001')), findsOneWidget);
     expect(find.text(l10n(tester).myOrders), findsOneWidget);
+  });
+
+  testWidgets('a completion that answers after the Shopper left takes the '
+      'order off the list at once', (WidgetTester tester) async {
+    shopper
+      ..details[shopperOrderA] = shopping(<Object?>[
+        tomato(status: 'purchased'),
+        bread(status: 'purchased'),
+      ])
+      ..afterAction[shopperOrderA] = ShopperOrdersApi.parseOrder(
+        <String, Object?>{
+          ...shopperOrderJson(
+            status: 'ready_for_delivery',
+            items: <Object?>[
+              tomato(status: 'purchased'),
+              bread(status: 'purchased'),
+            ],
+          ),
+          'assignment': shopperAssignmentJson(accepted: true, started: true),
+          'can_accept': false,
+          'can_start': false,
+        },
+      );
+    await openOrder(tester);
+    final Completer<void> hold = Completer<void>();
+    shopper.hold = hold;
+
+    await tapAndSettle(tester, byKey('shopper-complete'));
+    await tester.tap(byKey('complete-confirm'));
+    await tester.pump();
+    await tester.tap(find.byType(BackButton));
+    await tester.pump();
+    shopper
+      ..hold = null
+      ..holdList = Completer<void>();
+    hold.complete();
+    await tester.pumpAndSettle();
+
+    expect(byKey('shopper-order-$shopperOrderA'), findsNothing);
   });
 
   testWidgets('the refresh waits while a completion runs', (

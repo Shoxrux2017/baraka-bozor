@@ -79,7 +79,7 @@ Backend first, in order; the panel after W2-7 and W2-8 (W2-9 needs no API and ma
 | For W2-14: a confirmation whose outcome is unknown is kept in memory only (`DL-50` (4)); after a restart the Customer learns whether the order exists from "my orders", so W2-14 makes them reachable from the catalog and from an empty cart | Closed by W2-14 (`DL-51` (1)) |
 | The MapKit key and the free tier's fitness (`DL-36`) | Open, Owner; nothing in the wave depends on it |
 | Found in the closure walk: a build whose MapKit key Yandex refuses aborts about six seconds after launch (`DL-53` (1)) — the Owner's key today, and any key refused later for a lapsed tariff or an exceeded limit; before the map returns, MapKit must start only when the map is opened, not with the app | Open, before the map returns |
-| Found in the closure walk: in Customer mode a Shopper's or Courier's app bar holds six actions, and on a phone the title shortens to "Baraka…" | Open for Wave 4 (P3) |
+| Found in the closure walk: in Customer mode a Shopper's or Courier's app bar holds six actions, and on a phone the title shortens to "Baraka…" | Closed by W4-10 (`DL-113` (4)) |
 | For Wave 3: the board's attention list has no height of its own; below 1 584 px it stands above the orders, and as Wave 3 adds its attention types it can push them out of sight — cap it or let it fold | Open for Wave 3 |
 | Carried from Wave 1, for Wave 4: CORS for the API and for the image host in production, device pruning, the push token change stream | Open for Wave 4 |
 | Carried from Wave 1: iOS hands MapKit its key in `AppDelegate`, which needs a Mac (`DL-33` (6)) | Open until a Mac exists |

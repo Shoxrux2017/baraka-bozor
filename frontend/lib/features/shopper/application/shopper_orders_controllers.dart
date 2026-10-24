@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show protected;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart'
     show FutureProviderFamily, NotifierProviderFamily;
@@ -9,6 +10,7 @@ import '../../../core/network/idempotency_key.dart';
 import '../../../core/network/paged.dart';
 import '../../../core/session/staff_account.dart';
 import '../../../core/state/account_mutation.dart';
+import '../../../core/state/list_page_controller.dart';
 import '../../../core/state/mutation_state.dart';
 import '../data/shopper_orders_api.dart';
 import '../domain/shopper_orders.dart';
@@ -38,16 +40,31 @@ shopperOrdersPageProvider =
       ShopperOrdersPageController.new,
     );
 
+/// The page of the Shopper's current orders, the longest-waiting assignment
+/// first.
+class ShopperOrdersListController extends ListPageController<ShopperOrderRow> {
+  @override
+  Future<Paged<ShopperOrderRow>> build() {
+    if (ref.watch(staffAccountProvider) == null) {
+      return Completer<Paged<ShopperOrderRow>>().future;
+    }
+    return ref
+        .watch(shopperOrdersRepositoryProvider)
+        .orders(ref.watch(shopperOrdersPageProvider));
+  }
+
+  @override
+  @protected
+  String idOf(ShopperOrderRow row) => row.id;
+}
+
 /// The Shopper's current orders, the longest-waiting assignment first.
-final FutureProvider<Paged<ShopperOrderRow>> shopperOrdersProvider =
-    FutureProvider.autoDispose<Paged<ShopperOrderRow>>((Ref ref) {
-      if (ref.watch(staffAccountProvider) == null) {
-        return Completer<Paged<ShopperOrderRow>>().future;
-      }
-      return ref
-          .watch(shopperOrdersRepositoryProvider)
-          .orders(ref.watch(shopperOrdersPageProvider));
-    });
+final AsyncNotifierProvider<ShopperOrdersListController, Paged<ShopperOrderRow>>
+shopperOrdersProvider =
+    AsyncNotifierProvider.autoDispose<
+      ShopperOrdersListController,
+      Paged<ShopperOrderRow>
+    >(ShopperOrdersListController.new);
 
 /// One of the Shopper's current orders.
 final FutureProviderFamily<ShopperOrder, String> shopperOrderProvider =
@@ -159,7 +176,8 @@ unansweredRequestsProvider = NotifierProvider.autoDispose
 /// changed meanwhile may explain — the order and the list load again
 /// (`DL-28` (11)); an answer whose order left the Shopper — the last line
 /// not found cancels it — is not loaded again, since the Shopper may no
-/// longer read it (`DL-70` (6)).
+/// longer read it (`DL-70` (6)); its row leaves the list under the page at
+/// once (`DL-113`).
 ///
 /// The purchase is keyed: without a sure answer its key and what was sent
 /// wait in [unansweredRequestsProvider], and a retry sends them again.
@@ -250,6 +268,9 @@ class ShopperLineController extends AccountMutation {
       ref.invalidate(shopperOrderProvider(line.orderId));
     }
     ref.invalidate(shopperOrdersProvider);
+    if (answered != null && answered.assignment == null) {
+      dropRow(ref, shopperOrdersProvider, line.orderId);
+    }
   }
 }
 
@@ -270,7 +291,9 @@ shopperLineActionProvider = NotifierProvider.autoDispose
 /// Only the list loads again after it: a completed order is the Shopper's
 /// no more, and after a completion without a sure answer the order may not
 /// be either, so its page keeps what it shows and offers to send the
-/// completion again. A sure refusal loads the order again too.
+/// completion again. A sure refusal loads the order again too. A sure
+/// completion takes the order off the list under the page at once
+/// (`DL-113`).
 class ShopperCompleteController extends AccountMutation {
   ShopperCompleteController(this.orderId);
 
@@ -288,7 +311,12 @@ class ShopperCompleteController extends AccountMutation {
         newIdempotencyKey();
     final ShopperOrder? order = await perform(
       () => ref.read(shopperOrdersRepositoryProvider).complete(orderId, key),
-      reload: (ShopperOrder? _) => ref.invalidate(shopperOrdersProvider),
+      reload: (ShopperOrder? done) {
+        ref.invalidate(shopperOrdersProvider);
+        if (done != null) {
+          dropRow(ref, shopperOrdersProvider, orderId);
+        }
+      },
     );
     if (ref.mounted) {
       final bool unknown = leavesOutcomeUnknown(state.failure);

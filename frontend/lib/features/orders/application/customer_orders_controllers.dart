@@ -1,8 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show protected;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart'
-    show FutureProviderFamily, NotifierProviderFamily;
+    show
+        AsyncNotifierProviderFamily,
+        FutureProviderFamily,
+        NotifierProviderFamily;
 
 import '../../../app/providers.dart';
 import '../../../core/network/api_failure.dart';
@@ -11,6 +15,7 @@ import '../../../core/network/paged.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/state/account_mutation.dart';
+import '../../../core/state/list_page_controller.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../cart/application/cart_controllers.dart';
 import '../data/customer_orders_api.dart';
@@ -45,16 +50,36 @@ ordersPageProvider = NotifierProvider.autoDispose
     .family<OrdersPageController, int, OrdersTab>(OrdersPageController.new);
 
 /// One tab of the Customer's orders, newest first, one page at a time.
-final FutureProviderFamily<Paged<OrderSummary>, OrdersTab>
-customerOrdersProvider = FutureProvider.autoDispose
-    .family<Paged<OrderSummary>, OrdersTab>((Ref ref, OrdersTab tab) {
-      if (ref.watch(customerAccountProvider) == null) {
-        return Completer<Paged<OrderSummary>>().future;
-      }
-      return ref
-          .watch(customerOrdersRepositoryProvider)
-          .orders(tab, ref.watch(ordersPageProvider(tab)));
-    });
+class CustomerOrdersListController extends ListPageController<OrderSummary> {
+  CustomerOrdersListController(this.tab);
+
+  final OrdersTab tab;
+
+  @override
+  Future<Paged<OrderSummary>> build() {
+    if (ref.watch(customerAccountProvider) == null) {
+      return Completer<Paged<OrderSummary>>().future;
+    }
+    return ref
+        .watch(customerOrdersRepositoryProvider)
+        .orders(tab, ref.watch(ordersPageProvider(tab)));
+  }
+
+  @override
+  @protected
+  String idOf(OrderSummary row) => row.id;
+}
+
+/// One tab of the Customer's orders, newest first, one page at a time.
+final AsyncNotifierProviderFamily<
+  CustomerOrdersListController,
+  Paged<OrderSummary>,
+  OrdersTab
+>
+customerOrdersProvider = AsyncNotifierProvider.autoDispose
+    .family<CustomerOrdersListController, Paged<OrderSummary>, OrdersTab>(
+      CustomerOrdersListController.new,
+    );
 
 /// The question to put on the home banner: of the first page of pending
 /// questions, the one expiring first; `null` when none waits.
@@ -128,7 +153,9 @@ orderEditProvider = NotifierProvider.autoDispose
 
 /// The order's direct cancellation, under an `Idempotency-Key` kept until
 /// an answer says for sure whether it cancelled (`docs/09` sections 22 and
-/// 48); a cancelled order is a natural repeat anyway.
+/// 48); a cancelled order is a natural repeat anyway. A sure cancellation
+/// takes the order off the current orders under the page at once; a request
+/// for a cancellation leaves it there (`DL-113`).
 class OrderCancelController extends OrderMutation {
   OrderCancelController(super.orderId);
 
@@ -155,7 +182,12 @@ class OrderCancelController extends OrderMutation {
     final String? sent = _reason;
     final CustomerOrder? order = await perform(
       () => orders.cancel(orderId, sent, key),
-      reload: reload,
+      reload: (CustomerOrder? cancelled) {
+        reload(cancelled);
+        if (cancelled?.status == OrderStatus.cancelled) {
+          dropRow(ref, customerOrdersProvider(OrdersTab.current), orderId);
+        }
+      },
     );
     if (!_uncertain(ref.mounted ? state.failure : null)) {
       _key = null;
