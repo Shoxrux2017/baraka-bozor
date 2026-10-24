@@ -10,6 +10,7 @@ use App\Modules\Notifications\Push\PushMessage;
 use App\Modules\Notifications\Push\PushSendResult;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
@@ -306,13 +307,19 @@ final class FcmPushSenderTest extends TestCase
         Http::fake([self::TOKEN_URL => Http::response('down', 503)]);
         $unavailable = $this->sender()->send($this->pushToken, $this->message());
 
+        $this->assertTrue($unavailable->retryable);
+        $this->assertSame('auth_unavailable', $unavailable->errorCode);
+        Http::assertSentCount(1);
+    }
+
+    public function test_an_unreachable_token_endpoint_is_retried(): void
+    {
         Http::fake([self::TOKEN_URL => Http::failedConnection()]);
         $unreachable = $this->sender()->send($this->pushToken, $this->message());
 
-        foreach ([$unavailable, $unreachable] as $result) {
-            $this->assertTrue($result->retryable);
-            $this->assertSame('auth_unavailable', $result->errorCode);
-        }
+        $this->assertTrue($unreachable->retryable);
+        $this->assertSame('auth_unavailable', $unreachable->errorCode);
+        Http::assertNotSent(fn (Request $request): bool => $request->url() === self::SEND_URL);
     }
 
     public function test_no_secret_reaches_a_log_or_a_result(): void
@@ -322,17 +329,24 @@ final class FcmPushSenderTest extends TestCase
 
         $this->fakeHttp(Http::response(['name' => 'x']));
         $results[] = $this->sender()->send($this->pushToken, $message);
+        $this->assertTrue($results[0]->sent);
 
+        $this->freshHttp();
         $this->fakeHttp(Http::response($this->error(400, 'INVALID_ARGUMENT', 'Bad '.$this->pushToken, [
             $this->badRequest(['message.data[0].value']),
         ]), 400));
         $results[] = $this->sender()->send($this->pushToken, $message);
+        $this->assertSame('INVALID_ARGUMENT', $results[1]->errorCode);
 
+        $this->freshHttp();
         Http::fake([self::TOKEN_URL => Http::response(['error' => 'invalid_grant', 'error_description' => 'Invalid JWT Signature.'], 400)]);
         $results[] = $this->sender()->send($this->pushToken, $message);
+        $this->assertSame('auth_failed', $results[2]->errorCode);
 
+        $this->freshHttp();
         $this->fakeHttp(Http::failedConnection());
         $results[] = $this->sender()->send($this->pushToken, $message);
+        $this->assertSame('connection', $results[3]->errorCode);
 
         $haystack = json_encode([
             array_map(static fn (array $log): array => [$log['message'], $log['context']], $this->logs),
@@ -349,6 +363,16 @@ final class FcmPushSenderTest extends TestCase
         foreach ($needles as $needle) {
             $this->assertStringNotContainsString($needle, $haystack);
         }
+    }
+
+    /**
+     * A second `Http::fake` for a URL never overrides the first stub, so a test
+     * that runs several scenarios starts each one on a fresh factory.
+     */
+    private function freshHttp(): void
+    {
+        Http::swap(new Factory);
+        Http::preventStrayRequests();
     }
 
     private function sender(): FcmPushSender
