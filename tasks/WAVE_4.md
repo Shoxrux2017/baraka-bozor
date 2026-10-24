@@ -178,7 +178,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 
 - An HTTP v1 sender with the service account's OAuth token, through `google/auth` (a dependency; the reason goes in the commit).
 - Answers mapped:
-  - `UNREGISTERED`, or `INVALID_ARGUMENT` about the token: the device is revoked; an `INVALID_ARGUMENT` about the message revokes nothing. Correction (`DL-114` (4)): Firebase's documented invalid-token answer is `400 INVALID_ARGUMENT` with the message "The registration token is not a valid FCM registration token" and no field violation, so the message decides, not the field;
+  - `UNREGISTERED`, or `INVALID_ARGUMENT` about the token: the device is revoked; an `INVALID_ARGUMENT` about the message revokes nothing. Correction (`DL-114` (4)): Firebase's documented invalid-token answer is `400 INVALID_ARGUMENT` with the message "The registration token is not a valid FCM registration token" and no field violation; the Owner's project answered with that message and a violation on `message.token`. Either form revokes;
   - `429` and `5xx`: retried with backoff, honouring `Retry-After`;
   - anything else: recorded as failed.
 - `push-devices:prune` revokes devices unseen for 60 days.
