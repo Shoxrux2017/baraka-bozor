@@ -3,13 +3,20 @@
 # the restic repository, thin out old snapshots. Any failure leaves a status
 # naming its step, a non-zero exit and no dump file behind. It never runs
 # `restic init`: a mistyped repository address must fail, not start a new
-# repository (DL-104 (6)).
+# repository (DL-104 (6)). One run at a time: a second run stops at the lock
+# before it can delete the dump of the first or write a status.
 set -eu
 # shellcheck source=/dev/null
 . /usr/local/bin/lib.sh
 
 DUMP=/backup/db/barakabozor.dump
 STEP=config
+
+exec 9> /backup/db/.lock
+if ! flock -n 9; then
+  bb_log "another backup is running"
+  exit 1
+fi
 
 on_exit() {
   code=$?
