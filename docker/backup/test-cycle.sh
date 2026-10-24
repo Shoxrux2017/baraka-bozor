@@ -36,6 +36,10 @@ fail() {
 
 cleanup() {
   if [ -f "$W/stack.env" ]; then
+    # restic makes its directories 0700 for the container user; only that user
+    # can empty the repository so the host can remove the directory.
+    compose run --rm --no-deps -T --entrypoint sh backup \
+      -c 'find /repository -mindepth 1 -delete' > /dev/null 2>&1 || true
     compose down -v --remove-orphans > /dev/null 2>&1 || true
   fi
   if [ "$CREATED_DIR" = 1 ]; then
