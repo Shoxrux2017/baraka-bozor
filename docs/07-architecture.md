@@ -15,7 +15,6 @@ Backend-authoritative business and financial state; stable order history; strong
 ```text
 PHP 8.4 (in Docker), Laravel 13, Laravel Sanctum, PostgreSQL 17
 PHPUnit, Laravel Pint, Larastan (PHPStan level 5)
-Laravel Boost, the agent's MCP server (dev only, on trial: DL-103, DL-106)
 ```
 
 ### Frontend

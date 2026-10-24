@@ -39,7 +39,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 
 | # | Task | Gate | Status |
 |---|---|---|---|
-| W4-1 | Laravel Boost trial (`DL-103`, `DL-106`) | — | Merged (#110) |
+| W4-1 | Laravel Boost trial (`DL-103`, `DL-106`) | — | Merged (#110); removed unused (#112, `DL-108`) |
 | W4-2 | Production runtime: images, `docker/compose.prod.yaml`, Caddy, CORS, proxies, the worker, the scheduler and its pruning | — | Merged (#111) |
 | W4-3 | Backups: nightly encrypted copies off the host, the restore script | — | Planned |
 | W4-4 | Login codes through Telegram Gateway | Telegram (verification) | Planned |
@@ -60,6 +60,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 - Before anything is installed, check that `laravel/boost` supports Laravel 13 and that its MCP server runs inside the `app` container (`docker compose -f docker/compose.yaml exec -T app php artisan boost:mcp`). If either fails, the task ends with a note to the Owner and no pull request.
 - A dev dependency, with the reason in the commit (`AGENTS.md` section 7). `boost:install` must not write `AGENTS.md`, `CLAUDE.md` or `.mcp.json`; `git status` is checked before the commit.
 - After the first backend task that follows, the Owner hears in one line whether Boost was used. If it was not, a small pull request removes it.
+- Removed on 2026-10-24 (#112, `DL-108`): its tools never reached the agent's session during W4-2, nor at the start of W4-3.
 
 **W4-2. Production runtime** (`DL-104` (3) to (5), (8)).
 
@@ -229,8 +230,8 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 
 | Task | Finding | Why not acted on |
 |---|---|---|
-| W4-1 | P3: the two Boost switches live in `backend/.env`, so a checkout whose `.env` predates W4-1 would offer `record-rule` | Every `.env` is copied from `.env.example`, which carries them, and this machine's `.env` has them. Forcing them in code is taken up if Boost stays after the trial |
-| W4-1 | P3: the console-and-local gate in `AppServiceProvider` has no test of its own | `GlobalMiddlewareTest` guards what matters, that tests and CI never load Boost or `laravel/mcp`; the gate is removed with Boost if the trial ends |
+| W4-1 | P3: the two Boost switches live in `backend/.env`, so a checkout whose `.env` predates W4-1 would offer `record-rule` | Every `.env` is copied from `.env.example`, which carries them, and this machine's `.env` has them. Forcing them in code is taken up if Boost stays after the trial. Moot: Boost removed (`DL-108`) |
+| W4-1 | P3: the console-and-local gate in `AppServiceProvider` has no test of its own | `GlobalMiddlewareTest` guards what matters, that tests and CI never load Boost or `laravel/mcp`; the gate is removed with Boost if the trial ends. Removed with Boost (`DL-108`) |
 
 ## Closure
 
