@@ -91,21 +91,25 @@ final class TelegramGatewayCodeDeliveryTest extends TestCase
     }
 
     /**
-     * @return array<string, array{string}>
+     * Telegram answered W4-4's unreachable number with a 200 (`DL-111`); the
+     * 400 case keeps the status out of the decision.
+     *
+     * @return array<string, array{string, int}>
      */
     public static function unreachable(): array
     {
         return [
-            'invalid' => ['PHONE_NUMBER_INVALID'],
-            'not found' => ['PHONE_NUMBER_NOT_FOUND'],
-            'not available' => ['PHONE_NUMBER_NOT_AVAILABLE'],
+            'invalid' => ['PHONE_NUMBER_INVALID', 200],
+            'not found' => ['PHONE_NUMBER_NOT_FOUND', 200],
+            'not available' => ['PHONE_NUMBER_NOT_AVAILABLE', 200],
+            'invalid under a 400' => ['PHONE_NUMBER_INVALID', 400],
         ];
     }
 
     #[DataProvider('unreachable')]
-    public function test_a_number_telegram_cannot_reach_is_refused_without_a_challenge(string $error): void
+    public function test_a_number_telegram_cannot_reach_is_refused_without_a_challenge(string $error, int $status): void
     {
-        Http::fake([self::BASE.'/*' => Http::response(['ok' => false, 'error' => $error], 400)]);
+        Http::fake([self::BASE.'/*' => Http::response(['ok' => false, 'error' => $error], $status)]);
 
         $this->request()->assertStatus(409)->assertJsonPath('code', 'code_delivery_unavailable');
 

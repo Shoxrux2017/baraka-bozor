@@ -42,7 +42,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | W4-1 | Laravel Boost trial (`DL-103`, `DL-106`) | — | Merged (#110); removed unused (#112, `DL-108`) |
 | W4-2 | Production runtime: images, `docker/compose.prod.yaml`, Caddy, CORS, proxies, the worker, the scheduler and its pruning | — | Merged (#111) |
 | W4-3 | Backups: nightly encrypted copies off the host, the restore script | — | Merged (#113) |
-| W4-4 | Login codes through Telegram Gateway | Telegram (verification) | In progress |
+| W4-4 | Login codes through Telegram Gateway | Telegram (verification) | Merged (#114); verified (`DL-111`) |
 | W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
 | W4-6 | Android release build and closed testing | Google Play, W4-5 | Planned |
 | W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | Planned |
@@ -117,7 +117,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 - The cost guard of `DL-104` (9): the existing per-address limit counting an IPv6 address by its /64, and the daily ceiling of paid checks for phones that hold no active account, with warnings at half and at the ceiling. A test proves that an existing Customer and a Shopper still receive codes above the ceiling.
 - Tests against a fake HTTP server, including the provider's refusals, a timeout, and proof that neither the code nor the token reaches a log or an exception message.
 - The reviewer phone of `DL-105`: its own setting and fixed code beside the test phones, allowed in production and refused at boot when its code is the development code; it never receives a staff step, and no Shopper or Courier account can be created on it. `BR-ROLE-011`, `docs/09` section 6 and `AGENTS.md` section 5 are updated with it.
-- Verified with the Owner's token on the Owner's own number, which costs nothing. Until then the driver stays `fake` locally.
+- Verified with the Owner's token on the Owner's own number, which costs nothing. Until then the driver stays `fake` locally. Done on 2026-10-24 (`DL-111`): the code arrived and signed in, and an unallocated number answered `409`. A number without Telegram met an empty balance, so that check moved to W4-5.
 
 **W4-5. First deployment.**
 
@@ -131,7 +131,8 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 - A tagged release deployed by `docker/deploy.sh` (`DL-104` (7)): a dump before the migrations, a `503` with `Retry-After` while the app is replaced, the previous image kept for a rollback. The first Admin is made by the one-time command (`BR-ROLE-009`), whose temporary password goes to the Owner directly. The Owner then enters the business settings in the panel.
 - Every Shopper's and Courier's number is checked to reach Telegram, since staff sign in with a code first (`DL-77`).
 - The Telegram token is restricted to the server's address.
-- The Owner is offered an external check that alerts on a downed server and on a night without a backup, and that watches the log for the two ceiling messages (`Login code daily ceiling half used.`, `Login code daily ceiling reached.`); the ceiling's warnings reach the Owner only through it or a log alert.
+- The Gateway balance is funded before the first code. Then one code request for a number the Owner knows has no Telegram confirms the unreachable answer, `409 code_delivery_unavailable`, and the string Telegram gives for it is recorded; a `503` with a new string in the log adds that string to `TelegramGatewayCodeDelivery::UNREACHABLE` (`DL-111` (3)).
+- The Owner is offered an external check that alerts on a downed server and on a night without a backup, and that watches the log for the two ceiling messages (`Login code daily ceiling half used.`, `Login code daily ceiling reached.`) and for `Telegram Gateway refused a login code.` with the reason `BALANCE_NOT_ENOUGH` (`DL-111` (4)); these warnings reach the Owner only through it or a log alert.
 - Checked on the live server:
   - Caddy and the app see public client addresses, not the Docker bridge gateway: a Docker userland proxy would make every client one address and share the per-IP limits. The fix is in Docker's configuration or host networking for Caddy, not `TRUSTED_PROXIES`. In that gateway case a client could also send `X_Forwarded_For` with underscores, which Caddy's FastCGI transport maps onto the same variable as its own header (W4-2 security review, below the bar). If the gateway case is ever accepted, Caddy drops the underscore spellings with `header_up -X_Forwarded_For`, `-X_Forwarded_Host` and `-X_Forwarded_Proto`;
   - the panel's `current` link inside `PANEL_ROOT` is relative, since an absolute host path does not resolve inside Caddy's `/srv/panel` mount;
@@ -218,6 +219,8 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | Staff sign in with a code too (`DL-77`), so a Shopper or Courier whose number has no Telegram cannot work. W4-5 checks every staff number; the pilot checklist repeats it for new staff | Open, W4-5 |
 | A flood of code requests to random numbers can reach the daily ceiling and block new Customers' sign-up for the rest of that day; Customers and staff with an account are never blocked (`DL-104` (9)). The ceiling is raised in the server's configuration in minutes, and the warning at half of it gives time to raise it, but it reaches the Owner only once W4-5's external check or a log alert watches for the two ceiling log messages | Accepted for the pilot; the Owner may ask for a higher ceiling |
 | Funding Telegram Gateway goes through Fragment, which probably takes TON. Paying in cryptocurrency may have accounting and legal sides in Uzbekistan | Open, Owner |
+| An empty Gateway balance refuses every paid code with `503`: nobody without a live session can sign in, Shoppers and Couriers included, and the app says only that the service is unavailable (`DL-111` (4)). The Owner keeps the balance above a few days of codes; W4-5's external check watches the log for `BALANCE_NOT_ENOUGH` | Open, W4-5 |
+| `PHONE_NUMBER_NOT_FOUND` and `PHONE_NUMBER_NOT_AVAILABLE` are unconfirmed: W4-4's check of a number without Telegram met an empty balance (`DL-111` (3)). Were Telegram to answer such a number with another string, its Customer would see "service unavailable" instead of the words for having no Telegram | Open, W4-5 |
 | A Shopper or Courier replaced before starting is not notified; `docs/05` section 18 has no such event. They see the order leave their list on the next refresh | Accepted; the pilot shows whether it matters |
 | A push is best-effort (`BR-NOTIF-001`). A phone that is off, or that has notifications disabled, learns at the next opening, and the screens keep refreshing themselves | Accepted |
 | Push texts pass through Google, and phone numbers through Telegram. The texts carry no personal data beyond the order number and the amount (`DL-104` (10)). Two questions for the Owner's lawyer, with the privacy policy: does sending the phone to Telegram need the Customer's consent, and must the personal-data database be registered under ZRU-547 | Open, Owner, before the pilot |
@@ -249,6 +252,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | W4-3 | P3: `nocopy` on Caddy's images mount too | Caddy's image has no `/srv/storage`; the probe kept the volume's uid 33 |
 | W4-3 | P3: nothing asserts that the backup role is absent right after `restore.sh`, before `create-role.sh` | The role is cluster-wide and the dump holds none (`pg_dump` of one database). The rehearsal saw the scheduled night fail at the dump on the restored stack, which is that absence |
 | W4-3 | P3: the cycle exercises no `forget` failure | A forget-only failure needs a repository that breaks between two calls. Its step name comes from the same trap that the dump, backup and config failures prove |
+| W4-4 | P3: one docblock line in `LoginCodeCeiling.php` runs longer than its neighbours | Cosmetic; Pint passes and nothing reads differently. Reflowing it alone would be formatting churn (`AGENTS.md` section 7) |
 
 ## Closure
 
