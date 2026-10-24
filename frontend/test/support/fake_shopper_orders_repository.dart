@@ -204,6 +204,9 @@ class FakeShopperOrdersRepository implements ShopperOrdersRepository {
 
   Completer<void>? hold;
   Completer<void>? holdOrder;
+
+  /// Holds the list's loads only, until the test completes it.
+  Completer<void>? holdList;
   ApiFailure? listFailure;
   ApiFailure? orderFailure;
   ApiFailure? actionFailure;
@@ -219,6 +222,7 @@ class FakeShopperOrdersRepository implements ShopperOrdersRepository {
   Future<Paged<ShopperOrderRow>> orders(int page) async {
     loads.add('orders:$page');
     await _held();
+    await holdList?.future;
     if (listFailure != null) {
       throw listFailure!;
     }
