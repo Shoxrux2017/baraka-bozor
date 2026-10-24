@@ -13,7 +13,8 @@ RUN apk add --no-cache postgresql17-client restic supercronic tzdata \
 
 ENV TZ=Asia/Tashkent
 
-COPY lib.sh backup.sh check.sh /usr/local/bin/
+COPY --chmod=0755 backup.sh check.sh /usr/local/bin/
+COPY --chmod=0644 lib.sh /usr/local/bin/
 COPY crontab /etc/backup/crontab
 
 USER backup
