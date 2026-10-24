@@ -219,7 +219,7 @@ walkthrough runs on the same image and stack with `APP_ENV=local`, since test
 phones are refused in production. Start it with `WALKTHROUGH_SCHEDULER=1`: the
 script then waits for the stack's scheduler to write the expiry instead of
 running `approvals:expire` itself. Remove the rehearsal only with
-`docker compose -p bb-prod-local -f docker/compose.prod.yaml down -v`.
+`docker compose --env-file <the rehearsal's env file> -f docker/compose.prod.yaml down -v`.
 
 `docker/DEPLOY.md` (W4-5) will be the server runbook.
 
@@ -271,8 +271,12 @@ docker compose --env-file <file> -f docker/compose.prod.yaml logs backup
 ```
 
 `result` is `success` or `failure`; a failure names its `step` (`config`, `dump`,
-`backup` or `forget`). `docker/deploy.sh` (W4-5) and the Owner's checklist read these
-files. A backup by hand is the same script the night runs:
+`backup` or `forget`). A success counts only when `finished_at` is from the last
+night: a run killed outright skips its failure status and a stopped container writes
+nothing, so the file may still show an older success. `docker/deploy.sh` (W4-5) reads
+the age of `finished_at` and so does the Owner's checklist. Only one run goes at a
+time; a second one stops with "another backup is running" and leaves the status
+alone. A backup by hand is the same script the night runs:
 
 ```text
 docker compose --env-file <file> -f docker/compose.prod.yaml exec backup backup.sh
@@ -293,9 +297,11 @@ A restore is tried in a scratch stack with its own env file: another
 `COMPOSE_PROJECT_NAME`, other published ports and `EDGE_SUBNET`, no
 `COMPOSE_PROFILES=backup`, and the same `BACKUP_ENV_FILE`, since `restore.sh` reads
 the repository through the backup image. Remove the scratch stack only with
-`docker compose -p <project> -f docker/compose.prod.yaml down -v`. A production
-stack rebuilt from nothing runs `create-role.sh` again, because roles are not in the
-dump.
+`docker compose --env-file <that stack's env file> -f docker/compose.prod.yaml down -v`.
+`restore.sh` runs `create-role.sh` after the database, because roles are not in the
+dump; the restored stack's nights then work. If a restore fails after the database
+committed (the images or the migration), a rerun is refused as "not empty": run
+`down -v` on that stack, with its `--env-file`, and restore again.
 
 **The test cycle.** `docker/backup/test-cycle.sh` runs the whole path in the project
 `bb-backup-test` against a repository on a host directory: a failing night, a good

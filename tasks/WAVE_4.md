@@ -132,7 +132,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
   - the public pages `/legal/privacy` and `/account-deletion`, which W4-6 needs;
   - a sign-in by a Telegram code;
   - `approvals:expire` running from the scheduler;
-  - the first nightly backup, then a restore of it into a scratch stack on the server.
+  - the first nightly backup, then a restore of it into a scratch stack on the server. That scratch env file uses `localhost` hosts, fake drivers and blank provider keys (Telegram, FCM, payments), because `restore.sh` ends with `up -d`, which starts a worker and a scheduler on a copy of production data. Write this into `docker/DEPLOY.md`.
 - The Owner's question 2 is asked here, and the answer is set in the server's environment.
 - The test-phone list is empty in production (`BR-ROLE-011`). The reviewer phone and its code of `DL-105` are set in the server's environment, and its account "Проверка Google" is created.
 
