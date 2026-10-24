@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Runtime;
 
+use App\Modules\Notifications\Push\PushSender;
 use App\Providers\AppServiceProvider;
 use App\Support\Runtime\ProductionConfiguration;
 use Illuminate\Routing\Router;
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
+use Tests\Support\FcmTestKey;
 use Tests\TestCase;
 
 /**
@@ -30,7 +32,10 @@ final class ProductionConfigurationTest extends TestCase
             'services.telegram_gateway.token' => 'tg-test-token',
             'cors.allowed_origins' => ['https://panel.example.test'],
             'trustedproxy.proxies' => ['172.30.250.0/28'],
+            'notifications.push_driver' => 'fcm',
+            'services.fcm.service_account' => FcmTestKey::encoded(),
         ]);
+        $this->app->forgetInstance(PushSender::class);
     }
 
     public function test_a_complete_configuration_passes(): void
@@ -51,6 +56,8 @@ final class ProductionConfigurationTest extends TestCase
             'empty password' => ['database.connections.pgsql.password', '', 'DB_PASSWORD'],
             'no driver' => ['login_codes.driver', null, 'LOGIN_CODE_DRIVER'],
             'fake driver' => ['login_codes.driver', 'fake', 'LOGIN_CODE_DRIVER'],
+            'no push driver' => ['notifications.push_driver', null, 'PUSH_DRIVER'],
+            'fake push driver' => ['notifications.push_driver', 'fake', 'PUSH_DRIVER'],
             'empty url' => ['app.url', '', 'APP_URL'],
             'http url' => ['app.url', 'http://api.example.test', 'APP_URL'],
             'two origins' => ['cors.allowed_origins', ['https://a.example.test', 'https://b.example.test'], 'CORS_ALLOWED_ORIGINS'],
@@ -135,6 +142,42 @@ final class ProductionConfigurationTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('LOGIN_CODE_DRIVER');
+
+        ProductionConfiguration::assertComplete($this->app);
+    }
+
+    public function test_the_fcm_driver_without_a_key_is_named(): void
+    {
+        config(['services.fcm.service_account' => '']);
+
+        $this->assertSame(['FCM_SERVICE_ACCOUNT'], ProductionConfiguration::problems());
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('FCM_SERVICE_ACCOUNT');
+
+        ProductionConfiguration::assertComplete($this->app);
+    }
+
+    public function test_a_malformed_key_fails_at_the_check(): void
+    {
+        config(['services.fcm.service_account' => base64_encode('{}')]);
+        $this->app->forgetInstance(PushSender::class);
+
+        $this->assertSame([], ProductionConfiguration::problems());
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('FCM_SERVICE_ACCOUNT');
+
+        ProductionConfiguration::assertComplete($this->app);
+    }
+
+    public function test_an_unknown_push_driver_fails_at_the_check(): void
+    {
+        config(['notifications.push_driver' => 'pigeon']);
+        $this->app->forgetInstance(PushSender::class);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('PUSH_DRIVER');
 
         ProductionConfiguration::assertComplete($this->app);
     }

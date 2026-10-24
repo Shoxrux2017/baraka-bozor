@@ -6,6 +6,7 @@ namespace App\Support\Runtime;
 
 use App\Modules\Accounts\PhoneFingerprint;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryGateway;
+use App\Modules\Notifications\Push\PushSender;
 use Illuminate\Contracts\Foundation\Application;
 use RuntimeException;
 
@@ -57,6 +58,16 @@ final class ProductionConfiguration
             $problems[] = 'LOGIN_CODE_DAILY_LIMIT';
         }
 
+        $pushDriver = config('notifications.push_driver');
+
+        if (! is_string($pushDriver) || self::blank($pushDriver) || $pushDriver === 'fake') {
+            $problems[] = 'PUSH_DRIVER';
+        }
+
+        if ($pushDriver === 'fcm' && self::blank(config('services.fcm.service_account'))) {
+            $problems[] = 'FCM_SERVICE_ACCOUNT';
+        }
+
         $origins = config('cors.allowed_origins');
 
         if (! is_array($origins) || count($origins) !== 1 || in_array('*', $origins, true)) {
@@ -77,9 +88,10 @@ final class ProductionConfiguration
     }
 
     /**
-     * Beyond presence, resolves the code gateway and computes one fingerprint,
-     * so an unknown driver or a malformed key fails here with its own message
-     * rather than at the first sign-in or erasure.
+     * Beyond presence, resolves the code gateway and the push sender and
+     * computes one fingerprint, so an unknown driver or a malformed key (the
+     * fingerprint key or the Firebase service-account key) fails here with its
+     * own message rather than at the first sign-in, erasure or push.
      */
     public static function assertComplete(Application $app): void
     {
@@ -90,6 +102,7 @@ final class ProductionConfiguration
         }
 
         $app->make(CodeDeliveryGateway::class);
+        $app->make(PushSender::class);
         PhoneFingerprint::of('+998900000000');
     }
 
