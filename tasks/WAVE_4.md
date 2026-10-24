@@ -31,7 +31,7 @@ Each gate is the Owner's external action (`AGENTS.md` section 14). Work that nee
 
 1. **The store reviewers' sign-in.** Interview 7.2 says that test numbers are both how app-store reviewers sign in and empty in production, and `BR-ROLE-011`, `DL-11` and `AGENTS.md` section 5 hold the second half. Google asks an app with a one-time-code login for "reusable login credentials that can bypass" the code. W4-6 cannot upload before this is settled, and the fourteen days wait on W4-6, so this is asked at once, with the plan. **Answered on 2026-10-23: option А, one reviewer phone in production (`DL-105`).**
 2. **The handoff point at launch.** Does it exist (`delivery.handoff_point`, on by default, interview 1.1)? Asked at the deployment, W4-5 (Wave 3 risk list).
-3. **A rejected cancellation request.** Should the Customer get a push when the Operator rejects it? `docs/05` section 18 has no such event. Asked at W4-7.
+3. **A rejected cancellation request.** Should the Customer get a push when the Operator rejects it? `docs/05` section 18 has no such event. Asked at W4-7. **Answered yes, 2026-10-24 (`DL-112` (1)).**
 
 The launcher icon and the store graphics are drawn in Claude Design while W4-2 to W4-5 run, so the Owner's approval of them never holds W4-6.
 
@@ -45,13 +45,13 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | W4-4 | Login codes through Telegram Gateway | Telegram (verification) | Merged (#114); verified, the no-Telegram answer at W4-5 (`DL-111` (3)) |
 | W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
 | W4-6 | Android release build and closed testing | Google Play, W4-5 | Planned |
-| W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | Planned |
+| W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | In progress (PR pending) |
 | W4-8 | Firebase Cloud Messaging sender; device pruning | Firebase (verification) | Planned |
 | W4-9 | Push in the app: Firebase token, permission, banners, opening the order | Firebase | Planned |
 | W4-10 | Carried P3 fixes | — | Planned |
 | W4-11 | Wave closure and the pilot checklist | all | Planned |
 
-The order of work is the table's. W4-6 starts as soon as W4-5 is live, because its fourteen days run while W4-7 to W4-10 are built; testers then receive the later builds through the track.
+The order of work is the table's. W4-6 starts as soon as W4-5 is live, because its fourteen days run while W4-7 to W4-10 are built; testers then receive the later builds through the track. W4-6's preparation (release signing, version code, build script, store texts) may run before W4-5; the upload waits for it (`DL-112` (8)).
 
 ## Task notes
 
@@ -154,7 +154,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 
 **W4-7. Notifications on the server** (`DL-104` (10)).
 
-- A migration for `notification_deliveries` (`docs/08` section 26): the twelve types, the status `skipped`, and `push_device_id` `ON DELETE SET NULL`.
+- A migration for `notification_deliveries` (`docs/08` section 26): the thirteen types, the status `skipped`, and `push_device_id` `ON DELETE SET NULL`.
 - `NotificationService::notify` is called by each action of the trigger table in `DL-104` (10), beside the history row it writes, and dispatches the job after the commit (`DL-39`). An Admin's price correction on a shopped cash order sends `shopping_completed` again with the new amount.
 - The job:
   - renders the text from `lang/uz/notifications.php` and `lang/ru/notifications.php`;
@@ -162,7 +162,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
   - sends through the `PushSender` port, which has a fake for now;
   - writes a delivery row per device, or one `skipped` row with its reason;
   - retries a transient failure.
-- Owner question 3 is asked here; a yes adds a thirteenth event in this task.
+- Owner question 3 is asked here; a yes adds a thirteenth event in this task. Answered yes (`DL-112` (1)): `cancellation_rejected`.
 - Tests:
   - every trigger notifies the right person once, and the Customer receives `order_accepted` for their own order;
   - a rolled-back action notifies nobody;
