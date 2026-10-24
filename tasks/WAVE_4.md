@@ -181,6 +181,9 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
   - `429` and `5xx`: retried with backoff, honouring `Retry-After`;
   - anything else: recorded as failed.
 - `push-devices:prune` revokes devices unseen for 60 days.
+- The production boot check refuses `PUSH_DRIVER=fake` (as `DL-110` (7) does for the login-code driver), and `docker/production.env.example` switches to `PUSH_DRIVER=fcm`.
+- `PushSendResult::retry` gains the provider's `Retry-After`, which `DeliverPush` honours.
+- The FCM adapter keeps the push token out of exception messages, traces and `failed_jobs` rows (W4-7 security review).
 - Tests against a fake HTTP server. Verified with the Owner's project on the emulator with Google Play services, once W4-9 registers a real token.
 
 **W4-9. Push in the app** (`DL-104` (12)).
