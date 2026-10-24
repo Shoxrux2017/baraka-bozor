@@ -2,7 +2,8 @@
 # Creates, or refreshes, the database role the backup connects as: it reads
 # every table and writes nothing, so a leaked backup credential cannot alter the
 # data (DL-104 (6)). Idempotent; run it once after the first `up` and after any
-# change of PGPASSWORD in the backup env file.
+# change of PGPASSWORD in the backup env file. restore.sh runs it for a restored
+# stack.
 #
 #   docker/backup/create-role.sh <stack env file>
 #
@@ -11,13 +12,14 @@
 set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
-cd "$(dirname "$0")/../.."
-
 if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
   echo "usage: docker/backup/create-role.sh <stack env file>" >&2
   exit 2
 fi
-stack_env="$1"
+# Absolute before the cd below; pwd -W gives Windows paths in Git Bash.
+stack_env="$(cd "$(dirname "$1")" && { pwd -W 2>/dev/null || pwd; })/$(basename "$1")"
+
+cd "$(dirname "$0")/../.."
 
 compose() {
   docker compose --env-file "$stack_env" -f docker/compose.prod.yaml \

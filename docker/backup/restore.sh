@@ -3,8 +3,8 @@
 # product images into their volume (DL-104 (6)). Only into an empty stack: it
 # refuses when the database already holds tables, so a restore aimed at a live
 # stack stops before touching anything. The `backup` role is cluster-wide and not
-# in the dump, so a production stack restored from scratch runs `create-role.sh`
-# again.
+# in the dump, so after the database it runs `create-role.sh` again: without the
+# role every night would fail.
 #
 #   docker/backup/restore.sh <stack env file> [<snapshot id>]
 #
@@ -12,13 +12,13 @@
 set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
-cd "$(dirname "$0")/../.."
-
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ] || [ ! -f "$1" ]; then
   echo "usage: docker/backup/restore.sh <stack env file> [<snapshot id>]" >&2
   exit 2
 fi
-stack_env="$1"
+# Absolute before the cd below; pwd -W gives Windows paths in Git Bash.
+stack_env="$(cd "$(dirname "$1")" && { pwd -W 2>/dev/null || pwd; })/$(basename "$1")"
+cd "$(dirname "$0")/../.."
 snapshot="${2:-}"
 
 compose() {
@@ -27,14 +27,14 @@ compose() {
 }
 
 if [ -z "$snapshot" ]; then
-  compose run --rm --no-deps -T backup restic snapshots --host barakabozor
+  compose run --rm --no-deps -T backup restic snapshots --host barakabozor --retry-lock 30m
   echo "usage: docker/backup/restore.sh <stack env file> <snapshot id>" >&2
   exit 2
 fi
 
 project="$(compose config | sed -n 's/^name: //p')"
 
-compose up -d --wait db
+compose up -d --wait --no-recreate db
 
 # shellcheck disable=SC2016
 tables="$(compose exec -T db sh -c \
@@ -46,17 +46,19 @@ if [ "$tables" != 0 ]; then
 fi
 
 # shellcheck disable=SC2016
-compose run --rm --no-deps -T backup restic dump "$snapshot" /backup/db/barakabozor.dump \
+compose run --rm --no-deps -T backup restic dump --retry-lock 30m "$snapshot" /backup/db/barakabozor.dump \
   | compose exec -T db sh -c '
       f="$(mktemp)"
-      cat > "$f"
+      cat > "$f" || exit 1
       code=0
       pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --no-privileges \
         --single-transaction --exit-on-error "$f" || code=$?
       rm -f "$f"
       exit "$code"'
 
-compose run --rm --no-deps -T backup restic dump "$snapshot" /backup/images \
+bash docker/backup/create-role.sh "$stack_env"
+
+compose run --rm --no-deps -T backup restic dump --retry-lock 30m "$snapshot" /backup/images \
   | compose run --rm --no-deps -T --entrypoint tar app \
       -x -f - -C /app/storage/app/public --strip-components=2
 
