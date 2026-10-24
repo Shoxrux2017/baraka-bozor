@@ -93,6 +93,7 @@ APP_URL=http://localhost:18080
 CORS_ALLOWED_ORIGINS=https://panel.localhost
 LOG_CHANNEL=stderr
 LOGIN_CODE_DRIVER=fake
+PUSH_DRIVER=fake
 PHONE_FINGERPRINT_KEY=base64:$(openssl rand -base64 32)
 WALKTHROUGH_STAFF_PASSWORD=$(random_hex 12)
 DB_CONNECTION=pgsql
