@@ -55,6 +55,28 @@ final class PushSenderBindingTest extends TestCase
         $this->assertSame('tok-3', $fake->sent()[2]['token']);
     }
 
+    public function test_the_result_constructors_set_the_new_flags(): void
+    {
+        $rejected = PushSendResult::rejectedToken('UNREGISTERED');
+        $this->assertFalse($rejected->sent);
+        $this->assertFalse($rejected->retryable);
+        $this->assertTrue($rejected->revokesDevice);
+        $this->assertSame('UNREGISTERED', $rejected->errorCode);
+        $this->assertNull($rejected->retryAfterSeconds);
+
+        $plain = PushSendResult::retry('UNAVAILABLE');
+        $this->assertTrue($plain->retryable);
+        $this->assertFalse($plain->revokesDevice);
+        $this->assertNull($plain->retryAfterSeconds);
+
+        $this->assertSame(300, PushSendResult::retry('QUOTA_EXCEEDED', 300)->retryAfterSeconds);
+
+        foreach ([PushSendResult::sent(), PushSendResult::failed('X')] as $result) {
+            $this->assertFalse($result->revokesDevice);
+            $this->assertNull($result->retryAfterSeconds);
+        }
+    }
+
     public function test_the_testing_binding_answers_sent_by_default(): void
     {
         $result = $this->app->make(PushSender::class)->send('tok', new PushMessage('T', 'B', ['event' => 'x']));

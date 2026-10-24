@@ -27,6 +27,7 @@ final class ScheduleTest extends TestCase
             ['approvals:expire', '* * * * *', config('app.timezone')],
             ['idempotency-keys:prune', '0 4 * * *', 'Asia/Tashkent'],
             ['notification-deliveries:prune', '0 4 * * *', 'Asia/Tashkent'],
+            ['push-devices:prune', '0 4 * * *', 'Asia/Tashkent'],
             ['login-challenges:prune', '0 4 * * *', 'Asia/Tashkent'],
             ['queue:prune-failed --hours=720', '0 4 * * *', 'Asia/Tashkent'],
         ], $actual);

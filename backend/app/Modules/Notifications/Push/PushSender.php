@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Notifications\Push;
 
 /**
- * Sends one push to one device token. The real adapter (FCM) arrives with
- * W4-8; until then only the fake exists.
+ * Sends one push to one device token. The real adapter is FCM; the fake
+ * stands in for it in tests and local development.
  */
 interface PushSender
 {

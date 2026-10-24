@@ -6,7 +6,8 @@ namespace App\Modules\Notifications\Push;
 
 /**
  * What a push provider answered: delivered, refused for good, or worth
- * another try.
+ * another try. A retry may carry the provider's `Retry-After` seconds; a
+ * rejected token also asks for its device to be revoked.
  */
 final readonly class PushSendResult
 {
@@ -14,6 +15,8 @@ final readonly class PushSendResult
         public bool $sent,
         public bool $retryable,
         public ?string $errorCode,
+        public bool $revokesDevice = false,
+        public ?int $retryAfterSeconds = null,
     ) {}
 
     public static function sent(): self
@@ -26,8 +29,16 @@ final readonly class PushSendResult
         return new self(false, false, $errorCode);
     }
 
-    public static function retry(string $errorCode): self
+    public static function retry(string $errorCode, ?int $retryAfterSeconds = null): self
     {
-        return new self(false, true, $errorCode);
+        return new self(false, true, $errorCode, false, $retryAfterSeconds);
+    }
+
+    /**
+     * The provider refused the token for good: the device is revoked.
+     */
+    public static function rejectedToken(string $errorCode): self
+    {
+        return new self(false, false, $errorCode, true);
     }
 }

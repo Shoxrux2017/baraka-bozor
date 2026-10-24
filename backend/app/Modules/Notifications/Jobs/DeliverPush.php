@@ -7,6 +7,7 @@ namespace App\Modules\Notifications\Jobs;
 use App\Models\Enums\NotificationDeliveryStatus;
 use App\Models\NotificationDelivery;
 use App\Models\PushDevice;
+use App\Modules\Notifications\Actions\RevokePushDevice;
 use App\Modules\Notifications\NotificationService;
 use App\Modules\Notifications\Push\PushMessage;
 use App\Modules\Notifications\Push\PushSender;
@@ -59,14 +60,17 @@ final class DeliverPush implements ShouldQueue
             return;
         }
 
-        if (Carbon::parse($this->queuedAt)->addSeconds(NotificationService::MAX_AGE_SECONDS)->isPast()) {
+        $expiresAt = Carbon::parse($this->queuedAt)->addSeconds(NotificationService::MAX_AGE_SECONDS);
+
+        if ($expiresAt->isPast()) {
             $this->finish($row, NotificationDeliveryStatus::Failed, 'expired');
 
             return;
         }
 
         $row->attempt_count++;
-        $result = $sender->send($device->push_token, new PushMessage($this->title, $this->body, $this->data));
+        $ttlSeconds = max(1, $expiresAt->getTimestamp() - now()->getTimestamp());
+        $result = $sender->send($device->push_token, new PushMessage($this->title, $this->body, $this->data, $ttlSeconds));
 
         if ($result->sent) {
             $row->sent_at = now();
@@ -75,11 +79,29 @@ final class DeliverPush implements ShouldQueue
             return;
         }
 
+        if ($result->revokesDevice) {
+            RevokePushDevice::refusedByProvider($device->id);
+            $this->finish($row, NotificationDeliveryStatus::Failed, $result->errorCode);
+
+            return;
+        }
+
         if ($result->retryable && $this->attempts() < $this->tries) {
+            $delay = max(
+                self::BACKOFF_SECONDS[min($row->attempt_count, count(self::BACKOFF_SECONDS)) - 1],
+                $result->retryAfterSeconds ?? 0,
+            );
+
+            if ($expiresAt->getTimestamp() <= now()->getTimestamp() + $delay) {
+                $this->finish($row, NotificationDeliveryStatus::Failed, $result->errorCode);
+
+                return;
+            }
+
             $row->last_error_code = $result->errorCode;
             $row->save();
 
-            $this->release(self::BACKOFF_SECONDS[min($row->attempt_count, count(self::BACKOFF_SECONDS)) - 1]);
+            $this->release($delay);
 
             return;
         }
