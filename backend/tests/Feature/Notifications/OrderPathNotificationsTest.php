@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Modules\Notifications\Push\FakePushSender;
 use App\Modules\Notifications\Push\PushMessage;
 use App\Modules\Orders\CustomerCart;
+use App\Modules\Orders\FinalAmounts;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -322,6 +323,24 @@ final class OrderPathNotificationsTest extends TestCase
         $this->assertNotSame($before, $after);
         $this->assertOnlyPushed('shopping_completed', $customer);
         $this->assertBodyHasAmount($after);
+    }
+
+    public function test_a_correction_on_an_online_order_with_a_final_total_sends_nothing(): void
+    {
+        $shopper = $this->withDevice(Role::Shopper);
+        $customer = $this->withDevice(Role::Customer);
+        $admin = $this->withDevice(Role::Admin);
+        $order = $this->shoppedOrder($shopper, $customer, online: true);
+        $line = $this->buy($order, $shopper);
+        FinalAmounts::fill($order);
+        $order->save();
+        $total = $order->final_total_uzs;
+        $this->forgetPushes();
+
+        $this->correct($line, 16500, $admin)->assertStatus(409);
+
+        $this->assertSame($total, $order->fresh()->final_total_uzs);
+        $this->assertSame([], $this->sent());
     }
 
     public function test_a_correction_to_the_same_price_sends_nothing(): void
