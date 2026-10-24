@@ -46,7 +46,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
 | W4-6 | Android release build and closed testing | Google Play, W4-5 | Planned |
 | W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | Merged (#116) |
-| W4-8 | Firebase Cloud Messaging sender; device pruning | Firebase (verification) | In progress |
+| W4-8 | Firebase Cloud Messaging sender; device pruning | Firebase (verification) | Merged (#118); verified on the Owner's project (`DL-114` (4)) |
 | W4-9 | Push in the app: Firebase token, permission, banners, opening the order | Firebase | Planned |
 | W4-10 | Carried P3 fixes | — | Merged (#117) |
 | W4-11 | Wave closure and the pilot checklist | all | Planned |
