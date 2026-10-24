@@ -1705,3 +1705,17 @@ The server side of `DL-104` (10): the delivery record, the texts, the triggers a
 7. **The texts.** The titles and bodies of `lang/uz/notifications.php` and `lang/ru/notifications.php` carry the order number and an amount, never a name, phone or address. The Owner reads them on the wave's walk.
 8. **W4-6's preparation may start before W4-5.** Release signing, the version code, the build script and the store texts do not need the deployment; the upload to Google Play waits for it.
 9. **A price correction notifies on a cash order only.** `CorrectPrice` refuses an online order with `409 price_correction_locked` until Wave 5, so it sends `shopping_completed` for a cash order alone, and only when the final total was set and changes. Wave 5 decides what the correction of an online order sends.
+
+## DL-113 — Carried P3 fixes from W4-10 (2026-10-24, agent)
+
+The two rows Waves 2 and 3 left for Wave 4 (`tasks/WAVE_4.md` W4-10).
+
+1. **Why a list under a page showed its last answer.** Riverpod 3 pauses the providers of a screen that another page covers. An action's reload of the list under its page therefore runs only once the page closes, and until that reload answers, the list shows what it last had: after delivered, the Courier's list showed the delivered order as new for about a second, and tapping it said it was no longer theirs.
+2. **A sure answer that takes an order off a list drops its row at once.** The Courier's, the Shopper's and the Customer's order lists are a `ListPageController` (`core/state/list_page_controller.dart`), and the action drops the row before the list loads again:
+   - delivered and not delivered, for the Courier;
+   - a completion, and a line's answer that left the Shopper without the order (`DL-70` (6)), for the Shopper;
+   - a cancel whose answer is a cancelled order, from the Customer's current tab. The same call files a cancellation request from `shopping` on and answers the order carrying it (`DL-65` (1)), and that row stays.
+
+   The page keeps its place and its total goes one lower until the server's next answer replaces it. Nothing is dropped after a refusal, a lost answer or a server error. This is not the optimistic patching `frontend/AGENTS.md` section 11 forbids: the server has already answered. A list no screen holds is not loaded for a drop, so a delivery opened from a push asks for nothing more.
+3. **Rows that stay are not patched.** After an accept, a start, an edit, a cancellation request or a bought line, the row keeps its old state until the reload answers, a moment after the list shows again. Tapping it opens the order's own page, which loads fresh.
+4. **Customer mode's app bar was already fixed.** The row of `tasks/WAVE_2.md` and `tasks/WAVE_3.md` (six actions on a Shopper's or Courier's phone, the title cut short) closes without a code change. The Customer home has no app bar (`DL-75` items 4 and 5), every other Customer screen's app bar holds at most one action, and a Shopper's or Courier's holds one menu (`DL-98` (3)). `customer_home_test.dart` and the staff screens' tests pin it.

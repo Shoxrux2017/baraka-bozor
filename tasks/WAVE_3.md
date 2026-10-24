@@ -407,7 +407,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 | For Wave 5: the `unpaid_online` cancellation must close or refuse a pending cancellation request, as the last line removed does (`DL-54` (12)) | Open for Wave 5 |
 | The scheduler runs nowhere until Wave 4 deploys one; until then expiry is written by actions and derived by reads (`DL-54` (8)) | Open for Wave 4 |
 | Carried from Wave 2: a build whose MapKit key Yandex refuses aborts at launch (`DL-53` (1)). Before the map returns, MapKit must start only when the map is opened | Open, before the map returns |
-| Carried from Wave 2: in Customer mode a Shopper's or Courier's app bar holds six actions, and the title shortens on a phone. The areas of W3-15 and W3-18 must not repeat it; the Shopper's area keeps two, the language and one menu (`DL-69` (5)), and the Courier's does the same (`DL-72` (1)); Customer mode's own app bar remains | Open for Wave 4 (P3) |
+| Carried from Wave 2: in Customer mode a Shopper's or Courier's app bar holds six actions, and the title shortens on a phone. The areas of W3-15 and W3-18 must not repeat it; the Shopper's area keeps two, the language and one menu (`DL-69` (5)), and the Courier's does the same (`DL-72` (1)); Customer mode's own app bar remains | Closed by W4-10 (`DL-113` (4)) |
 | Carried from Wave 2: the MapKit key and the free tier's fitness (`DL-36`) | Open, Owner |
 | Carried from Wave 2, for Wave 4: CORS in production, device pruning, the push token change stream, reorder's stored answer (closed by `DL-91` item 3) | Open for Wave 4 |
 | Carried from Wave 2, for Wave 5: a payment attempt's outcome is not guarded by the idempotency key, and Paynet and xazna have no adapters | Open for Wave 5 |
@@ -415,7 +415,7 @@ As in Waves 1 and 2, the split is by layer (`DL-54` (22)). Each backend task tha
 | Until W3-17, the merged app labels a bought line with its ordered price beside the bought total, for example 18 400 a kg next to a total billed at 19 550. W3-17 shows the price to pay and the replacement (`DL-57` (4)) | Closed by W3-17 (`DL-71` (1)) |
 | Wave 2 risk rows this plan takes on: the Courier assignment (W3-8), an estimate line added by an edit billed at its own markup (W3-3), the self-order mark after shopping completes (`DL-54` (14)), a Shopper blocked after an assignment (`DL-54` (13)), and the attention list's height (W3-13) | Closed by W3-3, W3-8 and W3-13 |
 | From W3-7 until W3-8, completing a self-order's shopping drops its mark from the board and the attention list, and the row names no Shopper: both still read only the current assignment. W3-8 comes next and restores them as `DL-54` (14) sets them; no walkthrough runs between the two | Closed by W3-8 |
-| Found by the closure walk: a list left under a page reloads when the page is closed, and meanwhile shows what it last had. After delivered, the Courier's list showed the delivered order as new for about a second on the emulator. Tapping it then says it is no longer the Courier's. Any list under a page an action runs on can show the same moment | Open for Wave 4 (P3) |
+| Found by the closure walk: a list left under a page reloads when the page is closed, and meanwhile shows what it last had. After delivered, the Courier's list showed the delivered order as new for about a second on the emulator. Tapping it then says it is no longer the Courier's. Any list under a page an action runs on can show the same moment | Closed by W4-10 (`DL-113`) |
 
 ## Independent-review findings not acted on
 

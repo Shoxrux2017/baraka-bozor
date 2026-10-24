@@ -48,7 +48,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | In progress (PR pending) |
 | W4-8 | Firebase Cloud Messaging sender; device pruning | Firebase (verification) | Planned |
 | W4-9 | Push in the app: Firebase token, permission, banners, opening the order | Firebase | Planned |
-| W4-10 | Carried P3 fixes | — | Planned |
+| W4-10 | Carried P3 fixes | — | Done |
 | W4-11 | Wave closure and the pilot checklist | all | Planned |
 
 The order of work is the table's. W4-6 starts as soon as W4-5 is live, because its fourteen days run while W4-7 to W4-10 are built; testers then receive the later builds through the track. W4-6's preparation (release signing, version code, build script, store texts) may run before W4-5; the upload waits for it (`DL-112` (8)).
@@ -197,8 +197,8 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 
 **W4-10. Carried P3 fixes.**
 
-- A list left under a page shows its last answer for a moment after an action on that page (Wave 3 closure walk). After the action, the page tells the list to drop the changed row at once.
-- The six actions of Customer mode's app bar on a Shopper's or Courier's phone (Waves 2 and 3). Check whether the kit restyle already removed them. Close the row if so, otherwise fix it.
+- A list left under a page shows its last answer for a moment after an action on that page (Wave 3 closure walk). After the action, the page tells the list to drop the changed row at once. Done: Riverpod 3 pauses a covered list, so its reload waited for the page to close; a sure answer that takes an order off the Courier's, the Shopper's or the Customer's current list now drops its row first (`DL-113` (1) to (3)).
+- The six actions of Customer mode's app bar on a Shopper's or Courier's phone (Waves 2 and 3). Check whether the kit restyle already removed them. Close the row if so, otherwise fix it. Closed with no code change: the redesign removed them (`DL-113` (4)).
 
 **W4-11. Closure.**
 
@@ -241,7 +241,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | Carried from Wave 2: device pruning, the push token change stream | Close with W4-8 and W4-9 |
 | Carried from Wave 2: a build whose MapKit key Yandex refuses aborts at launch | Closed: the map is Google's since `DL-86`, and its SDK starts only when a map is shown |
 | Carried from Wave 3: the handoff point at launch | Owner question 2, W4-5 |
-| Carried from Wave 3, P3: a list under a page; Customer mode's app bar | W4-10 |
+| Carried from Wave 3, P3: a list under a page; Customer mode's app bar | Closed by W4-10 (`DL-113`) |
 | `composer audit` (found at W4-1) reports three advisories in packages the app already had: `symfony/http-foundation` (a ReDoS through the `Cache-Control` request header) and `league/commonmark` (two). They are updated before the first deployment | Closed by W4-2 (`DL-107` (10)) |
 
 ## Independent-review findings not acted on
