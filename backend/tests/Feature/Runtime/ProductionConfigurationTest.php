@@ -108,6 +108,28 @@ final class ProductionConfigurationTest extends TestCase
         $this->assertSame([], ProductionConfiguration::problems());
     }
 
+    /**
+     * @return array<string, array{mixed, bool}>
+     */
+    public static function dailyLimits(): array
+    {
+        return [
+            'zero' => [0, true],
+            'negative' => [-1, true],
+            'text' => ['abc', true],
+            'five hundred' => [500, false],
+            'default' => [null, false],
+        ];
+    }
+
+    #[DataProvider('dailyLimits')]
+    public function test_the_daily_limit_must_be_a_positive_integer(mixed $value, bool $named): void
+    {
+        config(['login_codes.daily_limit' => $value ?? config('login_codes.daily_limit')]);
+
+        $this->assertSame($named ? ['LOGIN_CODE_DAILY_LIMIT'] : [], ProductionConfiguration::problems());
+    }
+
     public function test_an_unknown_driver_fails_at_the_check(): void
     {
         config(['login_codes.driver' => 'carrier-pigeon']);

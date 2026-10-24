@@ -8,6 +8,7 @@ use App\Exceptions\ApiException;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryFailed;
 use App\Modules\Auth\CodeDelivery\CodeDeliveryGateway;
 use App\Modules\Auth\CodeDelivery\CodeUndeliverable;
+use App\Modules\Auth\LoginCodeCeiling;
 use App\Modules\Auth\LoginCodePolicy;
 use App\Modules\Auth\Models\LoginChallenge;
 use App\Modules\Auth\TestPhones;
@@ -36,7 +37,8 @@ use Illuminate\Support\Facades\Log;
  * would end the lock early.
  *
  * A configured test phone gets a challenge for the fixed test code and no
- * delivery at all; the counters apply to it like to any other phone.
+ * delivery at all; the counters apply to it like to any other phone, except
+ * the daily ceiling of paid checks, which only a real delivery can spend.
  */
 final class RequestCustomerLoginCode
 {
@@ -46,6 +48,7 @@ final class RequestCustomerLoginCode
         private readonly RateLimiter $limiter,
         private readonly CodeDeliveryGateway $gateway,
         private readonly TestPhones $testPhones,
+        private readonly LoginCodeCeiling $ceiling,
     ) {}
 
     public function __invoke(string $phone, string $ip, string $purpose = LoginChallenge::PURPOSE_CUSTOMER_LOGIN): RequestedLoginCode
@@ -66,6 +69,10 @@ final class RequestCustomerLoginCode
 
         $testCode = $this->testPhones->codeFor($phone);
         $code = $testCode ?? self::generate();
+
+        if ($testCode === null) {
+            $this->ceiling->reserve($phone);
+        }
 
         $channel = $testCode !== null ? TestPhones::CHANNEL : $this->deliver($phone, $code);
 

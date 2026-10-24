@@ -53,6 +53,10 @@ final class ProductionConfiguration
             $problems[] = 'TELEGRAM_GATEWAY_TOKEN';
         }
 
+        if (filter_var(config('login_codes.daily_limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) === false) {
+            $problems[] = 'LOGIN_CODE_DAILY_LIMIT';
+        }
+
         $origins = config('cors.allowed_origins');
 
         if (! is_array($origins) || count($origins) !== 1 || in_array('*', $origins, true)) {
