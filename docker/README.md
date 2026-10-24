@@ -305,7 +305,9 @@ A restore is tried in a scratch stack with its own env file: another
 the repository through the backup image. Remove the scratch stack only with
 `docker compose --env-file <that stack's env file> -f docker/compose.prod.yaml down -v`.
 A scratch stack uses fake drivers and no production credentials
-(`LOGIN_CODE_DRIVER=fake`, no Telegram or Firebase keys): the final `up -d` of
+(`LOGIN_CODE_DRIVER=fake`, no Telegram or Firebase keys) and runs with
+`APP_ENV=local`, since the production boot check refuses the fake driver
+(`DL-110` (7)); `docker/backup/test-cycle.sh` does the same. The final `up -d` of
 `restore.sh` starts the worker and the scheduler on copied Customer data. Roles are
 not in the dump, so `restore.sh` ends by printing a reminder and does not run
 `create-role.sh` itself: a scratch stack that kept `COMPOSE_PROFILES=backup` would
