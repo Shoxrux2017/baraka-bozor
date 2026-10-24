@@ -8,7 +8,7 @@ FROM alpine:3.24
 # below means Tashkent.
 RUN apk add --no-cache postgresql17-client restic supercronic tzdata \
     && adduser -D -u 10001 backup \
-    && mkdir -p /backup/db /backup/images /status \
+    && mkdir -p /backup/db /status \
     && chown backup:backup /backup/db /status
 
 ENV TZ=Asia/Tashkent

@@ -114,6 +114,15 @@ SQL
 snapshot_count() { bexec restic snapshots --json | grep -o '"short_id"' | wc -l | tr -d ' \r'; }
 
 compose up -d --build --wait
+
+# The backup mounts the images volume last while it is still empty. Docker gives
+# an empty volume the owner of the mounting image's directory, so the volume must
+# still be www-data's (uid 33 in the app image): otherwise Admin uploads fail.
+# Checked from the backup container, since mounting the volume in the app would
+# set the owner right again.
+compose up -d --force-recreate backup
+[ "$(bexec stat -c %u /backup/images | tr -d '')" = 33 ]   || fail "the images volume is not owned by www-data"
+
 compose run --rm app php artisan migrate --force
 compose run --rm app php artisan db:seed --class=WalkthroughSeeder --force
 bash docker/backup/create-role.sh "$W/stack.env"

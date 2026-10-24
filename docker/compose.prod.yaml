@@ -149,7 +149,15 @@ services:
       PGHOST: db
       PGDATABASE: ${DB_DATABASE:?DB_DATABASE is required}
     volumes:
-      - public-images:/backup/images:ro
+      # nocopy: Docker gives an empty volume the owner of the mounting image's
+      # directory, and only the app's image may set it (www-data), or uploads
+      # fail.
+      - type: volume
+        source: public-images
+        target: /backup/images
+        read_only: true
+        volume:
+          nocopy: true
       # The last result of each job.
       - backup-status:/status
     depends_on:
