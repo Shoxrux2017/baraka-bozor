@@ -28,6 +28,9 @@ final class SendNotification implements ShouldQueue
     use InteractsWithQueue;
     use Queueable;
 
+    /** One try: a retry after a partial fan-out would duplicate rows and pushes. */
+    public int $tries = 1;
+
     public function __construct(
         public readonly string $type,
         public readonly string $recipientUserId,

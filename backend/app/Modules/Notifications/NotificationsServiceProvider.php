@@ -19,7 +19,10 @@ final class NotificationsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(FakePushSender::class);
+        $this->app->singleton(
+            FakePushSender::class,
+            static fn (Application $app): FakePushSender => new FakePushSender($app->environment('testing')),
+        );
 
         $this->app->singleton(PushSender::class, static function (Application $app): PushSender {
             $driver = config('notifications.push_driver');

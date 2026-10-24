@@ -54,4 +54,26 @@ final class PushSenderBindingTest extends TestCase
         $this->assertCount(3, $fake->sent());
         $this->assertSame('tok-3', $fake->sent()[2]['token']);
     }
+
+    public function test_the_testing_binding_answers_sent_by_default(): void
+    {
+        $result = $this->app->make(PushSender::class)->send('tok', new PushMessage('T', 'B', ['event' => 'x']));
+
+        $this->assertTrue($result->sent);
+    }
+
+    public function test_a_fake_that_does_not_report_delivery_answers_failed_fake_driver(): void
+    {
+        $fake = new FakePushSender(reportsDelivery: false);
+        $fake->answerNext(PushSendResult::retry('unavailable'));
+        $message = new PushMessage('T', 'B', ['event' => 'x']);
+
+        $queued = $fake->send('tok-1', $message);
+        $default = $fake->send('tok-2', $message);
+
+        $this->assertSame('unavailable', $queued->errorCode);
+        $this->assertFalse($default->sent);
+        $this->assertFalse($default->retryable);
+        $this->assertSame('fake_driver', $default->errorCode);
+    }
 }

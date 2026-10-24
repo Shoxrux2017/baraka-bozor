@@ -6,7 +6,8 @@ namespace App\Modules\Notifications\Push;
 
 /**
  * Records what would be pushed, in this process only. It never logs or writes
- * anything: a token, a title or a body must not reach a log.
+ * anything: a token, a title or a body must not reach a log. Outside tests it
+ * never reports a delivery, because nothing leaves the server.
  */
 final class FakePushSender implements PushSender
 {
@@ -16,11 +17,13 @@ final class FakePushSender implements PushSender
     /** @var list<PushSendResult> */
     private array $answers = [];
 
+    public function __construct(private readonly bool $reportsDelivery = true) {}
+
     public function send(string $pushToken, PushMessage $message): PushSendResult
     {
         $this->sent[] = ['token' => $pushToken, 'message' => $message];
 
-        return array_shift($this->answers) ?? PushSendResult::sent();
+        return array_shift($this->answers) ?? ($this->reportsDelivery ? PushSendResult::sent() : PushSendResult::failed('fake_driver'));
     }
 
     /**
@@ -33,7 +36,7 @@ final class FakePushSender implements PushSender
 
     /**
      * Queues the answers the next sends get, in order; after them every send
-     * succeeds.
+     * succeeds, or fails with `fake_driver` when the fake does not report delivery.
      */
     public function answerNext(PushSendResult ...$results): void
     {

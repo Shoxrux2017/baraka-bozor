@@ -128,4 +128,9 @@ final class SendNotificationTest extends TestCase
         Queue::assertNothingPushed();
         $this->assertSame(0, NotificationDelivery::count());
     }
+
+    public function test_the_job_is_tried_once(): void
+    {
+        $this->assertSame(1, $this->job((string) Str::uuid())->tries);
+    }
 }

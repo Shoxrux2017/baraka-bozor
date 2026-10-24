@@ -351,6 +351,20 @@ final class ApprovalAndCancellationNotificationsTest extends TestCase
         $this->assertSame([], $this->sent());
     }
 
+    public function test_an_approved_request_ready_for_delivery_tells_only_the_customer(): void
+    {
+        $shopper = $this->withDevice(Role::Shopper);
+        $customer = $this->withDevice(Role::Customer);
+        $operator = $this->withDevice(Role::Operator);
+        $order = Order::factory()->readyForDelivery()->create(['customer_id' => $customer->id]);
+        $order->shopperAssignments()->update(['shopper_id' => $shopper->id]);
+        $request = OrderCancellationRequest::factory()->create(['order_id' => $order->id]);
+
+        $this->decideRequest($request, $operator, 'approve')->assertOk();
+
+        $this->assertPushed(['order_cancelled' => $customer]);
+    }
+
     public function test_an_approved_request_in_delivery_assigned_tells_the_courier(): void
     {
         $courier = $this->withDevice(Role::Courier);

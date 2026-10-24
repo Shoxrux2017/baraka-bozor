@@ -180,4 +180,16 @@ final class DeliverPushTest extends TestCase
         $this->assertSame(NotificationDeliveryStatus::Failed, $row->status);
         $this->assertSame('exception', $row->last_error_code);
     }
+
+    public function test_a_fake_that_does_not_report_delivery_marks_the_row_failed_without_sent_at(): void
+    {
+        [$row] = $this->queuedRow();
+
+        $this->job($row)->handle(new FakePushSender(reportsDelivery: false));
+
+        $row->refresh();
+        $this->assertSame(NotificationDeliveryStatus::Failed, $row->status);
+        $this->assertSame('fake_driver', $row->last_error_code);
+        $this->assertNull($row->sent_at);
+    }
 }
