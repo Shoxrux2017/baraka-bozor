@@ -75,7 +75,8 @@ final class TelegramGatewayCodeDelivery implements CodeDeliveryGateway
         }
 
         // The body is read whatever the HTTP status: the provider explains a
-        // refusal in it, and the unreachable-number answer is a 400.
+        // refusal in it, and its unreachable-number answer came with a 200 at
+        // W4-4's verification (`DL-111`).
         $body = $response->json();
 
         if (is_array($body) && ($body['ok'] ?? null) === false) {

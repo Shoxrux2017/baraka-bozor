@@ -91,21 +91,25 @@ final class TelegramGatewayCodeDeliveryTest extends TestCase
     }
 
     /**
-     * @return array<string, array{string}>
+     * Telegram answered W4-4's unreachable number with a 200 (`DL-111`); the
+     * 400 case keeps the status out of the decision.
+     *
+     * @return array<string, array{string, int}>
      */
     public static function unreachable(): array
     {
         return [
-            'invalid' => ['PHONE_NUMBER_INVALID'],
-            'not found' => ['PHONE_NUMBER_NOT_FOUND'],
-            'not available' => ['PHONE_NUMBER_NOT_AVAILABLE'],
+            'invalid' => ['PHONE_NUMBER_INVALID', 200],
+            'not found' => ['PHONE_NUMBER_NOT_FOUND', 200],
+            'not available' => ['PHONE_NUMBER_NOT_AVAILABLE', 200],
+            'invalid under a 400' => ['PHONE_NUMBER_INVALID', 400],
         ];
     }
 
     #[DataProvider('unreachable')]
-    public function test_a_number_telegram_cannot_reach_is_refused_without_a_challenge(string $error): void
+    public function test_a_number_telegram_cannot_reach_is_refused_without_a_challenge(string $error, int $status): void
     {
-        Http::fake([self::BASE.'/*' => Http::response(['ok' => false, 'error' => $error], 400)]);
+        Http::fake([self::BASE.'/*' => Http::response(['ok' => false, 'error' => $error], $status)]);
 
         $this->request()->assertStatus(409)->assertJsonPath('code', 'code_delivery_unavailable');
 
@@ -122,6 +126,7 @@ final class TelegramGatewayCodeDeliveryTest extends TestCase
         return [
             'token invalid' => [['ok' => false, 'error' => 'ACCESS_TOKEN_INVALID'], 401, 'ACCESS_TOKEN_INVALID'],
             'balance' => [['ok' => false, 'error' => 'BALANCE_NOT_ENOUGH'], 400, 'BALANCE_NOT_ENOUGH'],
+            'balance under a 200' => [['ok' => false, 'error' => 'BALANCE_NOT_ENOUGH'], 200, 'BALANCE_NOT_ENOUGH'],
             'flood' => [['ok' => false, 'error' => 'FLOOD_WAIT'], 429, 'FLOOD_WAIT'],
             'error with digits' => [['ok' => false, 'error' => 'CODE_123456'], 400, 'unreadable'],
             'html 502' => ['<html>Bad gateway</html>', 502, 'http_502'],
