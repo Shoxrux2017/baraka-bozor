@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show protected;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart'
     show FutureProviderFamily, NotifierProviderFamily;
@@ -11,6 +12,7 @@ import '../../../core/network/paged.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/session/staff_account.dart';
 import '../../../core/state/account_mutation.dart';
+import '../../../core/state/list_page_controller.dart';
 import '../../../core/state/mutation_state.dart';
 import '../data/courier_orders_api.dart';
 import '../domain/courier_orders.dart';
@@ -40,16 +42,31 @@ courierOrdersPageProvider =
       CourierOrdersPageController.new,
     );
 
+/// The page of the Courier's current deliveries, the longest-waiting
+/// assignment first.
+class CourierOrdersListController extends ListPageController<CourierOrder> {
+  @override
+  Future<Paged<CourierOrder>> build() {
+    if (ref.watch(staffAccountProvider) == null) {
+      return Completer<Paged<CourierOrder>>().future;
+    }
+    return ref
+        .watch(courierOrdersRepositoryProvider)
+        .orders(ref.watch(courierOrdersPageProvider));
+  }
+
+  @override
+  @protected
+  String idOf(CourierOrder row) => row.id;
+}
+
 /// The Courier's current deliveries, the longest-waiting assignment first.
-final FutureProvider<Paged<CourierOrder>> courierOrdersProvider =
-    FutureProvider.autoDispose<Paged<CourierOrder>>((Ref ref) {
-      if (ref.watch(staffAccountProvider) == null) {
-        return Completer<Paged<CourierOrder>>().future;
-      }
-      return ref
-          .watch(courierOrdersRepositoryProvider)
-          .orders(ref.watch(courierOrdersPageProvider));
-    });
+final AsyncNotifierProvider<CourierOrdersListController, Paged<CourierOrder>>
+courierOrdersProvider =
+    AsyncNotifierProvider.autoDispose<
+      CourierOrdersListController,
+      Paged<CourierOrder>
+    >(CourierOrdersListController.new);
 
 /// One of the Courier's current deliveries.
 final FutureProviderFamily<CourierOrder, String> courierOrderProvider =
@@ -131,7 +148,8 @@ unansweredHandoverProvider = NotifierProvider.autoDispose
 /// read no more: only the list loads again. After a sure refusal the order
 /// loads again too, so the Courier sees it as it now is; after an answer
 /// that did not say what it did, the order's page keeps what it shows, and
-/// the handover is offered again under its key (`DL-72`).
+/// the handover is offered again under its key (`DL-72`). A sure outcome
+/// takes the delivery off the list under the page at once (`DL-113`).
 class CourierOutcomeController extends AccountMutation {
   CourierOutcomeController(this.orderId);
 
@@ -190,7 +208,12 @@ class CourierOutcomeController extends AccountMutation {
     return order;
   }
 
-  void _reload(CourierOrder? _) => ref.invalidate(courierOrdersProvider);
+  void _reload(CourierOrder? answered) {
+    if (answered != null) {
+      dropRow(ref, courierOrdersProvider, orderId);
+    }
+    ref.invalidate(courierOrdersProvider);
+  }
 
   /// A conflict or the order gone: the order has moved on meanwhile —
   /// handed to another Courier, cancelled, or its outcome recorded from

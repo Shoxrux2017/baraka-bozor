@@ -22,7 +22,8 @@ ProviderContainer _container(FakeCourierOrdersRepository orders) {
   container
     ..listen(courierOutcomeProvider(courierOrderA), (_, _) {})
     ..listen(unansweredHandoverProvider(courierOrderA), (_, _) {})
-    ..listen(courierOrderProvider(courierOrderA), (_, _) {});
+    ..listen(courierOrderProvider(courierOrderA), (_, _) {})
+    ..listen(courierOrdersProvider, (_, _) {});
   return container;
 }
 
@@ -39,10 +40,28 @@ void main() {
       status: 'completed',
       ended: true,
     );
+    orders.details[courierOrderB] = courierOrder(
+      id: courierOrderB,
+      number: 1002,
+      status: 'on_the_way',
+    );
     container = _container(orders);
     addTearDown(container.dispose);
     outcome = container.read(courierOutcomeProvider(courierOrderA).notifier);
   });
+
+  /// The ids the list shows now, once its first page has answered.
+  Future<List<String>> listed({bool first = false}) async {
+    if (first) {
+      await container.read(courierOrdersProvider.future);
+    }
+    return container
+        .read(courierOrdersProvider)
+        .value!
+        .items
+        .map((order) => order.id)
+        .toList();
+  }
 
   test(
     'a handover without a sure answer goes again as it was, until one comes',
@@ -158,4 +177,46 @@ void main() {
     hold.complete();
     await first;
   });
+
+  test(
+    'a handover that ended the delivery takes it off the list at once',
+    () async {
+      await listed(first: true);
+      final Completer<void> hold = Completer<void>();
+      orders.holdList = hold;
+      await outcome.delivered(55600);
+      expect(await listed(), <String>[courierOrderB]);
+      hold.complete();
+      await container.pump();
+      expect(await listed(), <String>[courierOrderB]);
+    },
+  );
+
+  test('a not delivered takes it off the list at once', () async {
+    await listed(first: true);
+    final Completer<void> hold = Completer<void>();
+    orders.holdList = hold;
+    await outcome.notDelivered(DeliveryFailureReason.refused, null);
+    expect(await listed(), <String>[courierOrderB]);
+    hold.complete();
+    await container.pump();
+    expect(await listed(), <String>[courierOrderB]);
+  });
+
+  test(
+    'a handover without a sure answer, or refused, keeps it on the list',
+    () async {
+      await listed(first: true);
+      for (final ApiFailure failure in <ApiFailure>[
+        const NetworkFailure(),
+        const ApiRefusal(ApiError(status: 409, code: 'cash_amount_mismatch')),
+      ]) {
+        orders
+          ..actionFailure = failure
+          ..holdList = Completer<void>();
+        await outcome.delivered(55600);
+        expect(await listed(), contains(courierOrderA), reason: '$failure');
+      }
+    },
+  );
 }

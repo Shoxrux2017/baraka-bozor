@@ -1328,6 +1328,37 @@ void main() {
     });
   });
 
+  group('the list under a delivery', () {
+    setUp(() {
+      courier.details[courierOrderA] = courierOrder(status: 'on_the_way');
+      courier.afterAction[courierOrderA] = courierOrder(
+        status: 'completed',
+        ended: true,
+      );
+    });
+
+    testWidgets('a delivery handed over leaves the list under it at once', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      await tapAndSettle(tester, byKey('courier-order-$courierOrderA'));
+      await tapAndSettle(tester, byKey('courier-delivered'));
+      await tester.enterText(byKey('courier-cash'), '55600');
+      final Completer<void> hold = Completer<void>();
+      courier.holdList = hold;
+      await tapAndSettle(tester, byKey('courier-delivered-confirm'));
+
+      expect(location(tester), AppPaths.courier);
+      expect(byKey('courier-order-$courierOrderA'), findsNothing);
+      expect(byKey('courier-order-$courierOrderB'), findsOneWidget);
+
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('courier-order-$courierOrderA'), findsNothing);
+      expect(byKey('courier-order-$courierOrderB'), findsOneWidget);
+    });
+  });
+
   group('not delivered', () {
     setUp(() {
       courier.details[courierOrderA] = courierOrder(status: 'on_the_way');

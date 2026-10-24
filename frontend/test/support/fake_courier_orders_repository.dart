@@ -126,6 +126,9 @@ class FakeCourierOrdersRepository implements CourierOrdersRepository {
   final Map<String, CourierOrder> afterAction = <String, CourierOrder>{};
 
   Completer<void>? hold;
+
+  /// Holds the list's loads only, until the test completes it.
+  Completer<void>? holdList;
   ApiFailure? listFailure;
   ApiFailure? orderFailure;
 
@@ -143,6 +146,7 @@ class FakeCourierOrdersRepository implements CourierOrdersRepository {
   Future<Paged<CourierOrder>> orders(int page) async {
     loads.add('orders:$page');
     await _held();
+    await holdList?.future;
     if (listFailure != null) {
       throw listFailure!;
     }
