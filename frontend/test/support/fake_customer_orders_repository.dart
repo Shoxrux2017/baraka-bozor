@@ -239,6 +239,9 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   Completer<void>? loadHold;
   Completer<void>? hold;
 
+  /// Holds the list's loads only, until the test completes it.
+  Completer<void>? holdList;
+
   final List<String> loads = <String>[];
   final List<(String, List<OrderEditLine>, String?)> edits =
       <(String, List<OrderEditLine>, String?)>[];
@@ -296,6 +299,7 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   @override
   Future<Paged<OrderSummary>> orders(OrdersTab tab, int page) async {
     loads.add('orders:${tab.code}:$page');
+    await holdList?.future;
     final List<Map<String, Object?>> all =
         summaries ??
         <Map<String, Object?>>[

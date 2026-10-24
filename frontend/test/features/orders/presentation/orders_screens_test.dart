@@ -29,6 +29,8 @@ void main() {
   late FakeCustomerOrdersRepository orders;
   late FakeCartRepository cart;
 
+  const String otherOrder = '0192f0a0-0000-7000-8000-00000000c002';
+
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
   BuildContext anywhere(WidgetTester tester) =>
@@ -92,6 +94,26 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(finder);
     await tester.pumpAndSettle();
+  }
+
+  /// Goes back from the order's page to the list under it, by the app bar's
+  /// back button.
+  Future<void> backToList(WidgetTester tester) async {
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+  }
+
+  /// Opens the order reached from the list of current orders, which holds
+  /// [orderOne] and a second order.
+  Future<void> openFromList(WidgetTester tester) async {
+    orders = FakeCustomerOrdersRepository(
+      orders: <Map<String, Object?>>[
+        customerOrderJson(),
+        customerOrderJson(id: otherOrder),
+      ],
+    );
+    await open(tester, at: AppPaths.customerOrders);
+    await tapAndSettle(tester, byKey('order-$orderOne'));
   }
 
   /// Takes a line out of the editor: its options sheet, then the remove
@@ -327,6 +349,48 @@ void main() {
         expect(find.text(l10n(tester).orderStateShopping), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'a cancelled order leaves the current orders under it at once',
+      (WidgetTester tester) async {
+        await openFromList(tester);
+
+        orders.answer = customerOrderJson(
+          status: 'cancelled',
+          changeable: false,
+        );
+        final Completer<void> listHold = orders.holdList = Completer<void>();
+        await tapAndSettle(tester, byKey('order-cancel'));
+        await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
+        await tapAndSettle(tester, byKey('cancel-confirm'));
+        await backToList(tester);
+
+        expect(byKey('order-$orderOne'), findsNothing);
+        expect(byKey('order-$otherOrder'), findsOneWidget);
+
+        listHold.complete();
+        await tester.pumpAndSettle();
+
+        expect(byKey('order-$orderOne'), findsNothing);
+        expect(byKey('order-$otherOrder'), findsOneWidget);
+      },
+    );
+
+    testWidgets('a cancel without a sure answer keeps the order on the list', (
+      WidgetTester tester,
+    ) async {
+      await openFromList(tester);
+
+      orders.failure = const NetworkFailure();
+      orders.holdList = Completer<void>();
+      await tapAndSettle(tester, byKey('order-cancel'));
+      await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
+      await tapAndSettle(tester, byKey('cancel-confirm'));
+      await backToList(tester);
+
+      expect(byKey('order-$orderOne'), findsOneWidget);
+      expect(byKey('order-$otherOrder'), findsOneWidget);
+    });
   });
 
   group('a cancellation request', () {
@@ -379,6 +443,26 @@ void main() {
         tester.widget<Text>(byKey('order-cancel-needs-reason')).style?.color,
         KitColors.danger,
       );
+    });
+
+    testWidgets('a cancellation request keeps the order on the list', (
+      WidgetTester tester,
+    ) async {
+      await openFromList(tester);
+
+      orders.answer = customerOrderJson(
+        status: 'shopping',
+        changeable: false,
+        cancellationRequest: 'pending',
+      );
+      orders.holdList = Completer<void>();
+      await tapAndSettle(tester, byKey('order-cancel'));
+      await tester.enterText(byKey('cancel-reason'), 'Kerak emas');
+      await tapAndSettle(tester, byKey('cancel-confirm'));
+      await backToList(tester);
+
+      expect(byKey('order-$orderOne'), findsOneWidget);
+      expect(byKey('order-$otherOrder'), findsOneWidget);
     });
   });
 
