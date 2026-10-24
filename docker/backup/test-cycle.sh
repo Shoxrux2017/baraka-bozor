@@ -96,6 +96,17 @@ BACKUP
 
 bexec() { compose exec -T backup "$@"; }
 status_has() { bexec cat "/status/$1.json" | grep -q "$2"; }
+fingerprint() {
+  # shellcheck disable=SC2016
+  compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tA -v ON_ERROR_STOP=1' <<'SQL' | tr -d '\r'
+SELECT c.relname || ' ' || md5(query_to_xml(format('SELECT t::text AS r FROM %I t ORDER BY 1', c.relname), false, false, '')::text)
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p') AND c.relname NOT IN ('cache', 'cache_locks')
+ORDER BY c.relname;
+SELECT sequencename || ' ' || coalesce(last_value::text, 'unused')
+FROM pg_sequences WHERE schemaname = 'public' ORDER BY sequencename;
+SQL
+}
 snapshot_count() { bexec restic snapshots --json | grep -o '"short_id"' | wc -l | tr -d ' \r'; }
 
 compose up -d --build --wait
@@ -119,6 +130,8 @@ fi
 bexec backup.sh || fail "backup.sh failed on a healthy stack"
 status_has backup '"result":"success"' || fail "backup.json is not a success"
 status_has backup '"snapshot":"[0-9a-f]\{8\}"' || fail "backup.json names no snapshot"
+SNAPSHOT="$(bexec cat /status/backup.json | sed -n 's/.*"snapshot":"\([0-9a-f]\{8\}\)".*/\1/p' | tr -d '\r')"
+[ -n "$SNAPSHOT" ] || fail "no snapshot id in backup.json"
 bexec restic snapshots --json | grep -q '"hostname":"barakabozor"' \
   || fail "no snapshot with the host barakabozor"
 bexec test ! -e /backup/db/barakabozor.dump || fail "the dump file was left behind"
@@ -143,5 +156,33 @@ status_has check '"result":"success"' || fail "check.json is not a success"
 
 compose up -d --force-recreate backup
 bexec test -f /status/check.json || fail "check.json did not survive a container recreate"
+
+FINGERPRINT="$(fingerprint)"
+[ "$(printf '%s\n' "$FINGERPRINT" | wc -l)" -gt 10 ] || fail "the fingerprint covers too few tables"
+
+compose down -v --remove-orphans > /dev/null
+
+set +e
+NO_ID_OUTPUT="$(bash docker/backup/restore.sh "$W/stack.env" 2>&1)"
+NO_ID_CODE=$?
+set -e
+[ "$NO_ID_CODE" = 2 ] || fail "restore.sh without a snapshot id exited $NO_ID_CODE, not 2"
+printf '%s\n' "$NO_ID_OUTPUT" | grep -q "$SNAPSHOT" || fail "restore.sh without an id did not list the snapshot"
+
+bash docker/backup/restore.sh "$W/stack.env" "$SNAPSHOT" || fail "restore.sh failed"
+[ "$(fingerprint)" = "$FINGERPRINT" ] || fail "the database differs after the restore"
+
+RESTORED="$(compose run --rm --no-deps -T --entrypoint sh app -c "sha256sum $MARKER; stat -c %U $MARKER" | tr -d '\r')"
+[ "$(printf '%s\n' "$RESTORED" | sed -n 1p | cut -d' ' -f1)" = "$MARKER_SHA" ] \
+  || fail "the marker image differs after the restore"
+[ "$(printf '%s\n' "$RESTORED" | sed -n 2p)" = www-data ] || fail "the marker image is not owned by www-data"
+
+set +e
+AGAIN_OUTPUT="$(bash docker/backup/restore.sh "$W/stack.env" "$SNAPSHOT" 2>&1)"
+AGAIN_CODE=$?
+set -e
+[ "$AGAIN_CODE" != 0 ] || fail "a second restore into a live stack succeeded"
+printf '%s\n' "$AGAIN_OUTPUT" | grep -q 'not empty' || fail "the second restore did not say the database is not empty"
+[ "$(fingerprint)" = "$FINGERPRINT" ] || fail "the second restore changed the database"
 
 echo "test-cycle: passed"
