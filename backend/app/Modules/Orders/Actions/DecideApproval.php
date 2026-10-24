@@ -12,6 +12,7 @@ use App\Models\Enums\ApprovalType;
 use App\Models\Enums\CancellationReason;
 use App\Models\Enums\HistoryActorType;
 use App\Models\Enums\ItemRemovedReason;
+use App\Models\Enums\NotificationType;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
@@ -19,6 +20,7 @@ use App\Models\Enums\SubstitutionResolution;
 use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 use App\Modules\Orders\ApprovalExpiry;
 use App\Modules\Orders\CustomerApprovals;
 use App\Modules\Orders\CustomerOrders;
@@ -60,7 +62,10 @@ final class DecideApproval
 {
     public const OPERATION = 'customer.approval-decision';
 
-    public function __construct(private readonly IdempotencyStore $idempotency) {}
+    public function __construct(
+        private readonly IdempotencyStore $idempotency,
+        private readonly NotificationService $notifications,
+    ) {}
 
     public function decide(User $customer, string $approvalId, string $decision, string $idempotencyKey): CustomerApproval
     {
@@ -108,6 +113,7 @@ final class DecideApproval
         }
 
         $approve = $decision === 'approve';
+        $shopperId = $order->shopperAssignments()->whereNull('ended_at')->value('shopper_id');
 
         $approval->forceFill([
             'status' => $approve ? ApprovalStatus::Approved : ApprovalStatus::Rejected,
@@ -146,6 +152,13 @@ final class DecideApproval
             'reason_code' => $cancelled === null ? null : CancellationReason::NoItemsPurchased,
             'details' => $details,
         ])->save();
+
+        // An answer that empties the order is told as the cancellation it is, instead of as an answer.
+        if ($cancelled !== null) {
+            $this->notifications->notifyCancellation($order, $customer->id, $cancelled['shopper_user_id'], null);
+        } elseif ($shopperId !== null) {
+            $this->notifications->notify(NotificationType::ApprovalAnswered, $shopperId, $order, $customer->id, $approval->id);
+        }
 
         return $approval;
     }

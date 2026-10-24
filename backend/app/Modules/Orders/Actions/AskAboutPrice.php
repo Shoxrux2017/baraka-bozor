@@ -9,6 +9,7 @@ use App\Models\Enums\ApprovalType;
 use App\Models\Enums\PriceMode;
 use App\Models\Order;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 use App\Modules\Orders\CustomerQuestions;
 use App\Modules\Orders\PriceBound;
 use App\Modules\Orders\ShopperLine;
@@ -30,6 +31,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class AskAboutPrice
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function ask(User $shopper, string $orderId, string $itemId, int $actualMarketPriceUzs, ?string $named, ?string $note): Order
     {
         ShopperLine::expireFirst($shopper, $orderId);
@@ -50,7 +53,7 @@ final class AskAboutPrice
                 throw ApiException::conflict('approval_not_needed', ['ceiling_customer_unit_price_uzs' => $bound]);
             }
 
-            CustomerQuestions::ask($order, $line, $shopper, ApprovalType::PriceOverTolerance, [
+            CustomerQuestions::ask($this->notifications, $order, $line, $shopper, ApprovalType::PriceOverTolerance, [
                 'proposed_customer_unit_price_uzs' => $proposed,
                 'proposed_actual_market_price_uzs' => $actualMarketPriceUzs,
                 'replacement_product_id' => $asReplacement ? $product : null,

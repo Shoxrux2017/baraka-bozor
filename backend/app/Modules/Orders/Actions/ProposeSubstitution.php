@@ -15,6 +15,7 @@ use App\Models\OrderHistory;
 use App\Models\Product;
 use App\Models\User;
 use App\Modules\Catalog\CustomerCatalogListing;
+use App\Modules\Notifications\NotificationService;
 use App\Modules\Orders\CustomerQuestions;
 use App\Modules\Orders\PriceBound;
 use App\Modules\Orders\ShopperLine;
@@ -46,6 +47,8 @@ use Illuminate\Validation\ValidationException;
  */
 final class ProposeSubstitution
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function propose(User $shopper, string $orderId, string $itemId, string $replacementId, int $actualMarketPriceUzs, ?string $note): Order
     {
         ShopperLine::expireFirst($shopper, $orderId);
@@ -95,7 +98,7 @@ final class ProposeSubstitution
                 && $proposed <= PriceBound::automatic($line, $order);
 
             if (! $automatic) {
-                CustomerQuestions::ask($order, $line, $shopper, ApprovalType::Substitution, [
+                CustomerQuestions::ask($this->notifications, $order, $line, $shopper, ApprovalType::Substitution, [
                     'proposed_customer_unit_price_uzs' => $proposed,
                     'proposed_actual_market_price_uzs' => $actualMarketPriceUzs,
                     'replacement_product_id' => $product->id,

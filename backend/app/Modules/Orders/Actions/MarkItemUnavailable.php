@@ -13,6 +13,7 @@ use App\Models\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 use App\Modules\Orders\NothingLeftToBuy;
 use App\Modules\Orders\ShopperLine;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class MarkItemUnavailable
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function markUnavailable(User $shopper, string $orderId, string $itemId, ?string $note): Order
     {
         ShopperLine::expireFirst($shopper, $orderId);
@@ -67,6 +70,10 @@ final class MarkItemUnavailable
                 'note' => $note,
                 'details' => $details,
             ])->save();
+
+            if ($cancelled !== null) {
+                $this->notifications->notifyCancellation($order, $shopper->id, $cancelled['shopper_user_id'], null);
+            }
 
             return $order;
         });

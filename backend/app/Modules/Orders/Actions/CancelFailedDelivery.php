@@ -14,6 +14,7 @@ use App\Models\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 use App\Support\Scope\ScopedLookup;
 use Illuminate\Support\Facades\DB;
 
@@ -35,6 +36,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class CancelFailedDelivery
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function cancel(User $staff, string $orderId, ?string $note): Order
     {
         return DB::transaction(function () use ($staff, $orderId, $note): Order {
@@ -70,6 +73,8 @@ final class CancelFailedDelivery
                 'reason_code' => CancellationReason::DeliveryFailed,
                 'note' => $note,
             ])->save();
+
+            $this->notifications->notifyCancellation($order, $staff->id, null, null);
 
             return $order;
         });

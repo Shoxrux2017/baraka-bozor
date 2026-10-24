@@ -18,6 +18,7 @@ use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 use App\Modules\Orders\ApprovalExpiry;
 use App\Modules\Orders\NothingLeftToBuy;
 use App\Support\Scope\ScopedLookup;
@@ -46,6 +47,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class ResolveExpiredApproval
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function resolve(User $staff, string $approvalId, ?string $note): Order
     {
         /** @var CustomerApproval $found */
@@ -53,7 +56,7 @@ final class ResolveExpiredApproval
         $now = now();
         ApprovalExpiry::expireOverdueOf($found->order_id, $now);
 
-        return DB::transaction(static function () use ($staff, $found, $approvalId, $note, $now): Order {
+        return DB::transaction(function () use ($staff, $found, $approvalId, $note, $now): Order {
             /** @var Order $order */
             $order = Order::query()->whereKey($found->order_id)->lockForUpdate()->firstOrFail();
             /** @var CustomerApproval $approval */
@@ -108,6 +111,10 @@ final class ResolveExpiredApproval
                 'note' => $note,
                 'details' => $details,
             ])->save();
+
+            if ($cancelled !== null) {
+                $this->notifications->notifyCancellation($order, $staff->id, $cancelled['shopper_user_id'], null);
+            }
 
             return $order;
         });

@@ -27,10 +27,11 @@ use App\Models\OrderCancellationRequest;
 final class NothingLeftToBuy
 {
     /**
-     * Cancels the order when every line is removed, and answers the move and
-     * the request it closed; null when a line remains.
+     * Cancels the order when every line is removed, and answers the move, the
+     * request it closed and the Shopper whose assignment it ended (whom the
+     * caller tells); null when a line remains.
      *
-     * @return array{from: OrderStatus, closed_cancellation_request_id: string|null}|null
+     * @return array{from: OrderStatus, closed_cancellation_request_id: string|null, shopper_user_id: string|null}|null
      */
     public static function cancelIfSo(Order $order): ?array
     {
@@ -41,9 +42,11 @@ final class NothingLeftToBuy
         $now = now();
         $from = $order->status;
 
-        $order->shopperAssignments()->whereNull('ended_at')->get()->each(
-            static fn ($assignment) => $assignment->forceFill(['ended_at' => $now, 'ended_reason' => AssignmentEndReason::OrderCancelled])->save()
-        );
+        $holder = null;
+        foreach ($order->shopperAssignments()->whereNull('ended_at')->get() as $assignment) {
+            $holder = $assignment->shopper_id;
+            $assignment->forceFill(['ended_at' => $now, 'ended_reason' => AssignmentEndReason::OrderCancelled])->save();
+        }
 
         /** @var OrderCancellationRequest|null $request */
         $request = $order->cancellationRequests()->where('status', CancellationRequestStatus::Pending->value)->first();
@@ -55,6 +58,6 @@ final class NothingLeftToBuy
             'cancellation_reason_code' => CancellationReason::NoItemsPurchased,
         ])->save();
 
-        return ['from' => $from, 'closed_cancellation_request_id' => $request?->id];
+        return ['from' => $from, 'closed_cancellation_request_id' => $request?->id, 'shopper_user_id' => $holder];
     }
 }

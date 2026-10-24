@@ -11,6 +11,7 @@ use App\Models\Enums\CancellationReason;
 use App\Models\Enums\CancellationRequestStatus;
 use App\Models\Enums\HistoryActorType;
 use App\Models\Enums\ItemRemovedReason;
+use App\Models\Enums\NotificationType;
 use App\Models\Enums\OrderHistoryEvent;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
@@ -18,6 +19,7 @@ use App\Models\Order;
 use App\Models\OrderCancellationRequest;
 use App\Models\OrderHistory;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 use App\Modules\Orders\ApprovalExpiry;
 use App\Modules\Orders\OrderPermissions;
 use App\Support\Scope\ScopedLookup;
@@ -52,6 +54,8 @@ final class DecideCancellationRequest
 
     public const REJECT = 'reject';
 
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function decide(User $staff, string $requestId, string $decision, ?string $note): Order
     {
         /** @var OrderCancellationRequest $found */
@@ -82,11 +86,15 @@ final class DecideCancellationRequest
 
             $details = ['request_id' => $request->id, 'decision' => $decision];
             $from = null;
+            $shopperId = null;
+            $courierId = null;
             if ($decision === self::APPROVE) {
                 if (! in_array($order->status, OrderPermissions::REQUEST_WINDOW, true)) {
                     throw ApiException::conflict('order_state_conflict');
                 }
                 $from = $order->status;
+                $shopperId = $order->currentShopperAssignment()->value('shopper_id');
+                $courierId = $order->currentCourierAssignment()->value('courier_id');
                 // At the cancellation's own instant, under its lock: a question
                 // that fell due while the decision waited expires, rather than
                 // closing as cancelled (DL-65 (2)).
@@ -107,6 +115,12 @@ final class DecideCancellationRequest
                 'note' => $note,
                 'details' => $details,
             ])->save();
+
+            if ($decision === self::APPROVE) {
+                $this->notifications->notifyCancellation($order, $staff->id, $shopperId, $courierId);
+            } else {
+                $this->notifications->notify(NotificationType::CancellationRejected, $order->customer_id, $order, $staff->id);
+            }
 
             return $order;
         });

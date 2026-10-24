@@ -7,6 +7,7 @@ namespace App\Modules\Orders\Actions;
 use App\Models\Enums\ApprovalType;
 use App\Models\Order;
 use App\Models\User;
+use App\Modules\Notifications\NotificationService;
 use App\Modules\Orders\CustomerQuestions;
 use App\Modules\Orders\QuantityPolicy;
 use App\Modules\Orders\ShopperLine;
@@ -25,6 +26,8 @@ use Illuminate\Validation\ValidationException;
  */
 final class AskAboutQuantity
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function ask(User $shopper, string $orderId, string $itemId, string $proposedQuantity, ?string $note): Order
     {
         ShopperLine::expireFirst($shopper, $orderId);
@@ -41,7 +44,7 @@ final class AskAboutQuantity
                 ]);
             }
 
-            CustomerQuestions::ask($order, $line, $shopper, ApprovalType::ReducedQuantity, [
+            CustomerQuestions::ask($this->notifications, $order, $line, $shopper, ApprovalType::ReducedQuantity, [
                 'proposed_quantity' => $proposed->toDecimal(),
             ], $note);
 
