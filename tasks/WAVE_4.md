@@ -216,6 +216,9 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | Push texts pass through Google, and phone numbers through Telegram. The texts carry no personal data beyond the order number and the amount (`DL-104` (10)). Two questions for the Owner's lawyer, with the privacy policy: does sending the phone to Telegram need the Customer's consent, and must the personal-data database be registered under ZRU-547 | Open, Owner, before the pilot |
 | A disk-full or downed server is noticed only by people. An external uptime check is an Owner account | Open; offered at W4-5 |
 | The backup job cannot prune with append-only storage credentials, and an SFTP repository needs `openssh-client` in the backup image and the key mounted (`DL-109`). W4-5 decides the storage and settles both | Open, W4-5 |
+| The stack's env file (`APP_KEY`, `PHONE_FINGERPRINT_KEY`) is in no backup. The Owner keeps it with the restic password; W4-5's Owner checklist says so | Open, W4-5 |
+| A stale `success`: a stopped container or a killed run leaves the previous status. The deploy check and the external check of W4-5 test the age of `finished_at` | Open, W4-5 |
+| A restore from an older snapshot brings back Customers who erased their accounts after it (`BR-ROLE-013`). The promise stands; the restore runbook of W4-5 re-applies erasures made after the snapshot, the mechanism decided there | Open, W4-5 |
 | iOS push: the code is written and the configuration waits for a Mac and an Apple account (`docs/06`) | Open until a Mac exists |
 | Carried from Wave 3: the scheduler runs nowhere until Wave 4 deploys one (`DL-54` (8)) | Closes with W4-5 |
 | `worker` and `scheduler` do not mount the images volume; a future job that writes images must get it (W4-2 review) | Open, note |

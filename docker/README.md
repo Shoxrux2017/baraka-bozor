@@ -236,6 +236,7 @@ an encrypted restic repository every night at 03:00 Tashkent. The files:
 | `docker/backup/lib.sh` | Shared by the jobs: the log and the status files |
 | `docker/backup/backup.sh` | The night: dump, snapshot, retention, optional ping |
 | `docker/backup/check.sh` | The weekly `restic check` over 10% of the data |
+| `backup-tool` (a service in `docker/compose.prod.yaml`) | The backup image for the host scripts' one-off runs, under the profile `tools` with no Docker log (`DL-109`) |
 | `docker/backup/create-role.sh` | Creates the read-only database role (host script) |
 | `docker/backup/restore.sh` | Restores one snapshot into an empty stack (host script) |
 | `docker/backup/test-cycle.sh` | Back up, wipe, restore and compare, on a scratch stack (host script) |
@@ -272,9 +273,9 @@ docker compose --env-file <file> -f docker/compose.prod.yaml logs backup
 
 `result` is `success` or `failure`; a failure names its `step` (`config`, `dump`,
 `backup` or `forget`). A success counts only when `finished_at` is from the last
-night: a run killed outright skips its failure status and a stopped container writes
-nothing, so the file may still show an older success. `docker/deploy.sh` (W4-5) reads
-the age of `finished_at` and so does the Owner's checklist. Only one run goes at a
+night, so a `success` older than about 26 hours means the night did not run: a
+stopped container or a run killed outright leaves the previous status. The W4-5
+deploy check tests the age of `finished_at`, and so does the Owner's checklist. Only one run goes at a
 time; a second one stops with "another backup is running" and leaves the status
 alone. A backup by hand is the same script the night runs:
 
@@ -284,6 +285,11 @@ docker compose --env-file <file> -f docker/compose.prod.yaml exec backup backup.
 
 To see the schedule, `exec backup supercronic -test /etc/backup/crontab` validates
 the file and `exec backup date` shows the container's time (+05).
+
+**Keeping the keys.** The stack's env file is in no backup. Keep `APP_KEY` and
+`PHONE_FINGERPRINT_KEY` with the Owner beside the restic password: after a lost
+server, without the fingerprint key the restored blocked-phone fingerprints
+(`BR-ROLE-013`, `DL-95`) can no longer be matched.
 
 **Restoring.** Only into an empty stack: `restore.sh` stops with "not empty" when
 the database already holds tables. Without a snapshot id it lists the snapshots:
@@ -298,8 +304,13 @@ A restore is tried in a scratch stack with its own env file: another
 `COMPOSE_PROFILES=backup`, and the same `BACKUP_ENV_FILE`, since `restore.sh` reads
 the repository through the backup image. Remove the scratch stack only with
 `docker compose --env-file <that stack's env file> -f docker/compose.prod.yaml down -v`.
-`restore.sh` runs `create-role.sh` after the database, because roles are not in the
-dump; the restored stack's nights then work. If a restore fails after the database
+A scratch stack uses fake drivers and no production credentials
+(`LOGIN_CODE_DRIVER=fake`, no Telegram or Firebase keys): the final `up -d` of
+`restore.sh` starts the worker and the scheduler on copied Customer data. Roles are
+not in the dump, so `restore.sh` ends by printing a reminder and does not run
+`create-role.sh` itself: a scratch stack that kept `COMPOSE_PROFILES=backup` would
+otherwise write snapshots into the production repository. After a real recovery run
+`docker/backup/create-role.sh <env file>`, and the restored stack's nights work. If a restore fails after the database
 committed (the images or the migration), a rerun is refused as "not empty": run
 `down -v` on that stack, with its `--env-file`, and restore again.
 
