@@ -1642,3 +1642,9 @@ How `DL-104` (3) to (5) and (8) are built. The runbook is `docker/README.md`, "T
    - A production env file proves the boot, the edge and the processes.
    - The walkthrough runs on the same image and stack with `APP_ENV=local`, because test phones are refused in production by design (`BR-ROLE-011`) and the walkthrough's seeder is local-only (`DL-35`).
 10. **Security updates** before the first deployment. `symfony/http-foundation` moved to 8.1.9 while the other Symfony components stay on 8.0, because the fix ships only in 8.1. `league/commonmark` moved to 2.10.4.
+
+## DL-108 — Laravel Boost removed after its trial (2026-10-24, Owner)
+
+Closes the trial of `DL-103` and supersedes `DL-106`. In W4-2, the first backend task after the installation, Boost's tools never reached the agent's session in VS Code, although `claude mcp list` reported the server as connected, so Boost was not used. The Owner asked for proof rather than another try: if the tools were still absent at the start of the next session, Boost would go the same day, without a new question. They were absent at the start of W4-3.
+
+Removed: `laravel/boost` and the four packages it brought (`laravel/mcp`, `laravel/roster`, `symfony/yaml`, `composer/semver`), no other package moving; their discovery exclusions in `backend/composer.json`; the console-and-local gate in `AppServiceProvider`; the two switches in `backend/.env.example`; the runbook section in `docker/README.md`; the line in `docs/07` section 2. The local-scope registration in the developer's Claude configuration is removed by hand with `claude mcp remove laravel-boost -s local`. `GlobalMiddlewareTest` stays: it still proves that no package adds a global middleware.

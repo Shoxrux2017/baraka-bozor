@@ -8,8 +8,6 @@ use App\Support\Routing\UuidRouteParameters;
 use App\Support\Runtime\ProductionConfiguration;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Boost\BoostServiceProvider;
-use Laravel\Mcp\Server\McpServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,14 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Laravel Boost, the agent's development tool, loads only for console
-        // commands in the local environment (`DL-106`). Discovered, laravel/mcp
-        // would add a global middleware to every request, the test suite's too;
-        // the production image has neither package.
-        if ($this->app->environment('local') && $this->app->runningInConsole() && class_exists(BoostServiceProvider::class)) {
-            $this->app->register(McpServiceProvider::class);
-            $this->app->register(BoostServiceProvider::class);
-        }
+        //
     }
 
     /**
