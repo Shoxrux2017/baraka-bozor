@@ -9,6 +9,7 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/routing/visible_location.dart';
 import '../domain/push.dart';
 import '../domain/push_event.dart';
+import 'push_opener.dart';
 import 'push_ports.dart';
 
 /// Shows a push that arrives while the app is open, since the system draws
@@ -25,6 +26,12 @@ class PushPresenter {
       _show,
     );
     _ref.onDispose(foreground.cancel);
+
+    final PushOpener opener = _ref.read(pushOpenerProvider);
+    final BannerDisplay display = _ref.read(bannerDisplayProvider);
+    _ref.onDispose(inbox.opened.listen(opener.open).cancel);
+    _ref.onDispose(display.taps.listen(opener.open).cancel);
+    _guard(_openLaunch(inbox, display, opener), 'while reading the launch tap');
 
     // Until the stored preference is read the device language applies, the
     // same value for anyone who never chose one.
@@ -59,6 +66,20 @@ class PushPresenter {
           ),
       'while preparing the push channel',
     );
+  }
+
+  /// The tap that started the app, from the system's notification or from a
+  /// banner the app drew; the first one found wins.
+  Future<void> _openLaunch(
+    PushInbox inbox,
+    BannerDisplay display,
+    PushOpener opener,
+  ) async {
+    final PushTarget? target =
+        await inbox.launchTarget() ?? await display.launchTarget();
+    if (target != null) {
+      opener.open(target);
+    }
   }
 
   void _show(IncomingPush push) {
