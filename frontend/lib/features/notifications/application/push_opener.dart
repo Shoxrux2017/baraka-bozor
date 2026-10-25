@@ -49,14 +49,23 @@ class PushOpener {
 
   /// Only the session the push belongs to may open it: its slot holds a user
   /// of the recipient's role, past the gates that hold the interface back.
+  /// Two gates hold the whole phone, whatever the target: a pending staff
+  /// step, and, for Customer mode entered from the staff mode, the staff
+  /// first-login password (`docs/02-user-roles.md` section 10).
   bool _mayOpen(SignedIn state, PushTarget target) {
+    if (state.staffStep != null) {
+      return false;
+    }
     final AppUser? user = state.userIn(target.mode);
     if (user == null || user.role != target.role || user.mustChangePassword) {
       return false;
     }
     return switch (target.mode) {
-      SessionMode.staff => state.staffStep == null,
-      SessionMode.customer => user.fullName != null,
+      SessionMode.staff => true,
+      SessionMode.customer =>
+        user.fullName != null &&
+            (state.activeMode != SessionMode.staff ||
+                state.canOfferCustomerMode),
     };
   }
 
