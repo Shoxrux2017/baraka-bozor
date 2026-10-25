@@ -45,7 +45,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | W4-3 | Backups: nightly encrypted copies off the host, the restore script | — | Merged (#113) |
 | W4-4 | Login codes through Telegram Gateway | Telegram (verification) | Merged (#114); verified, the no-Telegram answer at W4-5 (`DL-111` (3)) |
 | W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
-| W4-6 | Android release build and closed testing | Google Play, W4-5 | Preparation done (`DL-116`); the upload waits for W4-5 and the Play account |
+| W4-6 | Android release build and closed testing | Google Play, W4-5 | Preparation merged (#120, `DL-116`); the upload waits for W4-5 and the Play account |
 | W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | Merged (#116) |
 | W4-8 | Firebase Cloud Messaging sender; device pruning | Firebase (verification) | Merged (#118); verified on the Owner's project (`DL-114` (4)) |
 | W4-9 | Push in the app: Firebase token, permission, banners, opening the order | Firebase | Merged (#119); walked with real pushes on the emulator (`DL-115`) |
