@@ -1755,7 +1755,7 @@ How `DL-104` (12) is built. The code is in `frontend/lib/features/notifications/
 10. **No token is no error.** No Play services, no network yet or a Firebase failure while asking for the token means nothing to register this time; the next start or token change tries again. An unexpected failure of the setup is reported once and the app starts without push. The token is in no log, error report, screen or test message.
 11. **The app stays on tokens for now.** `firebase_messaging` 17 marks `getToken` and `onTokenRefresh` deprecated in favour of Firebase Installation IDs (`register()`, `onRegistered`), and the Admin SDKs of mid-2026 deprecate `message.token` for `message.fid`. Firebase supports both during the transition and has announced no end. The W4-8 sender and its probe are proven on tokens, so the move to FIDs is made on the client and the server together in one later task, before FlutterFire removes the token API (risk row in `tasks/WAVE_4.md`).
 
-## DL-116 — The Android release from W4-6 (2026-10-25, agent; item 9 Owner)
+## DL-116 — The Android release from W4-6 (2026-10-25, agent; items 9 and 11 Owner)
 
 How `DL-104` (13) is prepared before the server exists; the upload itself waits for W4-5 and the Owner's Play account (`DL-112` (8)). The runbook is `docs/store/README.md`, and the Owner's steps are `docs/store/play-console.ru.md`.
 
@@ -1782,3 +1782,10 @@ How `DL-104` (13) is prepared before the server exists; the upload itself waits 
     - no `AD_ID` permission.
 
     On the `barakabozor` emulator against the local stack it signed a Customer in by code, registered its Firebase token, and showed a push sent through the Owner's Firebase project, so the Firebase key accepts the upload key. The Maps SDK answered "Authorization failure" for `EB:3F:C7:5D:D3:16:EF:C0:BF:E8:82:E5:1E:7D:5A:81:AD:12:48:EE;uz.barakabozor.app`: the Maps key is restricted to Android apps and does not yet list the upload key. The Owner adds the upload, the Play app-signing and the debug fingerprints to it (step 6 of the Owner's steps), and the map is checked again on a release build.
+11. **The launcher icon is the Owner's artwork (Owner, 2026-10-25).** The Owner turned down the variants drawn in Claude Design and supplied the finished icon: the letter B in a green gradient, with a leaf in the upper counter, a shopping cart in the lower one and a lime ribbon round the waist. It came as an adaptive foreground and background, a full icon on `#F1F8E9`, and the mark alone; the files are kept unchanged in `docs/store/graphics/source/`. `tasks/scripts/build_icons.py` generates every icon from them, so none is edited by hand:
+    - the adaptive layers, with a monochrome layer for Android's themed icons, and the 48 dp fallbacks;
+    - the notification icon;
+    - the web panel's favicon and icons;
+    - the 512 px store icon.
+
+    The monochrome layer and the notification icon are silhouettes whose white counters become holes, so the letter, the leaf and the cart survive in one colour. The notification icon keeps the name `ic_stat_notify`, now a PNG per density, so the manifest, `keep.xml` and the banner code are unchanged; this replaces the placeholder of `DL-115` (4). The feature graphic sets the mark beside the name, "Baraka" in green and "Bozor" in orange as in the Owner's sketch, rendered from `docs/store/graphics/feature-graphic.html`.

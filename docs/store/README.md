@@ -8,7 +8,7 @@ What the Android release needs besides the code (`DL-104` (13), `DL-116`). The O
 | `listing.md` | The listing texts, the graphics and the store settings |
 | `data-safety.ru.md` | The Data safety answers, each with its source in the code |
 | `content-rating.ru.md` | The content-rating questionnaire answers |
-| `graphics/` | The icon and the feature graphic, rendered from their SVG sources |
+| `graphics/` | The store icon (`play-icon-512.png`, from `tasks/scripts/build_icons.py`) and the feature graphic (`feature-graphic-1024x500.png`, rendered from `feature-graphic.html` with headless Chrome at 1024×500); `source/` holds the Owner's icon artwork, unchanged (`DL-116` (11)) |
 
 ## Signing
 

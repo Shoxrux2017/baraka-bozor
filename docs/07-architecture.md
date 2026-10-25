@@ -217,7 +217,7 @@ Languages: Uzbek (Latin) and Russian; the client owns every user-facing string, 
 
 Money renders as `150 000 so'm` / `150 000 сум`; phones as `+998 90 123 45 67`.
 
-Design: no brand assets exist. The client ships a text logo "BarakaBozor", the green seed colour already in `core/theme`, and standard Material 3 components; colours and logo live in one place so a designer can replace them later. The Shopper's price entry asks for confirmation when the entered market price is more than three times or less than a third of the estimate's market price (`DL-3`, S-35).
+Design: the brand mark is the Owner's icon, the letter B with a leaf and a cart (`DL-116` (11)); it is the launcher, notification, web-panel and store icon, generated from `docs/store/graphics/source/`. Inside the app the logo stays the text "BarakaBozor" in the kit's green, with standard Material 3 components; colours and logo live in one place. The Shopper's price entry asks for confirmation when the entered market price is more than three times or less than a third of the estimate's market price (`DL-3`, S-35).
 
 The Android release is built on the development machine by `tasks/scripts/build_release.ps1`, which takes the API address, the Maps key and the Firebase options from gitignored env files and refuses a modified tree or an address other than `https://<host>/api/v1`. It is signed only with the upload key named by the gitignored `frontend/android/key.properties`: a release build without it fails, Play App Signing holds the app's key, and the version code is the build number in `pubspec.yaml`. CI builds the web target only, so the key never reaches it (`DL-116`).
 

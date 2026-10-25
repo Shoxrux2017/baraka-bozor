@@ -34,7 +34,7 @@ Each gate is the Owner's external action (`AGENTS.md` section 14). Work that nee
 3. **A rejected cancellation request.** Should the Customer get a push when the Operator rejects it? `docs/05` section 18 has no such event. Asked at W4-7. **Answered yes, 2026-10-24 (`DL-112` (1)).**
 4. **Tobacco, nicotine and alcohol in the catalog.** Google Play allows tobacco in a grocery app only in unnamed regions with an ID check at delivery, and alcohol only with age checks; the content rating depends on it. Asked at W4-6. **Answered on 2026-10-25: option А, none of them (`DL-116` (9)).**
 
-The launcher icon and the store graphics are drawn in Claude Design while W4-2 to W4-5 run, so the Owner's approval of them never holds W4-6. They were not drawn by then; W4-6 drew three variants on 2026-10-25 (`Иконка приложения` in the project "BarakaBozor — стиль покупателя") for the Owner to choose.
+The launcher icon and the store graphics are drawn in Claude Design while W4-2 to W4-5 run, so the Owner's approval of them never holds W4-6. They were not drawn by then. W4-6 drew variants in Claude Design on 2026-10-25; the Owner turned them down and supplied the finished icon (`DL-116` (11)).
 
 ## Tasks
 
@@ -254,7 +254,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | Carried from Wave 3: the handoff point at launch | Owner question 2, W4-5 |
 | The app uses FCM registration tokens, which `firebase_messaging` 17 deprecates for Firebase Installation IDs (`register()`, `onRegistered`), and the Admin SDKs deprecate `message.token` for `message.fid`. Both are supported with no announced end. The client and the `FcmPushSender` move together in one task (`DL-115` (11)) | Open, before FlutterFire removes the token API |
 | `flutter build apk` warns that `firebase_core` applies the Kotlin Gradle Plugin and that future Flutter versions will refuse such plugins | Open, check at the next Flutter upgrade |
-| The small notification icon `ic_stat_notify` is a placeholder glyph | Open, redrawn with the launcher icon (W4-6, `DL-115` (4)) |
+| The small notification icon `ic_stat_notify` is a placeholder glyph | Closed by W4-6: the silhouette of the Owner's icon (`DL-116` (11)) |
 | A session that ends without a logout (the token expires after 30 days, `DL-26`) leaves its device registered, so that account's pushes still reach the phone until pruning revokes it after 60 days unseen. On a shared phone the next person can see the previous account's banner text (an order number and an amount); a tap opens nothing they can read, since the server answers the order with 404. | Accepted for the pilot; revisit if phones are shared |
 | Carried from Wave 3, P3: a list under a page; Customer mode's app bar | Closed by W4-10 (`DL-113`) |
 | `composer audit` (found at W4-1) reports three advisories in packages the app already had: `symfony/http-foundation` (a ReDoS through the `Cache-Control` request header) and `league/commonmark` (two). They are updated before the first deployment | Closed by W4-2 (`DL-107` (10)) |
