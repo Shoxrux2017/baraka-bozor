@@ -1,4 +1,6 @@
 import 'package:baraka_bozor/app/providers.dart';
+import 'package:baraka_bozor/core/session/session_controller.dart';
+import 'package:baraka_bozor/core/session/session_state.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/notifications/application/push_ports.dart';
@@ -110,6 +112,32 @@ void main() {
     containerOf(tester)
         .read(sessionControllerProvider.notifier)
         .replaceCustomerUser(user(id: 'c'));
+    await tester.pumpAndSettle();
+
+    expect(inbox.permissionRequests, 1);
+  });
+
+  testWidgets('waits past the staff step', (WidgetTester tester) async {
+    await open(tester);
+    final SignedIn pending = SignedIn(
+      activeMode: SessionMode.customer,
+      staffUser: null,
+      customerUser: user(id: 'c'),
+      staffStep: StaffStep(
+        token: 'a' * 64,
+        expiresAt: DateTime.utc(2026, 10, 15, 10, 5),
+      ),
+    );
+    final SessionController session = containerOf(tester)
+        .read(sessionControllerProvider.notifier);
+
+    session.state = AsyncData<SessionState>(pending);
+    await tester.pumpAndSettle();
+
+    expect(inbox.permissionRequests, 0);
+    expect(preferences.values[key], isNull);
+
+    session.state = AsyncData<SessionState>(pending.withoutStaffStep());
     await tester.pumpAndSettle();
 
     expect(inbox.permissionRequests, 1);
