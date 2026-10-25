@@ -29,7 +29,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        // flutter_local_notifications uses java.time, which Android 8 lacks.
+        // flutter_local_notifications is built with core library desugaring, so the app must enable it too.
         isCoreLibraryDesugaringEnabled = true
     }
 
