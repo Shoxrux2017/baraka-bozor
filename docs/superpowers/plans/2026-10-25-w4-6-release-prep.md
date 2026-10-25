@@ -109,20 +109,23 @@ Exact copy:
 - [ ] The script with the real key and `.env.release` = `https://api.example.invalid/api/v1` succeeds; that bundle and `.env.release` are deleted, since no real address exists before W4-5.
 - [ ] Rulings and the fingerprints go into the ledger and `DL-116`. The Owner is told where the keystore and `key.properties` are and to copy both to a password manager or a USB stick (with Play App Signing a lost upload key is replaced through Play support, never the app's key).
 
-### Task 5: The launcher icon (held until the Owner picks a drawing)
+### Task 5: The launcher icon from the Owner's artwork
 
-The lead draws variants in Claude Design ("BarakaBozor — стиль покупателя", file `Иконка приложения`): the launcher mark on the adaptive safe zone (66 of 108 dp), its white notification silhouette, the 512×512 store icon and the 1024×500 feature graphic. The Owner chooses; the brief for this task then carries the approved SVG.
+Amended on 2026-10-25: the Owner rejected the drawn variants and supplied the finished icon as PNGs (`C:/Users/Administrator/Pictures/logo/`): an adaptive foreground (1024, transparent; the mark ends exactly on the 66 dp safe circle, radius 313 px), an adaptive background (1024, a radial gradient from white to `#E3F2D3`), the full icon (1024, the mark on `#F1F8E9`) and the mark alone (1024 and 2048, transparent). Every icon is generated from them by a committed script, so none is hand-edited.
 
 **Files:**
-- Create: `docs/store/graphics/icon.svg`, `icon-foreground.svg`, `notify.svg`, `feature-graphic.svg` (the sources), and the rendered `docs/store/graphics/play-icon-512.png` (32-bit, alpha) and `feature-graphic-1024x500.png` (24-bit, no alpha)
-- Create: `frontend/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` (adaptive: `@color/ic_launcher_background`, `@drawable/ic_launcher_foreground`, `<monochrome>` the same foreground), `drawable/ic_launcher_foreground.xml` (vector), `values/ic_launcher_background.xml`
-- Modify: `drawable/ic_stat_notify.xml` (the approved silhouette, white; its comment loses "to be redrawn")
-- Delete: `mipmap-{m,h,xh,xxh,xxxh}dpi/ic_launcher.png` (with `minSdk` 26 every device takes the adaptive icon)
-- Modify: `frontend/web/favicon.png`, `frontend/web/icons/*.png`, `frontend/web/manifest.json` (`theme_color` `#44BA53`)
+- Create: `docs/store/graphics/source/` — the Owner's `baraka-bozor-icon-foreground.png`, `baraka-bozor-icon-background.png`, `baraka-bozor-icon-full.png`, `baraka-bozor-mark-2048.png`, copied unchanged
+- Create: `tasks/scripts/build_icons.py` (Python 3 with Pillow, which the header names as the one requirement): reads the sources and writes every file below, printing each path and size
+- Create (generated): `mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher_foreground.png`, `ic_launcher_background.png`, `ic_launcher_monochrome.png` at 108 dp (108, 162, 216, 324, 432 px); `mipmap-*/ic_launcher.png` replaced from the full icon at 48 dp (48, 72, 96, 144, 192 px); `drawable-{mdpi..xxxhdpi}/ic_stat_notify.png` at 24 dp (24, 36, 48, 72, 96 px); `frontend/web/favicon.png` (32), `frontend/web/icons/Icon-192.png`, `Icon-512.png`, `Icon-maskable-192.png`, `Icon-maskable-512.png` from the full icon; `docs/store/graphics/play-icon-512.png` (RGBA)
+- Create: `frontend/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` (adaptive icon: background, foreground and monochrome mipmaps)
+- Delete: `frontend/android/app/src/main/res/drawable/ic_stat_notify.xml` (the PNGs replace it under the same name, which `keep.xml`, the manifest and `LocalBannerDisplay.smallIcon` use)
 
-- [ ] **Step 1:** Render the PNGs from the SVGs with headless Chrome (`G:\tools\bb-walk\cdp.js shot` at the exact sizes); check the sizes and alpha with Python's `struct` on the PNG header.
-- [ ] **Step 2:** A debug APK on the emulator: the home-screen icon, the themed icon (Wallpaper & style → Themed icons), and a push's small icon look as drawn. Screenshots for the lead.
-- [ ] **Step 3:** `flutter build web --release` succeeds. **Commit** `feat(brand): the launcher icon and the store graphics`.
+The silhouette rule, for the monochrome layer and the notification icon: a foreground pixel keeps its alpha scaled by `1 - w`, where `w = clamp((min(R, G, B) - 160) / 80, 0, 1)`, so the white counters of the letter become holes and the green leaf and cart stay. The monochrome layer is black with that alpha, full 1024 canvas scaled; the notification icon is white with that alpha, cropped to the mark's bounding box and centred on a 24 dp square with 2 dp padding.
+
+- [ ] **Step 1:** Copy the sources, write the script and the adaptive XML, run the script, delete the vector notification icon.
+- [ ] **Step 2:** Check with Pillow: every file has its size; `play-icon-512.png` is RGBA; the notification PNGs are white with alpha only; the monochrome layer has holes where the counters are (alpha 0 at the centre of the upper counter).
+- [ ] **Step 3:** `flutter build apk --debug` and `flutter build web --release` succeed. **Commit** `feat(brand): the Owner's launcher icon, notification icon and web icons`.
+- [ ] **Step 4 (lead):** On the emulator: the home-screen icon, the themed icon and a push's small icon; the feature graphic (1024×500, 24-bit, from an HTML source in `docs/store/graphics/`) for the Owner.
 
 ### Task 6 (lead): Store documents and the decision
 
