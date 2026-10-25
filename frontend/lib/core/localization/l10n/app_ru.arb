@@ -1,6 +1,8 @@
 {
   "@@locale": "ru",
   "appTitle": "BarakaBozor",
+  "pushChannelName": "Заказы",
+  "pushChannelDescription": "Новые заказы, вопросы и изменения статуса",
   "customerLoginTitle": "Вход",
   "customerLoginIntro": "Введите номер телефона — пришлём код для входа",
   "phoneLabel": "Номер телефона",

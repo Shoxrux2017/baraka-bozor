@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The accent of a notification: KitColors.primaryDark. -->
+    <color name="notification_accent">#44BA53</color>
+</resources>

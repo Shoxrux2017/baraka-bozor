@@ -50,6 +50,21 @@ flutter build apk --dart-define=BB_API_BASE_URL=https://.../api/v1 --dart-define
 A build without the key, the web and iOS have no map and take the address
 point as coordinates (`DL-86` (2)).
 
+Push needs the Firebase values, build-time too and never committed. Keep them
+in `frontend/.env.firebase` (gitignored), one `KEY=value` per line:
+`FIREBASE_PROJECT_ID`, `FIREBASE_MESSAGING_SENDER_ID`,
+`FIREBASE_ANDROID_APP_ID` and `FIREBASE_ANDROID_API_KEY` for Android today, and
+`FIREBASE_IOS_APP_ID`, `FIREBASE_IOS_API_KEY` and `FIREBASE_IOS_BUNDLE_ID` once
+an iOS app is registered. The values come from the Firebase console's Android
+app (or its `google-services.json`). Add one more define to the Android build:
+
+```text
+flutter build apk --dart-define=BB_API_BASE_URL=https://.../api/v1 --dart-define-from-file=.env.maps --dart-define-from-file=.env.firebase
+```
+
+A build without them registers no device and receives no push; the web build
+never does (`DL-115`).
+
 ## Strings
 
 The client owns every user-facing string, in Uzbek (Latin) and Russian. They

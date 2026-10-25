@@ -13,6 +13,13 @@ class AppLocalizationsUz extends AppLocalizations {
   String get appTitle => 'BarakaBozor';
 
   @override
+  String get pushChannelName => 'Buyurtmalar';
+
+  @override
+  String get pushChannelDescription =>
+      'Yangi buyurtmalar, savollar va holat o\'zgarishlari';
+
+  @override
   String get customerLoginTitle => 'Kirish';
 
   @override

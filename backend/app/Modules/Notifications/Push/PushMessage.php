@@ -9,7 +9,8 @@ use App\Modules\Notifications\NotificationService;
 /**
  * A rendered push. `$data` carries only the event and the order id, both
  * strings. `$ttlSeconds` is how long the provider may hold it for an
- * offline device.
+ * offline device. `$tag` is the delivery row's id: one delivery row, one banner, so a
+ * resend and the app's own foreground banner replace each other.
  */
 final readonly class PushMessage
 {
@@ -21,5 +22,6 @@ final readonly class PushMessage
         public string $body,
         public array $data,
         public int $ttlSeconds = NotificationService::MAX_AGE_SECONDS,
+        public ?string $tag = null,
     ) {}
 }

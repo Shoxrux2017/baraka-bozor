@@ -343,6 +343,18 @@ final class DeliverPushTest extends TestCase
         $this->assertSame(3000, $this->push->sent()[1]['message']->ttlSeconds);
     }
 
+    public function test_the_delivery_id_is_the_push_tag(): void
+    {
+        [$row] = $this->queuedRow();
+        $this->push->answerNext(PushSendResult::retry('UNAVAILABLE'));
+
+        $this->job($row)->handle($this->push);
+        $this->job($row, 2)->handle($this->push);
+
+        $this->assertSame($row->id, $this->push->sent()[0]['message']->tag);
+        $this->assertSame($row->id, $this->push->sent()[1]['message']->tag);
+    }
+
     public function test_a_fake_that_does_not_report_delivery_marks_the_row_failed_without_sent_at(): void
     {
         [$row] = $this->queuedRow();
