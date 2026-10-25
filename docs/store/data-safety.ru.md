@@ -22,14 +22,16 @@
 | Personal info → **Phone number** | Yes | No | Required | App functionality, Account management, Fraud prevention, security, and compliance | Вход по коду; ограничения частоты; список заблокированных номеров |
 | Personal info → **Address** | Yes | No | Required | App functionality | Адрес доставки: улица, дом, ориентир |
 | Location → **Precise location** | Yes | No | Optional | App functionality | Точка адреса на карте и кнопка «Где я»: положение телефона читается только по нажатию |
+| Location → **Approximate location** | Yes | No | Optional | App functionality | Если человек разрешил только приблизительное местоположение (Android 12+), «Где я» ставит карту по нему, и эта точка может стать точкой адреса |
 | Financial info → **Purchase history** | Yes | No | Required | App functionality | Заказы, суммы, оплата наличными |
 | App activity → **In-app search history** | Yes | **Yes** | Optional | App functionality | Поиск товаров и адреса: сервер отвечает и ничего не хранит |
 | App activity → **Other user-generated content** | Yes | No | Optional | App functionality | Комментарии к товарам и доставке, ответы сборщику, оценки и отзывы, причины отмены |
+| App activity → **Other actions** | Yes | No | Optional | App functionality | Избранные товары хранятся на сервере |
 | App info and performance → **Crash logs** | Yes | No | Required | Analytics | Google Maps SDK собирает сбои карты |
 | App info and performance → **Diagnostics** | Yes | No | Required | Analytics | Google Maps SDK: сведения о запросах карты |
 | Device or other IDs → **Device or other IDs** | Yes | No | Required | App functionality | Токен уведомлений (Firebase) на нашем сервере; идентификатор установки Firebase; псевдонимный идентификатор Maps SDK |
 
-Не отмечать: Email, User IDs (кроме выше), Race, Political, Sexual orientation, Other personal info, Approximate location, все Financial info кроме Purchase history, Health, Messages, Photos and videos, Audio, Files, Calendar, Contacts, App interactions, Web browsing, Installed apps, Other app activity, Other app performance.
+Не отмечать: Email, User IDs, Race, Political, Sexual orientation, Other personal info, все Financial info кроме Purchase history, Health, Messages, Photos and videos, Audio, Files, Calendar, Contacts, App interactions, Web browsing, Installed apps, Other app performance.
 
 ## Шаг 3. Что увидят покупатели
 

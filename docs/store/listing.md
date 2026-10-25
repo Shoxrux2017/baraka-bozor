@@ -27,7 +27,7 @@ Qanday ishlaydi:
 • Yig'uvchi bozorda xarid qiladi. Narx kutilganidan ancha qimmat bo'lsa yoki mahsulotni almashtirish kerak bo'lsa, ilovada sizdan so'raydi.
 • Buyurtma qilganingizdan ko'pi uchun hech qachon to'lamaysiz.
 • Xariddan keyin aniq summani bilasiz va kuryerga naqd to'laysiz.
-• Buyurtmaning har bir bosqichi haqida bildirishnoma keladi.
+• Bildirishnomalar: buyurtma qabul qilindi, narx yoki almashtirish bo'yicha savol, xarid tugadi va yakuniy summa, kuryer yo'lda, buyurtma yetkazildi.
 • Oldingi buyurtmani bir tugma bilan takrorlaysiz.
 
 Buyurtmalar ish vaqtida yig'iladi va yetkaziladi.
@@ -46,7 +46,7 @@ BarakaBozor — продукты с базара до вашей двери.
 • Сборщик покупает на базаре. Если цена заметно выше ожидаемой или товар нужно заменить, он спросит вас в приложении.
 • Вы никогда не платите за больше, чем заказали.
 • После покупки вы знаете точную сумму и платите курьеру наличными.
-• Уведомления о каждом шаге заказа.
+• Уведомления: заказ принят, вопрос о цене или замене, покупка завершена и итоговая сумма, курьер в пути, заказ доставлен.
 • Прошлый заказ повторяется одной кнопкой.
 
 Заказы собираются и доставляются в рабочее время.
@@ -76,4 +76,4 @@ The screenshots, in this order: the home screen; a category with products; a pro
 - Category: Shopping. Tags: groceries, delivery.
 - Contact email: the Owner's, shown publicly on the store page. No phone number (it would be public too).
 - Website: left empty.
-- Countries: Uzbekistan only.
+- Countries: Uzbekistan only, set on the testing track and later on production (`play-console.ru.md`, step 5).

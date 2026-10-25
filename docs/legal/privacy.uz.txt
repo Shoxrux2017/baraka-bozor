@@ -10,6 +10,7 @@ BarakaBozor teruvchisi, kuryeri va operatori — faqat buyurtmangiz uchun kerakl
 ## Ma'lumotlarni kimga beramiz
 - Telegram — kirish kodini yuborish uchun telefon raqami.
 - Google — xaritada manzil qidirgan so'zlaringiz.
+- Google (xaritalar) — xarita ishlashi va nosozliklari haqidagi texnik ma'lumotlar.
 - Google (Firebase) — bildirishnomalar uchun qurilma identifikatori va ularning matni: buyurtma raqami va summa.
 Biz ma'lumotlaringizni sotmaymiz.
 ## Qancha saqlaymiz
