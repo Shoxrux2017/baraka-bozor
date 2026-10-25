@@ -9,6 +9,7 @@ import 'core/localization/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/font_licenses.dart';
 import 'features/notifications/application/push_presenter.dart';
+import 'features/notifications/application/push_permission.dart';
 import 'features/notifications/application/push_registrar.dart';
 import 'features/notifications/data/push_setup.dart';
 
@@ -40,6 +41,8 @@ class BarakaBozorApp extends ConsumerWidget {
     ref.watch(pushRegistrarProvider);
     // Shows a push that arrives while the app is open.
     ref.watch(pushPresenterProvider);
+    // Asks for the notification permission once, past the sign-in gates.
+    ref.watch(pushPermissionProvider);
     final AppLanguage? language = ref.watch(languageControllerProvider).value;
 
     return MaterialApp.router(
