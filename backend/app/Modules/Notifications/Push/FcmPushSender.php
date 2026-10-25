@@ -87,6 +87,14 @@ final class FcmPushSender implements PushSender
         }
 
         try {
+            $android = ['priority' => 'high', 'ttl' => $message->ttlSeconds.'s'];
+            $apnsHeaders = ['apns-expiration' => (string) (now()->getTimestamp() + $message->ttlSeconds)];
+
+            if ($message->tag !== null) {
+                $android['notification'] = ['tag' => $message->tag];
+                $apnsHeaders['apns-collapse-id'] = $message->tag;
+            }
+
             $response = Http::timeout(10)->connectTimeout(5)
                 ->withToken($accessToken)
                 ->acceptJson()
@@ -96,10 +104,8 @@ final class FcmPushSender implements PushSender
                         'token' => $pushToken,
                         'notification' => ['title' => $message->title, 'body' => $message->body],
                         'data' => $message->data,
-                        'android' => ['priority' => 'high', 'ttl' => $message->ttlSeconds.'s'],
-                        'apns' => ['headers' => [
-                            'apns-expiration' => (string) (now()->getTimestamp() + $message->ttlSeconds),
-                        ]],
+                        'android' => $android,
+                        'apns' => ['headers' => $apnsHeaders],
                     ],
                 ]);
         } catch (ConnectionException) {

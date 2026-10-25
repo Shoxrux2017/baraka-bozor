@@ -71,7 +71,7 @@ final class DeliverPush implements ShouldQueue
 
         $row->attempt_count++;
         $ttlSeconds = max(1, $expiresAt->getTimestamp() - now()->getTimestamp());
-        $result = $sender->send($device->push_token, new PushMessage($this->title, $this->body, $this->data, $ttlSeconds));
+        $result = $sender->send($device->push_token, new PushMessage($this->title, $this->body, $this->data, $ttlSeconds, tag: $row->id));
 
         if ($result->sent) {
             $row->sent_at = now();

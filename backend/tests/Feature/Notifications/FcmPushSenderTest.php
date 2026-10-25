@@ -85,6 +85,42 @@ final class FcmPushSenderTest extends TestCase
         ], $sendRequest->data());
     }
 
+    public function test_a_tag_reaches_android_and_apns(): void
+    {
+        $this->fakeHttp(Http::response(['name' => 'x']));
+
+        $this->assertTrue($this->sender()->send(
+            $this->pushToken,
+            new PushMessage('T', 'B', ['event' => 'order_accepted', 'order_id' => 'o-1'], tag: 'delivery-1'),
+        )->sent);
+
+        /** @var Request $sendRequest */
+        $sendRequest = Http::recorded()[1][0];
+        $this->assertSame([
+            'token' => $this->pushToken,
+            'notification' => ['title' => 'T', 'body' => 'B'],
+            'data' => ['event' => 'order_accepted', 'order_id' => 'o-1'],
+            'android' => ['priority' => 'high', 'ttl' => '3600s', 'notification' => ['tag' => 'delivery-1']],
+            'apns' => ['headers' => [
+                'apns-expiration' => (string) (now()->getTimestamp() + 3600),
+                'apns-collapse-id' => 'delivery-1',
+            ]],
+        ], $sendRequest->data()['message']);
+    }
+
+    public function test_a_message_without_a_tag_sends_neither(): void
+    {
+        $this->fakeHttp(Http::response(['name' => 'x']));
+
+        $this->assertTrue($this->sender()->send($this->pushToken, $this->message())->sent);
+
+        /** @var Request $sendRequest */
+        $sendRequest = Http::recorded()[1][0];
+        $message = $sendRequest->data()['message'];
+        $this->assertArrayNotHasKey('notification', $message['android']);
+        $this->assertArrayNotHasKey('apns-collapse-id', $message['apns']['headers']);
+    }
+
     public function test_the_token_is_fetched_once_for_two_pushes(): void
     {
         $this->fakeHttp(Http::response(['name' => 'x']));
