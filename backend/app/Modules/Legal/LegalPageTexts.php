@@ -56,7 +56,7 @@ final class LegalPageTexts
     /**
      * @return array{
      *     title: string, inApp: string, byPhone: string, erased: string, kept: string,
-     *     unfinished: string, privacy: string
+     *     backups: string, unfinished: string, privacy: string
      * }
      */
     public static function deletion(string $language, ?string $supportPhone): array
@@ -70,6 +70,7 @@ final class LegalPageTexts
                 'byPhone' => $supportPhone === null ? '' : "Без приложения: позвоните в поддержку {$supportPhone} с номера, на который открыт аккаунт. Удалим в течение 7 дней.",
                 'erased' => 'Что сотрём: имя, номер телефона, адреса, избранное и корзину.',
                 'kept' => 'Что останется: история заказов — без имени и телефона, для учёта.',
+                'backups' => 'Резервные копии: стёртые данные ещё до шести месяцев хранятся в зашифрованных резервных копиях и исчезают вместе с ними.',
                 'unfinished' => 'Если есть незавершённый заказ, удалить аккаунт можно после его доставки или отмены.',
                 'privacy' => self::documentTitle(LegalDocumentKind::Privacy, 'ru'),
             ];
@@ -81,6 +82,7 @@ final class LegalPageTexts
             'byPhone' => $supportPhone === null ? '' : "Ilovasiz: akkaunt ochilgan raqamdan {$supportPhone} qo'llab-quvvatlash raqamiga qo'ng'iroq qiling. 7 kun ichida o'chiramiz.",
             'erased' => "Nimalar o'chiriladi: ism, telefon raqami, manzillar, sevimlilar va savat.",
             'kept' => 'Nima qoladi: buyurtmalar tarixi — ism va telefonsiz, hisob uchun.',
+            'backups' => "Zaxira nusxalar: o'chirilgan ma'lumotlar yana olti oygacha shifrlangan zaxira nusxalarda saqlanadi va ular bilan birga yo'qoladi.",
             'unfinished' => "Tugallanmagan buyurtma bo'lsa, akkauntni u yetkazilgan yoki bekor qilingandan keyin o'chirish mumkin.",
             'privacy' => self::documentTitle(LegalDocumentKind::Privacy, 'uz'),
         ];

@@ -7,6 +7,7 @@
 @endif
 <p>{{ $texts['erased'] }}</p>
 <p>{{ $texts['kept'] }}</p>
+<p>{{ $texts['backups'] }}</p>
 <p>{{ $texts['unfinished'] }}</p>
 <p><a href="{{ $privacyUrl }}">{{ $texts['privacy'] }}</a></p>
 @endsection
