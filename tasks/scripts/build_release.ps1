@@ -76,7 +76,7 @@ if ($untracked) { Stop-Build 'frontend has untracked files' }
 # A release is built from a published commit, so the bundle can be explained
 # by anyone with the repository.
 git -C $repo merge-base --is-ancestor HEAD origin/main
-if ($LASTEXITCODE -ne 0) { Stop-Build 'HEAD is not on origin/main; a release is built from main' }
+if ($LASTEXITCODE -ne 0) { Stop-Build 'HEAD is not on origin/main; a release is built from main (run git fetch first)' }
 $commit = (git -C $repo rev-parse HEAD).Trim()
 
 # Check 2: the version code comes only from pubspec.yaml (`DL-116` (2)).
