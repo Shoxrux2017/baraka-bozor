@@ -68,6 +68,15 @@ $frontend = Join-Path $repo 'frontend'
 $dirty = git -C $repo status --porcelain --untracked-files=no
 if ($LASTEXITCODE -ne 0) { Stop-Build 'git status failed' }
 if ($dirty) { Stop-Build 'tracked files have uncommitted changes' }
+# An untracked file under frontend/ can still reach the bundle (an asset, a
+# source file); ignored files are not listed.
+$untracked = git -C $repo status --porcelain -- frontend
+if ($LASTEXITCODE -ne 0) { Stop-Build 'git status failed' }
+if ($untracked) { Stop-Build 'frontend has untracked files' }
+# A release is built from a published commit, so the bundle can be explained
+# by anyone with the repository.
+git -C $repo merge-base --is-ancestor HEAD origin/main
+if ($LASTEXITCODE -ne 0) { Stop-Build 'HEAD is not on origin/main; a release is built from main' }
 $commit = (git -C $repo rev-parse HEAD).Trim()
 
 # Check 2: the version code comes only from pubspec.yaml (`DL-116` (2)).
@@ -116,8 +125,17 @@ foreach ($file in $required.Keys) {
             Stop-Build "frontend/$file has no $name"
         }
     }
-    if ($file -eq '.env.release' -and $values['BB_API_BASE_URL'] -notmatch '^https://[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}/api/v1$') {
-        Stop-Build 'BB_API_BASE_URL in .env.release must be https://<host>/api/v1'
+    if ($file -eq '.env.release') {
+        # -cnotmatch: PowerShell's -notmatch ignores case, and /API/V1 is not a route.
+        if ($values['BB_API_BASE_URL'] -cnotmatch '^https://[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}/api/v1$') {
+            Stop-Build 'BB_API_BASE_URL in .env.release must be https://<host>/api/v1'
+        }
+        $apiHost = ([Uri]$values['BB_API_BASE_URL']).Host
+    }
+    elseif ($values.ContainsKey('BB_API_BASE_URL')) {
+        # Flutter lets a later --dart-define-from-file win, so the server is
+        # fixed by .env.release alone.
+        Stop-Build "frontend/$file must not set BB_API_BASE_URL"
     }
 }
 
@@ -142,7 +160,7 @@ if (-not $keytool) { Stop-Build 'keytool not found; set JAVA_HOME' }
 # Check 6: the build.
 Push-Location $frontend
 try {
-    flutter build appbundle --release '--dart-define-from-file=.env.release' '--dart-define-from-file=.env.maps' '--dart-define-from-file=.env.firebase'
+    flutter build appbundle --release '--dart-define-from-file=.env.maps' '--dart-define-from-file=.env.firebase' '--dart-define-from-file=.env.release'
     $buildExit = $LASTEXITCODE
 }
 finally {
@@ -179,7 +197,7 @@ if ($bundleExit -ne 0 -or $listExit -ne 0 -or -not $bundleSha256 -or -not $keyst
 
 # Output: the bundle named after its version, and a summary that explains it.
 if (-not $OutDir) { $OutDir = Join-Path $frontend 'build/release' }
-New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+$OutDir = (New-Item -ItemType Directory -Force -Path $OutDir).FullName
 $baseName = "barakabozor-$versionName-$versionCode"
 $bundlePath = Join-Path $OutDir "$baseName.aab"
 Copy-Item -LiteralPath $builtBundle -Destination $bundlePath -Force
@@ -187,8 +205,9 @@ $aabSha256 = (Get-FileHash -LiteralPath $bundlePath -Algorithm SHA256).Hash.ToLo
 $summary = @(
     "version=$versionName+$versionCode"
     "commit=$commit"
-    "built_at=$([DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))"
+    "built_at=$([DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ', [Globalization.CultureInfo]::InvariantCulture))"
     "aab_sha256=$aabSha256"
+    "api_host=$apiHost"
     "signer_sha1=$bundleSha1"
     "signer_sha256=$bundleSha256"
 )

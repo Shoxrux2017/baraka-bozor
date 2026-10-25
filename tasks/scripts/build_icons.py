@@ -10,7 +10,10 @@ each path and size:
 - Android `mipmap-*/ic_launcher_{foreground,background,monochrome}.png`
   (108 dp) and `ic_launcher.png` (48 dp, the full icon);
 - Android `drawable-*/ic_stat_notify.png` (24 dp, white with alpha only);
-- `frontend/web/favicon.png` and `frontend/web/icons/Icon-*.png`;
+- `frontend/web/favicon.png` and `frontend/web/icons/Icon-*.png`; the
+  maskable ones are the adaptive layers composed (the mark reaches 30.6% of
+  the width from the centre), because the full icon's mark reaches 40.1%, the
+  edge of the maskable safe zone;
 - `docs/store/graphics/play-icon-512.png` (RGBA).
 
 The monochrome layer and the notification icon are silhouettes: a pixel
@@ -99,10 +102,11 @@ def main() -> None:
         save(scaled(full, px(LAUNCHER_DP, scale)), RES / f"mipmap-{name}" / "ic_launcher.png")
         save(notification_icon(mark, scale), RES / f"drawable-{name}" / "ic_stat_notify.png")
 
+    maskable = Image.alpha_composite(background.convert("RGBA"), foreground).convert("RGB")
     save(scaled(full, 32), WEB / "favicon.png")
     for size in (192, 512):
         save(scaled(full, size), WEB / "icons" / f"Icon-{size}.png")
-        save(scaled(full, size), WEB / "icons" / f"Icon-maskable-{size}.png")
+        save(scaled(maskable, size), WEB / "icons" / f"Icon-maskable-{size}.png")
     save(scaled(full, 512).convert("RGBA"), PLAY_ICON)
 
 

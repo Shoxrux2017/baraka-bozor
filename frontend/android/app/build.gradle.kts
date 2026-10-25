@@ -30,7 +30,12 @@ val dartDefines: Map<String, String> =
 val releaseSigningProblem: String? = run {
     val file = rootProject.file("key.properties")
     if (!file.isFile) return@run "the file is missing"
-    val keys = Properties().apply { file.inputStream().use { load(it) } }
+    // Not the exception's text: it may echo a value of the file.
+    val keys = try {
+        Properties().apply { file.inputStream().use { load(it) } }
+    } catch (e: Exception) {
+        return@run "it cannot be read"
+    }
     for (name in listOf("storeFile", "storePassword", "keyAlias", "keyPassword")) {
         if (keys.getProperty(name).isNullOrBlank()) return@run "it has no $name"
     }
