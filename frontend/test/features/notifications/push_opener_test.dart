@@ -135,6 +135,26 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a Customer tap that launched a two-session phone switches from the staff mode',
+    (WidgetTester tester) async {
+      signInCustomer();
+      signInStaff(UserRole.shopper);
+      inbox.launch = customerTarget;
+
+      await open(tester);
+
+      final SignedIn session =
+          containerOf(tester).read(sessionControllerProvider).value!
+              as SignedIn;
+      expect(session.activeMode, SessionMode.customer);
+      expect(path(tester), AppPaths.customerOrder(orderOne));
+      routerOf(tester).pop();
+      await tester.pumpAndSettle();
+      expect(path(tester), AppPaths.customerOrders);
+    },
+  );
+
   testWidgets('a banner that launched the app opens the order', (
     WidgetTester tester,
   ) async {
