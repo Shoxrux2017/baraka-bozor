@@ -8,7 +8,7 @@ import '../../auth/domain/app_user.dart';
 import '../domain/push_event.dart';
 
 /// Opens the order a tapped push or banner names, in the mode that owns it
-/// (`DL-115` (5)).
+/// (`DL-115` (7)).
 ///
 /// A tap that starts the app arrives before the session is known, and the
 /// router is still on the bootstrap screen, so the latest target waits until

@@ -20,7 +20,7 @@ import '../../support/fake_push.dart';
 import '../../support/in_memory_stores.dart';
 
 /// A tap on a push or a banner, through the real router and session, with
-/// the push ports faked (`DL-115` (5)).
+/// the push ports faked (`DL-115` (7)).
 void main() {
   late InMemoryTokenStore tokens;
   late FakeAuthRepository auth;
