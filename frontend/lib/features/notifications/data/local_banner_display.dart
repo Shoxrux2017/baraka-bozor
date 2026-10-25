@@ -27,6 +27,10 @@ class LocalBannerDisplay implements BannerDisplay {
   final StreamController<PushTarget> _taps =
       StreamController<PushTarget>.broadcast();
 
+  /// The channel [prepare] received last. A banner names its channel the
+  /// same way, so a banner never renames the channel after its own title.
+  BannerChannel? _channel;
+
   /// Initialises the plugin. The Darwin settings request nothing: the
   /// permission is asked once, by the permission prompt, at the right time.
   static Future<LocalBannerDisplay> start() async {
@@ -56,6 +60,7 @@ class LocalBannerDisplay implements BannerDisplay {
 
   @override
   Future<void> prepare(BannerChannel channel) async {
+    _channel = channel;
     await _plugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -72,23 +77,27 @@ class LocalBannerDisplay implements BannerDisplay {
 
   /// One banner per tag: the same push shown twice replaces itself.
   @override
-  Future<void> show(IncomingPush push) => _plugin.show(
-    id: 0,
-    title: push.title,
-    body: push.body,
-    notificationDetails: NotificationDetails(
-      android: AndroidNotificationDetails(
-        channelId,
-        push.title,
-        importance: Importance.high,
-        priority: Priority.high,
-        color: KitColors.primaryDark,
-        tag: push.tag,
+  Future<void> show(IncomingPush push) {
+    final BannerChannel? channel = _channel;
+    return _plugin.show(
+      id: 0,
+      title: push.title,
+      body: push.body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          channelId,
+          channel?.name ?? channelId,
+          channelDescription: channel?.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          color: KitColors.primaryDark,
+          tag: push.tag,
+        ),
+        iOS: const DarwinNotificationDetails(),
       ),
-      iOS: const DarwinNotificationDetails(),
-    ),
-    payload: push.target?.payload,
-  );
+      payload: push.target?.payload,
+    );
+  }
 
   @override
   Stream<PushTarget> get taps => _taps.stream;
