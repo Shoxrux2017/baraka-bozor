@@ -10,10 +10,13 @@ BarakaBozor teruvchisi, kuryeri va operatori — faqat buyurtmangiz uchun kerakl
 ## Ma'lumotlarni kimga beramiz
 - Telegram — kirish kodini yuborish uchun telefon raqami.
 - Google — xaritada manzil qidirgan so'zlaringiz.
+- Google (xaritalar) — xarita ishlashi va nosozliklari haqidagi texnik ma'lumotlar.
+- Google (Firebase) — bildirishnomalar uchun qurilma identifikatori va ularning matni: buyurtma raqami va summa.
 Biz ma'lumotlaringizni sotmaymiz.
 ## Qancha saqlaymiz
 Akkauntingiz bor ekan. Akkaunt o'chirilgandan keyin buyurtmalar ism va telefonsiz saqlanadi — hisob uchun, [muddat — buxgalter aniqlaydi].
 Agar akkaunt bloklangan va keyin o'chirilgan bo'lsa, biz telefon raqamining qaytarib bo'lmaydigan izini saqlaymiz — undan raqamni tiklab bo'lmaydi, lekin u bilan qayta ro'yxatdan o'tib bo'lmaydi.
+Ma'lumotlar bazasining zaxira nusxalari shifrlangan, O'zbekistonda saqlanadi va olti oydan keyin o'chiriladi; shu vaqtgacha ularda o'chirilgan akkauntlar ma'lumotlari ham qoladi.
 ## Ma'lumotlarni qanday o'chirish mumkin
 Profil → «Akkauntni o'chirish». Yoki qo'llab-quvvatlash raqamiga qo'ng'iroq qiling.
 ## Rozilik

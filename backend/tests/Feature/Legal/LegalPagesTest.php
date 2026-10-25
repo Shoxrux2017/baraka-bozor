@@ -84,6 +84,18 @@ final class LegalPagesTest extends TestCase
             ->assertSee('lang="uz"', false);
     }
 
+    public function test_the_deletion_page_says_backups_keep_erased_data_for_six_months(): void
+    {
+        DB::table('business_settings')->where('id', BusinessSettings::SINGLETON_ID)
+            ->update(['support_phone' => null]);
+
+        $this->get('/account-deletion?lang=ru')->assertOk()
+            ->assertSee('Резервные копии: стёртые данные ещё до шести месяцев хранятся в зашифрованных резервных копиях и исчезают вместе с ними.', false);
+
+        $this->get('/account-deletion')->assertOk()
+            ->assertSee(e("Zaxira nusxalar: o'chirilgan ma'lumotlar yana olti oygacha shifrlangan zaxira nusxalarda saqlanadi va ular bilan birga yo'qoladi."), false);
+    }
+
     public function test_pages_need_no_session_and_set_no_cookie(): void
     {
         $this->publish(LegalDocumentKind::Terms, 'uz', 'Matn');

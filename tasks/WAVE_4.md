@@ -32,8 +32,9 @@ Each gate is the Owner's external action (`AGENTS.md` section 14). Work that nee
 1. **The store reviewers' sign-in.** Interview 7.2 says that test numbers are both how app-store reviewers sign in and empty in production, and `BR-ROLE-011`, `DL-11` and `AGENTS.md` section 5 hold the second half. Google asks an app with a one-time-code login for "reusable login credentials that can bypass" the code. W4-6 cannot upload before this is settled, and the fourteen days wait on W4-6, so this is asked at once, with the plan. **Answered on 2026-10-23: option А, one reviewer phone in production (`DL-105`).**
 2. **The handoff point at launch.** Does it exist (`delivery.handoff_point`, on by default, interview 1.1)? Asked at the deployment, W4-5 (Wave 3 risk list).
 3. **A rejected cancellation request.** Should the Customer get a push when the Operator rejects it? `docs/05` section 18 has no such event. Asked at W4-7. **Answered yes, 2026-10-24 (`DL-112` (1)).**
+4. **Tobacco, nicotine and alcohol in the catalog.** Google Play allows tobacco in a grocery app only in unnamed regions with an ID check at delivery, and alcohol only with age checks; the content rating depends on it. Asked at W4-6. **Answered on 2026-10-25: option А, none of them (`DL-116` (9)).**
 
-The launcher icon and the store graphics are drawn in Claude Design while W4-2 to W4-5 run, so the Owner's approval of them never holds W4-6.
+The launcher icon and the store graphics are drawn in Claude Design while W4-2 to W4-5 run, so the Owner's approval of them never holds W4-6. They were not drawn by then. W4-6 drew variants in Claude Design on 2026-10-25; the Owner turned them down and supplied the finished icon (`DL-116` (11)).
 
 ## Tasks
 
@@ -44,7 +45,7 @@ The launcher icon and the store graphics are drawn in Claude Design while W4-2 t
 | W4-3 | Backups: nightly encrypted copies off the host, the restore script | — | Merged (#113) |
 | W4-4 | Login codes through Telegram Gateway | Telegram (verification) | Merged (#114); verified, the no-Telegram answer at W4-5 (`DL-111` (3)) |
 | W4-5 | First deployment to the Owner's VPS; the web panel published | VPS, domain, backup storage, Telegram | Planned |
-| W4-6 | Android release build and closed testing | Google Play, W4-5 | Planned |
+| W4-6 | Android release build and closed testing | Google Play, W4-5 | Preparation merged (#120, `DL-116`); the upload waits for W4-5 and the Play account |
 | W4-7 | Notifications on the server: deliveries, intents from every action, templates, the queued sender with a fake | — | Merged (#116) |
 | W4-8 | Firebase Cloud Messaging sender; device pruning | Firebase (verification) | Merged (#118); verified on the Owner's project (`DL-114` (4)) |
 | W4-9 | Push in the app: Firebase token, permission, banners, opening the order | Firebase | Merged (#119); walked with real pushes on the emulator (`DL-115`) |
@@ -152,6 +153,12 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 - The launcher icon and the store graphics, drawn and approved earlier (Owner questions above), go into the build and the listing. The listing in Uzbek and Russian, the data-safety answers and the content rating are prepared in `docs/store/`. The data-safety answers and the public deletion page say that backups keep erased data for up to six months (`DL-104` (6)); the answers are redone when push ships (W4-9) and include the device identifier (the push token) from the first upload, since the app registers it at the first sign-in (`DL-115`).
 - The Owner uploads to the closed track and invites the testers; the agent gives the exact clicks. The reviewer phone and its code go into Play Console's App access (`DL-105`).
 - The release keys' SHA-1s are added to the Maps key and to the Firebase Android API key (`FIREBASE_ANDROID_API_KEY`), and the address map is checked on a release build.
+- Preparation done on 2026-10-25 (`DL-116`, plan `docs/superpowers/plans/2026-10-25-w4-6-release-prep.md`):
+  - the Gradle build signs releases only with the upload key; the key was made and the Owner keeps a copy;
+  - `tasks/scripts/build_release.ps1` passed with the real key (bundle `1.0.0+1`, deleted afterwards, since no real API address exists before W4-5);
+  - the deletion page and the privacy drafts disclose the six months of backups;
+  - `docs/store/` holds the listing, the data-safety and content-rating answers and the Owner's steps.
+- On the emulator, a release APK signed with the upload key signed in, registered its Firebase token and showed a real push. The map answered "Authorization failure": the Maps key lacks the upload key's SHA-1, which the Owner adds (step 6 of `docs/store/play-console.ru.md`); the map is checked again then.
 
 **W4-7. Notifications on the server** (`DL-104` (10)).
 
@@ -233,7 +240,10 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | The stack's env file (`APP_KEY`, `PHONE_FINGERPRINT_KEY`) is in no backup. The Owner keeps it with the restic password; W4-5's Owner checklist says so | Open, W4-5 |
 | A stale `success`: a stopped container or a killed run leaves the previous status. The deploy check and the external check of W4-5 test the age of `finished_at` | Open, W4-5 |
 | A restore from an older snapshot brings back Customers who erased their accounts after it (`BR-ROLE-013`). The promise stands; the restore runbook of W4-5 re-applies erasures made after the snapshot, the mechanism decided there | Open, W4-5 |
-| A staff account made on the reviewer phone before `LOGIN_CODE_REVIEWER_PHONE` was set keeps its password sign-in: the code paths refuse that phone, `AuthenticateStaff` does not. W4-6 checks, when the "Проверка Google" Customer account is created, that no staff account holds that phone | Open, W4-6 |
+| A staff account made on the reviewer phone before `LOGIN_CODE_REVIEWER_PHONE` was set keeps its password sign-in: the code paths refuse that phone, `AuthenticateStaff` does not. When the "Проверка Google" Customer account is created, the agent checks that no staff account holds that phone | Open, at the account's creation (W4-5) |
+| The Maps key is restricted to Android apps and lacks the upload key's SHA-1, so a release build shows a blank map with "Authorization failure" until the Owner adds the upload, Play app-signing and debug fingerprints (`DL-116` (10)) | Open, Owner; checked again on a release build |
+| App access gives Google's reviewers a Customer account only (`DL-105` (2)). Should a reviewer ask for the Shopper or Courier screens, a staff reviewer account is a new Owner decision | Open, at Google's review |
+| Play Console has no Uzbek listing language; the Uzbek text sits first in the Russian-labelled listing (`DL-116` (5)) | Accepted |
 | iOS push: the code is written and the configuration waits for a Mac and an Apple account (`docs/06`) | Open until a Mac exists |
 | Carried from Wave 3: the scheduler runs nowhere until Wave 4 deploys one (`DL-54` (8)) | Closes with W4-5 |
 | `worker` and `scheduler` do not mount the images volume; a future job that writes images must get it (W4-2 review) | Open, note |
@@ -244,7 +254,7 @@ The order of work is the table's. W4-6 starts as soon as W4-5 is live, because i
 | Carried from Wave 3: the handoff point at launch | Owner question 2, W4-5 |
 | The app uses FCM registration tokens, which `firebase_messaging` 17 deprecates for Firebase Installation IDs (`register()`, `onRegistered`), and the Admin SDKs deprecate `message.token` for `message.fid`. Both are supported with no announced end. The client and the `FcmPushSender` move together in one task (`DL-115` (11)) | Open, before FlutterFire removes the token API |
 | `flutter build apk` warns that `firebase_core` applies the Kotlin Gradle Plugin and that future Flutter versions will refuse such plugins | Open, check at the next Flutter upgrade |
-| The small notification icon `ic_stat_notify` is a placeholder glyph | Open, redrawn with the launcher icon (W4-6, `DL-115` (4)) |
+| The small notification icon `ic_stat_notify` is a placeholder glyph | Closed by W4-6: the silhouette of the Owner's icon (`DL-116` (11)) |
 | A session that ends without a logout (the token expires after 30 days, `DL-26`) leaves its device registered, so that account's pushes still reach the phone until pruning revokes it after 60 days unseen. On a shared phone the next person can see the previous account's banner text (an order number and an amount); a tap opens nothing they can read, since the server answers the order with 404. | Accepted for the pilot; revisit if phones are shared |
 | Carried from Wave 3, P3: a list under a page; Customer mode's app bar | Closed by W4-10 (`DL-113`) |
 | `composer audit` (found at W4-1) reports three advisories in packages the app already had: `symfony/http-foundation` (a ReDoS through the `Cache-Control` request header) and `league/commonmark` (two). They are updated before the first deployment | Closed by W4-2 (`DL-107` (10)) |

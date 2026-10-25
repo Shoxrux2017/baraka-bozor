@@ -1,4 +1,5 @@
 import java.util.Base64
+import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -21,6 +22,29 @@ val dartDefines: Map<String, String> =
         }
         ?: emptyMap()
 
+/**
+ * Why a release build cannot be signed, or null when `key.properties` is
+ * complete. The upload key lives in the gitignored `frontend/android/key.properties`
+ * and the keystore outside the repository (`DL-116` (1)).
+ */
+val releaseSigningProblem: String? = run {
+    val file = rootProject.file("key.properties")
+    if (!file.isFile) return@run "the file is missing"
+    // Not the exception's text: it may echo a value of the file.
+    val keys = try {
+        Properties().apply { file.inputStream().use { load(it) } }
+    } catch (e: Exception) {
+        return@run "it cannot be read"
+    }
+    for (name in listOf("storeFile", "storePassword", "keyAlias", "keyPassword")) {
+        if (keys.getProperty(name).isNullOrBlank()) return@run "it has no $name"
+    }
+    if (!file(keys.getProperty("storeFile").trim()).isFile) {
+        return@run "the keystore its storeFile names does not exist"
+    }
+    null
+}
+
 android {
     namespace = "uz.barakabozor.app"
     compileSdk = flutter.compileSdkVersion
@@ -37,16 +61,11 @@ android {
         // Fixed by decision D-2 of S01-FE-001. It cannot change after a Play
         // upload, which is why it was decided before these trees existed.
         applicationId = "uz.barakabozor.app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         // Android 8.0, API 26: the Owner chose it as the oldest Android the
         // app supports (`DL-33` (10)).
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
-        // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
-        // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
-        // You can force using the value of versionCode by specifying the `-P force-version-code-ignoring-abi=true`
-        // flag during build.
+        // The version code and name come from `version` in pubspec.yaml (`DL-116` (2)).
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
@@ -55,11 +74,37 @@ android {
         manifestPlaceholders["googleMapsApiKey"] = dartDefines["GOOGLE_MAPS_API_KEY"] ?: ""
     }
 
+    signingConfigs {
+        // Created only from a complete key.properties, so a release is never
+        // signed with the debug key or left unsigned (`DL-116` (1)).
+        if (releaseSigningProblem == null) {
+            create("release") {
+                val keys = Properties().apply {
+                    rootProject.file("key.properties").inputStream().use { load(it) }
+                }
+                storeFile = file(keys.getProperty("storeFile").trim())
+                storePassword = keys.getProperty("storePassword")
+                keyAlias = keys.getProperty("keyAlias")
+                keyPassword = keys.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
+        }
+    }
+}
+
+// Only a release task fails here; debug, profile, tests and the web build need no key.
+tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+    doFirst {
+        releaseSigningProblem?.let {
+            throw GradleException(
+                "A release build is signed with the upload key from frontend/android/key.properties " +
+                    "(DL-116 (1)): $it. See docs/store/README.md.",
+            )
         }
     }
 }

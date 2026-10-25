@@ -1,0 +1,5 @@
+# Never commit the real key.properties; the keystore stays outside the repository.
+storeFile=G:/tools/secrets/barakabozor-upload.jks
+storePassword=change-me
+keyAlias=upload
+keyPassword=change-me
