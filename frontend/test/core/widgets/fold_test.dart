@@ -166,4 +166,63 @@ void main() {
     await tester.pump();
     expect(find.byKey(const Key('b')), findsNothing);
   });
+
+  Widget single(bool shown, {bool appear = false, VoidCallback? onFolded}) =>
+      MaterialApp(
+        home: Scaffold(
+          body: Fold(
+            shown: shown,
+            appear: appear,
+            onFolded: onFolded,
+            child: _box('x'),
+          ),
+        ),
+      );
+
+  double heightOf(WidgetTester t) => t.getSize(find.byType(Fold)).height;
+
+  testWidgets('a fold first built hidden starts folded and still', (
+    tester,
+  ) async {
+    int folded = 0;
+    await tester.pumpWidget(single(false, onFolded: () => folded++));
+    await tester.pump();
+    expect(heightOf(tester), 0);
+    expect(tester.binding.hasScheduledFrame, isFalse);
+    expect(folded, 0);
+  });
+
+  testWidgets('a fold reversed while folding keeps its height', (tester) async {
+    await tester.pumpWidget(single(true));
+    await tester.pumpWidget(single(false));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 130));
+    final double h = heightOf(tester);
+    expect(h, inInclusiveRange(1, 39));
+    await tester.pumpWidget(single(true));
+    await tester.pump();
+    expect(heightOf(tester), closeTo(h, 1));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(heightOf(tester), greaterThan(h));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(heightOf(tester), 40);
+  });
+
+  testWidgets('a fold reversed while unfolding keeps its height', (
+    tester,
+  ) async {
+    await tester.pumpWidget(single(false));
+    await tester.pumpWidget(single(true));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    final double h = heightOf(tester);
+    expect(h, inInclusiveRange(1, 39));
+    await tester.pumpWidget(single(false));
+    await tester.pump();
+    expect(heightOf(tester), closeTo(h, 1));
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(heightOf(tester), lessThan(h));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(heightOf(tester), 0);
+  });
 }

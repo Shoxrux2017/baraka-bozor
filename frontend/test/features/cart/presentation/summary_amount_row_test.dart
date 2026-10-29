@@ -95,4 +95,30 @@ void main() {
       greaterThanOrEqualTo(tester.getBottomLeft(find.text(label)).dy),
     );
   });
+
+  testWidgets('a pending row draws a bar instead of the value', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: SummaryAmountRow(
+            valueKey: 'x',
+            label: label,
+            value: value,
+            replaced: 'old',
+            pendingWidth: 92,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey<String>('x-pending')), findsOneWidget);
+    expect(find.text(value), findsNothing);
+    expect(find.text('old'), findsNothing);
+    expect(
+      tester.getSize(find.byKey(const ValueKey<String>('x-pending'))).width,
+      92,
+    );
+  });
 }
