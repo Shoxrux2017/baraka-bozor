@@ -924,6 +924,17 @@ void main() {
       await tester.drag(byKey('checkout'), const Offset(0, -5000));
       await tester.pumpAndSettle();
       final int previews = checkout.previews.length;
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      final FocusNode wishFocus = tester
+          .widget<EditableText>(
+            find.descendant(
+              of: byKey('checkout-delivery-wish'),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .focusNode;
+      expect(wishFocus.hasFocus, isFalse);
 
       await tester.tap(byKey('checkout-confirm'));
       await tester.pumpAndSettle();
