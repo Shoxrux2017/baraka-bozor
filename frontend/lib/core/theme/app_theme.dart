@@ -30,6 +30,12 @@ ThemeData buildAppTheme(Brightness brightness) {
   );
   return ThemeData(
     useMaterial3: true,
+
+    /// Standard density on every platform, as phones have it (DL-117).
+    visualDensity: VisualDensity.standard,
+
+    /// Padded tap targets on every platform, so desktop browsers get 44 too (DL-117).
+    materialTapTargetSize: MaterialTapTargetSize.padded,
     fontFamily: appFontFamily,
     colorScheme: ColorScheme.fromSeed(
       seedColor: appSeedColor,

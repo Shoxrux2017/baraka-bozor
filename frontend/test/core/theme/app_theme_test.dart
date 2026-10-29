@@ -1,10 +1,35 @@
 import 'package:baraka_bozor/core/theme/app_theme.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('buildAppTheme', () {
+    test('keeps standard density and padded targets on every platform '
+        '(DL-117)', () {
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      for (final TargetPlatform platform in <TargetPlatform>[
+        TargetPlatform.windows,
+        TargetPlatform.macOS,
+        TargetPlatform.linux,
+        TargetPlatform.android,
+      ]) {
+        debugDefaultTargetPlatformOverride = platform;
+        final ThemeData theme = buildAppTheme(Brightness.light);
+        expect(
+          theme.visualDensity,
+          VisualDensity.standard,
+          reason: '$platform',
+        );
+        expect(
+          theme.materialTapTargetSize,
+          MaterialTapTargetSize.padded,
+          reason: '$platform',
+        );
+      }
+    });
+
     test('uses Material 3, as docs/07-architecture.md section 2 requires', () {
       expect(buildAppTheme(Brightness.light).useMaterial3, isTrue);
     });
