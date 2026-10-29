@@ -11,8 +11,9 @@ import '../theme/kit_colors.dart';
 /// of the tabs' shell (`DL-118`).
 enum CustomerTab { home, favorites, orders, profile }
 
-/// Wraps a tab screen other than the home: a system back it cannot pop — a
-/// tab is a branch of the shell — goes to the home instead of closing the app.
+/// Wraps a tab screen other than the home: a system back that reaches it goes
+/// to the home instead of closing the app. A tab is always the first page of
+/// its branch; sheets and screens over it are popped first (`DL-118` (3)).
 class CustomerTabScope extends StatelessWidget {
   const CustomerTabScope({required this.child, super.key});
 
@@ -21,7 +22,7 @@ class CustomerTabScope extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: context.canPop(),
+      canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) {
         if (!didPop) {
           context.go(AppPaths.customer);
