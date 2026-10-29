@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/kit_colors.dart';
+import 'panel_hit_box.dart';
 
 /// One choice of a [PanelSegmented]: its [value], [label], the [key] of its
 /// button and an optional [dot] colour shown before the label.
@@ -92,61 +93,57 @@ class _Segment extends StatelessWidget {
       excludeSemantics: true,
       label: hint == null ? label : '$label, $hint',
       onTap: onTap,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          borderRadius: radius,
-          onTap: onTap,
-          // The drawn segment stays 34 high; its tap area is 44 (DL-117).
-          child: SizedBox(
-            height: 44,
-            child: Center(
-              widthFactor: 1,
-              child: Ink(
-                height: 34,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: selected ? Colors.white : null,
-                  borderRadius: radius,
-                  boxShadow: selected
-                      ? const <BoxShadow>[
-                          BoxShadow(
-                            color: KitColors.shadow,
-                            blurRadius: 4,
-                            offset: Offset(0, 1),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    if (dot != null) ...<Widget>[
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: hollow ? null : dot,
-                          shape: BoxShape.circle,
-                          border: hollow
-                              ? Border.all(color: dot, width: 1.5)
-                              : null,
+      // The drawn segment stays 34 high, with its highlight on that pill; its
+      // tap area is 44 (DL-117).
+      child: PanelHitBox(
+        onTap: onTap,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            borderRadius: radius,
+            onTap: onTap,
+            child: Ink(
+              height: 34,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: selected ? Colors.white : null,
+                borderRadius: radius,
+                boxShadow: selected
+                    ? const <BoxShadow>[
+                        BoxShadow(
+                          color: KitColors.shadow,
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
                         ),
-                        child: const SizedBox(width: 8, height: 8),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  if (dot != null) ...<Widget>[
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: hollow ? null : dot,
+                        shape: BoxShape.circle,
+                        border: hollow
+                            ? Border.all(color: dot, width: 1.5)
+                            : null,
                       ),
-                      const SizedBox(width: 8),
-                    ],
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: selected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                        color: selected ? KitColors.ink : KitColors.ink2,
-                      ),
+                      child: const SizedBox(width: 8, height: 8),
                     ),
+                    const SizedBox(width: 8),
                   ],
-                ),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: selected ? KitColors.ink : KitColors.ink2,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

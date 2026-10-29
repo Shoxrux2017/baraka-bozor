@@ -642,6 +642,51 @@ void main() {
     expect(byKey('add-0192f0a0-0000-7000-8000-0000000000a1'), findsNothing);
   });
 
+  testWidgets('the not sold label of a compact card keeps 8 off the edge', (
+    WidgetTester tester,
+  ) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    await show(tester, tomato, size: KitCardSize.compact, available: false);
+    final Rect card = tester.getRect(byKey('product-card-$id'));
+    expect(tester.getTopLeft(byKey('unavailable-$id')).dx - card.left, 8);
+
+    await show(tester, tomato, available: false);
+    final Rect regular = tester.getRect(byKey('product-card-$id'));
+    expect(tester.getTopLeft(byKey('unavailable-$id')).dx - regular.left, 8);
+  });
+
+  testWidgets('the heart glyph stays 19 from the top right corner of the '
+      'card (DL-117)', (WidgetTester tester) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    for (final KitCardSize size in KitCardSize.values) {
+      await show(tester, tomato, size: size);
+      final Rect card = tester.getRect(byKey('product-card-$id'));
+      final Rect glyph = tester.getRect(
+        find.descendant(of: byKey('heart-$id'), matching: find.byType(Icon)),
+      );
+      expect(glyph.size, const Size(18, 18), reason: '$size');
+      expect(card.right - glyph.right, 19, reason: '$size');
+      expect(glyph.top - card.top, 19, reason: '$size');
+    }
+  });
+
+  testWidgets('the face of a card button is ink, so a press shows on it', (
+    WidgetTester tester,
+  ) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    await show(tester, tomato);
+    expect(tester.widget(byKey('add-face-$id')), isA<Ink>());
+
+    cart = FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[
+        lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
+      ]),
+    );
+    await show(tester, tomato);
+    expect(tester.widget(byKey('face-step-minus-$id')), isA<Ink>());
+    expect(tester.widget(byKey('face-step-plus-$id')), isA<Ink>());
+  });
+
   testWidgets('tapping the card opens the product', (
     WidgetTester tester,
   ) async {

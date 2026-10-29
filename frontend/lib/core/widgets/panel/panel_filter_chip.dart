@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../theme/kit_colors.dart';
 import 'panel_hit_box.dart';
 
-/// A 32-high filter chip (its tap area 44 high, DL-117): white with a `line` border, or — selected — a green
-/// wash with a green border and dark text.
+/// A 32-high filter chip (its tap area 44 high, DL-117): white with a `line`
+/// border, or — selected — a green wash with a green border and dark text.
 class PanelFilterChip extends StatelessWidget {
   const PanelFilterChip({
     super.key,

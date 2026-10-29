@@ -347,4 +347,4 @@ Noticed in the reviews and left out; each needs its own decision before any code
 
 ## Risks
 
-None yet.
+- The 44 stepper squeezes the cart line's sum, which is scaled down to fit. Measured width of the sum: 68 to 52 px at 320 wide, 108 to 92 at 360, 123 to 107 at 375. On a 320 px phone a sum like "≈ 127 600 so'm" is drawn at about 40 % of its size. Stage 3 (`cart-7`) fixes it when it redraws the line (`DL-117` (9)).

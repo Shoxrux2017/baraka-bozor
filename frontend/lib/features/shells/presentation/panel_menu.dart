@@ -12,6 +12,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/brand_wordmark.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
+import '../../../core/widgets/panel/panel_hit_box.dart';
 import '../../auth/domain/app_user.dart';
 import '../../operations/application/board_controllers.dart';
 import '../../operations/domain/board.dart';
@@ -48,13 +49,23 @@ Widget panelAttentionBadge(int count) {
 /// The language control of the panel's menu: offers the same choices and makes
 /// the same call as the language button of the other screens, drawn as a box
 /// naming the current language, or as an icon alone when [compact].
-class PanelLanguageButton extends ConsumerWidget {
+class PanelLanguageButton extends ConsumerStatefulWidget {
   const PanelLanguageButton({this.compact = false, super.key});
 
   final bool compact;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PanelLanguageButton> createState() =>
+      _PanelLanguageButtonState();
+}
+
+class _PanelLanguageButtonState extends ConsumerState<PanelLanguageButton> {
+  final GlobalKey<PopupMenuButtonState<AppLanguage>> _menu =
+      GlobalKey<PopupMenuButtonState<AppLanguage>>();
+
+  @override
+  Widget build(BuildContext context) {
+    final bool compact = widget.compact;
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage current =
         ref.watch(languageControllerProvider).value ??
@@ -63,28 +74,30 @@ class PanelLanguageButton extends ConsumerWidget {
         ? l10n.languageRussian
         : l10n.languageUzbek;
 
-    return PopupMenuButton<AppLanguage>(
-      tooltip: l10n.languageLabel,
-      initialValue: current,
-      padding: EdgeInsets.zero,
-      onSelected: (AppLanguage language) =>
-          ref.read(languageControllerProvider.notifier).select(language),
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<AppLanguage>>[
-        CheckedPopupMenuItem<AppLanguage>(
-          value: AppLanguage.uz,
-          checked: current == AppLanguage.uz,
-          child: Text(l10n.languageUzbek),
-        ),
-        CheckedPopupMenuItem<AppLanguage>(
-          value: AppLanguage.ru,
-          checked: current == AppLanguage.ru,
-          child: Text(l10n.languageRussian),
-        ),
-      ],
-      // The box is drawn 38 high; the padding around it makes the tap area
-      // 44 high (DL-117).
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: compact ? 3 : 0, vertical: 3),
+    // The box is drawn 38 high with its highlight on the box; the hit box
+    // around it makes the tap area 44 high (DL-117).
+    return PanelHitBox(
+      onTap: () => _menu.currentState?.showButtonMenu(),
+      child: PopupMenuButton<AppLanguage>(
+        key: _menu,
+        borderRadius: BorderRadius.circular(12),
+        tooltip: l10n.languageLabel,
+        initialValue: current,
+        padding: EdgeInsets.zero,
+        onSelected: (AppLanguage language) =>
+            ref.read(languageControllerProvider.notifier).select(language),
+        itemBuilder: (BuildContext context) => <PopupMenuEntry<AppLanguage>>[
+          CheckedPopupMenuItem<AppLanguage>(
+            value: AppLanguage.uz,
+            checked: current == AppLanguage.uz,
+            child: Text(l10n.languageUzbek),
+          ),
+          CheckedPopupMenuItem<AppLanguage>(
+            value: AppLanguage.ru,
+            checked: current == AppLanguage.ru,
+            child: Text(l10n.languageRussian),
+          ),
+        ],
         child: Container(
           height: 38,
           width: compact ? 38 : null,

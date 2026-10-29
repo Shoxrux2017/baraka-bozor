@@ -110,6 +110,45 @@ void main() {
       );
     });
 
+    test('draws a field label in a text colour, never the fill green '
+        '(DL-117)', () {
+      final input = buildAppTheme(Brightness.light).inputDecorationTheme;
+      TextStyle? label(Set<WidgetState> states) =>
+          WidgetStateProperty.resolveAs<TextStyle?>(
+            input.floatingLabelStyle,
+            states,
+          );
+      expect(
+        label(<WidgetState>{WidgetState.focused})!.color,
+        KitColors.primaryDark,
+      );
+      expect(label(<WidgetState>{WidgetState.error})!.color, KitColors.danger);
+      expect(
+        label(<WidgetState>{WidgetState.focused, WidgetState.error})!.color,
+        KitColors.danger,
+      );
+      expect(label(<WidgetState>{})!.color, KitColors.muted);
+    });
+
+    test('draws the date picker today number in the text green (DL-117)', () {
+      final DatePickerThemeData picker = buildAppTheme(Brightness.light)
+          .datePickerTheme;
+      expect(
+        picker.todayForegroundColor!.resolve(<WidgetState>{}),
+        KitColors.primaryDark,
+      );
+      expect(
+        picker.todayForegroundColor!.resolve(<WidgetState>{
+          WidgetState.selected,
+        }),
+        Colors.white,
+      );
+      expect(
+        picker.dayBackgroundColor!.resolve(<WidgetState>{WidgetState.selected}),
+        KitColors.primary,
+      );
+    });
+
     test('sets the bundled Montserrat as the font of every text style', () {
       for (final Brightness brightness in Brightness.values) {
         final TextTheme text = buildAppTheme(brightness).textTheme;

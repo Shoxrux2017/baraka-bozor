@@ -432,7 +432,7 @@ class _StatusChip extends StatelessWidget {
         KitColors.primaryDark,
       ),
       OrderItemStatus.awaitingCustomer => (
-        KitColors.warningSoft,
+        KitColors.warningWash,
         KitColors.warningDark,
       ),
       OrderItemStatus.removed => (KitColors.dangerWash, KitColors.danger),

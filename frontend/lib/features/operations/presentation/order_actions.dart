@@ -66,7 +66,7 @@ class ApprovalTile extends ConsumerWidget {
         ? KitColors.warning
         : KitColors.line;
     final (Color tagGround, Color tagText) = switch (approval.status) {
-      ApprovalStatus.pending => (KitColors.warningSoft, KitColors.warningDark),
+      ApprovalStatus.pending => (KitColors.warningWash, KitColors.warningDark),
       ApprovalStatus.approved => (KitColors.primaryWash, KitColors.primaryDark),
       ApprovalStatus.expired => (KitColors.dangerWash, KitColors.danger),
       ApprovalStatus.rejected ||

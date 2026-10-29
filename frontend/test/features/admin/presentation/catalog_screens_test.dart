@@ -31,6 +31,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../support/app_harness.dart';
+import '../../../support/drawn_size.dart';
 import '../../../support/fake_admin_catalog_repository.dart';
 import '../../../support/fake_auth_repository.dart';
 import '../../../support/in_memory_stores.dart';
@@ -371,6 +372,7 @@ void main() {
       );
       // Drawn 40 high, tapped from 48 (DL-117).
       expect(tester.getSize(byKey('new-category')).height, 48);
+      expect(drawnSize(tester, byKey('new-category')).height, 40);
       expect(
         tester.getTopRight(byKey('new-category')).dx,
         closeTo(tester.getTopRight(find.byType(PanelCard).first).dx, 0.5),
@@ -649,6 +651,7 @@ void main() {
       );
       // Drawn 40 high, tapped from 48 (DL-117).
       expect(tester.getSize(byKey('new-product')).height, 48);
+      expect(drawnSize(tester, byKey('new-product')).height, 40);
       expect(
         tester.widget<FilledButton>(byKey('new-product')).onPressed,
         isNotNull,

@@ -21,6 +21,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../support/app_harness.dart';
+import '../../../support/drawn_size.dart';
 import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_operations_repository.dart';
 import '../../../support/in_memory_stores.dart';
@@ -385,6 +386,7 @@ void main() {
     );
     // Drawn 40 high, tapped from 48 (DL-117).
     expect(tester.getSize(byKey('order-refresh')).height, 48);
+    expect(drawnSize(tester, byKey('order-refresh')).height, 40);
 
     await tapAndSettle(tester, byKey('order-back'));
     expect(byKey('operations-board'), findsOneWidget);

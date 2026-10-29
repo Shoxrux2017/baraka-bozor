@@ -3,6 +3,8 @@ import 'package:baraka_bozor/core/widgets/panel/panel_menu_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../support/drawn_size.dart';
+
 void main() {
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
@@ -38,6 +40,7 @@ void main() {
 
     // Drawn 40 high, tapped from 48 (DL-117).
     expect(tester.getSize(byKey('menu')).height, 48);
+    expect(drawnSize(tester, byKey('menu')).height, 40);
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
     expect(byKey('menu-0'), findsNothing);
 

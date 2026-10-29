@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraka_bozor/core/widgets/brand_wordmark.dart';
+import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/localization/role_labels.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
@@ -191,6 +192,24 @@ void main() {
     );
     expect(tester.getTopLeft(logout).dy - tester.getBottomLeft(language).dy, 8);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the language button highlights its 38 box, taps from 44 '
+      '(DL-117)', (WidgetTester tester) async {
+    await open(tester, UserRole.admin, size: const Size(1440, 900));
+
+    final Finder ink = find.descendant(
+      of: find.byType(PanelLanguageButton),
+      matching: find.byType(InkWell),
+    );
+    expect(tester.getSize(ink).height, 38);
+    expect(tester.widget<InkWell>(ink).borderRadius, BorderRadius.circular(12));
+
+    final Offset top = tester.getTopLeft(ink);
+    await tester.tapAt(top + const Offset(20, -2));
+    await tester.pumpAndSettle();
+    expect(find.text('Русский'), findsWidgets);
+    expect(find.byType(CheckedPopupMenuItem<AppLanguage>), findsNWidgets(2));
   });
 
   for (final (Locale locale, String name) in <(Locale, String)>[

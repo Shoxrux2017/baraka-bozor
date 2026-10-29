@@ -354,10 +354,11 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                 ),
               ),
               // The heart's glyph is 18 square, centred in a 44 tap box that
-              // lies inside the card, 2 from its top and right edges.
+              // lies inside the card, 6 from its top and right edges, so the
+              // glyph stays 19 from them (DL-117).
               Positioned(
-                top: 2,
-                right: 2,
+                top: 6,
+                right: 6,
                 child: _Absorb(
                   child: SizedBox.square(
                     dimension: KitCardType.tapSide,
@@ -397,8 +398,9 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
   );
 
   /// Where the picture sits in a well of [width] by [height]: centred, 0.7 of
-  /// the shorter side. The heart's glyph is 18 square in a 40 square box at
-  /// the top right, so it spans 11 to 29 from the top and the right edge.
+  /// the shorter side. The heart's glyph is 18 square in a 44 square box 6
+  /// from the card's top and right edges, so it spans 19 to 37 from them, 11
+  /// to 29 from the top and the right edge of this well.
   /// When the picture would come within 2 of it, it moves down to 2 below the
   /// glyph; if it no longer fits the well that way, it moves left clear of the
   /// glyph instead; it shrinks only when neither keeps its size.
@@ -437,7 +439,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
     final Widget row = SizedBox(
       height: KitCardType.bottomRowHeight,
       child: !widget.available
-          ? _Unavailable(id: id)
+          ? _Unavailable(id: id, compact: _compact)
           : line != null
           ? _Stepper(
               id: id,
@@ -505,23 +507,30 @@ class _Absorb extends StatelessWidget {
 }
 
 class _Unavailable extends StatelessWidget {
-  const _Unavailable({required this.id});
+  const _Unavailable({required this.id, required this.compact});
 
   final String id;
 
+  /// A compact card's bottom row is not padded, so the label keeps clear of
+  /// the card edge itself.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          AppLocalizations.of(context).catalogUnavailable,
-          key: ValueKey<String>('unavailable-$id'),
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: KitColors.muted,
+    return Padding(
+      padding: EdgeInsets.only(left: compact ? KitCardType.padding : 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            AppLocalizations.of(context).catalogUnavailable,
+            key: ValueKey<String>('unavailable-$id'),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: KitColors.muted,
+            ),
           ),
         ),
       ),
@@ -634,16 +643,16 @@ class _CardButton extends StatelessWidget {
         tooltip: label,
         padding: EdgeInsets.zero,
         onPressed: onTap,
-        icon: DecoratedBox(
+        // An [Ink] face, so the button's press highlight is painted over it.
+        icon: Ink(
           key: faceKey,
+          width: side,
+          height: side,
           decoration: BoxDecoration(
             color: onTap == null ? KitColors.primarySoft : KitColors.primary,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: SizedBox.square(
-            dimension: side,
-            child: Icon(icon, size: iconSize, color: Colors.white),
-          ),
+          child: Icon(icon, size: iconSize, color: Colors.white),
         ),
       ),
     );

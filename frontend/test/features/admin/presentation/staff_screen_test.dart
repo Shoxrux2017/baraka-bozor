@@ -31,6 +31,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../support/app_harness.dart';
+import '../../../support/drawn_size.dart';
 import '../../../support/fake_admin_staff_repository.dart';
 import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_operations_repository.dart';
@@ -768,6 +769,7 @@ void main() {
     final Rect button = tester.getRect(byKey('new-staff'));
     // Drawn 40 high, tapped from 48 (DL-117).
     expect(button.height, 48);
+    expect(drawnSize(tester, byKey('new-staff')).height, 40);
     expect(button.center.dx, greaterThan(tester.getCenter(title).dx));
     expect(tester.getRect(header).right - button.right, lessThan(1));
     expect(
