@@ -101,6 +101,24 @@ void main() {
     expect(find.byKey(const Key('b')), findsNothing);
   });
 
+  testWidgets('a fold fades out in 200 ms while the height is still going', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(<String>['a', 'b']));
+    await tester.pumpWidget(_app(<String>['a']));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    final Opacity fade = tester.widget<Opacity>(
+      find
+          .ancestor(
+            of: find.byKey(const Key('b')),
+            matching: find.byType(Opacity),
+          )
+          .first,
+    );
+    expect(fade.opacity, closeTo(0, 0.001));
+    expect(_fold(tester, 'b'), greaterThan(0));
+  });
   testWidgets('an item keeps its state while a neighbour folds', (
     tester,
   ) async {

@@ -3,9 +3,18 @@ import 'package:baraka_bozor/core/widgets/undo_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Future<void> _open(WidgetTester tester, VoidCallback onUndo) async {
+Future<void> _open(
+  WidgetTester tester,
+  VoidCallback onUndo, {
+  bool screenReader = false,
+}) async {
   await tester.pumpWidget(
     MaterialApp(
+      builder: (BuildContext context, Widget? child) => MediaQuery(
+        data: MediaQuery.of(context)
+            .copyWith(accessibleNavigation: screenReader),
+        child: child!,
+      ),
       home: Scaffold(
         body: Builder(
           builder: (BuildContext context) => TextButton(
@@ -38,6 +47,18 @@ void main() {
     expect(find.text('Undo'), findsNothing);
   });
 
+  testWidgets('with a screen reader the bar stays until its action', (
+    tester,
+  ) async {
+    int undone = 0;
+    await _open(tester, () => undone++, screenReader: true);
+    await tester.pump(const Duration(seconds: 10));
+    expect(find.text('Undo'), findsOneWidget);
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(undone, 1);
+    expect(find.text('Undo'), findsNothing);
+  });
   testWidgets('a tap runs onUndo once and closes the bar', (tester) async {
     int undone = 0;
     await _open(tester, () => undone++);

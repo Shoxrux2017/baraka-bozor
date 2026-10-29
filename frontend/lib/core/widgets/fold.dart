@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 const Cubic _foldCurve = Cubic(0.2, 0.8, 0.2, 1);
@@ -31,6 +33,10 @@ class _FoldState extends State<Fold> with SingleTickerProviderStateMixin {
   );
   bool _started = false;
 
+  /// The last move was a fold; the controller runs linearly and the curves
+  /// are applied when building.
+  bool _folding = false;
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +68,7 @@ class _FoldState extends State<Fold> with SingleTickerProviderStateMixin {
   bool get _reduced => MediaQuery.disableAnimationsOf(context);
 
   void _move({required bool forward}) {
+    _folding = !forward;
     if (_reduced) {
       _controller.value = forward ? 1 : 0;
       if (!forward) {
@@ -73,13 +80,13 @@ class _FoldState extends State<Fold> with SingleTickerProviderStateMixin {
       _controller.animateTo(
         1,
         duration: const Duration(milliseconds: 300),
-        curve: _foldCurve,
+        curve: Curves.linear,
       );
     } else {
       _controller.animateBack(
         0,
         duration: const Duration(milliseconds: 260),
-        curve: _foldCurve,
+        curve: Curves.linear,
       );
     }
   }
@@ -115,10 +122,16 @@ class _FoldState extends State<Fold> with SingleTickerProviderStateMixin {
       animation: _controller,
       child: widget.child,
       builder: (BuildContext context, Widget? child) {
-        final double size = _controller.value;
-        final double opacity = Curves.easeOut.transform(
-          (size * 1.3).clamp(0.0, 1.0),
-        );
+        final double v = _controller.value;
+        final double size;
+        final double opacity;
+        if (_folding) {
+          final double e = 1 - v;
+          size = 1 - _foldCurve.transform(e);
+          opacity = 1 - Curves.easeOut.transform(math.min(1.0, e * 260 / 200));
+        } else {
+          size = opacity = _foldCurve.transform(v);
+        }
         return ClipRect(
           child: Align(
             alignment: Alignment.topCenter,
