@@ -1,25 +1,27 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/catalog/catalog_values.dart';
+import '../../../core/accessibility/announce.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
-import '../../../core/localization/failure_text.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
-import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
-import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../cart/application/card_quantity.dart';
 import '../../cart/application/cart_controllers.dart';
+import '../../cart/application/cart_quantity_queue.dart';
 import '../../cart/domain/cart.dart';
+import '../../cart/presentation/cart_feedback.dart';
 import '../../favorites/application/favorites_controllers.dart';
 import '../domain/catalog.dart';
 import 'catalog_paths.dart';
@@ -99,11 +101,84 @@ class KitProductCard extends ConsumerStatefulWidget {
   ConsumerState<KitProductCard> createState() => _KitProductCardState();
 }
 
-class _KitProductCardState extends ConsumerState<KitProductCard> {
-  // One change at a time per card: a second tap while one is on its way is
-  // ignored, so a double tap never sends two requests.
+class _KitProductCardState extends ConsumerState<KitProductCard>
+    with SingleTickerProviderStateMixin {
+  // One heart change at a time per card: a second tap while one is on its
+  // way is ignored, so a double tap never sends two requests.
   bool _heartBusy = false;
-  bool _cartBusy = false;
+
+  /// How far the stepper has grown out of the "+" square: 0 is the square,
+  /// 1 the whole row. It grows in 260 ms and shrinks back in 220 ms
+  /// (`DL-119`).
+  late final AnimationController _reveal;
+  late final Animation<double> _revealCurve;
+
+  /// Whether the stepper, not the "+" row, is in the tree; it stays until the
+  /// shrink ends.
+  bool _stepperShown = false;
+
+  /// The last quantity the card showed, kept while the stepper shrinks.
+  String? _lastShown;
+
+  @override
+  void initState() {
+    super.initState();
+    _reveal =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 260),
+          reverseDuration: const Duration(milliseconds: 220),
+        )..addStatusListener((AnimationStatus status) {
+          if (status == AnimationStatus.dismissed && _stepperShown) {
+            setState(() => _stepperShown = false);
+          }
+        });
+    _revealCurve = CurvedAnimation(
+      parent: _reveal,
+      curve: const Cubic(0.2, 0.8, 0.2, 1),
+      reverseCurve: const Cubic(0.4, 0, 0.2, 1),
+    );
+    final CartLine? line = _lineOfCart();
+    if (line != null) {
+      _stepperShown = true;
+      _reveal.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _reveal.dispose();
+    super.dispose();
+  }
+
+  CartLine? _lineOfCart() => ref
+      .read(currentCartProvider)
+      .value
+      ?.lines
+      .where((CartLine l) => l.productId == widget.product.id)
+      .firstOrNull;
+
+  /// Moves the stepper toward [wanted]: it grows when there is a quantity to
+  /// show and shrinks back when there is none. With reduced motion it is
+  /// there or not at once.
+  void _followQuantity({required bool wanted, required bool reduced}) {
+    if (reduced) {
+      _stepperShown = wanted;
+      _reveal.stop();
+      return;
+    }
+    if (wanted) {
+      _stepperShown = true;
+      if (_reveal.status != AnimationStatus.forward &&
+          _reveal.status != AnimationStatus.completed) {
+        _reveal.forward();
+      }
+    } else if (_stepperShown &&
+        _reveal.status != AnimationStatus.reverse &&
+        _reveal.status != AnimationStatus.dismissed) {
+      _reveal.reverse();
+    }
+  }
 
   bool get _compact => widget.size == KitCardSize.compact;
 
@@ -136,81 +211,58 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
     }
   }
 
-  /// Runs one cart change of this card; a failure other than "already in the
-  /// cart" — which the refreshed cart answers by showing the stepper — is
-  /// said in a snackbar.
-  Future<void> _change(
-    Future<Cart?> Function() change,
-    MutationState Function() outcome,
-  ) async {
-    if (_cartBusy) {
-      return;
-    }
+  /// The quantity and its unit as a card says it.
+  String _quantityText(AppLocalizations l10n, String quantity) =>
+      '${QuantityRules.display(quantity)} '
+      '${CatalogLabels.unit(l10n, widget.product.unitCode)}';
+
+  /// The first "+": the quantity shows at once and the card says so by a
+  /// light haptic and an announcement (`DL-119`).
+  Future<void> _add() async {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    setState(() => _cartBusy = true);
-    final Cart? answer = await change();
-    if (!mounted) {
-      return;
-    }
-    setState(() => _cartBusy = false);
-    if (answer != null) {
-      return;
-    }
-    final ApiFailure? failure = outcome().failure;
-    if (failure == null ||
-        (failure is ApiRefusal && failure.code == 'cart_item_already_exists')) {
-      return;
-    }
-    final String? text = failureText(l10n, failure);
-    if (text != null) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(text)));
-    }
+    final String name = widget.product.name(interfaceLanguage(context));
+    final Future<ApiFailure?> answer = ref
+        .read(cartQuantityQueueProvider.notifier)
+        .want(widget.product.id, '1');
+    unawaited(HapticFeedback.lightImpact());
+    announce(context, l10n.cartCardAdded(name, _quantityText(l10n, '1')));
+    showCartFailure(messenger, l10n, await answer);
   }
 
-  Future<void> _add() {
-    // Taken before the wait: the card may show another product by then.
-    final String productId = widget.product.id;
-    return _change(
-      () => ref
-          .read(addToCartProvider(productId).notifier)
-          .add(
-            NewCartLine(
-              productId: productId,
-              quantity: '1',
-              customerNote: null,
-              substitutionPolicy: SubstitutionPolicy.allowSimilar,
-            ),
-          ),
-      () => ref.read(addToCartProvider(productId)),
-    );
-  }
-
-  Future<void> _step(CartLine line, {required bool up}) {
+  /// A step from the quantity the card shows; quick taps become one change
+  /// in the queue. At the smallest quantity the minus removes the line.
+  Future<void> _step(CartLine? line, String shown, {required bool up}) async {
     final UnitCode unit = widget.product.unitCode;
     final String? quantity = up
-        ? CardQuantity.next(unit, line.quantity)
-        : CardQuantity.previous(unit, line.quantity);
-    if (quantity == null) {
-      return _change(
-        () => ref.read(cartLineProvider(line.id).notifier).remove(),
-        () => ref.read(cartLineProvider(line.id)),
-      );
-    }
-    final CartLinePatch patch = CartLinePatch.between(
-      line,
-      quantity: quantity,
-      customerNote: line.customerNote,
-      substitutionPolicy: line.substitutionPolicy,
+        ? CardQuantity.next(unit, shown)
+        : CardQuantity.previous(unit, shown);
+    final CartQuantityQueue queue = ref.read(
+      cartQuantityQueueProvider.notifier,
     );
-    if (patch.isEmpty) {
-      return Future<void>.value();
+    if (quantity != null) {
+      final AppLocalizations l10n = AppLocalizations.of(context);
+      final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+      showCartFailure(
+        messenger,
+        l10n,
+        await queue.want(widget.product.id, quantity),
+      );
+      return;
     }
-    return _change(
-      () => ref.read(cartLineProvider(line.id).notifier).change(patch),
-      () => ref.read(cartLineProvider(line.id)),
+    if (line == null) {
+      // The add is still on its way: nothing to put back yet.
+      final AppLocalizations l10n = AppLocalizations.of(context);
+      final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+      showCartFailure(messenger, l10n, await queue.remove(widget.product.id));
+      return;
+    }
+    await removeCartLine(
+      context,
+      ref,
+      line: line,
+      quantity: shown,
+      name: widget.product.name(interfaceLanguage(context)),
     );
   }
 
@@ -227,6 +279,16 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
         ?.lines
         .where((CartLine l) => l.productId == id)
         .firstOrNull;
+    final String? shown = shownCartQuantity(
+      ref.watch(cartQuantityQueueProvider),
+      id,
+      line,
+    );
+    _lastShown = shown ?? _lastShown;
+    _followQuantity(
+      wanted: shown != null,
+      reduced: MediaQuery.disableAnimationsOf(context),
+    );
 
     final double imageHeight = widget.imageHeight ?? (_compact ? 84.0 : 112.0);
     final KitCardType type = KitCardType.of(widget.size);
@@ -348,7 +410,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                           ),
                           const SizedBox(height: KitCardType.gapAfterPrice),
                           if (constraints.hasTightHeight) const Spacer(),
-                          _bottomRow(l10n, line, unitSize),
+                          _bottomRow(l10n, line, shown, unitSize),
                         ],
                       ),
                 ),
@@ -431,28 +493,77 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
   /// sold". Taps on it never open the product. A regular card pads it like the
   /// rest; a compact card lets it span the card, so that each 44 square holds
   /// its 32 face 6 from the edge (`DL-117`) and lies inside the layout.
-  Widget _bottomRow(AppLocalizations l10n, CartLine? line, double unitSize) {
+  Widget _bottomRow(
+    AppLocalizations l10n,
+    CartLine? line,
+    String? shown,
+    double unitSize,
+  ) {
     final CatalogProduct product = widget.product;
     final String id = product.id;
     final double side = KitCardType.buttonSide(widget.size);
     final double iconSize = _compact ? 20 : 22;
+    final bool reduced = MediaQuery.disableAnimationsOf(context);
+    // While the stepper shrinks it keeps the last quantity it showed.
+    final String? quantity = shown ?? _lastShown;
     final Widget row = SizedBox(
       height: KitCardType.bottomRowHeight,
       child: !widget.available
           ? _Unavailable(id: id, compact: _compact)
-          : line != null
-          ? _Stepper(
-              id: id,
-              side: side,
-              iconSize: iconSize,
-              quantity:
-                  '${QuantityRules.display(line.quantity)} '
-                  '${CatalogLabels.unit(l10n, product.unitCode)}',
-              busy: _cartBusy,
-              minusLabel: l10n.cartStepMinus,
-              plusLabel: l10n.cartStepPlus,
-              onMinus: () => _step(line, up: false),
-              onPlus: () => _step(line, up: true),
+          : _stepperShown
+          ? LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final double full = constraints.maxWidth;
+                return AnimatedBuilder(
+                  animation: _revealCurve,
+                  builder: (BuildContext context, Widget? child) {
+                    final double t = reduced ? 1 : _revealCurve.value;
+                    return Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        key: ValueKey<String>('step-reveal-$id'),
+                        width:
+                            KitCardType.tapSide +
+                            (full - KitCardType.tapSide) * t,
+                        height: KitCardType.bottomRowHeight,
+                        child: ClipRect(
+                          child: OverflowBox(
+                            alignment: Alignment.centerRight,
+                            minWidth: full,
+                            maxWidth: full,
+                            child: child,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  child: _Stepper(
+                    id: id,
+                    side: side,
+                    iconSize: iconSize,
+                    quantity: quantity == null
+                        ? ''
+                        : _quantityText(l10n, quantity),
+                    isBin:
+                        quantity != null &&
+                        CardQuantity.previous(product.unitCode, quantity) ==
+                            null,
+                    minusLabel: l10n.cartStepMinus,
+                    binLabel: l10n.cartRemoveLine,
+                    plusLabel: l10n.cartStepPlus,
+                    onMinus: () {
+                      if (shown != null) {
+                        _step(line, shown, up: false);
+                      }
+                    },
+                    onPlus: () {
+                      if (shown != null) {
+                        _step(line, shown, up: true);
+                      }
+                    },
+                  ),
+                );
+              },
             )
           : Row(
               children: <Widget>[
@@ -481,7 +592,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                   iconSize: iconSize,
                   icon: Icons.add,
                   label: l10n.catalogAdd,
-                  onTap: _cartBusy ? null : _add,
+                  onTap: _add,
                 ),
               ],
             ),
@@ -544,8 +655,9 @@ class _Stepper extends StatelessWidget {
     required this.side,
     required this.iconSize,
     required this.quantity,
-    required this.busy,
+    required this.isBin,
     required this.minusLabel,
+    required this.binLabel,
     required this.plusLabel,
     required this.onMinus,
     required this.onPlus,
@@ -555,13 +667,22 @@ class _Stepper extends StatelessWidget {
   final double side;
   final double iconSize;
   final String quantity;
-  final bool busy;
+
+  /// Whether the minus is the red bin: the quantity is the smallest one.
+  final bool isBin;
   final String minusLabel;
+  final String binLabel;
   final String plusLabel;
   final VoidCallback onMinus;
   final VoidCallback onPlus;
 
-  Widget _button(Key key, IconData icon, String label, VoidCallback onTap) {
+  Widget _button(
+    Key key,
+    IconData icon,
+    String label,
+    VoidCallback onTap, {
+    bool bin = false,
+  }) {
     return _CardButton(
       buttonKey: key,
       faceKey: ValueKey<String>('face-${(key as ValueKey<String>).value}'),
@@ -569,7 +690,8 @@ class _Stepper extends StatelessWidget {
       iconSize: iconSize,
       icon: icon,
       label: label,
-      onTap: busy ? null : onTap,
+      bin: bin,
+      onTap: onTap,
     );
   }
 
@@ -577,12 +699,20 @@ class _Stepper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
-        _button(
-          ValueKey<String>('step-minus-$id'),
-          Icons.remove,
-          minusLabel,
-          onMinus,
-        ),
+        isBin
+            ? _button(
+                ValueKey<String>('step-minus-$id'),
+                Icons.delete_outline,
+                binLabel,
+                onMinus,
+                bin: true,
+              )
+            : _button(
+                ValueKey<String>('step-minus-$id'),
+                Icons.remove,
+                minusLabel,
+                onMinus,
+              ),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -614,7 +744,8 @@ class _Stepper extends StatelessWidget {
 
 /// A green button of the card: a face of [side] drawn at the centre of a 44
 /// square that takes the tap, so a compact card's 32 face has a 44 target
-/// (`DL-117`). Without [onTap] it is the soft, inactive green.
+/// (`DL-117`). A [bin] is the red outlined one that removes the line
+/// (`DL-119`).
 class _CardButton extends StatelessWidget {
   const _CardButton({
     required this.buttonKey,
@@ -624,6 +755,7 @@ class _CardButton extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.bin = false,
   });
 
   final Key buttonKey;
@@ -632,7 +764,8 @@ class _CardButton extends StatelessWidget {
   final double iconSize;
   final IconData icon;
   final String label;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
+  final bool bin;
 
   @override
   Widget build(BuildContext context) {
@@ -649,10 +782,17 @@ class _CardButton extends StatelessWidget {
           width: side,
           height: side,
           decoration: BoxDecoration(
-            color: onTap == null ? KitColors.primarySoft : KitColors.primary,
+            color: bin ? Colors.white : KitColors.primary,
             borderRadius: BorderRadius.circular(10),
+            border: bin
+                ? Border.all(color: KitColors.danger, width: 1.5)
+                : null,
           ),
-          child: Icon(icon, size: iconSize, color: Colors.white),
+          child: Icon(
+            icon,
+            size: iconSize,
+            color: bin ? KitColors.danger : Colors.white,
+          ),
         ),
       ),
     );

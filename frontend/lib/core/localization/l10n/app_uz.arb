@@ -2816,5 +2816,26 @@
       }
     }
   },
-  "undoAction": "Qaytarish"
+  "undoAction": "Qaytarish",
+  "cartLineRemoved": "{name} olib tashlandi",
+  "@cartLineRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cartCardAdded": "{name}: savatda {quantity}",
+  "@cartCardAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "cartRemoveLine": "Savatdan olib tashlash",
+  "cartNotSaved": "Aloqa yo'q — savat avvalgidek qoldi"
 }

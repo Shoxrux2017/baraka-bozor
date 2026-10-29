@@ -4256,4 +4256,20 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get undoAction => 'Qaytarish';
+
+  @override
+  String cartLineRemoved(String name) {
+    return '$name olib tashlandi';
+  }
+
+  @override
+  String cartCardAdded(String name, String quantity) {
+    return '$name: savatda $quantity';
+  }
+
+  @override
+  String get cartRemoveLine => 'Savatdan olib tashlash';
+
+  @override
+  String get cartNotSaved => 'Aloqa yo\'q — savat avvalgidek qoldi';
 }

@@ -4301,4 +4301,20 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get undoAction => 'Вернуть';
+
+  @override
+  String cartLineRemoved(String name) {
+    return '$name — убрано';
+  }
+
+  @override
+  String cartCardAdded(String name, String quantity) {
+    return '$name: $quantity в корзине';
+  }
+
+  @override
+  String get cartRemoveLine => 'Убрать из корзины';
+
+  @override
+  String get cartNotSaved => 'Нет связи — в корзине осталось как было';
 }
