@@ -177,7 +177,7 @@ const Map<int, TableColumnWidth> _columns = <int, TableColumnWidth>{
   0: FlexColumnWidth(3),
   1: FlexColumnWidth(1),
   2: FlexColumnWidth(2),
-  3: FixedColumnWidth(96),
+  3: FixedColumnWidth(104),
 };
 
 TextStyle _nameStyle(bool archived) => TextStyle(
@@ -392,7 +392,6 @@ class _CategoryActions extends ConsumerWidget {
           icon: Icons.edit_outlined,
           onTap: busy ? null : () => showCategoryForm(context, category),
         ),
-        const SizedBox(width: 8),
         PanelActionButton(
           buttonKey: ValueKey<String>(
             '${archived ? 'restore' : 'archive'}-${category.id}',

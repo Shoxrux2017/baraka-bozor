@@ -21,6 +21,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../support/app_harness.dart';
+import '../../../support/drawn_size.dart';
 import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_operations_repository.dart';
 import '../../../support/in_memory_stores.dart';
@@ -383,7 +384,9 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(tester.getSize(byKey('order-refresh')).height, 40);
+    // Drawn 40 high, tapped from 48 (DL-117).
+    expect(tester.getSize(byKey('order-refresh')).height, 48);
+    expect(drawnSize(tester, byKey('order-refresh')).height, 40);
 
     await tapAndSettle(tester, byKey('order-back'));
     expect(byKey('operations-board'), findsOneWidget);
@@ -469,7 +472,7 @@ void main() {
             find.text(OrderLabels.ratingReason(words, RatingReason.notFresh)),
           )
           .style!;
-      expect(reason.color, KitColors.dangerDark);
+      expect(reason.color, KitColors.danger);
       expect(find.text('Kartoshka eski edi'), findsOneWidget);
       expect(tester.getSize(byKey('rating-review')).height, 44);
 
@@ -705,4 +708,14 @@ void main() {
       },
     );
   }
+
+  testWidgets('the order page: every target meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await openOrder(tester);
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
 }

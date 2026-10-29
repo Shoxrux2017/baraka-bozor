@@ -175,7 +175,7 @@ class _Step extends StatelessWidget {
               fontWeight: ahead ? FontWeight.w500 : FontWeight.w600,
               color: switch (state) {
                 _StepState.ahead => KitColors.muted,
-                _StepState.cancelled => KitColors.dangerDark,
+                _StepState.cancelled => KitColors.danger,
                 _ => KitColors.ink,
               },
             ),

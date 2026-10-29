@@ -392,7 +392,7 @@ class CourierCard extends StatelessWidget {
               if (assignment.failedNote != null) assignment.failedNote!,
             ].join(': '),
             key: ValueKey<String>('courier-failure-${assignment.id}'),
-            color: KitColors.dangerDark,
+            color: KitColors.danger,
           ),
       ],
     );
@@ -546,7 +546,7 @@ class AssignmentActions extends ConsumerWidget {
         child: OutlinedButton(
           key: ValueKey<String>('reassign-$role'),
           style: kitOutlined(height: 40)
-              .copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+              .copyWith(tapTargetSize: MaterialTapTargetSize.padded),
           onPressed: busy ? null : pick,
           child: label(words.reassign, Icons.swap_horiz),
         ),

@@ -489,6 +489,21 @@ void main() {
       );
     });
 
+    testWidgets('a cart line fits a 320 px phone with text × 1.3', (
+      WidgetTester tester,
+    ) async {
+      cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+      await open(
+        tester,
+        at: '/customer/cart',
+        size: const Size(320, 640),
+        textScale: 1.3,
+      );
+
+      expect(find.byType(CartLineTile), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('a line is laid out as drawn: the sum and the stepper beside '
         'the picture', (WidgetTester tester) async {
       cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);

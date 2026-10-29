@@ -129,7 +129,7 @@ class OrderQuestionCard extends ConsumerWidget {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: KitColors.warning,
+                      color: KitColors.warningDark,
                     ),
                   ),
                 ),

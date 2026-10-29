@@ -91,9 +91,8 @@ class OrderDetailScreen extends ConsumerWidget {
                 if (labelled)
                   OutlinedButton.icon(
                     key: const ValueKey<String>('order-refresh'),
-                    style: kitOutlined(
-                      height: 40,
-                    ).copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    style: kitOutlined(height: 40)
+                        .copyWith(tapTargetSize: MaterialTapTargetSize.padded),
                     icon: const Icon(Icons.refresh, size: 20),
                     label: Text(l10n.boardRefresh),
                     onPressed: () =>
@@ -105,7 +104,7 @@ class OrderDetailScreen extends ConsumerWidget {
                     child: OutlinedButton(
                       key: const ValueKey<String>('order-refresh'),
                       style: kitOutlined(height: 40).copyWith(
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        tapTargetSize: MaterialTapTargetSize.padded,
                         minimumSize: const WidgetStatePropertyAll<Size>(
                           Size(40, 40),
                         ),
@@ -185,7 +184,7 @@ class _Header extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: KitColors.dangerDark,
+                color: KitColors.danger,
               ),
             ),
           ),

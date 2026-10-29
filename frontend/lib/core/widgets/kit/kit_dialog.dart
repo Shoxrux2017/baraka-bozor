@@ -206,7 +206,7 @@ class KitDialogBadge extends StatelessWidget {
       child: Icon(
         icon,
         size: 26,
-        color: danger ? KitColors.dangerDark : KitColors.primaryDark,
+        color: danger ? KitColors.danger : KitColors.primaryDark,
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../../../core/localization/order_labels.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/kit/kit_star.dart';
 import '../domain/customer_orders.dart';
 
 const List<BoxShadow> _cardShadow = <BoxShadow>[
@@ -78,11 +79,7 @@ class RateOrderCard extends StatelessWidget {
                       ),
                       child: const SizedBox.square(
                         dimension: 40,
-                        child: Icon(
-                          Icons.star_border,
-                          size: 26,
-                          color: KitColors.warning,
-                        ),
+                        child: Center(child: KitStar(filled: false, size: 26)),
                       ),
                     ),
                   ),
@@ -134,13 +131,7 @@ class RatedOrderCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 for (int star = 1; star <= 5; star++)
-                  Icon(
-                    star <= rating.stars ? Icons.star : Icons.star_border,
-                    size: 24,
-                    color: star <= rating.stars
-                        ? KitColors.warning
-                        : KitColors.line,
-                  ),
+                  KitStar(filled: star <= rating.stars, size: 24),
               ],
             ),
           ),

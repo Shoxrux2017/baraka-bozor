@@ -16,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../support/app_harness.dart';
+import '../../../support/drawn_size.dart';
 import '../../../support/fake_auth_repository.dart';
 import '../../../support/fake_operations_repository.dart';
 import '../../../support/in_memory_stores.dart';
@@ -163,7 +164,7 @@ void main() {
       for (final (String id, Color ground) in <(String, Color)>[
         ('0192f0a0-0000-7000-8000-500000000001', KitColors.line),
         ('0192f0a0-0000-7000-8000-500000000002', KitColors.primaryWash),
-        ('0192f0a0-0000-7000-8000-500000000003', KitColors.warningSoft),
+        ('0192f0a0-0000-7000-8000-500000000003', KitColors.warningWash),
         ('0192f0a0-0000-7000-8000-500000000004', KitColors.dangerWash),
       ]) {
         expect(tester.getSize(byKey('order-item-status-$id')).height, 22);
@@ -402,6 +403,11 @@ void main() {
       );
       expect(
         tester.getSize(byKey('remove-expired-$secondApproval')).height,
+        // Drawn 36 high, tapped from 48 (DL-117).
+        48,
+      );
+      expect(
+        drawnSize(tester, byKey('remove-expired-$secondApproval')).height,
         36,
       );
       expect(box(approvalId).color, Colors.white);
@@ -497,7 +503,9 @@ void main() {
         findsNothing,
       );
       expect(find.text(words.historyShowAll(13)), findsOneWidget);
-      expect(tester.getSize(byKey('history-fold')).height, 38);
+      // Drawn 38 high, tapped from 48 (DL-117).
+      expect(tester.getSize(byKey('history-fold')).height, 48);
+      expect(drawnSize(tester, byKey('history-fold')).height, 38);
       Color dot(String id) =>
           (decorationOf(tester, 'history-dot-$id').border! as Border).top.color;
       expect(dot('0192f0a0-0000-7000-8000-700000000012'), KitColors.danger);

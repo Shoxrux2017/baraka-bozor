@@ -93,7 +93,7 @@ class AccountStatusChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: blocked ? KitColors.dangerDark : KitColors.primaryDark,
+              color: blocked ? KitColors.danger : KitColors.primaryDark,
             ),
           ),
         ),

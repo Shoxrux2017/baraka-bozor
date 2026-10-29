@@ -1,10 +1,35 @@
 import 'package:baraka_bozor/core/theme/app_theme.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('buildAppTheme', () {
+    test('keeps standard density and padded targets on every platform '
+        '(DL-117)', () {
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      for (final TargetPlatform platform in <TargetPlatform>[
+        TargetPlatform.windows,
+        TargetPlatform.macOS,
+        TargetPlatform.linux,
+        TargetPlatform.android,
+      ]) {
+        debugDefaultTargetPlatformOverride = platform;
+        final ThemeData theme = buildAppTheme(Brightness.light);
+        expect(
+          theme.visualDensity,
+          VisualDensity.standard,
+          reason: '$platform',
+        );
+        expect(
+          theme.materialTapTargetSize,
+          MaterialTapTargetSize.padded,
+          reason: '$platform',
+        );
+      }
+    });
+
     test('uses Material 3, as docs/07-architecture.md section 2 requires', () {
       expect(buildAppTheme(Brightness.light).useMaterial3, isTrue);
     });
@@ -39,7 +64,7 @@ void main() {
 
     test('takes its seed from the kit primary', () {
       expect(appSeedColor, KitColors.primary);
-      expect(KitColors.primary, const Color(0xFF5AC268));
+      expect(KitColors.primary, const Color(0xFF3A9E46));
     });
 
     test('pins the kit primary in both schemes', () {
@@ -68,6 +93,59 @@ void main() {
       expect(
         (input.focusedBorder! as OutlineInputBorder).borderSide,
         const BorderSide(color: KitColors.primary, width: 1.5),
+      );
+    });
+
+    test('draws text buttons in the text green', () {
+      final ThemeData theme = buildAppTheme(Brightness.light);
+      expect(
+        theme.textButtonTheme.style!.foregroundColor!.resolve(<WidgetState>{}),
+        KitColors.primaryDark,
+      );
+      expect(
+        theme.outlinedButtonTheme.style!.foregroundColor!.resolve(
+          <WidgetState>{},
+        ),
+        KitColors.primaryDark,
+      );
+    });
+
+    test('draws a field label in a text colour, never the fill green '
+        '(DL-117)', () {
+      final input = buildAppTheme(Brightness.light).inputDecorationTheme;
+      TextStyle? label(Set<WidgetState> states) =>
+          WidgetStateProperty.resolveAs<TextStyle?>(
+            input.floatingLabelStyle,
+            states,
+          );
+      expect(
+        label(<WidgetState>{WidgetState.focused})!.color,
+        KitColors.primaryDark,
+      );
+      expect(label(<WidgetState>{WidgetState.error})!.color, KitColors.danger);
+      expect(
+        label(<WidgetState>{WidgetState.focused, WidgetState.error})!.color,
+        KitColors.danger,
+      );
+      expect(label(<WidgetState>{})!.color, KitColors.muted);
+    });
+
+    test('draws the date picker today number in the text green (DL-117)', () {
+      final DatePickerThemeData picker = buildAppTheme(Brightness.light)
+          .datePickerTheme;
+      expect(
+        picker.todayForegroundColor!.resolve(<WidgetState>{}),
+        KitColors.primaryDark,
+      );
+      expect(
+        picker.todayForegroundColor!.resolve(<WidgetState>{
+          WidgetState.selected,
+        }),
+        Colors.white,
+      );
+      expect(
+        picker.dayBackgroundColor!.resolve(<WidgetState>{WidgetState.selected}),
+        KitColors.primary,
       );
     });
 

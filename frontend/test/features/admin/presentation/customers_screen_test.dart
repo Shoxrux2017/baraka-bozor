@@ -322,10 +322,7 @@ void main() {
     final ButtonStyle? card = tester
         .widget<OutlinedButton>(byKey('customer-erase-$idA'))
         .style;
-    expect(
-      card?.foregroundColor?.resolve(<WidgetState>{}),
-      KitColors.dangerDark,
-    );
+    expect(card?.foregroundColor?.resolve(<WidgetState>{}), KitColors.danger);
     expect(card?.side?.resolve(<WidgetState>{})?.color, KitColors.danger);
     expect(
       find.descendant(

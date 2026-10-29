@@ -194,11 +194,118 @@ void main() {
   ) async {
     await show(tester, tomato, size: KitCardSize.compact);
     final Finder plus = byKey('add-0192f0a0-0000-7000-8000-0000000000a1');
-    expect(tester.getSize(plus).width, 32);
+    expect(
+      tester
+          .getSize(byKey('add-face-0192f0a0-0000-7000-8000-0000000000a1'))
+          .width,
+      32,
+    );
+    expect(tester.getSize(plus).width, 44);
     await tester.tapAt(tester.getCenter(plus) + const Offset(-18, 0));
     await tester.pumpAndSettle();
     expect(cart.added, hasLength(1));
     expect(opened, isNull);
+  });
+
+  testWidgets('a regular card draws its add button and stepper 44', (
+    WidgetTester tester,
+  ) async {
+    await show(tester, tomato);
+    expect(
+      tester.getSize(byKey('add-face-0192f0a0-0000-7000-8000-0000000000a1')),
+      const Size(44, 44),
+    );
+    expect(
+      tester.getSize(byKey('add-0192f0a0-0000-7000-8000-0000000000a1')),
+      const Size(44, 44),
+    );
+
+    cart = FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[
+        lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
+      ]),
+    );
+    await show(tester, tomato);
+    for (final String key in <String>['step-minus', 'step-plus']) {
+      expect(
+        tester.getSize(byKey('face-$key-0192f0a0-0000-7000-8000-0000000000a1')),
+        const Size(44, 44),
+        reason: key,
+      );
+    }
+  });
+
+  testWidgets('a compact card draws 32 inside a 44 hit square', (
+    WidgetTester tester,
+  ) async {
+    await show(tester, tomato, size: KitCardSize.compact);
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    expect(tester.getSize(byKey('add-face-$id')), const Size(32, 32));
+    expect(tester.getSize(byKey('add-$id')), const Size(44, 44));
+    expect(
+      tester.getCenter(byKey('add-face-$id')),
+      tester.getCenter(byKey('add-$id')),
+    );
+
+    cart = FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[
+        lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
+      ]),
+    );
+    await show(tester, tomato, size: KitCardSize.compact);
+    final Rect card = tester.getRect(byKey('product-card-$id'));
+    for (final String key in <String>['step-minus', 'step-plus']) {
+      expect(tester.getSize(byKey('face-$key-$id')), const Size(32, 32));
+      expect(tester.getSize(byKey('$key-$id')), const Size(44, 44));
+    }
+    expect(
+      tester.getRect(byKey('face-step-minus-$id')).left - card.left,
+      6,
+      reason: 'the face sits 6 from the card edge, as drawn',
+    );
+    expect(card.right - tester.getRect(byKey('face-step-plus-$id')).right, 6);
+  });
+
+  testWidgets("a tap 3 px inside a compact card's edge steps, not opens", (
+    WidgetTester tester,
+  ) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    cart = FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[
+        lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
+      ]),
+    );
+    await show(tester, tomato, size: KitCardSize.compact);
+    cart.answer = cartOf(<Map<String, Object?>>[
+      lineOf(tomato, '0.5', '0192f0a0-0000-7000-8000-0000000000b1'),
+    ]);
+    final Rect card = tester.getRect(byKey('product-card-$id'));
+    final Rect minus = tester.getRect(byKey('step-minus-$id'));
+    await tester.tapAt(Offset(card.left + 3, minus.center.dy));
+    await tester.pumpAndSettle();
+
+    expect(cart.patches.single.quantity, '0.5');
+    expect(opened, isNull);
+  });
+
+  group('every card target meets iOSTapTargetGuideline', () {
+    for (final KitCardSize size in KitCardSize.values) {
+      for (final bool inCart in <bool>[false, true]) {
+        testWidgets('$size, inCart=$inCart', (WidgetTester tester) async {
+          final SemanticsHandle handle = tester.ensureSemantics();
+          if (inCart) {
+            cart = FakeCartRepository(
+              cart: cartOf(<Map<String, Object?>>[
+                lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
+              ]),
+            );
+          }
+          await show(tester, tomato, size: size);
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+          handle.dispose();
+        });
+      }
+    }
   });
 
   testWidgets('shows the Uzbek name and unit line in Uzbek', (
@@ -533,6 +640,51 @@ void main() {
     );
     expect(find.text('Нет в продаже'), findsOneWidget);
     expect(byKey('add-0192f0a0-0000-7000-8000-0000000000a1'), findsNothing);
+  });
+
+  testWidgets('the not sold label of a compact card keeps 8 off the edge', (
+    WidgetTester tester,
+  ) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    await show(tester, tomato, size: KitCardSize.compact, available: false);
+    final Rect card = tester.getRect(byKey('product-card-$id'));
+    expect(tester.getTopLeft(byKey('unavailable-$id')).dx - card.left, 8);
+
+    await show(tester, tomato, available: false);
+    final Rect regular = tester.getRect(byKey('product-card-$id'));
+    expect(tester.getTopLeft(byKey('unavailable-$id')).dx - regular.left, 8);
+  });
+
+  testWidgets('the heart glyph stays 19 from the top right corner of the '
+      'card (DL-117)', (WidgetTester tester) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    for (final KitCardSize size in KitCardSize.values) {
+      await show(tester, tomato, size: size);
+      final Rect card = tester.getRect(byKey('product-card-$id'));
+      final Rect glyph = tester.getRect(
+        find.descendant(of: byKey('heart-$id'), matching: find.byType(Icon)),
+      );
+      expect(glyph.size, const Size(18, 18), reason: '$size');
+      expect(card.right - glyph.right, 19, reason: '$size');
+      expect(glyph.top - card.top, 19, reason: '$size');
+    }
+  });
+
+  testWidgets('the face of a card button is ink, so a press shows on it', (
+    WidgetTester tester,
+  ) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    await show(tester, tomato);
+    expect(tester.widget(byKey('add-face-$id')), isA<Ink>());
+
+    cart = FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[
+        lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
+      ]),
+    );
+    await show(tester, tomato);
+    expect(tester.widget(byKey('face-step-minus-$id')), isA<Ink>());
+    expect(tester.widget(byKey('face-step-plus-$id')), isA<Ink>());
   });
 
   testWidgets('tapping the card opens the product', (

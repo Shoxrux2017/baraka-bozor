@@ -19,6 +19,7 @@ import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../../core/widgets/kit/kit_dialog.dart';
 import '../../../core/widgets/kit/kit_fields.dart';
+import '../../../core/widgets/kit/kit_star.dart';
 import '../../admin/presentation/catalog_form_rules.dart';
 import '../../auth/domain/app_user.dart';
 import '../application/board_controllers.dart';
@@ -65,9 +66,9 @@ class ApprovalTile extends ConsumerWidget {
         ? KitColors.warning
         : KitColors.line;
     final (Color tagGround, Color tagText) = switch (approval.status) {
-      ApprovalStatus.pending => (KitColors.warningSoft, KitColors.warningDark),
+      ApprovalStatus.pending => (KitColors.warningWash, KitColors.warningDark),
       ApprovalStatus.approved => (KitColors.primaryWash, KitColors.primaryDark),
-      ApprovalStatus.expired => (KitColors.dangerWash, KitColors.dangerDark),
+      ApprovalStatus.expired => (KitColors.dangerWash, KitColors.danger),
       ApprovalStatus.rejected ||
       ApprovalStatus.cancelled => (KitColors.line, KitColors.ink2),
     };
@@ -220,7 +221,7 @@ class ApprovalTile extends ConsumerWidget {
                   style: kitFilled(
                     color: KitColors.danger,
                     height: 36,
-                  ).copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                  ).copyWith(tapTargetSize: MaterialTapTargetSize.padded),
                   icon: const Icon(
                     Icons.remove_shopping_cart_outlined,
                     size: 18,
@@ -377,7 +378,7 @@ class CancellationRequestTile extends ConsumerWidget {
               first: OutlinedButton(
                 key: ValueKey<String>('reject-request-${request.id}'),
                 style: kitOutlined(height: 40)
-                    .copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    .copyWith(tapTargetSize: MaterialTapTargetSize.padded),
                 onPressed: reloading
                     ? null
                     : () => decide(CancellationDecision.reject),
@@ -388,7 +389,7 @@ class CancellationRequestTile extends ConsumerWidget {
                 style: kitFilled(
                   color: KitColors.danger,
                   height: 40,
-                ).copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                ).copyWith(tapTargetSize: MaterialTapTargetSize.padded),
                 onPressed: reloading
                     ? null
                     : () => decide(CancellationDecision.approve),
@@ -445,7 +446,7 @@ class FailedDeliveryCancel extends ConsumerWidget {
 
     return OutlinedButton.icon(
       key: const ValueKey<String>('cancel-failed-delivery'),
-      style: kitOutlined(foreground: KitColors.dangerDark, height: 44).copyWith(
+      style: kitOutlined(foreground: KitColors.danger, height: 44).copyWith(
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         side: const WidgetStatePropertyAll<BorderSide>(
           BorderSide(color: KitColors.danger),
@@ -499,7 +500,7 @@ class PriceCorrectionButton extends ConsumerWidget {
           foregroundColor: KitColors.primaryDark,
           padding: const EdgeInsets.symmetric(vertical: 4),
           minimumSize: const Size(0, 28),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          tapTargetSize: MaterialTapTargetSize.padded,
           textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         ),
         icon: const Icon(Icons.edit, size: 14),
@@ -1066,13 +1067,7 @@ class RatingDetails extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     for (int star = 1; star <= 5; star++)
-                      Icon(
-                        Icons.star,
-                        size: 22,
-                        color: star <= rating.stars
-                            ? KitColors.star
-                            : KitColors.line,
-                      ),
+                      KitStar(filled: star <= rating.stars, size: 22),
                   ],
                 ),
               ),
@@ -1113,7 +1108,7 @@ class RatingDetails extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: KitColors.dangerDark,
+                          color: KitColors.danger,
                         ),
                       ),
                     ),

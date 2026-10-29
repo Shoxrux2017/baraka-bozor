@@ -25,7 +25,7 @@ class OrderStatusChip extends StatelessWidget {
     final (Color ground, Color text) = switch (status) {
       OrderStatus.newOrder => (KitColors.primary, Colors.white),
       OrderStatus.completed => (KitColors.field, KitColors.ink2),
-      OrderStatus.cancelled => (KitColors.dangerWash, KitColors.dangerDark),
+      OrderStatus.cancelled => (KitColors.dangerWash, KitColors.danger),
       OrderStatus.finalPaymentPending => (
         KitColors.warningWash,
         KitColors.warningDark,

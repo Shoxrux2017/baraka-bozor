@@ -17,6 +17,7 @@ import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/operations/data/operations_api.dart';
 import 'package:baraka_bozor/features/operations/domain/board.dart';
 import 'package:baraka_bozor/features/operations/presentation/board_widgets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -817,7 +818,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(lastQuery().search, '1001');
     expect(lastQuery().page, 1);
-    expect(tester.getSize(byKey('board-search')).height, 40);
+    expect(tester.getSize(byKey('board-search')).height, 44);
 
     await tapAndSettle(tester, byKey('board-clear-filters'));
     expect(lastQuery(), const BoardQuery());
@@ -1475,7 +1476,7 @@ void main() {
     expect(tone(OrderStatus.completed), (KitColors.field, KitColors.ink2));
     expect(tone(OrderStatus.cancelled), (
       KitColors.dangerWash,
-      KitColors.dangerDark,
+      KitColors.danger,
     ));
     expect(tone(OrderStatus.finalPaymentPending), (
       KitColors.warningWash,
@@ -1644,6 +1645,30 @@ void main() {
       );
     },
   );
+
+  testWidgets('every target meets iOSTapTargetGuideline on a desktop '
+      'platform (DL-117)', (WidgetTester tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    final SemanticsHandle handle = tester.ensureSemantics();
+    try {
+      await open(tester);
+
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    } finally {
+      handle.dispose();
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets('every target meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester);
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
 }
 
 String _courierDelayed(AppLocalizations l10n) => l10n.attentionCourierDelayed;

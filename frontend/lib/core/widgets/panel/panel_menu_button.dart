@@ -13,7 +13,7 @@ ButtonStyle panelFilterStyle({required bool active}) {
     foreground: active ? KitColors.primaryDark : KitColors.ink,
     height: 40,
   ).copyWith(
-    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    tapTargetSize: MaterialTapTargetSize.padded,
     textStyle: const WidgetStatePropertyAll<TextStyle>(
       TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
     ),

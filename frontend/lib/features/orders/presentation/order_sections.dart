@@ -390,7 +390,7 @@ class OrderLineRow extends StatelessWidget {
       if (line.question != null) {
         tag = _Tag(
           text: l10n.lineTagWaiting,
-          color: KitColors.warning,
+          color: KitColors.warningDark,
           icon: Icons.help,
         );
       }
@@ -837,7 +837,7 @@ class CourierCard extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: KitColors.primary,
+                          color: KitColors.primaryDark,
                         ),
                       ),
               ),
@@ -896,7 +896,7 @@ class CancellationRequestCard extends StatelessWidget {
     final bool pending = request.status == CancellationRequestStatus.pending;
     final (Color ink, Color wash) = switch (request.status) {
       CancellationRequestStatus.pending => (
-        KitColors.warning,
+        KitColors.warningDark,
         KitColors.warningWash,
       ),
       CancellationRequestStatus.approved => (

@@ -93,13 +93,10 @@ void main() {
   }
 
   /// Whether the star at [key] is drawn filled.
-  bool filled(WidgetTester tester, String key) =>
-      tester
-          .widget<Icon>(
-            find.descendant(of: byKey(key), matching: find.byType(Icon)),
-          )
-          .icon ==
-      Icons.star;
+  bool filled(WidgetTester tester, String key) => find
+      .descendant(of: byKey(key), matching: find.byIcon(Icons.star))
+      .evaluate()
+      .isNotEmpty;
 
   /// The one rating sent: the stars, the reason codes, the comment.
   void expectSent(int stars, List<String> reasons, String? comment) {

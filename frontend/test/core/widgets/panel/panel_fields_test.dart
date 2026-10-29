@@ -52,7 +52,7 @@ void main() {
     },
   );
 
-  testWidgets('the panel search is a filled 40-high field with a search icon', (
+  testWidgets('the panel search is a filled 44-high field with a search icon', (
     WidgetTester tester,
   ) async {
     final InputDecoration d = panelSearchDecoration(
@@ -62,7 +62,7 @@ void main() {
 
     expect(d.hintText, 'Search');
     expect(d.fillColor, KitColors.field);
-    expect(d.constraints, const BoxConstraints(minHeight: 40));
+    expect(d.constraints, const BoxConstraints(minHeight: 44));
     expect(d.suffixIcon, isA<Icon>());
     expect(d.prefixIcon, isA<Icon>());
     expect(

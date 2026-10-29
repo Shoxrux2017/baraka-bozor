@@ -30,6 +30,12 @@ ThemeData buildAppTheme(Brightness brightness) {
   );
   return ThemeData(
     useMaterial3: true,
+
+    // Standard density on every platform, as phones have it (DL-117).
+    visualDensity: VisualDensity.standard,
+    // Padded tap targets on every platform, so desktop browsers get 48
+    // too (DL-117).
+    materialTapTargetSize: MaterialTapTargetSize.padded,
     fontFamily: appFontFamily,
     colorScheme: ColorScheme.fromSeed(
       seedColor: appSeedColor,
@@ -49,12 +55,40 @@ ThemeData buildAppTheme(Brightness brightness) {
         textStyle: buttonText,
       ),
     ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(foregroundColor: KitColors.primaryDark),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(foregroundColor: KitColors.primaryDark),
+    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: KitColors.field,
       border: border(KitColors.line, 1),
       enabledBorder: border(KitColors.line, 1),
       focusedBorder: border(KitColors.primary, 1.5),
+      // Label text is never the fill green (DL-117).
+      floatingLabelStyle: WidgetStateTextStyle.resolveWith(
+        (Set<WidgetState> states) => TextStyle(
+          color: states.contains(WidgetState.error)
+              ? KitColors.danger
+              : states.contains(WidgetState.focused)
+              ? KitColors.primaryDark
+              : KitColors.muted,
+        ),
+      ),
+    ),
+    // Today's number is text, so it takes the text green (DL-117).
+    datePickerTheme: DatePickerThemeData(
+      todayForegroundColor: WidgetStateProperty.resolveWith(
+        (Set<WidgetState> states) => states.contains(WidgetState.selected)
+            ? Colors.white
+            : KitColors.primaryDark,
+      ),
+      dayBackgroundColor: WidgetStateProperty.resolveWith(
+        (Set<WidgetState> states) =>
+            states.contains(WidgetState.selected) ? KitColors.primary : null,
+      ),
     ),
   );
 }

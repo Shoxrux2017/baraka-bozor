@@ -38,7 +38,7 @@ class _ConsentLineState extends ConsumerState<ConsentLine> {
     fontSize: 11,
     height: 1.55,
     fontWeight: FontWeight.w600,
-    color: KitColors.primary,
+    color: KitColors.primaryDark,
   );
 
   late final TapGestureRecognizer _terms;

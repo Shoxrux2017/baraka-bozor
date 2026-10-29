@@ -88,7 +88,7 @@ class _OrderHistoryState extends ConsumerState<OrderHistory> {
               backgroundColor: KitColors.field,
               foregroundColor: KitColors.ink,
               minimumSize: const Size.fromHeight(38),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              tapTargetSize: MaterialTapTargetSize.padded,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
