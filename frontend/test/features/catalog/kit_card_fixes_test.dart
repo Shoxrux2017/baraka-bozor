@@ -212,11 +212,11 @@ void main() {
         final Rect card = tester.getRect(byKey('product-card-$idL'));
         final Rect name = tester.getRect(find.text(twoLines.nameRu));
         final Rect price = tester.getRect(find.textContaining('≈'));
-        final double rowTop = tester.getCenter(byKey('add-$idL')).dy - 20;
+        final double rowTop = tester.getCenter(byKey('add-$idL')).dy - 22;
         expect(name.top - card.top, closeTo(8 + imageHeight + 8, 2));
         expect(price.top - name.bottom, closeTo(4, 2));
         expect(rowTop - price.bottom, closeTo(8, 2), reason: 'no band');
-        expect(card.bottom - (rowTop + 40), closeTo(8, 2));
+        expect(card.bottom - (rowTop + 44), closeTo(8, 2));
       });
     }
   });

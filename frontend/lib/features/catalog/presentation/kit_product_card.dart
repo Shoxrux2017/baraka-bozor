@@ -49,12 +49,17 @@ class KitCardType {
   static KitCardType of(KitCardSize size) =>
       size == KitCardSize.compact ? compact : regular;
 
-  /// The side of the add button and of the stepper's buttons.
+  /// The drawn side of the add button and of the stepper's buttons: a compact
+  /// card draws 32 inside its 44 tap square, a regular card draws all 44
+  /// (`DL-117`).
   static double buttonSide(KitCardSize size) =>
-      size == KitCardSize.compact ? 32 : 36;
+      size == KitCardSize.compact ? 32 : tapSide;
 
-  /// The height of the bottom row: the tap area around the add button.
-  static const double bottomRowHeight = 40;
+  /// The side of every tap target of the card (`DL-117`).
+  static const double tapSide = 44;
+
+  /// The height of the bottom row: the tap square around the add button.
+  static const double bottomRowHeight = tapSide;
 
   /// The card's padding and the gaps between its parts; [kitCardExtent]
   /// adds them up.
@@ -251,27 +256,31 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
           onTap: () => context.push(CatalogPaths.product(id)),
-          child: Padding(
-            padding: const EdgeInsets.all(KitCardType.padding),
-            // Given an exact height, the bottom row is pinned to the bottom.
-            child: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) =>
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: constraints.hasTightHeight
-                        ? MainAxisSize.max
-                        : MainAxisSize.min,
-                    children: <Widget>[
-                      SizedBox(
-                        height: imageHeight,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: KitColors.card,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Stack(
-                            children: <Widget>[
-                              Positioned.fill(
+          child: Stack(
+            fit: StackFit.passthrough,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: KitCardType.padding,
+                ),
+                // Given an exact height, the bottom row is pinned to the
+                // bottom.
+                child: LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) =>
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: constraints.hasTightHeight
+                            ? MainAxisSize.max
+                            : MainAxisSize.min,
+                        children: <Widget>[
+                          _sidePadded(
+                            SizedBox(
+                              height: imageHeight,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: KitColors.card,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                                 child: LayoutBuilder(
                                   builder:
                                       (
@@ -302,78 +311,90 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                                       },
                                 ),
                               ),
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: _Absorb(
-                                  child: IconButton(
-                                    key: ValueKey<String>('heart-$id'),
-                                    tooltip: favorite
-                                        ? l10n.favoriteRemove
-                                        : l10n.favoriteAdd,
-                                    visualDensity: VisualDensity.compact,
-                                    padding: const EdgeInsets.all(6),
-                                    constraints: const BoxConstraints.tightFor(
-                                      width: 32,
-                                      height: 32,
-                                    ),
-                                    iconSize: 18,
-                                    color: favorite
-                                        ? KitColors.danger
-                                        : KitColors.ink,
-                                    icon: Icon(
-                                      favorite
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                    ),
-                                    onPressed: _toggleHeart,
-                                  ),
+                            ),
+                          ),
+                          const SizedBox(height: KitCardType.gapAfterPicture),
+                          _sidePadded(
+                            Text(
+                              product.name(language),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: nameSize,
+                                height: nameHeight / nameSize,
+                                fontWeight: FontWeight.w500,
+                                color: textColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: KitCardType.gapAfterName),
+                          _sidePadded(
+                            Text(
+                              l10n.catalogApproxPrice(
+                                MoneyFormat.uzs(
+                                  product.customerUnitPriceUzs,
+                                  language,
                                 ),
                               ),
-                            ],
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: priceSize,
+                                height: KitCardType.priceLineHeight,
+                                fontWeight: FontWeight.w700,
+                                color: textColor,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: KitCardType.gapAfterPrice),
+                          if (constraints.hasTightHeight) const Spacer(),
+                          _bottomRow(l10n, line, unitSize),
+                        ],
                       ),
-                      const SizedBox(height: KitCardType.gapAfterPicture),
-                      Text(
-                        product.name(language),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: nameSize,
-                          height: nameHeight / nameSize,
-                          fontWeight: FontWeight.w500,
-                          color: textColor,
-                        ),
+                ),
+              ),
+              // The heart's glyph is 18 square, centred in a 44 tap box that
+              // lies inside the card, 2 from its top and right edges.
+              Positioned(
+                top: 2,
+                right: 2,
+                child: _Absorb(
+                  child: SizedBox.square(
+                    dimension: KitCardType.tapSide,
+                    child: IconButton(
+                      key: ValueKey<String>('heart-$id'),
+                      tooltip: favorite
+                          ? l10n.favoriteRemove
+                          : l10n.favoriteAdd,
+                      visualDensity: VisualDensity.standard,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(
+                        width: KitCardType.tapSide,
+                        height: KitCardType.tapSide,
                       ),
-                      const SizedBox(height: KitCardType.gapAfterName),
-                      Text(
-                        l10n.catalogApproxPrice(
-                          MoneyFormat.uzs(
-                            product.customerUnitPriceUzs,
-                            language,
-                          ),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: priceSize,
-                          height: KitCardType.priceLineHeight,
-                          fontWeight: FontWeight.w700,
-                          color: textColor,
-                        ),
+                      iconSize: 18,
+                      color: favorite ? KitColors.danger : KitColors.ink,
+                      icon: Icon(
+                        favorite ? Icons.favorite : Icons.favorite_border,
                       ),
-                      const SizedBox(height: KitCardType.gapAfterPrice),
-                      if (constraints.hasTightHeight) const Spacer(),
-                      _bottomRow(l10n, line, unitSize),
-                    ],
+                      onPressed: _toggleHeart,
+                    ),
                   ),
-            ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+
+  /// Keeps a part of the card clear of its side edges; the compact bottom row
+  /// is the one part that is not padded, so its 44 squares lie in the layout.
+  static Widget _sidePadded(Widget child) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: KitCardType.padding),
+    child: child,
+  );
 
   /// Where the picture sits in a well of [width] by [height]: centred, 0.7 of
   /// the shorter side. The heart's glyph is 18 square in a 40 square box at
@@ -405,34 +426,39 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
   }
 
   /// The bottom row: the unit and the "+", the stepper in the cart, or "not
-  /// sold". Taps on it never open the product.
+  /// sold". Taps on it never open the product. A regular card pads it like the
+  /// rest; a compact card lets it span the card, so that each 44 square holds
+  /// its 32 face 6 from the edge (`DL-117`) and lies inside the layout.
   Widget _bottomRow(AppLocalizations l10n, CartLine? line, double unitSize) {
     final CatalogProduct product = widget.product;
     final String id = product.id;
     final double side = KitCardType.buttonSide(widget.size);
     final double iconSize = _compact ? 20 : 22;
-    return _Absorb(
-      child: SizedBox(
-        height: KitCardType.bottomRowHeight,
-        child: !widget.available
-            ? _Unavailable(id: id)
-            : line != null
-            ? _Stepper(
-                id: id,
-                side: side,
-                iconSize: iconSize,
-                quantity:
-                    '${QuantityRules.display(line.quantity)} '
-                    '${CatalogLabels.unit(l10n, product.unitCode)}',
-                busy: _cartBusy,
-                minusLabel: l10n.cartStepMinus,
-                plusLabel: l10n.cartStepPlus,
-                onMinus: () => _step(line, up: false),
-                onPlus: () => _step(line, up: true),
-              )
-            : Row(
-                children: <Widget>[
-                  Expanded(
+    final Widget row = SizedBox(
+      height: KitCardType.bottomRowHeight,
+      child: !widget.available
+          ? _Unavailable(id: id)
+          : line != null
+          ? _Stepper(
+              id: id,
+              side: side,
+              iconSize: iconSize,
+              quantity:
+                  '${QuantityRules.display(line.quantity)} '
+                  '${CatalogLabels.unit(l10n, product.unitCode)}',
+              busy: _cartBusy,
+              minusLabel: l10n.cartStepMinus,
+              plusLabel: l10n.cartStepPlus,
+              onMinus: () => _step(line, up: false),
+              onPlus: () => _step(line, up: true),
+            )
+          : Row(
+              children: <Widget>[
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: _compact ? KitCardType.padding : 0,
+                    ),
                     child: Text(
                       l10n.catalogPerUnit(
                         CatalogLabels.unit(l10n, product.unitCode),
@@ -445,42 +471,20 @@ class _KitProductCardState extends ConsumerState<KitProductCard> {
                       ),
                     ),
                   ),
-                  // The tap area is the whole 40-square slot, the visible
-                  // button the smaller square inside it.
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    excludeFromSemantics: true,
-                    onTap: _cartBusy ? () {} : _add,
-                    child: SizedBox.square(
-                      dimension: KitCardType.bottomRowHeight,
-                      child: Center(
-                        child: SizedBox.square(
-                          dimension: side,
-                          child: IconButton(
-                            key: ValueKey<String>('add-$id'),
-                            tooltip: l10n.catalogAdd,
-                            padding: EdgeInsets.zero,
-                            iconSize: iconSize,
-                            style: IconButton.styleFrom(
-                              backgroundColor: KitColors.primary,
-                              foregroundColor: Colors.white,
-                              disabledBackgroundColor: KitColors.primarySoft,
-                              disabledForegroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            icon: const Icon(Icons.add),
-                            onPressed: _cartBusy ? null : _add,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-      ),
+                ),
+                _CardButton(
+                  buttonKey: ValueKey<String>('add-$id'),
+                  faceKey: ValueKey<String>('add-face-$id'),
+                  side: side,
+                  iconSize: iconSize,
+                  icon: Icons.add,
+                  label: l10n.catalogAdd,
+                  onTap: _cartBusy ? null : _add,
+                ),
+              ],
+            ),
     );
+    return _Absorb(child: _compact ? row : _sidePadded(row));
   }
 }
 
@@ -549,25 +553,14 @@ class _Stepper extends StatelessWidget {
   final VoidCallback onPlus;
 
   Widget _button(Key key, IconData icon, String label, VoidCallback onTap) {
-    return SizedBox.square(
-      dimension: side,
-      child: IconButton(
-        key: key,
-        tooltip: label,
-        padding: EdgeInsets.zero,
-        iconSize: iconSize,
-        style: IconButton.styleFrom(
-          backgroundColor: KitColors.primary,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: KitColors.primarySoft,
-          disabledForegroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        icon: Icon(icon),
-        onPressed: busy ? null : onTap,
-      ),
+    return _CardButton(
+      buttonKey: key,
+      faceKey: ValueKey<String>('face-${(key as ValueKey<String>).value}'),
+      side: side,
+      iconSize: iconSize,
+      icon: icon,
+      label: label,
+      onTap: busy ? null : onTap,
     );
   }
 
@@ -606,6 +599,53 @@ class _Stepper extends StatelessWidget {
           onPlus,
         ),
       ],
+    );
+  }
+}
+
+/// A green button of the card: a face of [side] drawn at the centre of a 44
+/// square that takes the tap, so a compact card's 32 face has a 44 target
+/// (`DL-117`). Without [onTap] it is the soft, inactive green.
+class _CardButton extends StatelessWidget {
+  const _CardButton({
+    required this.buttonKey,
+    required this.faceKey,
+    required this.side,
+    required this.iconSize,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final Key buttonKey;
+  final Key faceKey;
+  final double side;
+  final double iconSize;
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: KitCardType.tapSide,
+      child: IconButton(
+        key: buttonKey,
+        tooltip: label,
+        padding: EdgeInsets.zero,
+        onPressed: onTap,
+        icon: DecoratedBox(
+          key: faceKey,
+          decoration: BoxDecoration(
+            color: onTap == null ? KitColors.primarySoft : KitColors.primary,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: SizedBox.square(
+            dimension: side,
+            child: Icon(icon, size: iconSize, color: Colors.white),
+          ),
+        ),
+      ),
     );
   }
 }

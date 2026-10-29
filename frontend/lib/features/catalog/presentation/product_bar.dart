@@ -194,9 +194,8 @@ class _Stepper extends StatelessWidget {
   final VoidCallback? onMinus;
   final VoidCallback? onPlus;
 
-  static const double _buttonSize = 38;
+  static const double _buttonSize = 44;
   static const double _quantityMinWidth = 64;
-  static const double _edge = 4;
 
   static const TextStyle quantityStyle = TextStyle(
     fontSize: 14,
@@ -207,7 +206,7 @@ class _Stepper extends StatelessWidget {
     decorationColor: KitColors.muted,
   );
 
-  /// The width the stepper needs: two buttons, the edges and the quantity at
+  /// The width the stepper needs: two 44 buttons and the quantity at
   /// the real font and text scale, at least [_quantityMinWidth].
   static double widthOf(BuildContext context, String quantity) {
     final TextPainter painter = TextPainter(
@@ -221,8 +220,7 @@ class _Stepper extends StatelessWidget {
     )..layout();
     final double text = painter.width;
     painter.dispose();
-    return 2 * _edge +
-        2 * _buttonSize +
+    return 2 * _buttonSize +
         (text > _quantityMinWidth ? text : _quantityMinWidth);
   }
 
@@ -253,7 +251,6 @@ class _Stepper extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: ProductBar.height),
         child: Row(
           children: <Widget>[
-            const SizedBox(width: _edge),
             _button(
               const ValueKey<String>('product-minus'),
               Icons.remove,
@@ -286,7 +283,6 @@ class _Stepper extends StatelessWidget {
               plusLabel,
               onPlus,
             ),
-            const SizedBox(width: _edge),
           ],
         ),
       ),

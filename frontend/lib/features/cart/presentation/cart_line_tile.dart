@@ -328,7 +328,9 @@ class _CartLineTileState extends ConsumerState<CartLineTile> {
               children: <Widget>[
                 info,
                 const Spacer(),
-                const SizedBox(height: 8),
+                // The 44 stepper under the text still ends level with the
+                // 84 picture, so the gap is small (`DL-117`).
+                const SizedBox(height: 2),
                 bottom,
               ],
             ),

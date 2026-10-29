@@ -30,8 +30,8 @@ class CartLineStepper extends StatelessWidget {
   final VoidCallback onQuantity;
   final bool atMinimum;
 
-  static const double width = 116;
-  static const double height = 36;
+  static const double width = 132;
+  static const double height = 44;
 
   Widget _button(Key key, IconData icon, String label, VoidCallback onTap) {
     return SizedBox.square(
@@ -55,7 +55,8 @@ class CartLineStepper extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(
+      // The outline is drawn over the buttons, so they keep all 44.
+      foregroundDecoration: BoxDecoration(
         border: Border.all(color: KitColors.primary),
         borderRadius: BorderRadius.circular(12),
       ),

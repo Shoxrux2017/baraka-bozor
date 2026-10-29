@@ -193,6 +193,13 @@ class _DeliveryAddressSheet extends ConsumerWidget {
                 key: const ValueKey<String>('delivery-address-close'),
                 tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                 onPressed: () => Navigator.of(context).pop(),
+                // A 44 square takes the tap; the drawn circle stays 28
+                // (`DL-117`).
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(
+                  width: 44,
+                  height: 44,
+                ),
                 icon: DecoratedBox(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
