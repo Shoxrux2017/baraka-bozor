@@ -47,6 +47,10 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
   late final TextEditingController _note;
+  final FocusNode _wishFocus = FocusNode();
+
+  /// The wish field with its label, to bring into view (`DL-121`).
+  final GlobalKey _wishKey = GlobalKey();
   final List<ProviderSubscription<dynamic>> _subscriptions =
       <ProviderSubscription<dynamic>>[];
   String? _addressId;
@@ -98,7 +102,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _addressId = sent?.request.addressId;
     _adopted = sent != null;
     _shown = sent?.preview;
-    _note = TextEditingController(text: sent?.request.deliveryTimeNote ?? '');
+    // A sent confirmation shows the wish it was sent with; otherwise the
+    // draft the Customer left (`DL-121`).
+    _note = TextEditingController(
+      text: sent != null
+          ? sent.request.deliveryTimeNote ?? ''
+          : ref.read(checkoutWishDraftProvider),
+    );
 
     final String? account = ref.read(customerAccountProvider);
     if (account != null) {
@@ -143,6 +153,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       subscription.close();
     }
     _note.dispose();
+    _wishFocus.dispose();
     super.dispose();
   }
 
@@ -212,6 +223,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _wishValid() =>
       trimLikeServer(_note.text).runes.length <=
       CheckoutRequest.deliveryTimeNoteMax;
+
+  /// Brings the wish field into view and focuses it, so an over-long wish is
+  /// seen where it is (`DL-121`).
+  void _showWish() {
+    final BuildContext? target = _wishKey.currentContext;
+    if (target != null) {
+      Scrollable.ensureVisible(
+        target,
+        alignment: 0.3,
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+    _wishFocus.requestFocus();
+  }
 
   CheckoutRequest _requestFor(String addressId) {
     final String wish = trimLikeServer(_note.text);
@@ -387,9 +415,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
     final Address? held = _heldAddress();
-    if (held == null ||
-        !(_form.currentState?.validate() ?? true) ||
-        !_wishValid()) {
+    if (held == null) {
+      return;
+    }
+    if (!(_form.currentState?.validate() ?? true) || !_wishValid()) {
+      _showWish();
       return;
     }
     final CheckoutRequest request = _requestFor(held.id);
@@ -595,14 +625,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       onChange: onChange,
                     ),
                     const SizedBox(height: 12),
-                    CheckoutWishField(
-                      controller: _note,
-                      enabled: !locked,
-                      onChanged: (String _) {
-                        if (_replacedTotal != null) {
-                          setState(() => _replacedTotal = null);
-                        }
-                      },
+                    KeyedSubtree(
+                      key: _wishKey,
+                      child: CheckoutWishField(
+                        controller: _note,
+                        focusNode: _wishFocus,
+                        // Only a placement or a sent confirmation closes it:
+                        // a wish typed during a preview is previewed again
+                        // before placing (`DL-89`, `DL-121`).
+                        enabled: !busyPlace && !sent,
+                        onChanged: (String text) {
+                          ref
+                              .read(checkoutWishDraftProvider.notifier)
+                              .set(text);
+                          if (_replacedTotal != null) {
+                            setState(() => _replacedTotal = null);
+                          }
+                        },
+                      ),
                     ),
                     const SizedBox(height: 24),
                     _Heading(l10n.checkoutPayment),

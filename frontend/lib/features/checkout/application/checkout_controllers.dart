@@ -94,6 +94,25 @@ preparedCheckoutProvider =
       PreparedCheckoutController.new,
     );
 
+/// What the Customer typed as the delivery wish, kept while they look at the
+/// cart and come back (`DL-121`). It is not auto-disposed, so it outlives the
+/// checkout screen; another account starts it over, and a placed order
+/// clears it.
+class CheckoutWishDraft extends Notifier<String> {
+  @override
+  String build() {
+    ref.watch(customerAccountProvider);
+    return '';
+  }
+
+  void set(String text) => state = text;
+
+  void clear() => state = '';
+}
+
+final NotifierProvider<CheckoutWishDraft, String> checkoutWishDraftProvider =
+    NotifierProvider<CheckoutWishDraft, String>(CheckoutWishDraft.new);
+
 /// Asking for a preview. The previous one goes as the request leaves, so a
 /// refusal never leaves an old total to confirm. A refusal that may mean
 /// the Customer's data moved on — an address gone, a product no longer
@@ -157,6 +176,7 @@ class PlaceOrderController extends CartMutation {
         showCart(null);
         if (order != null) {
           ref.invalidate(customerOrdersProvider);
+          ref.read(checkoutWishDraftProvider.notifier).clear();
           checkout.markAnswered(prepared.idempotencyKey, placed: true);
         }
       },

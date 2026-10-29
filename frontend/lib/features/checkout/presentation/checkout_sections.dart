@@ -290,15 +290,22 @@ class CheckoutDeliveryCard extends StatelessWidget {
 }
 
 /// "Пожелание к доставке", up to 160 characters as the server counts them.
+/// The error shows as it is typed; the counter only from [counterFrom]
+/// characters, and in the danger colour over the limit (`DL-121`).
 class CheckoutWishField extends StatelessWidget {
   const CheckoutWishField({
     required this.controller,
+    required this.focusNode,
     required this.enabled,
     required this.onChanged,
     super.key,
   });
 
+  /// The length from which the counter is shown.
+  static const int counterFrom = 120;
+
   final TextEditingController controller;
+  final FocusNode focusNode;
   final bool enabled;
   final ValueChanged<String> onChanged;
 
@@ -320,7 +327,9 @@ class CheckoutWishField extends StatelessWidget {
         TextFormField(
           key: const ValueKey<String>('checkout-delivery-wish'),
           controller: controller,
+          focusNode: focusNode,
           enabled: enabled,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           minLines: 1,
           maxLines: 3,
           style: const TextStyle(fontSize: 14, color: KitColors.ink),
@@ -335,18 +344,25 @@ class CheckoutWishField extends StatelessWidget {
             focusedBorder: none,
             errorBorder: none,
             focusedErrorBorder: none,
+            errorStyle: const TextStyle(fontSize: 12, color: KitColors.danger),
             contentPadding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
             counter: ValueListenableBuilder<TextEditingValue>(
               valueListenable: controller,
-              builder: (BuildContext context, TextEditingValue value, _) =>
-                  Text(
-                    '${trimLikeServer(value.text).runes.length} / '
-                    '${CheckoutRequest.deliveryTimeNoteMax}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: KitColors.muted,
-                    ),
+              builder: (BuildContext context, TextEditingValue value, _) {
+                final int length = trimLikeServer(value.text).runes.length;
+                if (length < counterFrom) {
+                  return const SizedBox.shrink();
+                }
+                final bool over = length > CheckoutRequest.deliveryTimeNoteMax;
+                return Text(
+                  '$length / ${CheckoutRequest.deliveryTimeNoteMax}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: over ? KitColors.danger : KitColors.muted,
+                    fontWeight: over ? FontWeight.w600 : null,
                   ),
+                );
+              },
             ),
           ),
           onChanged: onChanged,

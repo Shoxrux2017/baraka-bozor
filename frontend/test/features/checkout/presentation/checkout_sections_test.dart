@@ -3,6 +3,7 @@ import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/product_image.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
@@ -317,23 +318,68 @@ void main() {
     expect(byKey('checkout-gone-to-cart'), findsNothing);
   });
 
-  testWidgets('the wish counter counts what the server keeps', (
+  Future<void> pumpWish(
     WidgetTester tester,
+    TextEditingController controller,
   ) async {
-    final TextEditingController controller = TextEditingController();
-    addTearDown(controller.dispose);
+    final FocusNode focus = FocusNode();
+    addTearDown(focus.dispose);
     await tester.pumpWidget(
       host(
         CheckoutWishField(
           controller: controller,
+          focusNode: focus,
           enabled: true,
           onChanged: (String _) {},
         ),
       ),
     );
-    await tester.enterText(byKey('checkout-delivery-wish'), '  после 18:00  ');
+  }
+
+  Future<void> type(WidgetTester tester, int count) async {
+    await tester.enterText(
+      byKey('checkout-delivery-wish'),
+      '  ${'a' * count}  ',
+    );
     await tester.pump();
-    expect(find.text('11 / 160'), findsOneWidget);
+  }
+
+  testWidgets('the counter shows from 120 characters and turns red over 160', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController controller = TextEditingController();
+    addTearDown(controller.dispose);
+    await pumpWish(tester, controller);
+
+    await type(tester, 119);
+    expect(find.text('119 / 160'), findsNothing);
+
+    await type(tester, 120);
+    final TextStyle muted = tester.widget<Text>(find.text('120 / 160')).style!;
+    expect(muted.color, KitColors.muted);
+    expect(muted.fontSize, 11);
+
+    await type(tester, 161);
+    final TextStyle over = tester.widget<Text>(find.text('161 / 160')).style!;
+    expect(over.color, KitColors.danger);
+    expect(over.fontWeight, FontWeight.w600);
+  });
+
+  testWidgets('the error shows while typing', (WidgetTester tester) async {
+    final TextEditingController controller = TextEditingController();
+    addTearDown(controller.dispose);
+    await pumpWish(tester, controller);
+    final String tooLong = ru.fieldTooLong(160);
+
+    await type(tester, 161);
+    expect(find.text(tooLong), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.text(tooLong)).style!.color,
+      KitColors.danger,
+    );
+
+    await type(tester, 160);
+    expect(find.text(tooLong), findsNothing);
   });
 
   String estimate99(Locale language, int amount) =>
@@ -356,6 +402,8 @@ void main() {
         final CheckoutPreview preview = previewOf(lines: 12, total: 99999999);
         final TextEditingController wish = TextEditingController();
         addTearDown(wish.dispose);
+        final FocusNode wishFocus = FocusNode();
+        addTearDown(wishFocus.dispose);
 
         await tester.pumpWidget(
           app(
@@ -377,6 +425,7 @@ void main() {
                             ),
                             CheckoutWishField(
                               controller: wish,
+                              focusNode: wishFocus,
                               enabled: true,
                               onChanged: (String _) {},
                             ),
