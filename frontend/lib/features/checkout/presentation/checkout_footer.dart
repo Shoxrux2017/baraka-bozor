@@ -238,8 +238,8 @@ class CheckoutRecountNotice extends StatelessWidget {
   final String before;
   final String after;
 
-  static const String _beforeMark = '';
-  static const String _afterMark = '';
+  static const String _beforeMark = '\u{E000}';
+  static const String _afterMark = '\u{E001}';
 
   @override
   Widget build(BuildContext context) {
@@ -247,7 +247,7 @@ class CheckoutRecountNotice extends StatelessWidget {
     final String template = AppLocalizations.of(context)
         .checkoutRecountedFromTo(_beforeMark, _afterMark);
     final List<InlineSpan> spans = <InlineSpan>[];
-    final RegExp mark = RegExp('[$_beforeMark$_afterMark]');
+    final RegExp mark = RegExp('$_beforeMark|$_afterMark');
     int from = 0;
     for (final RegExpMatch match in mark.allMatches(template)) {
       if (match.start > from) {
