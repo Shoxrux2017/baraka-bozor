@@ -15,6 +15,7 @@ import 'package:baraka_bozor/features/addresses/application/addresses_controller
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/features/profile/domain/profile.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -1202,6 +1203,120 @@ void main() {
 
     expect(byKey('checkout-placed'), findsOneWidget);
     expect(find.byType(ActiveModeBar), findsOneWidget);
+  });
+
+  List<MethodCall> mockHaptics(WidgetTester tester) {
+    final List<MethodCall> calls = <MethodCall>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall call) async {
+        calls.add(call);
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    return calls;
+  }
+
+  Iterable<MethodCall> lightImpacts(List<MethodCall> calls) => calls.where(
+    (MethodCall c) =>
+        c.method == 'HapticFeedback.vibrate' &&
+        c.arguments == 'HapticFeedbackType.lightImpact',
+  );
+
+  double cardOpacity(WidgetTester tester) => tester
+      .widget<FadeTransition>(
+        find.ancestor(
+          of: byKey('checkout-placed-card'),
+          matching: find.byType(FadeTransition),
+        ),
+      )
+      .opacity
+      .value;
+
+  double circleScale(WidgetTester tester) => tester
+      .widget<ScaleTransition>(
+        find
+            .ancestor(
+              of: byKey('checkout-placed-circle'),
+              matching: find.byType(ScaleTransition),
+            )
+            .first,
+      )
+      .scale
+      .value;
+
+  testWidgets('the placed card rises from below with a light haptic', (
+    WidgetTester tester,
+  ) async {
+    final List<MethodCall> calls = mockHaptics(tester);
+    await open(tester);
+    await tester.ensureVisible(byKey('checkout-confirm'));
+    await tester.pumpAndSettle();
+    await tester.tap(byKey('checkout-confirm'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(byKey('checkout-placed-card'), findsOneWidget);
+    expect(lightImpacts(calls), hasLength(1));
+    final double startOpacity = cardOpacity(tester);
+    final double startBottom = tester
+        .getBottomLeft(byKey('checkout-placed-card'))
+        .dy;
+    expect(startOpacity, lessThan(0.2));
+    expect(circleScale(tester), lessThan(0.7));
+
+    await tester.pump(const Duration(milliseconds: 210));
+    final double midOpacity = cardOpacity(tester);
+    expect(midOpacity, inExclusiveRange(startOpacity, 1));
+    expect(
+      tester.getBottomLeft(byKey('checkout-placed-card')).dy,
+      lessThan(startBottom),
+    );
+    expect(circleScale(tester), inExclusiveRange(0.6, 1));
+
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(cardOpacity(tester), 1);
+    expect(circleScale(tester), 1);
+    final double endBottom = tester
+        .getBottomLeft(byKey('checkout-placed-card'))
+        .dy;
+    expect(startBottom - endBottom, closeTo(48, 3));
+    expect(lightImpacts(calls), hasLength(1));
+  });
+
+  testWidgets(
+    'with reduced motion the placed card stands at once, and still buzzes',
+    (WidgetTester tester) async {
+      final List<MethodCall> calls = mockHaptics(tester);
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await open(tester);
+      await order(tester);
+
+      expect(cardOpacity(tester), 1);
+      expect(circleScale(tester), 1);
+      expect(lightImpacts(calls), hasLength(1));
+    },
+  );
+
+  testWidgets('the placed view meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester);
+    await order(tester);
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
   });
 
   testWidgets('leaving while a stale confirmation previews again is safe', (
