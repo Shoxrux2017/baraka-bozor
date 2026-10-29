@@ -26,8 +26,10 @@ void showCartFailure(
   if (text == null) {
     return;
   }
+  // Removed, not hidden: a bar that has not drawn its first frame does not
+  // hide, and the failure would wait behind it.
   messenger
-    ..hideCurrentSnackBar()
+    ..removeCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(text)));
 }
 

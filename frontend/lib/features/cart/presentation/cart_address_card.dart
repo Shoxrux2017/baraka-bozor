@@ -116,18 +116,21 @@ class CartAddressCard extends ConsumerWidget {
                     const SizedBox(width: 8),
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 120),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: TextButton(
-                          key: const ValueKey<String>('cart-address-change'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: KitColors.primaryDark,
-                            textStyle: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
+                      // The button keeps its 44 px target; the text, not the
+                      // button, shrinks to the width (`DL-119`).
+                      child: TextButton(
+                        key: const ValueKey<String>('cart-address-change'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: KitColors.primaryDark,
+                          minimumSize: const Size(44, 44),
+                          textStyle: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
-                          onPressed: onTap,
+                        ),
+                        onPressed: onTap,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
                           child: Text(action),
                         ),
                       ),

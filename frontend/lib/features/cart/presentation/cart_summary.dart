@@ -5,15 +5,20 @@ import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/soft_change.dart';
 import '../domain/cart.dart';
 
 /// The amounts of the cart (drawing 19): the goods, the delivery and the
 /// service fee when the server has them, and the total. Every figure is the
 /// server's; nothing is added here (`DL-37` (19)).
+///
+/// With [waiting] the amounts are dimmed: a quantity change is on its way and
+/// they are the last ones the server gave (`DL-119`).
 class CartSummary extends StatelessWidget {
-  const CartSummary({required this.cart, super.key});
+  const CartSummary({required this.cart, this.waiting = false, super.key});
 
   final Cart cart;
+  final bool waiting;
 
   @override
   Widget build(BuildContext context) {
@@ -39,18 +44,21 @@ class CartSummary extends StatelessWidget {
           children: <Widget>[
             SummaryAmountRow(
               valueKey: 'cart-subtotal',
+              waiting: waiting,
               label: l10n.cartGoods(cart.availableCount),
               value: estimate(cart.estimatedSubtotalUzs),
             ),
             if (delivery != null)
               SummaryAmountRow(
                 valueKey: 'cart-delivery',
+                waiting: waiting,
                 label: l10n.cartDelivery,
                 value: sum(delivery),
               ),
             if (fee != null)
               SummaryAmountRow(
                 valueKey: 'cart-service-fee',
+                waiting: waiting,
                 label: l10n.cartServiceFee,
                 value: cart.serviceFeeIsEstimate ? estimate(fee) : sum(fee),
               ),
@@ -64,6 +72,7 @@ class CartSummary extends StatelessWidget {
                 label: l10n.cartTotal,
                 value: estimate(total),
                 emphasised: true,
+                waiting: waiting,
               ),
             ],
             const SizedBox(height: 8),
@@ -106,7 +115,8 @@ class EstimateNote extends StatelessWidget {
 }
 
 /// One line of amounts: a label and a figure. [replaced] is an earlier
-/// figure shown struck through before the current one.
+/// figure shown struck through before the current one. A changed [value]
+/// rises softly and, while [waiting], is dimmed (`DL-119`).
 class SummaryAmountRow extends StatelessWidget {
   const SummaryAmountRow({
     required this.valueKey,
@@ -114,6 +124,7 @@ class SummaryAmountRow extends StatelessWidget {
     required this.value,
     this.emphasised = false,
     this.replaced,
+    this.waiting = false,
     super.key,
   });
 
@@ -122,6 +133,7 @@ class SummaryAmountRow extends StatelessWidget {
   final String value;
   final bool emphasised;
   final String? replaced;
+  final bool waiting;
 
   @override
   Widget build(BuildContext context) {
@@ -132,13 +144,17 @@ class SummaryAmountRow extends StatelessWidget {
             color: KitColors.ink,
           )
         : const TextStyle(fontSize: 14, color: KitColors.ink2);
-    final Text valueText = Text(
-      value,
-      key: ValueKey<String>(valueKey),
-      textAlign: TextAlign.end,
-      style: style.copyWith(
-        color: KitColors.ink,
-        fontWeight: emphasised ? FontWeight.w700 : FontWeight.w600,
+    final Widget valueText = SoftChange(
+      value: value,
+      waiting: waiting,
+      child: Text(
+        value,
+        key: ValueKey<String>(valueKey),
+        textAlign: TextAlign.end,
+        style: style.copyWith(
+          color: KitColors.ink,
+          fontWeight: emphasised ? FontWeight.w700 : FontWeight.w600,
+        ),
       ),
     );
     return Padding(

@@ -8,10 +8,12 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
+import '../../../core/widgets/fold.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../catalog/presentation/recommended_row.dart';
 import '../application/cart_controllers.dart';
+import '../application/cart_quantity_queue.dart';
 import '../domain/cart.dart';
 import 'cart_address_card.dart';
 import 'cart_footer.dart';
@@ -92,24 +94,41 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   if (cart.lines.isEmpty) {
                     return const _EmptyCart();
                   }
+                  // A line the Customer took out folds away at the tap, before
+                  // the server answers (`DL-119`).
+                  final Map<String, String> wishes = ref.watch(
+                    cartQuantityQueueProvider,
+                  );
+                  final List<CartLine> shown = <CartLine>[
+                    for (final CartLine line in cart.lines)
+                      if (wishes[line.productId] != CartQuantityQueue.out) line,
+                  ];
                   return ListView(
                     key: const ValueKey<String>('cart-lines'),
                     padding: const EdgeInsets.only(top: 16),
                     children: <Widget>[
-                      for (final CartLine line in cart.lines)
-                        // The key sits on the list's own child, so a line that
-                        // leaves does not hand its State to the next one.
-                        Padding(
-                          key: ValueKey<String>(line.id),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: CartLineTile(line: line),
-                        ),
+                      FoldingColumn<CartLine>(
+                        items: shown,
+                        keyOf: (CartLine line) => line.id,
+                        itemBuilder: (BuildContext context, CartLine line) =>
+                            // The key sits on the line's own child, so a line
+                            // that leaves does not hand its State to the next.
+                            Padding(
+                              key: ValueKey<String>(line.id),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: CartLineTile(line: line),
+                            ),
+                      ),
                       if (cart.hasUnavailable)
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16),
                           child: _UnavailableHint(),
                         ),
                       CartMinimumNotice(cart: cart),
+                      CartSummary(cart: cart, waiting: wishes.isNotEmpty),
+                      const CartAddressCard(),
                       RecommendedRow(
                         title: l10n.cartAddMoreTitle,
                         excludedProductIds: <String>{
@@ -120,8 +139,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         rowKey: 'cart-add-more',
                       ),
                       const SizedBox(height: 8),
-                      CartSummary(cart: cart),
-                      const CartAddressCard(),
                     ],
                   );
                 },
