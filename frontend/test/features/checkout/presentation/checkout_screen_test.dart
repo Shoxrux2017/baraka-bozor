@@ -956,6 +956,33 @@ void main() {
     },
   );
 
+  testWidgets('every target of the checkout meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    checkout.outsideHours = true;
+    await open(tester);
+    await tapAndSettle(tester, byKey('checkout-items-toggle'));
+    checkout.queuedPreviews.add(previewJson(total: 48600));
+    checkout.placeFailure = const ApiRefusal(
+      ApiError(status: 409, code: 'checkout_snapshot_stale'),
+    );
+    await order(tester);
+    expect(byKey('checkout-refreshed'), findsOneWidget);
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
+
+  testWidgets('without an address every target meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    addresses = FakeAddressesRepository(rows: <Address>[]);
+    await open(tester);
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
+
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets(
       'at large text the recount, Итого and Заказать fit a small phone (${device.languageCode})',
