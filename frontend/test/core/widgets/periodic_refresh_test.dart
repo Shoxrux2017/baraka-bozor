@@ -76,6 +76,22 @@ void main() {
     expect(refreshes, 1);
   });
 
+  testWidgets('it waits while its tickers are off', (
+    WidgetTester tester,
+  ) async {
+    Widget tickers({required bool enabled}) => MaterialApp(
+      home: TickerMode(enabled: enabled, child: screen(active: true)),
+    );
+
+    await tester.pumpWidget(tickers(enabled: false));
+    await tester.pump(const Duration(seconds: 11));
+    expect(refreshes, 0);
+
+    await tester.pumpWidget(tickers(enabled: true));
+    await tester.pump(const Duration(seconds: 11));
+    expect(refreshes, 1);
+  });
+
   testWidgets('leaving the screen leaves no refresh behind', (
     WidgetTester tester,
   ) async {

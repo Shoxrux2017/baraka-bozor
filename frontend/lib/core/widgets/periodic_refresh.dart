@@ -5,7 +5,9 @@ import 'package:flutter/widgets.dart';
 /// Keeps what a screen shows current while it is shown, without push
 /// (`DL-54` (15)). [interval] after each successful load, while the screen's
 /// route is the top one and the app is in the foreground, it calls
-/// [onRefresh]; otherwise it waits another [interval].
+/// [onRefresh]; otherwise it waits another [interval]. A tab the tabs shell
+/// keeps and a route another covers have their tickers off, and so wait too
+/// (`DL-118` (6)).
 ///
 /// It waits while [active] is false: while a load runs, and after one
 /// failed. A refresh that fails therefore stops the refreshing, the screen
@@ -65,7 +67,9 @@ class _PeriodicRefreshState extends State<PeriodicRefresh> {
     final AppLifecycleState? lifecycle = WidgetsBinding.instance.lifecycleState;
     final bool foreground =
         lifecycle == null || lifecycle == AppLifecycleState.resumed;
-    final bool shown = ModalRoute.of(context)?.isCurrent ?? true;
+    final bool shown =
+        (ModalRoute.of(context)?.isCurrent ?? true) &&
+        TickerMode.valuesOf(context).enabled;
     // The refresh's own load makes [active] false, which cancels this; a
     // refresh that changes nothing still comes round again.
     _schedule();
