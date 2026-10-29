@@ -18,8 +18,8 @@ Rules for every stage:
 | Stage | Screens | Items | Server | Status |
 |---|---|---|---|---|
 | 1 | Kit colours and sizes (all roles) | 7 | — | Merged (PR #121) |
-| 2 | Customer tabs | 5 | — | In review |
-| 3 | Cart and the card's stepper | 8 | — | Planned |
+| 2 | Customer tabs | 5 | — | Merged (PR #122) |
+| 3 | Cart and the card's stepper | 8 | — | In review |
 | 4 | Checkout | 10 | — | Planned |
 | 5 | Product | 9 | — | Planned |
 | 6 | Home and categories | 14 | working hours | Planned |
@@ -347,7 +347,7 @@ Noticed in the reviews and left out; each needs its own decision before any code
 
 ## Risks
 
-- The 44 stepper squeezes the cart line's sum, which is scaled down to fit. Measured width of the sum: 68 to 52 px at 320 wide, 108 to 92 at 360, 123 to 107 at 375. On a 320 px phone a sum like "≈ 127 600 so'm" is drawn at about 40 % of its size. Stage 3 (`cart-7`) fixes it when it redraws the line (`DL-117` (9)).
+- The 44 stepper squeezes the cart line's sum, which is scaled down to fit. Measured width of the sum: 68 to 52 px at 320 wide, 108 to 92 at 360, 123 to 107 at 375. On a 320 px phone a sum like "≈ 127 600 so'm" is drawn at about 40 % of its size. Stage 3 (`cart-7`) fixes it when it redraws the line (`DL-117` (9)). Fixed: the sum now stands over the stepper when the two do not fit side by side (`DL-119` (4)).
 
 ## Review findings not acted on
 
