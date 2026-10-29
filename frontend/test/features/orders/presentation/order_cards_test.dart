@@ -6,6 +6,7 @@ import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/widgets/kit/kit_star.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_cards.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -281,20 +282,14 @@ void main() {
     }
     final Finder stars = find.descendant(
       of: byKey('order-stars-$_orderTwo'),
-      matching: find.byIcon(Icons.star),
+      matching: find.byType(KitStar),
     );
     expect(
-      <Color?>[
+      <bool>[
         for (final Element star in stars.evaluate())
-          (star.widget as Icon).color,
+          (star.widget as KitStar).filled,
       ],
-      <Color>[
-        KitColors.warning,
-        KitColors.warning,
-        KitColors.warning,
-        KitColors.warning,
-        KitColors.line,
-      ],
+      <bool>[true, true, true, true, false],
     );
     expect(byKey('order-stars-$orderOne'), findsNothing);
     expect(

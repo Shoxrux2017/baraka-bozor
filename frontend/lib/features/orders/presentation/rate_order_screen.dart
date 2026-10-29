@@ -11,6 +11,7 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/kit/kit_star.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../application/customer_orders_controllers.dart';
@@ -221,14 +222,11 @@ class _RateOrderScreenState extends ConsumerState<RateOrderScreen> {
                           onTap: () => _choose(star),
                           child: SizedBox.square(
                             dimension: 52,
-                            child: Icon(
-                              stars != null && star <= stars
-                                  ? Icons.star
-                                  : Icons.star_border,
-                              size: 44,
-                              color: stars != null && star <= stars
-                                  ? KitColors.warning
-                                  : KitColors.line,
+                            child: Center(
+                              child: KitStar(
+                                filled: stars != null && star <= stars,
+                                size: 44,
+                              ),
                             ),
                           ),
                         ),

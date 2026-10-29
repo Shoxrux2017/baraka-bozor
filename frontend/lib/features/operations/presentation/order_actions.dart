@@ -19,6 +19,7 @@ import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit/kit_buttons.dart';
 import '../../../core/widgets/kit/kit_dialog.dart';
 import '../../../core/widgets/kit/kit_fields.dart';
+import '../../../core/widgets/kit/kit_star.dart';
 import '../../admin/presentation/catalog_form_rules.dart';
 import '../../auth/domain/app_user.dart';
 import '../application/board_controllers.dart';
@@ -1066,13 +1067,7 @@ class RatingDetails extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     for (int star = 1; star <= 5; star++)
-                      Icon(
-                        Icons.star,
-                        size: 22,
-                        color: star <= rating.stars
-                            ? KitColors.star
-                            : KitColors.line,
-                      ),
+                      KitStar(filled: star <= rating.stars, size: 22),
                   ],
                 ),
               ),

@@ -14,6 +14,7 @@ import '../../../core/platform/clock.dart';
 import '../../../core/platform/phone_calls.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/kit/kit_star.dart';
 import '../../../core/widgets/product_image.dart';
 import '../domain/customer_orders.dart';
 import 'reorder_sheet.dart';
@@ -551,12 +552,7 @@ class _RatedStars extends StatelessWidget {
         key: ValueKey<String>('order-stars-${order.id}'),
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          for (int i = 1; i <= 5; i++)
-            Icon(
-              Icons.star,
-              size: 20,
-              color: i <= stars ? KitColors.warning : KitColors.line,
-            ),
+          for (int i = 1; i <= 5; i++) KitStar(filled: i <= stars, size: 20),
         ],
       ),
     );
