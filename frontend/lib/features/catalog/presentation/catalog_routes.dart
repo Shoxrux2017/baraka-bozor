@@ -12,19 +12,22 @@ import 'category_screen.dart';
 import 'recommended_screen.dart';
 import 'search_screen.dart';
 
+/// The Customer's home tab, the first branch of the tabs' shell
+/// (`features/shells`, `DL-118`).
+final GoRoute catalogHomeRoute = GoRoute(
+  path: AppPaths.customer,
+  name: 'catalog-home',
+  builder: (BuildContext context, GoRouterState state) =>
+      const CatalogHomeScreen(),
+);
+
 /// The Customer catalog is the Customer area's home (`docs/07-architecture.md`
-/// section 27): the area's entry, a category's products and a product. The
+/// section 27): a category's products and a product. The
 /// session guard admits only the Customer mode here; the backend decides
 /// what the requests may read.
 final FeatureRoutes catalogRoutes = FeatureRoutes(
   feature: 'catalog',
   routes: <RouteBase>[
-    GoRoute(
-      path: AppPaths.customer,
-      name: 'catalog-home',
-      builder: (BuildContext context, GoRouterState state) =>
-          const CatalogHomeScreen(),
-    ),
     GoRoute(
       path: CatalogPaths.categories,
       name: 'catalog-categories',

@@ -98,7 +98,7 @@ void main() {
   double top(WidgetTester tester, Finder finder) =>
       tester.getTopLeft(finder).dy;
 
-  testWidgets('the tab bar opens the orders and the profile over the home', (
+  testWidgets('the tab bar switches to the orders and the profile tabs', (
     WidgetTester tester,
   ) async {
     await open(tester);
@@ -112,7 +112,7 @@ void main() {
     await tester.tap(byKey('open-orders'));
     await tester.pumpAndSettle();
     expect(find.byType(CatalogHomeScreen), findsNothing);
-    // The orders tab has no back arrow of its own: the system back leaves it.
+    // The orders tab has no back arrow of its own: the system back goes home.
     expect(find.byType(BackButton), findsNothing);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
