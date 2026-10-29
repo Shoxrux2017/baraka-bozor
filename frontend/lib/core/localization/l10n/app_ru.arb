@@ -878,7 +878,8 @@
   "checkoutTitle": "Оформление",
   "checkoutGo": "Оформить",
   "checkoutPayment": "Способ оплаты",
-  "checkoutOnlineUnavailable": "Пока можно оплатить только наличными",
+  "checkoutOnlineSoon": "Онлайн-оплата через Payme и Click — скоро",
+  "checkoutAddressAdd": "Добавить",
   "checkoutCalculating": "Считаем сумму…",
   "checkoutPlacing": "Отправляем заказ…",
   "checkoutPlaced": "Заказ № {number} оформлен",
@@ -928,8 +929,6 @@
   "checkoutWishHint": "Например: после 18:00, позвонить заранее",
   "paymentCashTitle": "Наличными курьеру",
   "paymentCashHint": "При получении, точную сумму покажем после сборки",
-  "paymentOnlineTitle": "Онлайн: Payme или Click",
-  "checkoutSoon": "Скоро",
   "checkoutItems": "Товары · {count}",
   "@checkoutItems": {
     "placeholders": {

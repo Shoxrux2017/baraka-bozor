@@ -1903,8 +1903,11 @@ class AppLocalizationsUz extends AppLocalizations {
   String get checkoutPayment => 'To\'lov usuli';
 
   @override
-  String get checkoutOnlineUnavailable =>
-      'Hozircha faqat naqd pul bilan to\'lash mumkin';
+  String get checkoutOnlineSoon =>
+      'Payme va Click orqali onlayn to\'lov — tez orada';
+
+  @override
+  String get checkoutAddressAdd => 'Qo\'shish';
 
   @override
   String get checkoutCalculating => 'Summa hisoblanmoqda…';
@@ -1998,12 +2001,6 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get paymentCashHint =>
       'Qabul qilganda, aniq summani yig\'ishdan keyin ko\'rsatamiz';
-
-  @override
-  String get paymentOnlineTitle => 'Onlayn: Payme yoki Click';
-
-  @override
-  String get checkoutSoon => 'Tez orada';
 
   @override
   String checkoutItems(int count) {

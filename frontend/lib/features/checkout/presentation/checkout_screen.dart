@@ -651,7 +651,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     const SizedBox(height: 24),
                     _Heading(l10n.checkoutPayment),
                     const SizedBox(height: 12),
-                    const CheckoutPaymentCards(),
+                    const CheckoutPayment(),
                     if (shown != null) ...<Widget>[
                       const SizedBox(height: 24),
                       CheckoutItemsStrip(

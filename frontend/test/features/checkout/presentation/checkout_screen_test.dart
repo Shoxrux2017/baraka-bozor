@@ -178,11 +178,15 @@ void main() {
     expect(checkout.previews, hasLength(1));
     expect(checkout.previews.single.addressId, 'a-1');
     expect(checkout.previews.single.deliveryTimeNote, isNull);
+    expect(byKey('pay-cash'), findsOneWidget);
+    expect(find.byType(RadioListTile<Object>), findsNothing);
     expect(
-      tester.widget<RadioListTile<Object>>(byKey('pay-online')).enabled,
-      isFalse,
+      find.descendant(
+        of: byKey('pay-online-soon'),
+        matching: find.text(words.checkoutOnlineSoon),
+      ),
+      findsOneWidget,
     );
-    expect(find.text(words.checkoutOnlineUnavailable), findsOneWidget);
     expect(byKey('checkout-total'), findsOneWidget);
 
     await tester.enterText(byKey('checkout-delivery-wish'), '  Kechqurun ');
@@ -890,6 +894,7 @@ void main() {
     await open(tester);
 
     expect(inCard(l10n(tester).deliveryAddressAdd), findsOneWidget);
+    expect(inCard(l10n(tester).checkoutAddressAdd), findsOneWidget);
     expect(checkout.previews, isEmpty);
     expect(orderActive(tester), isFalse);
     await tapAndSettle(tester, byKey('checkout-address-change'));
@@ -999,11 +1004,6 @@ void main() {
         List<String>.filled(161, 'a').join(),
       );
       await tester.pump();
-      await tester.drag(byKey('checkout'), const Offset(0, -5000));
-      await tester.pumpAndSettle();
-      final int previews = checkout.previews.length;
-      FocusManager.instance.primaryFocus?.unfocus();
-      await tester.pump();
       final FocusNode wishFocus = tester
           .widget<EditableText>(
             find.descendant(
@@ -1012,6 +1012,11 @@ void main() {
             ),
           )
           .focusNode;
+      await tester.drag(byKey('checkout'), const Offset(0, -5000));
+      await tester.pumpAndSettle();
+      final int previews = checkout.previews.length;
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
       expect(wishFocus.hasFocus, isFalse);
 
       await tester.tap(byKey('checkout-confirm'));

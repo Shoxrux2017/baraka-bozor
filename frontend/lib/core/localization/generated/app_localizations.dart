@@ -3500,11 +3500,17 @@ abstract class AppLocalizations {
   /// **'To\'lov usuli'**
   String get checkoutPayment;
 
-  /// No description provided for @checkoutOnlineUnavailable.
+  /// No description provided for @checkoutOnlineSoon.
   ///
   /// In uz, this message translates to:
-  /// **'Hozircha faqat naqd pul bilan to\'lash mumkin'**
-  String get checkoutOnlineUnavailable;
+  /// **'Payme va Click orqali onlayn to\'lov — tez orada'**
+  String get checkoutOnlineSoon;
+
+  /// No description provided for @checkoutAddressAdd.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shish'**
+  String get checkoutAddressAdd;
 
   /// No description provided for @checkoutCalculating.
   ///
@@ -3655,18 +3661,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Qabul qilganda, aniq summani yig\'ishdan keyin ko\'rsatamiz'**
   String get paymentCashHint;
-
-  /// No description provided for @paymentOnlineTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Onlayn: Payme yoki Click'**
-  String get paymentOnlineTitle;
-
-  /// No description provided for @checkoutSoon.
-  ///
-  /// In uz, this message translates to:
-  /// **'Tez orada'**
-  String get checkoutSoon;
 
   /// No description provided for @checkoutItems.
   ///

@@ -971,7 +971,8 @@
   "checkoutTitle": "Rasmiylashtirish",
   "checkoutGo": "Rasmiylashtirish",
   "checkoutPayment": "To'lov usuli",
-  "checkoutOnlineUnavailable": "Hozircha faqat naqd pul bilan to'lash mumkin",
+  "checkoutOnlineSoon": "Payme va Click orqali onlayn to'lov — tez orada",
+  "checkoutAddressAdd": "Qo'shish",
   "checkoutCalculating": "Summa hisoblanmoqda…",
   "checkoutPlacing": "Buyurtma yuborilmoqda…",
   "checkoutPlaced": "Buyurtma № {number} rasmiylashtirildi",
@@ -1021,8 +1022,6 @@
   "checkoutWishHint": "Masalan: 18:00 dan keyin, oldindan qo'ng'iroq qiling",
   "paymentCashTitle": "Kuryerga naqd pul",
   "paymentCashHint": "Qabul qilganda, aniq summani yig'ishdan keyin ko'rsatamiz",
-  "paymentOnlineTitle": "Onlayn: Payme yoki Click",
-  "checkoutSoon": "Tez orada",
   "checkoutItems": "Mahsulotlar · {count}",
   "@checkoutItems": {
     "placeholders": {

@@ -1932,8 +1932,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get checkoutPayment => 'Способ оплаты';
 
   @override
-  String get checkoutOnlineUnavailable =>
-      'Пока можно оплатить только наличными';
+  String get checkoutOnlineSoon => 'Онлайн-оплата через Payme и Click — скоро';
+
+  @override
+  String get checkoutAddressAdd => 'Добавить';
 
   @override
   String get checkoutCalculating => 'Считаем сумму…';
@@ -2024,12 +2026,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get paymentCashHint =>
       'При получении, точную сумму покажем после сборки';
-
-  @override
-  String get paymentOnlineTitle => 'Онлайн: Payme или Click';
-
-  @override
-  String get checkoutSoon => 'Скоро';
 
   @override
   String checkoutItems(int count) {
