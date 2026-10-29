@@ -469,7 +469,7 @@ void main() {
             find.text(OrderLabels.ratingReason(words, RatingReason.notFresh)),
           )
           .style!;
-      expect(reason.color, KitColors.dangerDark);
+      expect(reason.color, KitColors.danger);
       expect(find.text('Kartoshka eski edi'), findsOneWidget);
       expect(tester.getSize(byKey('rating-review')).height, 44);
 

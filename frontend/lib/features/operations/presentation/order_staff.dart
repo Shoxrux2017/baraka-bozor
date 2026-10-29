@@ -392,7 +392,7 @@ class CourierCard extends StatelessWidget {
               if (assignment.failedNote != null) assignment.failedNote!,
             ].join(': '),
             key: ValueKey<String>('courier-failure-${assignment.id}'),
-            color: KitColors.dangerDark,
+            color: KitColors.danger,
           ),
       ],
     );

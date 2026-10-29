@@ -39,7 +39,7 @@ void main() {
 
     test('takes its seed from the kit primary', () {
       expect(appSeedColor, KitColors.primary);
-      expect(KitColors.primary, const Color(0xFF5AC268));
+      expect(KitColors.primary, const Color(0xFF3A9E46));
     });
 
     test('pins the kit primary in both schemes', () {
@@ -68,6 +68,20 @@ void main() {
       expect(
         (input.focusedBorder! as OutlineInputBorder).borderSide,
         const BorderSide(color: KitColors.primary, width: 1.5),
+      );
+    });
+
+    test('draws text buttons in the text green', () {
+      final ThemeData theme = buildAppTheme(Brightness.light);
+      expect(
+        theme.textButtonTheme.style!.foregroundColor!.resolve(<WidgetState>{}),
+        KitColors.primaryDark,
+      );
+      expect(
+        theme.outlinedButtonTheme.style!.foregroundColor!.resolve(
+          <WidgetState>{},
+        ),
+        KitColors.primaryDark,
       );
     });
 

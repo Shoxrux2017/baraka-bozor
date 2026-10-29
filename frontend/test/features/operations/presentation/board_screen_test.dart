@@ -1475,7 +1475,7 @@ void main() {
     expect(tone(OrderStatus.completed), (KitColors.field, KitColors.ink2));
     expect(tone(OrderStatus.cancelled), (
       KitColors.dangerWash,
-      KitColors.dangerDark,
+      KitColors.danger,
     ));
     expect(tone(OrderStatus.finalPaymentPending), (
       KitColors.warningWash,

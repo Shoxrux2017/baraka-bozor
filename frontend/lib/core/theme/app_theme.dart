@@ -49,6 +49,12 @@ ThemeData buildAppTheme(Brightness brightness) {
         textStyle: buttonText,
       ),
     ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(foregroundColor: KitColors.primaryDark),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(foregroundColor: KitColors.primaryDark),
+    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: KitColors.field,

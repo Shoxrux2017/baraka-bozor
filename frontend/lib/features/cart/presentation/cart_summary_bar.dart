@@ -57,9 +57,9 @@ class CartSummaryBar extends ConsumerWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            boxShadow: const <BoxShadow>[
+            boxShadow: <BoxShadow>[
               BoxShadow(
-                color: Color(0x595AC268),
+                color: KitColors.primary.withValues(alpha: 0.35),
                 offset: Offset(0, 6),
                 blurRadius: 18,
               ),

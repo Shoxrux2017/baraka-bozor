@@ -185,7 +185,7 @@ class _Header extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: KitColors.dangerDark,
+                color: KitColors.danger,
               ),
             ),
           ),

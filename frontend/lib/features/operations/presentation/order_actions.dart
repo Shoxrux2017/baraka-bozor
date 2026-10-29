@@ -67,7 +67,7 @@ class ApprovalTile extends ConsumerWidget {
     final (Color tagGround, Color tagText) = switch (approval.status) {
       ApprovalStatus.pending => (KitColors.warningSoft, KitColors.warningDark),
       ApprovalStatus.approved => (KitColors.primaryWash, KitColors.primaryDark),
-      ApprovalStatus.expired => (KitColors.dangerWash, KitColors.dangerDark),
+      ApprovalStatus.expired => (KitColors.dangerWash, KitColors.danger),
       ApprovalStatus.rejected ||
       ApprovalStatus.cancelled => (KitColors.line, KitColors.ink2),
     };
@@ -445,7 +445,7 @@ class FailedDeliveryCancel extends ConsumerWidget {
 
     return OutlinedButton.icon(
       key: const ValueKey<String>('cancel-failed-delivery'),
-      style: kitOutlined(foreground: KitColors.dangerDark, height: 44).copyWith(
+      style: kitOutlined(foreground: KitColors.danger, height: 44).copyWith(
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         side: const WidgetStatePropertyAll<BorderSide>(
           BorderSide(color: KitColors.danger),
@@ -1113,7 +1113,7 @@ class RatingDetails extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: KitColors.dangerDark,
+                          color: KitColors.danger,
                         ),
                       ),
                     ),

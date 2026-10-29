@@ -173,7 +173,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
             padding: const EdgeInsets.only(top: 16),
             child: Text(
               l10n.customerUnfinished('${blockedBy.number}'),
-              style: const TextStyle(fontSize: 13, color: KitColors.dangerDark),
+              style: const TextStyle(fontSize: 13, color: KitColors.danger),
             ),
           )
         else
@@ -454,7 +454,7 @@ class _DangerRow extends StatelessWidget {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: KitColors.dangerDark,
+            color: KitColors.danger,
           ),
         ),
         const SizedBox(height: 2),
@@ -466,7 +466,7 @@ class _DangerRow extends StatelessWidget {
     );
     final Widget button = OutlinedButton.icon(
       key: ValueKey<String>('customer-erase-${customer.id}'),
-      style: kitOutlined(foreground: KitColors.dangerDark, height: 44).copyWith(
+      style: kitOutlined(foreground: KitColors.danger, height: 44).copyWith(
         side: WidgetStateProperty.resolveWith<BorderSide>(
           (Set<WidgetState> states) => BorderSide(
             color: states.contains(WidgetState.disabled)
