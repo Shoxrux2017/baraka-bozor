@@ -219,6 +219,55 @@ void main() {
     expect(gridPixels(tester), 400);
   });
 
+  testWidgets('a tap on the current tab scrolls its list to the top', (
+    WidgetTester tester,
+  ) async {
+    orders.summaries = <Map<String, Object?>>[
+      for (int i = 0; i < 12; i++)
+        orderSummaryJson(
+          id: '0192f0a0-0000-7000-8000-00000000d0${i.toString().padLeft(2, '0')}',
+          number: 2000 + i,
+          status: 'completed',
+        ),
+    ];
+    double pixels(WidgetTester tester, String key) => tester
+        .state<ScrollableState>(
+          find
+              .descendant(of: byKey(key), matching: find.byType(Scrollable))
+              .first,
+        )
+        .position
+        .pixels;
+    await open(tester);
+    tester.view.physicalSize = const Size(800, 600);
+    await tester.pumpAndSettle();
+
+    final List<(String, String, String)> cases = <(String, String, String)>[
+      ('open-home', 'home-body', 'home'),
+      ('open-favorites', 'favorites-grid', 'favorites'),
+      ('open-orders', 'orders-list', 'orders'),
+      ('open-profile', 'profile-list', 'profile'),
+    ];
+    for (final (String tabKey, String listKey, String name) in cases) {
+      await tab(tester, tabKey);
+      if (name == 'orders') {
+        await tester.tap(byKey('orders-tab-past'));
+        await tester.pumpAndSettle();
+      }
+      final double before = pixels(tester, listKey);
+      await tester.drag(byKey(listKey), const Offset(0, -300));
+      await tester.pumpAndSettle();
+      final double scrolled = pixels(tester, listKey);
+      expect(scrolled, greaterThan(before), reason: name);
+
+      await tab(tester, tabKey);
+      expect(pixels(tester, listKey), 0, reason: name);
+
+      await tab(tester, tabKey);
+      expect(pixels(tester, listKey), 0, reason: name);
+    }
+  });
+
   testWidgets('a hidden orders tab loads nothing', (WidgetTester tester) async {
     await open(tester);
     await tab(tester, 'open-orders');

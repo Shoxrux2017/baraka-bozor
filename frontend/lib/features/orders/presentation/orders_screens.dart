@@ -85,6 +85,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                         ? _Empty(tab: _tab)
                         : ListView(
                             key: const ValueKey<String>('orders-list'),
+                            primary: true,
                             padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
                             children: <Widget>[
                               for (final OrderSummary order in page.items)

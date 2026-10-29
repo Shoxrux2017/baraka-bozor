@@ -97,6 +97,7 @@ class _Grid extends StatelessWidget {
 
     return ListView.builder(
       key: const ValueKey<String>('favorites-grid'),
+      primary: true,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       itemCount: rows + (state.hasMore ? 1 : 0),
       itemBuilder: (BuildContext context, int row) {

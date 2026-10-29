@@ -59,6 +59,7 @@ class ProfileScreen extends ConsumerWidget {
                   skipLoadingOnRefresh: !profile.hasError,
                   data: (CustomerProfile profile) => ListView(
                     key: const ValueKey<String>('profile-list'),
+                    primary: true,
                     padding: EdgeInsets.zero,
                     children: <Widget>[
                       ProfileHeader(profile: profile),

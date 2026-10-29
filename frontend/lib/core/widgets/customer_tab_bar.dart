@@ -11,8 +11,8 @@ import '../theme/kit_colors.dart';
 /// of the tabs' shell (`DL-118`).
 enum CustomerTab { home, favorites, orders, profile }
 
-/// Wraps a tab screen other than the home: a system back it cannot pop â€” a
-/// tab is a branch of the shell â€” goes to the home instead of closing the app.
+/// Wraps a tab screen other than the home: a system back it cannot pop — a
+/// tab is a branch of the shell — goes to the home instead of closing the app.
 class CustomerTabScope extends StatelessWidget {
   const CustomerTabScope({required this.child, super.key});
 
@@ -48,6 +48,7 @@ class CustomerTabBar extends StatelessWidget {
 
   void _open(BuildContext context, CustomerTab tab) {
     if (tab == current) {
+      _toTop(context);
       return;
     }
     final StatefulNavigationShellState? shell = StatefulNavigationShell.maybeOf(
@@ -64,6 +65,27 @@ class CustomerTabBar extends StatelessWidget {
       CustomerTab.orders => AppPaths.customerOrders,
       CustomerTab.profile => AppPaths.customerProfile,
     });
+  }
+
+  /// A tap on the current tab: its main list, which takes the route's primary
+  /// scroll controller, goes back to the top (`DL-118`). At the top nothing
+  /// moves.
+  void _toTop(BuildContext context) {
+    final ScrollController? controller = PrimaryScrollController.maybeOf(
+      context,
+    );
+    if (controller == null || !controller.hasClients) {
+      return;
+    }
+    if (MediaQuery.disableAnimationsOf(context)) {
+      controller.jumpTo(0);
+    } else {
+      controller.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   @override
@@ -173,6 +195,7 @@ class _TabButton extends StatelessWidget {
         onTap: onTap,
         child: Stack(
           alignment: Alignment.center,
+          fit: StackFit.expand,
           children: <Widget>[
             if (selected)
               // The soft glow above the current icon.
@@ -198,10 +221,41 @@ class _TabButton extends StatelessWidget {
                   ),
                 ),
               ),
-            Icon(
-              icon,
-              size: 28,
-              color: selected ? KitColors.primary : KitColors.muted,
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(
+                      icon,
+                      size: 26,
+                      color: selected ? KitColors.primary : KitColors.muted,
+                    ),
+                    const SizedBox(height: 2),
+                    MediaQuery.withClampedTextScaling(
+                      maxScaleFactor: 15 / 11,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: 11,
+                            height: 1.2,
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: selected
+                                ? KitColors.primaryDark
+                                : KitColors.muted,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

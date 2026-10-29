@@ -106,7 +106,13 @@ void main() {
   ) async {
     await open(tester);
 
-    expect(find.text('Sevimlilar'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Sevimlilar'),
+      ),
+      findsOneWidget,
+    );
     expect(byKey('product-card-p-1'), findsOneWidget);
     expect(byKey('product-card-p-2'), findsOneWidget);
     final Icon heart = tester.widget<Icon>(
