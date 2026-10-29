@@ -84,4 +84,52 @@ void main() {
     final SnackBar bar = tester.widget<SnackBar>(find.byType(SnackBar));
     expect(bar.backgroundColor, KitColors.undoBar);
   });
+
+  testWidgets('at 320 px with text × 2 the action goes under the text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (BuildContext context) => TextButton(
+              onPressed: () => showUndoBar(
+                ScaffoldMessenger.of(context),
+                text: 'Pomidor olib tashlandi',
+                actionLabel: 'Qaytarish',
+                onUndo: () {},
+              ),
+              child: const Text('go'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('go'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(tester.takeException(), isNull);
+    final Rect text = tester.getRect(find.text('Pomidor olib tashlandi'));
+    final Rect action = tester.getRect(find.text('Qaytarish'));
+    expect(action.top, greaterThanOrEqualTo(text.bottom));
+    final Rect bar = tester.getRect(find.byType(SnackBar));
+    expect(action.right, lessThanOrEqualTo(bar.right));
+    expect(action.right, greaterThan(bar.right - 40), reason: '$action $bar');
+  });
+
+  testWidgets('with room the text and the action share one row', (
+    tester,
+  ) async {
+    await _open(tester, () {});
+    final Rect text = tester.getRect(find.text('Olma removed'));
+    final Rect action = tester.getRect(find.text('Undo'));
+    expect(action.left, greaterThanOrEqualTo(text.right));
+    expect((action.center.dy - text.center.dy).abs(), lessThan(4));
+  });
 }
