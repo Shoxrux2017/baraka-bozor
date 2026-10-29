@@ -223,7 +223,7 @@ The Android release is built on the development machine by `tasks/scripts/build_
 
 ## 28. Async and Session Safety
 
-Session, target and operation identity guard every async completion; a result that completes after a mode switch or an account change is discarded. A sure answer that takes a row off a list removes it from the list under the page at once, before that list loads again (`DL-113`). Payment, approval and order actions suppress duplicate submission and reconcile from the server after an uncertain outcome. A failed load is never retried automatically: the screen shows the reason and a retry the person presses (`DL-28` (12)).
+Session, target and operation identity guard every async completion; a result that completes after a mode switch or an account change is discarded. A sure answer that takes a row off a list removes it from the list under the page at once, before that list loads again (`DL-113`). Payment, approval and order actions suppress duplicate submission and reconcile from the server after an uncertain outcome. A failed load is never retried automatically: the screen shows the reason and a retry the person presses (`DL-28` (12)). The Customer's cart quantities go through one queue per account: one request per product at a time, the newest wish after its answer, and a wish never sent for another account (`DL-119`).
 
 ## 29. Navigation
 

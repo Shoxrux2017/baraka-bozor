@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,7 +8,6 @@ import '../../../core/catalog/catalog_values.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
-import '../../../core/localization/failure_text.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
@@ -14,14 +15,16 @@ import '../../../core/network/api_failure.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/soft_change.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../catalog/presentation/catalog_paths.dart';
 import '../../catalog/presentation/quantity_sheet.dart';
 import '../application/card_quantity.dart';
-import '../application/cart_controllers.dart';
+import '../application/cart_quantity_queue.dart';
 import '../domain/cart.dart';
 import 'cart_line_stepper.dart';
-import 'remove_line_sheet.dart';
+import 'cart_feedback.dart';
+import 'swipe_to_remove.dart';
 
 /// One line of the cart (drawings 19 and 19б): picture, name, the unit price,
 /// the rule and the note when set, and a bottom row with the line's estimate
@@ -38,72 +41,49 @@ class CartLineTile extends ConsumerStatefulWidget {
 }
 
 class _CartLineTileState extends ConsumerState<CartLineTile> {
-  // The remove sheet is open: a second minus does not stack another.
-  bool _asking = false;
-
   CartLine get _line => widget.line;
 
-  /// Runs one change of this line; a failure is said in a snackbar, and the
-  /// controller has already asked for the cart again when it may be stale.
-  Future<void> _run(Future<Cart?> Function() change) async {
-    if (ref.read(cartLineProvider(_line.id)).isBusy) {
-      return;
-    }
+  /// What the Customer sees: the wish the server has not answered yet, else
+  /// the line's own quantity (`DL-119`).
+  String _shown(Map<String, String> wishes) =>
+      shownCartQuantity(wishes, _line.productId, _line) ?? _line.quantity;
+
+  /// Wishes [quantity] through the queue; a failure is said in a snackbar.
+  Future<void> _want(String quantity, {bool now = false}) async {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final String id = _line.id;
-    final Cart? answer = await change();
-    if (answer != null || !mounted) {
-      return;
-    }
-    final ApiFailure? failure = ref.read(cartLineProvider(id)).failure;
-    if (failure == null) {
-      return;
-    }
-    final String? text = failureText(l10n, failure);
-    if (text != null) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(text)));
-    }
+    final ApiFailure? failure = await ref
+        .read(cartQuantityQueueProvider.notifier)
+        .want(_line.productId, quantity, now: now);
+    showCartFailure(messenger, l10n, failure);
   }
 
-  Future<void> _remove() =>
-      _run(() => ref.read(cartLineProvider(_line.id).notifier).remove());
+  /// Takes the line out at once and offers it back.
+  Future<void> _remove() => removeCartLine(
+    context,
+    ref,
+    line: _line,
+    quantity: _shown(ref.read(cartQuantityQueueProvider)),
+    name: _line.name(interfaceLanguage(context)),
+  );
 
-  Future<void> _change(String quantity) {
-    final CartLinePatch patch = CartLinePatch.between(
-      _line,
-      quantity: quantity,
-      customerNote: _line.customerNote,
-      substitutionPolicy: _line.substitutionPolicy,
+  void _plus() {
+    final String? quantity = CardQuantity.next(
+      _line.unit,
+      _shown(ref.read(cartQuantityQueueProvider)),
     );
-    if (patch.isEmpty) {
-      return Future<void>.value();
-    }
-    return _run(
-      () => ref.read(cartLineProvider(_line.id).notifier).change(patch),
-    );
-  }
-
-  Future<void> _plus() {
-    final String? quantity = CardQuantity.next(_line.unit, _line.quantity);
-    return quantity == null ? Future<void>.value() : _change(quantity);
-  }
-
-  Future<void> _minus() async {
-    if (_asking || ref.read(cartLineProvider(_line.id)).isBusy) {
-      return;
-    }
-    final String? quantity = CardQuantity.previous(_line.unit, _line.quantity);
     if (quantity != null) {
-      return _change(quantity);
+      _want(quantity);
     }
-    _asking = true;
-    final bool confirmed = await confirmRemoveLine(context, _line);
-    _asking = false;
-    if (confirmed && mounted) {
-      await _remove();
+  }
+
+  void _minus() {
+    final String shown = _shown(ref.read(cartQuantityQueueProvider));
+    final String? quantity = CardQuantity.previous(_line.unit, shown);
+    if (quantity == null) {
+      _remove();
+    } else {
+      _want(quantity);
     }
   }
 
@@ -111,10 +91,10 @@ class _CartLineTileState extends ConsumerState<CartLineTile> {
     final String? quantity = await showQuantitySheet(
       context,
       unit: _line.unit,
-      current: _line.quantity,
+      current: _shown(ref.read(cartQuantityQueueProvider)),
     );
     if (quantity != null && mounted) {
-      await _change(quantity);
+      await _want(quantity, now: true);
     }
   }
 
@@ -125,9 +105,12 @@ class _CartLineTileState extends ConsumerState<CartLineTile> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
     final CartLine line = _line;
-    final bool busy = ref.watch(cartLineProvider(line.id)).isBusy;
+    final Map<String, String> wishes = ref.watch(cartQuantityQueueProvider);
+    final String shown = _shown(wishes);
     final String unit = CatalogLabels.unit(l10n, line.unit);
-    final String quantity = '${QuantityRules.display(line.quantity)} $unit';
+    final String quantity = '${QuantityRules.display(shown)} $unit';
+    final bool canStep =
+        QuantityRules.normalize(line.unit, line.quantity) != null;
     final bool available = line.isAvailable;
     final int? price = line.customerUnitPriceUzs;
     final int? total = line.estimatedLineTotalUzs;
@@ -229,115 +212,158 @@ class _CartLineTileState extends ConsumerState<CartLineTile> {
       ],
     );
 
-    final Widget bottom = available && total != null
-        ? Row(
-            children: <Widget>[
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      estimate
-                          ? l10n.cartLineEstimate(
-                              MoneyFormat.uzs(total, language),
-                            )
-                          : MoneyFormat.uzs(total, language),
-                      key: ValueKey<String>('line-sum-${line.id}'),
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: KitColors.ink,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              CartLineStepper(
-                id: line.id,
-                quantityText: quantity,
-                busy: busy,
-                canStep:
-                    QuantityRules.normalize(line.unit, line.quantity) != null,
-                onMinus: _minus,
-                onPlus: _plus,
-                onQuantity: _exactQuantity,
-              ),
-            ],
-          )
-        : Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    quantity,
-                    maxLines: 1,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: KitColors.muted,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: OutlinedButton(
-                  key: ValueKey<String>('remove-line-${line.id}'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: KitColors.danger,
-                    side: const BorderSide(color: KitColors.danger),
-                    minimumSize: const Size(0, 36),
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: busy ? null : _remove,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      l10n.cartRemoveConfirm,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          );
+    final String? sumText = available && total != null
+        ? (estimate
+              ? l10n.cartLineEstimate(MoneyFormat.uzs(total, language))
+              : MoneyFormat.uzs(total, language))
+        : null;
+    const TextStyle sumStyle = TextStyle(
+      fontSize: 15,
+      fontWeight: FontWeight.w700,
+      color: KitColors.ink,
+    );
 
-    // The picture on the left; the text, then the bottom row level with the
-    // picture's bottom when the text is short, in the column beside it.
-    final Widget row = IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    /// The bottom row of a sold line: the sum, dimmed while the change
+    /// waits, beside the stepper or, when they do not fit, over it.
+    Widget bottom(double columnWidth) {
+      final Widget sum = SoftChange(
+        value: total ?? 0,
+        waiting: wishes.containsKey(line.productId),
+        child: Text(
+          sumText!,
+          key: ValueKey<String>('line-sum-${line.id}'),
+          style: sumStyle,
+        ),
+      );
+      Widget stepper(double width) => CartLineStepper(
+        id: line.id,
+        quantityText: quantity,
+        busy: false,
+        canStep: canStep,
+        atMinimum: canStep && CardQuantity.previous(line.unit, shown) == null,
+        binLabel: l10n.cartRemoveLine,
+        width: width,
+        onMinus: _minus,
+        onPlus: _plus,
+        onQuantity: _exactQuantity,
+      );
+      final TextPainter painter = TextPainter(
+        text: TextSpan(
+          text: sumText,
+          style: DefaultTextStyle.of(context).style.merge(sumStyle),
+        ),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        maxLines: 1,
+      )..layout();
+      final double sumWidth = painter.width;
+      painter.dispose();
+      if (sumWidth + 8 + CartLineStepper.defaultWidth <= columnWidth) {
+        return Row(
+          children: <Widget>[
+            Expanded(
+              child: Align(alignment: Alignment.centerLeft, child: sum),
+            ),
+            const SizedBox(width: 8),
+            stepper(CartLineStepper.defaultWidth),
+          ],
+        );
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Align(alignment: Alignment.topLeft, child: picture),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                info,
-                const Spacer(),
-                // The 44 stepper under the text still ends level with the
-                // 84 picture, so the gap is small (`DL-117`).
-                const SizedBox(height: 2),
-                bottom,
-              ],
+          sum,
+          const SizedBox(height: 6),
+          stepper(math.min(180, columnWidth)),
+        ],
+      );
+    }
+
+    final Widget unavailableBottom = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              quantity,
+              maxLines: 1,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: KitColors.muted,
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: OutlinedButton(
+            key: ValueKey<String>('remove-line-${line.id}'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: KitColors.danger,
+              side: const BorderSide(color: KitColors.danger),
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: _remove,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                l10n.cartRemoveConfirm,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
+
+    // The picture on the left; the text, then the bottom row level with the
+    // picture's bottom when the text is short, in the column beside it. The
+    // LayoutBuilder sits above the IntrinsicHeight, which cannot hold one.
+    final Widget row = LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double columnWidth = constraints.maxWidth - 84 - 12;
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Align(alignment: Alignment.topLeft, child: picture),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    info,
+                    const Spacer(),
+                    // The 44 stepper under the text still ends level with
+                    // the 84 picture, so the gap is small (`DL-117`).
+                    const SizedBox(height: 2),
+                    sumText != null ? bottom(columnWidth) : unavailableBottom,
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    final Widget content = available
+        ? InkWell(
+            key: ValueKey<String>('cart-line-${line.id}'),
+            onTap: _openProduct,
+            child: row,
+          )
+        : row;
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -345,13 +371,12 @@ class _CartLineTileState extends ConsumerState<CartLineTile> {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        child: available
-            ? InkWell(
-                key: ValueKey<String>('cart-line-${line.id}'),
-                onTap: _openProduct,
-                child: row,
-              )
-            : row,
+        child: SwipeToRemove(
+          label: l10n.cartRemoveConfirm,
+          removing: wishes[line.productId] == CartQuantityQueue.out,
+          onRemove: _remove,
+          child: content,
+        ),
       ),
     );
   }

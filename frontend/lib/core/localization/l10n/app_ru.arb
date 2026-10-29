@@ -2123,7 +2123,6 @@
       }
     }
   },
-  "cartRemoveTitle": "Убрать из корзины?",
   "cartRemoveConfirm": "Убрать",
   "cartEmptyTitle": "Корзина пока пуста",
   "cartEmptyText": "Добавьте товары из каталога — сборщик купит их на рынке, курьер привезёт.",
@@ -2474,5 +2473,27 @@
         "type": "String"
       }
     }
-  }
+  },
+  "undoAction": "Вернуть",
+  "cartLineRemoved": "{name} — убрано",
+  "@cartLineRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cartCardAdded": "{name}: {quantity} в корзине",
+  "@cartCardAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "cartRemoveLine": "Убрать из корзины",
+  "cartNotSaved": "Нет связи — в корзине осталось как было"
 }

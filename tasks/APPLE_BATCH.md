@@ -18,8 +18,8 @@ Rules for every stage:
 | Stage | Screens | Items | Server | Status |
 |---|---|---|---|---|
 | 1 | Kit colours and sizes (all roles) | 7 | — | Merged (PR #121) |
-| 2 | Customer tabs | 5 | — | In review |
-| 3 | Cart and the card's stepper | 8 | — | Planned |
+| 2 | Customer tabs | 5 | — | Merged (PR #122) |
+| 3 | Cart and the card's stepper | 8 | — | In review |
 | 4 | Checkout | 10 | — | Planned |
 | 5 | Product | 9 | — | Planned |
 | 6 | Home and categories | 14 | working hours | Planned |
@@ -347,10 +347,16 @@ Noticed in the reviews and left out; each needs its own decision before any code
 
 ## Risks
 
-- The 44 stepper squeezes the cart line's sum, which is scaled down to fit. Measured width of the sum: 68 to 52 px at 320 wide, 108 to 92 at 360, 123 to 107 at 375. On a 320 px phone a sum like "≈ 127 600 so'm" is drawn at about 40 % of its size. Stage 3 (`cart-7`) fixes it when it redraws the line (`DL-117` (9)).
+- The 44 stepper squeezes the cart line's sum, which is scaled down to fit. Measured width of the sum: 68 to 52 px at 320 wide, 108 to 92 at 360, 123 to 107 at 375. On a 320 px phone a sum like "≈ 127 600 so'm" is drawn at about 40 % of its size. Stage 3 (`cart-7`) fixes it when it redraws the line (`DL-117` (9)). Fixed: the sum now stands over the stepper when the two do not fit side by side (`DL-119` (4)).
 
 ## Review findings not acted on
 
 - Stage 1 re-review, P3: the panel's pending-approval tag now sits on `warningWash`, the same ground as its card, so "pending" shows as text without a pill (still 4.96:1). Ruling: panel only and readable; the smallest fix is a white ground for that tag (`order_actions.dart`, the `tagGround` switch), taken with the next stage that touches the panel.
 - Stage 1 re-review, P3, unconfirmed: the panel's language button has a `PanelHitBox` (a `GestureDetector`) around its `PopupMenuButton` without `excludeSemantics`, so a screen reader may meet two actions. Ruling: not reproduced; check it with the panel's next screen-reader pass and wrap it like the pager if it doubles.
 - Stage 2 re-review, minor: `PeriodicRefresh._tick` refreshes a shown screen without clearing the flag of a tick skipped earlier, so a refresh that leaves `active` true and a later hide and show can give one extra refresh. Ruling: harmless (one redundant load, no wrong data); the one-line fix (`_skipped = false` in the refreshing branch) goes with the next stage that touches `periodic_refresh.dart`.
+- Stage 3 review, minor: `Fold` maps its linear time through different curves when folding and unfolding, so a line that comes back while it folds (a removal that fails at once, offline) jumps before it unfolds. Ruling: cosmetic and short; the fix is to keep the size on reversal (derive the unfolding start from the current size), taken with the next stage that uses `FoldingColumn`.
+- Stage 3 review, minor: the quantity queue treats a cart that has not loaded yet as one without the product, so a step then adds at once, and an existing line answers `cart_item_already_exists` and the step is dropped quietly. Ruling: a card or line shows a stepper only once the cart or a wish is known, so the case needs a cart that never loaded; left as is.
+- Stage 3 review, minor: the product card starts and stops its grow and shrink from `build()`; a card that scrolls in while its product has a wish but no line yet grows instead of appearing. Ruling: no crash (traced), visual only; a `ref.listen` would be cleaner, taken with stage 5 or 7 when the card is touched.
+- Stage 3 review, minor: the cart footer's fit check hard-codes the button's 18 px side padding and the 12 + 1 + 12 divider. Ruling: correct today; whoever changes the button updates the check.
+- Stage 3 review, out of scope: the product screen still saves its quantity through the same cart controllers, so a queue send that meets its save on the same line is refused as busy and the queue's wish is dropped quietly. Ruling: stage 5 (`product-3`) moves the product screen onto the queue.
+- Stage 3 review, for the Owner's look: at 100 % text on a 360 dp phone a six-digit line sum leaves about 92 px beside the stepper, so many lines stand their sum over the stepper rather than beside it as drawn. Ruling: the walk takes a 360 dp screenshot for the Owner.

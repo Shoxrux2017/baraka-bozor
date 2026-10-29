@@ -9,13 +9,16 @@ import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/core/widgets/product_image.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
+import 'package:baraka_bozor/features/cart/application/cart_quantity_queue.dart';
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -44,6 +47,7 @@ void main() {
     double? imageHeight,
     bool available = true,
     double width = 161,
+    bool reduced = false,
   }) async {
     opened = null;
     final GoRouter router = GoRouter(
@@ -87,9 +91,19 @@ void main() {
           locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          builder: (BuildContext context, Widget? child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: reduced),
+            child: child!,
+          ),
         ),
       ),
     );
+    await tester.pumpAndSettle();
+  }
+
+  /// Lets a step's wait run out, then the request and the animations.
+  Future<void> settleStep(WidgetTester tester) async {
+    await tester.pump(CartQuantityQueue.settleDelay);
     await tester.pumpAndSettle();
   }
 
@@ -282,7 +296,7 @@ void main() {
     final Rect card = tester.getRect(byKey('product-card-$id'));
     final Rect minus = tester.getRect(byKey('step-minus-$id'));
     await tester.tapAt(Offset(card.left + 3, minus.center.dy));
-    await tester.pumpAndSettle();
+    await settleStep(tester);
 
     expect(cart.patches.single.quantity, '0.5');
     expect(opened, isNull);
@@ -290,13 +304,23 @@ void main() {
 
   group('every card target meets iOSTapTargetGuideline', () {
     for (final KitCardSize size in KitCardSize.values) {
-      for (final bool inCart in <bool>[false, true]) {
-        testWidgets('$size, inCart=$inCart', (WidgetTester tester) async {
+      for (final (bool inCart, String quantity) in <(bool, String)>[
+        (false, '1'),
+        (true, '1'),
+        (true, '0.5'),
+      ]) {
+        testWidgets('$size, inCart=$inCart, $quantity kg', (
+          WidgetTester tester,
+        ) async {
           final SemanticsHandle handle = tester.ensureSemantics();
           if (inCart) {
             cart = FakeCartRepository(
               cart: cartOf(<Map<String, Object?>>[
-                lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
+                lineOf(
+                  tomato,
+                  quantity,
+                  '0192f0a0-0000-7000-8000-0000000000b1',
+                ),
               ]),
             );
           }
@@ -375,7 +399,7 @@ void main() {
       lineOf(tomato, '1.5', '0192f0a0-0000-7000-8000-0000000000b1'),
     ]);
     await tester.tap(byKey('step-plus-0192f0a0-0000-7000-8000-0000000000a1'));
-    await tester.pumpAndSettle();
+    await settleStep(tester);
 
     expect(cart.calls, contains('change:0192f0a0-0000-7000-8000-0000000000b1'));
     expect(cart.patches.single.quantity, '1.5');
@@ -396,14 +420,14 @@ void main() {
       lineOf(tomato, '0.5', '0192f0a0-0000-7000-8000-0000000000b1'),
     ]);
     await tester.tap(byKey('step-minus-0192f0a0-0000-7000-8000-0000000000a1'));
-    await tester.pumpAndSettle();
+    await settleStep(tester);
 
     expect(cart.patches.single.quantity, '0.5');
   });
 
-  testWidgets('minus at one piece removes the line', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('minus at one piece is a bin that removes the line at once, '
+      'and the bar brings it back', (WidgetTester tester) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a2';
     cart = FakeCartRepository(
       cart: cartOf(<Map<String, Object?>>[
         lineOf(bread, '1', '0192f0a0-0000-7000-8000-0000000000b2'),
@@ -411,20 +435,186 @@ void main() {
     );
     await show(tester, bread);
     cart.answer = cartOf(<Map<String, Object?>>[]);
-    await tester.tap(byKey('step-minus-0192f0a0-0000-7000-8000-0000000000a2'));
+    await tester.tap(byKey('step-minus-$id'));
+    await tester.pump();
+
+    expect(cart.patches, isEmpty);
+    expect(cart.calls, contains('remove:0192f0a0-0000-7000-8000-0000000000b2'));
+    expect(find.text('Хлеб — убрано'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(byKey('add-$id'), findsOneWidget);
+    expect(byKey('step-qty-$id'), findsNothing);
+  });
+
+  testWidgets('three quick plus give 2,5 kg in one change', (
+    WidgetTester tester,
+  ) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    cart = FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[
+        lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
+      ]),
+    );
+    await show(tester, tomato);
+    cart.answer = cartOf(<Map<String, Object?>>[
+      lineOf(tomato, '2.5', '0192f0a0-0000-7000-8000-0000000000b1'),
+    ]);
+    for (int i = 0; i < 3; i++) {
+      await tester.tap(byKey('step-plus-$id'));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(quantityShown(tester, id), _qty('2,5', 'кг'));
+    expect(cart.patches, isEmpty);
+
+    await tester.pump(CartQuantityQueue.settleDelay);
+    await tester.pumpAndSettle();
+    expect(cart.patches.map((CartLinePatch p) => p.quantity), <String?>['2.5']);
+    expect(quantityShown(tester, id), _qty('2,5', 'кг'));
+  });
+
+  testWidgets('plus grows into the stepper, with a light haptic and an '
+      'announcement', (WidgetTester tester) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    final List<MethodCall> calls = <MethodCall>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall call) async {
+        calls.add(call);
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    await show(tester, tomato);
+    cart.hold = Completer<void>();
+    await tester.tap(byKey('add-$id'));
+    await tester.pump();
+
+    expect(quantityShown(tester, id), _qty('1', 'кг'));
+    expect(
+      calls.where(
+        (MethodCall c) =>
+            c.method == 'HapticFeedback.vibrate' &&
+            c.arguments == 'HapticFeedbackType.lightImpact',
+      ),
+      hasLength(1),
+    );
+    expect(
+      tester.takeAnnouncements().map(
+        (CapturedAccessibilityAnnouncement a) => a.message,
+      ),
+      <String>['Помидор: ${_qty('1', 'кг')} в корзине'],
+    );
+    expect(cart.added, hasLength(1));
+    cart.hold!.complete();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('the stepper grows from the plus in 0.26 s; at once with '
+      'reduced motion', (WidgetTester tester) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    await show(tester, tomato);
+    cart.hold = Completer<void>();
+    await tester.tap(byKey('add-$id'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 130));
+    final double mid = tester.getSize(byKey('step-reveal-$id')).width;
+    await tester.pump(const Duration(milliseconds: 130));
+    final double full = tester.getSize(byKey('step-reveal-$id')).width;
+    expect(mid, greaterThan(44));
+    expect(mid, lessThan(full));
+    expect(full, 145);
+    cart.hold!.complete();
     await tester.pumpAndSettle();
 
-    expect(cart.calls, contains('remove:0192f0a0-0000-7000-8000-0000000000b2'));
-    expect(byKey('add-0192f0a0-0000-7000-8000-0000000000a2'), findsOneWidget);
+    cart = FakeCartRepository();
+    await show(tester, tomato, reduced: true);
+    cart.hold = Completer<void>();
+    await tester.tap(byKey('add-$id'));
+    await tester.pump();
+    expect(tester.getSize(byKey('step-reveal-$id')).width, 145);
+    cart.hold!.complete();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('at the smallest quantity the minus is a red bin that removes '
+      'at once', (WidgetTester tester) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    cart = FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          id: '0192f0a0-0000-7000-8000-0000000000b1',
+          productId: tomato.id,
+          quantity: '0.500',
+          note: 'ripe',
+          policy: 'contact_before_substitution',
+        ),
+      ]),
+    );
+    await show(tester, tomato);
+    final Icon icon = tester.widget<Icon>(
+      find.descendant(
+        of: byKey('step-minus-$id'),
+        matching: find.byIcon(Icons.delete_outline),
+      ),
+    );
+    expect(icon.color, KitColors.danger);
     expect(
-      byKey('step-qty-0192f0a0-0000-7000-8000-0000000000a2'),
-      findsNothing,
+      tester.widget<IconButton>(byKey('step-minus-$id')).tooltip,
+      'Убрать из корзины',
+    );
+
+    cart.answer = cartOf(<Map<String, Object?>>[]);
+    await tester.tap(byKey('step-minus-$id'));
+    expect(
+      cart.calls.where((String c) => c.startsWith('remove')),
+      hasLength(1),
+    );
+    await tester.pump();
+    expect(find.text('Помидор — убрано'), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Вернуть'));
+    await tester.pumpAndSettle();
+    final NewCartLine back = cart.added.single;
+    expect(back.quantity, '0.500');
+    expect(back.customerNote, 'ripe');
+    expect(back.substitutionPolicy, SubstitutionPolicy.contactBefore);
+    expect(find.text('Вернуть'), findsNothing);
+  });
+
+  testWidgets('a lost connection puts the card back and says so', (
+    WidgetTester tester,
+  ) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
+    cart = FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[
+        lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
+      ]),
+    );
+    await show(tester, tomato);
+    cart.failure = const NetworkFailure();
+    await tester.tap(byKey('step-plus-$id'));
+    await tester.pump();
+    expect(quantityShown(tester, id), _qty('1,5', 'кг'));
+    await tester.pump(CartQuantityQueue.settleDelay);
+    await tester.pumpAndSettle();
+
+    expect(quantityShown(tester, id), _qty('1', 'кг'));
+    expect(
+      find.text('Нет связи — в корзине осталось как было'),
+      findsOneWidget,
     );
   });
 
-  testWidgets('while a change is pending both step buttons are disabled', (
+  testWidgets('taps while a change is on its way still count', (
     WidgetTester tester,
   ) async {
+    const String id = '0192f0a0-0000-7000-8000-0000000000a1';
     cart = FakeCartRepository(
       cart: cartOf(<Map<String, Object?>>[
         lineOf(tomato, '1', '0192f0a0-0000-7000-8000-0000000000b1'),
@@ -433,37 +623,24 @@ void main() {
     await show(tester, tomato);
     final Completer<void> hold = Completer<void>();
     cart.hold = hold;
-    await tester.tap(byKey('step-plus-0192f0a0-0000-7000-8000-0000000000a1'));
+    await tester.tap(byKey('step-plus-$id'));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(cart.patches.map((CartLinePatch p) => p.quantity), <String?>['1.5']);
+    await tester.tap(byKey('step-plus-$id'));
     await tester.pump();
+    expect(quantityShown(tester, id), _qty('2', 'кг'));
 
-    expect(
-      tester
-          .widget<IconButton>(
-            byKey('step-plus-0192f0a0-0000-7000-8000-0000000000a1'),
-          )
-          .onPressed,
-      isNull,
-    );
-    expect(
-      tester
-          .widget<IconButton>(
-            byKey('step-minus-0192f0a0-0000-7000-8000-0000000000a1'),
-          )
-          .onPressed,
-      isNull,
-    );
-    expect(cart.patches, hasLength(1));
-
+    cart.answer = cartOf(<Map<String, Object?>>[
+      lineOf(tomato, '1.5', '0192f0a0-0000-7000-8000-0000000000b1'),
+    ]);
+    cart.hold = null;
     hold.complete();
+    await tester.pump(const Duration(milliseconds: 600));
     await tester.pumpAndSettle();
-    expect(
-      tester
-          .widget<IconButton>(
-            byKey('step-plus-0192f0a0-0000-7000-8000-0000000000a1'),
-          )
-          .onPressed,
-      isNotNull,
-    );
+    expect(cart.patches.map((CartLinePatch p) => p.quantity), <String?>[
+      '1.5',
+      '2',
+    ]);
   });
 
   testWidgets('a line that already exists is shown as the stepper', (
@@ -573,10 +750,10 @@ void main() {
       final Completer<void> hold = Completer<void>();
       cart.hold = hold;
       await tester.tap(byKey('step-plus-$id'));
-      await tester.pump();
+      await tester.pump(CartQuantityQueue.settleDelay);
       await tester.tap(byKey('step-plus-$id'));
       await tester.tap(byKey('step-minus-$id'));
-      await tester.pumpAndSettle();
+      await tester.pump();
       expect(opened, isNull);
       expect(find.text('product page'), findsNothing);
       expect(cart.patches, hasLength(1));
@@ -592,8 +769,8 @@ void main() {
       cart.hold = hold;
       await tester.tap(byKey('add-$id'));
       await tester.pump();
-      await tester.tap(byKey('add-$id'));
-      await tester.pumpAndSettle();
+      await tester.tap(byKey('step-plus-$id'));
+      await tester.pump();
       expect(opened, isNull);
       expect(cart.added, hasLength(1));
       hold.complete();

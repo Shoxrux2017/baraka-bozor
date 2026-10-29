@@ -3622,9 +3622,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get cartRemoveTitle => 'Убрать из корзины?';
-
-  @override
   String get cartRemoveConfirm => 'Убрать';
 
   @override
@@ -4298,4 +4295,23 @@ class AppLocalizationsRu extends AppLocalizations {
   String requestCustomerReason(String reason) {
     return 'Причина клиента: «$reason»';
   }
+
+  @override
+  String get undoAction => 'Вернуть';
+
+  @override
+  String cartLineRemoved(String name) {
+    return '$name — убрано';
+  }
+
+  @override
+  String cartCardAdded(String name, String quantity) {
+    return '$name: $quantity в корзине';
+  }
+
+  @override
+  String get cartRemoveLine => 'Убрать из корзины';
+
+  @override
+  String get cartNotSaved => 'Нет связи — в корзине осталось как было';
 }

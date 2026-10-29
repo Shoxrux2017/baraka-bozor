@@ -6200,12 +6200,6 @@ abstract class AppLocalizations {
   /// **'{unit} uchun {price}'**
   String cartUnitPriceExact(String unit, String price);
 
-  /// No description provided for @cartRemoveTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Savatdan olib tashlansinmi?'**
-  String get cartRemoveTitle;
-
   /// No description provided for @cartRemoveConfirm.
   ///
   /// In uz, this message translates to:
@@ -7267,6 +7261,36 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Mijoz sababi: «{reason}»'**
   String requestCustomerReason(String reason);
+
+  /// No description provided for @undoAction.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaytarish'**
+  String get undoAction;
+
+  /// No description provided for @cartLineRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name} olib tashlandi'**
+  String cartLineRemoved(String name);
+
+  /// No description provided for @cartCardAdded.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: savatda {quantity}'**
+  String cartCardAdded(String name, String quantity);
+
+  /// No description provided for @cartRemoveLine.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatdan olib tashlash'**
+  String get cartRemoveLine;
+
+  /// No description provided for @cartNotSaved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q — savat avvalgidek qoldi'**
+  String get cartNotSaved;
 }
 
 class _AppLocalizationsDelegate
