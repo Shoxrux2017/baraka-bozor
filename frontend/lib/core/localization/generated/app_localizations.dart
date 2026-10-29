@@ -6200,12 +6200,6 @@ abstract class AppLocalizations {
   /// **'{unit} uchun {price}'**
   String cartUnitPriceExact(String unit, String price);
 
-  /// No description provided for @cartRemoveTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Savatdan olib tashlansinmi?'**
-  String get cartRemoveTitle;
-
   /// No description provided for @cartRemoveConfirm.
   ///
   /// In uz, this message translates to:

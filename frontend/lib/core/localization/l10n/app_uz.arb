@@ -2289,7 +2289,6 @@
       }
     }
   },
-  "cartRemoveTitle": "Savatdan olib tashlansinmi?",
   "cartRemoveConfirm": "Olib tashlash",
   "cartEmptyTitle": "Savat hozircha bo'sh",
   "cartEmptyText": "Katalogdan mahsulot qo'shing — yig'uvchi ularni bozordan oladi, kuryer olib keladi.",

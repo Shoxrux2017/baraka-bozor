@@ -3580,9 +3580,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get cartRemoveTitle => 'Savatdan olib tashlansinmi?';
-
-  @override
   String get cartRemoveConfirm => 'Olib tashlash';
 
   @override

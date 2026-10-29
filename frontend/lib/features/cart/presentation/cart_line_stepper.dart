@@ -6,8 +6,10 @@ import '../../../core/theme/kit_colors.dart';
 /// The stepper of a cart line (drawing 19): a minus, the quantity — which
 /// opens the exact-amount sheet — and a plus, in a green outline. While
 /// [busy] its change runs all three are inactive; while the line cannot be
-/// stepped, the minus and the plus are. With [atMinimum] the minus is a bin
-/// (the order's editor, where the last step takes the line out).
+/// stepped, the minus and the plus are. With [atMinimum] the minus is a red
+/// bin (the last step takes the line out, `DL-119`); [binLabel] names it, the
+/// order's editor's "remove from the order" when not given. [width] is 132
+/// unless the cart stacks the stepper under the sum at large text.
 class CartLineStepper extends StatelessWidget {
   const CartLineStepper({
     required this.id,
@@ -18,6 +20,8 @@ class CartLineStepper extends StatelessWidget {
     required this.onPlus,
     required this.onQuantity,
     this.atMinimum = false,
+    this.binLabel,
+    this.width = defaultWidth,
     super.key,
   });
 
@@ -29,11 +33,19 @@ class CartLineStepper extends StatelessWidget {
   final VoidCallback onPlus;
   final VoidCallback onQuantity;
   final bool atMinimum;
+  final String? binLabel;
+  final double width;
 
-  static const double width = 132;
+  static const double defaultWidth = 132;
   static const double height = 44;
 
-  Widget _button(Key key, IconData icon, String label, VoidCallback onTap) {
+  Widget _button(
+    Key key,
+    IconData icon,
+    String label,
+    VoidCallback onTap, {
+    Color color = KitColors.primary,
+  }) {
     return SizedBox.square(
       dimension: height,
       child: IconButton(
@@ -41,7 +53,7 @@ class CartLineStepper extends StatelessWidget {
         tooltip: label,
         padding: EdgeInsets.zero,
         iconSize: 18,
-        color: KitColors.primary,
+        color: color,
         disabledColor: KitColors.primarySoft,
         icon: Icon(icon),
         onPressed: busy || !canStep ? null : onTap,
@@ -65,8 +77,11 @@ class CartLineStepper extends StatelessWidget {
           _button(
             ValueKey<String>('line-minus-$id'),
             atMinimum ? Icons.delete_outline : Icons.remove,
-            atMinimum ? l10n.orderEditRemoveLine : l10n.cartStepMinus,
+            atMinimum
+                ? binLabel ?? l10n.orderEditRemoveLine
+                : l10n.cartStepMinus,
             onMinus,
+            color: atMinimum ? KitColors.danger : KitColors.primary,
           ),
           Expanded(
             child: Semantics(

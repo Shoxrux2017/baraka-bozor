@@ -3622,9 +3622,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get cartRemoveTitle => 'Убрать из корзины?';
-
-  @override
   String get cartRemoveConfirm => 'Убрать';
 
   @override
