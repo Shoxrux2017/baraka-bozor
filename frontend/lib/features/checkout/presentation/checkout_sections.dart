@@ -593,7 +593,8 @@ class CheckoutAmounts extends StatelessWidget {
 
   final CheckoutPreview preview;
 
-  /// The total the Customer saw before the figures were recounted.
+  /// The total the Customer saw before the figures were recounted; the
+  /// notice itself is the footer's (`DL-121`).
   final int? replacedTotalUzs;
 
   @override
@@ -609,16 +610,6 @@ class CheckoutAmounts extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (replaced != null) ...<Widget>[
-          _Notice(
-            noticeKey: 'checkout-refreshed',
-            wash: KitColors.primaryWash,
-            icon: Icons.sync,
-            iconColor: KitColors.primaryDark,
-            text: l10n.checkoutRecounted,
-          ),
-          const SizedBox(height: 12),
-        ],
         SummaryAmountRow(
           valueKey: 'checkout-subtotal',
           label: l10n.cartGoods(preview.lines.length),
@@ -651,123 +642,6 @@ class CheckoutAmounts extends StatelessWidget {
         const EstimateNote(),
       ],
     );
-  }
-}
-
-/// The bar under the checkout: "≈ total | Заказать".
-class CheckoutFooter extends StatelessWidget {
-  const CheckoutFooter({
-    required this.totalUzs,
-    required this.estimate,
-    required this.busy,
-    required this.busyLabel,
-    required this.onOrder,
-    this.message,
-    super.key,
-  });
-
-  final int? totalUzs;
-  final bool estimate;
-  final bool busy;
-  final String busyLabel;
-  final VoidCallback? onOrder;
-  final Widget? message;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final int? total = totalUzs;
-    final Widget? note = message;
-    const TextStyle text = TextStyle(fontSize: 15, fontWeight: FontWeight.w700);
-
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 20,
-            offset: Offset(0, -6),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (note != null)
-              // A long message scrolls: the button below always stays in reach.
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.sizeOf(context).height * 0.25,
-                ),
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: note,
-                  ),
-                ),
-              ),
-            FilledButton(
-              key: const ValueKey<String>('checkout-confirm'),
-              style: FilledButton.styleFrom(
-                backgroundColor: KitColors.primary,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: busy
-                    ? KitColors.primary
-                    : KitColors.line,
-                disabledForegroundColor: busy ? Colors.white : KitColors.muted,
-                minimumSize: const Size.fromHeight(54),
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              onPressed: busy ? null : onOrder,
-              child: busy
-                  ? SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                        semanticsLabel: busyLabel,
-                      ),
-                    )
-                  : FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          if (total != null) ...<Widget>[
-                            Text(_amount(context, l10n, total), style: text),
-                            const SizedBox(width: 12),
-                            SizedBox(
-                              width: 1,
-                              height: 22,
-                              child: ColoredBox(
-                                color: onOrder != null
-                                    ? Colors.white54
-                                    : KitColors.muted,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                          ],
-                          Text(l10n.checkoutOrder, style: text),
-                        ],
-                      ),
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _amount(BuildContext context, AppLocalizations l10n, int total) {
-    final String sum = MoneyFormat.uzs(total, interfaceLanguage(context));
-    return estimate ? l10n.cartLineEstimate(sum) : sum;
   }
 }
 

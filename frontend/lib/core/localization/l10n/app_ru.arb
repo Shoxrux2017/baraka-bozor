@@ -879,8 +879,8 @@
   "checkoutGo": "Оформить",
   "checkoutPayment": "Способ оплаты",
   "checkoutOnlineUnavailable": "Пока можно оплатить только наличными",
-  "checkoutCalculating": "Рассчитываем",
-  "checkoutPlacing": "Отправляем заказ",
+  "checkoutCalculating": "Считаем сумму…",
+  "checkoutPlacing": "Отправляем заказ…",
   "checkoutPlaced": "Заказ № {number} оформлен",
   "@checkoutPlaced": {
     "placeholders": {
@@ -948,6 +948,18 @@
     }
   },
   "checkoutRecounted": "Пока вы оформляли, заказ пересчитали. Проверьте итог и нажмите «Заказать» ещё раз.",
+  "checkoutRecountedFromTo": "Сумма изменилась: {before} → {after}. Проверьте и нажмите «Заказать» ещё раз.",
+  "@checkoutRecountedFromTo": {
+    "placeholders": {
+      "before": {
+        "type": "String"
+      },
+      "after": {
+        "type": "String"
+      }
+    }
+  },
+  "checkoutWhyNoAddress": "Добавьте адрес доставки — без него не посчитать доставку",
   "checkoutGoneTitle": "{count, plural, one{Товар закончился} few{Товары закончились} many{Товары закончились} other{Товары закончились}}",
   "@checkoutGoneTitle": {
     "placeholders": {

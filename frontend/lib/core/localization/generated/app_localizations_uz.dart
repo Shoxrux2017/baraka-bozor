@@ -1907,10 +1907,10 @@ class AppLocalizationsUz extends AppLocalizations {
       'Hozircha faqat naqd pul bilan to\'lash mumkin';
 
   @override
-  String get checkoutCalculating => 'Hisoblanmoqda';
+  String get checkoutCalculating => 'Summa hisoblanmoqda…';
 
   @override
-  String get checkoutPlacing => 'Buyurtma yuborilmoqda';
+  String get checkoutPlacing => 'Buyurtma yuborilmoqda…';
 
   @override
   String checkoutPlaced(String number) {
@@ -2021,6 +2021,15 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get checkoutRecounted =>
       'Rasmiylashtirayotganingizda buyurtma qayta hisoblandi. Summani tekshiring va «Buyurtma berish»ni yana bosing.';
+
+  @override
+  String checkoutRecountedFromTo(String before, String after) {
+    return 'Summa o\'zgardi: $before → $after. Tekshiring va «Buyurtma berish»ni yana bosing.';
+  }
+
+  @override
+  String get checkoutWhyNoAddress =>
+      'Yetkazish manzilini qo\'shing — usiz yetkazib berish narxini hisoblab bo\'lmaydi';
 
   @override
   String checkoutGoneTitle(int count) {

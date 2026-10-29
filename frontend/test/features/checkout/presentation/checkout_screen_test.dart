@@ -896,6 +896,84 @@ void main() {
     expect(top(tester), AppPaths.customerNewAddress);
   });
 
+  testWidgets('without an address a line says why under the grey button', (
+    WidgetTester tester,
+  ) async {
+    addresses = FakeAddressesRepository(rows: <Address>[]);
+    await open(tester);
+
+    expect(
+      tester.widget<Text>(byKey('checkout-why')).data,
+      l10n(tester).checkoutWhyNoAddress,
+    );
+    expect(orderActive(tester), isFalse);
+  });
+
+  testWidgets(
+    'a recount shows было → стало above Заказать and goes with the next change',
+    (WidgetTester tester) async {
+      await open(tester);
+      final AppLocalizations words = l10n(tester);
+      checkout.queuedPreviews.add(previewJson(total: 48600));
+      checkout.placeFailure = const ApiRefusal(
+        ApiError(status: 409, code: 'checkout_snapshot_stale'),
+      );
+
+      await order(tester);
+
+      final String before = words.cartLineEstimate(
+        MoneyFormat.uzs(47600, AppLanguage.uz),
+      );
+      final String after = words.cartLineEstimate(
+        MoneyFormat.uzs(48600, AppLanguage.uz),
+      );
+      expect(
+        tester.getTopLeft(byKey('checkout-refreshed')).dy,
+        lessThan(tester.getTopLeft(byKey('checkout-confirm')).dy),
+      );
+      final String plain = tester
+          .widgetList<RichText>(
+            find.descendant(
+              of: byKey('checkout-refreshed'),
+              matching: find.byType(RichText),
+            ),
+          )
+          .map((RichText t) => t.text.toPlainText())
+          .join();
+      expect(plain, contains(before));
+      expect(plain, contains(after));
+
+      await tester.enterText(byKey('checkout-delivery-wish'), 'Qo‘ng‘iroq');
+      await tester.pumpAndSettle();
+      expect(byKey('checkout-refreshed'), findsNothing);
+    },
+  );
+
+  for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+    testWidgets(
+      'at large text the recount, Итого and Заказать fit a small phone (${device.languageCode})',
+      (WidgetTester tester) async {
+        await open(
+          tester,
+          size: const Size(320, 640),
+          textScale: 2,
+          device: device,
+        );
+        checkout.queuedPreviews.add(previewJson(total: 48600));
+        checkout.placeFailure = const ApiRefusal(
+          ApiError(status: 409, code: 'checkout_snapshot_stale'),
+        );
+
+        await order(tester);
+
+        expect(tester.takeException(), isNull);
+        expect(byKey('checkout-refreshed'), findsOneWidget);
+        expect(byKey('checkout-footer-total'), findsOneWidget);
+        expect(byKey('checkout-confirm').hitTestable(), findsOneWidget);
+      },
+    );
+  }
+
   testWidgets('a wish longer than 160 characters is refused before sending', (
     WidgetTester tester,
   ) async {

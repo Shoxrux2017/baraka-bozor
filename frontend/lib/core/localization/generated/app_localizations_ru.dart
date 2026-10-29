@@ -1936,10 +1936,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Пока можно оплатить только наличными';
 
   @override
-  String get checkoutCalculating => 'Рассчитываем';
+  String get checkoutCalculating => 'Считаем сумму…';
 
   @override
-  String get checkoutPlacing => 'Отправляем заказ';
+  String get checkoutPlacing => 'Отправляем заказ…';
 
   @override
   String checkoutPlaced(String number) {
@@ -2047,6 +2047,15 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get checkoutRecounted =>
       'Пока вы оформляли, заказ пересчитали. Проверьте итог и нажмите «Заказать» ещё раз.';
+
+  @override
+  String checkoutRecountedFromTo(String before, String after) {
+    return 'Сумма изменилась: $before → $after. Проверьте и нажмите «Заказать» ещё раз.';
+  }
+
+  @override
+  String get checkoutWhyNoAddress =>
+      'Добавьте адрес доставки — без него не посчитать доставку';
 
   @override
   String checkoutGoneTitle(int count) {

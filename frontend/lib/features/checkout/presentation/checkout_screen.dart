@@ -26,6 +26,7 @@ import '../../profile/application/profile_controllers.dart';
 import '../../profile/domain/profile.dart';
 import '../application/checkout_controllers.dart';
 import '../domain/checkout.dart';
+import 'checkout_footer.dart';
 import 'checkout_placed_view.dart';
 import 'checkout_sections.dart';
 
@@ -544,6 +545,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         !addresses.isLoading &&
         !_previewWhenListed;
     final bool busy = busyPreview || busyPlace;
+    final bool noAddress = list != null && list.isEmpty && !sent;
     final bool locked = busy || sent;
     final CheckoutPreview? shown = gone ? null : _shown;
     final String? opensAt = shown?.opensAt;
@@ -588,6 +590,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ? l10n.checkoutPlacing
               : l10n.checkoutCalculating,
           onOrder: sent || (!gone && held != null) ? _order : null,
+          recountedFromUzs: _replacedTotal,
+          why: noAddress ? l10n.checkoutWhyNoAddress : null,
           message: notes.isEmpty
               ? null
               : Column(

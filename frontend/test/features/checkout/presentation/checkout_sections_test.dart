@@ -9,6 +9,7 @@ import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
 import 'package:baraka_bozor/features/checkout/data/checkout_api.dart';
 import 'package:baraka_bozor/features/checkout/domain/checkout.dart';
+import 'package:baraka_bozor/features/checkout/presentation/checkout_footer.dart';
 import 'package:baraka_bozor/features/checkout/presentation/checkout_sections.dart';
 import 'package:baraka_bozor/features/profile/domain/profile.dart';
 import 'package:flutter/material.dart';
@@ -219,72 +220,24 @@ void main() {
     );
   });
 
-  testWidgets('a recount shows the notice and the struck old total', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      host(
-        CheckoutAmounts(
-          preview: previewOf(total: 48600),
-          replacedTotalUzs: 47600,
+  testWidgets(
+    "the amounts keep the struck old total, the notice is the footer's",
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        host(
+          CheckoutAmounts(
+            preview: previewOf(total: 48600),
+            replacedTotalUzs: 47600,
+          ),
         ),
-      ),
-    );
-    expect(byKey('checkout-refreshed'), findsOneWidget);
-    expect(
-      tester.widget<Text>(find.text(estimate(47600))).style?.decoration,
-      TextDecoration.lineThrough,
-    );
-  });
-
-  testWidgets('the footer reads total | Заказать and is inactive while busy', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      host(
-        CheckoutFooter(
-          totalUzs: 47600,
-          estimate: true,
-          busy: false,
-          busyLabel: 'Оформляем',
-          onOrder: () {},
-        ),
-      ),
-    );
-    expect(find.text(estimate(47600)), findsOneWidget);
-    expect(find.text('Заказать'), findsOneWidget);
-    await tester.pumpWidget(
-      host(
-        CheckoutFooter(
-          totalUzs: 47600,
-          estimate: true,
-          busy: true,
-          busyLabel: 'Оформляем',
-          onOrder: () {},
-        ),
-      ),
-    );
-    final CircularProgressIndicator spinner = tester
-        .widget<CircularProgressIndicator>(
-          find.byType(CircularProgressIndicator),
-        );
-    expect(spinner.semanticsLabel, 'Оформляем');
-    await tester.pumpWidget(
-      host(
-        const CheckoutFooter(
-          totalUzs: null,
-          estimate: true,
-          busy: false,
-          busyLabel: '',
-          onOrder: null,
-        ),
-      ),
-    );
-    expect(
-      tester.widget<FilledButton>(byKey('checkout-confirm')).onPressed,
-      isNull,
-    );
-  });
+      );
+      expect(byKey('checkout-refreshed'), findsNothing);
+      expect(
+        tester.widget<Text>(find.text(estimate(47600))).style?.decoration,
+        TextDecoration.lineThrough,
+      );
+    },
+  );
 
   testWidgets('the gone sheet names each product and leads to the cart', (
     WidgetTester tester,

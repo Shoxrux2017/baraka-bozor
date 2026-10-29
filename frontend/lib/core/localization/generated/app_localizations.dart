@@ -3509,13 +3509,13 @@ abstract class AppLocalizations {
   /// No description provided for @checkoutCalculating.
   ///
   /// In uz, this message translates to:
-  /// **'Hisoblanmoqda'**
+  /// **'Summa hisoblanmoqda…'**
   String get checkoutCalculating;
 
   /// No description provided for @checkoutPlacing.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma yuborilmoqda'**
+  /// **'Buyurtma yuborilmoqda…'**
   String get checkoutPlacing;
 
   /// No description provided for @checkoutPlaced.
@@ -3691,6 +3691,18 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Rasmiylashtirayotganingizda buyurtma qayta hisoblandi. Summani tekshiring va «Buyurtma berish»ni yana bosing.'**
   String get checkoutRecounted;
+
+  /// No description provided for @checkoutRecountedFromTo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Summa o\'zgardi: {before} → {after}. Tekshiring va «Buyurtma berish»ni yana bosing.'**
+  String checkoutRecountedFromTo(String before, String after);
+
+  /// No description provided for @checkoutWhyNoAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish manzilini qo\'shing — usiz yetkazib berish narxini hisoblab bo\'lmaydi'**
+  String get checkoutWhyNoAddress;
 
   /// No description provided for @checkoutGoneTitle.
   ///
