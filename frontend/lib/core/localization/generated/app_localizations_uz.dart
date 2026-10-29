@@ -1907,6 +1907,12 @@ class AppLocalizationsUz extends AppLocalizations {
       'Payme va Click orqali onlayn to\'lov — tez orada';
 
   @override
+  String get checkoutItemsShow => 'Tarkibini ko\'rsatish';
+
+  @override
+  String get checkoutItemsHide => 'Tarkibini yashirish';
+
+  @override
   String get checkoutAddressAdd => 'Qo\'shish';
 
   @override

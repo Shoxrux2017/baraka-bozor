@@ -1935,6 +1935,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get checkoutOnlineSoon => 'Онлайн-оплата через Payme и Click — скоро';
 
   @override
+  String get checkoutItemsShow => 'Показать состав';
+
+  @override
+  String get checkoutItemsHide => 'Скрыть состав';
+
+  @override
   String get checkoutAddressAdd => 'Добавить';
 
   @override

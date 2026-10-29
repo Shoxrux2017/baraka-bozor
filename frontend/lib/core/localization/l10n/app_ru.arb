@@ -879,6 +879,8 @@
   "checkoutGo": "Оформить",
   "checkoutPayment": "Способ оплаты",
   "checkoutOnlineSoon": "Онлайн-оплата через Payme и Click — скоро",
+  "checkoutItemsShow": "Показать состав",
+  "checkoutItemsHide": "Скрыть состав",
   "checkoutAddressAdd": "Добавить",
   "checkoutCalculating": "Считаем сумму…",
   "checkoutPlacing": "Отправляем заказ…",

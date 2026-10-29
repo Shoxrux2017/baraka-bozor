@@ -3506,6 +3506,18 @@ abstract class AppLocalizations {
   /// **'Payme va Click orqali onlayn to\'lov — tez orada'**
   String get checkoutOnlineSoon;
 
+  /// No description provided for @checkoutItemsShow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarkibini ko\'rsatish'**
+  String get checkoutItemsShow;
+
+  /// No description provided for @checkoutItemsHide.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarkibini yashirish'**
+  String get checkoutItemsHide;
+
   /// No description provided for @checkoutAddressAdd.
   ///
   /// In uz, this message translates to:

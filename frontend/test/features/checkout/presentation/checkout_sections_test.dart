@@ -10,6 +10,7 @@ import 'package:baraka_bozor/features/cart/domain/cart.dart';
 import 'package:baraka_bozor/features/checkout/data/checkout_api.dart';
 import 'package:baraka_bozor/features/checkout/domain/checkout.dart';
 import 'package:baraka_bozor/features/checkout/presentation/checkout_footer.dart';
+import 'package:baraka_bozor/features/checkout/presentation/checkout_items.dart';
 import 'package:baraka_bozor/features/checkout/presentation/checkout_sections.dart';
 import 'package:baraka_bozor/features/profile/domain/profile.dart';
 import 'package:flutter/material.dart';
@@ -300,29 +301,21 @@ void main() {
     expect(link.top, lessThan(detail.bottom));
   });
 
-  testWidgets('the strip shows four pictures and +8 for twelve lines', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      host(
-        CheckoutItemsStrip(
-          lines: previewOf(lines: 12).lines,
-          imageByCartItem: const <String, String?>{},
-          onChange: () {},
-        ),
-      ),
-    );
-    expect(find.byType(ProductImage), findsNWidgets(4));
-    expect(find.text('+8'), findsOneWidget);
-  });
-
   testWidgets("the amounts are the preview's, with ≈ on an estimate", (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(host(CheckoutAmounts(preview: previewOf())));
+    await tester.pumpWidget(
+      host(CheckoutAmounts(preview: previewOf(), lineCount: 1, pending: false)),
+    );
     expect(tester.widget<Text>(byKey('checkout-total')).data, estimate(47600));
     await tester.pumpWidget(
-      host(CheckoutAmounts(preview: previewOf(kind: 'final'))),
+      host(
+        CheckoutAmounts(
+          preview: previewOf(kind: 'final'),
+          lineCount: 1,
+          pending: false,
+        ),
+      ),
     );
     expect(
       tester.widget<Text>(byKey('checkout-total')).data,
@@ -337,6 +330,8 @@ void main() {
         host(
           CheckoutAmounts(
             preview: previewOf(total: 48600),
+            lineCount: 1,
+            pending: false,
             replacedTotalUzs: 47600,
           ),
         ),
@@ -493,13 +488,15 @@ void main() {
                               onChanged: (String _) {},
                             ),
                             const CheckoutPayment(),
-                            CheckoutItemsStrip(
-                              lines: preview.lines,
-                              imageByCartItem: const <String, String?>{},
+                            CheckoutItems(
+                              items: checkoutItemsOf(preview: preview),
+                              pending: false,
                               onChange: () {},
                             ),
                             CheckoutAmounts(
                               preview: preview,
+                              lineCount: preview.lines.length,
+                              pending: false,
                               replacedTotalUzs: 88888888,
                             ),
                           ],

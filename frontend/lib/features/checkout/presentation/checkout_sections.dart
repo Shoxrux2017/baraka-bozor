@@ -6,11 +6,9 @@ import '../../../core/formatting/phone_format.dart';
 import '../../../core/formatting/server_text.dart';
 import '../../../core/layout/text_width.dart';
 import '../../../core/localization/app_language.dart';
-import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/orders/order_values.dart';
-import '../../../core/orders/quantity_rules.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../addresses/domain/addresses.dart';
@@ -22,12 +20,6 @@ import '../domain/checkout.dart';
 const List<BoxShadow> _cardShadow = <BoxShadow>[
   BoxShadow(color: Color(0x14000000), blurRadius: 12, offset: Offset(0, 2)),
 ];
-
-const TextStyle _heading = TextStyle(
-  fontSize: 16,
-  fontWeight: FontWeight.w700,
-  color: KitColors.ink,
-);
 
 /// A 44x44 icon on the green wash.
 class _IconWell extends StatelessWidget {
@@ -52,12 +44,13 @@ class _IconWell extends StatelessWidget {
 /// scales down at large text, the button — and so its tap target — does not;
 /// without one ([maxWidth] infinite) the label is never scaled and the button
 /// is flush with its text (`DL-121`).
-class _EditButton extends StatelessWidget {
-  const _EditButton({
+class CheckoutEditButton extends StatelessWidget {
+  const CheckoutEditButton({
     required this.buttonKey,
     required this.label,
     required this.onPressed,
     this.maxWidth = 120,
+    super.key,
   });
 
   static const TextStyle labelStyle = TextStyle(
@@ -237,7 +230,7 @@ class CheckoutDeliveryCard extends StatelessWidget {
                           textWidth(
                             context,
                             linkLabel,
-                            _EditButton.labelStyle,
+                            CheckoutEditButton.labelStyle,
                           ) +
                           16;
                       final bool beside = linkWidth + 8 <= box.maxWidth / 2;
@@ -265,7 +258,7 @@ class CheckoutDeliveryCard extends StatelessWidget {
                           ],
                         ),
                       );
-                      final Widget link = _EditButton(
+                      final Widget link = CheckoutEditButton(
                         buttonKey: 'checkout-address-change',
                         label: linkLabel,
                         onPressed: onChange,
@@ -503,118 +496,23 @@ class CheckoutPayment extends StatelessWidget {
   }
 }
 
-/// "Товары · N" with the pictures of the first four lines.
-class CheckoutItemsStrip extends StatelessWidget {
-  const CheckoutItemsStrip({
-    required this.lines,
-    required this.imageByCartItem,
-    required this.onChange,
-    super.key,
-  });
-
-  /// The most pictures the strip shows.
-  static const int shown = 4;
-
-  final List<PreviewLine> lines;
-  final Map<String, String?> imageByCartItem;
-  final VoidCallback onChange;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final List<PreviewLine> visible = lines.take(shown).toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                l10n.checkoutItems(lines.length),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: _heading,
-              ),
-            ),
-            const SizedBox(width: 8),
-            _EditButton(
-              buttonKey: 'checkout-items-change',
-              label: l10n.editButton,
-              onPressed: onChange,
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: <Widget>[
-            for (final PreviewLine line in visible)
-              SizedBox(
-                width: 64,
-                child: Column(
-                  children: <Widget>[
-                    _tile(
-                      ProductImage(
-                        url: imageByCartItem[line.cartItemId],
-                        size: 48,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        '${QuantityRules.display(line.quantity)} '
-                        '${CatalogLabels.unit(l10n, line.unit)}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: KitColors.ink2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            if (lines.length > shown)
-              SizedBox(
-                width: 64,
-                child: _tile(
-                  Text(
-                    '+${lines.length - shown}',
-                    key: const ValueKey<String>('checkout-items-more'),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: KitColors.ink2,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  static Widget _tile(Widget child) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: KitColors.card,
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: SizedBox.square(dimension: 64, child: Center(child: child)),
-  );
-}
-
-/// The amounts of the checkout, exactly the preview's (drawing 25).
+/// The amounts of the checkout, exactly the preview's (drawing 25). Without a
+/// preview every figure is a grey bar of its own width, pulsing while
+/// [pending]; the cart's estimates are never shown here (`DL-121`).
 class CheckoutAmounts extends StatelessWidget {
   const CheckoutAmounts({
     required this.preview,
+    required this.lineCount,
+    required this.pending,
     this.replacedTotalUzs,
     super.key,
   });
 
-  final CheckoutPreview preview;
+  final CheckoutPreview? preview;
+
+  /// The number of products in «Товары (N)» while there is no preview.
+  final int lineCount;
+  final bool pending;
 
   /// The total the Customer saw before the figures were recounted; the
   /// notice itself is the footer's (`DL-121`).
@@ -624,7 +522,9 @@ class CheckoutAmounts extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
-    final bool estimate = preview.totalKind != TotalKind.finalTotal;
+    final CheckoutPreview? held = preview;
+    final bool estimate =
+        held != null && held.totalKind != TotalKind.finalTotal;
     String sum(int amount) => MoneyFormat.uzs(amount, language);
     String figure(int amount) =>
         estimate ? l10n.cartLineEstimate(sum(amount)) : sum(amount);
@@ -635,18 +535,24 @@ class CheckoutAmounts extends StatelessWidget {
       children: <Widget>[
         SummaryAmountRow(
           valueKey: 'checkout-subtotal',
-          label: l10n.cartGoods(preview.lines.length),
-          value: figure(preview.merchandiseSubtotalUzs),
+          label: l10n.cartGoods(held?.lines.length ?? lineCount),
+          value: held == null ? '' : figure(held.merchandiseSubtotalUzs),
+          pendingWidth: held == null ? 92 : null,
+          pulsing: pending,
         ),
         SummaryAmountRow(
           valueKey: 'checkout-delivery',
           label: l10n.cartDelivery,
-          value: sum(preview.deliveryFeeUzs),
+          value: held == null ? '' : sum(held.deliveryFeeUzs),
+          pendingWidth: held == null ? 76 : null,
+          pulsing: pending,
         ),
         SummaryAmountRow(
           valueKey: 'checkout-service-fee',
           label: l10n.cartServiceFee,
-          value: sum(preview.serviceFeeUzs),
+          value: held == null ? '' : sum(held.serviceFeeUzs),
+          pendingWidth: held == null ? 68 : null,
+          pulsing: pending,
         ),
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 6),
@@ -655,11 +561,14 @@ class CheckoutAmounts extends StatelessWidget {
         SummaryAmountRow(
           valueKey: 'checkout-total',
           label: l10n.cartTotal,
-          value: figure(preview.totalUzs),
+          value: held == null ? '' : figure(held.totalUzs),
           emphasised: true,
-          replaced: replaced == null || replaced == preview.totalUzs
+          replaced:
+              held == null || replaced == null || replaced == held.totalUzs
               ? null
               : figure(replaced),
+          pendingWidth: held == null ? 120 : null,
+          pulsing: pending,
         ),
         const SizedBox(height: 8),
         const EstimateNote(),

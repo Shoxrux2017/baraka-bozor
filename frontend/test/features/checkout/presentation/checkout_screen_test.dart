@@ -8,6 +8,7 @@ import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
+import 'package:baraka_bozor/core/widgets/fold.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
@@ -1388,11 +1389,110 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(byKey('checkout-total'), findsNothing);
+    expect(byKey('checkout-total-pending'), findsOneWidget);
     expect(checkout.previews.last.addressId, 'a-2');
     checkout.previewHold = null;
     hold.complete();
     await tester.pumpAndSettle();
     expect(byKey('checkout-total'), findsOneWidget);
+    expect(byKey('checkout-total-pending'), findsNothing);
+  });
+
+  testWidgets(
+    'the goods and the amounts stand in place while the figures come',
+    (WidgetTester tester) async {
+      final Completer<void> hold = Completer<void>();
+      checkout.previewHold = hold;
+      await open(tester, settle: false);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(byKey('checkout-items'), findsOneWidget);
+      expect(byKey('checkout-total-pending'), findsOneWidget);
+      expect(byKey('checkout-total'), findsNothing);
+      final double top = tester.getTopLeft(byKey('checkout-items')).dy;
+
+      checkout.previewHold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('checkout-total'), findsOneWidget);
+      expect(byKey('checkout-total-pending'), findsNothing);
+      expect(tester.getTopLeft(byKey('checkout-items')).dy, top);
+    },
+  );
+
+  testWidgets(
+    'figures never show for another address, not even in the composition',
+    (WidgetTester tester) async {
+      await open(tester);
+      await tapAndSettle(tester, byKey('checkout-items-toggle'));
+      const String sum = 'checkout-item-$tomatoLine-sum';
+      expect(byKey(sum), findsOneWidget);
+
+      final Completer<void> hold = Completer<void>();
+      checkout.previewHold = hold;
+      await tapAndSettle(tester, byKey('checkout-address-change'));
+      await tester.tap(byKey('delivery-address-a-2'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(byKey('checkout-total'), findsNothing);
+      expect(byKey(sum), findsNothing);
+      expect(byKey('checkout-total-pending'), findsOneWidget);
+      expect(byKey('checkout-item-$tomatoLine-pending'), findsOneWidget);
+
+      checkout.previewHold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('checkout-total'), findsOneWidget);
+      expect(byKey(sum), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the closed banner unfolds once and stays while the figures are recounted',
+    (WidgetTester tester) async {
+      checkout.outsideHours = true;
+      await open(tester, settle: false);
+      final Finder fold = find.ancestor(
+        of: byKey('checkout-closed'),
+        matching: find.byType(Fold),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      final double early = tester.getSize(fold).height;
+      await tester.pumpAndSettle();
+      final double full = tester.getSize(fold).height;
+      expect(early, lessThan(full));
+      expect(full, greaterThan(0));
+
+      final Completer<void> hold = Completer<void>();
+      checkout.previewHold = hold;
+      await tapAndSettle(tester, byKey('checkout-address-change'));
+      await tester.tap(byKey('delivery-address-a-2'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(byKey('checkout-closed'), findsOneWidget);
+      expect(tester.getSize(fold).height, full);
+
+      checkout.outsideHours = false;
+      checkout.previewHold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('checkout-closed'), findsNothing);
+    },
+  );
+
+  testWidgets('a refused preview leaves still bars and the refusal', (
+    WidgetTester tester,
+  ) async {
+    checkout.previewFailure = const ApiRefusal(
+      ApiError(status: 422, code: 'address_outside_service_area'),
+    );
+    await open(tester);
+
+    expect(byKey('failure-message'), findsOneWidget);
+    expect(byKey('checkout-total-pending'), findsOneWidget);
+    expect(byKey('checkout-total'), findsNothing);
+    expect(tester.binding.hasScheduledFrame, isFalse);
   });
 
   testWidgets(

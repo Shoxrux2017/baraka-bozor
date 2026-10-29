@@ -15,6 +15,7 @@ import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/fold.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../addresses/application/addresses_controllers.dart';
 import '../../addresses/application/delivery_address.dart';
@@ -27,6 +28,7 @@ import '../../profile/domain/profile.dart';
 import '../application/checkout_controllers.dart';
 import '../domain/checkout.dart';
 import 'checkout_footer.dart';
+import 'checkout_items.dart';
 import 'checkout_placed_view.dart';
 import 'checkout_sections.dart';
 
@@ -87,6 +89,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   /// The preview on screen: kept while the next one runs.
   CheckoutPreview? _shown;
 
+  /// When collecting starts, from the latest preview that said the shop is
+  /// closed; kept while the next preview runs and gone when one says open
+  /// (`DL-121`).
+  String? _closedOpensAt;
+
+  /// The last text of the closed banner, kept while it folds away.
+  String? _closedText;
+
   /// The total the Customer saw before the figures were recounted.
   int? _replacedTotal;
   ApiFailure? _failure;
@@ -103,6 +113,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _addressId = sent?.request.addressId;
     _adopted = sent != null;
     _shown = sent?.preview;
+    _keepClosed(sent?.preview);
     // A sent confirmation shows the wish it was sent with; otherwise the
     // draft the Customer left (`DL-121`).
     _note = TextEditingController(
@@ -364,8 +375,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (prepared == null) {
       return null;
     }
-    setState(() => _shown = prepared.preview);
+    setState(() {
+      _shown = prepared.preview;
+      _keepClosed(prepared.preview);
+    });
     return prepared;
+  }
+
+  /// Takes the closed banner's time from [preview], the latest one.
+  void _keepClosed(CheckoutPreview? preview) {
+    if (preview == null) {
+      return;
+    }
+    final String? opensAt = preview.outsideWorkingHours
+        ? preview.opensAt
+        : null;
+    _closedOpensAt = opensAt;
+    _closedText = opensAt ?? _closedText;
   }
 
   /// A refusal in the footer — or, for products gone from sale, the sheet.
@@ -557,7 +583,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final bool noAddress = list != null && list.isEmpty && !sent;
     final bool locked = busy || sent;
     final CheckoutPreview? shown = gone ? null : _shown;
-    final String? opensAt = shown?.opensAt;
+    final bool closed = !gone && _closedOpensAt != null;
+    final List<CheckoutItem> items = checkoutItemsOf(
+      preview: shown,
+      cart: cart,
+    );
 
     final VoidCallback? onChange = locked
         ? null
@@ -620,12 +650,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   key: const ValueKey<String>('checkout'),
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                   children: <Widget>[
-                    if (shown != null &&
-                        shown.outsideWorkingHours &&
-                        opensAt != null) ...<Widget>[
-                      CheckoutClosedBanner(opensAt: opensAt),
-                      const SizedBox(height: 16),
-                    ],
+                    Fold(
+                      shown: closed,
+                      appear: true,
+                      onFolded: () {
+                        if (_closedOpensAt == null) {
+                          setState(() => _closedText = null);
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _closedText == null
+                            ? const SizedBox.shrink()
+                            : CheckoutClosedBanner(opensAt: _closedText!),
+                      ),
+                    ),
                     _Heading(l10n.checkoutWhere),
                     const SizedBox(height: 12),
                     CheckoutDeliveryCard(
@@ -661,20 +700,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     _Heading(l10n.checkoutPayment),
                     const SizedBox(height: 12),
                     const CheckoutPayment(),
-                    if (shown != null) ...<Widget>[
+                    if (items.isNotEmpty) ...<Widget>[
                       const SizedBox(height: 24),
-                      CheckoutItemsStrip(
-                        lines: shown.lines,
-                        imageByCartItem: <String, String?>{
-                          for (final CartLine line
-                              in cart?.lines ?? const <CartLine>[])
-                            line.id: line.imageUrl,
-                        },
+                      CheckoutItems(
+                        key: const ValueKey<String>('checkout-items'),
+                        items: items,
+                        pending: busyPreview,
                         onChange: () => context.pop(),
                       ),
+                    ],
+                    if (shown != null || (held != null && !gone)) ...<Widget>[
                       const SizedBox(height: 16),
                       CheckoutAmounts(
                         preview: shown,
+                        lineCount: items.length,
+                        pending: busyPreview,
                         replacedTotalUzs: _replacedTotal,
                       ),
                     ],

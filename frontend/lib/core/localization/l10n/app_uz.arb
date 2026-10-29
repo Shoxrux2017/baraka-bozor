@@ -972,6 +972,8 @@
   "checkoutGo": "Rasmiylashtirish",
   "checkoutPayment": "To'lov usuli",
   "checkoutOnlineSoon": "Payme va Click orqali onlayn to'lov — tez orada",
+  "checkoutItemsShow": "Tarkibini ko'rsatish",
+  "checkoutItemsHide": "Tarkibini yashirish",
   "checkoutAddressAdd": "Qo'shish",
   "checkoutCalculating": "Summa hisoblanmoqda…",
   "checkoutPlacing": "Buyurtma yuborilmoqda…",
