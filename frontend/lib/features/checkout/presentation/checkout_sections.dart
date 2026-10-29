@@ -428,7 +428,7 @@ class CheckoutPayment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    return DecoratedBox(
+    final Widget card = DecoratedBox(
       key: const ValueKey<String>('pay-cash'),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -468,28 +468,37 @@ class CheckoutPayment extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            Row(
-              key: const ValueKey<String>('pay-online-soon'),
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const Icon(Icons.schedule, size: 16, color: KitColors.muted),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    l10n.checkoutOnlineSoon,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      height: 1.35,
-                      color: KitColors.muted,
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        card,
+        const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Row(
+            key: const ValueKey<String>('pay-online-soon'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              const Icon(Icons.schedule, size: 16, color: KitColors.muted),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  l10n.checkoutOnlineSoon,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: KitColors.muted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

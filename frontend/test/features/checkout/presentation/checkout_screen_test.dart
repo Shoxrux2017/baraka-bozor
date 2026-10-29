@@ -1043,6 +1043,51 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a wish scrolled far away is kept, so Заказать still brings it into view',
+    (WidgetTester tester) async {
+      await open(tester, size: const Size(320, 640), textScale: 2);
+      await tester.enterText(
+        byKey('checkout-delivery-wish'),
+        List<String>.filled(161, 'a').join(),
+      );
+      await tester.drag(byKey('checkout'), const Offset(0, -9000));
+      await tester.pumpAndSettle();
+      // A shorter window: the field is then far out of the laid-out part.
+      tester.view.physicalSize = const Size(320, 420);
+      await tester.pumpAndSettle();
+      await tester.drag(byKey('checkout'), const Offset(0, -9000));
+      await tester.pumpAndSettle();
+      final int previews = checkout.previews.length;
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.drag(byKey('checkout'), const Offset(0, 30));
+      await tester.pumpAndSettle();
+
+      await tester.tap(byKey('checkout-confirm'));
+      await tester.pumpAndSettle();
+
+      final Rect field = tester.getRect(byKey('checkout-delivery-wish'));
+      expect(field.top, greaterThanOrEqualTo(0));
+      expect(field.bottom, lessThanOrEqualTo(420));
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: byKey('checkout-delivery-wish'),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .focusNode
+            .hasFocus,
+        isTrue,
+      );
+      expect(find.text(l10n(tester).fieldTooLong(160)), findsOneWidget);
+      expect(checkout.previews, hasLength(previews));
+      expect(checkout.placements, isEmpty);
+    },
+  );
+
   testWidgets('two quick taps place once', (WidgetTester tester) async {
     await open(tester);
 

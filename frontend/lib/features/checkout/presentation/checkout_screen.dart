@@ -230,14 +230,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   void _showWish() {
     final BuildContext? target = _wishKey.currentContext;
     if (target != null) {
-      Scrollable.ensureVisible(
-        target,
-        alignment: 0.3,
-        duration: MediaQuery.disableAnimationsOf(context)
-            ? Duration.zero
-            : const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      // A kept-alive field far off screen has a stale position: a first jump
+      // brings it back into the laid-out part, the second one places it.
+      Scrollable.ensureVisible(target, duration: Duration.zero);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final BuildContext? placed = _wishKey.currentContext;
+        if (!mounted || placed == null) {
+          return;
+        }
+        Scrollable.ensureVisible(
+          placed,
+          alignment: 0.3,
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      });
     }
     _wishFocus.requestFocus();
   }
@@ -629,7 +638,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       onChange: onChange,
                     ),
                     const SizedBox(height: 12),
-                    KeyedSubtree(
+                    _KeepAlive(
                       key: _wishKey,
                       child: CheckoutWishField(
                         controller: _note,
@@ -795,5 +804,28 @@ class CheckoutRefusal extends StatelessWidget {
             max.replaceAll('.', ','),
           )
         : l10n.addressOutsideAreaPlain;
+  }
+}
+
+/// Keeps its child built while the lazy list scrolls away from it, so the
+/// wish field can still be brought into view and focused (`DL-121`).
+class _KeepAlive extends StatefulWidget {
+  const _KeepAlive({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  State<_KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<_KeepAlive>
+    with AutomaticKeepAliveClientMixin<_KeepAlive> {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }

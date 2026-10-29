@@ -195,6 +195,18 @@ void main() {
       findsOneWidget,
     );
     expect(byKey('pay-online'), findsNothing);
+    expect(
+      find.descendant(
+        of: byKey('pay-cash'),
+        matching: byKey('pay-online-soon'),
+      ),
+      findsNothing,
+      reason: 'the line stands outside the card',
+    );
+    expect(
+      tester.getRect(byKey('pay-online-soon')).top,
+      closeTo(tester.getRect(byKey('pay-cash')).bottom + 10, 0.5),
+    );
   });
 
   testWidgets('with no address the link reads Добавить', (
