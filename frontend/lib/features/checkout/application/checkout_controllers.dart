@@ -8,6 +8,7 @@ import '../../../core/session/customer_account.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../addresses/application/addresses_controllers.dart';
 import '../../cart/application/cart_controllers.dart';
+import '../../orders/application/customer_orders_controllers.dart';
 import '../data/checkout_api.dart';
 import '../domain/checkout.dart';
 
@@ -137,7 +138,8 @@ checkoutPreviewProvider =
 /// order: a lost answer, a server error or an order still being placed
 /// leaves only the same confirmation to send again (`DL-50` (4)). The cart
 /// becomes a new, empty one on the server, so it is asked for again after
-/// the order is placed, and after an outcome that may have placed it.
+/// the order is placed, and after an outcome that may have placed it; so is
+/// the Customer's list of orders, which a kept tab would show without it.
 class PlaceOrderController extends CartMutation {
   CheckoutRepository get _checkout => ref.read(checkoutRepositoryProvider);
 
@@ -154,6 +156,7 @@ class PlaceOrderController extends CartMutation {
       reload: (PlacedOrder? order) {
         showCart(null);
         if (order != null) {
+          ref.invalidate(customerOrdersProvider);
           checkout.markAnswered(prepared.idempotencyKey, placed: true);
         }
       },
@@ -165,6 +168,7 @@ class PlaceOrderController extends CartMutation {
       } else if (failure != null) {
         // The order may exist, and with it a new, empty cart.
         showCart(null);
+        ref.invalidate(customerOrdersProvider);
       }
     }
     return order;

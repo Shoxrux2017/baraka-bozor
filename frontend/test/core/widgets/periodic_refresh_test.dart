@@ -56,10 +56,12 @@ void main() {
     await tester.pump(const Duration(seconds: 30));
     expect(refreshes, 0);
 
+    // The ticks it missed make it refresh at once, then every interval.
     navigator.pop();
     await tester.pumpAndSettle();
-    await tester.pump(const Duration(seconds: 10));
     expect(refreshes, 1);
+    await tester.pump(const Duration(seconds: 10));
+    expect(refreshes, 2);
   });
 
   testWidgets('it waits while the app is in the background', (
@@ -88,8 +90,61 @@ void main() {
     expect(refreshes, 0);
 
     await tester.pumpWidget(tickers(enabled: true));
-    await tester.pump(const Duration(seconds: 11));
+    await tester.pump();
     expect(refreshes, 1);
+    await tester.pump(const Duration(seconds: 11));
+    expect(refreshes, 2);
+  });
+
+  testWidgets('a screen shown again after a skipped tick refreshes at once', (
+    WidgetTester tester,
+  ) async {
+    Widget tickers({required bool enabled}) => MaterialApp(
+      home: TickerMode(enabled: enabled, child: screen(active: true)),
+    );
+
+    await tester.pumpWidget(tickers(enabled: false));
+    await tester.pump(const Duration(seconds: 11));
+    expect(refreshes, 0);
+
+    await tester.pumpWidget(tickers(enabled: true));
+    await tester.pump();
+    expect(refreshes, 1);
+
+    // The next one is a whole interval later.
+    await tester.pump(const Duration(seconds: 9));
+    expect(refreshes, 1);
+    await tester.pump(const Duration(seconds: 1));
+    expect(refreshes, 2);
+  });
+
+  testWidgets('shown again before a tick was skipped, it waits for the '
+      'interval', (WidgetTester tester) async {
+    Widget tickers({required bool enabled}) => MaterialApp(
+      home: TickerMode(enabled: enabled, child: screen(active: true)),
+    );
+
+    await tester.pumpWidget(tickers(enabled: false));
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpWidget(tickers(enabled: true));
+    await tester.pump();
+    expect(refreshes, 0);
+
+    await tester.pump(const Duration(seconds: 4));
+    expect(refreshes, 0);
+    await tester.pump(const Duration(seconds: 1));
+    expect(refreshes, 1);
+  });
+
+  testWidgets('a tick skipped in the background is not a hidden screen', (
+    WidgetTester tester,
+  ) async {
+    await host(tester, active: true);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump(const Duration(seconds: 11));
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(refreshes, 0);
   });
 
   testWidgets('leaving the screen leaves no refresh behind', (
