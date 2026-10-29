@@ -101,7 +101,7 @@ class ProductEditScreen extends ConsumerWidget {
           child: TextButton.icon(
             key: const ValueKey<String>('back-to-products'),
             style: TextButton.styleFrom(
-              foregroundColor: KitColors.primary,
+              foregroundColor: KitColors.primaryDark,
               padding: const EdgeInsets.symmetric(horizontal: 4),
               textStyle: const TextStyle(
                 fontSize: 13,

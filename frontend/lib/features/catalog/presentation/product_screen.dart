@@ -882,7 +882,7 @@ class _Gone extends StatelessWidget {
             OutlinedButton(
               key: const ValueKey<String>('product-gone-action'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: KitColors.primary,
+                foregroundColor: KitColors.primaryDark,
                 side: const BorderSide(color: KitColors.primary),
                 minimumSize: const Size(0, 48),
                 shape: RoundedRectangleBorder(

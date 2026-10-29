@@ -297,7 +297,7 @@ class _EmptyField extends ConsumerWidget {
                 TextButton(
                   key: const ValueKey<String>('recent-clear'),
                   style: TextButton.styleFrom(
-                    foregroundColor: KitColors.primary,
+                    foregroundColor: KitColors.primaryDark,
                     textStyle: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -484,7 +484,7 @@ class _NothingFound extends StatelessWidget {
           OutlinedButton(
             key: const ValueKey<String>('search-all-categories'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: KitColors.primary,
+              foregroundColor: KitColors.primaryDark,
               side: const BorderSide(color: KitColors.primary),
               minimumSize: const Size(0, 48),
               shape: RoundedRectangleBorder(

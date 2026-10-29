@@ -179,7 +179,7 @@ final ButtonStyle authOutlinedButtonStyle = OutlinedButton.styleFrom(
   minimumSize: const Size(0, 56),
   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
   textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-  foregroundColor: KitColors.primary,
+  foregroundColor: KitColors.primaryDark,
   side: const BorderSide(color: KitColors.primary),
 );
 

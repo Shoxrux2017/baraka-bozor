@@ -42,7 +42,7 @@ class OrderStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (Color ink, Color wash) = switch (status) {
       OrderStatus.shopping || OrderStatus.finalPaymentPending => (
-        KitColors.warning,
+        KitColors.warningDark,
         KitColors.warningWash,
       ),
       OrderStatus.cancelled => (

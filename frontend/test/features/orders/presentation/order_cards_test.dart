@@ -157,9 +157,9 @@ void main() {
     Color? ink() => tester.widget<Text>(find.byType(Text)).style?.color;
 
     await show(OrderStatus.shopping);
-    expect((wash(), ink()), (KitColors.warningWash, KitColors.warning));
+    expect((wash(), ink()), (KitColors.warningWash, KitColors.warningDark));
     await show(OrderStatus.finalPaymentPending);
-    expect((wash(), ink()), (KitColors.warningWash, KitColors.warning));
+    expect((wash(), ink()), (KitColors.warningWash, KitColors.warningDark));
     await show(OrderStatus.completed);
     expect((wash(), ink()), (KitColors.field, KitColors.muted));
     await show(OrderStatus.cancelled);
