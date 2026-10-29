@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme/kit_colors.dart';
+import 'panel_hit_box.dart';
 
 /// A row of [pills]: wrapping, 6 apart, when [wrap] is true, otherwise one row
 /// that scrolls sideways — by finger, by mouse drag, by wheel or by the scroll
@@ -81,7 +82,8 @@ class _ScrollingPillsState extends State<_ScrollingPills> {
 }
 
 /// A filter pill: white with a 1 px outline, or — [selected] — green; with
-/// an optional [count] after the label, muted when it is zero.
+/// an optional [count] after the label, muted when it is zero. It is drawn 36
+/// high and taps from 44 high (DL-117).
 class PanelPill extends StatelessWidget {
   const PanelPill({
     required this.label,
@@ -104,46 +106,61 @@ class PanelPill extends StatelessWidget {
         ? KitColors.muted
         : KitColors.ink;
 
-    return Material(
-      color: selected ? KitColors.primary : Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: selected
-            ? BorderSide.none
-            : const BorderSide(color: KitColors.line),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+    return Semantics(
+      button: true,
+      selected: selected,
+      excludeSemantics: true,
+      label: count == null ? label : '$label\n$count',
+      onTap: onTap,
+      child: PanelHitBox(
         onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 36),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Flexible(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                      color: text,
-                    ),
-                  ),
+        child: Material(
+          color: selected ? KitColors.primary : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: selected
+                ? BorderSide.none
+                : const BorderSide(color: KitColors.line),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 36),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
                 ),
-                if (count != null) ...<Widget>[
-                  const SizedBox(width: 8),
-                  Text(
-                    '$count',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: text,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: selected
+                              ? FontWeight.w700
+                              : FontWeight.w600,
+                          color: text,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              ],
+                    if (count != null) ...<Widget>[
+                      const SizedBox(width: 8),
+                      Text(
+                        '$count',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: text,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),

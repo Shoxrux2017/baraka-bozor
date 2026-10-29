@@ -817,7 +817,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(lastQuery().search, '1001');
     expect(lastQuery().page, 1);
-    expect(tester.getSize(byKey('board-search')).height, 40);
+    expect(tester.getSize(byKey('board-search')).height, 44);
 
     await tapAndSettle(tester, byKey('board-clear-filters'));
     expect(lastQuery(), const BoardQuery());
@@ -1644,6 +1644,16 @@ void main() {
       );
     },
   );
+
+  testWidgets('every target meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester);
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
 }
 
 String _courierDelayed(AppLocalizations l10n) => l10n.attentionCourierDelayed;

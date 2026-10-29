@@ -81,36 +81,41 @@ class PanelLanguageButton extends ConsumerWidget {
           child: Text(l10n.languageRussian),
         ),
       ],
-      child: Container(
-        height: 38,
-        width: compact ? 38 : null,
-        padding: EdgeInsets.symmetric(horizontal: compact ? 0 : 12),
-        alignment: compact ? Alignment.center : Alignment.centerLeft,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: KitColors.line),
-        ),
-        child: compact
-            ? const Icon(Icons.language, size: 20, color: KitColors.ink2)
-            : Row(
-                children: <Widget>[
-                  const Icon(Icons.language, size: 20, color: KitColors.ink2),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: KitColors.ink2,
+      // The box is drawn 38 high; the padding around it makes the tap area
+      // 44 high (DL-117).
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: compact ? 3 : 0, vertical: 3),
+        child: Container(
+          height: 38,
+          width: compact ? 38 : null,
+          padding: EdgeInsets.symmetric(horizontal: compact ? 0 : 12),
+          alignment: compact ? Alignment.center : Alignment.centerLeft,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: KitColors.line),
+          ),
+          child: compact
+              ? const Icon(Icons.language, size: 20, color: KitColors.ink2)
+              : Row(
+                  children: <Widget>[
+                    const Icon(Icons.language, size: 20, color: KitColors.ink2),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: KitColors.ink2,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -504,7 +509,7 @@ class _UserFooter extends StatelessWidget {
         OutlinedButton.icon(
           key: const ValueKey<String>('logout-button'),
           style: kitOutlined(height: 38)
-              .copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+              .copyWith(tapTargetSize: MaterialTapTargetSize.padded),
           icon: const Icon(Icons.logout, size: 18),
           label: Text(l10n.logoutButton),
           onPressed: onLogout,

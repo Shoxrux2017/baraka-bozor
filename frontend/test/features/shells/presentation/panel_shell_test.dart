@@ -179,8 +179,10 @@ void main() {
     final Finder language = find.byType(PanelLanguageButton);
     // The rail's 1 px right border and the 16 px gutters on both sides.
     final double footerWidth = tester.getSize(rail).width - 1 - 32;
-    expect(tester.getSize(language).height, 38);
-    expect(tester.getSize(logout).height, 38);
+    // Both drawn 38 high; the tap area of the language button is 44 and the
+    // logout button's 48 (DL-117).
+    expect(tester.getSize(language).height, 44);
+    expect(tester.getSize(logout).height, 48);
     expect(tester.getSize(language).width, footerWidth);
     expect(tester.getSize(logout).width, footerWidth);
     expect(

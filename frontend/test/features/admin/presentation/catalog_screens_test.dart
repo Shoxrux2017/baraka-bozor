@@ -369,7 +369,8 @@ void main() {
         tester.getTopLeft(count).dy,
         greaterThan(tester.getTopLeft(title.last).dy),
       );
-      expect(tester.getSize(byKey('new-category')).height, 40);
+      // Drawn 40 high, tapped from 48 (DL-117).
+      expect(tester.getSize(byKey('new-category')).height, 48);
       expect(
         tester.getTopRight(byKey('new-category')).dx,
         closeTo(tester.getTopRight(find.byType(PanelCard).first).dx, 0.5),
@@ -646,7 +647,8 @@ void main() {
         tester.getTopLeft(count).dy,
         greaterThan(tester.getTopLeft(title.last).dy),
       );
-      expect(tester.getSize(byKey('new-product')).height, 40);
+      // Drawn 40 high, tapped from 48 (DL-117).
+      expect(tester.getSize(byKey('new-product')).height, 48);
       expect(
         tester.widget<FilledButton>(byKey('new-product')).onPressed,
         isNotNull,
@@ -2046,7 +2048,8 @@ void main() {
         '${text.catalogForCustomer(MoneyFormat.uzs(100, AppLanguage.uz))}',
       );
       final double card = tester.getTopRight(byKey('product-p-1')).dx;
-      expect(card - tester.getTopRight(byKey('archive-p-1')).dx, lessThan(20));
+      // The 36 button stands in a 44 tap box: 4 more to the card edge (DL-117).
+      expect(card - tester.getTopRight(byKey('archive-p-1')).dx, lessThan(24));
       // The prices take the width they need and the names the rest: the
       // caption stands on one line instead of wrapping at half the free space.
       expect(tester.getSize(caption).height, lessThan(20));
@@ -2109,5 +2112,15 @@ void main() {
         });
       }
     }
+  });
+
+  testWidgets('the products list: every target meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester, AdminPaths.products);
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
   });
 }

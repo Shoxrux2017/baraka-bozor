@@ -39,10 +39,9 @@ class PanelSegmented<T> extends StatelessWidget {
         border: Border.all(color: KitColors.line),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Wrap(
           spacing: 2,
-          runSpacing: 2,
           children: <Widget>[
             for (final PanelSegment<T> segment in segments)
               _Segment(
@@ -98,48 +97,57 @@ class _Segment extends StatelessWidget {
         child: InkWell(
           borderRadius: radius,
           onTap: onTap,
-          child: Ink(
-            height: 34,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: selected ? Colors.white : null,
-              borderRadius: radius,
-              boxShadow: selected
-                  ? const <BoxShadow>[
-                      BoxShadow(
-                        color: KitColors.shadow,
-                        blurRadius: 4,
-                        offset: Offset(0, 1),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                if (dot != null) ...<Widget>[
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: hollow ? null : dot,
-                      shape: BoxShape.circle,
-                      border: hollow
-                          ? Border.all(color: dot, width: 1.5)
-                          : null,
-                    ),
-                    child: const SizedBox(width: 8, height: 8),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: selected ? KitColors.ink : KitColors.ink2,
-                  ),
+          // The drawn segment stays 34 high; its tap area is 44 (DL-117).
+          child: SizedBox(
+            height: 44,
+            child: Center(
+              widthFactor: 1,
+              child: Ink(
+                height: 34,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white : null,
+                  borderRadius: radius,
+                  boxShadow: selected
+                      ? const <BoxShadow>[
+                          BoxShadow(
+                            color: KitColors.shadow,
+                            blurRadius: 4,
+                            offset: Offset(0, 1),
+                          ),
+                        ]
+                      : null,
                 ),
-              ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    if (dot != null) ...<Widget>[
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: hollow ? null : dot,
+                          shape: BoxShape.circle,
+                          border: hollow
+                              ? Border.all(color: dot, width: 1.5)
+                              : null,
+                        ),
+                        child: const SizedBox(width: 8, height: 8),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                        color: selected ? KitColors.ink : KitColors.ink2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

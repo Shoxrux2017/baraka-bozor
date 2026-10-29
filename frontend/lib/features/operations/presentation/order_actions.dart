@@ -221,7 +221,7 @@ class ApprovalTile extends ConsumerWidget {
                   style: kitFilled(
                     color: KitColors.danger,
                     height: 36,
-                  ).copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                  ).copyWith(tapTargetSize: MaterialTapTargetSize.padded),
                   icon: const Icon(
                     Icons.remove_shopping_cart_outlined,
                     size: 18,
@@ -378,7 +378,7 @@ class CancellationRequestTile extends ConsumerWidget {
               first: OutlinedButton(
                 key: ValueKey<String>('reject-request-${request.id}'),
                 style: kitOutlined(height: 40)
-                    .copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    .copyWith(tapTargetSize: MaterialTapTargetSize.padded),
                 onPressed: reloading
                     ? null
                     : () => decide(CancellationDecision.reject),
@@ -389,7 +389,7 @@ class CancellationRequestTile extends ConsumerWidget {
                 style: kitFilled(
                   color: KitColors.danger,
                   height: 40,
-                ).copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                ).copyWith(tapTargetSize: MaterialTapTargetSize.padded),
                 onPressed: reloading
                     ? null
                     : () => decide(CancellationDecision.approve),
@@ -500,7 +500,7 @@ class PriceCorrectionButton extends ConsumerWidget {
           foregroundColor: KitColors.primaryDark,
           padding: const EdgeInsets.symmetric(vertical: 4),
           minimumSize: const Size(0, 28),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          tapTargetSize: MaterialTapTargetSize.padded,
           textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         ),
         icon: const Icon(Icons.edit, size: 14),

@@ -766,7 +766,8 @@ void main() {
     );
 
     final Rect button = tester.getRect(byKey('new-staff'));
-    expect(button.height, 40);
+    // Drawn 40 high, tapped from 48 (DL-117).
+    expect(button.height, 48);
     expect(button.center.dx, greaterThan(tester.getCenter(title).dx));
     expect(tester.getRect(header).right - button.right, lessThan(1));
     expect(
@@ -1305,5 +1306,15 @@ void main() {
     expect(staff.issued, hasLength(1));
     expect(find.text(staff.issued.single), findsNothing);
     expect(byKey('temporary-password'), findsNothing);
+  });
+
+  testWidgets('the staff list: every target meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester);
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
   });
 }

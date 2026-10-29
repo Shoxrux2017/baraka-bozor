@@ -383,7 +383,8 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(tester.getSize(byKey('order-refresh')).height, 40);
+    // Drawn 40 high, tapped from 48 (DL-117).
+    expect(tester.getSize(byKey('order-refresh')).height, 48);
 
     await tapAndSettle(tester, byKey('order-back'));
     expect(byKey('operations-board'), findsOneWidget);
@@ -705,4 +706,14 @@ void main() {
       },
     );
   }
+
+  testWidgets('the order page: every target meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await openOrder(tester);
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
 }

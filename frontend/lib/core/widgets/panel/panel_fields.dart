@@ -9,21 +9,21 @@ const TextStyle panelFieldTextStyle = TextStyle(
 );
 
 /// The decoration of a panel list's search: a filled `field` box of radius 12,
-/// 40 high, with a search icon at the start and an optional [suffix].
+/// 44 high (DL-117), with a search icon at the start and an optional [suffix].
 InputDecoration panelSearchDecoration({required String hint, Widget? suffix}) {
   return InputDecoration(
     hintText: hint,
     hintStyle: const TextStyle(fontSize: 13, color: KitColors.muted),
     prefixIcon: const Icon(Icons.search, size: 20),
     prefixIconColor: KitColors.muted,
-    prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+    prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 44),
     suffixIcon: suffix,
-    suffixIconConstraints: const BoxConstraints(minHeight: 40),
+    suffixIconConstraints: const BoxConstraints(minHeight: 44),
     filled: true,
     fillColor: KitColors.field,
     isDense: true,
-    constraints: const BoxConstraints(minHeight: 40),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    constraints: const BoxConstraints(minHeight: 44),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide.none,

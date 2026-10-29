@@ -540,7 +540,7 @@ class _PurchaseSheetState extends ConsumerState<PurchaseSheet> {
           borderRadius: BorderRadius.circular(10),
           onTap: enabled ? onTap : null,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 40),
+            constraints: const BoxConstraints(minHeight: 44),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Row(

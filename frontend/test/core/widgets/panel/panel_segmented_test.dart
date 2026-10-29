@@ -53,7 +53,16 @@ void main() {
     expect(fill(tester, 'seg-b'), isNull);
     expect(weight('Active'), FontWeight.w600);
     expect(weight('Blocked'), FontWeight.w500);
-    expect(tester.getSize(byKey('seg-a')).height, 34);
+    // Drawn 34 high, tapped from 44 high (DL-117).
+    expect(tester.getSize(byKey('seg-a')).height, 44);
+    expect(
+      tester
+          .getSize(
+            find.descendant(of: byKey('seg-a'), matching: find.byType(Ink)),
+          )
+          .height,
+      34,
+    );
     expect(
       tester.getSemantics(byKey('seg-a')),
       matchesSemantics(
@@ -116,5 +125,15 @@ void main() {
         isNull,
       );
     }
+  });
+
+  testWidgets('every target meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await tester.pumpWidget(host('a', (String _) {}));
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
   });
 }

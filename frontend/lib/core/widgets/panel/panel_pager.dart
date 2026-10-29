@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import '../../localization/generated/app_localizations.dart';
 import '../../network/paged.dart';
 import '../../theme/kit_colors.dart';
+import 'panel_hit_box.dart';
 
 /// The panel's pager: the range shown on the left, and on the right the
 /// previous and next buttons around up to five numbered pages near the
-/// current one. Nothing when the list is one page.
+/// current one. Nothing when the list is one page. A page button is drawn 32
+/// square and taps from 44 square (DL-117).
 class PanelPager extends StatelessWidget {
   const PanelPager({required this.page, required this.onPage, super.key});
 
@@ -84,25 +86,32 @@ class _PageButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final BorderRadius radius = BorderRadius.circular(8);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Material(
-        key: ValueKey<String>('page-$number'),
-        color: current ? KitColors.primary : Colors.transparent,
-        borderRadius: radius,
-        child: InkWell(
+    return Semantics(
+      button: true,
+      selected: current,
+      excludeSemantics: true,
+      label: '$number',
+      onTap: current ? null : onTap,
+      child: PanelHitBox(
+        onTap: current ? null : onTap,
+        child: Material(
+          key: ValueKey<String>('page-$number'),
+          color: current ? KitColors.primary : Colors.transparent,
           borderRadius: radius,
-          onTap: current ? null : onTap,
-          child: SizedBox(
-            width: 32,
-            height: 32,
-            child: Center(
-              child: Text(
-                '$number',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: current ? Colors.white : KitColors.ink2,
+          child: InkWell(
+            borderRadius: radius,
+            onTap: current ? null : onTap,
+            child: SizedBox(
+              width: 32,
+              height: 32,
+              child: Center(
+                child: Text(
+                  '$number',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: current ? Colors.white : KitColors.ink2,
+                  ),
                 ),
               ),
             ),

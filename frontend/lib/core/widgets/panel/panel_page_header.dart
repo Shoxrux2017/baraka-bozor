@@ -77,7 +77,7 @@ class PanelHeaderButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ButtonStyle style = kitFilled(height: 40)
-        .copyWith(tapTargetSize: MaterialTapTargetSize.shrinkWrap);
+        .copyWith(tapTargetSize: MaterialTapTargetSize.padded);
 
     if (labelled) {
       return FilledButton.icon(

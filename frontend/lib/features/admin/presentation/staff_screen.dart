@@ -318,7 +318,7 @@ class _StaffTable extends StatelessWidget {
           width: const FlexColumnWidth(1.6),
           end: false,
         ),
-        (label: '', width: const FixedColumnWidth(140), end: true),
+        (label: '', width: const FixedColumnWidth(152), end: true),
       ],
       rows: <PanelTableRow>[
         for (final StaffMember member in members) _row(context, l10n, member),
@@ -514,10 +514,8 @@ class _StaffActions extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        for (int i = 0; i < buttons.length; i++) ...<Widget>[
-          if (i > 0) const SizedBox(width: 6),
-          buttons[i],
-        ],
+        // Each button taps from 44 square, so they stand edge to edge.
+        ...buttons,
       ],
     );
   }

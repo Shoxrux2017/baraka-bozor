@@ -402,7 +402,8 @@ void main() {
       );
       expect(
         tester.getSize(byKey('remove-expired-$secondApproval')).height,
-        36,
+        // Drawn 36 high, tapped from 48 (DL-117).
+        48,
       );
       expect(box(approvalId).color, Colors.white);
       expect(
@@ -497,7 +498,8 @@ void main() {
         findsNothing,
       );
       expect(find.text(words.historyShowAll(13)), findsOneWidget);
-      expect(tester.getSize(byKey('history-fold')).height, 38);
+      // Drawn 38 high, tapped from 48 (DL-117).
+      expect(tester.getSize(byKey('history-fold')).height, 48);
       Color dot(String id) =>
           (decorationOf(tester, 'history-dot-$id').border! as Border).top.color;
       expect(dot('0192f0a0-0000-7000-8000-700000000012'), KitColors.danger);

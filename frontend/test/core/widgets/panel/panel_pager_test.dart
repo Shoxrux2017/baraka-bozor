@@ -78,4 +78,14 @@ void main() {
     expect(find.byType(Text), findsNothing);
     expect(byKey('next-page'), findsNothing);
   });
+
+  testWidgets('every target meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await pump(tester, pageOf(2), (int _) {});
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
 }

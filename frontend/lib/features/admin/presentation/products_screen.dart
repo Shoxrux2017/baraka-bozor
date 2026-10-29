@@ -360,7 +360,7 @@ const Map<int, TableColumnWidth> _columns = <int, TableColumnWidth>{
   2: FlexColumnWidth(1.3),
   3: FlexColumnWidth(1.2),
   4: FlexColumnWidth(2.2),
-  5: FixedColumnWidth(64),
+  5: FixedColumnWidth(72),
 };
 
 TextStyle _nameStyle(bool archived) => TextStyle(

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/kit_colors.dart';
+import 'panel_hit_box.dart';
 
-/// A 32-high filter chip: white with a `line` border, or — selected — a green
+/// A 32-high filter chip (its tap area 44 high, DL-117): white with a `line` border, or — selected — a green
 /// wash with a green border and dark text.
 class PanelFilterChip extends StatelessWidget {
   const PanelFilterChip({
@@ -31,39 +32,45 @@ class PanelFilterChip extends StatelessWidget {
       excludeSemantics: true,
       label: label,
       onTap: onTap,
-      child: Material(
-        key: ValueKey<String>(chipKey),
-        color: selected ? KitColors.primaryWash : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: radius,
-          side: BorderSide(
-            color: selected ? KitColors.primary : KitColors.line,
-            width: selected ? 1.5 : 1,
+      child: PanelHitBox(
+        onTap: onTap,
+        child: Material(
+          key: ValueKey<String>(chipKey),
+          color: selected ? KitColors.primaryWash : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: radius,
+            side: BorderSide(
+              color: selected ? KitColors.primary : KitColors.line,
+              width: selected ? 1.5 : 1,
+            ),
           ),
-        ),
-        child: InkWell(
-          borderRadius: radius,
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 32),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(icon, size: 16, color: color),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: color,
+          child: InkWell(
+            borderRadius: radius,
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 32),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(icon, size: 16, color: color),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

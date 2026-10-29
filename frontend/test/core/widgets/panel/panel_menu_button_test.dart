@@ -36,7 +36,8 @@ void main() {
     final List<String?> chosen = <String?>[];
     await pump(tester, active: false, onSelected: chosen.add);
 
-    expect(tester.getSize(byKey('menu')).height, 40);
+    // Drawn 40 high, tapped from 48 (DL-117).
+    expect(tester.getSize(byKey('menu')).height, 48);
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
     expect(byKey('menu-0'), findsNothing);
 
