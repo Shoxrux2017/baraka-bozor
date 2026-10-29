@@ -348,3 +348,8 @@ Noticed in the reviews and left out; each needs its own decision before any code
 ## Risks
 
 - The 44 stepper squeezes the cart line's sum, which is scaled down to fit. Measured width of the sum: 68 to 52 px at 320 wide, 108 to 92 at 360, 123 to 107 at 375. On a 320 px phone a sum like "≈ 127 600 so'm" is drawn at about 40 % of its size. Stage 3 (`cart-7`) fixes it when it redraws the line (`DL-117` (9)).
+
+## Review findings not acted on
+
+- Stage 1 re-review, P3: the panel's pending-approval tag now sits on `warningWash`, the same ground as its card, so "pending" shows as text without a pill (still 4.96:1). Ruling: panel only and readable; the smallest fix is a white ground for that tag (`order_actions.dart`, the `tagGround` switch), taken with the next stage that touches the panel.
+- Stage 1 re-review, P3, unconfirmed: the panel's language button has a `PanelHitBox` (a `GestureDetector`) around its `PopupMenuButton` without `excludeSemantics`, so a screen reader may meet two actions. Ruling: not reproduced; check it with the panel's next screen-reader pass and wrap it like the pager if it doubles.
