@@ -223,6 +223,7 @@ void main() {
             customerNote: 'Eski',
             substitutionPolicy: SubstitutionPolicy.contactBefore,
           ),
+          account: 'customer-a',
         ),
       );
       expect(carts.calls.last, 'add:$tomatoProduct');
@@ -234,6 +235,38 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
     },
   );
+
+  testWidgets('a restore for the account that left adds nothing, even when '
+      'the queue was rebuilt for the new one', (tester) async {
+    final ProviderContainer container = await open(tester);
+    container.listen(cartQuantityQueueProvider, (_, _) {});
+    final CartQuantityQueue queue = container.read(
+      cartQuantityQueueProvider.notifier,
+    );
+    carts.answer = cartOf(<Map<String, Object?>>[]);
+    unawaited(queue.remove(tomatoProduct));
+    await tester.pump();
+    await tester.pump();
+
+    container.read(_account.notifier).signIn('customer-b');
+    await tester.pump();
+    carts.calls.clear();
+    final Future<ApiFailure?> restored = queue.restore(
+      const NewCartLine(
+        productId: tomatoProduct,
+        quantity: '1.5',
+        customerNote: 'Eski',
+        substitutionPolicy: SubstitutionPolicy.contactBefore,
+      ),
+      account: 'customer-a',
+    );
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(await restored, isNull);
+    expect(carts.added, isEmpty);
+    expect(carts.calls.where((String c) => c.startsWith('add')), isEmpty);
+    expect(container.read(cartQuantityQueueProvider), isEmpty);
+  });
 
   testWidgets('a restore while the removal is on its way adds after it', (
     tester,
@@ -254,6 +287,7 @@ void main() {
         customerNote: null,
         substitutionPolicy: SubstitutionPolicy.allowSimilar,
       ),
+      account: 'customer-a',
     );
     expect(carts.calls, <String>['remove:$tomatoLine']);
 

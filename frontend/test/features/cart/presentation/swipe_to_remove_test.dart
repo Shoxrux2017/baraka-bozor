@@ -68,6 +68,23 @@ void main() {
     expect(removed, 1);
   });
 
+  testWidgets('a second swipe while the row slides out still removes once', (
+    WidgetTester tester,
+  ) async {
+    await show(tester);
+
+    await tester.fling(find.byKey(rowKey), const Offset(-300, 0), 1000);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.flingFrom(const Offset(300, 150), const Offset(-100, 0), 500);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(removed, 1);
+    expect(offset(tester), lessThan(-800));
+  });
+
   testWidgets('a short slow drag springs back', (WidgetTester tester) async {
     await show(tester);
 
@@ -114,24 +131,29 @@ void main() {
     expect(tester.getTopLeft(find.byKey(rowKey)).dy, lessThan(0));
   });
 
-  testWidgets('the row has an action for screen readers', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('the row has an action for screen readers and no scroll '
+      'actions', (WidgetTester tester) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
     await show(tester);
 
-    final Semantics semantics = tester.widget<Semantics>(
-      find.descendant(
-        of: find.byType(SwipeToRemove),
-        matching: find.byType(Semantics),
-      ),
-    );
-    final Map<CustomSemanticsAction, VoidCallback> actions =
-        semantics.properties.customSemanticsActions!;
-    expect(actions.keys.single.label, 'Remove');
+    final SemanticsNode node = tester.getSemantics(find.byKey(rowKey));
+    final SemanticsData data = node.getSemanticsData();
+    final List<CustomSemanticsAction> actions = data.customSemanticsActionIds!
+        .map(CustomSemanticsAction.getAction)
+        .whereType<CustomSemanticsAction>()
+        .toList();
+    expect(actions.single.label, 'Remove');
+    expect(data.hasAction(SemanticsAction.scrollLeft), isFalse);
+    expect(data.hasAction(SemanticsAction.scrollRight), isFalse);
 
-    actions.values.single();
+    node.owner!.performAction(
+      node.id,
+      SemanticsAction.customAction,
+      CustomSemanticsAction.getIdentifier(actions.single),
+    );
     await run(tester, const Duration(milliseconds: 280));
     expect(removed, 1);
+    handle.dispose();
   });
 
   testWidgets('with reduced motion it removes and springs back without '

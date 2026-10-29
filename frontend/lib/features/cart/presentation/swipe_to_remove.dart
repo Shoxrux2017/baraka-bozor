@@ -114,6 +114,10 @@ class _SwipeToRemoveState extends State<SwipeToRemove>
   }
 
   void _onStart(DragStartDetails details) {
+    // A row that is sliding out stays on its way (`DL-119`).
+    if (_out) {
+      return;
+    }
     _controller.stop();
     _motion = null;
     _then = null;
@@ -165,6 +169,9 @@ class _SwipeToRemoveState extends State<SwipeToRemove>
         CustomSemanticsAction(label: widget.label): _slideOutAndRemove,
       },
       child: GestureDetector(
+        // Scroll actions would let a screen reader's scroll gesture remove the
+        // row; the custom action above is its way (`DL-119`).
+        excludeFromSemantics: true,
         onHorizontalDragStart: _onStart,
         onHorizontalDragUpdate: _onUpdate,
         onHorizontalDragEnd: _onEnd,
@@ -211,7 +218,7 @@ class _SwipeToRemoveState extends State<SwipeToRemove>
               ),
             Transform.translate(
               offset: Offset(_offset, 0),
-              child: ColoredBox(color: Colors.white, child: widget.child),
+              child: Material(color: Colors.white, child: widget.child),
             ),
           ],
         ),

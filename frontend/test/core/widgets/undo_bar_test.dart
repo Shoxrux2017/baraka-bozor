@@ -8,13 +8,13 @@ Future<void> _open(
   VoidCallback onUndo, {
   bool screenReader = false,
 }) async {
+  if (screenReader) {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(accessibleNavigation: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+  }
   await tester.pumpWidget(
     MaterialApp(
-      builder: (BuildContext context, Widget? child) => MediaQuery(
-        data: MediaQuery.of(context)
-            .copyWith(accessibleNavigation: screenReader),
-        child: child!,
-      ),
       home: Scaffold(
         body: Builder(
           builder: (BuildContext context) => TextButton(
@@ -52,7 +52,9 @@ void main() {
   ) async {
     int undone = 0;
     await _open(tester, () => undone++, screenReader: true);
-    await tester.pump(const Duration(seconds: 10));
+    for (int second = 0; second < 10; second++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
     expect(find.text('Undo'), findsOneWidget);
     await tester.tap(find.text('Undo'));
     await tester.pumpAndSettle();

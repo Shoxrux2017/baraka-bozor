@@ -6,6 +6,7 @@ import '../../../core/localization/failure_text.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/undo_bar.dart';
+import '../../../core/session/customer_account.dart';
 import '../application/cart_quantity_queue.dart';
 import '../domain/cart.dart';
 
@@ -26,10 +27,11 @@ void showCartFailure(
   if (text == null) {
     return;
   }
-  // Removed, not hidden: a bar that has not drawn its first frame does not
-  // hide, and the failure would wait behind it.
+  // Cleared, not hidden: a bar that has not drawn its first frame does not
+  // hide, and a removal's own undo bar may still be queued behind the current
+  // one; none of them may outlive the failure (`DL-119`).
   messenger
-    ..removeCurrentSnackBar()
+    ..clearSnackBars()
     ..showSnackBar(SnackBar(content: Text(text)));
 }
 
@@ -53,6 +55,7 @@ Future<void> removeCartLine(
     customerNote: line.customerNote,
     substitutionPolicy: line.substitutionPolicy,
   );
+  final String? account = ref.read(customerAccountProvider);
   final String text = l10n.cartLineRemoved(name);
   final Future<ApiFailure?> removal = queue.remove(line.productId);
   if (line.isAvailable) {
@@ -61,7 +64,11 @@ Future<void> removeCartLine(
       text: text,
       actionLabel: l10n.undoAction,
       onUndo: () async {
-        showCartFailure(messenger, l10n, await queue.restore(again));
+        showCartFailure(
+          messenger,
+          l10n,
+          await queue.restore(again, account: account),
+        );
       },
     );
   } else {

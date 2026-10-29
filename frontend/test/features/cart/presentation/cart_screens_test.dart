@@ -1687,6 +1687,32 @@ void main() {
       expect(path(tester), '/customer/checkout');
     });
 
+    testWidgets('Оформить stays on the cart when the answer drops it below '
+        'the minimum', (WidgetTester tester) async {
+      cart.current = cartOf(
+        <Map<String, Object?>>[cartLineJson(quantity: '3.000', total: 55200)],
+        subtotal: 55200,
+        minimum: 50000,
+        shortfall: 0,
+      );
+      await open(tester, at: '/customer/cart');
+      expect(checkoutActive(tester), isTrue);
+
+      cart.answer = cartOf(
+        <Map<String, Object?>>[cartLineJson(quantity: '2.000', total: 36800)],
+        subtotal: 36800,
+        minimum: 50000,
+        shortfall: 13200,
+      );
+      await tester.tap(byKey('line-minus-$tomatoLine'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(byKey('go-to-checkout'));
+      await tester.pumpAndSettle();
+
+      expect(path(tester), '/customer/cart');
+      expect(checkoutActive(tester), isFalse);
+    });
+
     testWidgets('Оформить stays on the cart when the waiting change fails', (
       WidgetTester tester,
     ) async {
@@ -1731,6 +1757,41 @@ void main() {
       expect(find.text(words.cartNotSaved), findsOneWidget);
       expect(find.text(words.undoAction), findsNothing);
       await tester.pumpAndSettle();
+    });
+
+    testWidgets('a removal that fails while an earlier undo bar is still '
+        'up leaves no Вернуть behind', (WidgetTester tester) async {
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(quantity: '0.500', total: 9200),
+        cartLineJson(
+          id: breadLine,
+          productId: breadProduct,
+          unit: 'piece',
+          quantity: '1',
+          priceMode: 'fixed',
+          price: 4000,
+          total: 4000,
+        ),
+      ]);
+      await open(tester, at: '/customer/cart');
+      final AppLocalizations words = l10n(tester);
+
+      cart.answer = cartOf(<Map<String, Object?>>[
+        cartLineJson(quantity: '0.500', total: 9200),
+      ]);
+      await tapAndSettle(tester, byKey('line-minus-$breadLine'));
+      expect(find.text(words.undoAction), findsOneWidget);
+
+      cart.failure = const NetworkFailure();
+      await tester.tap(byKey('line-minus-$tomatoLine'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 700));
+
+      expect(find.text(words.cartNotSaved), findsOneWidget);
+      expect(find.text(words.undoAction), findsNothing);
+      expect(byKey('line-minus-$tomatoLine'), findsOneWidget, reason: 'back');
+      await tester.pumpAndSettle();
+      expect(find.text(words.undoAction), findsNothing);
     });
 
     testWidgets('with large text the total stands over Оформить', (

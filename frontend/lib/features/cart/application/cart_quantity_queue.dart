@@ -89,9 +89,15 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
   Future<ApiFailure?> remove(String productId) =>
       _wish(productId, out, now: true);
 
-  /// Puts [line] back at once, with its note and rule.
-  Future<ApiFailure?> restore(NewCartLine line) =>
-      _wish(line.productId, line.quantity, now: true, template: line);
+  /// Puts [line] back at once, with its note and rule. [account] is the one
+  /// the line was removed from; when another is signed in now, nothing is
+  /// added and the call completes with `null` (`DL-119`).
+  Future<ApiFailure?> restore(NewCartLine line, {required String? account}) {
+    if (account == null || account != ref.read(customerAccountProvider)) {
+      return Future<ApiFailure?>.value();
+    }
+    return _wish(line.productId, line.quantity, now: true, template: line);
+  }
 
   /// Sends every waiting step now and completes when every product is
   /// answered; `true` when nothing failed.

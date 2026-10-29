@@ -8,6 +8,7 @@ import '../../../core/localization/interface_language.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/soft_change.dart';
+import '../application/cart_controllers.dart';
 import '../application/cart_quantity_queue.dart';
 import '../domain/cart.dart';
 
@@ -16,13 +17,13 @@ const TextStyle _amountStyle = TextStyle(
   fontWeight: FontWeight.w700,
 );
 
-/// The bar under the cart (drawing 19): "â‰ˆ total | ÐžÑ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ", inactive with
+/// The bar under the cart (drawing 19): "≈ total | Оформить", inactive with
 /// its reason while a line is not sold or the minimum is not reached. With
 /// the settings unfilled the total is absent and the button still opens the
-/// checkout, which refuses as before. Â«ÐžÑ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒÂ» first sends what waits in the
+/// checkout, which refuses as before. «Оформить» first sends what waits in the
 /// quantity queue and opens the checkout only when that held; the total is
-/// dimmed meanwhile. When "total | ÐžÑ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒ" does not fit the button at the
-/// device's text size, the total stands over a button with Â«ÐžÑ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒÂ» alone
+/// dimmed meanwhile. When "total | Оформить" does not fit the button at the
+/// device's text size, the total stands over a button with «Оформить» alone
 /// (`DL-119`).
 class CartFooter extends ConsumerStatefulWidget {
   const CartFooter({required this.cart, super.key});
@@ -45,8 +46,10 @@ class _CartFooterState extends ConsumerState<CartFooter> {
       return;
     }
     setState(() => _settling = false);
-    // The answer may have closed the checkout (the minimum, a line gone).
-    if (!held || !widget.cart.canCheckout) {
+    // The answer may have closed the checkout (the minimum, a line gone); the
+    // widget has not been rebuilt with it yet, so the provider is read.
+    final bool open = ref.read(currentCartProvider).value?.canCheckout ?? false;
+    if (!held || !open) {
       return;
     }
     // The "added" notices stay behind, queued ones too.
@@ -106,7 +109,7 @@ class _CartFooterState extends ConsumerState<CartFooter> {
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             // The button's own padding is 18 on each side; its content is the
-            // total, a 12 + 1 + 12 divider, Â«ÐžÑ„Ð¾Ñ€Ð¼Ð¸Ñ‚ÑŒÂ», 6 and the arrow.
+            // total, a 12 + 1 + 12 divider, «Оформить», 6 and the arrow.
             final double needed =
                 (totalText == null
                     ? 0
