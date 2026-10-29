@@ -7267,6 +7267,12 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Mijoz sababi: «{reason}»'**
   String requestCustomerReason(String reason);
+
+  /// No description provided for @undoAction.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qaytarish'**
+  String get undoAction;
 }
 
 class _AppLocalizationsDelegate

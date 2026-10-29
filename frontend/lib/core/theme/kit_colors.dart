@@ -64,4 +64,10 @@ abstract final class KitColors {
 
   /// The edge of a filled rating star (`DL-117`).
   static const Color starEdge = Color(0xFF94600A);
+
+  /// The undo bar's dark background (`DL-119`).
+  static const Color undoBar = Color(0xFF1E261F);
+
+  /// The undo bar's action text: 9.8:1 on [undoBar] (`DL-119`).
+  static const Color undoAction = Color(0xFF8FE09A);
 }

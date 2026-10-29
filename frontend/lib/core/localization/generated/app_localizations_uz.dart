@@ -4253,4 +4253,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String requestCustomerReason(String reason) {
     return 'Mijoz sababi: «$reason»';
   }
+
+  @override
+  String get undoAction => 'Qaytarish';
 }

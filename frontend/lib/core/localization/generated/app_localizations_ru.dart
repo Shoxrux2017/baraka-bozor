@@ -4298,4 +4298,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String requestCustomerReason(String reason) {
     return 'Причина клиента: «$reason»';
   }
+
+  @override
+  String get undoAction => 'Вернуть';
 }

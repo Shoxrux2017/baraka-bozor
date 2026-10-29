@@ -76,6 +76,15 @@ void main() {
     );
   });
 
+  test('the undo bar and its action (DL-119)', () {
+    expect(KitColors.undoBar, const Color(0xFF1E261F));
+    expect(KitColors.undoAction, const Color(0xFF8FE09A));
+    expect(
+      _contrast(KitColors.undoAction, KitColors.undoBar),
+      greaterThanOrEqualTo(7),
+    );
+  });
+
   test('icons and star edges stand out at 3:1', () {
     for (final Color c in <Color>[
       KitColors.primary,
