@@ -1,3 +1,4 @@
+import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
@@ -107,6 +108,112 @@ void main() {
     await tester.pumpWidget(items(lines: 2));
     expect(find.bySemanticsLabel('Помидоры, 1,5 кг'), findsNWidgets(2));
     handle.dispose();
+  });
+
+  Widget oneLine({int? total = 1250000, Locale locale = const Locale('ru')}) =>
+      app(
+        Scaffold(
+          body: SingleChildScrollView(
+            child: CheckoutItems(
+              items: <CheckoutItem>[
+                CheckoutItem(
+                  id: 'one',
+                  nameUz: 'Pomidor navbahor',
+                  nameRu: 'Помидоры черри',
+                  unit: UnitCode.kg,
+                  quantity: '1.500',
+                  priceMode: PriceMode.estimate,
+                  imageUrl: null,
+                  lineTotalUzs: total,
+                ),
+              ],
+              pending: false,
+              onChange: () {},
+            ),
+          ),
+        ),
+        locale: locale,
+      );
+
+  Future<void> openOneLine(
+    WidgetTester tester,
+    Widget widget, {
+    required Size size,
+    required double textScale,
+  }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    tester.platformDispatcher.textScaleFactorTestValue = textScale;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.pumpWidget(widget);
+    await tester.tap(byKey('checkout-items-toggle'));
+    await tester.pumpAndSettle();
+  }
+
+  for (final Locale locale in const <Locale>[Locale('ru'), Locale('uz')]) {
+    testWidgets('at large text a long sum goes under the quantity ($locale)', (
+      WidgetTester tester,
+    ) async {
+      await openOneLine(
+        tester,
+        oneLine(locale: locale),
+        size: const Size(320, 640),
+        textScale: 2,
+      );
+      expect(tester.takeException(), isNull);
+      final Finder name = find.descendant(
+        of: byKey('checkout-item-one'),
+        matching: find.text(
+          locale.languageCode == 'ru' ? 'Помидоры черри' : 'Pomidor navbahor',
+        ),
+      );
+      final Finder quantity = find.descendant(
+        of: byKey('checkout-item-one'),
+        matching: find.textContaining(RegExp(r'1,5')),
+      );
+      final Rect sum = tester.getRect(byKey('checkout-item-one-sum'));
+      expect(sum.top, greaterThanOrEqualTo(tester.getRect(quantity).bottom));
+      final String word = locale.languageCode == 'ru' ? 'Помидоры' : 'Pomidor';
+      final TextPainter painter = TextPainter(
+        text: TextSpan(text: word, style: const TextStyle(fontSize: 28)),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      expect(
+        tester.getSize(name).width,
+        greaterThanOrEqualTo(painter.width - 8),
+      );
+    });
+  }
+
+  testWidgets('beside the name when it fits', (WidgetTester tester) async {
+    await openOneLine(
+      tester,
+      oneLine(),
+      size: const Size(800, 640),
+      textScale: 1,
+    );
+    final Rect sum = tester.getRect(byKey('checkout-item-one-sum'));
+    final Rect name = tester.getRect(
+      find.descendant(
+        of: byKey('checkout-item-one'),
+        matching: find.text('Помидоры черри'),
+      ),
+    );
+    expect(sum.top, lessThan(name.bottom));
+    expect(sum.left, greaterThan(name.right));
+  });
+
+  testWidgets('a seven-digit sum scales down rather than overflow', (
+    WidgetTester tester,
+  ) async {
+    await openOneLine(
+      tester,
+      oneLine(total: 99999999),
+      size: const Size(320, 640),
+      textScale: 2,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Показать состав lists every name, quantity and server sum', (

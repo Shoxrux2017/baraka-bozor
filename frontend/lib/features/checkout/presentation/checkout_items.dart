@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/catalog/catalog_values.dart';
 import '../../../core/formatting/money_format.dart';
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
@@ -264,6 +267,19 @@ class _CheckoutItemsState extends State<CheckoutItems> {
     );
   }
 
+  static const TextStyle _nameStyle = TextStyle(
+    fontSize: 14,
+    color: KitColors.ink,
+  );
+  static const TextStyle _sumStyle = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: KitColors.ink,
+  );
+
+  /// The width of a grey bar standing for a sum.
+  static const double _barWidth = 64;
+
   Widget _row(AppLocalizations l10n, AppLanguage language, CheckoutItem item) {
     final int? total = item.lineTotalUzs;
     final String? sum = total == null
@@ -271,6 +287,31 @@ class _CheckoutItemsState extends State<CheckoutItems> {
         : item.priceMode == PriceMode.estimate
         ? l10n.cartLineEstimate(MoneyFormat.uzs(total, language))
         : MoneyFormat.uzs(total, language);
+    final String name = item.name(language);
+    final Widget sumBlock = sum != null
+        ? Text(
+            sum,
+            key: ValueKey<String>('checkout-item-${item.id}-sum'),
+            maxLines: 1,
+            softWrap: false,
+            style: _sumStyle,
+          )
+        : SkeletonBar(
+            key: ValueKey<String>('checkout-item-${item.id}-pending'),
+            width: _barWidth,
+            pulsing: widget.pending,
+          );
+    final double sumWidth = sum != null
+        ? textWidth(context, sum, _sumStyle)
+        : _barWidth;
+    final double longestWord = name
+        .split(RegExp(r'\s+'))
+        .map((String word) => textWidth(context, word, _nameStyle))
+        .fold<double>(0, math.max);
+    final Widget quantity = Text(
+      _quantity(l10n, item),
+      style: const TextStyle(fontSize: 12, color: KitColors.muted),
+    );
     return DecoratedBox(
       key: ValueKey<String>('checkout-item-${item.id}'),
       decoration: const BoxDecoration(
@@ -278,59 +319,51 @@ class _CheckoutItemsState extends State<CheckoutItems> {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: <Widget>[
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: KitColors.card,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: SizedBox.square(
-                dimension: 44,
-                child: Center(
-                  child: ProductImage(url: item.imageUrl, size: 32),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    item.name(language),
-                    style: const TextStyle(fontSize: 14, color: KitColors.ink),
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            // The room right of the picture and its gap. The sum stands
+            // beside the name when the name's longest word still fits; else
+            // it goes under the quantity, never broken and scaled down only
+            // when it alone is wider than the room (`DL-121`).
+            final double room = constraints.maxWidth - 44 - 12;
+            final bool beside = sumWidth + 8 + longestWord <= room;
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: KitColors.card,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  Text(
-                    _quantity(l10n, item),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: KitColors.muted,
+                  child: SizedBox.square(
+                    dimension: 44,
+                    child: Center(
+                      child: ProductImage(url: item.imageUrl, size: 32),
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (sum != null)
-              Text(
-                sum,
-                key: ValueKey<String>('checkout-item-${item.id}-sum'),
-                maxLines: 1,
-                softWrap: false,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: KitColors.ink,
                 ),
-              )
-            else
-              SkeletonBar(
-                key: ValueKey<String>('checkout-item-${item.id}-pending'),
-                width: 64,
-                pulsing: widget.pending,
-              ),
-          ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(name, style: _nameStyle),
+                      quantity,
+                      if (!beside) ...<Widget>[
+                        const SizedBox(height: 4),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: AlignmentDirectional.centerStart,
+                          child: sumBlock,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (beside) ...<Widget>[const SizedBox(width: 8), sumBlock],
+              ],
+            );
+          },
         ),
       ),
     );

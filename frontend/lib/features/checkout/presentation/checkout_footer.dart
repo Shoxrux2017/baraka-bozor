@@ -55,6 +55,19 @@ class CheckoutFooter extends StatelessWidget {
         ? null
         : _amount(context, l10n, total);
 
+    final Widget? notice = recountedFrom != null && total != null
+        ? recountedFrom == total
+              ? _RecountShell(
+                  key: const ValueKey<String>('checkout-refreshed'),
+                  child: Text(l10n.checkoutRecounted, style: _noticeText),
+                )
+              : CheckoutRecountNotice(
+                  key: const ValueKey<String>('checkout-refreshed'),
+                  before: _amount(context, l10n, recountedFrom),
+                  after: _amount(context, l10n, total),
+                )
+        : null;
+
     return DecoratedBox(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -84,36 +97,31 @@ class CheckoutFooter extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                if (note != null)
-                  // A long message scrolls: the button below always stays in
-                  // reach.
+                if (note != null || notice != null)
+                  // Refusals and the recount notice scroll inside a quarter of
+                  // the screen: the button below always stays in reach
+                  // (`DL-121`).
                   ConstrainedBox(
                     constraints: BoxConstraints(
                       maxHeight: MediaQuery.sizeOf(context).height * 0.25,
                     ),
                     child: SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: note,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          if (note != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: note,
+                            ),
+                          if (notice != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: notice,
+                            ),
+                        ],
                       ),
                     ),
-                  ),
-                if (recountedFrom != null && total != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: recountedFrom == total
-                        ? _RecountShell(
-                            key: const ValueKey<String>('checkout-refreshed'),
-                            child: Text(
-                              l10n.checkoutRecounted,
-                              style: _noticeText,
-                            ),
-                          )
-                        : CheckoutRecountNotice(
-                            key: const ValueKey<String>('checkout-refreshed'),
-                            before: _amount(context, l10n, recountedFrom),
-                            after: _amount(context, l10n, total),
-                          ),
                   ),
                 if (reason != null)
                   Padding(

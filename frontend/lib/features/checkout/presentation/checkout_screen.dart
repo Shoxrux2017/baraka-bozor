@@ -75,7 +75,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   /// An address was chosen that the loaded list does not hold yet.
   bool _previewWhenListed = false;
 
-  /// A tap on "Заказать" is being served.
+  /// A tap on "Заказать" is being served: the wish is closed meanwhile, so
+  /// what is placed is what was previewed (`DL-121`).
   bool _ordering = false;
 
   /// Previews this screen is waiting for: a run that ends while there is
@@ -220,7 +221,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ref.read(preparedCheckoutProvider.notifier).clear();
     }
     if (!_sent && _addressId != null) {
-      _autoPreview();
+      if (_wishValid()) {
+        _autoPreview();
+      } else {
+        // An over-long draft shows its error as soon as the checkout opens.
+        _form.currentState?.validate();
+      }
     }
   }
 
@@ -436,11 +442,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (_ordering || _placed != null) {
       return;
     }
-    _ordering = true;
+    setState(() => _ordering = true);
     try {
       await _orderOnce();
     } finally {
-      _ordering = false;
+      if (mounted) {
+        setState(() => _ordering = false);
+      } else {
+        _ordering = false;
+      }
     }
   }
 
@@ -682,10 +692,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       child: CheckoutWishField(
                         controller: _note,
                         focusNode: _wishFocus,
-                        // Only a placement or a sent confirmation closes it:
-                        // a wish typed during a preview is previewed again
-                        // before placing (`DL-89`, `DL-121`).
-                        enabled: !busyPlace && !sent,
+                        // Open while the screen counts on its own (`DL-89`
+                        // previews it again at the next tap); closed from a
+                        // tap on "Заказать" until its answer, and when a
+                        // confirmation is sent (`DL-121`).
+                        enabled: !_ordering && !busyPlace && !sent,
                         onChanged: (String text) {
                           ref
                               .read(checkoutWishDraftProvider.notifier)

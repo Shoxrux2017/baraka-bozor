@@ -271,6 +271,33 @@ void main() {
     );
   });
 
+  testWidgets('a recount with a long message keeps Заказать in reach', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    tester.platformDispatcher.textScaleFactorTestValue = 3.1;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.pumpWidget(
+      footerHost(
+        CheckoutFooter(
+          totalUzs: 48600,
+          recountedFromUzs: 47600,
+          estimate: true,
+          busy: false,
+          busyLabel: '…',
+          onOrder: () {},
+          message: Text(List<String>.filled(40, 'Xabar').join(' ')),
+        ),
+        locale: const Locale('uz'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(byKey('checkout-confirm').hitTestable(), findsOneWidget);
+  });
+
   testWidgets('beside it when they fit', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(800, 640);
     tester.view.devicePixelRatio = 1;

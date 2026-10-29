@@ -903,7 +903,7 @@ void main() {
     expect(top(tester), AppPaths.customerNewAddress);
   });
 
-  testWidgets('without an address a line says why under the grey button', (
+  testWidgets('without an address a line says why over the grey button', (
     WidgetTester tester,
   ) async {
     addresses = FakeAddressesRepository(rows: <Address>[]);
@@ -912,6 +912,10 @@ void main() {
     expect(
       tester.widget<Text>(byKey('checkout-why')).data,
       l10n(tester).checkoutWhyNoAddress,
+    );
+    expect(
+      tester.getBottomLeft(byKey('checkout-why')).dy,
+      lessThanOrEqualTo(tester.getTopLeft(byKey('checkout-confirm')).dy),
     );
     expect(orderActive(tester), isFalse);
   });
@@ -1007,6 +1011,61 @@ void main() {
       },
     );
   }
+
+  testWidgets('from a tap on Заказать until its answer the wish is closed', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.enterText(byKey('checkout-delivery-wish'), 'A');
+    await tester.pump();
+    final Completer<void> hold = Completer<void>();
+    checkout.previewHold = hold;
+
+    await tester.tap(byKey('checkout-confirm'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(wishActive(tester), isFalse);
+    checkout.previewHold = null;
+    hold.complete();
+    await tester.pumpAndSettle();
+
+    expect(checkout.previews.last.deliveryTimeNote, 'A');
+    expect(checkout.placements, hasLength(1));
+  });
+
+  testWidgets('a refused tap on Заказать opens the wish again', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    checkout.placeFailure = const ApiRefusal(
+      ApiError(status: 409, code: 'cart_empty'),
+    );
+
+    await order(tester);
+
+    expect(wishActive(tester), isTrue);
+  });
+
+  testWidgets('an over-long draft brought back shows its error at once', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.enterText(
+      byKey('checkout-delivery-wish'),
+      List<String>.filled(161, 'a').join(),
+    );
+    await tester.pump();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    final int previews = checkout.previews.length;
+
+    await tester.tap(byKey('go-to-checkout'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n(tester).fieldTooLong(160)), findsOneWidget);
+    expect(checkout.previews, hasLength(previews));
+  });
 
   testWidgets('a wish longer than 160 characters is refused before sending', (
     WidgetTester tester,
