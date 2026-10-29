@@ -323,23 +323,28 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   });
 
-  testWidgets('another account drops the wishes and sends nothing', (
-    tester,
-  ) async {
-    final ProviderContainer container = await open(tester);
-    final CartQuantityQueue queue = container.read(
-      cartQuantityQueueProvider.notifier,
-    );
-    carts.calls.clear();
+  for (final bool listened in <bool>[false, true]) {
+    testWidgets('another account drops the wishes and sends nothing'
+        '${listened ? ' (queue listened)' : ''}', (tester) async {
+      final ProviderContainer container = await open(tester);
+      if (listened) {
+        container.listen(cartQuantityQueueProvider, (_, _) {});
+      }
+      final CartQuantityQueue queue = container.read(
+        cartQuantityQueueProvider.notifier,
+      );
+      carts.calls.clear();
 
-    final Future<ApiFailure?> caller = queue.want(tomatoProduct, '2');
-    await tester.pump(const Duration(milliseconds: 200));
-    container.read(_account.notifier).signIn('customer-b');
-    await tester.pump(_settle);
+      final Future<ApiFailure?> caller = queue.want(tomatoProduct, '2');
+      await tester.pump(const Duration(milliseconds: 200));
+      container.read(_account.notifier).signIn('customer-b');
+      await tester.pump(_settle);
 
-    expect(carts.calls.where((String c) => c.startsWith('change')), isEmpty);
-    expect(container.read(cartQuantityQueueProvider), isEmpty);
-    expect(await caller, isNull);
-    await tester.pump(const Duration(seconds: 1));
-  });
+      expect(carts.calls.where((String c) => c != 'cart'), isEmpty);
+      expect(carts.added, isEmpty);
+      expect(container.read(cartQuantityQueueProvider), isEmpty);
+      expect(await caller, isNull);
+      await tester.pump(const Duration(seconds: 1));
+    });
+  }
 }

@@ -53,9 +53,12 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
   /// The product ids with a request on its way, and what each one carries.
   final Map<String, String> _sent = <String, String>{};
 
+  /// The account this queue was built for; a wish never goes to another.
+  String? _account;
+
   @override
   Map<String, String> build() {
-    ref.watch(customerAccountProvider);
+    _account = ref.watch(customerAccountProvider);
     ref.onDispose(() {
       _generation++;
       for (final Timer timer in _timers.values) {
@@ -171,6 +174,12 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
   }
 
   void _send(String id) {
+    // The rebuild for another account may not have run yet; a wish made for
+    // the last account is dropped here, never sent into this one's cart.
+    if (ref.read(customerAccountProvider) != _account) {
+      _done(id, null);
+      return;
+    }
     if (_sent.containsKey(id)) {
       return;
     }
@@ -212,6 +221,9 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
       try {
         answered =
             await ref.read(cartLineProvider(line.id).notifier).remove() != null;
+        if (!ref.mounted || generation != _generation) {
+          return;
+        }
         failure = ref.read(cartLineProvider(line.id)).failure;
       } finally {
         hold.close();
@@ -236,6 +248,9 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
                   ),
                 ) !=
             null;
+        if (!ref.mounted || generation != _generation) {
+          return;
+        }
         failure = ref.read(addToCartProvider(id)).failure;
       } finally {
         hold.close();
@@ -258,6 +273,9 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
                   ),
                 ) !=
             null;
+        if (!ref.mounted || generation != _generation) {
+          return;
+        }
         failure = ref.read(cartLineProvider(line.id)).failure;
       } finally {
         hold.close();
