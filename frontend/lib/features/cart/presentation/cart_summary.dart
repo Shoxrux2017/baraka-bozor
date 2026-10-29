@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/formatting/money_format.dart';
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
@@ -117,6 +120,10 @@ class EstimateNote extends StatelessWidget {
 /// One line of amounts: a label and a figure. [replaced] is an earlier
 /// figure shown struck through before the current one. A changed [value]
 /// rises softly and, while [waiting], is dimmed (`DL-119`).
+///
+/// An amount never breaks inside a word: with room the label and the figure
+/// share a row; without it the figure stands under the label, end-aligned; and
+/// only when the figure alone is wider than the row is it scaled down.
 class SummaryAmountRow extends StatelessWidget {
   const SummaryAmountRow({
     required this.valueKey,
@@ -135,6 +142,13 @@ class SummaryAmountRow extends StatelessWidget {
   final String? replaced;
   final bool waiting;
 
+  static const TextStyle _replacedStyle = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: KitColors.muted,
+    decoration: TextDecoration.lineThrough,
+  );
+
   @override
   Widget build(BuildContext context) {
     final TextStyle style = emphasised
@@ -144,49 +158,71 @@ class SummaryAmountRow extends StatelessWidget {
             color: KitColors.ink,
           )
         : const TextStyle(fontSize: 14, color: KitColors.ink2);
+    final TextStyle valueStyle = style.copyWith(
+      color: KitColors.ink,
+      fontWeight: emphasised ? FontWeight.w700 : FontWeight.w600,
+    );
     final Widget valueText = SoftChange(
       value: value,
       waiting: waiting,
       child: Text(
         value,
         key: ValueKey<String>(valueKey),
+        maxLines: 1,
+        softWrap: false,
         textAlign: TextAlign.end,
-        style: style.copyWith(
-          color: KitColors.ink,
-          fontWeight: emphasised ? FontWeight.w700 : FontWeight.w600,
-        ),
+        style: valueStyle,
       ),
     );
+    final String? earlier = replaced;
+    final Widget block = earlier == null
+        ? valueText
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                earlier,
+                maxLines: 1,
+                softWrap: false,
+                style: _replacedStyle,
+              ),
+              const SizedBox(width: 8),
+              valueText,
+            ],
+          );
+    final double blockWidth =
+        textWidth(context, value, valueStyle) +
+        (earlier == null ? 0 : textWidth(context, earlier, _replacedStyle) + 8);
+    final double longestWord = label
+        .split(RegExp(r'\s+'))
+        .map((String word) => textWidth(context, word, style))
+        .fold<double>(0, math.max);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Expanded(child: Text(label, style: style)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: replaced == null
-                ? valueText
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: <Widget>[
-                      Flexible(
-                        child: Text(
-                          replaced!,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: KitColors.muted,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(child: valueText),
-                    ],
-                  ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          if (blockWidth + 12 + longestWord <= constraints.maxWidth) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(child: Text(label, style: style)),
+                const SizedBox(width: 12),
+                block,
+              ],
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(label, style: style),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FittedBox(fit: BoxFit.scaleDown, child: block),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

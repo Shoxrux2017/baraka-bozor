@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/catalog/catalog_values.dart';
 import '../../../core/formatting/money_format.dart';
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
@@ -247,17 +248,7 @@ class _CartLineTileState extends ConsumerState<CartLineTile> {
         onPlus: _plus,
         onQuantity: _exactQuantity,
       );
-      final TextPainter painter = TextPainter(
-        text: TextSpan(
-          text: sumText,
-          style: DefaultTextStyle.of(context).style.merge(sumStyle),
-        ),
-        textDirection: Directionality.of(context),
-        textScaler: MediaQuery.textScalerOf(context),
-        maxLines: 1,
-      )..layout();
-      final double sumWidth = painter.width;
-      painter.dispose();
+      final double sumWidth = textWidth(context, sumText, sumStyle);
       if (sumWidth + 8 + CartLineStepper.defaultWidth <= columnWidth) {
         return Row(
           children: <Widget>[

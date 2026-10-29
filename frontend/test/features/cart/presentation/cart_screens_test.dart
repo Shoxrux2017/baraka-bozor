@@ -1839,6 +1839,51 @@ void main() {
       );
     });
 
+    for (final (String name, Size size, Locale device)
+        in <(String, Size, Locale)>[
+          ('411 wide, Russian', const Size(411, 900), const Locale('ru')),
+          ('320 wide, Uzbek', const Size(320, 640), const Locale('uz')),
+        ]) {
+      testWidgets('at ×2 the amounts keep whole on one line ($name)', (
+        WidgetTester tester,
+      ) async {
+        cart.current = cartOf(
+          <Map<String, Object?>>[cartLineJson(total: 130000)],
+          subtotal: 130000,
+          serviceFee: 3000,
+          deliveryFee: 16375,
+          total: 149375,
+        );
+        await open(
+          tester,
+          at: '/customer/cart',
+          size: size,
+          textScale: 2,
+          device: device,
+        );
+
+        await tester.scrollUntilVisible(byKey('cart-total'), 300);
+        expect(tester.takeException(), isNull);
+        // An 18 px line at ×2 is 36 high; a broken word would be 72.
+        expect(tester.getSize(byKey('cart-total')).height, lessThan(54));
+        expect(
+          tester.getTopRight(byKey('cart-total')).dx,
+          closeTo(size.width - 20, 0.5),
+        );
+
+        final Finder footerValue = find.descendant(
+          of: byKey('cart-footer-total'),
+          matching: find.byType(Text),
+        );
+        expect(footerValue, findsNWidgets(2));
+        expect(tester.getSize(footerValue.last).height, lessThan(51));
+        expect(
+          tester.getTopRight(footerValue.last).dx,
+          closeTo(size.width - 20, 0.5),
+        );
+      });
+    }
+
     testWidgets('at normal text the total stays inside the button', (
       WidgetTester tester,
     ) async {
