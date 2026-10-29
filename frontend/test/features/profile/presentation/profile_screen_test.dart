@@ -3,6 +3,7 @@ import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
 import 'package:baraka_bozor/features/profile/application/profile_controllers.dart';
 import 'package:baraka_bozor/features/profile/domain/profile.dart';
 import 'package:baraka_bozor/features/profile/presentation/profile_header.dart';
@@ -11,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../support/app_harness.dart';
 import '../../../support/fake_auth_repository.dart';
+import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_customer_repositories.dart';
 import '../../../support/fake_legal_repository.dart';
 import '../../../support/fake_shopper_orders_repository.dart';
@@ -59,6 +61,7 @@ void main() {
     Locale device = const Locale('ru'),
     double textScale = 1,
     bool staff = false,
+    FakeCartRepository? cart,
   }) async {
     tester.platformDispatcher.textScaleFactorTestValue = textScale;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
@@ -79,6 +82,7 @@ void main() {
         device: device,
         legal: legal,
         phoneCalls: calls,
+        cart: cart,
         overrides: [profileRepositoryProvider.overrideWithValue(profile)],
       ),
     );
@@ -129,6 +133,82 @@ void main() {
       expect(find.text('Как вас зовут?'), findsOneWidget);
       expect(find.text('Указать имя'), findsOneWidget);
       expect(byKey('profile-support'), findsNothing);
+    });
+
+    testWidgets(
+      'the header has a white cart button with its count, which opens the cart',
+      (tester) async {
+        profile.current = named('Дилноза Каримова');
+        await openProfile(
+          tester,
+          size: const Size(400, 900),
+          cart: FakeCartRepository(
+            cart: cartOf(<Map<String, Object?>>[
+              cartLineJson(),
+              cartLineJson(
+                id: breadLine,
+                productId: breadProduct,
+                unit: 'piece',
+              ),
+            ]),
+          ),
+        );
+
+        final Finder header = find.byType(ProfileHeader);
+        expect(
+          find.descendant(of: header, matching: byKey('open-cart')),
+          findsOneWidget,
+        );
+        expect(tester.getSize(byKey('open-cart')), const Size(44, 44));
+        expect(
+          400 - tester.getTopRight(byKey('open-cart')).dx,
+          10,
+          reason: '10 px from the edge, as drawn',
+        );
+        expect(tester.widget<Text>(byKey('cart-count')).data, '2');
+        expect(
+          tester
+              .widget<Icon>(
+                find.descendant(
+                  of: byKey('open-cart'),
+                  matching: find.byIcon(Icons.shopping_bag_outlined),
+                ),
+              )
+              .color,
+          Colors.white,
+        );
+        expect(
+          tester
+              .getCenter(
+                find.descendant(of: header, matching: find.text('Профиль')),
+              )
+              .dx,
+          closeTo(200, 1),
+          reason: 'the title stays centred',
+        );
+
+        await tester.tap(byKey('open-cart'));
+        await tester.pumpAndSettle();
+        expect(find.byType(ProfileHeader), findsNothing);
+        expect(find.byType(CartScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets('the header keeps its height', (tester) async {
+      profile.current = named('Дилноза Каримова');
+      await openProfile(tester, size: const Size(400, 900));
+
+      expect(tester.getSize(find.byType(ProfileHeader)).height, 155);
+    });
+
+    testWidgets('every target meets iOSTapTargetGuideline', (tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      profile.current = named('Дилноза Каримова');
+      legal.publishBoth();
+      await openProfile(tester, size: const Size(400, 900));
+
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      handle.dispose();
     });
 
     testWidgets('the language row value follows the language', (tester) async {

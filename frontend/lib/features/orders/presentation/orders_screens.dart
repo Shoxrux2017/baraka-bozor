@@ -19,6 +19,7 @@ import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/periodic_refresh.dart';
+import '../../cart/presentation/cart_widgets.dart';
 import '../application/customer_orders_controllers.dart';
 import '../domain/customer_orders.dart';
 import 'cancel_sheet.dart';
@@ -57,8 +58,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: kitAppBar(
-          title: l10n.myOrders,
+          title: l10n.homeNavOrders,
           automaticallyImplyLeading: false,
+          actions: const <Widget>[CartButton()],
         ),
         bottomNavigationBar: const CustomerTabBar(current: CustomerTab.orders),
         body: SafeArea(
