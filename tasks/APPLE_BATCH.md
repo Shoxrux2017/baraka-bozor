@@ -17,8 +17,8 @@ Rules for every stage:
 
 | Stage | Screens | Items | Server | Status |
 |---|---|---|---|---|
-| 1 | Kit colours and sizes (all roles) | 7 | — | In review |
-| 2 | Customer tabs | 5 | — | Planned |
+| 1 | Kit colours and sizes (all roles) | 7 | — | Merged (PR #121) |
+| 2 | Customer tabs | 5 | — | In review |
 | 3 | Cart and the card's stepper | 8 | — | Planned |
 | 4 | Checkout | 10 | — | Planned |
 | 5 | Product | 9 | — | Planned |
