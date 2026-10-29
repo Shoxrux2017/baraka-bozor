@@ -4,12 +4,11 @@ import '../../../core/formatting/address_format.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/formatting/server_text.dart';
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/app_language.dart';
-import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/orders/order_values.dart';
-import '../../../core/orders/quantity_rules.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../addresses/domain/addresses.dart';
@@ -22,59 +21,69 @@ const List<BoxShadow> _cardShadow = <BoxShadow>[
   BoxShadow(color: Color(0x14000000), blurRadius: 12, offset: Offset(0, 2)),
 ];
 
-const TextStyle _heading = TextStyle(
-  fontSize: 16,
-  fontWeight: FontWeight.w700,
-  color: KitColors.ink,
-);
-
 /// A 44x44 icon on the green wash.
 class _IconWell extends StatelessWidget {
-  const _IconWell({required this.icon, this.opacity = 1});
+  const _IconWell({required this.icon});
 
   final IconData icon;
-  final double opacity;
 
   @override
-  Widget build(BuildContext context) => Opacity(
-    opacity: opacity,
-    child: DecoratedBox(
-      decoration: const BoxDecoration(
-        color: KitColors.primaryWash,
-        borderRadius: BorderRadius.all(Radius.circular(12)),
-      ),
-      child: SizedBox.square(
-        dimension: 44,
-        child: Icon(icon, color: KitColors.primaryDark),
-      ),
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: const BoxDecoration(
+      color: KitColors.primaryWash,
+      borderRadius: BorderRadius.all(Radius.circular(12)),
+    ),
+    child: SizedBox.square(
+      dimension: 44,
+      child: Icon(icon, color: KitColors.primaryDark),
     ),
   );
 }
 
-/// A small "Изменить" text button: the label scales down where the text is
-/// large, the button — and so its tap target — does not.
-class _EditButton extends StatelessWidget {
-  const _EditButton({required this.buttonKey, required this.onPressed});
+/// A small text button ("Изменить", "Добавить"). With a width cap the label
+/// scales down at large text, the button — and so its tap target — does not;
+/// without one ([maxWidth] infinite) the label is never scaled and the button
+/// is flush with its text (`DL-121`).
+class CheckoutEditButton extends StatelessWidget {
+  const CheckoutEditButton({
+    required this.buttonKey,
+    required this.label,
+    required this.onPressed,
+    this.maxWidth = 120,
+    super.key,
+  });
+
+  static const TextStyle labelStyle = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+  );
 
   final String buttonKey;
+  final String label;
   final VoidCallback? onPressed;
+  final double maxWidth;
 
   @override
-  Widget build(BuildContext context) => ConstrainedBox(
-    constraints: const BoxConstraints(maxWidth: 120),
-    child: TextButton(
-      key: ValueKey<String>(buttonKey),
-      style: TextButton.styleFrom(
-        foregroundColor: KitColors.primaryDark,
-        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+  Widget build(BuildContext context) {
+    final bool capped = maxWidth.isFinite;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: TextButton(
+        key: ValueKey<String>(buttonKey),
+        style: TextButton.styleFrom(
+          foregroundColor: KitColors.primaryDark,
+          textStyle: labelStyle,
+          padding: capped ? null : EdgeInsets.zero,
+          minimumSize: capped ? null : const Size(44, 44),
+          alignment: capped ? null : AlignmentDirectional.centerStart,
+        ),
+        onPressed: onPressed,
+        child: capped
+            ? FittedBox(fit: BoxFit.scaleDown, child: Text(label))
+            : Text(label),
       ),
-      onPressed: onPressed,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(AppLocalizations.of(context).editButton),
-      ),
-    ),
-  );
+    );
+  }
 }
 
 /// A notice on a wash: an icon and a line, announced when it appears.
@@ -143,7 +152,10 @@ class CheckoutClosedBanner extends StatelessWidget {
   );
 }
 
-/// "Куда привезти": the delivery address and the recipient (drawing 25).
+/// "Куда привезти": the delivery address and the recipient (drawing 25). The
+/// address and the name are never cut; the link reads "Добавить" without an
+/// address and goes under the address where it does not fit beside it
+/// (`DL-121`).
 class CheckoutDeliveryCard extends StatelessWidget {
   const CheckoutDeliveryCard({
     required this.address,
@@ -191,6 +203,9 @@ class CheckoutDeliveryCard extends StatelessWidget {
       );
     }
     final String? name = recipient?.fullName;
+    final String linkLabel = held == null && !gone && sentAddressLine == null
+        ? l10n.checkoutAddressAdd
+        : l10n.editButton;
 
     return DecoratedBox(
       key: const ValueKey<String>('checkout-address'),
@@ -209,39 +224,62 @@ class CheckoutDeliveryCard extends StatelessWidget {
                 const _IconWell(icon: Icons.home_outlined),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: InkWell(
-                    onTap: onChange,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: gone ? KitColors.danger : KitColors.ink,
-                          ),
-                        ),
-                        if (detail != null)
-                          Text(
-                            detail,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: KitColors.muted,
+                  child: LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints box) {
+                      final double linkWidth =
+                          textWidth(
+                            context,
+                            linkLabel,
+                            CheckoutEditButton.labelStyle,
+                          ) +
+                          16;
+                      final bool beside = linkWidth + 8 <= box.maxWidth / 2;
+                      final Widget texts = InkWell(
+                        onTap: onChange,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: gone ? KitColors.danger : KitColors.ink,
+                              ),
                             ),
-                          ),
-                      ],
-                    ),
+                            if (detail != null)
+                              Text(
+                                detail,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: KitColors.muted,
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                      final Widget link = CheckoutEditButton(
+                        buttonKey: 'checkout-address-change',
+                        label: linkLabel,
+                        onPressed: onChange,
+                        maxWidth: double.infinity,
+                      );
+                      if (beside) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(child: texts),
+                            const SizedBox(width: 8),
+                            link,
+                          ],
+                        );
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[texts, link],
+                      );
+                    },
                   ),
-                ),
-                const SizedBox(width: 8),
-                _EditButton(
-                  buttonKey: 'checkout-address-change',
-                  onPressed: onChange,
                 ),
               ],
             ),
@@ -261,8 +299,6 @@ class CheckoutDeliveryCard extends StatelessWidget {
                       children: <Widget>[
                         Text(
                           name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -290,15 +326,22 @@ class CheckoutDeliveryCard extends StatelessWidget {
 }
 
 /// "Пожелание к доставке", up to 160 characters as the server counts them.
+/// The error shows as it is typed; the counter only from [counterFrom]
+/// characters, and in the danger colour over the limit (`DL-121`).
 class CheckoutWishField extends StatelessWidget {
   const CheckoutWishField({
     required this.controller,
+    required this.focusNode,
     required this.enabled,
     required this.onChanged,
     super.key,
   });
 
+  /// The length from which the counter is shown.
+  static const int counterFrom = 120;
+
   final TextEditingController controller;
+  final FocusNode focusNode;
   final bool enabled;
   final ValueChanged<String> onChanged;
 
@@ -320,7 +363,9 @@ class CheckoutWishField extends StatelessWidget {
         TextFormField(
           key: const ValueKey<String>('checkout-delivery-wish'),
           controller: controller,
+          focusNode: focusNode,
           enabled: enabled,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           minLines: 1,
           maxLines: 3,
           style: const TextStyle(fontSize: 14, color: KitColors.ink),
@@ -335,18 +380,25 @@ class CheckoutWishField extends StatelessWidget {
             focusedBorder: none,
             errorBorder: none,
             focusedErrorBorder: none,
+            errorStyle: const TextStyle(fontSize: 12, color: KitColors.danger),
             contentPadding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
             counter: ValueListenableBuilder<TextEditingValue>(
               valueListenable: controller,
-              builder: (BuildContext context, TextEditingValue value, _) =>
-                  Text(
-                    '${trimLikeServer(value.text).runes.length} / '
-                    '${CheckoutRequest.deliveryTimeNoteMax}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: KitColors.muted,
-                    ),
+              builder: (BuildContext context, TextEditingValue value, _) {
+                final int length = trimLikeServer(value.text).runes.length;
+                if (length < counterFrom) {
+                  return const SizedBox.shrink();
+                }
+                final bool over = length > CheckoutRequest.deliveryTimeNoteMax;
+                return Text(
+                  '$length / ${CheckoutRequest.deliveryTimeNoteMax}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: over ? KitColors.danger : KitColors.muted,
+                    fontWeight: over ? FontWeight.w600 : null,
                   ),
+                );
+              },
             ),
           ),
           onChanged: onChanged,
@@ -361,230 +413,118 @@ class CheckoutWishField extends StatelessWidget {
   }
 }
 
-/// "Способ оплаты": cash is chosen, online is shown and not yet open.
-class CheckoutPaymentCards extends StatelessWidget {
-  const CheckoutPaymentCards({super.key});
+/// "Способ оплаты": one cash row, and a line that online payment is coming.
+/// Nothing in it is a control (`DL-121`).
+class CheckoutPayment extends StatelessWidget {
+  const CheckoutPayment({super.key});
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    return RadioGroup<PaymentMethod>(
-      groupValue: PaymentMethod.cash,
-      onChanged: (PaymentMethod? _) {},
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _payCard(
-            selected: true,
-            tile: RadioListTile<PaymentMethod>(
-              key: const ValueKey<String>('pay-cash'),
-              value: PaymentMethod.cash,
-              controlAffinity: ListTileControlAffinity.trailing,
-              activeColor: KitColors.primary,
-              secondary: const _IconWell(icon: Icons.payments_outlined),
-              title: Text(
-                l10n.paymentCashTitle,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: KitColors.ink,
-                ),
-              ),
-              subtitle: Text(
-                l10n.paymentCashHint,
-                style: const TextStyle(fontSize: 12, color: KitColors.muted),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _payCard(
-            selected: false,
-            tile: RadioListTile<PaymentMethod>(
-              key: const ValueKey<String>('pay-online'),
-              value: PaymentMethod.online,
-              enabled: false,
-              controlAffinity: ListTileControlAffinity.trailing,
-              secondary: const _IconWell(icon: Icons.credit_card, opacity: 0.5),
-              title: Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  Text(
-                    l10n.paymentOnlineTitle,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: KitColors.muted,
-                    ),
-                  ),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: KitColors.line,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      child: Text(
-                        l10n.checkoutSoon,
+    final Widget card = DecoratedBox(
+      key: const ValueKey<String>('pay-cash'),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: _cardShadow,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                const _IconWell(icon: Icons.payments_outlined),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        l10n.paymentCashTitle,
                         style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: KitColors.ink2,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: KitColors.ink,
                         ),
                       ),
-                    ),
+                      Text(
+                        l10n.paymentCashHint,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: KitColors.muted,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              subtitle: Text(
-                l10n.checkoutOnlineUnavailable,
-                style: const TextStyle(fontSize: 12, color: KitColors.muted),
-              ),
+                ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
-  }
-
-  static Widget _payCard({required bool selected, required Widget tile}) =>
-      DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: _cardShadow,
-          border: selected
-              ? Border.all(color: KitColors.primary, width: 1.5)
-              : null,
-        ),
-        child: Material(type: MaterialType.transparency, child: tile),
-      );
-}
-
-/// "Товары · N" with the pictures of the first four lines.
-class CheckoutItemsStrip extends StatelessWidget {
-  const CheckoutItemsStrip({
-    required this.lines,
-    required this.imageByCartItem,
-    required this.onChange,
-    super.key,
-  });
-
-  /// The most pictures the strip shows.
-  static const int shown = 4;
-
-  final List<PreviewLine> lines;
-  final Map<String, String?> imageByCartItem;
-  final VoidCallback onChange;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final List<PreviewLine> visible = lines.take(shown).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                l10n.checkoutItems(lines.length),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: _heading,
-              ),
-            ),
-            const SizedBox(width: 8),
-            _EditButton(
-              buttonKey: 'checkout-items-change',
-              onPressed: onChange,
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: <Widget>[
-            for (final PreviewLine line in visible)
-              SizedBox(
-                width: 64,
-                child: Column(
-                  children: <Widget>[
-                    _tile(
-                      ProductImage(
-                        url: imageByCartItem[line.cartItemId],
-                        size: 48,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        '${QuantityRules.display(line.quantity)} '
-                        '${CatalogLabels.unit(l10n, line.unit)}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: KitColors.ink2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            if (lines.length > shown)
-              SizedBox(
-                width: 64,
-                child: _tile(
-                  Text(
-                    '+${lines.length - shown}',
-                    key: const ValueKey<String>('checkout-items-more'),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: KitColors.ink2,
-                    ),
+        card,
+        const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Row(
+            key: const ValueKey<String>('pay-online-soon'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              const Icon(Icons.schedule, size: 16, color: KitColors.muted),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  l10n.checkoutOnlineSoon,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: KitColors.muted,
                   ),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ],
     );
   }
-
-  static Widget _tile(Widget child) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: KitColors.card,
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: SizedBox.square(dimension: 64, child: Center(child: child)),
-  );
 }
 
-/// The amounts of the checkout, exactly the preview's (drawing 25).
+/// The amounts of the checkout, exactly the preview's (drawing 25). Without a
+/// preview every figure is a grey bar of its own width, pulsing while
+/// [pending]; the cart's estimates are never shown here (`DL-121`).
 class CheckoutAmounts extends StatelessWidget {
   const CheckoutAmounts({
     required this.preview,
+    required this.lineCount,
+    required this.pending,
     this.replacedTotalUzs,
     super.key,
   });
 
-  final CheckoutPreview preview;
+  final CheckoutPreview? preview;
 
-  /// The total the Customer saw before the figures were recounted.
+  /// The number of products in «Товары (N)» while there is no preview.
+  final int lineCount;
+  final bool pending;
+
+  /// The total the Customer saw before the figures were recounted; the
+  /// notice itself is the footer's (`DL-121`).
   final int? replacedTotalUzs;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
-    final bool estimate = preview.totalKind != TotalKind.finalTotal;
+    final CheckoutPreview? held = preview;
+    final bool estimate =
+        held != null && held.totalKind != TotalKind.finalTotal;
     String sum(int amount) => MoneyFormat.uzs(amount, language);
     String figure(int amount) =>
         estimate ? l10n.cartLineEstimate(sum(amount)) : sum(amount);
@@ -593,30 +533,26 @@ class CheckoutAmounts extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (replaced != null) ...<Widget>[
-          _Notice(
-            noticeKey: 'checkout-refreshed',
-            wash: KitColors.primaryWash,
-            icon: Icons.sync,
-            iconColor: KitColors.primaryDark,
-            text: l10n.checkoutRecounted,
-          ),
-          const SizedBox(height: 12),
-        ],
         SummaryAmountRow(
           valueKey: 'checkout-subtotal',
-          label: l10n.cartGoods(preview.lines.length),
-          value: figure(preview.merchandiseSubtotalUzs),
+          label: l10n.cartGoods(held?.lines.length ?? lineCount),
+          value: held == null ? '' : figure(held.merchandiseSubtotalUzs),
+          pendingWidth: held == null ? 92 : null,
+          pulsing: pending,
         ),
         SummaryAmountRow(
           valueKey: 'checkout-delivery',
           label: l10n.cartDelivery,
-          value: sum(preview.deliveryFeeUzs),
+          value: held == null ? '' : sum(held.deliveryFeeUzs),
+          pendingWidth: held == null ? 76 : null,
+          pulsing: pending,
         ),
         SummaryAmountRow(
           valueKey: 'checkout-service-fee',
           label: l10n.cartServiceFee,
-          value: sum(preview.serviceFeeUzs),
+          value: held == null ? '' : sum(held.serviceFeeUzs),
+          pendingWidth: held == null ? 68 : null,
+          pulsing: pending,
         ),
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 6),
@@ -625,133 +561,19 @@ class CheckoutAmounts extends StatelessWidget {
         SummaryAmountRow(
           valueKey: 'checkout-total',
           label: l10n.cartTotal,
-          value: figure(preview.totalUzs),
+          value: held == null ? '' : figure(held.totalUzs),
           emphasised: true,
-          replaced: replaced == null || replaced == preview.totalUzs
+          replaced:
+              held == null || replaced == null || replaced == held.totalUzs
               ? null
               : figure(replaced),
+          pendingWidth: held == null ? 120 : null,
+          pulsing: pending,
         ),
         const SizedBox(height: 8),
         const EstimateNote(),
       ],
     );
-  }
-}
-
-/// The bar under the checkout: "≈ total | Заказать".
-class CheckoutFooter extends StatelessWidget {
-  const CheckoutFooter({
-    required this.totalUzs,
-    required this.estimate,
-    required this.busy,
-    required this.busyLabel,
-    required this.onOrder,
-    this.message,
-    super.key,
-  });
-
-  final int? totalUzs;
-  final bool estimate;
-  final bool busy;
-  final String busyLabel;
-  final VoidCallback? onOrder;
-  final Widget? message;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final int? total = totalUzs;
-    final Widget? note = message;
-    const TextStyle text = TextStyle(fontSize: 15, fontWeight: FontWeight.w700);
-
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 20,
-            offset: Offset(0, -6),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (note != null)
-              // A long message scrolls: the button below always stays in reach.
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.sizeOf(context).height * 0.25,
-                ),
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: note,
-                  ),
-                ),
-              ),
-            FilledButton(
-              key: const ValueKey<String>('checkout-confirm'),
-              style: FilledButton.styleFrom(
-                backgroundColor: KitColors.primary,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: busy
-                    ? KitColors.primary
-                    : KitColors.line,
-                disabledForegroundColor: busy ? Colors.white : KitColors.muted,
-                minimumSize: const Size.fromHeight(54),
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              onPressed: busy ? null : onOrder,
-              child: busy
-                  ? SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                        semanticsLabel: busyLabel,
-                      ),
-                    )
-                  : FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          if (total != null) ...<Widget>[
-                            Text(_amount(context, l10n, total), style: text),
-                            const SizedBox(width: 12),
-                            SizedBox(
-                              width: 1,
-                              height: 22,
-                              child: ColoredBox(
-                                color: onOrder != null
-                                    ? Colors.white54
-                                    : KitColors.muted,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                          ],
-                          Text(l10n.checkoutOrder, style: text),
-                        ],
-                      ),
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _amount(BuildContext context, AppLocalizations l10n, int total) {
-    final String sum = MoneyFormat.uzs(total, interfaceLanguage(context));
-    return estimate ? l10n.cartLineEstimate(sum) : sum;
   }
 }
 

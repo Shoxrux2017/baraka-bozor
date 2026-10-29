@@ -3500,22 +3500,40 @@ abstract class AppLocalizations {
   /// **'To\'lov usuli'**
   String get checkoutPayment;
 
-  /// No description provided for @checkoutOnlineUnavailable.
+  /// No description provided for @checkoutOnlineSoon.
   ///
   /// In uz, this message translates to:
-  /// **'Hozircha faqat naqd pul bilan to\'lash mumkin'**
-  String get checkoutOnlineUnavailable;
+  /// **'Payme va Click orqali onlayn to\'lov — tez orada'**
+  String get checkoutOnlineSoon;
+
+  /// No description provided for @checkoutItemsShow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarkibini ko\'rsatish'**
+  String get checkoutItemsShow;
+
+  /// No description provided for @checkoutItemsHide.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tarkibini yashirish'**
+  String get checkoutItemsHide;
+
+  /// No description provided for @checkoutAddressAdd.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qo\'shish'**
+  String get checkoutAddressAdd;
 
   /// No description provided for @checkoutCalculating.
   ///
   /// In uz, this message translates to:
-  /// **'Hisoblanmoqda'**
+  /// **'Summa hisoblanmoqda…'**
   String get checkoutCalculating;
 
   /// No description provided for @checkoutPlacing.
   ///
   /// In uz, this message translates to:
-  /// **'Buyurtma yuborilmoqda'**
+  /// **'Buyurtma yuborilmoqda…'**
   String get checkoutPlacing;
 
   /// No description provided for @checkoutPlaced.
@@ -3656,18 +3674,6 @@ abstract class AppLocalizations {
   /// **'Qabul qilganda, aniq summani yig\'ishdan keyin ko\'rsatamiz'**
   String get paymentCashHint;
 
-  /// No description provided for @paymentOnlineTitle.
-  ///
-  /// In uz, this message translates to:
-  /// **'Onlayn: Payme yoki Click'**
-  String get paymentOnlineTitle;
-
-  /// No description provided for @checkoutSoon.
-  ///
-  /// In uz, this message translates to:
-  /// **'Tez orada'**
-  String get checkoutSoon;
-
   /// No description provided for @checkoutItems.
   ///
   /// In uz, this message translates to:
@@ -3691,6 +3697,18 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Rasmiylashtirayotganingizda buyurtma qayta hisoblandi. Summani tekshiring va «Buyurtma berish»ni yana bosing.'**
   String get checkoutRecounted;
+
+  /// No description provided for @checkoutRecountedFromTo.
+  ///
+  /// In uz, this message translates to:
+  /// **'Summa o\'zgardi: {before} → {after}. Tekshiring va «Buyurtma berish»ni yana bosing.'**
+  String checkoutRecountedFromTo(String before, String after);
+
+  /// No description provided for @checkoutWhyNoAddress.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazish manzilini qo\'shing — usiz yetkazib berish narxini hisoblab bo\'lmaydi'**
+  String get checkoutWhyNoAddress;
 
   /// No description provided for @checkoutGoneTitle.
   ///

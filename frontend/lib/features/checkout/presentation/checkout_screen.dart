@@ -15,6 +15,7 @@ import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/fold.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../addresses/application/addresses_controllers.dart';
 import '../../addresses/application/delivery_address.dart';
@@ -26,6 +27,8 @@ import '../../profile/application/profile_controllers.dart';
 import '../../profile/domain/profile.dart';
 import '../application/checkout_controllers.dart';
 import '../domain/checkout.dart';
+import 'checkout_footer.dart';
+import 'checkout_items.dart';
 import 'checkout_placed_view.dart';
 import 'checkout_sections.dart';
 
@@ -47,6 +50,10 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
   late final TextEditingController _note;
+  final FocusNode _wishFocus = FocusNode();
+
+  /// The wish field with its label, to bring into view (`DL-121`).
+  final GlobalKey _wishKey = GlobalKey();
   final List<ProviderSubscription<dynamic>> _subscriptions =
       <ProviderSubscription<dynamic>>[];
   String? _addressId;
@@ -68,7 +75,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   /// An address was chosen that the loaded list does not hold yet.
   bool _previewWhenListed = false;
 
-  /// A tap on "Заказать" is being served.
+  /// A tap on "Заказать" is being served: the wish is closed meanwhile, so
+  /// what is placed is what was previewed (`DL-121`).
   bool _ordering = false;
 
   /// Previews this screen is waiting for: a run that ends while there is
@@ -81,6 +89,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   /// The preview on screen: kept while the next one runs.
   CheckoutPreview? _shown;
+
+  /// When collecting starts, from the latest preview that said the shop is
+  /// closed; kept while the next preview runs and gone when one says open
+  /// (`DL-121`).
+  String? _closedOpensAt;
+
+  /// The last text of the closed banner, kept while it folds away.
+  String? _closedText;
 
   /// The total the Customer saw before the figures were recounted.
   int? _replacedTotal;
@@ -98,7 +114,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _addressId = sent?.request.addressId;
     _adopted = sent != null;
     _shown = sent?.preview;
-    _note = TextEditingController(text: sent?.request.deliveryTimeNote ?? '');
+    _keepClosed(sent?.preview);
+    // A sent confirmation shows the wish it was sent with; otherwise the
+    // draft the Customer left (`DL-121`).
+    _note = TextEditingController(
+      text: sent != null
+          ? sent.request.deliveryTimeNote ?? ''
+          : ref.read(checkoutWishDraftProvider),
+    );
 
     final String? account = ref.read(customerAccountProvider);
     if (account != null) {
@@ -143,6 +166,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       subscription.close();
     }
     _note.dispose();
+    _wishFocus.dispose();
     super.dispose();
   }
 
@@ -197,7 +221,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ref.read(preparedCheckoutProvider.notifier).clear();
     }
     if (!_sent && _addressId != null) {
-      _autoPreview();
+      if (_wishValid()) {
+        _autoPreview();
+      } else {
+        // An over-long draft shows its error as soon as the checkout opens.
+        _form.currentState?.validate();
+      }
     }
   }
 
@@ -212,6 +241,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _wishValid() =>
       trimLikeServer(_note.text).runes.length <=
       CheckoutRequest.deliveryTimeNoteMax;
+
+  /// Brings the wish field into view and focuses it, so an over-long wish is
+  /// seen where it is (`DL-121`).
+  void _showWish() {
+    final BuildContext? target = _wishKey.currentContext;
+    if (target != null) {
+      // A kept-alive field far off screen has a stale position: a first jump
+      // brings it back into the laid-out part, the second one places it.
+      Scrollable.ensureVisible(target, duration: Duration.zero);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final BuildContext? placed = _wishKey.currentContext;
+        if (!mounted || placed == null) {
+          return;
+        }
+        Scrollable.ensureVisible(
+          placed,
+          alignment: 0.3,
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      });
+    }
+    _wishFocus.requestFocus();
+  }
 
   CheckoutRequest _requestFor(String addressId) {
     final String wish = trimLikeServer(_note.text);
@@ -326,8 +381,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (prepared == null) {
       return null;
     }
-    setState(() => _shown = prepared.preview);
+    setState(() {
+      _shown = prepared.preview;
+      _keepClosed(prepared.preview);
+    });
     return prepared;
+  }
+
+  /// Takes the closed banner's time from [preview], the latest one.
+  void _keepClosed(CheckoutPreview? preview) {
+    if (preview == null) {
+      return;
+    }
+    final String? opensAt = preview.outsideWorkingHours
+        ? preview.opensAt
+        : null;
+    _closedOpensAt = opensAt;
+    _closedText = opensAt ?? _closedText;
   }
 
   /// A refusal in the footer — or, for products gone from sale, the sheet.
@@ -372,11 +442,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (_ordering || _placed != null) {
       return;
     }
-    _ordering = true;
+    setState(() => _ordering = true);
     try {
       await _orderOnce();
     } finally {
-      _ordering = false;
+      if (mounted) {
+        setState(() => _ordering = false);
+      } else {
+        _ordering = false;
+      }
     }
   }
 
@@ -387,9 +461,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
     final Address? held = _heldAddress();
-    if (held == null ||
-        !(_form.currentState?.validate() ?? true) ||
-        !_wishValid()) {
+    if (held == null) {
+      return;
+    }
+    if (!(_form.currentState?.validate() ?? true) || !_wishValid()) {
+      _showWish();
       return;
     }
     final CheckoutRequest request = _requestFor(held.id);
@@ -514,9 +590,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         !addresses.isLoading &&
         !_previewWhenListed;
     final bool busy = busyPreview || busyPlace;
+    final bool noAddress = list != null && list.isEmpty && !sent;
     final bool locked = busy || sent;
     final CheckoutPreview? shown = gone ? null : _shown;
-    final String? opensAt = shown?.opensAt;
+    final bool closed = !gone && _closedOpensAt != null;
+    final List<CheckoutItem> items = checkoutItemsOf(
+      preview: shown,
+      cart: cart,
+    );
 
     final VoidCallback? onChange = locked
         ? null
@@ -558,6 +639,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ? l10n.checkoutPlacing
               : l10n.checkoutCalculating,
           onOrder: sent || (!gone && held != null) ? _order : null,
+          recountedFromUzs: _replacedTotal,
+          why: noAddress ? l10n.checkoutWhyNoAddress : null,
           message: notes.isEmpty
               ? null
               : Column(
@@ -577,12 +660,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   key: const ValueKey<String>('checkout'),
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                   children: <Widget>[
-                    if (shown != null &&
-                        shown.outsideWorkingHours &&
-                        opensAt != null) ...<Widget>[
-                      CheckoutClosedBanner(opensAt: opensAt),
-                      const SizedBox(height: 16),
-                    ],
+                    Fold(
+                      shown: closed,
+                      appear: true,
+                      onFolded: () {
+                        if (_closedOpensAt == null) {
+                          setState(() => _closedText = null);
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _closedText == null
+                            ? const SizedBox.shrink()
+                            : CheckoutClosedBanner(opensAt: _closedText!),
+                      ),
+                    ),
                     _Heading(l10n.checkoutWhere),
                     const SizedBox(height: 12),
                     CheckoutDeliveryCard(
@@ -595,33 +687,45 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       onChange: onChange,
                     ),
                     const SizedBox(height: 12),
-                    CheckoutWishField(
-                      controller: _note,
-                      enabled: !locked,
-                      onChanged: (String _) {
-                        if (_replacedTotal != null) {
-                          setState(() => _replacedTotal = null);
-                        }
-                      },
+                    _KeepAlive(
+                      key: _wishKey,
+                      child: CheckoutWishField(
+                        controller: _note,
+                        focusNode: _wishFocus,
+                        // Open while the screen counts on its own (`DL-89`
+                        // previews it again at the next tap); closed from a
+                        // tap on "Заказать" until its answer, and when a
+                        // confirmation is sent (`DL-121`).
+                        enabled: !_ordering && !busyPlace && !sent,
+                        onChanged: (String text) {
+                          ref
+                              .read(checkoutWishDraftProvider.notifier)
+                              .set(text);
+                          if (_replacedTotal != null) {
+                            setState(() => _replacedTotal = null);
+                          }
+                        },
+                      ),
                     ),
                     const SizedBox(height: 24),
                     _Heading(l10n.checkoutPayment),
                     const SizedBox(height: 12),
-                    const CheckoutPaymentCards(),
-                    if (shown != null) ...<Widget>[
+                    const CheckoutPayment(),
+                    if (items.isNotEmpty) ...<Widget>[
                       const SizedBox(height: 24),
-                      CheckoutItemsStrip(
-                        lines: shown.lines,
-                        imageByCartItem: <String, String?>{
-                          for (final CartLine line
-                              in cart?.lines ?? const <CartLine>[])
-                            line.id: line.imageUrl,
-                        },
+                      CheckoutItems(
+                        key: const ValueKey<String>('checkout-items'),
+                        items: items,
+                        pending: busyPreview,
                         onChange: () => context.pop(),
                       ),
+                    ],
+                    if (shown != null || (held != null && !gone)) ...<Widget>[
                       const SizedBox(height: 16),
                       CheckoutAmounts(
                         preview: shown,
+                        lineCount: items.length,
+                        pending: busyPreview,
                         replacedTotalUzs: _replacedTotal,
                       ),
                     ],
@@ -751,5 +855,28 @@ class CheckoutRefusal extends StatelessWidget {
             max.replaceAll('.', ','),
           )
         : l10n.addressOutsideAreaPlain;
+  }
+}
+
+/// Keeps its child built while the lazy list scrolls away from it, so the
+/// wish field can still be brought into view and focused (`DL-121`).
+class _KeepAlive extends StatefulWidget {
+  const _KeepAlive({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  State<_KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<_KeepAlive>
+    with AutomaticKeepAliveClientMixin<_KeepAlive> {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }

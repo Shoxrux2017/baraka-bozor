@@ -67,6 +67,8 @@ The Customer browses categories, searches (both languages), sees unit, price mod
 4. It returns a signed five-minute checkout token bound to the current state.
 5. The Customer confirms. Confirming previews again a changed wish or a stale token, and places an unchanged offer without asking again (`DL-89`).
 
+In the app the goods and the amounts keep their places while the preview comes, with grey bars for figures not yet counted; the wish can be typed at once and is kept until an order is placed; online payment shows as coming until Wave 5 (`DL-121`).
+
 If anything changed, order creation refuses: a check of the preview that now fails answers its own code — a product gone is `product_unavailable`, naming it — and any other change, an expired token or an address since removed is `checkout_snapshot_stale`; the Customer previews again (`DL-42`).
 
 ## 8. Order Creation

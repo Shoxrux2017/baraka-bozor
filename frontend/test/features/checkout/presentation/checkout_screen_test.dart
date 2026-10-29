@@ -8,12 +8,14 @@ import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
+import 'package:baraka_bozor/core/widgets/fold.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/application/addresses_controllers.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/features/profile/domain/profile.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -178,11 +180,15 @@ void main() {
     expect(checkout.previews, hasLength(1));
     expect(checkout.previews.single.addressId, 'a-1');
     expect(checkout.previews.single.deliveryTimeNote, isNull);
+    expect(byKey('pay-cash'), findsOneWidget);
+    expect(find.byType(RadioListTile<Object>), findsNothing);
     expect(
-      tester.widget<RadioListTile<Object>>(byKey('pay-online')).enabled,
-      isFalse,
+      find.descendant(
+        of: byKey('pay-online-soon'),
+        matching: find.text(words.checkoutOnlineSoon),
+      ),
+      findsOneWidget,
     );
-    expect(find.text(words.checkoutOnlineUnavailable), findsOneWidget);
     expect(byKey('checkout-total'), findsOneWidget);
 
     await tester.enterText(byKey('checkout-delivery-wish'), '  Kechqurun ');
@@ -331,24 +337,102 @@ void main() {
     expect(byKey('catalog-search'), findsOneWidget);
   });
 
-  testWidgets('what a preview was asked for cannot change while it runs', (
+  testWidgets(
+    'while a preview runs the wish can be typed; the address and Заказать wait',
+    (WidgetTester tester) async {
+      final Completer<void> hold = Completer<void>();
+      checkout.previewHold = hold;
+      await open(tester, settle: false);
+
+      expect(wishActive(tester), isTrue);
+      expect(changeActive(tester), isFalse);
+      expect(orderActive(tester), isFalse);
+
+      checkout.previewHold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(wishActive(tester), isTrue);
+      expect(changeActive(tester), isTrue);
+      expect(orderActive(tester), isTrue);
+    },
+  );
+
+  testWidgets(
+    'a wish typed during the opening preview is previewed again before placing',
+    (WidgetTester tester) async {
+      final Completer<void> hold = Completer<void>();
+      checkout.previewHold = hold;
+      await open(tester, settle: false);
+
+      await tester.enterText(byKey('checkout-delivery-wish'), 'после 18:00');
+      await tester.pump();
+      checkout.previewHold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(checkout.previews, hasLength(1), reason: 'typing asks nothing');
+
+      await order(tester);
+
+      expect(checkout.previews, hasLength(2));
+      expect(checkout.previews.last.deliveryTimeNote, 'после 18:00');
+      expect(checkout.placements.single.$1, 'token-2');
+    },
+  );
+
+  testWidgets('the wish survives a trip to the cart and back', (
     WidgetTester tester,
   ) async {
-    final Completer<void> hold = Completer<void>();
-    checkout.previewHold = hold;
-    await open(tester, settle: false);
+    await open(tester);
+    await tester.enterText(byKey('checkout-delivery-wish'), 'после 18:00');
+    await tester.pump();
 
-    expect(wishActive(tester), isFalse);
-    expect(changeActive(tester), isFalse);
-    expect(orderActive(tester), isFalse);
-
-    checkout.previewHold = null;
-    hold.complete();
+    GoRouter.of(anywhere(tester)).pop();
     await tester.pumpAndSettle();
-    expect(wishActive(tester), isTrue);
-    expect(changeActive(tester), isTrue);
-    expect(orderActive(tester), isTrue);
+    await tester.scrollUntilVisible(
+      byKey('go-to-checkout'),
+      300,
+      scrollable: find
+          .descendant(
+            of: byKey('cart-lines'),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.tap(byKey('go-to-checkout'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<TextFormField>(byKey('checkout-delivery-wish'))
+          .controller!
+          .text,
+      'после 18:00',
+    );
+    expect(checkout.previews.last.deliveryTimeNote, 'после 18:00');
   });
+
+  testWidgets(
+    'a sent confirmation comes back with the wish it was sent with, locked',
+    (WidgetTester tester) async {
+      await open(tester);
+      await tester.enterText(byKey('checkout-delivery-wish'), 'Kechqurun');
+      checkout.placeFailure = const NetworkFailure();
+      await order(tester);
+
+      GoRouter.of(anywhere(tester)).pop();
+      await tester.pumpAndSettle();
+      await tapAndSettle(tester, byKey('cart-check-unconfirmed'));
+
+      expect(
+        tester
+            .widget<TextFormField>(byKey('checkout-delivery-wish'))
+            .controller!
+            .text,
+        'Kechqurun',
+      );
+      expect(wishActive(tester), isFalse);
+    },
+  );
 
   testWidgets(
     'a retry of a confirmation whose outcome is unknown reuses its key, and nothing else may change',
@@ -812,10 +896,175 @@ void main() {
     await open(tester);
 
     expect(inCard(l10n(tester).deliveryAddressAdd), findsOneWidget);
+    expect(inCard(l10n(tester).checkoutAddressAdd), findsOneWidget);
     expect(checkout.previews, isEmpty);
     expect(orderActive(tester), isFalse);
     await tapAndSettle(tester, byKey('checkout-address-change'));
     expect(top(tester), AppPaths.customerNewAddress);
+  });
+
+  testWidgets('without an address a line says why over the grey button', (
+    WidgetTester tester,
+  ) async {
+    addresses = FakeAddressesRepository(rows: <Address>[]);
+    await open(tester);
+
+    expect(
+      tester.widget<Text>(byKey('checkout-why')).data,
+      l10n(tester).checkoutWhyNoAddress,
+    );
+    expect(
+      tester.getBottomLeft(byKey('checkout-why')).dy,
+      lessThanOrEqualTo(tester.getTopLeft(byKey('checkout-confirm')).dy),
+    );
+    expect(orderActive(tester), isFalse);
+  });
+
+  testWidgets(
+    'a recount shows было → стало above Заказать and goes with the next change',
+    (WidgetTester tester) async {
+      await open(tester);
+      final AppLocalizations words = l10n(tester);
+      checkout.queuedPreviews.add(previewJson(total: 48600));
+      checkout.placeFailure = const ApiRefusal(
+        ApiError(status: 409, code: 'checkout_snapshot_stale'),
+      );
+
+      await order(tester);
+
+      final String before = words.cartLineEstimate(
+        MoneyFormat.uzs(47600, AppLanguage.uz),
+      );
+      final String after = words.cartLineEstimate(
+        MoneyFormat.uzs(48600, AppLanguage.uz),
+      );
+      expect(
+        tester.getTopLeft(byKey('checkout-refreshed')).dy,
+        lessThan(tester.getTopLeft(byKey('checkout-confirm')).dy),
+      );
+      final String plain = tester
+          .widgetList<RichText>(
+            find.descendant(
+              of: byKey('checkout-refreshed'),
+              matching: find.byType(RichText),
+            ),
+          )
+          .map((RichText t) => t.text.toPlainText())
+          .join();
+      expect(plain, contains(before));
+      expect(plain, contains(after));
+
+      await tester.enterText(byKey('checkout-delivery-wish'), 'Qo‘ng‘iroq');
+      await tester.pumpAndSettle();
+      expect(byKey('checkout-refreshed'), findsNothing);
+    },
+  );
+
+  testWidgets('every target of the checkout meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    checkout.outsideHours = true;
+    await open(tester);
+    await tapAndSettle(tester, byKey('checkout-items-toggle'));
+    checkout.queuedPreviews.add(previewJson(total: 48600));
+    checkout.placeFailure = const ApiRefusal(
+      ApiError(status: 409, code: 'checkout_snapshot_stale'),
+    );
+    await order(tester);
+    expect(byKey('checkout-refreshed'), findsOneWidget);
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
+
+  testWidgets('without an address every target meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    addresses = FakeAddressesRepository(rows: <Address>[]);
+    await open(tester);
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
+
+  for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+    testWidgets(
+      'at large text the recount, Итого and Заказать fit a small phone (${device.languageCode})',
+      (WidgetTester tester) async {
+        await open(
+          tester,
+          size: const Size(320, 640),
+          textScale: 2,
+          device: device,
+        );
+        checkout.queuedPreviews.add(previewJson(total: 48600));
+        checkout.placeFailure = const ApiRefusal(
+          ApiError(status: 409, code: 'checkout_snapshot_stale'),
+        );
+
+        await order(tester);
+
+        expect(tester.takeException(), isNull);
+        expect(byKey('checkout-refreshed'), findsOneWidget);
+        expect(byKey('checkout-footer-total'), findsOneWidget);
+        expect(byKey('checkout-confirm').hitTestable(), findsOneWidget);
+      },
+    );
+  }
+
+  testWidgets('from a tap on Заказать until its answer the wish is closed', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.enterText(byKey('checkout-delivery-wish'), 'A');
+    await tester.pump();
+    final Completer<void> hold = Completer<void>();
+    checkout.previewHold = hold;
+
+    await tester.tap(byKey('checkout-confirm'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(wishActive(tester), isFalse);
+    checkout.previewHold = null;
+    hold.complete();
+    await tester.pumpAndSettle();
+
+    expect(checkout.previews.last.deliveryTimeNote, 'A');
+    expect(checkout.placements, hasLength(1));
+  });
+
+  testWidgets('a refused tap on Заказать opens the wish again', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    checkout.placeFailure = const ApiRefusal(
+      ApiError(status: 409, code: 'cart_empty'),
+    );
+
+    await order(tester);
+
+    expect(wishActive(tester), isTrue);
+  });
+
+  testWidgets('an over-long draft brought back shows its error at once', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.enterText(
+      byKey('checkout-delivery-wish'),
+      List<String>.filled(161, 'a').join(),
+    );
+    await tester.pump();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    final int previews = checkout.previews.length;
+
+    await tester.tap(byKey('go-to-checkout'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n(tester).fieldTooLong(160)), findsOneWidget);
+    expect(checkout.previews, hasLength(previews));
   });
 
   testWidgets('a wish longer than 160 characters is refused before sending', (
@@ -833,6 +1082,99 @@ void main() {
     expect(checkout.previews, hasLength(1), reason: 'only the first');
     expect(checkout.placements, isEmpty);
   });
+
+  testWidgets(
+    'Заказать with an over-long wish brings the field into view and focuses it',
+    (WidgetTester tester) async {
+      await open(tester, size: const Size(320, 640));
+      await tester.enterText(
+        byKey('checkout-delivery-wish'),
+        List<String>.filled(161, 'a').join(),
+      );
+      await tester.pump();
+      final FocusNode wishFocus = tester
+          .widget<EditableText>(
+            find.descendant(
+              of: byKey('checkout-delivery-wish'),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .focusNode;
+      await tester.drag(byKey('checkout'), const Offset(0, -5000));
+      await tester.pumpAndSettle();
+      final int previews = checkout.previews.length;
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      expect(wishFocus.hasFocus, isFalse);
+
+      await tester.tap(byKey('checkout-confirm'));
+      await tester.pumpAndSettle();
+
+      final Rect field = tester.getRect(byKey('checkout-delivery-wish'));
+      expect(field.top, greaterThanOrEqualTo(0));
+      expect(field.bottom, lessThanOrEqualTo(640));
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: byKey('checkout-delivery-wish'),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .focusNode
+            .hasFocus,
+        isTrue,
+      );
+      expect(find.text(l10n(tester).fieldTooLong(160)), findsOneWidget);
+      expect(checkout.previews, hasLength(previews));
+      expect(checkout.placements, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'a wish scrolled far away is kept, so Заказать still brings it into view',
+    (WidgetTester tester) async {
+      await open(tester, size: const Size(320, 640), textScale: 2);
+      await tester.enterText(
+        byKey('checkout-delivery-wish'),
+        List<String>.filled(161, 'a').join(),
+      );
+      await tester.drag(byKey('checkout'), const Offset(0, -9000));
+      await tester.pumpAndSettle();
+      // A shorter window: the field is then far out of the laid-out part.
+      tester.view.physicalSize = const Size(320, 420);
+      await tester.pumpAndSettle();
+      await tester.drag(byKey('checkout'), const Offset(0, -9000));
+      await tester.pumpAndSettle();
+      final int previews = checkout.previews.length;
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      await tester.drag(byKey('checkout'), const Offset(0, 30));
+      await tester.pumpAndSettle();
+
+      await tester.tap(byKey('checkout-confirm'));
+      await tester.pumpAndSettle();
+
+      final Rect field = tester.getRect(byKey('checkout-delivery-wish'));
+      expect(field.top, greaterThanOrEqualTo(0));
+      expect(field.bottom, lessThanOrEqualTo(420));
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: byKey('checkout-delivery-wish'),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .focusNode
+            .hasFocus,
+        isTrue,
+      );
+      expect(find.text(l10n(tester).fieldTooLong(160)), findsOneWidget);
+      expect(checkout.previews, hasLength(previews));
+      expect(checkout.placements, isEmpty);
+    },
+  );
 
   testWidgets('two quick taps place once', (WidgetTester tester) async {
     await open(tester);
@@ -947,6 +1289,120 @@ void main() {
 
     expect(byKey('checkout-placed'), findsOneWidget);
     expect(find.byType(ActiveModeBar), findsOneWidget);
+  });
+
+  List<MethodCall> mockHaptics(WidgetTester tester) {
+    final List<MethodCall> calls = <MethodCall>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall call) async {
+        calls.add(call);
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    return calls;
+  }
+
+  Iterable<MethodCall> lightImpacts(List<MethodCall> calls) => calls.where(
+    (MethodCall c) =>
+        c.method == 'HapticFeedback.vibrate' &&
+        c.arguments == 'HapticFeedbackType.lightImpact',
+  );
+
+  double cardOpacity(WidgetTester tester) => tester
+      .widget<FadeTransition>(
+        find.ancestor(
+          of: byKey('checkout-placed-card'),
+          matching: find.byType(FadeTransition),
+        ),
+      )
+      .opacity
+      .value;
+
+  double circleScale(WidgetTester tester) => tester
+      .widget<ScaleTransition>(
+        find
+            .ancestor(
+              of: byKey('checkout-placed-circle'),
+              matching: find.byType(ScaleTransition),
+            )
+            .first,
+      )
+      .scale
+      .value;
+
+  testWidgets('the placed card rises from below with a light haptic', (
+    WidgetTester tester,
+  ) async {
+    final List<MethodCall> calls = mockHaptics(tester);
+    await open(tester);
+    await tester.ensureVisible(byKey('checkout-confirm'));
+    await tester.pumpAndSettle();
+    await tester.tap(byKey('checkout-confirm'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(byKey('checkout-placed-card'), findsOneWidget);
+    expect(lightImpacts(calls), hasLength(1));
+    final double startOpacity = cardOpacity(tester);
+    final double startBottom = tester
+        .getBottomLeft(byKey('checkout-placed-card'))
+        .dy;
+    expect(startOpacity, lessThan(0.2));
+    expect(circleScale(tester), lessThan(0.7));
+
+    await tester.pump(const Duration(milliseconds: 210));
+    final double midOpacity = cardOpacity(tester);
+    expect(midOpacity, inExclusiveRange(startOpacity, 1));
+    expect(
+      tester.getBottomLeft(byKey('checkout-placed-card')).dy,
+      lessThan(startBottom),
+    );
+    expect(circleScale(tester), inExclusiveRange(0.6, 1));
+
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(cardOpacity(tester), 1);
+    expect(circleScale(tester), 1);
+    final double endBottom = tester
+        .getBottomLeft(byKey('checkout-placed-card'))
+        .dy;
+    expect(startBottom - endBottom, closeTo(48, 3));
+    expect(lightImpacts(calls), hasLength(1));
+  });
+
+  testWidgets(
+    'with reduced motion the placed card stands at once, and still buzzes',
+    (WidgetTester tester) async {
+      final List<MethodCall> calls = mockHaptics(tester);
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await open(tester);
+      await order(tester);
+
+      expect(cardOpacity(tester), 1);
+      expect(circleScale(tester), 1);
+      expect(lightImpacts(calls), hasLength(1));
+    },
+  );
+
+  testWidgets('the placed view meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester);
+    await order(tester);
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
   });
 
   testWidgets('leaving while a stale confirmation previews again is safe', (
@@ -1134,11 +1590,110 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(byKey('checkout-total'), findsNothing);
+    expect(byKey('checkout-total-pending'), findsOneWidget);
     expect(checkout.previews.last.addressId, 'a-2');
     checkout.previewHold = null;
     hold.complete();
     await tester.pumpAndSettle();
     expect(byKey('checkout-total'), findsOneWidget);
+    expect(byKey('checkout-total-pending'), findsNothing);
+  });
+
+  testWidgets(
+    'the goods and the amounts stand in place while the figures come',
+    (WidgetTester tester) async {
+      final Completer<void> hold = Completer<void>();
+      checkout.previewHold = hold;
+      await open(tester, settle: false);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(byKey('checkout-items'), findsOneWidget);
+      expect(byKey('checkout-total-pending'), findsOneWidget);
+      expect(byKey('checkout-total'), findsNothing);
+      final double top = tester.getTopLeft(byKey('checkout-items')).dy;
+
+      checkout.previewHold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('checkout-total'), findsOneWidget);
+      expect(byKey('checkout-total-pending'), findsNothing);
+      expect(tester.getTopLeft(byKey('checkout-items')).dy, top);
+    },
+  );
+
+  testWidgets(
+    'figures never show for another address, not even in the composition',
+    (WidgetTester tester) async {
+      await open(tester);
+      await tapAndSettle(tester, byKey('checkout-items-toggle'));
+      const String sum = 'checkout-item-$tomatoLine-sum';
+      expect(byKey(sum), findsOneWidget);
+
+      final Completer<void> hold = Completer<void>();
+      checkout.previewHold = hold;
+      await tapAndSettle(tester, byKey('checkout-address-change'));
+      await tester.tap(byKey('delivery-address-a-2'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(byKey('checkout-total'), findsNothing);
+      expect(byKey(sum), findsNothing);
+      expect(byKey('checkout-total-pending'), findsOneWidget);
+      expect(byKey('checkout-item-$tomatoLine-pending'), findsOneWidget);
+
+      checkout.previewHold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('checkout-total'), findsOneWidget);
+      expect(byKey(sum), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the closed banner unfolds once and stays while the figures are recounted',
+    (WidgetTester tester) async {
+      checkout.outsideHours = true;
+      await open(tester, settle: false);
+      final Finder fold = find.ancestor(
+        of: byKey('checkout-closed'),
+        matching: find.byType(Fold),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      final double early = tester.getSize(fold).height;
+      await tester.pumpAndSettle();
+      final double full = tester.getSize(fold).height;
+      expect(early, lessThan(full));
+      expect(full, greaterThan(0));
+
+      final Completer<void> hold = Completer<void>();
+      checkout.previewHold = hold;
+      await tapAndSettle(tester, byKey('checkout-address-change'));
+      await tester.tap(byKey('delivery-address-a-2'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(byKey('checkout-closed'), findsOneWidget);
+      expect(tester.getSize(fold).height, full);
+
+      checkout.outsideHours = false;
+      checkout.previewHold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('checkout-closed'), findsNothing);
+    },
+  );
+
+  testWidgets('a refused preview leaves still bars and the refusal', (
+    WidgetTester tester,
+  ) async {
+    checkout.previewFailure = const ApiRefusal(
+      ApiError(status: 422, code: 'address_outside_service_area'),
+    );
+    await open(tester);
+
+    expect(byKey('failure-message'), findsOneWidget);
+    expect(byKey('checkout-total-pending'), findsOneWidget);
+    expect(byKey('checkout-total'), findsNothing);
+    expect(tester.binding.hasScheduledFrame, isFalse);
   });
 
   testWidgets(

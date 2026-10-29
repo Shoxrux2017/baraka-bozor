@@ -878,9 +878,12 @@
   "checkoutTitle": "Оформление",
   "checkoutGo": "Оформить",
   "checkoutPayment": "Способ оплаты",
-  "checkoutOnlineUnavailable": "Пока можно оплатить только наличными",
-  "checkoutCalculating": "Рассчитываем",
-  "checkoutPlacing": "Отправляем заказ",
+  "checkoutOnlineSoon": "Онлайн-оплата через Payme и Click — скоро",
+  "checkoutItemsShow": "Показать состав",
+  "checkoutItemsHide": "Скрыть состав",
+  "checkoutAddressAdd": "Добавить",
+  "checkoutCalculating": "Считаем сумму…",
+  "checkoutPlacing": "Отправляем заказ…",
   "checkoutPlaced": "Заказ № {number} оформлен",
   "@checkoutPlaced": {
     "placeholders": {
@@ -928,8 +931,6 @@
   "checkoutWishHint": "Например: после 18:00, позвонить заранее",
   "paymentCashTitle": "Наличными курьеру",
   "paymentCashHint": "При получении, точную сумму покажем после сборки",
-  "paymentOnlineTitle": "Онлайн: Payme или Click",
-  "checkoutSoon": "Скоро",
   "checkoutItems": "Товары · {count}",
   "@checkoutItems": {
     "placeholders": {
@@ -948,6 +949,18 @@
     }
   },
   "checkoutRecounted": "Пока вы оформляли, заказ пересчитали. Проверьте итог и нажмите «Заказать» ещё раз.",
+  "checkoutRecountedFromTo": "Сумма изменилась: {before} → {after}. Проверьте и нажмите «Заказать» ещё раз.",
+  "@checkoutRecountedFromTo": {
+    "placeholders": {
+      "before": {
+        "type": "String"
+      },
+      "after": {
+        "type": "String"
+      }
+    }
+  },
+  "checkoutWhyNoAddress": "Добавьте адрес доставки — без него не посчитать доставку",
   "checkoutGoneTitle": "{count, plural, one{Товар закончился} few{Товары закончились} many{Товары закончились} other{Товары закончились}}",
   "@checkoutGoneTitle": {
     "placeholders": {

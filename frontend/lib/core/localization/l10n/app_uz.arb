@@ -971,9 +971,12 @@
   "checkoutTitle": "Rasmiylashtirish",
   "checkoutGo": "Rasmiylashtirish",
   "checkoutPayment": "To'lov usuli",
-  "checkoutOnlineUnavailable": "Hozircha faqat naqd pul bilan to'lash mumkin",
-  "checkoutCalculating": "Hisoblanmoqda",
-  "checkoutPlacing": "Buyurtma yuborilmoqda",
+  "checkoutOnlineSoon": "Payme va Click orqali onlayn to'lov — tez orada",
+  "checkoutItemsShow": "Tarkibini ko'rsatish",
+  "checkoutItemsHide": "Tarkibini yashirish",
+  "checkoutAddressAdd": "Qo'shish",
+  "checkoutCalculating": "Summa hisoblanmoqda…",
+  "checkoutPlacing": "Buyurtma yuborilmoqda…",
   "checkoutPlaced": "Buyurtma № {number} rasmiylashtirildi",
   "@checkoutPlaced": {
     "placeholders": {
@@ -1021,8 +1024,6 @@
   "checkoutWishHint": "Masalan: 18:00 dan keyin, oldindan qo'ng'iroq qiling",
   "paymentCashTitle": "Kuryerga naqd pul",
   "paymentCashHint": "Qabul qilganda, aniq summani yig'ishdan keyin ko'rsatamiz",
-  "paymentOnlineTitle": "Onlayn: Payme yoki Click",
-  "checkoutSoon": "Tez orada",
   "checkoutItems": "Mahsulotlar · {count}",
   "@checkoutItems": {
     "placeholders": {
@@ -1041,6 +1042,18 @@
     }
   },
   "checkoutRecounted": "Rasmiylashtirayotganingizda buyurtma qayta hisoblandi. Summani tekshiring va «Buyurtma berish»ni yana bosing.",
+  "checkoutRecountedFromTo": "Summa o'zgardi: {before} → {after}. Tekshiring va «Buyurtma berish»ni yana bosing.",
+  "@checkoutRecountedFromTo": {
+    "placeholders": {
+      "before": {
+        "type": "String"
+      },
+      "after": {
+        "type": "String"
+      }
+    }
+  },
+  "checkoutWhyNoAddress": "Yetkazish manzilini qo'shing — usiz yetkazib berish narxini hisoblab bo'lmaydi",
   "checkoutGoneTitle": "{count, plural, one{Mahsulot tugadi} other{Mahsulotlar tugadi}}",
   "@checkoutGoneTitle": {
     "placeholders": {

@@ -1932,14 +1932,22 @@ class AppLocalizationsRu extends AppLocalizations {
   String get checkoutPayment => 'Способ оплаты';
 
   @override
-  String get checkoutOnlineUnavailable =>
-      'Пока можно оплатить только наличными';
+  String get checkoutOnlineSoon => 'Онлайн-оплата через Payme и Click — скоро';
 
   @override
-  String get checkoutCalculating => 'Рассчитываем';
+  String get checkoutItemsShow => 'Показать состав';
 
   @override
-  String get checkoutPlacing => 'Отправляем заказ';
+  String get checkoutItemsHide => 'Скрыть состав';
+
+  @override
+  String get checkoutAddressAdd => 'Добавить';
+
+  @override
+  String get checkoutCalculating => 'Считаем сумму…';
+
+  @override
+  String get checkoutPlacing => 'Отправляем заказ…';
 
   @override
   String checkoutPlaced(String number) {
@@ -2026,12 +2034,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'При получении, точную сумму покажем после сборки';
 
   @override
-  String get paymentOnlineTitle => 'Онлайн: Payme или Click';
-
-  @override
-  String get checkoutSoon => 'Скоро';
-
-  @override
   String checkoutItems(int count) {
     return 'Товары · $count';
   }
@@ -2047,6 +2049,15 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get checkoutRecounted =>
       'Пока вы оформляли, заказ пересчитали. Проверьте итог и нажмите «Заказать» ещё раз.';
+
+  @override
+  String checkoutRecountedFromTo(String before, String after) {
+    return 'Сумма изменилась: $before → $after. Проверьте и нажмите «Заказать» ещё раз.';
+  }
+
+  @override
+  String get checkoutWhyNoAddress =>
+      'Добавьте адрес доставки — без него не посчитать доставку';
 
   @override
   String checkoutGoneTitle(int count) {

@@ -7,7 +7,9 @@ const Cubic _foldCurve = Cubic(0.2, 0.8, 0.2, 1);
 /// Folds [child]'s height and opacity away when [shown] turns false, then
 /// calls [onFolded]; unfolds it again when [shown] turns true (`DL-119`). With
 /// [appear] it unfolds on its first build. With reduced motion it does not
-/// animate: [onFolded] is called after the first frame.
+/// animate: [onFolded] is called after the first frame. A fold first built with
+/// [shown] false starts folded and still, without [onFolded]; a reversal while
+/// it moves keeps the drawn height and goes on from there (`DL-121`).
 class Fold extends StatefulWidget {
   const Fold({
     required this.shown,
@@ -50,9 +52,6 @@ class _FoldState extends State<Fold> with SingleTickerProviderStateMixin {
       _started = true;
       if (widget.shown && widget.appear) {
         _move(forward: true);
-      } else if (!widget.shown) {
-        _controller.value = 1;
-        _move(forward: false);
       }
     }
   }
@@ -67,7 +66,28 @@ class _FoldState extends State<Fold> with SingleTickerProviderStateMixin {
 
   bool get _reduced => MediaQuery.disableAnimationsOf(context);
 
+  /// The value `v` for which `curve(v)` is [target]; the curve rises
+  /// monotonically, so it is found by bisection (`DL-121`).
+  static double _invert(double target) {
+    double low = 0;
+    double high = 1;
+    for (int i = 0; i < 20; i++) {
+      final double mid = (low + high) / 2;
+      if (_foldCurve.transform(mid) < target) {
+        low = mid;
+      } else {
+        high = mid;
+      }
+    }
+    return (low + high) / 2;
+  }
+
   void _move({required bool forward}) {
+    // The height drawn now, so a reversal goes on from it and does not jump.
+    final double v = _controller.value;
+    final double drawn = _folding
+        ? 1 - _foldCurve.transform(1 - v)
+        : _foldCurve.transform(v);
     _folding = !forward;
     if (_reduced) {
       _controller.value = forward ? 1 : 0;
@@ -77,15 +97,19 @@ class _FoldState extends State<Fold> with SingleTickerProviderStateMixin {
       return;
     }
     if (forward) {
+      final double from = _invert(drawn);
+      _controller.value = from;
       _controller.animateTo(
         1,
-        duration: const Duration(milliseconds: 300),
+        duration: Duration(milliseconds: (300 * (1 - from)).round()),
         curve: Curves.linear,
       );
     } else {
+      final double from = 1 - _invert(1 - drawn);
+      _controller.value = from;
       _controller.animateBack(
         0,
-        duration: const Duration(milliseconds: 260),
+        duration: Duration(milliseconds: (260 * from).round()),
         curve: Curves.linear,
       );
     }

@@ -1903,14 +1903,23 @@ class AppLocalizationsUz extends AppLocalizations {
   String get checkoutPayment => 'To\'lov usuli';
 
   @override
-  String get checkoutOnlineUnavailable =>
-      'Hozircha faqat naqd pul bilan to\'lash mumkin';
+  String get checkoutOnlineSoon =>
+      'Payme va Click orqali onlayn to\'lov — tez orada';
 
   @override
-  String get checkoutCalculating => 'Hisoblanmoqda';
+  String get checkoutItemsShow => 'Tarkibini ko\'rsatish';
 
   @override
-  String get checkoutPlacing => 'Buyurtma yuborilmoqda';
+  String get checkoutItemsHide => 'Tarkibini yashirish';
+
+  @override
+  String get checkoutAddressAdd => 'Qo\'shish';
+
+  @override
+  String get checkoutCalculating => 'Summa hisoblanmoqda…';
+
+  @override
+  String get checkoutPlacing => 'Buyurtma yuborilmoqda…';
 
   @override
   String checkoutPlaced(String number) {
@@ -2000,12 +2009,6 @@ class AppLocalizationsUz extends AppLocalizations {
       'Qabul qilganda, aniq summani yig\'ishdan keyin ko\'rsatamiz';
 
   @override
-  String get paymentOnlineTitle => 'Onlayn: Payme yoki Click';
-
-  @override
-  String get checkoutSoon => 'Tez orada';
-
-  @override
   String checkoutItems(int count) {
     return 'Mahsulotlar · $count';
   }
@@ -2021,6 +2024,15 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get checkoutRecounted =>
       'Rasmiylashtirayotganingizda buyurtma qayta hisoblandi. Summani tekshiring va «Buyurtma berish»ni yana bosing.';
+
+  @override
+  String checkoutRecountedFromTo(String before, String after) {
+    return 'Summa o\'zgardi: $before → $after. Tekshiring va «Buyurtma berish»ni yana bosing.';
+  }
+
+  @override
+  String get checkoutWhyNoAddress =>
+      'Yetkazish manzilini qo\'shing — usiz yetkazib berish narxini hisoblab bo\'lmaydi';
 
   @override
   String checkoutGoneTitle(int count) {

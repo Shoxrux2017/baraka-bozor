@@ -51,6 +51,7 @@ ProviderContainer _container(
   container.listen(unconfirmedOrderProvider, (_, _) {});
   container.listen(checkoutPreviewProvider, (_, _) {});
   container.listen(placeOrderProvider, (_, _) {});
+  container.listen(checkoutWishDraftProvider, (_, _) {});
   return container;
 }
 
@@ -131,6 +132,63 @@ void main() {
       expect(container.read(unconfirmedOrderProvider), isFalse);
     },
   );
+
+  test(
+    'the wish draft outlives the screen and starts over for another account',
+    () {
+      final ProviderContainer container = _container(FakeCheckoutRepository());
+      addTearDown(container.dispose);
+      expect(container.read(checkoutWishDraftProvider), '');
+
+      container.read(checkoutWishDraftProvider.notifier).set('после 18:00');
+      expect(container.read(checkoutWishDraftProvider), 'после 18:00');
+
+      container.read(_account.notifier).signIn('customer-b');
+      expect(container.read(checkoutWishDraftProvider), '');
+    },
+  );
+
+  test('a placed order clears the draft', () async {
+    final ProviderContainer container = _container(FakeCheckoutRepository());
+    addTearDown(container.dispose);
+    await container
+        .read(checkoutPreviewProvider.notifier)
+        .preview(_request, addressLine: 'Amir Temur, 12');
+    container.read(checkoutWishDraftProvider.notifier).set('после 18:00');
+
+    await container
+        .read(placeOrderProvider.notifier)
+        .place(container.read(preparedCheckoutProvider)!);
+
+    expect(container.read(checkoutWishDraftProvider), '');
+  });
+
+  test('a refused or unknown placement keeps the draft', () async {
+    final FakeCheckoutRepository checkout = FakeCheckoutRepository();
+    final ProviderContainer container = _container(checkout);
+    addTearDown(container.dispose);
+    await container
+        .read(checkoutPreviewProvider.notifier)
+        .preview(_request, addressLine: 'Amir Temur, 12');
+    container.read(checkoutWishDraftProvider.notifier).set('после 18:00');
+
+    checkout.placeFailure = const ApiRefusal(
+      ApiError(status: 409, code: 'product_unavailable'),
+    );
+    await container
+        .read(placeOrderProvider.notifier)
+        .place(container.read(preparedCheckoutProvider)!);
+    expect(container.read(checkoutWishDraftProvider), 'после 18:00');
+
+    await container
+        .read(checkoutPreviewProvider.notifier)
+        .preview(_request, addressLine: 'Amir Temur, 12');
+    checkout.placeFailure = const NetworkFailure();
+    await container
+        .read(placeOrderProvider.notifier)
+        .place(container.read(preparedCheckoutProvider)!);
+    expect(container.read(checkoutWishDraftProvider), 'после 18:00');
+  });
 
   group('a kept orders list is asked for again', () {
     int listLoads(FakeCustomerOrdersRepository orders) =>

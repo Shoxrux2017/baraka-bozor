@@ -8,6 +8,7 @@ import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/skeleton_bar.dart';
 import '../../../core/widgets/soft_change.dart';
 import '../domain/cart.dart';
 
@@ -121,6 +122,10 @@ class EstimateNote extends StatelessWidget {
 /// figure shown struck through before the current one. A changed [value]
 /// rises softly and, while [waiting], is dimmed (`DL-119`).
 ///
+/// With [pendingWidth] the figure is not known yet: a grey bar of that width
+/// stands in its place, [value] and [replaced] are not drawn, and [pulsing]
+/// makes the bar pulse (`DL-121`).
+///
 /// An amount never breaks inside a word: with room the label and the figure
 /// share a row; without it the figure stands under the label, end-aligned; and
 /// only when the figure alone is wider than the row is it scaled down.
@@ -132,6 +137,8 @@ class SummaryAmountRow extends StatelessWidget {
     this.emphasised = false,
     this.replaced,
     this.waiting = false,
+    this.pendingWidth,
+    this.pulsing = false,
     super.key,
   });
 
@@ -141,6 +148,8 @@ class SummaryAmountRow extends StatelessWidget {
   final bool emphasised;
   final String? replaced;
   final bool waiting;
+  final double? pendingWidth;
+  final bool pulsing;
 
   static const TextStyle _replacedStyle = TextStyle(
     fontSize: 13,
@@ -174,8 +183,16 @@ class SummaryAmountRow extends StatelessWidget {
         style: valueStyle,
       ),
     );
-    final String? earlier = replaced;
-    final Widget block = earlier == null
+    final double? pending = pendingWidth;
+    final String? earlier = pending == null ? replaced : null;
+    final Widget block = pending != null
+        ? SkeletonBar(
+            key: ValueKey<String>('$valueKey-pending'),
+            width: pending,
+            height: emphasised ? 18 : 14,
+            pulsing: pulsing,
+          )
+        : earlier == null
         ? valueText
         : Row(
             mainAxisSize: MainAxisSize.min,
@@ -191,7 +208,7 @@ class SummaryAmountRow extends StatelessWidget {
             ],
           );
     final double blockWidth =
-        textWidth(context, value, valueStyle) +
+        (pending ?? textWidth(context, value, valueStyle)) +
         (earlier == null ? 0 : textWidth(context, earlier, _replacedStyle) + 8);
     final double longestWord = label
         .split(RegExp(r'\s+'))

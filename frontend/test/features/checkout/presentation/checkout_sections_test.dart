@@ -3,11 +3,14 @@ import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/product_image.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
 import 'package:baraka_bozor/features/checkout/data/checkout_api.dart';
 import 'package:baraka_bozor/features/checkout/domain/checkout.dart';
+import 'package:baraka_bozor/features/checkout/presentation/checkout_footer.dart';
+import 'package:baraka_bozor/features/checkout/presentation/checkout_items.dart';
 import 'package:baraka_bozor/features/checkout/presentation/checkout_sections.dart';
 import 'package:baraka_bozor/features/profile/domain/profile.dart';
 import 'package:flutter/material.dart';
@@ -176,41 +179,143 @@ void main() {
     expect(byKey('checkout-recipient'), findsNothing);
   });
 
-  testWidgets('online is shown, inactive, with "Скоро"', (
+  testWidgets('payment is one cash row and the line about online payment', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(host(const CheckoutPaymentCards()));
-    expect(
-      tester.widget<RadioListTile<PaymentMethod>>(byKey('pay-online')).enabled,
-      isFalse,
-    );
-    expect(find.text('Скоро'), findsOneWidget);
+    await tester.pumpWidget(host(const CheckoutPayment()));
     expect(byKey('pay-cash'), findsOneWidget);
+    expect(find.byType(RadioListTile<PaymentMethod>), findsNothing);
+    expect(find.byType(Radio<PaymentMethod>), findsNothing);
+    expect(find.text(ru.paymentCashTitle), findsOneWidget);
+    expect(find.text(ru.paymentCashHint), findsOneWidget);
+    expect(
+      find.descendant(
+        of: byKey('pay-online-soon'),
+        matching: find.text(ru.checkoutOnlineSoon),
+      ),
+      findsOneWidget,
+    );
+    expect(byKey('pay-online'), findsNothing);
+    expect(
+      find.descendant(
+        of: byKey('pay-cash'),
+        matching: byKey('pay-online-soon'),
+      ),
+      findsNothing,
+      reason: 'the line stands outside the card',
+    );
+    expect(
+      tester.getRect(byKey('pay-online-soon')).top,
+      closeTo(tester.getRect(byKey('pay-cash')).bottom + 10, 0.5),
+    );
   });
 
-  testWidgets('the strip shows four pictures and +8 for twelve lines', (
+  testWidgets('with no address the link reads Добавить', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
       host(
-        CheckoutItemsStrip(
-          lines: previewOf(lines: 12).lines,
-          imageByCartItem: const <String, String?>{},
+        CheckoutDeliveryCard(
+          address: null,
+          gone: false,
+          recipient: aziz,
           onChange: () {},
         ),
       ),
     );
-    expect(find.byType(ProductImage), findsNWidgets(4));
-    expect(find.text('+8'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: byKey('checkout-address-change'),
+        matching: find.text(ru.checkoutAddressAdd),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text(ru.editButton), findsNothing);
+  });
+
+  testWidgets('a long address is shown whole', (WidgetTester tester) async {
+    final String street = 'Улица ${'длинная ' * 15}'.trim();
+    expect(street.length, greaterThanOrEqualTo(120));
+    await tester.pumpWidget(
+      host(
+        CheckoutDeliveryCard(
+          address: address(label: null, street: street),
+          gone: false,
+          recipient: aziz,
+          onChange: () {},
+        ),
+      ),
+    );
+    final Finder title = find.byWidgetPredicate(
+      (Widget w) => w is Text && (w.data ?? '').startsWith(street),
+    );
+    expect(title, findsOneWidget);
+    expect(tester.widget<Text>(title).maxLines, isNull);
+    final double lineHeight = tester.getSize(find.text('Азиз Каримов')).height;
+    expect(tester.getSize(title).height, greaterThan(lineHeight * 2));
+  });
+
+  Future<void> pumpCardAt(WidgetTester tester, double scale) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    tester.platformDispatcher.textScaleFactorTestValue = scale;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.pumpWidget(
+      host(
+        CheckoutDeliveryCard(
+          address: address(),
+          gone: false,
+          recipient: aziz,
+          onChange: () {},
+        ),
+      ),
+    );
+  }
+
+  testWidgets('at large text the link goes under the address', (
+    WidgetTester tester,
+  ) async {
+    await pumpCardAt(tester, 1.8);
+    final Rect link = tester.getRect(byKey('checkout-address-change'));
+    final Rect title = tester.getRect(find.text('Дом'));
+    final Rect detail = tester.getRect(
+      find.text('Чиланзар, 14, ${ru.addressApartmentShort('5')}'),
+    );
+    expect(link.top, greaterThanOrEqualTo(detail.bottom));
+    expect(link.left, title.left);
+    expect(link.width, greaterThanOrEqualTo(44));
+    expect(link.height, greaterThanOrEqualTo(44));
+  });
+
+  testWidgets('at normal text the link stands beside the address', (
+    WidgetTester tester,
+  ) async {
+    await pumpCardAt(tester, 1);
+    final Rect link = tester.getRect(byKey('checkout-address-change'));
+    final Rect title = tester.getRect(find.text('Дом'));
+    final Rect detail = tester.getRect(
+      find.text('Чиланзар, 14, ${ru.addressApartmentShort('5')}'),
+    );
+    expect(link.left, greaterThanOrEqualTo(title.right));
+    expect(link.top, lessThan(detail.bottom));
   });
 
   testWidgets("the amounts are the preview's, with ≈ on an estimate", (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(host(CheckoutAmounts(preview: previewOf())));
+    await tester.pumpWidget(
+      host(CheckoutAmounts(preview: previewOf(), lineCount: 1, pending: false)),
+    );
     expect(tester.widget<Text>(byKey('checkout-total')).data, estimate(47600));
     await tester.pumpWidget(
-      host(CheckoutAmounts(preview: previewOf(kind: 'final'))),
+      host(
+        CheckoutAmounts(
+          preview: previewOf(kind: 'final'),
+          lineCount: 1,
+          pending: false,
+        ),
+      ),
     );
     expect(
       tester.widget<Text>(byKey('checkout-total')).data,
@@ -218,72 +323,26 @@ void main() {
     );
   });
 
-  testWidgets('a recount shows the notice and the struck old total', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      host(
-        CheckoutAmounts(
-          preview: previewOf(total: 48600),
-          replacedTotalUzs: 47600,
+  testWidgets(
+    "the amounts keep the struck old total, the notice is the footer's",
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        host(
+          CheckoutAmounts(
+            preview: previewOf(total: 48600),
+            lineCount: 1,
+            pending: false,
+            replacedTotalUzs: 47600,
+          ),
         ),
-      ),
-    );
-    expect(byKey('checkout-refreshed'), findsOneWidget);
-    expect(
-      tester.widget<Text>(find.text(estimate(47600))).style?.decoration,
-      TextDecoration.lineThrough,
-    );
-  });
-
-  testWidgets('the footer reads total | Заказать and is inactive while busy', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      host(
-        CheckoutFooter(
-          totalUzs: 47600,
-          estimate: true,
-          busy: false,
-          busyLabel: 'Оформляем',
-          onOrder: () {},
-        ),
-      ),
-    );
-    expect(find.text(estimate(47600)), findsOneWidget);
-    expect(find.text('Заказать'), findsOneWidget);
-    await tester.pumpWidget(
-      host(
-        CheckoutFooter(
-          totalUzs: 47600,
-          estimate: true,
-          busy: true,
-          busyLabel: 'Оформляем',
-          onOrder: () {},
-        ),
-      ),
-    );
-    final CircularProgressIndicator spinner = tester
-        .widget<CircularProgressIndicator>(
-          find.byType(CircularProgressIndicator),
-        );
-    expect(spinner.semanticsLabel, 'Оформляем');
-    await tester.pumpWidget(
-      host(
-        const CheckoutFooter(
-          totalUzs: null,
-          estimate: true,
-          busy: false,
-          busyLabel: '',
-          onOrder: null,
-        ),
-      ),
-    );
-    expect(
-      tester.widget<FilledButton>(byKey('checkout-confirm')).onPressed,
-      isNull,
-    );
-  });
+      );
+      expect(byKey('checkout-refreshed'), findsNothing);
+      expect(
+        tester.widget<Text>(find.text(estimate(47600))).style?.decoration,
+        TextDecoration.lineThrough,
+      );
+    },
+  );
 
   testWidgets('the gone sheet names each product and leads to the cart', (
     WidgetTester tester,
@@ -317,23 +376,68 @@ void main() {
     expect(byKey('checkout-gone-to-cart'), findsNothing);
   });
 
-  testWidgets('the wish counter counts what the server keeps', (
+  Future<void> pumpWish(
     WidgetTester tester,
+    TextEditingController controller,
   ) async {
-    final TextEditingController controller = TextEditingController();
-    addTearDown(controller.dispose);
+    final FocusNode focus = FocusNode();
+    addTearDown(focus.dispose);
     await tester.pumpWidget(
       host(
         CheckoutWishField(
           controller: controller,
+          focusNode: focus,
           enabled: true,
           onChanged: (String _) {},
         ),
       ),
     );
-    await tester.enterText(byKey('checkout-delivery-wish'), '  после 18:00  ');
+  }
+
+  Future<void> type(WidgetTester tester, int count) async {
+    await tester.enterText(
+      byKey('checkout-delivery-wish'),
+      '  ${'a' * count}  ',
+    );
     await tester.pump();
-    expect(find.text('11 / 160'), findsOneWidget);
+  }
+
+  testWidgets('the counter shows from 120 characters and turns red over 160', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController controller = TextEditingController();
+    addTearDown(controller.dispose);
+    await pumpWish(tester, controller);
+
+    await type(tester, 119);
+    expect(find.text('119 / 160'), findsNothing);
+
+    await type(tester, 120);
+    final TextStyle muted = tester.widget<Text>(find.text('120 / 160')).style!;
+    expect(muted.color, KitColors.muted);
+    expect(muted.fontSize, 11);
+
+    await type(tester, 161);
+    final TextStyle over = tester.widget<Text>(find.text('161 / 160')).style!;
+    expect(over.color, KitColors.danger);
+    expect(over.fontWeight, FontWeight.w600);
+  });
+
+  testWidgets('the error shows while typing', (WidgetTester tester) async {
+    final TextEditingController controller = TextEditingController();
+    addTearDown(controller.dispose);
+    await pumpWish(tester, controller);
+    final String tooLong = ru.fieldTooLong(160);
+
+    await type(tester, 161);
+    expect(find.text(tooLong), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.text(tooLong)).style!.color,
+      KitColors.danger,
+    );
+
+    await type(tester, 160);
+    expect(find.text(tooLong), findsNothing);
   });
 
   String estimate99(Locale language, int amount) =>
@@ -356,6 +460,8 @@ void main() {
         final CheckoutPreview preview = previewOf(lines: 12, total: 99999999);
         final TextEditingController wish = TextEditingController();
         addTearDown(wish.dispose);
+        final FocusNode wishFocus = FocusNode();
+        addTearDown(wishFocus.dispose);
 
         await tester.pumpWidget(
           app(
@@ -377,17 +483,20 @@ void main() {
                             ),
                             CheckoutWishField(
                               controller: wish,
+                              focusNode: wishFocus,
                               enabled: true,
                               onChanged: (String _) {},
                             ),
-                            const CheckoutPaymentCards(),
-                            CheckoutItemsStrip(
-                              lines: preview.lines,
-                              imageByCartItem: const <String, String?>{},
+                            const CheckoutPayment(),
+                            CheckoutItems(
+                              items: checkoutItemsOf(preview: preview),
+                              pending: false,
                               onChange: () {},
                             ),
                             CheckoutAmounts(
                               preview: preview,
+                              lineCount: preview.lines.length,
+                              pending: false,
                               replacedTotalUzs: 88888888,
                             ),
                           ],
@@ -413,7 +522,7 @@ void main() {
         expect(tester.takeException(), isNull);
         // A scrolling Column builds every section: all of them were laid out.
         expect(byKey('pay-cash'), findsOneWidget);
-        expect(byKey('pay-online'), findsOneWidget);
+        expect(byKey('pay-online-soon'), findsOneWidget);
         expect(find.byType(ProductImage), findsNWidgets(4));
         expect(byKey('checkout-items-more'), findsOneWidget);
         expect(find.text('+8'), findsOneWidget);
