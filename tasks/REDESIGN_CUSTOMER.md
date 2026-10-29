@@ -14,7 +14,7 @@ The app moves to the screen kit stage by stage (`DL-76`). Design 4a (`DL-74`) is
 
 ## Risks
 
-- White text on the primary `#5AC268` has a contrast of 2.4:1, below WCAG AA. Kept as the kit's look.
+- White text on the primary `#5AC268` had a contrast of 2.4:1, below WCAG AA. Resolved by `DL-117`: buttons `#3A9E46` (3.4:1, the Owner's choice), green text `#2D7D38`.
 - Real Telegram delivery arrives in Wave 4. Until then only the configured test phones can sign in, staff included.
 - A blocked Customer account would also stop that person's staff sign-in on the phone (verify refuses before the step). Latent: no API blocks a Customer today. After an erasure of a blocked Customer (`DL-95`) the lockout is permanent: no Admin tool lifts a fingerprint yet.
 - Stage 7b, the Wave 4 deployment sets `PHONE_FINGERPRINT_KEY` (base64, 32 bytes) and never removes a key from `PHONE_FINGERPRINT_PREVIOUS_KEYS`.
