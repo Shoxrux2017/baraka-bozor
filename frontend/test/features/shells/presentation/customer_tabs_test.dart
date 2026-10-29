@@ -1,6 +1,8 @@
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
+import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
+import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
@@ -16,8 +18,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../support/app_harness.dart';
+import '../../../support/fake_address_map.dart';
 import '../../../support/fake_auth_repository.dart';
+import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_catalog_repository.dart';
+import '../../../support/fake_checkout_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/fake_customer_repositories.dart';
 import '../../../support/fake_favorites_repository.dart';
@@ -65,7 +70,11 @@ void main() {
     auth.identities[SessionSlot.customer] = user(id: 'c');
   });
 
-  Future<void> open(WidgetTester tester) async {
+  Future<void> open(
+    WidgetTester tester, {
+    FakeCartRepository? cart,
+    FakeAddressesRepository? addresses,
+  }) async {
     tester.view.physicalSize = const Size(800, 2000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -74,9 +83,12 @@ void main() {
         tokens: tokens,
         repository: auth,
         catalog: catalog,
+        cart: cart,
+        addresses: addresses,
         favorites: favorites,
         orders: orders,
         profile: profile,
+        overrides: [addressMapProvider.overrideWithValue(FakeAddressMap())],
       ),
     );
     await tester.pumpAndSettle();
@@ -196,6 +208,75 @@ void main() {
       expect(find.byType(CustomerTabBar), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'back on a tab after a screen over it was closed still goes home',
+    (WidgetTester tester) async {
+      await open(tester);
+      await tab(tester, 'open-profile');
+      await tester.tap(byKey('profile-edit'));
+      await tester.pumpAndSettle();
+      expect(find.byType(EditProfileScreen), findsOneWidget);
+
+      // An inset that appears under the editor rebuilds the tab beneath it.
+      tester.view.padding = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetPadding);
+      await tester.pump();
+
+      await back(tester);
+      expect(find.byType(ProfileScreen), findsOneWidget);
+
+      await back(tester);
+      expect(find.byType(CatalogHomeScreen), findsOneWidget);
+    },
+  );
+
+  testWidgets('a tab reached by go, then back, goes home', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    routerOf(tester).go(AppPaths.customerOrders);
+    await tester.pumpAndSettle();
+    expect(find.byType(CatalogHomeScreen), findsNothing);
+
+    await back(tester);
+
+    expect(find.byType(CatalogHomeScreen), findsOneWidget);
+  });
+
+  testWidgets('a placed order is on the kept orders tab at once', (
+    WidgetTester tester,
+  ) async {
+    await open(
+      tester,
+      cart: FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[cartLineJson()]),
+      ),
+      addresses: FakeAddressesRepository(rows: <Address>[address()]),
+    );
+    await tab(tester, 'open-orders');
+    expect(find.byType(CurrentOrderCard), findsOneWidget);
+    await tab(tester, 'open-home');
+
+    // The server now holds one more order.
+    orders.rows = <Map<String, Object?>>[
+      ...orders.rows,
+      customerOrderJson(id: placedOrderId),
+    ];
+    routerOf(tester).push('/customer/cart');
+    await tester.pumpAndSettle();
+    await tester.tap(byKey('go-to-checkout'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(byKey('checkout-confirm'));
+    await tester.tap(byKey('checkout-confirm'));
+    await tester.pumpAndSettle();
+    await tester.tap(byKey('checkout-to-home'));
+    await tester.pumpAndSettle();
+
+    await tab(tester, 'open-orders');
+
+    expect(find.byType(CurrentOrderCard), findsNWidgets(2));
+  });
 
   testWidgets('a push opens the orders tab with the order over it', (
     WidgetTester tester,
