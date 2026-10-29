@@ -19,8 +19,8 @@ Rules for every stage:
 |---|---|---|---|---|
 | 1 | Kit colours and sizes (all roles) | 7 | — | Merged (PR #121) |
 | 2 | Customer tabs | 5 | — | Merged (PR #122) |
-| 3 | Cart and the card's stepper | 8 | — | In review |
-| 4 | Checkout | 10 | — | Planned |
+| 3 | Cart and the card's stepper | 8 | — | Merged (PR #123) |
+| 4 | Checkout | 10 | — | In review |
 | 5 | Product | 9 | — | Planned |
 | 6 | Home and categories | 14 | working hours | Planned |
 | 7 | Category screen and product lists | 10 | — | Planned |
@@ -354,7 +354,7 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stage 1 re-review, P3: the panel's pending-approval tag now sits on `warningWash`, the same ground as its card, so "pending" shows as text without a pill (still 4.96:1). Ruling: panel only and readable; the smallest fix is a white ground for that tag (`order_actions.dart`, the `tagGround` switch), taken with the next stage that touches the panel.
 - Stage 1 re-review, P3, unconfirmed: the panel's language button has a `PanelHitBox` (a `GestureDetector`) around its `PopupMenuButton` without `excludeSemantics`, so a screen reader may meet two actions. Ruling: not reproduced; check it with the panel's next screen-reader pass and wrap it like the pager if it doubles.
 - Stage 2 re-review, minor: `PeriodicRefresh._tick` refreshes a shown screen without clearing the flag of a tick skipped earlier, so a refresh that leaves `active` true and a later hide and show can give one extra refresh. Ruling: harmless (one redundant load, no wrong data); the one-line fix (`_skipped = false` in the refreshing branch) goes with the next stage that touches `periodic_refresh.dart`.
-- Stage 3 review, minor: `Fold` maps its linear time through different curves when folding and unfolding, so a line that comes back while it folds (a removal that fails at once, offline) jumps before it unfolds. Ruling: cosmetic and short; the fix is to keep the size on reversal (derive the unfolding start from the current size), taken with the next stage that uses `FoldingColumn`.
+- Stage 3 review, minor: `Fold` maps its linear time through different curves when folding and unfolding, so a line that comes back while it folds (a removal that fails at once, offline) jumps before it unfolds. Ruling: cosmetic and short; the fix is to keep the size on reversal (derive the unfolding start from the current size), taken with the next stage that uses `FoldingColumn`. Fixed in stage 4: a reversal keeps the drawn height (`DL-121` (11)).
 - Stage 3 review, minor: the quantity queue treats a cart that has not loaded yet as one without the product, so a step then adds at once, and an existing line answers `cart_item_already_exists` and the step is dropped quietly. Ruling: a card or line shows a stepper only once the cart or a wish is known, so the case needs a cart that never loaded; left as is.
 - Stage 3 review, minor: the product card starts and stops its grow and shrink from `build()`; a card that scrolls in while its product has a wish but no line yet grows instead of appearing. Ruling: no crash (traced), visual only; a `ref.listen` would be cleaner, taken with stage 5 or 7 when the card is touched.
 - Stage 3 review, minor: the cart footer's fit check hard-codes the button's 18 px side padding and the 12 + 1 + 12 divider. Ruling: correct today; whoever changes the button updates the check.

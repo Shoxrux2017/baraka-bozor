@@ -1834,3 +1834,19 @@ The emulator walk of stages 2 and 3 found two things about large and narrow layo
 
 1. **Narrow phones keep the stacked line (Owner, 2026-10-29).** On a 360 dp phone at normal text the line's text column is 232 dp, too narrow for even a five-digit sum beside the 132 dp stepper, so every line stands its sum over the stepper. The Owner chose to keep it so, over a smaller picture or a smaller sum: everything stays full size and readable, at the cost of more scrolling. This confirms `DL-119` (4) for narrow phones.
 2. **An amount never breaks inside a word.** `MoneyFormat` joins an amount with no-break spaces, so «≈ 149 375 сум» is one word; at text × 2 it broke as «с / ум» in the cart's amounts and the footer's total. `SummaryAmountRow` (cart, checkout, order, order editor) and the footer now put the figure beside its label when both fit, measured at the real text size, under the label otherwise, and scale it down only when the figure alone is wider than the row. One `textWidth` in `core/layout/` measures for the line, the amounts and the footer.
+
+## DL-121 — The Apple batch, stage 4: the checkout (2026-10-29, agent; item 8 Owner)
+
+Stage 4 of `tasks/APPLE_BATCH.md` codes the ten items of the checkout, `checkout-1` to `checkout-10`.
+
+1. **The recount above the button** (`checkout-1`). The footer shows «было → стало» when the total changed and a general line when it did not; the struck old total stays in «Итого». This supersedes the notice at the end of the list (`DL-89`). The notice rises from 12 px lower in 280 ms.
+2. **The composition** (`checkout-2`). «Показать состав» lists name, quantity and the preview's line sum; a picture's label is «name, quantity». The list is built only while it is open.
+3. **The layout stays** (`checkout-3`). The goods come from the cart before the preview (names, quantities and pictures only); the amounts box stands whenever an address is held. Grey bars pulse while a preview runs and stay still after a refusal. Never a figure for another address, nor a cart estimate on this screen (`AGENTS.md` §5). The closed banner keeps its place while recounting and keeps the latest preview's opening time until a preview says the shop is open.
+4. **The busy button** (`checkout-4`). «Считаем сумму…» and «Отправляем заказ…» on the green button, with a white spinner.
+5. **The wish** (`checkout-5`). The field is open while a preview runs: `DL-89`'s preview at «Заказать» covers a wish typed meanwhile. It is checked as typed, with a counter from 120 characters. The field is kept built in the list, so «Заказать» can always bring an over-long wish back into view (first a jump, then it is placed a third from the top) and focus it.
+6. **No address** (`checkout-6`). «Добавить» and the line why stand under the grey button.
+7. **The wish draft** (`checkout-7`). It is kept in memory per account until an order is placed, not on the device: it is the Customer's own text and a restart is a fresh start.
+8. **Payment (Owner, 2026-10-24, checkout test item 8).** One cash row, which holds only cash, and under it «Онлайн-оплата через Payme и Click — скоро». It is a promise to the Customer; the choice returns as real options with Wave 5.
+9. **Large text** (`checkout-9`). The address is never cut; its link goes under it when beside it would take more than half the row. «Итого» stands over «Заказать» when they do not fit together, as in the cart (`DL-119` (4)).
+10. **The placed card** (`checkout-10`). The card rises from 48 px lower with a light haptic, which stays with reduced motion.
+11. **Shared pieces.** `SkeletonBar`, `FooterTotal` and `SummaryAmountRow.pendingWidth`; `CheckoutEditButton` is public in `checkout_sections.dart`, `CheckoutFooter` lives in `checkout_footer.dart`, the strip and the list in `checkout_items.dart`. `Fold` starts hidden still and reverses without a jump, which closes the stage 3 residual.
