@@ -5,11 +5,14 @@ import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/checkout/application/checkout_controllers.dart';
 import 'package:baraka_bozor/features/checkout/domain/checkout.dart';
+import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
+import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_checkout_repository.dart';
+import '../../../support/fake_customer_orders_repository.dart';
 
 /// The signed-in Customer, switchable by the test.
 class _Account extends Notifier<String?> {
@@ -30,9 +33,15 @@ const CheckoutRequest _request = CheckoutRequest(
 
 /// A container with the providers the checkout uses kept alive, as its
 /// screens keep them.
-ProviderContainer _container(FakeCheckoutRepository checkout) {
+ProviderContainer _container(
+  FakeCheckoutRepository checkout, {
+  FakeCustomerOrdersRepository? orders,
+}) {
   final ProviderContainer container = ProviderContainer(
     overrides: [
+      customerOrdersRepositoryProvider.overrideWithValue(
+        orders ?? FakeCustomerOrdersRepository(),
+      ),
       customerAccountProvider.overrideWith((Ref ref) => ref.watch(_account)),
       checkoutRepositoryProvider.overrideWithValue(checkout),
       cartRepositoryProvider.overrideWithValue(FakeCartRepository()),
@@ -122,4 +131,68 @@ void main() {
       expect(container.read(unconfirmedOrderProvider), isFalse);
     },
   );
+
+  group('a kept orders list is asked for again', () {
+    int listLoads(FakeCustomerOrdersRepository orders) =>
+        orders.loads.where((String l) => l.startsWith('orders:')).length;
+
+    Future<
+      (
+        ProviderContainer,
+        FakeCheckoutRepository,
+        FakeCustomerOrdersRepository,
+        int,
+      )
+    >
+    kept() async {
+      final FakeCheckoutRepository checkout = FakeCheckoutRepository();
+      final FakeCustomerOrdersRepository orders =
+          FakeCustomerOrdersRepository();
+      final ProviderContainer container = _container(checkout, orders: orders);
+      addTearDown(container.dispose);
+      container.listen(customerOrdersProvider(OrdersTab.current), (_, _) {});
+      await container.read(customerOrdersProvider(OrdersTab.current).future);
+      await container
+          .read(checkoutPreviewProvider.notifier)
+          .preview(_request, addressLine: 'Amir Temur, 12');
+      return (container, checkout, orders, listLoads(orders));
+    }
+
+    test('after an order is placed', () async {
+      final (container, _, orders, before) = await kept();
+
+      await container
+          .read(placeOrderProvider.notifier)
+          .place(container.read(preparedCheckoutProvider)!);
+      await container.read(customerOrdersProvider(OrdersTab.current).future);
+
+      expect(listLoads(orders), before + 1);
+    });
+
+    test('after an outcome that may have placed it', () async {
+      final (container, checkout, orders, before) = await kept();
+      checkout.placeFailure = const NetworkFailure();
+
+      await container
+          .read(placeOrderProvider.notifier)
+          .place(container.read(preparedCheckoutProvider)!);
+      await container.read(customerOrdersProvider(OrdersTab.current).future);
+
+      expect(listLoads(orders), before + 1);
+    });
+
+    test('but not after a refusal that placed nothing', () async {
+      final (container, checkout, orders, before) = await kept();
+      checkout.placeFailure = const ApiRefusal(
+        ApiError(status: 409, code: 'product_unavailable'),
+      );
+
+      await container
+          .read(placeOrderProvider.notifier)
+          .place(container.read(preparedCheckoutProvider)!);
+      await container.read(customerOrdersProvider(OrdersTab.current).future);
+
+      expect(listLoads(orders), before);
+    });
+  });
 }

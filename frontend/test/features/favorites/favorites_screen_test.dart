@@ -49,6 +49,7 @@ void main() {
     Locale locale = const Locale('uz'),
     Size? size,
     double textScale = 1,
+    FakeCartRepository? cart,
   }) async {
     if (size != null) {
       tester.view.physicalSize = size;
@@ -82,7 +83,9 @@ void main() {
         retry: (int count, Object error) => null,
         overrides: [
           customerAccountProvider.overrideWithValue('c'),
-          cartRepositoryProvider.overrideWithValue(FakeCartRepository()),
+          cartRepositoryProvider.overrideWithValue(
+            cart ?? FakeCartRepository(),
+          ),
           favoritesRepositoryProvider.overrideWithValue(favorites),
         ],
         child: MaterialApp.router(
@@ -101,12 +104,67 @@ void main() {
   AppLocalizations l10n(WidgetTester tester) =>
       AppLocalizations.of(tester.element(find.byType(FavoritesScreen)));
 
+  testWidgets('the header has the search and the cart with its count', (
+    WidgetTester tester,
+  ) async {
+    await open(
+      tester,
+      cart: FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[
+          cartLineJson(),
+          cartLineJson(id: breadLine, productId: breadProduct, unit: 'piece'),
+        ]),
+      ),
+    );
+
+    final Finder bar = find.byType(AppBar);
+    expect(
+      find.descendant(of: bar, matching: byKey('open-search')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: bar, matching: byKey('open-cart')),
+      findsOneWidget,
+    );
+    expect(
+      tester.getCenter(byKey('open-search')).dx,
+      lessThan(tester.getCenter(byKey('open-cart')).dx),
+      reason: 'the search, then the cart',
+    );
+    expect(tester.widget<Text>(byKey('cart-count')).data, '2');
+    expect(
+      tester
+          .getCenter(
+            find.descendant(of: bar, matching: find.text('Sevimlilar')),
+          )
+          .dx,
+      closeTo(tester.getCenter(bar).dx, 1),
+      reason: 'the title stays centred',
+    );
+  });
+
+  testWidgets('every target meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester);
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
+
   testWidgets('lists the favourites with filled hearts, and the tab bar', (
     WidgetTester tester,
   ) async {
     await open(tester);
 
-    expect(find.text('Sevimlilar'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Sevimlilar'),
+      ),
+      findsOneWidget,
+    );
     expect(byKey('product-card-p-1'), findsOneWidget);
     expect(byKey('product-card-p-2'), findsOneWidget);
     final Icon heart = tester.widget<Icon>(

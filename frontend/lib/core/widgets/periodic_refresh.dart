@@ -5,7 +5,10 @@ import 'package:flutter/widgets.dart';
 /// Keeps what a screen shows current while it is shown, without push
 /// (`DL-54` (15)). [interval] after each successful load, while the screen's
 /// route is the top one and the app is in the foreground, it calls
-/// [onRefresh]; otherwise it waits another [interval].
+/// [onRefresh]; otherwise it waits another [interval]. A tab the tabs shell
+/// keeps and a route another covers have their tickers off, and so wait too
+/// (`DL-118` (6)). A tick that found the screen hidden is remembered: when
+/// the screen is shown again it refreshes at once, not an interval later.
 ///
 /// It waits while [active] is false: while a load runs, and after one
 /// failed. A refresh that fails therefore stops the refreshing, the screen
@@ -32,10 +35,28 @@ class PeriodicRefresh extends StatefulWidget {
 class _PeriodicRefreshState extends State<PeriodicRefresh> {
   Timer? _timer;
 
+  /// A tick found the screen hidden, so what it shows may be stale.
+  bool _skipped = false;
+
   @override
   void initState() {
     super.initState();
     _schedule();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_skipped && widget.active && _shown && _foreground) {
+      _skipped = false;
+      _schedule();
+      // Not during the build that showed the screen.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.active) {
+          widget.onRefresh();
+        }
+      });
+    }
   }
 
   @override
@@ -44,6 +65,9 @@ class _PeriodicRefreshState extends State<PeriodicRefresh> {
     if (widget.active != oldWidget.active ||
         widget.interval != oldWidget.interval) {
       _schedule();
+    }
+    if (!widget.active) {
+      _skipped = false;
     }
   }
 
@@ -62,17 +86,26 @@ class _PeriodicRefreshState extends State<PeriodicRefresh> {
     if (!mounted) {
       return;
     }
-    final AppLifecycleState? lifecycle = WidgetsBinding.instance.lifecycleState;
-    final bool foreground =
-        lifecycle == null || lifecycle == AppLifecycleState.resumed;
-    final bool shown = ModalRoute.of(context)?.isCurrent ?? true;
+    final bool shown = _shown;
     // The refresh's own load makes [active] false, which cancels this; a
     // refresh that changes nothing still comes round again.
     _schedule();
-    if (foreground && shown) {
+    if (!shown) {
+      _skipped = true;
+    } else if (_foreground) {
       widget.onRefresh();
     }
   }
+
+  bool get _foreground {
+    final AppLifecycleState? lifecycle = WidgetsBinding.instance.lifecycleState;
+    return lifecycle == null || lifecycle == AppLifecycleState.resumed;
+  }
+
+  /// The screen's route is the top one and its tickers are on.
+  bool get _shown =>
+      (ModalRoute.of(context)?.isCurrent ?? true) &&
+      TickerMode.valuesOf(context).enabled;
 
   @override
   Widget build(BuildContext context) => widget.child;

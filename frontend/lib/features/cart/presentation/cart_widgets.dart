@@ -18,37 +18,94 @@ import 'cart_paths.dart';
 /// The way to the cart from the Customer's screens, with the number of its
 /// lines (the kit's shopping bag with a green count). The count is the
 /// signed-in Customer's own, never another account's, and is announced once,
-/// in words.
-class CartButton extends ConsumerWidget {
-  const CartButton({super.key});
+/// in words. The count bumps when the cart grows (`DL-118`); [onBrand] draws
+/// it for a green header: a white bag and a white count.
+class CartButton extends ConsumerStatefulWidget {
+  const CartButton({this.onBrand = false, super.key});
+
+  final bool onBrand;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartButton> createState() => _CartButtonState();
+}
+
+class _CartButtonState extends ConsumerState<CartButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _bump = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 300),
+  );
+
+  /// To 1.3 at 40 % of the time and back, both with an ease-out.
+  late final Animation<double> _scale = _bump.drive(
+    TweenSequence<double>(<TweenSequenceItem<double>>[
+      TweenSequenceItem<double>(
+        tween: Tween<double>(
+          begin: 1,
+          end: 1.3,
+        ).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 40,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(
+          begin: 1.3,
+          end: 1,
+        ).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 60,
+      ),
+    ]),
+  );
+
+  @override
+  void dispose() {
+    _bump.dispose();
+    super.dispose();
+  }
+
+  void _onCart(AsyncValue<Cart>? previous, AsyncValue<Cart> next) {
+    final Cart? before = previous?.value;
+    final Cart? after = next.value;
+    if (before == null ||
+        after == null ||
+        !after.grewFrom(before) ||
+        MediaQuery.disableAnimationsOf(context)) {
+      return;
+    }
+    _bump.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<Cart> cart = ref.watch(currentCartProvider);
+    ref.listen<AsyncValue<Cart>>(currentCartProvider, _onCart);
     // The last count known for this account, a failed reload included.
     final int count = cart.value?.itemCount ?? 0;
+    final bool onBrand = widget.onBrand;
 
-    return IconButton(
-      key: const ValueKey<String>('open-cart'),
-      tooltip: l10n.cartBadge(count),
-      icon: Stack(
-        clipBehavior: Clip.none,
-        children: <Widget>[
-          const Icon(
-            Icons.shopping_bag_outlined,
-            size: 26,
-            color: KitColors.ink,
-          ),
-          if (count > 0)
-            Positioned(
-              top: -7,
-              right: -9,
+    final Widget icon = Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: <Widget>[
+        Icon(
+          Icons.shopping_bag_outlined,
+          size: 26,
+          color: onBrand ? Colors.white : KitColors.ink,
+        ),
+        if (count > 0)
+          Positioned(
+            top: onBrand ? 1 : -7,
+            right: onBrand ? 1 : -9,
+            child: ScaleTransition(
+              key: const ValueKey<String>('cart-badge-bump'),
+              scale: _scale,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: KitColors.primary,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white, width: 2),
+                  color: onBrand ? Colors.white : KitColors.primary,
+                  borderRadius: BorderRadius.circular(onBrand ? 9 : 10),
+                  border: onBrand
+                      ? null
+                      : Border.all(color: Colors.white, width: 2),
                 ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(
@@ -62,9 +119,9 @@ class CartButton extends ConsumerWidget {
                         '$count',
                         key: const ValueKey<String>('cart-count'),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
+                        style: TextStyle(
+                          color: onBrand ? KitColors.primaryDark : Colors.white,
+                          fontSize: onBrand ? 11 : 10,
                           height: 1.3,
                           fontWeight: FontWeight.w700,
                         ),
@@ -74,8 +131,22 @@ class CartButton extends ConsumerWidget {
                 ),
               ),
             ),
-        ],
-      ),
+          ),
+      ],
+    );
+
+    return IconButton(
+      key: const ValueKey<String>('open-cart'),
+      tooltip: l10n.cartBadge(count),
+      style: onBrand
+          ? IconButton.styleFrom(
+              fixedSize: const Size(44, 44),
+              minimumSize: const Size(44, 44),
+              padding: EdgeInsets.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            )
+          : null,
+      icon: icon,
       onPressed: () => context.push(CartPaths.cart),
     );
   }

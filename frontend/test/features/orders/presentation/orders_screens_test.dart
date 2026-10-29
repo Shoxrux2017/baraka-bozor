@@ -222,6 +222,99 @@ void main() {
     );
   });
 
+  testWidgets('the header says «Заказы» with the cart and its count', (
+    WidgetTester tester,
+  ) async {
+    cart = FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[
+        cartLineJson(),
+        cartLineJson(id: breadLine, productId: breadProduct, unit: 'piece'),
+      ]),
+    );
+    await open(
+      tester,
+      at: AppPaths.customerOrders,
+      alone: true,
+      device: const Locale('ru'),
+    );
+
+    final Finder bar = find.byType(AppBar);
+    expect(
+      find.descendant(of: bar, matching: find.text('Заказы')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: bar, matching: byKey('open-cart')),
+      findsOneWidget,
+    );
+    expect(tester.widget<Text>(byKey('cart-count')).data, '2');
+    expect(
+      find.descendant(of: bar, matching: find.text('Мои заказы')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('the cart bumps after «Повторить»', (WidgetTester tester) async {
+    orders = FakeCustomerOrdersRepository(
+      orders: <Map<String, Object?>>[customerOrderJson(status: 'completed')],
+    );
+    orders.reorderAnswer = <String, Object?>{
+      'added_items': <Object?>[
+        <String, Object?>{
+          'product_id': productBread,
+          'name_uz': 'Non',
+          'name_ru': 'Хлеб',
+          'quantity': '1',
+        },
+      ],
+      'skipped_existing_items': <Object?>[],
+      'unavailable_items': <Object?>[],
+      'cart_full_items': <Object?>[],
+    };
+    cart = FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[cartLineJson()]),
+    );
+    await open(
+      tester,
+      at: AppPaths.customerOrders,
+      alone: true,
+      device: const Locale('ru'),
+    );
+    await tapAndSettle(tester, byKey('orders-tab-past'));
+    expect(
+      tester.widget<ScaleTransition>(byKey('cart-badge-bump')).scale.value,
+      1,
+    );
+
+    cart.answer = cartOf(<Map<String, Object?>>[
+      cartLineJson(),
+      cartLineJson(id: breadLine, productId: breadProduct, unit: 'piece'),
+    ]);
+    await tester.tap(byKey('order-repeat-$orderOne'));
+    double highest = 1;
+    for (int step = 0; step < 40; step++) {
+      await tester.pump(const Duration(milliseconds: 20));
+      final Finder badge = byKey('cart-badge-bump');
+      if (badge.evaluate().isNotEmpty) {
+        highest = highest < tester.widget<ScaleTransition>(badge).scale.value
+            ? tester.widget<ScaleTransition>(badge).scale.value
+            : highest;
+      }
+    }
+
+    expect(highest, greaterThan(1.1), reason: 'the badge was bumped');
+  });
+
+  testWidgets('every target meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester, at: AppPaths.customerOrders, alone: true);
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
+
   testWidgets('an empty cart leads to the catalog, and the orders are a tab', (
     WidgetTester tester,
   ) async {

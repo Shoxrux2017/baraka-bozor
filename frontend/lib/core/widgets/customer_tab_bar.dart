@@ -7,11 +7,13 @@ import '../localization/generated/app_localizations.dart';
 import '../routing/app_paths.dart';
 import '../theme/kit_colors.dart';
 
-/// The four places the Customer's bottom bar leads to.
+/// The four places the Customer's bottom bar leads to. Tab `i` is branch `i`
+/// of the tabs' shell (`DL-118`).
 enum CustomerTab { home, favorites, orders, profile }
 
-/// Wraps a tab screen other than the home: a system back it cannot pop — the
-/// tab is the only route — goes to the home instead of closing the app.
+/// Wraps a tab screen other than the home: a system back that reaches it goes
+/// to the home instead of closing the app. A tab is always the first page of
+/// its branch; sheets and screens over it are popped first (`DL-118` (3)).
 class CustomerTabScope extends StatelessWidget {
   const CustomerTabScope({required this.child, super.key});
 
@@ -20,7 +22,7 @@ class CustomerTabScope extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: context.canPop(),
+      canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) {
         if (!didPop) {
           context.go(AppPaths.customer);
@@ -31,12 +33,10 @@ class CustomerTabScope extends StatelessWidget {
   }
 }
 
-/// The Customer's bottom bar (`DL-80` item 6): home, favourites, orders and
-/// profile. The home, the favourites, the orders and the profile stay
-/// separate routes, so the bar only decides how one is reached: the current
-/// tab does nothing; the home is gone back to; another tab is pushed over the
-/// home, and replaces the tab it is opened from. The system back therefore
-/// always returns to the home and never closes the app from a tab.
+/// The Customer's bottom bar (`DL-80` item 6, `DL-118`): home, favourites,
+/// orders and profile. The four tabs are branches of one shell, so another
+/// tab is switched to and keeps its place; the current tab is left to its
+/// own handling. The system back from a tab other than the home goes home.
 class CustomerTabBar extends StatelessWidget {
   const CustomerTabBar({required this.current, super.key});
 
@@ -49,27 +49,43 @@ class CustomerTabBar extends StatelessWidget {
 
   void _open(BuildContext context, CustomerTab tab) {
     if (tab == current) {
+      _toTop(context);
       return;
     }
-    if (tab == CustomerTab.home) {
-      context.go(AppPaths.customer);
+    final StatefulNavigationShellState? shell = StatefulNavigationShell.maybeOf(
+      context,
+    );
+    if (shell != null) {
+      shell.goBranch(tab.index);
       return;
     }
-    final String path = switch (tab) {
+    // A screen shown alone, with no shell above it.
+    context.go(switch (tab) {
+      CustomerTab.home => AppPaths.customer,
       CustomerTab.favorites => AppPaths.customerFavorites,
       CustomerTab.orders => AppPaths.customerOrders,
       CustomerTab.profile => AppPaths.customerProfile,
-      CustomerTab.home => AppPaths.customer,
-    };
-    if (current == CustomerTab.home) {
-      context.push<void>(path);
-    } else if (context.canPop()) {
-      context.pushReplacement(path);
+    });
+  }
+
+  /// A tap on the current tab: its main list, which takes the route's primary
+  /// scroll controller, goes back to the top (`DL-118`). At the top nothing
+  /// moves.
+  void _toTop(BuildContext context) {
+    final ScrollController? controller = PrimaryScrollController.maybeOf(
+      context,
+    );
+    if (controller == null || !controller.hasClients) {
+      return;
+    }
+    if (MediaQuery.disableAnimationsOf(context)) {
+      controller.jumpTo(0);
     } else {
-      // The tab is the only route (opened by address): put the home beneath
-      // the next one, so the back never closes the app.
-      context.go(AppPaths.customer);
-      context.push<void>(path);
+      controller.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
     }
   }
 
@@ -180,6 +196,7 @@ class _TabButton extends StatelessWidget {
         onTap: onTap,
         child: Stack(
           alignment: Alignment.center,
+          fit: StackFit.expand,
           children: <Widget>[
             if (selected)
               // The soft glow above the current icon.
@@ -205,10 +222,41 @@ class _TabButton extends StatelessWidget {
                   ),
                 ),
               ),
-            Icon(
-              icon,
-              size: 28,
-              color: selected ? KitColors.primary : KitColors.muted,
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(
+                      icon,
+                      size: 26,
+                      color: selected ? KitColors.primary : KitColors.muted,
+                    ),
+                    const SizedBox(height: 2),
+                    MediaQuery.withClampedTextScaling(
+                      maxScaleFactor: 15 / 11,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: 11,
+                            height: 1.2,
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: selected
+                                ? KitColors.primaryDark
+                                : KitColors.muted,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

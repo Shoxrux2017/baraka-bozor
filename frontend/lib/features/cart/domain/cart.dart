@@ -43,6 +43,26 @@ final class Cart {
 
   bool get canCheckout => lines.isNotEmpty && !hasUnavailable && !belowMinimum;
 
+  /// Whether this cart holds more than [before], the same cart as it was: a
+  /// product it did not hold, or more of one. A removal, a smaller quantity
+  /// and another cart are no growth (`DL-118`).
+  bool grewFrom(Cart before) {
+    if (before.id != id) {
+      return false;
+    }
+    final Map<String, int> held = <String, int>{
+      for (final CartLine line in before.lines)
+        line.productId: QuantityRules.thousandths(line.quantity),
+    };
+    for (final CartLine line in lines) {
+      final int? was = held[line.productId];
+      if (was == null || QuantityRules.thousandths(line.quantity) > was) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// The line of [id], if the cart holds it.
   CartLine? line(String id) {
     for (final CartLine line in lines) {

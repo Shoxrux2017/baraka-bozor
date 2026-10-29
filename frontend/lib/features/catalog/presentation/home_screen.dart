@@ -212,6 +212,7 @@ class _Sections extends ConsumerWidget {
 
     return SingleChildScrollView(
       key: const ValueKey<String>('home-body'),
+      primary: true,
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -718,13 +718,17 @@ void main() {
       );
     });
 
-    testWidgets('a profile without a name, with the way to the profile', (
+    testWidgets('a profile without a name, with the way to the name editor', (
       WidgetTester tester,
     ) async {
       await refused(tester, 'customer_profile_incomplete');
       expect(find.text(l10n(tester).errorProfileIncomplete), findsOneWidget);
       await tapAndSettle(tester, byKey('checkout-open-profile'));
-      expect(top(tester), AppPaths.customerProfile);
+      expect(top(tester), AppPaths.customerEditProfile);
+
+      GoRouter.of(anywhere(tester)).pop();
+      await tester.pumpAndSettle();
+      expect(top(tester), AppPaths.customerCheckout);
     });
 
     testWidgets(

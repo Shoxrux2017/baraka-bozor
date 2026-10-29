@@ -39,6 +39,14 @@ void main() {
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
+  /// The screen's own title: the tab label of the bar says the same word.
+  Finder profileTitle(String text) => find.descendant(
+    of: find.byWidgetPredicate(
+      (Widget w) => w is Semantics && w.properties.header == true,
+    ),
+    matching: find.text(text),
+  );
+
   AppLocalizations l10n(WidgetTester tester) =>
       AppLocalizations.of(tester.element(find.byType(Scaffold).first));
 
@@ -212,7 +220,7 @@ void main() {
       await tapAndSettle(tester, byKey('language-ru'));
 
       expect(byKey('language-sheet'), findsNothing);
-      expect(find.text('Профиль'), findsOneWidget);
+      expect(profileTitle('Профиль'), findsOneWidget);
       expect(auth.calls, contains('language:customer:ru'));
     });
   });
@@ -229,7 +237,7 @@ void main() {
       await tapAndSettle(tester, byKey('profile-language'));
       await tapAndSettle(tester, byKey('language-ru'));
 
-      expect(find.text('Профиль'), findsOneWidget);
+      expect(profileTitle('Профиль'), findsOneWidget);
       expect(auth.calls, contains('language:customer:ru'));
     });
   });

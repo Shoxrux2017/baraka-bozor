@@ -9,19 +9,21 @@ import 'order_product_picker.dart';
 import 'orders_screens.dart';
 import 'rate_order_screen.dart';
 
-/// The Customer's orders, inside the Customer area: the list, an order, its
+/// The Customer's orders list, the third branch of the tabs' shell
+/// (`features/shells`, `DL-118`).
+final GoRoute ordersTabRoute = GoRoute(
+  path: AppPaths.customerOrders,
+  name: 'customer-orders',
+  builder: (BuildContext context, GoRouterState state) => const OrdersScreen(),
+);
+
+/// The Customer's orders, inside the Customer area: an order, its
 /// editor and the product picker the editor adds from. Each opens over the
 /// screen it was reached from, so the system back returns there. An order's
 /// id is taken in lower case, as the API answers it.
 final FeatureRoutes ordersRoutes = FeatureRoutes(
   feature: 'orders',
   routes: <RouteBase>[
-    GoRoute(
-      path: AppPaths.customerOrders,
-      name: 'customer-orders',
-      builder: (BuildContext context, GoRouterState state) =>
-          const OrdersScreen(),
-    ),
     GoRoute(
       path: AppPaths.customerOrderPattern,
       name: 'customer-order',

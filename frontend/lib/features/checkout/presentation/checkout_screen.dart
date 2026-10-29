@@ -695,7 +695,7 @@ class CheckoutRefusal extends StatelessWidget {
         l10n.errorProfileIncomplete,
         TextButton(
           key: const ValueKey<String>('checkout-open-profile'),
-          onPressed: () => context.push(AppPaths.customerProfile),
+          onPressed: () => context.push(AppPaths.customerEditProfile),
           child: Text(l10n.checkoutOpenProfile),
         ),
       ),

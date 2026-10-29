@@ -1,7 +1,10 @@
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/session/customer_account.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
+import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/presentation/addresses_screens.dart';
@@ -16,6 +19,7 @@ import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.da
 import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/app_harness.dart';
@@ -98,7 +102,7 @@ void main() {
   double top(WidgetTester tester, Finder finder) =>
       tester.getTopLeft(finder).dy;
 
-  testWidgets('the tab bar opens the orders and the profile over the home', (
+  testWidgets('the tab bar switches to the orders and the profile tabs', (
     WidgetTester tester,
   ) async {
     await open(tester);
@@ -112,7 +116,7 @@ void main() {
     await tester.tap(byKey('open-orders'));
     await tester.pumpAndSettle();
     expect(find.byType(CatalogHomeScreen), findsNothing);
-    // The orders tab has no back arrow of its own: the system back leaves it.
+    // The orders tab has no back arrow of its own: the system back goes home.
     expect(find.byType(BackButton), findsNothing);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
@@ -525,6 +529,55 @@ void main() {
     await tester.tap(byKey('open-cart'));
     await tester.pumpAndSettle();
     expect(find.byType(CatalogHomeScreen), findsNothing);
+  });
+
+  testWidgets('the home keeps the ink bag and its badge bumps when the cart '
+      'grows', (WidgetTester tester) async {
+    final FakeCartRepository cart = FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[cartLineJson()]),
+    );
+    await open(tester, cart: cart);
+
+    expect(
+      tester
+          .widget<Icon>(
+            find.descendant(
+              of: byKey('open-cart'),
+              matching: find.byIcon(Icons.shopping_bag_outlined),
+            ),
+          )
+          .color,
+      KitColors.ink,
+    );
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(byKey('open-cart')),
+    );
+    container
+        .read(cartProvider(container.read(customerAccountProvider)!).notifier)
+        .show(
+          cartOf(<Map<String, Object?>>[
+            cartLineJson(),
+            cartLineJson(id: breadLine, productId: breadProduct, unit: 'piece'),
+          ]),
+        );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+
+    expect(
+      tester.widget<ScaleTransition>(byKey('cart-badge-bump')).scale.value,
+      closeTo(1.3, 0.01),
+    );
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('every target meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester);
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
   });
 
   testWidgets('an empty cart shows no count', (WidgetTester tester) async {

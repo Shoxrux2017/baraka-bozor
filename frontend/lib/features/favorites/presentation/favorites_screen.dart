@@ -10,6 +10,7 @@ import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/customer_tab_bar.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../cart/presentation/cart_widgets.dart';
 import '../../catalog/presentation/kit_product_card.dart';
 import '../../catalog/presentation/kit_product_grid.dart';
 import '../application/favorites_controllers.dart';
@@ -37,6 +38,7 @@ class FavoritesScreen extends ConsumerWidget {
           title: l10n.favoritesTitle,
           automaticallyImplyLeading: false,
           search: true,
+          actions: const <Widget>[CartButton()],
         ),
         // The mode stays visible while two sessions exist (DL-75).
         body: UnderActiveMode(
@@ -97,6 +99,7 @@ class _Grid extends StatelessWidget {
 
     return ListView.builder(
       key: const ValueKey<String>('favorites-grid'),
+      primary: true,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       itemCount: rows + (state.hasMore ? 1 : 0),
       itemBuilder: (BuildContext context, int row) {
