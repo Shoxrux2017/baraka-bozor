@@ -3578,6 +3578,50 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productAdded => 'Savatda';
 
   @override
+  String productSumFor(String quantity) {
+    return '$quantity uchun';
+  }
+
+  @override
+  String productSumInCart(String quantity) {
+    return 'savatda · $quantity';
+  }
+
+  @override
+  String productPriceSpoken(String price, String unit) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'kg': 'kilogramm',
+      'gram': 'gramm',
+      'piece': 'dona',
+      'liter': 'litr',
+      'package': 'qadoq',
+      'box': 'quti',
+      'bundle': 'bog\'',
+      'meter': 'metr',
+      'other': 'birlik',
+    });
+    return 'Narxi taxminan $price, 1 $_temp0 uchun';
+  }
+
+  @override
+  String productQuantitySpoken(String name) {
+    return 'Miqdor, $name';
+  }
+
+  @override
+  String get productQuantityTapHint => 'aniq miqdorni kiritish';
+
+  @override
+  String productAddSpoken(String name, String quantity, String sum) {
+    return 'Savatga qo\'shish: $name, $quantity, taxminan $sum';
+  }
+
+  @override
+  String productOpenCartSpoken(String quantity) {
+    return 'Savatni ochish. Savatda $quantity';
+  }
+
+  @override
   String get quantitySheetTitle => 'Miqdor';
 
   @override

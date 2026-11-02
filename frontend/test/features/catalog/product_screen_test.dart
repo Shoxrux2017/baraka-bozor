@@ -35,6 +35,7 @@ import '../../support/fake_cart_repository.dart';
 import '../../support/fake_catalog_repository.dart';
 import '../../support/fake_favorites_repository.dart';
 import '../../support/in_memory_stores.dart';
+import '../../support/paragraphs.dart';
 
 /// The product screen (drawing 18, 18b) through the real router, against a
 /// catalog, a cart and favourites in memory.
@@ -131,6 +132,7 @@ void main() {
     ProductOpening? opening,
     bool push = true,
   }) async {
+    await loadMontserrat();
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -206,6 +208,31 @@ void main() {
       expect(find.byIcon(Icons.favorite), findsNothing);
       expect(find.text(l10n(tester).favoriteFailed), findsOneWidget);
     });
+
+    for (final (Locale, String) phrase in <(Locale, String)>[
+      (
+        const Locale('ru'),
+        'Цена примерно ${MoneyFormat.uzs(12075, AppLanguage.ru)} за килограмм',
+      ),
+      (
+        const Locale('uz'),
+        'Narxi taxminan ${MoneyFormat.uzs(12075, AppLanguage.uz)}, 1 '
+            'kilogramm uchun',
+      ),
+    ]) {
+      testWidgets('the price is one phrase (${phrase.$1.languageCode})', (
+        WidgetTester tester,
+      ) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await open(tester, device: phrase.$1);
+
+        final SemanticsData data = tester
+            .getSemantics(byKey('product-price-row'))
+            .getSemanticsData();
+        expect(data.label, phrase.$2);
+        handle.dispose();
+      });
+    }
 
     testWidgets('the name, the price, the unit and the estimate panel', (
       WidgetTester tester,
@@ -607,6 +634,90 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+
+    for (final Locale device in const <Locale>[Locale('ru'), Locale('uz')]) {
+      testWidgets('at 320 and text x2 the sum is whole and the button full '
+          'width (${device.languageCode})', (WidgetTester tester) async {
+        await open(
+          tester,
+          size: const Size(320, 640),
+          textScale: 2,
+          device: device,
+        );
+
+        final Finder bar = find.byType(ProductBar);
+        expect(byKey('product-side-sum'), findsOneWidget);
+        expect(byKey('product-sum'), findsNothing);
+        final Rect sum = tester.getRect(byKey('product-side-sum'));
+        final Rect barRect = tester.getRect(bar);
+        expect(sum.left, greaterThanOrEqualTo(barRect.left + 16 - 0.5));
+        expect(sum.right, lessThanOrEqualTo(barRect.right - 16 + 0.5));
+        // The amount is whole: nothing cut, every line inside the bar.
+        final RenderParagraph amount = tester.renderObject<RenderParagraph>(
+          byKey('product-side-amount'),
+        );
+        expect(amount.didExceedMaxLines, isFalse);
+        final String text = tester
+            .widget<Text>(byKey('product-side-amount'))
+            .data!;
+        for (final TextBox box in amount.getBoxesForSelection(
+          TextSelection(baseOffset: 0, extentOffset: text.length),
+        )) {
+          expect(box.right, lessThanOrEqualTo(amount.size.width + 0.5));
+        }
+        expect(amount.size.width, lessThanOrEqualTo(320 - 32 + 0.5));
+
+        expect(
+          tester.getSize(byKey('add-to-cart')).width,
+          closeTo(320 - 32, 0.5),
+        );
+        expect(byKey('add-to-cart').hitTestable(), findsOneWidget);
+        expect(
+          find.descendant(of: bar, matching: find.byType(FittedBox)),
+          findsNothing,
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    for (final double width in <double>[390]) {
+      testWidgets('at $width and text x2 the sum stands beside the stepper', (
+        WidgetTester tester,
+      ) async {
+        await open(tester, size: Size(width, 800), textScale: 2);
+
+        // Either inside the button beside the stepper or in the sum block
+        // beside it: never pushed below.
+        final Finder sum = byKey('product-side-sum').evaluate().isEmpty
+            ? byKey('product-sum')
+            : byKey('product-side-sum');
+        final Rect stepper = tester.getRect(
+          find
+              .ancestor(
+                of: byKey('product-minus'),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
+        );
+        final Rect shown = tester.getRect(sum);
+        expect(shown.left, greaterThanOrEqualTo(stepper.right));
+        expect(shown.top, lessThan(stepper.bottom));
+        expect(byKey('add-to-cart').hitTestable(), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('at 400 and text x1 the button keeps its sum beside the '
+        'stepper', (WidgetTester tester) async {
+      await open(tester);
+
+      expect(byKey('product-side-sum'), findsNothing);
+      expect(byKey('product-sum'), findsOneWidget);
+      expect(
+        tester.getRect(byKey('add-to-cart')).left,
+        greaterThan(tester.getRect(byKey('product-plus')).right),
+      );
+    });
 
     testWidgets(
       'while the add is in flight the button waits and ignores taps',

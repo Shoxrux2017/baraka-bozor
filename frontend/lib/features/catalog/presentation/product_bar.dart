@@ -1,6 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/formatting/money_format.dart';
+import '../../../core/layout/text_width.dart';
+import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
@@ -84,81 +88,136 @@ class ProductBar extends StatelessWidget {
         lower == null &&
         QuantityRules.thousandths(quantity) <=
             QuantityRules.thousandths(CardQuantity.step(product.unitCode));
+    final AppLanguage language = interfaceLanguage(context);
     final String sum = l10n.catalogApproxPrice(
-      MoneyFormat.uzs(sumUzs, interfaceLanguage(context)),
+      MoneyFormat.uzs(sumUzs, language),
     );
 
-    final String shownQuantity =
-        '${QuantityRules.display(quantity)} '
+    String quantityText(String value) =>
+        '${QuantityRules.display(value)} '
         '${CatalogLabels.unit(l10n, product.unitCode)}';
+    final String shownQuantity = quantityText(quantity);
+    final String name = product.name(language);
 
-    final Widget actionButton = switch (action) {
-      ProductBarAction.add || ProductBarAction.adding => FilledButton(
-        key: const ValueKey<String>('add-to-cart'),
-        style: FilledButton.styleFrom(
-          backgroundColor: KitColors.primary,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: KitColors.primarySoft,
-          disabledForegroundColor: Colors.white,
-          minimumSize: const Size(0, height),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        // While adding the tap is taken and does nothing, so the button
-        // keeps its colour and shows the wait.
-        onPressed: onAction == null
-            ? null
-            : (action == ProductBarAction.adding ? () {} : onAction),
-        child: action == ProductBarAction.adding
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const ExcludeSemantics(
-                    child: SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(child: _labelOverSum(l10n.productAdding, sum)),
-                ],
-              )
-            : _labelOverSum(l10n.productAddToCart, sum),
+    final String label = switch (action) {
+      ProductBarAction.add => l10n.productAddToCart,
+      ProductBarAction.adding => l10n.productAdding,
+      ProductBarAction.added => l10n.productAdded,
+      ProductBarAction.openCart => l10n.cartOpen,
+    };
+    final String? sumLine = switch (action) {
+      ProductBarAction.add || ProductBarAction.adding => sum,
+      ProductBarAction.added => null,
+      ProductBarAction.openCart => '$shownQuantity · $sum',
+    };
+    final String spoken = switch (action) {
+      ProductBarAction.add => l10n.productAddSpoken(
+        name,
+        shownQuantity,
+        MoneyFormat.uzs(sumUzs, language),
       ),
-      ProductBarAction.added => _AddedMark(text: l10n.productAdded),
-      ProductBarAction.openCart => OutlinedButton(
-        key: const ValueKey<String>('open-cart'),
-        style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: KitColors.primaryDark,
-          side: const BorderSide(color: KitColors.primary, width: 1.5),
-          minimumSize: const Size(0, height),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        onPressed: onAction,
-        child: _labelOverSum(l10n.cartOpen, '$shownQuantity · $sum'),
-      ),
+      ProductBarAction.adding => l10n.productAdding,
+      ProductBarAction.added => l10n.productAdded,
+      ProductBarAction.openCart => l10n.productOpenCartSpoken(shownQuantity),
     };
 
-    Widget stepper() => _Stepper(
-      quantity: shownQuantity,
-      minusLabel: bin ? l10n.cartRemoveLine : l10n.cartStepMinus,
-      minusIcon: bin ? Icons.delete_outline : Icons.remove,
-      minusColor: bin ? KitColors.danger : KitColors.primaryDark,
-      plusLabel: l10n.cartStepPlus,
-      onQuantityTap: locked ? null : onQuantityTap,
-      onMinus: bin
+    Widget actionButton({required bool withSum}) {
+      final String? line = withSum ? sumLine : null;
+      return switch (action) {
+        ProductBarAction.add || ProductBarAction.adding => FilledButton(
+          key: const ValueKey<String>('add-to-cart'),
+          style: FilledButton.styleFrom(
+            backgroundColor: KitColors.primary,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: KitColors.primarySoft,
+            disabledForegroundColor: Colors.white,
+            minimumSize: const Size(0, height),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          // While adding the tap is taken and does nothing, so the button
+          // keeps its colour and shows the wait.
+          onPressed: onAction == null
+              ? null
+              : (action == ProductBarAction.adding ? () {} : onAction),
+          child: Semantics(
+            label: spoken,
+            excludeSemantics: true,
+            child: action == ProductBarAction.adding
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      const ExcludeSemantics(
+                        child: SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(child: _labelOverSum(label, line)),
+                    ],
+                  )
+                : _labelOverSum(label, line),
+          ),
+        ),
+        ProductBarAction.added => Semantics(
+          label: spoken,
+          excludeSemantics: true,
+          child: _AddedMark(text: label),
+        ),
+        ProductBarAction.openCart => OutlinedButton(
+          key: const ValueKey<String>('open-cart'),
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: KitColors.primaryDark,
+            side: const BorderSide(color: KitColors.primary, width: 1.5),
+            minimumSize: const Size(0, height),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          onPressed: onAction,
+          child: Semantics(
+            label: spoken,
+            excludeSemantics: true,
+            child: _labelOverSum(label, line),
+          ),
+        ),
+      };
+    }
+
+    final Widget stepper = Semantics(
+      label: l10n.productQuantitySpoken(name),
+      value: shownQuantity,
+      increasedValue: upper == null ? null : quantityText(upper),
+      decreasedValue: bin
+          ? quantityText('0')
+          : (lower == null ? null : quantityText(lower)),
+      onIncrease: upper == null ? null : () => onQuantity(upper),
+      onDecrease: bin
           ? onRemove
           : (lower == null ? null : () => onQuantity(lower)),
-      onPlus: upper == null ? null : () => onQuantity(upper),
+      onTap: locked ? null : onQuantityTap,
+      onTapHint: l10n.productQuantityTapHint,
+      excludeSemantics: true,
+      child: _Stepper(
+        quantity: shownQuantity,
+        minusLabel: bin ? l10n.cartRemoveLine : l10n.cartStepMinus,
+        minusIcon: bin ? Icons.delete_outline : Icons.remove,
+        minusColor: bin ? KitColors.danger : KitColors.primaryDark,
+        plusLabel: l10n.cartStepPlus,
+        onQuantityTap: locked ? null : onQuantityTap,
+        onMinus: bin
+            ? onRemove
+            : (lower == null ? null : () => onQuantity(lower)),
+        onPlus: upper == null ? null : () => onQuantity(upper),
+      ),
     );
 
     return DecoratedBox(
@@ -181,30 +240,65 @@ class ProductBar extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            // The quantity is read at the Customer's text size and never
-            // shrunk: beside the action when both fit, else above it.
+            // Everything is measured at the Customer's text size and never
+            // shrunk: the action beside the stepper when both fit; else the
+            // sum moves out of the button, beside the stepper or under it,
+            // and the button takes the full width.
             final double stepperWidth = _Stepper.widthOf(
               context,
               shownQuantity,
             );
-            final bool beside =
-                stepperWidth + _gap + _actionMinWidth <= constraints.maxWidth;
-            if (beside) {
+            final double content =
+                <double>[
+                  textWidth(context, label, _labelStyle),
+                  if (sumLine != null) textWidth(context, sumLine, _lineStyle),
+                ].reduce(math.max) +
+                16 +
+                (action == ProductBarAction.added ? 30 : 0) +
+                (action == ProductBarAction.adding ? 26 : 0);
+            final double actionWidth = math.max(_actionMinWidth, content);
+            if (stepperWidth + _gap + actionWidth <= constraints.maxWidth) {
               return Row(
                 children: <Widget>[
-                  SizedBox(width: stepperWidth, child: stepper()),
+                  SizedBox(width: stepperWidth, child: stepper),
                   const SizedBox(width: _gap),
-                  Expanded(child: actionButton),
+                  Expanded(child: actionButton(withSum: true)),
                 ],
               );
             }
+            final Widget sideSum = _SideSum(
+              amount: sum,
+              caption: action == ProductBarAction.openCart
+                  ? l10n.productSumInCart(shownQuantity)
+                  : l10n.productSumFor(shownQuantity),
+            );
+            final bool sumBeside =
+                stepperWidth +
+                    _gap +
+                    textWidth(context, sum, _SideSum.amountStyle) <=
+                constraints.maxWidth;
             return Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                stepper(),
+                if (sumBeside)
+                  Row(
+                    children: <Widget>[
+                      SizedBox(width: stepperWidth, child: stepper),
+                      const SizedBox(width: _gap),
+                      Expanded(child: sideSum),
+                    ],
+                  )
+                else ...<Widget>[
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: SizedBox(width: stepperWidth, child: stepper),
+                  ),
+                  const SizedBox(height: 8),
+                  sideSum,
+                ],
                 const SizedBox(height: 10),
-                actionButton,
+                actionButton(withSum: false),
               ],
             );
           },
@@ -213,23 +307,33 @@ class ProductBar extends StatelessWidget {
     );
   }
 
-  /// A label over a sum, one line each.
-  static Widget _labelOverSum(String label, String sum) => Column(
+  static const TextStyle _labelStyle = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+  );
+  static const TextStyle _lineStyle = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+  );
+
+  /// A label, with the sum under it when there is one; one line each.
+  static Widget _labelOverSum(String label, String? sum) => Column(
     mainAxisSize: MainAxisSize.min,
     children: <Widget>[
       Text(
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        style: _labelStyle,
       ),
-      Text(
-        sum,
-        key: const ValueKey<String>('product-sum'),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-      ),
+      if (sum != null)
+        Text(
+          sum,
+          key: const ValueKey<String>('product-sum'),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: _lineStyle,
+        ),
     ],
   );
 
@@ -237,6 +341,41 @@ class ProductBar extends StatelessWidget {
 
   /// The least the action gets beside the stepper before it moves below.
   static const double _actionMinWidth = 120;
+}
+
+/// The sum when it has left the button: the amount over what it is for, at
+/// the Customer's text size and never shortened (`DL-122`).
+class _SideSum extends StatelessWidget {
+  const _SideSum({required this.amount, required this.caption});
+
+  final String amount;
+  final String caption;
+
+  static const TextStyle amountStyle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    color: KitColors.ink,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const ValueKey<String>('product-side-sum'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          amount,
+          key: const ValueKey<String>('product-side-amount'),
+          style: amountStyle,
+        ),
+        Text(
+          caption,
+          style: const TextStyle(fontSize: 12, color: KitColors.muted),
+        ),
+      ],
+    );
+  }
 }
 
 /// "В корзине" with a check that pops in from small and clear in 340 ms; with

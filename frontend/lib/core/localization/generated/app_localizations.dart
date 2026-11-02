@@ -6200,6 +6200,48 @@ abstract class AppLocalizations {
   /// **'Savatda'**
   String get productAdded;
 
+  /// No description provided for @productSumFor.
+  ///
+  /// In uz, this message translates to:
+  /// **'{quantity} uchun'**
+  String productSumFor(String quantity);
+
+  /// No description provided for @productSumInCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'savatda · {quantity}'**
+  String productSumInCart(String quantity);
+
+  /// No description provided for @productPriceSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narxi taxminan {price}, 1 {unit, select, kg{kilogramm} gram{gramm} piece{dona} liter{litr} package{qadoq} box{quti} bundle{bog\'} meter{metr} other{birlik}} uchun'**
+  String productPriceSpoken(String price, String unit);
+
+  /// No description provided for @productQuantitySpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Miqdor, {name}'**
+  String productQuantitySpoken(String name);
+
+  /// No description provided for @productQuantityTapHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'aniq miqdorni kiritish'**
+  String get productQuantityTapHint;
+
+  /// No description provided for @productAddSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga qo\'shish: {name}, {quantity}, taxminan {sum}'**
+  String productAddSpoken(String name, String quantity, String sum);
+
+  /// No description provided for @productOpenCartSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatni ochish. Savatda {quantity}'**
+  String productOpenCartSpoken(String quantity);
+
   /// No description provided for @quantitySheetTitle.
   ///
   /// In uz, this message translates to:

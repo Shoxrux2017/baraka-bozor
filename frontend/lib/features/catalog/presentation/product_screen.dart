@@ -746,34 +746,42 @@ class _Page extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(side, 8, side, 0),
-                  child: Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.end,
-                    spacing: 8,
-                    children: <Widget>[
-                      Text(
-                        l10n.catalogApproxPrice(
-                          MoneyFormat.uzs(
-                            product.customerUnitPriceUzs,
-                            language,
+                  child: Semantics(
+                    key: const ValueKey<String>('product-price-row'),
+                    label: l10n.productPriceSpoken(
+                      MoneyFormat.uzs(product.customerUnitPriceUzs, language),
+                      product.unitCode.name,
+                    ),
+                    excludeSemantics: true,
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.end,
+                      spacing: 8,
+                      children: <Widget>[
+                        Text(
+                          l10n.catalogApproxPrice(
+                            MoneyFormat.uzs(
+                              product.customerUnitPriceUzs,
+                              language,
+                            ),
+                          ),
+                          key: const ValueKey<String>('product-price'),
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: KitColors.ink,
                           ),
                         ),
-                        key: const ValueKey<String>('product-price'),
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: KitColors.ink,
+                        Text(
+                          l10n.catalogPerUnit(
+                            CatalogLabels.unit(l10n, product.unitCode),
+                          ),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: KitColors.muted,
+                          ),
                         ),
-                      ),
-                      Text(
-                        l10n.catalogPerUnit(
-                          CatalogLabels.unit(l10n, product.unitCode),
-                        ),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: KitColors.muted,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 if (product.priceMode == PriceMode.estimate)
