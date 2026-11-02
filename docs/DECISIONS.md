@@ -1895,3 +1895,11 @@ Stage 6 of `tasks/APPLE_BATCH.md` codes the fourteen items of the home and «В�
 8. **Title** (`cats-1`). «Категории», as the home and the kit's drawing 10б.
 9. **Cart bar on «Все категории»** (`cats-2`). Extends `DL-80` (3).
 10. **Press and flight** (`cats-5`). `PressScale` in `core/`; each tile owns its hero tag and hands it to the category route, so a category on two screens in the stack never shares a tag (as `DL-122` (1)).
+
+## DL-126 — Layout rules read the text factor at the text's own size (2026-11-02, agent)
+
+On Android 14 and later `MediaQuery.textScalerOf` is the platform's nonlinear scaler: small font sizes scale fully (12 becomes about 24 at 200 %) and sizes near 100 hardly at all. Stage 6's emulator walk (`DL-125`, Android 16, font size 200 %) showed it: two rules fed a large size to the scaler (`scale(88)` for the category columns, `scale(150)` for the recommended card), so the home kept four columns with names cut mid-word and cards 150 wide with the price cut; the tests passed because `textScaleFactorTestValue` gives a linear scaler.
+
+A layout size that follows the text takes `textScaleAt(scaler, fontSize) = scaler.scale(fontSize) / fontSize` at the size of the text it must hold (`core/layout/text_width.dart`): the category columns at the name's 12 px, the recommended card width at the regular card's price size. The tests inject an Android-like nonlinear scaler (`test/support/nonlinear_text_scaler.dart`).
+
+The other large-size `scale(...)` calls were checked and left: `quantity_sheet.dart:218` (`scale(58)` is a minimum height; the field's content sets the real one) and `order_history.dart:126` (`scale(76)`, the web panel, where text scales linearly).

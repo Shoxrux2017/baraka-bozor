@@ -55,6 +55,7 @@ Widget appUnderTest({
   Surface surface = Surface.mobile,
   Locale device = const Locale('uz'),
   DateTime Function()? clock,
+  TextScaler? textScaler,
   List<Override> overrides = const <Override>[],
 }) {
   return ProviderScope(
@@ -101,6 +102,13 @@ Widget appUnderTest({
       if (clock != null) clockProvider.overrideWithValue(clock),
       ...overrides,
     ],
-    child: const BarakaBozorApp(),
+    child: textScaler == null
+        ? const BarakaBozorApp()
+        : Builder(
+            builder: (BuildContext context) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+              child: const BarakaBozorApp(),
+            ),
+          ),
   );
 }

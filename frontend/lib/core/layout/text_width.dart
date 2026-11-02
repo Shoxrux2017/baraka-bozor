@@ -17,3 +17,11 @@ double textWidth(BuildContext context, String text, TextStyle style) {
   painter.dispose();
   return width;
 }
+
+/// How much [scaler] enlarges text of [fontSize]: `scale(fontSize) / fontSize`.
+/// A layout size that follows the text takes this factor at the size of the
+/// text it must hold, not at its own: Android 14 and later scales large sizes
+/// hardly at all and small ones fully, so `scale(88)` says nothing of a 12 px
+/// name (`DL-126`).
+double textScaleAt(TextScaler scaler, double fontSize) =>
+    scaler.scale(fontSize) / fontSize;

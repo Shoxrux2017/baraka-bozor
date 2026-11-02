@@ -4,6 +4,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/press_scale.dart';
@@ -13,9 +14,10 @@ import 'catalog_paths.dart';
 
 /// How many category tiles fit a grid [width] (inside the side safe areas) at
 /// the text size [scaler] gives: one rule for the home and «Все категории»
-/// (`DL-125`); never fewer than two.
+/// (`DL-125`); never fewer than two. A name is 12 px, so the factor is read
+/// there (`DL-126`).
 int categoryColumns(double width, TextScaler scaler) =>
-    math.max(2, ((width - 20) / (scaler.scale(88) + 12)).round());
+    math.max(2, ((width - 20) / (88 * textScaleAt(scaler, 12) + 12)).round());
 
 /// The height of a grid row of tiles [tile] wide in [columns] columns: the
 /// picture, the gap and the name's lines at the text size [scaler] gives
