@@ -54,6 +54,7 @@ final class CartApiTest extends TestCase
         $this->assertSame([
             'id', 'items', 'item_count', 'estimated_subtotal_uzs', 'service_fee_uzs', 'service_fee_kind',
             'delivery_fee_uzs', 'estimated_total_uzs', 'minimum_order_uzs', 'minimum_order_shortfall_uzs',
+            'working_hours',
         ], array_keys($first->json('data')));
         $this->assertSame([], $first->json('data.items'));
         $this->assertSame(0, $first->json('data.estimated_subtotal_uzs'));

@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/orders/application/customer_orders_controllers.dart';
 import '../localization/generated/app_localizations.dart';
 import '../routing/app_paths.dart';
 import '../theme/kit_colors.dart';
@@ -37,7 +39,7 @@ class CustomerTabScope extends StatelessWidget {
 /// orders and profile. The four tabs are branches of one shell, so another
 /// tab is switched to and keeps its place; the current tab is left to its
 /// own handling. The system back from a tab other than the home goes home.
-class CustomerTabBar extends StatelessWidget {
+class CustomerTabBar extends ConsumerWidget {
   const CustomerTabBar({required this.current, super.key});
 
   final CustomerTab current;
@@ -90,8 +92,9 @@ class CustomerTabBar extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final int waiting = ref.watch(openQuestionsProvider).length;
     final double inset = MediaQuery.paddingOf(context).bottom;
     final double height = math.max(_height, _content + inset);
 
@@ -100,13 +103,15 @@ class CustomerTabBar extends StatelessWidget {
       String key,
       IconData filled,
       IconData outlined,
-      String label,
-    ) => Expanded(
+      String label, {
+      int badge = 0,
+    }) => Expanded(
       child: _TabButton(
         key: ValueKey<String>(key),
         icon: tab == current ? filled : outlined,
         label: label,
         selected: tab == current,
+        badge: badge,
         onTap: () => _open(context, tab),
       ),
     );
@@ -152,6 +157,7 @@ class CustomerTabBar extends StatelessWidget {
                     Icons.receipt_long,
                     Icons.receipt_long_outlined,
                     l10n.homeNavOrders,
+                    badge: waiting,
                   ),
                   tab(
                     CustomerTab.profile,
@@ -176,9 +182,12 @@ class _TabButton extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.badge = 0,
     super.key,
   });
 
+  /// How many questions wait on the tab; none draws nothing (`DL-125`).
+  final int badge;
   final IconData icon;
   final String label;
   final bool selected;
@@ -189,7 +198,9 @@ class _TabButton extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: label,
+      label: badge > 0
+          ? AppLocalizations.of(context).homeNavOrdersWaiting(badge)
+          : label,
       excludeSemantics: true,
       onTap: onTap,
       child: InkWell(
@@ -218,6 +229,22 @@ class _TabButton extends StatelessWidget {
                           spreadRadius: 4,
                         ),
                       ],
+                    ),
+                  ),
+                ),
+              ),
+            if (badge > 0)
+              Positioned(
+                top: 8,
+                left: 0,
+                right: 0,
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Transform.translate(
+                    offset: const Offset(6, 0),
+                    child: FractionalTranslation(
+                      translation: const Offset(0.5, 0),
+                      child: _Badge(count: badge),
                     ),
                   ),
                 ),
@@ -259,6 +286,37 @@ class _TabButton extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The count of waiting questions: a red pill with a white ring.
+class _Badge extends StatelessWidget {
+  const _Badge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey<String>('orders-badge'),
+      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: KitColors.danger,
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: Text(
+        '$count',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          height: 1,
         ),
       ),
     );

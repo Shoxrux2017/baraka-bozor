@@ -262,10 +262,10 @@ void main() {
   ) async {
     catalog.categoriesFailure = const NetworkFailure();
     await open(tester);
-    expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+    expect(find.text(l10n(tester).staleOffline), findsOneWidget);
 
     catalog.categoryRows = <CatalogCategory>[];
-    await tester.tap(find.text(l10n(tester).retryButton));
+    await tester.tap(byKey('stale-retry'));
     await tester.pumpAndSettle();
     expect(find.text(l10n(tester).catalogNoProducts), findsOneWidget);
   });
@@ -353,6 +353,9 @@ void main() {
         await tester.tap(byKey('search-back'));
         await tester.pumpAndSettle();
 
+        // The home is one scroll now: its top, with the way back, is above.
+        await tester.drag(byKey('home-scroll'), const Offset(0, 1000));
+        await tester.pumpAndSettle();
         await tester.tap(byKey('switch-to-staff-button'));
         await tester.pumpAndSettle();
         expect(mode, findsOneWidget, reason: 'back in the staff shell');

@@ -71,4 +71,33 @@ void main() {
       isTrue,
     );
   });
+
+  testWidgets('a radius rounds its corners', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Column(
+          children: <Widget>[
+            SkeletonBar(width: 80, height: 20, pulsing: false),
+            SkeletonBar(width: 80, height: 20, pulsing: false, radius: 6),
+          ],
+        ),
+      ),
+    );
+    final List<DecoratedBox> boxes = tester
+        .widgetList<DecoratedBox>(
+          find.descendant(
+            of: find.byType(SkeletonBar),
+            matching: find.byType(DecoratedBox),
+          ),
+        )
+        .toList();
+    expect(
+      (boxes[0].decoration as BoxDecoration).borderRadius,
+      BorderRadius.circular(10),
+    );
+    expect(
+      (boxes[1].decoration as BoxDecoration).borderRadius,
+      BorderRadius.circular(6),
+    );
+  });
 }

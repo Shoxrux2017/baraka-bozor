@@ -3421,9 +3421,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get catalogAdd => 'Qo\'shish';
-
-  @override
   String get catalogUnavailable => 'Sotuvda yo\'q';
 
   @override
@@ -3845,11 +3842,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get questionBannerTitle => 'Yig\'uvchi javobingizni kutmoqda';
-
-  @override
-  String questionBannerOrder(String number, String time) {
-    return 'Buyurtma № $number · $time gacha javob bering';
-  }
 
   @override
   String get questionAnswer => 'Javob berish';
@@ -4353,4 +4345,127 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get cartNotSaved => 'Aloqa yo\'q — savat avvalgidek qoldi';
+
+  @override
+  String get staleOffline => 'Aloqa yo\'q';
+
+  @override
+  String get staleFailed => 'Yangilab bo\'lmadi';
+
+  @override
+  String staleShownAt(String time) {
+    return '$time holatiga';
+  }
+
+  @override
+  String get staleRefresh => 'Yangilash';
+
+  @override
+  String staleSpoken(String reason, String time) {
+    return '$reason. $time holatidagi ma\'lumotlar ko\'rsatilgan';
+  }
+
+  @override
+  String deadlineLeft(int minutes) {
+    return '$minutes daqiqa qoldi';
+  }
+
+  @override
+  String deadlineLeftSpoken(int minutes) {
+    return '$minutes daqiqa qoldi';
+  }
+
+  @override
+  String get refreshDone => 'Yangilandi';
+
+  @override
+  String cartSummarySpoken(String count, String sum) {
+    return 'Savat: $count, taxminan $sum. Savatga';
+  }
+
+  @override
+  String deliveryAddressSpoken(String address) {
+    return 'Yetkazib berish manzili: $address. O\'zgartirish';
+  }
+
+  @override
+  String get catalogSearchSpoken => 'Mahsulotlarni qidirish';
+
+  @override
+  String get homeCategoriesAll => 'Barcha kategoriyalar';
+
+  @override
+  String get recommendedAll => 'Barcha tavsiyalar';
+
+  @override
+  String cardSpoken(String name, String price, String unit) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'kg': 'kilogramm',
+      'gram': 'gramm',
+      'piece': 'dona',
+      'liter': 'litr',
+      'package': 'qadoq',
+      'box': 'quti',
+      'bundle': 'bog\'',
+      'meter': 'metr',
+      'other': 'birlik',
+    });
+    return '$name, taxminan $price, 1 $_temp0 uchun';
+  }
+
+  @override
+  String cardInCartSpoken(String card, String quantity) {
+    return '$card. Savatda $quantity';
+  }
+
+  @override
+  String cardAddSpoken(String name) {
+    return 'Savatga qo\'shish: $name';
+  }
+
+  @override
+  String cardStepperSpoken(String name) {
+    return '$name savatda';
+  }
+
+  @override
+  String favoriteAddSpoken(String name) {
+    return 'Sevimlilarga qo\'shish: $name';
+  }
+
+  @override
+  String favoriteRemoveSpoken(String name) {
+    return 'Sevimlilardan olib tashlash: $name';
+  }
+
+  @override
+  String questionBannerUntil(String number, String time) {
+    return 'Buyurtma № $number · $time gacha';
+  }
+
+  @override
+  String questionSpoken(String number, String left) {
+    return 'Yig\'uvchi javobingizni kutmoqda. Buyurtma № $number, $left. Javob berish';
+  }
+
+  @override
+  String questionArrived(String number, String left) {
+    return 'Yig\'uvchi № $number buyurtma haqida so\'ramoqda. $left';
+  }
+
+  @override
+  String get questionExpired => 'Javob berish vaqti tugadi';
+
+  @override
+  String homeNavOrdersWaiting(int count) {
+    return 'Buyurtmalar, javob kutilmoqda: $count';
+  }
+
+  @override
+  String get homeClosedTitle => 'Hozir yopiq.';
+
+  @override
+  String homeClosedBody(String time) {
+    return 'Buyurtmani hozir qabul qilamiz, soat $time dan yig\'ib, yetkazib beramiz';
+  }
 }

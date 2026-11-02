@@ -296,6 +296,20 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
       reduced: MediaQuery.disableAnimationsOf(context),
     );
 
+    final String name = product.name(language);
+    final String spoken = l10n.cardSpoken(
+      name,
+      MoneyFormat.uzs(product.customerUnitPriceUzs, language),
+      product.unitCode.name,
+    );
+    // The card reads as one stop: the product, its price and what is in the
+    // cart, or that it is no longer sold (`DL-125`).
+    final String cardLabel = !widget.available
+        ? '$spoken. ${l10n.catalogUnavailable}'
+        : shown == null
+        ? spoken
+        : l10n.cardInCartSpoken(spoken, _quantityText(l10n, shown));
+
     final double imageHeight = widget.imageHeight ?? (_compact ? 84.0 : 112.0);
     final KitCardType type = KitCardType.of(widget.size);
     final double nameSize = type.nameSize;
@@ -321,146 +335,163 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
             ),
           ],
         ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => context.push(
-            CatalogPaths.product(id),
-            extra: ProductOpening(product: product, heroTag: _heroTag),
-          ),
-          child: Stack(
-            fit: StackFit.passthrough,
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: KitCardType.padding,
-                ),
-                // Given an exact height, the bottom row is pinned to the
-                // bottom.
-                child: LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints constraints) =>
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        mainAxisSize: constraints.hasTightHeight
-                            ? MainAxisSize.max
-                            : MainAxisSize.min,
-                        children: <Widget>[
-                          _sidePadded(
-                            Hero(
-                              tag: _heroTag,
-                              flightShuttleBuilder: productPhotoFlight(
-                                product.imageUrl,
-                              ),
-                              child: SizedBox(
-                                height: imageHeight,
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    color: KitColors.card,
-                                    borderRadius: BorderRadius.circular(12),
+        child: Semantics(
+          key: ValueKey<String>('card-semantics-$id'),
+          container: true,
+          button: true,
+          label: cardLabel,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => context.push(
+              CatalogPaths.product(id),
+              extra: ProductOpening(product: product, heroTag: _heroTag),
+            ),
+            child: Stack(
+              fit: StackFit.passthrough,
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: KitCardType.padding,
+                  ),
+                  // Given an exact height, the bottom row is pinned to the
+                  // bottom.
+                  child: LayoutBuilder(
+                    builder:
+                        (
+                          BuildContext context,
+                          BoxConstraints constraints,
+                        ) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: constraints.hasTightHeight
+                              ? MainAxisSize.max
+                              : MainAxisSize.min,
+                          children: <Widget>[
+                            _sidePadded(
+                              ExcludeSemantics(
+                                child: Hero(
+                                  tag: _heroTag,
+                                  flightShuttleBuilder: productPhotoFlight(
+                                    product.imageUrl,
                                   ),
-                                  child: LayoutBuilder(
-                                    builder:
-                                        (
-                                          BuildContext context,
-                                          BoxConstraints constraints,
-                                        ) {
-                                          final Rect rect = _pictureRect(
-                                            constraints.maxWidth,
-                                            imageHeight,
-                                          );
-                                          return Stack(
-                                            children: <Widget>[
-                                              Positioned.fromRect(
-                                                rect: rect,
-                                                child: Opacity(
-                                                  key: ValueKey<String>(
-                                                    'picture-$id',
+                                  child: SizedBox(
+                                    height: imageHeight,
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        color: KitColors.card,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: LayoutBuilder(
+                                        builder:
+                                            (
+                                              BuildContext context,
+                                              BoxConstraints constraints,
+                                            ) {
+                                              final Rect rect = _pictureRect(
+                                                constraints.maxWidth,
+                                                imageHeight,
+                                              );
+                                              return Stack(
+                                                children: <Widget>[
+                                                  Positioned.fromRect(
+                                                    rect: rect,
+                                                    child: Opacity(
+                                                      key: ValueKey<String>(
+                                                        'picture-$id',
+                                                      ),
+                                                      opacity: available
+                                                          ? 1
+                                                          : 0.45,
+                                                      child: ProductImage(
+                                                        url: product.imageUrl,
+                                                        size: rect.width,
+                                                      ),
+                                                    ),
                                                   ),
-                                                  opacity: available ? 1 : 0.45,
-                                                  child: ProductImage(
-                                                    url: product.imageUrl,
-                                                    size: rect.width,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          );
-                                        },
+                                                ],
+                                              );
+                                            },
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: KitCardType.gapAfterPicture),
-                          _sidePadded(
-                            Text(
-                              product.name(language),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: nameSize,
-                                height: nameHeight / nameSize,
-                                fontWeight: FontWeight.w500,
-                                color: textColor,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: KitCardType.gapAfterName),
-                          _sidePadded(
-                            Text(
-                              l10n.catalogApproxPrice(
-                                MoneyFormat.uzs(
-                                  product.customerUnitPriceUzs,
-                                  language,
+                            const SizedBox(height: KitCardType.gapAfterPicture),
+                            _sidePadded(
+                              ExcludeSemantics(
+                                child: Text(
+                                  name,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: nameSize,
+                                    height: nameHeight / nameSize,
+                                    fontWeight: FontWeight.w500,
+                                    color: textColor,
+                                  ),
                                 ),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: priceSize,
-                                height: KitCardType.priceLineHeight,
-                                fontWeight: FontWeight.w700,
-                                color: textColor,
+                            ),
+                            const SizedBox(height: KitCardType.gapAfterName),
+                            _sidePadded(
+                              ExcludeSemantics(
+                                child: Text(
+                                  l10n.catalogApproxPrice(
+                                    MoneyFormat.uzs(
+                                      product.customerUnitPriceUzs,
+                                      language,
+                                    ),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: priceSize,
+                                    height: KitCardType.priceLineHeight,
+                                    fontWeight: FontWeight.w700,
+                                    color: textColor,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: KitCardType.gapAfterPrice),
-                          if (constraints.hasTightHeight) const Spacer(),
-                          _bottomRow(l10n, line, shown, unitSize),
-                        ],
-                      ),
+                            const SizedBox(height: KitCardType.gapAfterPrice),
+                            if (constraints.hasTightHeight) const Spacer(),
+                            _bottomRow(l10n, line, shown, unitSize),
+                          ],
+                        ),
+                  ),
                 ),
-              ),
-              // The heart's glyph is 18 square, centred in a 44 tap box that
-              // lies inside the card, 6 from its top and right edges, so the
-              // glyph stays 19 from them (DL-117).
-              Positioned(
-                top: 6,
-                right: 6,
-                child: _Absorb(
-                  child: SizedBox.square(
-                    dimension: KitCardType.tapSide,
-                    child: IconButton(
-                      key: ValueKey<String>('heart-$id'),
-                      tooltip: favorite
-                          ? l10n.favoriteRemove
-                          : l10n.favoriteAdd,
-                      visualDensity: VisualDensity.standard,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints.tightFor(
-                        width: KitCardType.tapSide,
-                        height: KitCardType.tapSide,
+                // The heart's glyph is 18 square, centred in a 44 tap box that
+                // lies inside the card, 6 from its top and right edges, so the
+                // glyph stays 19 from them (DL-117).
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: _Absorb(
+                    child: SizedBox.square(
+                      dimension: KitCardType.tapSide,
+                      child: IconButton(
+                        key: ValueKey<String>('heart-$id'),
+                        tooltip: favorite
+                            ? l10n.favoriteRemoveSpoken(name)
+                            : l10n.favoriteAddSpoken(name),
+                        visualDensity: VisualDensity.standard,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: KitCardType.tapSide,
+                          height: KitCardType.tapSide,
+                        ),
+                        iconSize: 18,
+                        color: favorite ? KitColors.danger : KitColors.ink,
+                        icon: Icon(
+                          favorite ? Icons.favorite : Icons.favorite_border,
+                        ),
+                        onPressed: _toggleHeart,
                       ),
-                      iconSize: 18,
-                      color: favorite ? KitColors.danger : KitColors.ink,
-                      icon: Icon(
-                        favorite ? Icons.favorite : Icons.favorite_border,
-                      ),
-                      onPressed: _toggleHeart,
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -521,10 +552,18 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
     final bool reduced = MediaQuery.disableAnimationsOf(context);
     // While the stepper shrinks it keeps the last quantity it showed.
     final String? quantity = shown ?? _lastShown;
+    final String? upper = quantity == null
+        ? null
+        : CardQuantity.next(product.unitCode, quantity);
+    final String? lower = quantity == null
+        ? null
+        : CardQuantity.previous(product.unitCode, quantity);
     final Widget row = SizedBox(
       height: KitCardType.bottomRowHeight,
       child: !widget.available
-          ? _Unavailable(id: id, compact: _compact)
+          ? ExcludeSemantics(
+              child: _Unavailable(id: id, compact: _compact),
+            )
           : _stepperShown
           ? LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
@@ -552,30 +591,54 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
                       ),
                     );
                   },
-                  child: _Stepper(
-                    id: id,
-                    side: side,
-                    iconSize: iconSize,
-                    quantity: quantity == null
+                  child: Semantics(
+                    container: true,
+                    label: l10n.cardStepperSpoken(
+                      product.name(interfaceLanguage(context)),
+                    ),
+                    value: quantity == null
                         ? ''
                         : _quantityText(l10n, quantity),
-                    isBin:
-                        quantity != null &&
-                        CardQuantity.previous(product.unitCode, quantity) ==
-                            null,
-                    minusLabel: l10n.cartStepMinus,
-                    binLabel: l10n.cartRemoveLine,
-                    plusLabel: l10n.cartStepPlus,
-                    onMinus: () {
-                      if (shown != null) {
-                        _step(line, shown, up: false);
-                      }
-                    },
-                    onPlus: () {
-                      if (shown != null) {
-                        _step(line, shown, up: true);
-                      }
-                    },
+                    increasedValue: upper == null
+                        ? null
+                        : _quantityText(l10n, upper),
+                    decreasedValue: quantity == null
+                        ? null
+                        : lower == null
+                        ? _quantityText(l10n, '0')
+                        : _quantityText(l10n, lower),
+                    onIncrease: shown == null || upper == null
+                        ? null
+                        : () => _step(line, shown, up: true),
+                    onDecrease: shown == null
+                        ? null
+                        : () => _step(line, shown, up: false),
+                    excludeSemantics: true,
+                    child: _Stepper(
+                      id: id,
+                      side: side,
+                      iconSize: iconSize,
+                      quantity: quantity == null
+                          ? ''
+                          : _quantityText(l10n, quantity),
+                      isBin:
+                          quantity != null &&
+                          CardQuantity.previous(product.unitCode, quantity) ==
+                              null,
+                      minusLabel: l10n.cartStepMinus,
+                      binLabel: l10n.cartRemoveLine,
+                      plusLabel: l10n.cartStepPlus,
+                      onMinus: () {
+                        if (shown != null) {
+                          _step(line, shown, up: false);
+                        }
+                      },
+                      onPlus: () {
+                        if (shown != null) {
+                          _step(line, shown, up: true);
+                        }
+                      },
+                    ),
                   ),
                 );
               },
@@ -587,15 +650,17 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
                     padding: EdgeInsets.only(
                       left: _compact ? KitCardType.padding : 0,
                     ),
-                    child: Text(
-                      l10n.catalogPerUnit(
-                        CatalogLabels.unit(l10n, product.unitCode),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: unitSize,
-                        color: KitColors.muted,
+                    child: ExcludeSemantics(
+                      child: Text(
+                        l10n.catalogPerUnit(
+                          CatalogLabels.unit(l10n, product.unitCode),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: unitSize,
+                          color: KitColors.muted,
+                        ),
                       ),
                     ),
                   ),
@@ -606,7 +671,9 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
                   side: side,
                   iconSize: iconSize,
                   icon: Icons.add,
-                  label: l10n.catalogAdd,
+                  label: l10n.cardAddSpoken(
+                    product.name(interfaceLanguage(context)),
+                  ),
                   onTap: _add,
                 ),
               ],

@@ -49,6 +49,7 @@ Map<String, Object?> cartJson(
   int? total,
   int? minimum,
   int? shortfall,
+  Map<String, Object?>? workingHours,
 }) {
   final int sum =
       subtotal ??
@@ -73,6 +74,7 @@ Map<String, Object?> cartJson(
     'minimum_order_uzs': minimum,
     'minimum_order_shortfall_uzs':
         shortfall ?? (minimum == null ? null : max(0, minimum - sum)),
+    'working_hours': workingHours,
   };
 }
 
@@ -85,6 +87,7 @@ Cart cartOf(
   int? total,
   int? minimum,
   int? shortfall,
+  Map<String, Object?>? workingHours,
 }) => CartApi.parseCart(
   cartJson(
     lines,
@@ -95,6 +98,7 @@ Cart cartOf(
     total: total,
     minimum: minimum,
     shortfall: shortfall,
+    workingHours: workingHours,
   ),
 );
 

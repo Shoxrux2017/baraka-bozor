@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui' show SemanticsAction;
 
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
@@ -19,6 +18,7 @@ import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart
 import 'package:baraka_bozor/features/catalog/presentation/product_photo.dart';
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -154,7 +154,7 @@ void main() {
     );
     expect(find.text('за кг'), findsOneWidget);
     expect(byKey('add-0192f0a0-0000-7000-8000-0000000000a1'), findsOneWidget);
-    expect(find.byTooltip('Добавить'), findsOneWidget);
+    expect(find.byTooltip('Добавить в корзину: Помидор'), findsOneWidget);
     expect(find.text('Добавить'), findsNothing);
   });
 
@@ -342,7 +342,7 @@ void main() {
     await show(tester, tomato, locale: const Locale('uz'));
     expect(find.text('Pomidor'), findsOneWidget);
     expect(find.text('kg uchun'), findsOneWidget);
-    expect(find.byTooltip("Qo'shish"), findsOneWidget);
+    expect(find.byTooltip("Savatga qo'shish: Pomidor"), findsOneWidget);
   });
 
   testWidgets('one tap adds one unit, allowing similar, with no note', (
@@ -903,7 +903,7 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('in the cart it exposes the card, the heart, minus and plus', (
+    testWidgets('in the cart it exposes the card, the heart and the stepper', (
       WidgetTester tester,
     ) async {
       final SemanticsHandle handle = tester.ensureSemantics();
@@ -914,7 +914,8 @@ void main() {
       );
       await show(tester, tomato);
 
-      expect(find.semantics.byAction(SemanticsAction.tap), findsNWidgets(4));
+      expect(find.semantics.byAction(SemanticsAction.tap), findsNWidgets(2));
+      expect(find.semantics.byAction(SemanticsAction.increase), findsOneWidget);
       handle.dispose();
     });
   });
@@ -1021,5 +1022,154 @@ void main() {
         }
       }
     }
+  });
+
+  group('for a screen reader (DL-125)', () {
+    const String cartLine = '0192f0a0-0000-7000-8000-0000000000b1';
+    final CatalogProduct priced = catalogProduct(
+      id: '0192f0a0-0000-7000-8000-0000000000a1',
+      customerUnitPriceUzs: 12075,
+    );
+    final String spoken =
+        'Помидор, примерно ${MoneyFormat.uzs(12075, AppLanguage.ru)} за '
+        'килограмм';
+
+    testWidgets('the card is one stop that names the product and its price', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await show(tester, priced);
+
+      final SemanticsNode node = tester.getSemantics(
+        byKey('card-semantics-${priced.id}'),
+      );
+      expect(node.label, spoken);
+      expect(
+        find.semantics.byLabel('Помидор'),
+        findsNothing,
+        reason: 'the name says nothing apart',
+      );
+      expect(find.semantics.byLabel(RegExp('≈')), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('in the cart it says how much', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[lineOf(priced, '1', cartLine)]),
+      );
+      await show(tester, priced);
+
+      expect(
+        tester.getSemantics(byKey('card-semantics-${priced.id}')).label,
+        '$spoken. В корзине ${_qty('1', 'кг')}',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('a card no longer sold says so', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await show(tester, priced, available: false);
+
+      expect(
+        tester.getSemantics(byKey('card-semantics-${priced.id}')).label,
+        '$spoken. Нет в продаже',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('the add and the heart name the product', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await show(tester, priced);
+
+      expect(
+        tester.getSemantics(byKey('add-${priced.id}')).tooltip,
+        'Добавить в корзину: Помидор',
+      );
+      expect(
+        tester.getSemantics(byKey('heart-${priced.id}')).tooltip,
+        'Добавить в избранное: Помидор',
+      );
+      expect(
+        tester.widget<IconButton>(byKey('heart-${priced.id}')).tooltip,
+        'Добавить в избранное: Помидор',
+      );
+      await tester.tap(byKey('heart-${priced.id}'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getSemantics(byKey('heart-${priced.id}')).tooltip,
+        'Убрать из избранного: Помидор',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('the stepper is one adjustable node', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[lineOf(priced, '1', cartLine)]),
+      );
+      await show(tester, priced);
+
+      final SemanticsData data = tester
+          .getSemantics(find.bySemanticsLabel('Помидор в корзине'))
+          .getSemanticsData();
+      expect(data.value, _qty('1', 'кг'));
+      expect(data.increasedValue, _qty('1,5', 'кг'));
+      expect(data.decreasedValue, _qty('0,5', 'кг'));
+      expect(data.hasAction(SemanticsAction.increase), isTrue);
+      expect(data.hasAction(SemanticsAction.decrease), isTrue);
+      expect(find.bySemanticsLabel('Убрать из корзины'), findsNothing);
+      expect(find.bySemanticsLabel('Увеличить'), findsNothing);
+
+      cart.answer = cartOf(<Map<String, Object?>>[
+        lineOf(priced, '1.5', cartLine),
+      ]);
+      tester.semantics.increase(find.semantics.byLabel('Помидор в корзине'));
+      await settleStep(tester);
+      expect(cart.patches.single.quantity, '1.5');
+      handle.dispose();
+    });
+
+    testWidgets('the decrease at the smallest step removes the line', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[lineOf(priced, '0.5', cartLine)]),
+      );
+      await show(tester, priced);
+
+      cart.answer = cartOf(<Map<String, Object?>>[]);
+      tester.semantics.decrease(find.semantics.byLabel('Помидор в корзине'));
+      await tester.pumpAndSettle();
+      expect(
+        cart.calls.where((String c) => c.startsWith('remove')),
+        isNotEmpty,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('the card speaks Uzbek', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[lineOf(priced, '1', cartLine)]),
+      );
+      await show(tester, priced, locale: const Locale('uz'));
+
+      expect(
+        tester.getSemantics(byKey('card-semantics-${priced.id}')).label,
+        'Pomidor, taxminan ${MoneyFormat.uzs(12075, AppLanguage.uz)}, 1 '
+        'kilogramm uchun. Savatda ${_qty('1', 'kg')}',
+      );
+      expect(
+        tester.getSemantics(byKey('heart-${priced.id}')).tooltip,
+        "Sevimlilarga qo'shish: Pomidor",
+      );
+      handle.dispose();
+    });
   });
 }

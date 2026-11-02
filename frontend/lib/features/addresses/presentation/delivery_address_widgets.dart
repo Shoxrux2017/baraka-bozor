@@ -8,6 +8,7 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/skeleton_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../application/addresses_controllers.dart';
 import '../application/delivery_address.dart';
@@ -23,8 +24,14 @@ class DeliveryAddressLine extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final (String value, String? detail, VoidCallback? onTap) = switch (ref
-        .watch(deliveryAddressProvider)) {
+    final AsyncValue<Address?> current = ref.watch(deliveryAddressProvider);
+    final bool loading =
+        current is! AsyncData<Address?> && current is! AsyncError<Address?>;
+    final (
+      String value,
+      String? detail,
+      VoidCallback? onTap,
+    ) = switch (current) {
       AsyncData<Address?>(value: final Address address) => (
         address.label ?? address.streetLine,
         address.label == null ? null : address.streetLine,
@@ -43,10 +50,10 @@ class DeliveryAddressLine extends ConsumerWidget {
         null,
         () => ref.invalidate(addressesProvider),
       ),
-      _ => ('…', null, null),
+      _ => ('', null, null),
     };
 
-    return InkWell(
+    final Widget line = InkWell(
       key: const ValueKey<String>('delivery-address'),
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -61,29 +68,38 @@ class DeliveryAddressLine extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Flexible(
-                        child: Text(
-                          value,
-                          key: const ValueKey<String>('delivery-address-value'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: KitColors.ink,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
+                  if (loading) ...<Widget>[
+                    // Two bars stand where the label and the street will be
+                    // (`DL-125`).
+                    const SkeletonBar(width: 90, height: 14),
+                    const SizedBox(height: 6),
+                    const SkeletonBar(width: 170, height: 10),
+                  ] else
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Flexible(
+                          child: Text(
+                            value,
+                            key: const ValueKey<String>(
+                              'delivery-address-value',
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: KitColors.ink,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                      const Icon(
-                        Icons.keyboard_arrow_down,
-                        size: 20,
-                        color: KitColors.ink,
-                      ),
-                    ],
-                  ),
+                        const Icon(
+                          Icons.keyboard_arrow_down,
+                          size: 20,
+                          color: KitColors.ink,
+                        ),
+                      ],
+                    ),
                   if (detail != null)
                     Text(
                       detail,
@@ -100,6 +116,23 @@ class DeliveryAddressLine extends ConsumerWidget {
           ],
         ),
       ),
+    );
+    // With an address the line is one button that says where the order goes
+    // (`DL-125`).
+    final Address? chosen = current.value;
+    if (current is! AsyncData<Address?> || chosen == null) {
+      return line;
+    }
+    return Semantics(
+      button: true,
+      excludeSemantics: true,
+      label: l10n.deliveryAddressSpoken(
+        chosen.label == null
+            ? chosen.streetLine
+            : '${chosen.label}, ${chosen.streetLine}',
+      ),
+      onTap: onTap,
+      child: line,
     );
   }
 }

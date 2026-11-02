@@ -12,6 +12,7 @@ import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/routing/app_paths.dart';
+import '../../../core/state/loaded.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/kit_app_bar.dart';
@@ -224,36 +225,40 @@ class _PickCategories extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
-    final AsyncValue<List<CatalogCategory>> sections = ref.watch(
+    final AsyncValue<Loaded<List<CatalogCategory>>> sections = ref.watch(
       catalogCategoriesProvider,
     );
-
-    return sections.when(
-      skipLoadingOnRefresh: !sections.hasError,
-      data: (List<CatalogCategory> categories) => categories.isEmpty
-          ? Center(child: Text(l10n.catalogNoProducts))
-          : ListView(
-              key: const ValueKey<String>('pick-categories'),
-              children: <Widget>[
-                for (final CatalogCategory category in categories)
-                  ListTile(
-                    key: ValueKey<String>('pick-category-${category.id}'),
-                    leading: const Icon(Icons.category_outlined),
-                    title: Text(category.name(language)),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => onPick(category),
-                  ),
-              ],
-            ),
-      error: (Object error, StackTrace _) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: LoadFailure(
-          error: error,
-          onRetry: () => ref.invalidate(catalogCategoriesProvider),
+    // The categories kept from the last load stand when a refresh failed.
+    final List<CatalogCategory>? kept = sections.value?.data;
+    if (kept == null) {
+      return sections.when(
+        data: (Loaded<List<CatalogCategory>> _) => const SizedBox.shrink(),
+        error: (Object error, StackTrace _) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: LoadFailure(
+            error: error,
+            onRetry: () => ref.invalidate(catalogCategoriesProvider),
+          ),
         ),
-      ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-    );
+        loading: () => const Center(child: CircularProgressIndicator()),
+      );
+    }
+    final List<CatalogCategory> categories = kept;
+    return categories.isEmpty
+        ? Center(child: Text(l10n.catalogNoProducts))
+        : ListView(
+            key: const ValueKey<String>('pick-categories'),
+            children: <Widget>[
+              for (final CatalogCategory category in categories)
+                ListTile(
+                  key: ValueKey<String>('pick-category-${category.id}'),
+                  leading: const Icon(Icons.category_outlined),
+                  title: Text(category.name(language)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => onPick(category),
+                ),
+            ],
+          );
   }
 }
 

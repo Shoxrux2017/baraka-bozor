@@ -324,7 +324,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final List<(String, String, String)> cases = <(String, String, String)>[
-      ('open-home', 'home-body', 'home'),
+      ('open-home', 'home-scroll', 'home'),
       ('open-favorites', 'favorites-grid', 'favorites'),
       ('open-orders', 'orders-list', 'orders'),
       ('open-profile', 'profile-list', 'profile'),

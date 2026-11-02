@@ -22,7 +22,7 @@ Rules for every stage:
 | 3 | Cart and the card's stepper | 8 | — | Merged (PR #123) |
 | 4 | Checkout | 10 | — | Merged (PR #125) |
 | 5 | Product | 9 | — | Merged (PR #126) |
-| 6 | Home and categories | 14 | working hours | Planned |
+| 6 | Home and categories | 14 | working hours | In review |
 | 7 | Category screen and product lists | 10 | — | Planned |
 | 8 | «Рекомендуем» and «Все товары» | 7 | list order | Planned |
 | 9 | Search | 8 | — | Planned |
@@ -350,6 +350,8 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - The 44 stepper squeezes the cart line's sum, which is scaled down to fit. Measured width of the sum: 68 to 52 px at 320 wide, 108 to 92 at 360, 123 to 107 at 375. On a 320 px phone a sum like "≈ 127 600 so'm" is drawn at about 40 % of its size. Stage 3 (`cart-7`) fixes it when it redraws the line (`DL-117` (9)). Fixed: the sum now stands over the stepper when the two do not fit side by side (`DL-119` (4)).
 - The app has no page transitions and no iOS back-swipe: go_router 18.0.1 recognises a Material app by `package:material_ui`'s `MaterialApp`, a different class from `package:flutter/material.dart`'s in Flutter 3.47.5, so every route gets go_router's `NoTransitionPage` (since the scaffold, `32bdcbb`). Stage 5 gives only the product route its own `MaterialPage`, so its photo can fly (`DL-122` (1)). The fix — one page builder for every route, then the tests that assume an instant push — is a task of its own; the Owner places it in the batch. Fixed: one page builder for every route; pages opened over another slide in, with the iOS back-swipe, and flat pages stand in place (`DL-124`).
 
+- The app reads the cart's `working_hours` as a required key (`DL-125` (7)), so a build of stage 6 or later refuses the cart answer of an older server. Deploy the backend before any such build reaches a phone (W4-5).
+
 ## Review findings not acted on
 
 - Stage 1 re-review, P3: the panel's pending-approval tag now sits on `warningWash`, the same ground as its card, so "pending" shows as text without a pill (still 4.96:1). Ruling: panel only and readable; the smallest fix is a white ground for that tag (`order_actions.dart`, the `tagGround` switch), taken with the next stage that touches the panel.
@@ -367,3 +369,11 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stage 4 walk, minor: the closed wish field was not dimmed, although the drawing has `.w-in:disabled{opacity:.45}`. Fixed in stage 5: `CheckoutWishField` is drawn at opacity 0.45 while it is not enabled (`DL-122`).
 - Stage 5, minor: at the bin the quantity's `decreasedValue` reads «0 кг» (Flutter needs a value with every decrease); `cartRemoveLine` would say what happens. Ruling: harmless — the bin removes with «Вернуть»; taken when the bar is next touched.
 - Stage 5 re-review, P3: the bin is not a tracked change, so when it is tapped while a note or a rule is on its way and the removal then fails, the screen's "on its way" flags stay set and the server's note and rule are not put back until the next change. Ruling: needs a pending note or rule, a bin tap and a failed removal at once, and the next change clears it; the fix (clear both flags in the bin's path) goes with the next stage that touches the product screen.
+- Stage 6 final review, P3: on a failed pull TalkBack may hear the stale line twice — once from its live region and once from the pull's announcement. Ruling: iOS speaks only the announcement, so both stay; Android may repeat one phrase.
+- Stage 6 final review, P3: open questions are filtered by the device clock, so a phone running fast drops the banner and the «Заказы» count early by its offset. Ruling: display only, as planned; the order page still shows the question.
+- Stage 6, minor: the banner's spoken minutes follow its rebuilds (the 30 s reload), while the visible chip counts down on its own timer. Ruling: at most a minute off; kept.
+- Stage 6, minor: the home stays mounted on a hidden tab, so a question that appears there (only after an order action, since its refresh waits while hidden) buzzes and is announced from the hidden home. Ruling: rare, and the expiry notice is the only one a screen-reader user gets on the order page; kept.
+- Stage 6 re-review, P3: while `StaleDataLine` is busy its button holds only a spinner, so a screen reader meets an unlabelled disabled button during the retry. Ruling: taken with stage 7, which reuses the line on the category screen (`catpage-2`); the fix is a label («Обновляем…») on the busy button.
+- Stage 6 re-review, P3: the order editor's picker keeps a dead `data:` branch in its `sections.when`, there only to satisfy `when`. Ruling: harmless; replaced by a `switch` with stage 13, which touches the picker.
+- Stage 6 re-review, P3: `StoreClosedLine` and `QuestionBanner` start their `AppLifecycleListener` with a bare `_lifecycle;` statement in `initState`. Ruling: works; assign it explicitly when either is next touched.
+- Stage 6 re-review, P3: the category screen now keeps its rail after a failed refresh but shows no stale line there. Ruling: stage 7 (`catpage-2`) brings the stale line to the category screen.

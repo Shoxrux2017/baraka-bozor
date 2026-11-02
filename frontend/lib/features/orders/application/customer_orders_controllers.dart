@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/misc.dart'
 
 import '../../../app/providers.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/platform/clock.dart';
 import '../../../core/network/idempotency_key.dart';
 import '../../../core/network/paged.dart';
 import '../../../core/orders/order_values.dart';
@@ -81,23 +82,43 @@ customerOrdersProvider = AsyncNotifierProvider.autoDispose
       CustomerOrdersListController.new,
     );
 
-/// The question to put on the home banner: of the first page of pending
-/// questions, the one expiring first; `null` when none waits.
-final FutureProvider<PendingQuestion?> pendingQuestionProvider =
-    FutureProvider.autoDispose<PendingQuestion?>((Ref ref) async {
+/// Every question a Shopper waits on, the one expiring first at the head
+/// (`DL-125`).
+final FutureProvider<List<PendingQuestion>> pendingQuestionsProvider =
+    FutureProvider.autoDispose<List<PendingQuestion>>((Ref ref) async {
       if (ref.watch(customerAccountProvider) == null) {
-        return Completer<PendingQuestion?>().future;
+        return Completer<List<PendingQuestion>>().future;
       }
       final List<PendingQuestion> questions = await ref
           .watch(customerOrdersRepositoryProvider)
           .pendingQuestions();
-      PendingQuestion? first;
-      for (final PendingQuestion question in questions) {
-        if (first == null || question.expiresAt.isBefore(first.expiresAt)) {
-          first = question;
-        }
+      return List<PendingQuestion>.of(questions)..sort(
+        (PendingQuestion a, PendingQuestion b) =>
+            a.expiresAt.compareTo(b.expiresAt),
+      );
+    });
+
+/// The questions still open: the last list that loaded, kept while a refresh
+/// fails, without those whose time to answer is over. It changes at the
+/// moment the earliest of them expires.
+final Provider<List<PendingQuestion>> openQuestionsProvider =
+    Provider.autoDispose<List<PendingQuestion>>((Ref ref) {
+      final List<PendingQuestion> loaded =
+          ref.watch(pendingQuestionsProvider).value ??
+          const <PendingQuestion>[];
+      final DateTime now = ref.watch(clockProvider)();
+      final List<PendingQuestion> open = <PendingQuestion>[
+        for (final PendingQuestion question in loaded)
+          if (question.expiresAt.isAfter(now)) question,
+      ];
+      if (open.isNotEmpty) {
+        final Timer timer = Timer(
+          open.first.expiresAt.difference(now),
+          ref.invalidateSelf,
+        );
+        ref.onDispose(timer.cancel);
       }
-      return first;
+      return open;
     });
 
 /// One of the Customer's orders.
@@ -129,7 +150,7 @@ abstract class OrderMutation extends AccountMutation {
   void reload(Object? _) => ref
     ..invalidate(customerOrderProvider(orderId))
     ..invalidate(customerOrdersProvider)
-    ..invalidate(pendingQuestionProvider);
+    ..invalidate(pendingQuestionsProvider);
 }
 
 /// The order's edit: every line it keeps and the delivery wish.

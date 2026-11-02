@@ -47,7 +47,8 @@ class MoreInCategory extends ConsumerWidget {
     final CatalogCategory? category = ref
         .watch(catalogCategoriesProvider)
         .value
-        ?.where((CatalogCategory c) => c.id == product.categoryId)
+        ?.data
+        .where((CatalogCategory c) => c.id == product.categoryId)
         .firstOrNull;
     final double extent = kitCardExtent(
       MediaQuery.textScalerOf(context),

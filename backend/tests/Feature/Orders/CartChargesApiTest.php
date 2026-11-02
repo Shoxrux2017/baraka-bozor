@@ -146,13 +146,38 @@ final class CartChargesApiTest extends TestCase
         $changed = $this->asCustomer()->patchJson(self::ITEMS.'/'.$line, ['quantity' => '2'])->assertOk();
         $removed = $this->asCustomer()->deleteJson(self::ITEMS.'/'.$line)->assertOk();
 
-        foreach ([$added, $changed, $removed] as $response) {
+        $shown = $this->asCustomer()->getJson(self::CART)->assertOk();
+
+        foreach ([$added, $changed, $removed, $shown] as $response) {
             foreach (self::KEYS as $key) {
                 $this->assertArrayHasKey($key, $response->json('data'), $key);
             }
+            $this->assertArrayHasKey('working_hours', $response->json('data'));
         }
         $this->assertSame(36800 + 3000 + 12000, $changed->json('data.estimated_total_uzs'));
         $this->assertSame(50000, $removed->json('data.minimum_order_shortfall_uzs'));
+    }
+
+    public function test_the_cart_answers_the_working_hours(): void
+    {
+        $this->settings(['opens_at' => '08:00', 'closes_at' => '22:00']);
+
+        $data = $this->asCustomer()->getJson(self::CART)->assertOk()->json('data');
+
+        $this->assertSame(['opens_at' => '08:00', 'closes_at' => '22:00'], $data['working_hours']);
+    }
+
+    public function test_always_open_and_unset_hours_answer_null(): void
+    {
+        $this->settings(['opens_at' => '00:00', 'closes_at' => '23:59']);
+        $data = $this->asCustomer()->getJson(self::CART)->assertOk()->json('data');
+        $this->assertArrayHasKey('working_hours', $data);
+        $this->assertNull($data['working_hours']);
+
+        $this->settings(['opens_at' => null, 'closes_at' => null]);
+        $data = $this->asCustomer()->getJson(self::CART)->assertOk()->json('data');
+        $this->assertArrayHasKey('working_hours', $data);
+        $this->assertNull($data['working_hours']);
     }
 
     /**

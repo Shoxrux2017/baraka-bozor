@@ -5930,12 +5930,6 @@ abstract class AppLocalizations {
   /// **'{unit} uchun'**
   String catalogPerUnit(String unit);
 
-  /// No description provided for @catalogAdd.
-  ///
-  /// In uz, this message translates to:
-  /// **'Qo\'shish'**
-  String get catalogAdd;
-
   /// No description provided for @catalogUnavailable.
   ///
   /// In uz, this message translates to:
@@ -6559,12 +6553,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Yig\'uvchi javobingizni kutmoqda'**
   String get questionBannerTitle;
-
-  /// No description provided for @questionBannerOrder.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtma № {number} · {time} gacha javob bering'**
-  String questionBannerOrder(String number, String time);
 
   /// No description provided for @questionAnswer.
   ///
@@ -7381,6 +7369,162 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Aloqa yo\'q — savat avvalgidek qoldi'**
   String get cartNotSaved;
+
+  /// No description provided for @staleOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q'**
+  String get staleOffline;
+
+  /// No description provided for @staleFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilab bo\'lmadi'**
+  String get staleFailed;
+
+  /// No description provided for @staleShownAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'{time} holatiga'**
+  String staleShownAt(String time);
+
+  /// No description provided for @staleRefresh.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilash'**
+  String get staleRefresh;
+
+  /// No description provided for @staleSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{reason}. {time} holatidagi ma\'lumotlar ko\'rsatilgan'**
+  String staleSpoken(String reason, String time);
+
+  /// No description provided for @deadlineLeft.
+  ///
+  /// In uz, this message translates to:
+  /// **'{minutes} daqiqa qoldi'**
+  String deadlineLeft(int minutes);
+
+  /// No description provided for @deadlineLeftSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{minutes} daqiqa qoldi'**
+  String deadlineLeftSpoken(int minutes);
+
+  /// No description provided for @refreshDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilandi'**
+  String get refreshDone;
+
+  /// No description provided for @cartSummarySpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savat: {count}, taxminan {sum}. Savatga'**
+  String cartSummarySpoken(String count, String sum);
+
+  /// No description provided for @deliveryAddressSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berish manzili: {address}. O\'zgartirish'**
+  String deliveryAddressSpoken(String address);
+
+  /// No description provided for @catalogSearchSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotlarni qidirish'**
+  String get catalogSearchSpoken;
+
+  /// No description provided for @homeCategoriesAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha kategoriyalar'**
+  String get homeCategoriesAll;
+
+  /// No description provided for @recommendedAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha tavsiyalar'**
+  String get recommendedAll;
+
+  /// No description provided for @cardSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, taxminan {price}, 1 {unit, select, kg{kilogramm} gram{gramm} piece{dona} liter{litr} package{qadoq} box{quti} bundle{bog\'} meter{metr} other{birlik}} uchun'**
+  String cardSpoken(String name, String price, String unit);
+
+  /// No description provided for @cardInCartSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{card}. Savatda {quantity}'**
+  String cardInCartSpoken(String card, String quantity);
+
+  /// No description provided for @cardAddSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga qo\'shish: {name}'**
+  String cardAddSpoken(String name);
+
+  /// No description provided for @cardStepperSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name} savatda'**
+  String cardStepperSpoken(String name);
+
+  /// No description provided for @favoriteAddSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilarga qo\'shish: {name}'**
+  String favoriteAddSpoken(String name);
+
+  /// No description provided for @favoriteRemoveSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilardan olib tashlash: {name}'**
+  String favoriteRemoveSpoken(String name);
+
+  /// No description provided for @questionBannerUntil.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} · {time} gacha'**
+  String questionBannerUntil(String number, String time);
+
+  /// No description provided for @questionSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi javobingizni kutmoqda. Buyurtma № {number}, {left}. Javob berish'**
+  String questionSpoken(String number, String left);
+
+  /// No description provided for @questionArrived.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi № {number} buyurtma haqida so\'ramoqda. {left}'**
+  String questionArrived(String number, String left);
+
+  /// No description provided for @questionExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob berish vaqti tugadi'**
+  String get questionExpired;
+
+  /// No description provided for @homeNavOrdersWaiting.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar, javob kutilmoqda: {count}'**
+  String homeNavOrdersWaiting(int count);
+
+  /// No description provided for @homeClosedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir yopiq.'**
+  String get homeClosedTitle;
+
+  /// No description provided for @homeClosedBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani hozir qabul qilamiz, soat {time} dan yig\'ib, yetkazib beramiz'**
+  String homeClosedBody(String time);
 }
 
 class _AppLocalizationsDelegate

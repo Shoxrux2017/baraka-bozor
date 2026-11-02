@@ -10,6 +10,7 @@ class SectionTitle extends StatelessWidget {
     required this.title,
     required this.seeAllKey,
     required this.onSeeAll,
+    this.seeAllLabel,
     super.key,
   });
 
@@ -19,37 +20,61 @@ class SectionTitle extends StatelessWidget {
   /// `null` leaves "Все" out.
   final VoidCallback? onSeeAll;
 
+  /// What "Все" opens, for a screen reader; the title is a heading
+  /// (`DL-125`).
+  final String? seeAllLabel;
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: KitColors.ink,
+    final Widget title = Semantics(
+      header: true,
+      child: Text(
+        this.title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: KitColors.ink,
+        ),
+      ),
+    );
+    final VoidCallback? onSeeAll = this.onSeeAll;
+    final Widget? seeAll = onSeeAll == null
+        ? null
+        : TextButton(
+            key: ValueKey<String>(seeAllKey),
+            style: TextButton.styleFrom(
+              foregroundColor: KitColors.primaryDark,
+              textStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-          if (onSeeAll != null)
-            TextButton(
-              key: ValueKey<String>(seeAllKey),
-              style: TextButton.styleFrom(
-                foregroundColor: KitColors.primaryDark,
-                textStyle: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              onPressed: onSeeAll,
+            onPressed: onSeeAll,
+            child: Semantics(
+              label: seeAllLabel,
+              excludeSemantics: seeAllLabel != null,
               child: Text(AppLocalizations.of(context).homeSeeAll),
             ),
-        ],
-      ),
+          );
+    // A large text leaves the title no room beside "Все": it goes under it
+    // (`DL-125`).
+    final bool stacked = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+      child: stacked && seeAll != null
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                title,
+                Align(alignment: AlignmentDirectional.centerEnd, child: seeAll),
+              ],
+            )
+          : Row(
+              children: <Widget>[
+                Expanded(child: title),
+                ?seeAll,
+              ],
+            ),
     );
   }
 }

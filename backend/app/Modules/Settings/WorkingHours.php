@@ -62,6 +62,12 @@ final readonly class WorkingHours
         return sprintf('%02d:%02d', intdiv($this->opens, 60), $this->opens % 60);
     }
 
+    /** `HH:MM`, for the client's "closed now" line (`DL-125`). */
+    public function closesAt(): string
+    {
+        return sprintf('%02d:%02d', intdiv($this->closes, 60), $this->closes % 60);
+    }
+
     private static function minutes(string $time): int
     {
         if (preg_match('/^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?\z/', $time, $parts) !== 1) {

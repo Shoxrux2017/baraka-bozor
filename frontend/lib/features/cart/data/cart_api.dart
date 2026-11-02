@@ -9,6 +9,7 @@ import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/storage/token_store.dart';
 import '../domain/cart.dart';
+import '../domain/store_hours.dart';
 
 /// The data source for `docs/09-api-contracts.md` section 17, on the
 /// Customer session, with its strict parsing. Every answer is the whole
@@ -140,6 +141,8 @@ class CartApi {
     if (shortfall != null && minimum != null && shortfall > minimum) {
       throw const FormatException('the shortfall is more than the minimum');
     }
+    final Object? rawHours = json.member('working_hours');
+    final StoreHours? hours = rawHours == null ? null : _parseHours(rawHours);
     return Cart(
       id: json.uuid('id'),
       lines: lines,
@@ -150,6 +153,16 @@ class CartApi {
       estimatedTotalUzs: total,
       minimumOrderUzs: minimum,
       minimumShortfallUzs: shortfall,
+      hours: hours,
+    );
+  }
+
+  /// The working hours: both times `HH:MM`, or the cart is refused.
+  static StoreHours _parseHours(Object rawHours) {
+    final JsonFields hours = JsonFields.of(rawHours, 'working_hours');
+    return StoreHours.parse(
+      hours.string('opens_at'),
+      hours.string('closes_at'),
     );
   }
 

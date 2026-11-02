@@ -2199,7 +2199,6 @@
       }
     }
   },
-  "catalogAdd": "Qo'shish",
   "catalogUnavailable": "Sotuvda yo'q",
   "favoriteFailed": "Saqlab bo'lmadi. Qayta urinib ko'ring",
   "favoritesFull": "Sevimlilar to'ldi: 500 tadan ko'p bo'lmaydi",
@@ -2519,17 +2518,6 @@
   "reorderRepeatOrder": "Buyurtmani takrorlash",
   "reorderSending": "Savatga qo'shilmoqda",
   "questionBannerTitle": "Yig'uvchi javobingizni kutmoqda",
-  "questionBannerOrder": "Buyurtma № {number} · {time} gacha javob bering",
-  "@questionBannerOrder": {
-    "placeholders": {
-      "number": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "questionAnswer": "Javob berish",
   "ordersTabCurrent": "Joriy",
   "ordersTabPast": "O'tgan",
@@ -2922,5 +2910,174 @@
     }
   },
   "cartRemoveLine": "Savatdan olib tashlash",
-  "cartNotSaved": "Aloqa yo'q — savat avvalgidek qoldi"
+  "cartNotSaved": "Aloqa yo'q — savat avvalgidek qoldi",
+  "staleOffline": "Aloqa yo'q",
+  "staleFailed": "Yangilab bo'lmadi",
+  "staleShownAt": "{time} holatiga",
+  "@staleShownAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "staleRefresh": "Yangilash",
+  "staleSpoken": "{reason}. {time} holatidagi ma'lumotlar ko'rsatilgan",
+  "@staleSpoken": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "deadlineLeft": "{minutes} daqiqa qoldi",
+  "@deadlineLeft": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "deadlineLeftSpoken": "{minutes} daqiqa qoldi",
+  "@deadlineLeftSpoken": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "refreshDone": "Yangilandi",
+  "cartSummarySpoken": "Savat: {count}, taxminan {sum}. Savatga",
+  "@cartSummarySpoken": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "deliveryAddressSpoken": "Yetkazib berish manzili: {address}. O'zgartirish",
+  "@deliveryAddressSpoken": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogSearchSpoken": "Mahsulotlarni qidirish",
+  "homeCategoriesAll": "Barcha kategoriyalar",
+  "recommendedAll": "Barcha tavsiyalar",
+  "cardSpoken": "{name}, taxminan {price}, 1 {unit, select, kg{kilogramm} gram{gramm} piece{dona} liter{litr} package{qadoq} box{quti} bundle{bog'} meter{metr} other{birlik}} uchun",
+  "@cardSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "cardInCartSpoken": "{card}. Savatda {quantity}",
+  "@cardInCartSpoken": {
+    "placeholders": {
+      "card": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "cardAddSpoken": "Savatga qo'shish: {name}",
+  "@cardAddSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cardStepperSpoken": "{name} savatda",
+  "@cardStepperSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "favoriteAddSpoken": "Sevimlilarga qo'shish: {name}",
+  "@favoriteAddSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "favoriteRemoveSpoken": "Sevimlilardan olib tashlash: {name}",
+  "@favoriteRemoveSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "questionBannerUntil": "Buyurtma № {number} · {time} gacha",
+  "@questionBannerUntil": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "questionSpoken": "Yig'uvchi javobingizni kutmoqda. Buyurtma № {number}, {left}. Javob berish",
+  "@questionSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "questionArrived": "Yig'uvchi № {number} buyurtma haqida so'ramoqda. {left}",
+  "@questionArrived": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "questionExpired": "Javob berish vaqti tugadi",
+  "homeNavOrdersWaiting": "Buyurtmalar, javob kutilmoqda: {count}",
+  "@homeNavOrdersWaiting": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeClosedTitle": "Hozir yopiq.",
+  "homeClosedBody": "Buyurtmani hozir qabul qilamiz, soat {time} dan yig'ib, yetkazib beramiz",
+  "@homeClosedBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  }
 }

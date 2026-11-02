@@ -1880,3 +1880,18 @@ The app had no page transition and no iOS back-swipe. Every route now builds its
 4. **The product.** Its own `MaterialPage` (`DL-122` (1)) folds into `appPage`.
 5. **Tests.** No test relied on an instant page. The checkout's placed-card helper now reads the nearest `FadeTransition`, since the page's own fade sits above it; no assertion changed.
 6. **Owner.** This task is a session of its own before stage 6 (2026-11-02, option «1»).
+
+## DL-125 — The Apple batch, stage 6: home and categories (2026-11-02, agent; item `home-10` Owner)
+
+Stage 6 of `tasks/APPLE_BATCH.md` codes the fourteen items of the home and «Все категории», `home-*` and `cats-*`.
+
+1. **One scroll** (`home-2`, reproduced on the emulator first). The mode bar and the address scroll away on the home and the search sticks; every other screen keeps the mode bar fixed (`DL-75`).
+2. **No filter button** (`home-3`). Sorting stays in the product lists; this supersedes `DL-83` (3)'s "the home's filter button always opens every product".
+3. **Loading and offline** (`home-4`, `cats-6`). `Loaded<T>` keeps a load's time; `StaleDataLine` in `core/` says «Нет связи» for a network failure and «Не удалось обновить» for another; skeletons pulse while loading and stand still after a failure; a pull refreshes. The stale line puts its button under its words above text scale 1.3; `FadeInSliver` in `core/` fades data in after skeletons.
+4. **The question** (`home-7`). Open questions drop at their expiry by a timer; `DeadlineChip` in `core/`; a count on «Заказы» on every tab; the banner comes and goes through `Fold` (300 ms, the app's one unfold, not the drawing's 260). The open questions keep the last loaded list while a refresh fails; the spoken minutes follow the banner's rebuilds, while the chip counts on its own timer.
+5. **Large text and width** (`home-8`, `cats-3`, `cats-4`). One column rule for both grids; recommended cards 150 to 260 wide. `SectionTitle` puts «Все» under the title at text ×2.
+6. **Screen reader** (`home-9`, `cats-7`). The address with «доставка», named «Все», headings; the card as one phrase, a named «+», a named heart (the card's part of `fav-8`) and one adjustable stepper; tiles as name and button; the cart bar as one phrase. The heart and «+» are named through their tooltips.
+7. **Closed (Owner, 2026-10-25, home test item 10).** «Сейчас закрыто. Заказ примем сейчас, соберём и привезём с 8:00» — customer-facing text. The cart answers `working_hours`: the Customer resource every screen with a cart button already holds, so no new request; the app compares it with its clock for this line only, and checkout's preview still decides (`docs/07` section 26, `BR-CHK-009`). `working_hours` is a required key of the cart answer in the app; the line writes the opening time as «8:00»; a closed store learnt after the first frame unfolds the line.
+8. **Title** (`cats-1`). «Категории», as the home and the kit's drawing 10б.
+9. **Cart bar on «Все категории»** (`cats-2`). Extends `DL-80` (3).
+10. **Press and flight** (`cats-5`). `PressScale` in `core/`; each tile owns its hero tag and hands it to the category route, so a category on two screens in the stack never shares a tag (as `DL-122` (1)).

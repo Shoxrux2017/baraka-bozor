@@ -3457,9 +3457,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get catalogAdd => 'Добавить';
-
-  @override
   String get catalogUnavailable => 'Нет в продаже';
 
   @override
@@ -3890,11 +3887,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get questionBannerTitle => 'Сборщик ждёт вашего ответа';
-
-  @override
-  String questionBannerOrder(String number, String time) {
-    return 'Заказ № $number · ответьте до $time';
-  }
 
   @override
   String get questionAnswer => 'Ответить';
@@ -4397,4 +4389,135 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get cartNotSaved => 'Нет связи — в корзине осталось как было';
+
+  @override
+  String get staleOffline => 'Нет связи';
+
+  @override
+  String get staleFailed => 'Не удалось обновить';
+
+  @override
+  String staleShownAt(String time) {
+    return 'данные на $time';
+  }
+
+  @override
+  String get staleRefresh => 'Обновить';
+
+  @override
+  String staleSpoken(String reason, String time) {
+    return '$reason. Показаны данные на $time';
+  }
+
+  @override
+  String deadlineLeft(int minutes) {
+    return 'Осталось $minutes мин';
+  }
+
+  @override
+  String deadlineLeftSpoken(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes минуты',
+      many: '$minutes минут',
+      few: '$minutes минуты',
+      one: '$minutes минута',
+    );
+    return 'осталось $_temp0';
+  }
+
+  @override
+  String get refreshDone => 'Обновлено';
+
+  @override
+  String cartSummarySpoken(String count, String sum) {
+    return 'Корзина: $count, примерно $sum. В корзину';
+  }
+
+  @override
+  String deliveryAddressSpoken(String address) {
+    return 'Адрес доставки: $address. Изменить';
+  }
+
+  @override
+  String get catalogSearchSpoken => 'Поиск товаров';
+
+  @override
+  String get homeCategoriesAll => 'Все категории';
+
+  @override
+  String get recommendedAll => 'Все рекомендуемые';
+
+  @override
+  String cardSpoken(String name, String price, String unit) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'kg': 'килограмм',
+      'gram': 'грамм',
+      'piece': 'штуку',
+      'liter': 'литр',
+      'package': 'упаковку',
+      'box': 'коробку',
+      'bundle': 'пучок',
+      'meter': 'метр',
+      'other': 'единицу',
+    });
+    return '$name, примерно $price за $_temp0';
+  }
+
+  @override
+  String cardInCartSpoken(String card, String quantity) {
+    return '$card. В корзине $quantity';
+  }
+
+  @override
+  String cardAddSpoken(String name) {
+    return 'Добавить в корзину: $name';
+  }
+
+  @override
+  String cardStepperSpoken(String name) {
+    return '$name в корзине';
+  }
+
+  @override
+  String favoriteAddSpoken(String name) {
+    return 'Добавить в избранное: $name';
+  }
+
+  @override
+  String favoriteRemoveSpoken(String name) {
+    return 'Убрать из избранного: $name';
+  }
+
+  @override
+  String questionBannerUntil(String number, String time) {
+    return 'Заказ № $number · до $time';
+  }
+
+  @override
+  String questionSpoken(String number, String left) {
+    return 'Сборщик ждёт вашего ответа. Заказ № $number, $left. Ответить';
+  }
+
+  @override
+  String questionArrived(String number, String left) {
+    return 'Сборщик спрашивает про заказ № $number. $left';
+  }
+
+  @override
+  String get questionExpired => 'Время на ответ вышло';
+
+  @override
+  String homeNavOrdersWaiting(int count) {
+    return 'Заказы, ждут ответа: $count';
+  }
+
+  @override
+  String get homeClosedTitle => 'Сейчас закрыто.';
+
+  @override
+  String homeClosedBody(String time) {
+    return 'Заказ примем сейчас, соберём и привезём с $time';
+  }
 }

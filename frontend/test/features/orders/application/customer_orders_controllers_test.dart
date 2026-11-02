@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/network/idempotency_key.dart';
+import 'package:baraka_bozor/core/platform/clock.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
@@ -227,7 +228,7 @@ void main() {
         'expires_at': expiresAt,
       };
 
-  test('the banner question is the one expiring first', () async {
+  test('the earliest comes first', () async {
     final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository()
       ..pendingRows = <Map<String, Object?>>[
         pending(approvalOne, '2026-09-28T09:00:00Z'),
@@ -235,40 +236,122 @@ void main() {
       ];
     final ProviderContainer container = _container(orders);
     addTearDown(container.dispose);
-    container.listen(pendingQuestionProvider, (_, _) {});
+    container.listen(pendingQuestionsProvider, (_, _) {});
 
-    final PendingQuestion? first = await container.read(
-      pendingQuestionProvider.future,
+    final List<PendingQuestion> all = await container.read(
+      pendingQuestionsProvider.future,
     );
-    expect(first!.approvalId, '0192f0a0-0000-7000-8000-00000000c032');
+    expect(all.map((PendingQuestion q) => q.approvalId), <String>[
+      '0192f0a0-0000-7000-8000-00000000c032',
+      approvalOne,
+    ]);
 
     orders.pendingRows = <Map<String, Object?>>[];
-    container.invalidate(pendingQuestionProvider);
-    expect(await container.read(pendingQuestionProvider.future), isNull);
+    container.invalidate(pendingQuestionsProvider);
+    expect(await container.read(pendingQuestionsProvider.future), isEmpty);
   });
 
-  test('a decision reloads the banner question', () async {
+  test('a decision reloads the questions', () async {
     final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository()
       ..pendingRows = <Map<String, Object?>>[
         pending(approvalOne, '2026-09-28T09:00:00Z'),
       ];
     final ProviderContainer container = _container(orders);
     addTearDown(container.dispose);
-    container.listen(pendingQuestionProvider, (_, _) {});
+    container.listen(pendingQuestionsProvider, (_, _) {});
     final OrderLineRef line = (orderId: orderOne, lineId: lineTomato);
     container.listen(approvalDecisionProvider(line), (_, _) {});
-    expect(await container.read(pendingQuestionProvider.future), isNotNull);
+    expect(await container.read(pendingQuestionsProvider.future), hasLength(1));
 
     orders.pendingRows = <Map<String, Object?>>[];
     await container
         .read(approvalDecisionProvider(line).notifier)
         .decide(approvalOne, ApprovalDecision.approve);
 
-    expect(await container.read(pendingQuestionProvider.future), isNull);
+    expect(await container.read(pendingQuestionsProvider.future), isEmpty);
     expect(
       orders.loads.where((String load) => load == 'pending'),
       hasLength(2),
     );
+  });
+
+  group('open questions', () {
+    late DateTime now;
+    final DateTime start = DateTime.utc(2026, 9, 28, 7);
+
+    ProviderContainer open(FakeCustomerOrdersRepository orders) {
+      final ProviderContainer container = ProviderContainer(
+        retry: (int count, Object error) => null,
+        overrides: [
+          customerAccountProvider.overrideWith((Ref ref) => 'customer-a'),
+          customerOrdersRepositoryProvider.overrideWithValue(orders),
+          clockProvider.overrideWithValue(() => now),
+        ],
+      );
+      container.listen(openQuestionsProvider, (_, _) {});
+      return container;
+    }
+
+    setUp(() => now = start);
+
+    testWidgets('open questions leave out the expired and drop one at its '
+        'expiry', (WidgetTester tester) async {
+      final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository()
+        ..pendingRows = <Map<String, Object?>>[
+          pending(approvalOne, '2026-09-28T07:10:00Z'),
+          pending(
+            '0192f0a0-0000-7000-8000-00000000c032',
+            '2026-09-28T07:05:00Z',
+          ),
+          pending(
+            '0192f0a0-0000-7000-8000-00000000c033',
+            '2026-09-28T06:59:00Z',
+          ),
+        ];
+      final ProviderContainer container = open(orders);
+      await container.read(pendingQuestionsProvider.future);
+      await tester.pump();
+
+      expect(container.read(openQuestionsProvider), hasLength(2));
+      expect(
+        container.read(openQuestionsProvider).first.approvalId,
+        '0192f0a0-0000-7000-8000-00000000c032',
+      );
+
+      now = start.add(const Duration(minutes: 5));
+      await tester.pump(const Duration(minutes: 5));
+      expect(container.read(openQuestionsProvider), hasLength(1));
+      expect(
+        container.read(openQuestionsProvider).single.approvalId,
+        approvalOne,
+      );
+      container.dispose();
+    });
+
+    testWidgets('a failed refresh keeps the questions', (
+      WidgetTester tester,
+    ) async {
+      final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository()
+        ..pendingRows = <Map<String, Object?>>[
+          pending(approvalOne, '2026-09-28T07:10:00Z'),
+        ];
+      final ProviderContainer container = open(orders);
+      await container.read(pendingQuestionsProvider.future);
+      await tester.pump();
+      expect(container.read(openQuestionsProvider), hasLength(1));
+
+      orders.pendingFailure = const NetworkFailure();
+      container.invalidate(pendingQuestionsProvider);
+      await expectLater(
+        container.read(pendingQuestionsProvider.future),
+        throwsA(isA<NetworkFailure>()),
+      );
+      await tester.pump();
+
+      expect(container.read(pendingQuestionsProvider).hasError, isTrue);
+      expect(container.read(openQuestionsProvider), hasLength(1));
+      container.dispose();
+    });
   });
 
   test('a reorder keeps its key until a sure answer', () async {

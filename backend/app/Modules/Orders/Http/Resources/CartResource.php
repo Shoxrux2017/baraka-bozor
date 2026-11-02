@@ -9,6 +9,7 @@ use App\Modules\Orders\CartCharges;
 use App\Modules\Orders\CartLine;
 use App\Modules\Orders\CartView;
 use App\Modules\Orders\QuantityPolicy;
+use App\Modules\Settings\WorkingHours;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,8 +25,16 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 final class CartResource extends JsonResource
 {
-    public function __construct(CartView $view, private readonly CartCharges $charges)
-    {
+    /**
+     * `$hours` is the business's working hours, for display only: the client
+     * says "closed now" on the home while checkout stays the authority
+     * (`DL-125`). `null` while the hours are unset.
+     */
+    public function __construct(
+        CartView $view,
+        private readonly CartCharges $charges,
+        private readonly ?WorkingHours $hours = null,
+    ) {
         parent::__construct($view);
     }
 
@@ -47,6 +56,9 @@ final class CartResource extends JsonResource
             'estimated_total_uzs' => $this->charges->estimatedTotalUzs,
             'minimum_order_uzs' => $this->charges->minimumOrderUzs,
             'minimum_order_shortfall_uzs' => $this->charges->minimumOrderShortfallUzs,
+            'working_hours' => $this->hours === null || $this->hours->isAlwaysOpen()
+                ? null
+                : ['opens_at' => $this->hours->opensAt(), 'closes_at' => $this->hours->closesAt()],
         ];
     }
 
