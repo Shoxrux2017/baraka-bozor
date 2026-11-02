@@ -14,6 +14,7 @@ const Set<String> _entryNames = <String>{
   'session-unreachable',
   'wrong-surface',
   'account-deleted',
+  'shopper-done',
   'catalog-home',
   'customer-favorites',
   'customer-orders',
@@ -55,7 +56,6 @@ const Set<String> _pageNames = <String>{
   'legal-privacy',
   'shopper-order',
   'shopper-replace',
-  'shopper-done',
   'courier-order',
 };
 

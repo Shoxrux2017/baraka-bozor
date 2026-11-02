@@ -1,3 +1,4 @@
+import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/features/cart/presentation/cart_paths.dart';
@@ -118,6 +119,7 @@ void main() {
       await tester.drag(byKey('favorites-grid'), const Offset(0, -400));
       await tester.pumpAndSettle();
       final double before = gridPixels(tester);
+      expect(before, greaterThan(0));
 
       routerOf(tester).push(CartPaths.cart);
       await tester.pumpAndSettle();
@@ -146,6 +148,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(CatalogHomeScreen), findsOneWidget);
+  });
+
+  testWidgets('the tabs come back in place, not sliding', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    routerOf(tester).go(CartPaths.cart);
+    await tester.pumpAndSettle();
+
+    routerOf(tester).go(AppPaths.customer);
+    await tester.pump();
+
+    expect(find.byType(CatalogHomeScreen), findsOneWidget);
+    expect(find.byType(CartScreen), findsNothing);
   });
 
   testWidgets('a tab switch is still instant', (WidgetTester tester) async {

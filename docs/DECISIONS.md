@@ -1876,7 +1876,7 @@ The app had no page transition and no iOS back-swipe. Every route now builds its
 
 1. **Cause.** go_router 18 recognises a Material app by `material_ui`'s `MaterialApp`; the app's is Flutter's own, so every route had `NoTransitionPage` since the scaffold (`32bdcbb`). 18.1.2 (the newest, 2026-11-02) is the same, and moving to `material_ui` would touch every import and the theme. So `appPage` in `core/routing/app_page.dart` builds the page of every route, and no `builder:` is left.
 2. **Platform pages.** They use the theme's default transitions, with no override: on Android predictive back and FadeForwards (450 ms); on iOS Cupertino (500 ms) with the edge back-swipe, which Flutter turns off on a page that holds its back.
-3. **Entry pages stand in place.** The bootstrap, the sign-in screens (flat, `07` §29; their motion is `vhod-5`, `sys-2`, `profile-1`), `account-deleted` (`del-10`), the tabs (`DL-118`), the staff homes and the whole web panel (a website's page swaps, with the browser's back and forward). `route_pages_test.dart` pins the list.
+3. **Entry pages stand in place.** The bootstrap, the sign-in screens (flat, `07` §29; their motion is `vhod-5`, `sys-2`, `profile-1`), `account-deleted` (`del-10`) and the Shopper's done screen (reached by `go`, no way back), the tabs (`DL-118`), the staff homes and the whole web panel (a website's page swaps, with the browser's back and forward). `route_pages_test.dart` pins the list.
 4. **The product.** Its own `MaterialPage` (`DL-122` (1)) folds into `appPage`.
-5. **Tests.** Those that took a page as appearing in one frame now let the transition run; none lost an assertion.
+5. **Tests.** No test relied on an instant page. The checkout's placed-card helper now reads the nearest `FadeTransition`, since the page's own fade sits above it; no assertion changed.
 6. **Owner.** This task is a session of its own before stage 6 (2026-11-02, option «1»).

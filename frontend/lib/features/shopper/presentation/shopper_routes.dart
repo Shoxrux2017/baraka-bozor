@@ -49,8 +49,11 @@ final FeatureRoutes shopperRoutes = FeatureRoutes(
       // Only an order number: anything else is no closing screen.
       redirect: (BuildContext context, GoRouterState state) =>
           _orderNumber(state) == null ? AppPaths.shopper : null,
-      pageBuilder: (BuildContext context, GoRouterState state) =>
-          appPage(state, ShopperDoneScreen(orderNumber: _orderNumber(state)!)),
+      pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+        state,
+        ShopperDoneScreen(orderNumber: _orderNumber(state)!),
+        entry: true,
+      ),
     ),
   ],
 );
