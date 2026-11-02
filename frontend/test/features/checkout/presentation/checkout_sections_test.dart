@@ -535,4 +535,36 @@ void main() {
       },
     );
   }
+
+  testWidgets('a closed wish is dimmed', (WidgetTester tester) async {
+    final TextEditingController wish = TextEditingController();
+    addTearDown(wish.dispose);
+    final FocusNode focus = FocusNode();
+    addTearDown(focus.dispose);
+    Future<void> show({required bool enabled}) => tester.pumpWidget(
+      host(
+        CheckoutWishField(
+          controller: wish,
+          focusNode: focus,
+          enabled: enabled,
+          onChanged: (String _) {},
+        ),
+      ),
+    );
+    double opacity() => tester
+        .widget<Opacity>(
+          find
+              .ancestor(
+                of: byKey('checkout-delivery-wish'),
+                matching: find.byType(Opacity),
+              )
+              .first,
+        )
+        .opacity;
+
+    await show(enabled: true);
+    expect(opacity(), 1);
+    await show(enabled: false);
+    expect(opacity(), 0.45);
+  });
 }
