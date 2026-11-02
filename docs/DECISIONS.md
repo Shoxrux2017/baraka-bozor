@@ -1850,3 +1850,22 @@ Stage 4 of `tasks/APPLE_BATCH.md` codes the ten items of the checkout, `checkout
 9. **Large text** (`checkout-9`). The address is never cut; its link goes under it when beside it would take more than half the row. «Итого» stands over «Заказать» when they do not fit together, as in the cart (`DL-119` (4)).
 10. **The placed card** (`checkout-10`). The card rises from 48 px lower with a light haptic, which stays with reduced motion.
 11. **Shared pieces.** `SkeletonBar`, `FooterTotal` and `SummaryAmountRow.pendingWidth`; `CheckoutEditButton` is public in `checkout_sections.dart`, `CheckoutFooter` lives in `checkout_footer.dart`, the strip and the list in `checkout_items.dart`. `Fold` starts hidden still and reverses without a jump, which closes the stage 3 residual.
+
+## DL-122 — The Apple batch, stage 5: the product (2026-10-30, agent; item 7 Owner)
+
+Stage 5 of `tasks/APPLE_BATCH.md` codes the nine items of the product screen, `product-1` to `product-9`.
+
+1. **Opening** (`product-1`). The card hands its product and a per-card hero tag (`extra`), so one product twice on a screen never shares a tag; the server's answer replaces the card's; `404` shows the product gone, other failures keep the card's page; without a card (the cart line, a link) it loads as before. The product route builds its own `MaterialPage`, because go_router 18.0.1 recognises a Material app by `package:material_ui`'s `MaterialApp`, a different class from `flutter/material.dart`'s in Flutter 3.47.5, and so gives every route a `NoTransitionPage`; without its own page the photo could not fly.
+2. **The add** (`product-2`). «Добавляем…», then «В корзине» with a light haptic for 1.1 s, then «Открыть корзину»; no snack bar; an existing line is shown, not announced.
+3. **Autosave** (`product-3`). Every change goes through the quantity queue, which now carries a line's note and rule: one request per product for the card, the cart line and the screen (the stage 3 residual). The note goes 1 s after its last change, when its field loses focus and when the screen goes; marks «Сохраняем…» / «Сохранено». A note whose save fails keeps its text and is sent again with the next change, when the field closes or when the screen goes.
+4. **The note** (`product-4`, reproduced on the emulator first). «Готово» over the keyboard (both platforms), and a tap outside or a drag closes it; the counter from 250 and a live error; `KeyboardDoneBar` lives in `core/`.
+5. **Screen reader** (`product-5`). One price phrase with the unit's full word; quantities in their visible form, which the reader voices; one adjustable quantity; the button names the product, the quantity and the sum.
+6. **The sheet** (`product-6`). One sheet for its three callers; chips 0,5 · 1 · 1,5 · 2 · 3, or 1 · 2 · 3 · 5 · 10 for whole units; the errors keep their existing words. The field turns red only for a text that is not a quantity, not while it is empty.
+7. **The estimate (Owner, 2026-10-25, product test item 7).** «Цена ориентировочная», «Если выйдет дороже допустимого — спросим вас до покупки.» and «Как считаем» open to the full text. This is customer-facing text and a promise: the Customer is asked before a price above the tolerance is paid (`AGENTS.md` §6).
+8. **Large text** (`product-8`). The sum stands beside the stepper, or under it, and is never cut; the button is full width.
+9. **The bin** (`product-9`). At the smallest step in the cart the minus is a bin, with «Вернуть» as in the cart (`DL-119`).
+10. **Amounts.** The bar shows the line's server estimate while its quantity is the one shown, else the «≈» client estimate (`AGENTS.md` §5).
+
+## DL-123 — Two pairs of Apple stages share a session (2026-10-30, Owner)
+
+The Owner chose not to run stages in parallel: they share files, one test database, one emulator and the weekly limit. Stages 8 + 9 and 17 + 22 each share one session, one branch, one plan and one pull request; every other stage keeps its own.
