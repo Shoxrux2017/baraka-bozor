@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/formatting/server_text.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/fold.dart';
 import '../../../core/widgets/soft_change.dart';
 import '../../cart/presentation/cart_widgets.dart';
 
@@ -243,6 +244,118 @@ class ProductNoteField extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// The estimate in two short lines and a «Как считаем» that unfolds the full
+/// text and closes it again (`DL-122`).
+class ProductEstimate extends StatefulWidget {
+  const ProductEstimate({super.key});
+
+  @override
+  State<ProductEstimate> createState() => _ProductEstimateState();
+}
+
+class _ProductEstimateState extends State<ProductEstimate> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: KitColors.primaryWash,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Icon(Icons.info_outline, size: 20, color: KitColors.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    l10n.productEstimateTitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      height: 1.4,
+                      color: KitColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.productEstimatePromise,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.45,
+                      color: KitColors.ink2,
+                    ),
+                  ),
+                  Fold(
+                    shown: _open,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        l10n.catalogEstimateExplain,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.45,
+                          color: KitColors.ink2,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Semantics(
+                    button: true,
+                    expanded: _open,
+                    child: InkWell(
+                      key: const ValueKey<String>('product-estimate-how'),
+                      onTap: () => setState(() => _open = !_open),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 44),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Flexible(
+                              child: Text(
+                                _open
+                                    ? l10n.productReadLess
+                                    : l10n.productEstimateHow,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: KitColors.primaryDark,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            AnimatedRotation(
+                              turns: _open ? 0.5 : 0,
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.ease,
+                              child: const Icon(
+                                Icons.expand_more,
+                                size: 18,
+                                color: KitColors.primaryDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

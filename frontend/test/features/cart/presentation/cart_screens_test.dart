@@ -306,7 +306,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+        tester.widget<TextField>(byKey('line-note')).controller!.text,
         'Qizilini oling',
       );
       expect(

@@ -6116,6 +6116,24 @@ abstract class AppLocalizations {
   /// **'Yig\'ish'**
   String get productReadLess;
 
+  /// No description provided for @productEstimateTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narx taxminiy'**
+  String get productEstimateTitle;
+
+  /// No description provided for @productEstimatePromise.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ruxsat etilganidan qimmatroq chiqsa — xariddan oldin sizdan so\'raymiz.'**
+  String get productEstimatePromise;
+
+  /// No description provided for @productEstimateHow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qanday hisoblaymiz'**
+  String get productEstimateHow;
+
   /// No description provided for @productIfMissing.
   ///
   /// In uz, this message translates to:

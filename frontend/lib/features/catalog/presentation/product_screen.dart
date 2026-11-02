@@ -789,7 +789,9 @@ class _Page extends StatelessWidget {
                 if (product.priceMode == PriceMode.estimate)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(side, 12, side, 0),
-                    child: _EstimatePanel(text: l10n.catalogEstimateExplain),
+                    child: const ProductEstimate(
+                      key: ValueKey<String>('product-estimate'),
+                    ),
                   ),
                 if (description != null)
                   Padding(
@@ -962,46 +964,6 @@ class _Section extends StatelessWidget {
           const SizedBox(height: 8),
           child,
         ],
-      ),
-    );
-  }
-}
-
-class _EstimatePanel extends StatelessWidget {
-  const _EstimatePanel({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: KitColors.primaryWash,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const Icon(
-              Icons.info_outline,
-              size: 20,
-              color: KitColors.primaryDark,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 12,
-                  height: 1.45,
-                  color: KitColors.ink2,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

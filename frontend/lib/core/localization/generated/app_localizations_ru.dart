@@ -3572,6 +3572,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String get productReadLess => 'Свернуть';
 
   @override
+  String get productEstimateTitle => 'Цена ориентировочная';
+
+  @override
+  String get productEstimatePromise =>
+      'Если выйдет дороже допустимого — спросим вас до покупки.';
+
+  @override
+  String get productEstimateHow => 'Как считаем';
+
+  @override
   String get productIfMissing => 'Если товара не будет';
 
   @override

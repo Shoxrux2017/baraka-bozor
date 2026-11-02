@@ -3531,6 +3531,16 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productReadLess => 'Yig\'ish';
 
   @override
+  String get productEstimateTitle => 'Narx taxminiy';
+
+  @override
+  String get productEstimatePromise =>
+      'Ruxsat etilganidan qimmatroq chiqsa — xariddan oldin sizdan so\'raymiz.';
+
+  @override
+  String get productEstimateHow => 'Qanday hisoblaymiz';
+
+  @override
   String get productIfMissing => 'Mahsulot bo\'lmasa';
 
   @override

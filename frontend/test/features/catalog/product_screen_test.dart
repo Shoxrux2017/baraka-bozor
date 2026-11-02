@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
@@ -165,6 +166,11 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Finder foldOfExplain(WidgetTester tester) => find.ancestor(
+    of: find.text(l10n(tester).catalogEstimateExplain),
+    matching: find.byType(Fold),
+  );
+
   group('the layout', () {
     testWidgets('the app bar has the back arrow, the title and the heart', (
       WidgetTester tester,
@@ -244,7 +250,71 @@ void main() {
       expect(find.text('Pomidor'), findsNothing, reason: 'no second name');
       expect(tester.widget<Text>(byKey('product-price')).data, approx(12075));
       expect(find.text('за кг'), findsOneWidget);
+      expect(find.text(l10n(tester).productEstimateTitle), findsOneWidget);
+      expect(find.text(l10n(tester).productEstimatePromise), findsOneWidget);
+      expect(find.text(l10n(tester).productEstimateHow), findsOneWidget);
+      expect(
+        tester.getSize(foldOfExplain(tester)).height,
+        0,
+        reason: 'the full text stands folded',
+      );
+    });
+
+    testWidgets('Как считаем opens the full text and closes it', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await open(tester);
+      final Finder how = byKey('product-estimate-how');
+      expect(tester.getSize(how).height, greaterThanOrEqualTo(44));
+      expect(
+        tester.getSemantics(how).getSemanticsData().flagsCollection.isExpanded,
+        Tristate.isFalse,
+      );
+
+      await tester.tap(how);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      final RotationTransition turn = tester.widget<RotationTransition>(
+        find.descendant(of: how, matching: find.byType(RotationTransition)),
+      );
+      expect(turn.turns.value, 0.5);
+      await tester.pumpAndSettle();
       expect(find.text(l10n(tester).catalogEstimateExplain), findsOneWidget);
+      expect(find.text(l10n(tester).productReadLess), findsOneWidget);
+      expect(find.text(l10n(tester).productEstimateHow), findsNothing);
+      expect(
+        tester.getSemantics(how).getSemanticsData().flagsCollection.isExpanded,
+        Tristate.isTrue,
+      );
+
+      await tester.tap(how);
+      await tester.pumpAndSettle();
+      expect(find.text(l10n(tester).productEstimateHow), findsOneWidget);
+      expect(
+        tester.getSize(foldOfExplain(tester)).height,
+        0,
+        reason: 'folded to nothing',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('with reduced motion the full text stands at once', (
+      WidgetTester tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await open(tester);
+
+      await tester.tap(byKey('product-estimate-how'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text(l10n(tester).catalogEstimateExplain), findsOneWidget);
+      expect(tester.getSize(foldOfExplain(tester)).height, greaterThan(0));
+      expect(find.text(l10n(tester).productReadLess), findsOneWidget);
     });
 
     testWidgets('a fixed price product has no estimate panel', (
@@ -252,6 +322,7 @@ void main() {
     ) async {
       await open(tester, id: breadProduct);
 
+      expect(find.text(l10n(tester).productEstimateTitle), findsNothing);
       expect(find.text(l10n(tester).catalogEstimateExplain), findsNothing);
     });
 
