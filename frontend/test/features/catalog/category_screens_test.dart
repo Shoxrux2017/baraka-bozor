@@ -437,6 +437,31 @@ void main() {
       semantics.dispose();
     });
 
+    for (final double scale in <double>[1, 2]) {
+      testWidgets('every target of all categories meets iOSTapTargetGuideline '
+          '(text x$scale)', (WidgetTester tester) async {
+        final SemanticsHandle semantics = tester.ensureSemantics();
+        size(tester, 320, 640);
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await open(
+          tester,
+          CatalogPaths.categories,
+          locale: const Locale('ru'),
+          cart: FakeCartRepository(
+            cart: cartOf(<Map<String, Object?>>[cartLineJson()]),
+          ),
+        );
+        catalog.categoriesFailure = const NetworkFailure();
+        await pull(tester);
+        expect(byKey('stale-line'), findsOneWidget);
+        expect(byKey('category-c-1'), findsOneWidget);
+
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        semantics.dispose();
+      });
+    }
+
     testWidgets('pressing a tile shrinks it to 0.96 and opens the category', (
       WidgetTester tester,
     ) async {

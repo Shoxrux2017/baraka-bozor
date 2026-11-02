@@ -130,10 +130,17 @@ void main() {
     Locale device, {
     FakeCustomerOrdersRepository? orders,
     DateTime Function()? clock,
+    FakeCartRepository? cart,
   }) async {
     tokens.tokens[SessionSlot.staff] = 's';
     auth.identities[SessionSlot.staff] = user(id: 's', role: UserRole.courier);
-    await open(tester, device: device, orders: orders, clock: clock);
+    await open(
+      tester,
+      device: device,
+      orders: orders,
+      clock: clock,
+      cart: cart,
+    );
     await tester.tap(byKey('staff-menu'));
     await tester.pumpAndSettle();
     await tester.tap(byKey('switch-to-customer-button'));
@@ -1492,4 +1499,73 @@ void main() {
       );
     });
   });
+
+  for (final double scale in <double>[1, 2]) {
+    testWidgets(
+      'every target of the home meets iOSTapTargetGuideline (text x$scale)',
+      (WidgetTester tester) async {
+        final SemanticsHandle semantics = tester.ensureSemantics();
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        // 23:10 in Tashkent: the store is closed; the question runs on.
+        final DateTime night = DateTime.utc(2026, 11, 2, 18, 10);
+        final FakeCustomerOrdersRepository orders =
+            FakeCustomerOrdersRepository()
+              ..pendingRows = <Map<String, Object?>>[
+                <String, Object?>{
+                  'id': approvalOne,
+                  'order_id': orderOne,
+                  'order_number': 1044,
+                  'expires_at': '2026-11-02T19:00:00Z',
+                },
+              ];
+        // The recommended products fail: the stale line shows over the data.
+        catalog.nextFailure = const UnexpectedFailure();
+        await asTwoSessionCustomer(
+          tester,
+          const Locale('ru'),
+          orders: orders,
+          clock: () => night,
+          cart: FakeCartRepository(
+            cart: cartOf(
+              <Map<String, Object?>>[],
+              workingHours: <String, Object?>{
+                'opens_at': '08:00',
+                'closes_at': '22:00',
+              },
+            ),
+          ),
+        );
+        // At the top of the page, then scrolled until the question has gone
+        // under the search and the stale line shows whole: a target half
+        // under the pinned search is clipped, which no screen can avoid.
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        final ScrollPosition position = tester
+            .state<ScrollableState>(verticalScrollables)
+            .position;
+        final double searchBottom =
+            tester.getRect(byKey('catalog-search')).bottom + 8;
+        position.jumpTo(
+          position.pixels +
+              tester
+                  .getRect(
+                    find.byKey(
+                      const ValueKey<String>('question-banner'),
+                      skipOffstage: false,
+                    ),
+                  )
+                  .bottom -
+              searchBottom +
+              1,
+        );
+        await tester.pumpAndSettle();
+        expect(byKey('stale-line'), findsOneWidget);
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        semantics.dispose();
+      },
+    );
+  }
 }

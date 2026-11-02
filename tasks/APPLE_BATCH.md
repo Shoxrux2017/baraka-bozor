@@ -22,7 +22,7 @@ Rules for every stage:
 | 3 | Cart and the card's stepper | 8 | — | Merged (PR #123) |
 | 4 | Checkout | 10 | — | Merged (PR #125) |
 | 5 | Product | 9 | — | Merged (PR #126) |
-| 6 | Home and categories | 14 | working hours | Planned |
+| 6 | Home and categories | 14 | working hours | In review |
 | 7 | Category screen and product lists | 10 | — | Planned |
 | 8 | «Рекомендуем» and «Все товары» | 7 | list order | Planned |
 | 9 | Search | 8 | — | Planned |
