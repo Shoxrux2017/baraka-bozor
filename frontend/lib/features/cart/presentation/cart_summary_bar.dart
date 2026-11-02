@@ -65,80 +65,92 @@ class CartSummaryBar extends ConsumerWidget {
               ),
             ],
           ),
-          child: Material(
-            key: const ValueKey<String>('cart-summary'),
-            color: KitColors.primary,
-            borderRadius: BorderRadius.circular(16),
-            child: InkWell(
+          child: Semantics(
+            button: true,
+            label: l10n.cartSummarySpoken(
+              l10n.cartSummaryCount(cart.itemCount),
+              MoneyFormat.uzs(
+                cart.estimatedSubtotalUzs,
+                interfaceLanguage(context),
+              ),
+            ),
+            excludeSemantics: true,
+            onTap: () => context.push(CartPaths.cart),
+            child: Material(
+              key: const ValueKey<String>('cart-summary'),
+              color: KitColors.primary,
               borderRadius: BorderRadius.circular(16),
-              onTap: () => context.push(CartPaths.cart),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 64),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(3),
-                          child: ProductImage(url: last.imageUrl, size: 40),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              l10n.cartSummaryCount(cart.itemCount),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
-                              ),
-                            ),
-                            Text(
-                              l10n.catalogApproxPrice(
-                                MoneyFormat.uzs(
-                                  cart.estimatedSubtotalUzs,
-                                  interfaceLanguage(context),
-                                ),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          '${l10n.cartSummaryOpen} →',
-                          maxLines: 2,
-                          textAlign: TextAlign.end,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => context.push(CartPaths.cart),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 64),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        DecoratedBox(
+                          decoration: BoxDecoration(
                             color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(3),
+                            child: ProductImage(url: last.imageUrl, size: 40),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                l10n.cartSummaryCount(cart.itemCount),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                l10n.catalogApproxPrice(
+                                  MoneyFormat.uzs(
+                                    cart.estimatedSubtotalUzs,
+                                    interfaceLanguage(context),
+                                  ),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            '${l10n.cartSummaryOpen} →',
+                            maxLines: 2,
+                            textAlign: TextAlign.end,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

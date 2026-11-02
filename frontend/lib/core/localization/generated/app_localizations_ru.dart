@@ -4434,4 +4434,12 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return 'осталось $_temp0';
   }
+
+  @override
+  String get refreshDone => 'Обновлено';
+
+  @override
+  String cartSummarySpoken(String count, String sum) {
+    return 'Корзина: $count, примерно $sum. В корзину';
+  }
 }

@@ -6,6 +6,7 @@ import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/state/loaded.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/kit_app_bar.dart';
@@ -31,9 +32,9 @@ class CategoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
-    final AsyncValue<List<CatalogCategory>> categories = ref.watch(
-      catalogCategoriesProvider,
-    );
+    final AsyncValue<List<CatalogCategory>> categories = ref
+        .watch(catalogCategoriesProvider)
+        .whenData((Loaded<List<CatalogCategory>> loaded) => loaded.data);
     final CatalogCategory? category = categories.value
         ?.where((CatalogCategory c) => c.id == categoryId)
         .firstOrNull;

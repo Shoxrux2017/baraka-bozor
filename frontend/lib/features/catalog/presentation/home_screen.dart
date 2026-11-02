@@ -6,6 +6,7 @@ import '../../../app/providers.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/session/session_state.dart';
+import '../../../core/state/loaded.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/customer_tab_bar.dart';
@@ -206,9 +207,9 @@ class _Sections extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<List<CatalogCategory>> categories = ref.watch(
-      catalogCategoriesProvider,
-    );
+    final AsyncValue<List<CatalogCategory>> categories = ref
+        .watch(catalogCategoriesProvider)
+        .whenData((Loaded<List<CatalogCategory>> loaded) => loaded.data);
 
     return SingleChildScrollView(
       key: const ValueKey<String>('home-body'),
@@ -270,12 +271,11 @@ class _CategoryGrid extends StatelessWidget {
         runSpacing: _Sections.gap,
         children: <Widget>[
           for (final CatalogCategory category in categories)
-            InkWell(
+            CategoryButton(
               key: ValueKey<String>('category-${category.id}'),
-              borderRadius: BorderRadius.circular(14),
-              onTap: () =>
-                  context.push<void>(CatalogPaths.category(category.id)),
-              child: CategoryTile(category: category, size: tile),
+              category: category,
+              columns: _Sections.columns,
+              size: tile,
             ),
         ],
       ),

@@ -4382,4 +4382,12 @@ class AppLocalizationsUz extends AppLocalizations {
   String deadlineLeftSpoken(int minutes) {
     return '$minutes daqiqa qoldi';
   }
+
+  @override
+  String get refreshDone => 'Yangilandi';
+
+  @override
+  String cartSummarySpoken(String count, String sum) {
+    return 'Savat: $count, taxminan $sum. Savatga';
+  }
 }

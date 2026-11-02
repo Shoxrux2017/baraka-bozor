@@ -2588,5 +2588,7 @@
   "staleRefresh": "Обновить",
   "staleSpoken": "{reason}. Показаны данные на {time}",
   "deadlineLeft": "Осталось {minutes} мин",
-  "deadlineLeftSpoken": "осталось {minutes, plural, one{# минута} few{# минуты} many{# минут} other{# минуты}}"
+  "deadlineLeftSpoken": "осталось {minutes, plural, one{# минута} few{# минуты} many{# минут} other{# минуты}}",
+  "refreshDone": "Обновлено",
+  "cartSummarySpoken": "Корзина: {count}, примерно {sum}. В корзину"
 }

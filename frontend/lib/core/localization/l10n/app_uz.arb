@@ -2960,5 +2960,17 @@
         "type": "int"
       }
     }
+  },
+  "refreshDone": "Yangilandi",
+  "cartSummarySpoken": "Savat: {count}, taxminan {sum}. Savatga",
+  "@cartSummarySpoken": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "sum": {
+        "type": "String"
+      }
+    }
   }
 }

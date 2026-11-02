@@ -12,6 +12,7 @@ import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/routing/app_paths.dart';
+import '../../../core/state/loaded.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/kit_app_bar.dart';
@@ -224,9 +225,9 @@ class _PickCategories extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
-    final AsyncValue<List<CatalogCategory>> sections = ref.watch(
-      catalogCategoriesProvider,
-    );
+    final AsyncValue<List<CatalogCategory>> sections = ref
+        .watch(catalogCategoriesProvider)
+        .whenData((Loaded<List<CatalogCategory>> loaded) => loaded.data);
 
     return sections.when(
       skipLoadingOnRefresh: !sections.hasError,

@@ -8,7 +8,9 @@ import '../../../app/providers.dart';
 import '../../../core/errors/report_unexpected_error.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/network/paged.dart';
+import '../../../core/platform/clock.dart';
 import '../../../core/session/customer_account.dart';
+import '../../../core/state/loaded.dart';
 import '../data/catalog_api.dart';
 import '../data/catalog_repository_impl.dart';
 import '../domain/catalog.dart';
@@ -20,14 +22,19 @@ final Provider<CatalogRepository> catalogRepositoryProvider =
           CatalogRepositoryImpl(CatalogApi(ref.watch(apiClientProvider))),
     );
 
-/// The catalog's sections. The catalog needs a Customer session
-/// (`DL-17` (4)): with no Customer account nothing is asked for.
-final FutureProvider<List<CatalogCategory>> catalogCategoriesProvider =
-    FutureProvider.autoDispose<List<CatalogCategory>>((Ref ref) {
+/// The catalog's sections and the moment they came (`DL-125`), so a screen
+/// that could not refresh them says when what it shows is from. The catalog
+/// needs a Customer session (`DL-17` (4)): with no Customer account nothing is
+/// asked for.
+final FutureProvider<Loaded<List<CatalogCategory>>> catalogCategoriesProvider =
+    FutureProvider.autoDispose<Loaded<List<CatalogCategory>>>((Ref ref) async {
       if (ref.watch(customerAccountProvider) == null) {
-        return Completer<List<CatalogCategory>>().future;
+        return Completer<Loaded<List<CatalogCategory>>>().future;
       }
-      return ref.watch(catalogRepositoryProvider).categories();
+      final List<CatalogCategory> rows = await ref
+          .watch(catalogRepositoryProvider)
+          .categories();
+      return Loaded<List<CatalogCategory>>(rows, at: ref.read(clockProvider)());
     });
 
 final FutureProviderFamily<CatalogProduct, String> catalogProductProvider =

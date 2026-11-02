@@ -7423,6 +7423,18 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'{minutes} daqiqa qoldi'**
   String deadlineLeftSpoken(int minutes);
+
+  /// No description provided for @refreshDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilandi'**
+  String get refreshDone;
+
+  /// No description provided for @cartSummarySpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savat: {count}, taxminan {sum}. Savatga'**
+  String cartSummarySpoken(String count, String sum);
 }
 
 class _AppLocalizationsDelegate
