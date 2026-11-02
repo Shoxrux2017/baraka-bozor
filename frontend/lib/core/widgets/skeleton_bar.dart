@@ -11,12 +11,16 @@ class SkeletonBar extends StatefulWidget {
     required this.width,
     this.height = 14,
     this.pulsing = true,
+    this.radius,
     super.key,
   });
 
   final double width;
   final double height;
   final bool pulsing;
+
+  /// The corner radius; half the height (a pill) when null.
+  final double? radius;
 
   @override
   State<SkeletonBar> createState() => _SkeletonBarState();
@@ -71,7 +75,9 @@ class _SkeletonBarState extends State<SkeletonBar>
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: KitColors.line,
-            borderRadius: BorderRadius.circular(widget.height / 2),
+            borderRadius: BorderRadius.circular(
+              widget.radius ?? widget.height / 2,
+            ),
           ),
           child: SizedBox(width: widget.width, height: widget.height),
         ),

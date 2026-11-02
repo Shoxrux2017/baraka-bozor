@@ -2581,5 +2581,12 @@
     }
   },
   "cartRemoveLine": "Убрать из корзины",
-  "cartNotSaved": "Нет связи — в корзине осталось как было"
+  "cartNotSaved": "Нет связи — в корзине осталось как было",
+  "staleOffline": "Нет связи",
+  "staleFailed": "Не удалось обновить",
+  "staleShownAt": "данные на {time}",
+  "staleRefresh": "Обновить",
+  "staleSpoken": "{reason}. Показаны данные на {time}",
+  "deadlineLeft": "Осталось {minutes} мин",
+  "deadlineLeftSpoken": "осталось {minutes, plural, one{# минута} few{# минуты} many{# минут} other{# минуты}}"
 }

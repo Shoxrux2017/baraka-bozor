@@ -7381,6 +7381,48 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Aloqa yo\'q — savat avvalgidek qoldi'**
   String get cartNotSaved;
+
+  /// No description provided for @staleOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q'**
+  String get staleOffline;
+
+  /// No description provided for @staleFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilab bo\'lmadi'**
+  String get staleFailed;
+
+  /// No description provided for @staleShownAt.
+  ///
+  /// In uz, this message translates to:
+  /// **'{time} holatiga'**
+  String staleShownAt(String time);
+
+  /// No description provided for @staleRefresh.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilash'**
+  String get staleRefresh;
+
+  /// No description provided for @staleSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{reason}. {time} holatidagi ma\'lumotlar ko\'rsatilgan'**
+  String staleSpoken(String reason, String time);
+
+  /// No description provided for @deadlineLeft.
+  ///
+  /// In uz, this message translates to:
+  /// **'{minutes} daqiqa qoldi'**
+  String deadlineLeft(int minutes);
+
+  /// No description provided for @deadlineLeftSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{minutes} daqiqa qoldi'**
+  String deadlineLeftSpoken(int minutes);
 }
 
 class _AppLocalizationsDelegate

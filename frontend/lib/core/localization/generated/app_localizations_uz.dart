@@ -4353,4 +4353,33 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get cartNotSaved => 'Aloqa yo\'q — savat avvalgidek qoldi';
+
+  @override
+  String get staleOffline => 'Aloqa yo\'q';
+
+  @override
+  String get staleFailed => 'Yangilab bo\'lmadi';
+
+  @override
+  String staleShownAt(String time) {
+    return '$time holatiga';
+  }
+
+  @override
+  String get staleRefresh => 'Yangilash';
+
+  @override
+  String staleSpoken(String reason, String time) {
+    return '$reason. $time holatidagi ma\'lumotlar ko\'rsatilgan';
+  }
+
+  @override
+  String deadlineLeft(int minutes) {
+    return '$minutes daqiqa qoldi';
+  }
+
+  @override
+  String deadlineLeftSpoken(int minutes) {
+    return '$minutes daqiqa qoldi';
+  }
 }

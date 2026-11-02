@@ -4397,4 +4397,41 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get cartNotSaved => 'Нет связи — в корзине осталось как было';
+
+  @override
+  String get staleOffline => 'Нет связи';
+
+  @override
+  String get staleFailed => 'Не удалось обновить';
+
+  @override
+  String staleShownAt(String time) {
+    return 'данные на $time';
+  }
+
+  @override
+  String get staleRefresh => 'Обновить';
+
+  @override
+  String staleSpoken(String reason, String time) {
+    return '$reason. Показаны данные на $time';
+  }
+
+  @override
+  String deadlineLeft(int minutes) {
+    return 'Осталось $minutes мин';
+  }
+
+  @override
+  String deadlineLeftSpoken(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '# минуты',
+      many: '# минут',
+      few: '# минуты',
+      one: '# минута',
+    );
+    return 'осталось $_temp0';
+  }
 }

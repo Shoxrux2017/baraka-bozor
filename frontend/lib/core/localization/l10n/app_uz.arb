@@ -2922,5 +2922,43 @@
     }
   },
   "cartRemoveLine": "Savatdan olib tashlash",
-  "cartNotSaved": "Aloqa yo'q — savat avvalgidek qoldi"
+  "cartNotSaved": "Aloqa yo'q — savat avvalgidek qoldi",
+  "staleOffline": "Aloqa yo'q",
+  "staleFailed": "Yangilab bo'lmadi",
+  "staleShownAt": "{time} holatiga",
+  "@staleShownAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "staleRefresh": "Yangilash",
+  "staleSpoken": "{reason}. {time} holatidagi ma'lumotlar ko'rsatilgan",
+  "@staleSpoken": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "deadlineLeft": "{minutes} daqiqa qoldi",
+  "@deadlineLeft": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "deadlineLeftSpoken": "{minutes} daqiqa qoldi",
+  "@deadlineLeftSpoken": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
 }
