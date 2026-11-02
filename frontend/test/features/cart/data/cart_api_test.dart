@@ -5,6 +5,7 @@ import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/cart/data/cart_api.dart';
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
+import 'package:baraka_bozor/features/cart/domain/store_hours.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -166,6 +167,54 @@ void main() {
           <String, Object?>{...priced, 'substitution_policy': 'whatever'},
         ]),
         cartJson(<Map<String, Object?>>[], subtotal: -1),
+      ]) {
+        expect(
+          () => CartApi.parseCart(broken),
+          throwsFormatException,
+          reason: '$broken',
+        );
+      }
+    });
+  });
+
+  group('working hours', () {
+    final List<Map<String, Object?>> lines = <Map<String, Object?>>[
+      cartLineJson(),
+    ];
+
+    test('working hours parse, null stays null, a half pair is malformed', () {
+      final Cart open = CartApi.parseCart(
+        cartJson(
+          lines,
+          workingHours: <String, Object?>{
+            'opens_at': '08:00',
+            'closes_at': '22:00',
+          },
+        ),
+      );
+      expect(open.hours, StoreHours.parse('08:00', '22:00'));
+      expect(CartApi.parseCart(cartJson(lines)).hours, isNull);
+
+      final Map<String, Object?> absent = cartJson(lines)
+        ..remove('working_hours');
+      for (final Object? broken in <Object?>[
+        absent,
+        cartJson(lines, workingHours: <String, Object?>{'opens_at': '08:00'}),
+        cartJson(
+          lines,
+          workingHours: <String, Object?>{
+            'opens_at': '8:00',
+            'closes_at': '22:00',
+          },
+        ),
+        cartJson(
+          lines,
+          workingHours: <String, Object?>{
+            'opens_at': '08:00',
+            'closes_at': null,
+          },
+        ),
+        <String, Object?>{...cartJson(lines), 'working_hours': 'always'},
       ]) {
         expect(
           () => CartApi.parseCart(broken),

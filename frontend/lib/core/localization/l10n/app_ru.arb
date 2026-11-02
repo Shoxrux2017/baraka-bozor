@@ -2604,5 +2604,7 @@
   "questionSpoken": "Сборщик ждёт вашего ответа. Заказ № {number}, {left}. Ответить",
   "questionArrived": "Сборщик спрашивает про заказ № {number}. {left}",
   "questionExpired": "Время на ответ вышло",
-  "homeNavOrdersWaiting": "Заказы, ждут ответа: {count}"
+  "homeNavOrdersWaiting": "Заказы, ждут ответа: {count}",
+  "homeClosedTitle": "Сейчас закрыто.",
+  "homeClosedBody": "Заказ примем сейчас, соберём и привезём с {time}"
 }

@@ -27,6 +27,7 @@ import 'catalog_paths.dart';
 import 'category_tile.dart';
 import 'recommended_row.dart';
 import 'section_title.dart';
+import 'store_closed_line.dart';
 
 /// The Customer area's home in the kit's look (`DL-80`, drawings 10 and 10a),
 /// one scroll: where the order goes with the cart at its right, the search
@@ -234,7 +235,7 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
                   reduceMotion: MediaQuery.disableAnimationsOf(context),
                 ),
               ),
-
+              const SliverToBoxAdapter(child: StoreClosedLine()),
               const SliverToBoxAdapter(child: QuestionBanner()),
               if (failure != null)
                 SliverToBoxAdapter(

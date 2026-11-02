@@ -3071,5 +3071,14 @@
         "type": "int"
       }
     }
+  },
+  "homeClosedTitle": "Hozir yopiq.",
+  "homeClosedBody": "Buyurtmani hozir qabul qilamiz, soat {time} dan yig'ib, yetkazib beramiz",
+  "@homeClosedBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   }
 }

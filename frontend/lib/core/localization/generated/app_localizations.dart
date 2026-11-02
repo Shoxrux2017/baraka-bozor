@@ -7519,6 +7519,18 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtmalar, javob kutilmoqda: {count}'**
   String homeNavOrdersWaiting(int count);
+
+  /// No description provided for @homeClosedTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir yopiq.'**
+  String get homeClosedTitle;
+
+  /// No description provided for @homeClosedBody.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani hozir qabul qilamiz, soat {time} dan yig\'ib, yetkazib beramiz'**
+  String homeClosedBody(String time);
 }
 
 class _AppLocalizationsDelegate

@@ -4515,4 +4515,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String homeNavOrdersWaiting(int count) {
     return 'Заказы, ждут ответа: $count';
   }
+
+  @override
+  String get homeClosedTitle => 'Сейчас закрыто.';
+
+  @override
+  String homeClosedBody(String time) {
+    return 'Заказ примем сейчас, соберём и привезём с $time';
+  }
 }

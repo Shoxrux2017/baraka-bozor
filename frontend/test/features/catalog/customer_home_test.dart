@@ -1366,4 +1366,130 @@ void main() {
       expect(byKey('question-banner'), findsNothing);
     });
   });
+
+  group('closed', () {
+    late DateTime now;
+    late FakeCartRepository cart;
+
+    /// A Tashkent wall-clock time as an instant.
+    DateTime tashkent(int hour, int minute) => DateTime.utc(
+      2026,
+      11,
+      2,
+      hour,
+      minute,
+    ).subtract(const Duration(hours: 5));
+
+    const Map<String, Object?> daytime = <String, Object?>{
+      'opens_at': '08:00',
+      'closes_at': '22:00',
+    };
+
+    Future<void> home(
+      WidgetTester tester, {
+      Map<String, Object?>? hours = daytime,
+      Locale device = const Locale('ru'),
+    }) {
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[], workingHours: hours),
+      );
+      return open(tester, device: device, cart: cart, clock: () => now);
+    }
+
+    Future<void> advance(WidgetTester tester, Duration by) async {
+      now = now.add(by);
+      await tester.pump(by);
+    }
+
+    testWidgets('at night the home says it is closed and when it opens', (
+      WidgetTester tester,
+    ) async {
+      now = tashkent(23, 10);
+      await home(tester);
+
+      expect(byKey('store-closed'), findsOneWidget);
+      expect(
+        find.text(
+          'Сейчас закрыто. Заказ примем сейчас, соберём и привезём с 8:00',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        top(tester, byKey('store-closed')),
+        greaterThan(top(tester, byKey('catalog-search'))),
+        reason: 'right under the search',
+      );
+    });
+
+    testWidgets('the line folds away at opening while the home is shown', (
+      WidgetTester tester,
+    ) async {
+      now = tashkent(7, 59);
+      await home(tester);
+      expect(byKey('store-closed'), findsOneWidget);
+
+      await advance(tester, const Duration(minutes: 1));
+      await tester.pumpAndSettle();
+      expect(byKey('store-closed'), findsNothing);
+    });
+
+    testWidgets('it comes at closing while the home is shown', (
+      WidgetTester tester,
+    ) async {
+      now = tashkent(21, 59);
+      await home(tester);
+      expect(byKey('store-closed'), findsNothing);
+
+      await advance(tester, const Duration(minutes: 1));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(byKey('store-closed'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(byKey('store-closed'), findsOneWidget);
+    });
+
+    testWidgets('no line while open, always open or unset', (
+      WidgetTester tester,
+    ) async {
+      now = tashkent(12, 0);
+      await home(tester);
+      expect(byKey('store-closed'), findsNothing);
+
+      now = tashkent(23, 10);
+      await tester.pumpWidget(const SizedBox());
+      await home(tester, hours: null);
+      expect(byKey('store-closed'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await home(
+        tester,
+        hours: <String, Object?>{'opens_at': '00:00', 'closes_at': '23:59'},
+      );
+      expect(byKey('store-closed'), findsNothing);
+    });
+
+    testWidgets('the line is one phrase', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      now = tashkent(23, 10);
+      await home(tester);
+
+      expect(
+        tester.getSemantics(byKey('store-closed')).label,
+        'Сейчас закрыто. Заказ примем сейчас, соберём и привезём с 8:00',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('the line speaks Uzbek', (WidgetTester tester) async {
+      now = tashkent(23, 10);
+      await home(tester, device: const Locale('uz'));
+
+      expect(
+        find.text(
+          "Hozir yopiq. Buyurtmani hozir qabul qilamiz, soat 8:00 dan yig'ib, "
+          'yetkazib beramiz',
+        ),
+        findsOneWidget,
+      );
+    });
+  });
 }

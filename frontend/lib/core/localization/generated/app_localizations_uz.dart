@@ -4463,4 +4463,12 @@ class AppLocalizationsUz extends AppLocalizations {
   String homeNavOrdersWaiting(int count) {
     return 'Buyurtmalar, javob kutilmoqda: $count';
   }
+
+  @override
+  String get homeClosedTitle => 'Hozir yopiq.';
+
+  @override
+  String homeClosedBody(String time) {
+    return 'Buyurtmani hozir qabul qilamiz, soat $time dan yig\'ib, yetkazib beramiz';
+  }
 }

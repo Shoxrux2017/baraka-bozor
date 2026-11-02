@@ -2,6 +2,7 @@ import '../../../core/catalog/catalog_values.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
+import 'store_hours.dart';
 
 /// The Customer's active cart (`docs/09` section 17): its lines at the
 /// current prices and the estimate of their subtotal, as the server
@@ -17,6 +18,7 @@ final class Cart {
     required this.estimatedTotalUzs,
     required this.minimumOrderUzs,
     required this.minimumShortfallUzs,
+    this.hours,
   });
 
   final String id;
@@ -31,6 +33,9 @@ final class Cart {
   final int? estimatedTotalUzs;
   final int? minimumOrderUzs;
   final int? minimumShortfallUzs;
+
+  /// The working hours, or `null` when unset or round the clock.
+  final StoreHours? hours;
 
   int get itemCount => lines.length;
 
