@@ -1844,9 +1844,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get cartAdded => 'Savatga qo\'shildi';
-
-  @override
   String get cartQuantity => 'Miqdori';
 
   @override
@@ -3534,10 +3531,23 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productReadLess => 'Yig\'ish';
 
   @override
+  String get productEstimateTitle => 'Narx taxminiy';
+
+  @override
+  String get productEstimatePromise =>
+      'Ruxsat etilganidan qimmatroq chiqsa — xariddan oldin sizdan so\'raymiz.';
+
+  @override
+  String get productEstimateHow => 'Qanday hisoblaymiz';
+
+  @override
   String get productIfMissing => 'Mahsulot bo\'lmasa';
 
   @override
   String get productNoteHint => 'Masalan: qattiqroq, pishib o\'tmagan';
+
+  @override
+  String get keyboardDone => 'Tayyor';
 
   @override
   String productMoreIn(String category) {
@@ -3566,17 +3576,79 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get productSave => 'Saqlash';
+  String get productSaving => 'Saqlanmoqda…';
 
   @override
-  String get cartLineSaved => 'Savat yangilandi';
+  String get productLineSaved => 'Saqlandi';
 
   @override
-  String get productAlreadyInCart =>
-      'Bu mahsulot savatda bor — o\'zgartirib, saqlashingiz mumkin';
+  String get productAdding => 'Qo\'shilmoqda…';
 
   @override
-  String get quantitySheetTitle => 'Miqdor';
+  String get productAdded => 'Savatda';
+
+  @override
+  String productSumFor(String quantity) {
+    return '$quantity uchun';
+  }
+
+  @override
+  String productSumInCart(String quantity) {
+    return 'savatda · $quantity';
+  }
+
+  @override
+  String productPriceSpoken(String price, String unit) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'kg': 'kilogramm',
+      'gram': 'gramm',
+      'piece': 'dona',
+      'liter': 'litr',
+      'package': 'qadoq',
+      'box': 'quti',
+      'bundle': 'bog\'',
+      'meter': 'metr',
+      'other': 'birlik',
+    });
+    return 'Narxi taxminan $price, 1 $_temp0 uchun';
+  }
+
+  @override
+  String productQuantitySpoken(String name) {
+    return 'Miqdor, $name';
+  }
+
+  @override
+  String get productQuantityTapHint => 'aniq miqdorni kiritish';
+
+  @override
+  String productAddSpoken(String name, String quantity, String sum) {
+    return 'Savatga qo\'shish: $name, $quantity, taxminan $sum';
+  }
+
+  @override
+  String productOpenCartSpoken(String quantity) {
+    return 'Savatni ochish. Savatda $quantity';
+  }
+
+  @override
+  String quantitySheetAsk(String name, String unit) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'kg': 'kilogramm',
+      'gram': 'gramm',
+      'piece': 'dona',
+      'liter': 'litr',
+      'package': 'qadoq',
+      'box': 'quti',
+      'bundle': 'bog\'',
+      'meter': 'metr',
+      'other': 'birlik',
+    });
+    return '$name — necha $_temp0?';
+  }
+
+  @override
+  String get quantitySheetEmpty => 'Miqdorni kiriting';
 
   @override
   String get quantitySheetDone => 'Tayyor';

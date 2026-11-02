@@ -946,7 +946,6 @@
       }
     }
   },
-  "cartAdded": "Savatga qo'shildi",
   "cartQuantity": "Miqdori",
   "cartQuantityFraction": "0 dan katta son: ko'pi bilan 4 xona va 3 kasr",
   "cartQuantityWhole": "1 dan 9999 gacha butun son",
@@ -2252,8 +2251,12 @@
   "productTitle": "Mahsulot haqida",
   "productReadMore": "Batafsil",
   "productReadLess": "Yig'ish",
+  "productEstimateTitle": "Narx taxminiy",
+  "productEstimatePromise": "Ruxsat etilganidan qimmatroq chiqsa — xariddan oldin sizdan so'raymiz.",
+  "productEstimateHow": "Qanday hisoblaymiz",
   "productIfMissing": "Mahsulot bo'lmasa",
   "productNoteHint": "Masalan: qattiqroq, pishib o'tmagan",
+  "keyboardDone": "Tayyor",
   "productMoreIn": "«{category}» bo'limidan yana",
   "@productMoreIn": {
     "placeholders": {
@@ -2275,10 +2278,80 @@
       }
     }
   },
-  "productSave": "Saqlash",
-  "cartLineSaved": "Savat yangilandi",
-  "productAlreadyInCart": "Bu mahsulot savatda bor — o'zgartirib, saqlashingiz mumkin",
-  "quantitySheetTitle": "Miqdor",
+  "productSaving": "Saqlanmoqda…",
+  "productLineSaved": "Saqlandi",
+  "productAdding": "Qo'shilmoqda…",
+  "productAdded": "Savatda",
+  "productSumFor": "{quantity} uchun",
+  "@productSumFor": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "productSumInCart": "savatda · {quantity}",
+  "@productSumInCart": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "productPriceSpoken": "Narxi taxminan {price}, 1 {unit, select, kg{kilogramm} gram{gramm} piece{dona} liter{litr} package{qadoq} box{quti} bundle{bog'} meter{metr} other{birlik}} uchun",
+  "@productPriceSpoken": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "productQuantitySpoken": "Miqdor, {name}",
+  "@productQuantitySpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "productQuantityTapHint": "aniq miqdorni kiritish",
+  "productAddSpoken": "Savatga qo'shish: {name}, {quantity}, taxminan {sum}",
+  "@productAddSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      },
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "productOpenCartSpoken": "Savatni ochish. Savatda {quantity}",
+  "@productOpenCartSpoken": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "quantitySheetAsk": "{name} — necha {unit, select, kg{kilogramm} gram{gramm} piece{dona} liter{litr} package{qadoq} box{quti} bundle{bog'} meter{metr} other{birlik}}?",
+  "@quantitySheetAsk": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "quantitySheetEmpty": "Miqdorni kiriting",
   "quantitySheetDone": "Tayyor",
   "cartUnitPrice": "{unit} uchun ≈ {price}",
   "@cartUnitPrice": {

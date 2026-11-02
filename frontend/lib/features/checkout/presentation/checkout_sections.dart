@@ -360,53 +360,61 @@ class CheckoutWishField extends StatelessWidget {
           style: const TextStyle(fontSize: 12, color: KitColors.muted),
         ),
         const SizedBox(height: 6),
-        TextFormField(
-          key: const ValueKey<String>('checkout-delivery-wish'),
-          controller: controller,
-          focusNode: focusNode,
-          enabled: enabled,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          minLines: 1,
-          maxLines: 3,
-          style: const TextStyle(fontSize: 14, color: KitColors.ink),
-          decoration: InputDecoration(
-            hintText: l10n.checkoutWishHint,
-            hintStyle: const TextStyle(fontSize: 14, color: KitColors.muted),
-            filled: true,
-            fillColor: KitColors.field,
-            border: none,
-            enabledBorder: none,
-            disabledBorder: none,
-            focusedBorder: none,
-            errorBorder: none,
-            focusedErrorBorder: none,
-            errorStyle: const TextStyle(fontSize: 12, color: KitColors.danger),
-            contentPadding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            counter: ValueListenableBuilder<TextEditingValue>(
-              valueListenable: controller,
-              builder: (BuildContext context, TextEditingValue value, _) {
-                final int length = trimLikeServer(value.text).runes.length;
-                if (length < counterFrom) {
-                  return const SizedBox.shrink();
-                }
-                final bool over = length > CheckoutRequest.deliveryTimeNoteMax;
-                return Text(
-                  '$length / ${CheckoutRequest.deliveryTimeNoteMax}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: over ? KitColors.danger : KitColors.muted,
-                    fontWeight: over ? FontWeight.w600 : null,
-                  ),
-                );
-              },
+        // The drawing dims a closed field to .45 (`DL-122`).
+        Opacity(
+          opacity: enabled ? 1 : 0.45,
+          child: TextFormField(
+            key: const ValueKey<String>('checkout-delivery-wish'),
+            controller: controller,
+            focusNode: focusNode,
+            enabled: enabled,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            minLines: 1,
+            maxLines: 3,
+            style: const TextStyle(fontSize: 14, color: KitColors.ink),
+            decoration: InputDecoration(
+              hintText: l10n.checkoutWishHint,
+              hintStyle: const TextStyle(fontSize: 14, color: KitColors.muted),
+              filled: true,
+              fillColor: KitColors.field,
+              border: none,
+              enabledBorder: none,
+              disabledBorder: none,
+              focusedBorder: none,
+              errorBorder: none,
+              focusedErrorBorder: none,
+              errorStyle: const TextStyle(
+                fontSize: 12,
+                color: KitColors.danger,
+              ),
+              contentPadding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+              counter: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: controller,
+                builder: (BuildContext context, TextEditingValue value, _) {
+                  final int length = trimLikeServer(value.text).runes.length;
+                  if (length < counterFrom) {
+                    return const SizedBox.shrink();
+                  }
+                  final bool over =
+                      length > CheckoutRequest.deliveryTimeNoteMax;
+                  return Text(
+                    '$length / ${CheckoutRequest.deliveryTimeNoteMax}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: over ? KitColors.danger : KitColors.muted,
+                      fontWeight: over ? FontWeight.w600 : null,
+                    ),
+                  );
+                },
+              ),
             ),
+            onChanged: onChanged,
+            validator: (String? text) =>
+                trimLikeServer(text ?? '').runes.length >
+                    CheckoutRequest.deliveryTimeNoteMax
+                ? l10n.fieldTooLong(CheckoutRequest.deliveryTimeNoteMax)
+                : null,
           ),
-          onChanged: onChanged,
-          validator: (String? text) =>
-              trimLikeServer(text ?? '').runes.length >
-                  CheckoutRequest.deliveryTimeNoteMax
-              ? l10n.fieldTooLong(CheckoutRequest.deliveryTimeNoteMax)
-              : null,
         ),
       ],
     );

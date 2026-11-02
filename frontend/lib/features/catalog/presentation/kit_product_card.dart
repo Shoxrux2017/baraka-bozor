@@ -25,6 +25,7 @@ import '../../cart/presentation/cart_feedback.dart';
 import '../../favorites/application/favorites_controllers.dart';
 import '../domain/catalog.dart';
 import 'catalog_paths.dart';
+import 'product_photo.dart';
 
 /// The two sizes of the kit card: the rail grid's and everything else's.
 enum KitCardSize { compact, regular }
@@ -106,6 +107,11 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
   // One heart change at a time per card: a second tap while one is on its
   // way is ignored, so a double tap never sends two requests.
   bool _heartBusy = false;
+
+  /// The tag of this card's photo (`DL-122`): one per card, so one product
+  /// twice on a screen never shares a tag, and the photo flies to and from
+  /// the card that was tapped.
+  final Object _heroTag = Object();
 
   /// How far the stepper has grown out of the "+" square: 0 is the square,
   /// 1 the whole row. It grows in 260 ms and shrinks back in 220 ms
@@ -317,7 +323,10 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () => context.push(CatalogPaths.product(id)),
+          onTap: () => context.push(
+            CatalogPaths.product(id),
+            extra: ProductOpening(product: product, heroTag: _heroTag),
+          ),
           child: Stack(
             fit: StackFit.passthrough,
             children: <Widget>[
@@ -336,41 +345,47 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
                             : MainAxisSize.min,
                         children: <Widget>[
                           _sidePadded(
-                            SizedBox(
-                              height: imageHeight,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: KitColors.card,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: LayoutBuilder(
-                                  builder:
-                                      (
-                                        BuildContext context,
-                                        BoxConstraints constraints,
-                                      ) {
-                                        final Rect rect = _pictureRect(
-                                          constraints.maxWidth,
-                                          imageHeight,
-                                        );
-                                        return Stack(
-                                          children: <Widget>[
-                                            Positioned.fromRect(
-                                              rect: rect,
-                                              child: Opacity(
-                                                key: ValueKey<String>(
-                                                  'picture-$id',
-                                                ),
-                                                opacity: available ? 1 : 0.45,
-                                                child: ProductImage(
-                                                  url: product.imageUrl,
-                                                  size: rect.width,
+                            Hero(
+                              tag: _heroTag,
+                              flightShuttleBuilder: productPhotoFlight(
+                                product.imageUrl,
+                              ),
+                              child: SizedBox(
+                                height: imageHeight,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: KitColors.card,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: LayoutBuilder(
+                                    builder:
+                                        (
+                                          BuildContext context,
+                                          BoxConstraints constraints,
+                                        ) {
+                                          final Rect rect = _pictureRect(
+                                            constraints.maxWidth,
+                                            imageHeight,
+                                          );
+                                          return Stack(
+                                            children: <Widget>[
+                                              Positioned.fromRect(
+                                                rect: rect,
+                                                child: Opacity(
+                                                  key: ValueKey<String>(
+                                                    'picture-$id',
+                                                  ),
+                                                  opacity: available ? 1 : 0.45,
+                                                  child: ProductImage(
+                                                    url: product.imageUrl,
+                                                    size: rect.width,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ],
-                                        );
-                                      },
+                                            ],
+                                          );
+                                        },
+                                  ),
                                 ),
                               ),
                             ),

@@ -75,6 +75,9 @@ class FakeCatalogRepository implements CatalogRepository {
   /// The next single-product request answers this instead.
   ApiFailure? productFailure;
 
+  /// While set, a single-product request waits for it.
+  Completer<void>? productHold;
+
   /// How many times the sections were asked for.
   int categoryLoads = 0;
 
@@ -147,6 +150,7 @@ class FakeCatalogRepository implements CatalogRepository {
 
   @override
   Future<CatalogProduct> product(String id) async {
+    await productHold?.future;
     final ApiFailure? failure = productFailure;
     if (failure != null) {
       productFailure = null;

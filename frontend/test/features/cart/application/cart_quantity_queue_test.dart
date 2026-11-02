@@ -319,6 +319,39 @@ void main() {
 
     expect(await settled, isTrue);
     expect(container.read(cartQuantityQueueProvider), isEmpty);
+
+    // A note that waits behind a request on its way is sent by settle too.
+    carts.calls.clear();
+    carts.patches.clear();
+    final Completer<void> hold = Completer<void>();
+    carts.hold = hold;
+    unawaited(queue.want(tomatoProduct, '3'));
+    await tester.pump(_settle);
+    expect(carts.calls, <String>['change:$tomatoLine']);
+    unawaited(
+      queue.describe(
+        tomatoProduct,
+        const CartLineDetails(
+          customerNote: 'Eski',
+          substitutionPolicy: SubstitutionPolicy.allowSimilar,
+        ),
+      ),
+    );
+    final Future<bool> settledWithNote = queue.settle();
+    carts.hold = null;
+    carts.answer = cartOf(<Map<String, Object?>>[
+      cartLineJson(quantity: '3.000'),
+    ]);
+    hold.complete();
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    expect(await settledWithNote, isTrue);
+    expect(carts.patches, hasLength(2));
+    expect(carts.patches.last.quantity, isNull);
+    expect(carts.patches.last.customerNote, 'Eski');
+    expect(container.read(cartQuantityQueueProvider), isEmpty);
     await tester.pump(const Duration(seconds: 1));
   });
 
@@ -379,6 +412,232 @@ void main() {
       expect(container.read(cartQuantityQueueProvider), isEmpty);
       expect(await caller, isNull);
       await tester.pump(const Duration(seconds: 1));
+    });
+  }
+
+  const CartLineDetails firmNote = CartLineDetails(
+    customerNote: 'Покрепче',
+    substitutionPolicy: SubstitutionPolicy.contactBefore,
+  );
+
+  testWidgets('describe sends a note and a rule at once', (tester) async {
+    final ProviderContainer container = await open(tester);
+    carts.calls.clear();
+
+    unawaited(
+      container
+          .read(cartQuantityQueueProvider.notifier)
+          .describe(tomatoProduct, firmNote),
+    );
+
+    expect(carts.calls, <String>['change:$tomatoLine']);
+    final CartLinePatch patch = carts.patches.single;
+    expect(patch.quantity, isNull);
+    expect(patch.noteChanged, isTrue);
+    expect(patch.customerNote, 'Покрепче');
+    expect(patch.substitutionPolicy, SubstitutionPolicy.contactBefore);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets(
+    'a step, a rule and a note on one line reach the cart one request at a '
+    'time',
+    (tester) async {
+      final ProviderContainer container = await open(tester);
+      final CartQuantityQueue queue = container.read(
+        cartQuantityQueueProvider.notifier,
+      );
+      carts.calls.clear();
+
+      // Inside the settle: one request carries the step and the details.
+      final Future<ApiFailure?> step = queue.want(tomatoProduct, '2');
+      await tester.pump(const Duration(milliseconds: 100));
+      final Future<ApiFailure?> details = queue.describe(
+        tomatoProduct,
+        firmNote,
+      );
+      await tester.pump(_settle);
+      await tester.pump();
+      await tester.pump();
+
+      expect(carts.calls, <String>['change:$tomatoLine']);
+      expect(carts.patches.single.quantity, '2');
+      expect(carts.patches.single.customerNote, 'Покрепче');
+      expect(
+        carts.patches.single.substitutionPolicy,
+        SubstitutionPolicy.contactBefore,
+      );
+      expect(await step, isNull);
+      expect(await details, isNull);
+      expect(container.read(cartQuantityQueueProvider), isEmpty);
+
+      // While the step's request runs: the details wait, then follow.
+      carts.calls.clear();
+      carts.patches.clear();
+      carts.answer = cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          quantity: '3.000',
+          note: 'Покрепче',
+          policy: 'contact_before_substitution',
+        ),
+      ]);
+      final Completer<void> hold = Completer<void>();
+      carts.hold = hold;
+      unawaited(queue.want(tomatoProduct, '3'));
+      await tester.pump(_settle);
+      expect(carts.calls, <String>['change:$tomatoLine']);
+
+      final Future<ApiFailure?> second = queue.describe(
+        tomatoProduct,
+        const CartLineDetails(
+          customerNote: 'Yupqaroq',
+          substitutionPolicy: SubstitutionPolicy.contactBefore,
+        ),
+      );
+      await tester.pump(_settle);
+      expect(carts.calls, hasLength(1), reason: 'never two open at once');
+
+      carts.hold = null;
+      hold.complete();
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      expect(carts.calls, <String>['change:$tomatoLine', 'change:$tomatoLine']);
+      expect(carts.patches.last.quantity, isNull);
+      expect(carts.patches.last.customerNote, 'Yupqaroq');
+      expect(carts.patches.last.substitutionPolicy, isNull);
+      expect(await second, isNull);
+      expect(container.read(cartQuantityQueueProvider), isEmpty);
+      await tester.pump(const Duration(seconds: 1));
+    },
+  );
+
+  testWidgets('add carries the note and the rule', (tester) async {
+    final ProviderContainer container = await open(tester);
+    carts.calls.clear();
+
+    unawaited(
+      container
+          .read(cartQuantityQueueProvider.notifier)
+          .add(
+            const NewCartLine(
+              productId: breadProduct,
+              quantity: '1',
+              customerNote: 'Yupqa',
+              substitutionPolicy: SubstitutionPolicy.contactBefore,
+            ),
+          ),
+    );
+
+    expect(carts.calls, <String>['add:$breadProduct']);
+    expect(carts.added.single.customerNote, 'Yupqa');
+    expect(
+      carts.added.single.substitutionPolicy,
+      SubstitutionPolicy.contactBefore,
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(container.read(cartQuantityQueueProvider), isEmpty);
+    expect(carts.calls, <String>['add:$breadProduct']);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('an add while another add of the product is on its way puts its '
+      'note and rule on the line after it', (tester) async {
+    final ProviderContainer container = await open(tester);
+    final CartQuantityQueue queue = container.read(
+      cartQuantityQueueProvider.notifier,
+    );
+    carts.calls.clear();
+    final Completer<void> hold = Completer<void>();
+    carts.hold = hold;
+
+    unawaited(queue.want(breadProduct, '1'));
+    final Future<ApiFailure?> second = queue.add(
+      const NewCartLine(
+        productId: breadProduct,
+        quantity: '1',
+        customerNote: 'Yupqa',
+        substitutionPolicy: SubstitutionPolicy.contactBefore,
+      ),
+    );
+    expect(carts.calls, <String>['add:$breadProduct']);
+
+    carts.hold = null;
+    carts.answer = cartOf(<Map<String, Object?>>[
+      cartLineJson(),
+      cartLineJson(
+        id: breadLine,
+        productId: breadProduct,
+        unit: 'piece',
+        quantity: '1.000',
+      ),
+    ]);
+    hold.complete();
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    expect(carts.calls, <String>['add:$breadProduct', 'change:$breadLine']);
+    final CartLinePatch patch = carts.patches.single;
+    expect(patch.quantity, isNull);
+    expect(patch.customerNote, 'Yupqa');
+    expect(patch.substitutionPolicy, SubstitutionPolicy.contactBefore);
+    expect(await second, isNull);
+    expect(container.read(cartQuantityQueueProvider), isEmpty);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('describe of a product not in the cart sends nothing', (
+    tester,
+  ) async {
+    final ProviderContainer container = await open(tester);
+    carts.calls.clear();
+
+    final ApiFailure? heard = await container
+        .read(cartQuantityQueueProvider.notifier)
+        .describe(breadProduct, firmNote);
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(heard, isNull);
+    expect(carts.calls.where((String c) => c != 'cart'), isEmpty);
+    expect(container.read(cartQuantityQueueProvider), isEmpty);
+  });
+
+  for (final bool listened in <bool>[false, true]) {
+    testWidgets('another account drops a waiting note and sends nothing'
+        '${listened ? ' (queue listened)' : ''}', (tester) async {
+      final ProviderContainer container = await open(tester);
+      if (listened) {
+        container.listen(cartQuantityQueueProvider, (_, _) {});
+      }
+      final CartQuantityQueue queue = container.read(
+        cartQuantityQueueProvider.notifier,
+      );
+      carts.calls.clear();
+      final Completer<void> hold = Completer<void>();
+      carts.hold = hold;
+
+      unawaited(queue.want(tomatoProduct, '2'));
+      await tester.pump(_settle);
+      expect(carts.calls, <String>['change:$tomatoLine']);
+      final Future<ApiFailure?> note = queue.describe(tomatoProduct, firmNote);
+
+      container.read(_account.notifier).signIn('customer-b');
+      await tester.pump();
+      carts.hold = null;
+      hold.complete();
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(carts.patches, hasLength(1), reason: 'only the first, in flight');
+      expect(carts.patches.single.customerNote, isNull);
+      expect(carts.added, isEmpty);
+      expect(container.read(cartQuantityQueueProvider), isEmpty);
+      expect(await note, isNull);
     });
   }
 }

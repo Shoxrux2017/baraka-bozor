@@ -1,30 +1,35 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/catalog/catalog_values.dart';
+import '../../../core/accessibility/announce.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/formatting/server_text.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
-import '../../../core/localization/failure_text.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/orders/estimate_preview.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/routing/app_paths.dart';
-import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/fold.dart';
+import '../../../core/widgets/keyboard_done_bar.dart';
 import '../../../core/widgets/kit_app_bar.dart';
-import '../../../core/widgets/product_image.dart';
 import '../../cart/application/cart_controllers.dart';
+import '../../cart/application/cart_quantity_queue.dart';
 import '../../cart/domain/cart.dart';
+import '../../cart/presentation/cart_feedback.dart';
 import '../../cart/presentation/cart_paths.dart';
 import '../../cart/presentation/cart_widgets.dart';
 import '../../favorites/application/favorites_controllers.dart';
@@ -32,6 +37,8 @@ import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 import 'more_in_category.dart';
 import 'product_bar.dart';
+import 'product_photo.dart';
+import 'product_sections.dart';
 import 'quantity_sheet.dart';
 
 /// One product (drawing 18): its picture, name, approximate price and what an
@@ -39,21 +46,73 @@ import 'quantity_sheet.dart';
 /// note to the Shopper, more of its category, and a bottom bar with the
 /// stepper and "В корзину". A product that can no longer be seen shows that
 /// it is gone (drawing 18b).
+///
+/// Opened from a card it is given the card's product ([opening]) and shows it
+/// at once while the server's answer is on its way; the photo flies from the
+/// card and the page under it fades up (`DL-122`).
 class ProductScreen extends ConsumerStatefulWidget {
-  const ProductScreen({required this.productId, super.key});
+  const ProductScreen({required this.productId, this.opening, super.key});
 
   final String productId;
+
+  /// What the card handed over; ignored when it is for another product.
+  final ProductOpening? opening;
 
   @override
   ConsumerState<ProductScreen> createState() => _ProductScreenState();
 }
 
+/// Where the screen's add stands (`DL-122`).
+enum _AddPhase { idle, adding, added }
+
+/// The field whose change the save mark follows (`DL-122`).
+enum _SaveField { quantity, policy, note }
+
 class _ProductScreenState extends ConsumerState<ProductScreen> {
-  final GlobalKey<FormState> _form = GlobalKey<FormState>();
   final TextEditingController _note = TextEditingController();
   String _quantity = '1';
   SubstitutionPolicy _policy = SubstitutionPolicy.allowSimilar;
   bool _heartBusy = false;
+  _AddPhase _phase = _AddPhase.idle;
+
+  /// Read once so [dispose] can still send a waiting note.
+  late final CartQuantityQueue _queue;
+  final FocusNode _noteFocus = FocusNode();
+
+  /// The note field, to bring into view when it is too long to send.
+  final GlobalKey _noteKey = GlobalKey();
+
+  /// How long the note waits after its last key.
+  static const Duration _noteSettle = Duration(seconds: 1);
+  Timer? _noteTimer;
+
+  /// Whether the Customer changed the note and it is not sent yet.
+  bool _noteDirty = false;
+
+  /// Whether a note handed to the queue has not been answered yet: a cart
+  /// answer must not put the older note into the field over a newer one.
+  bool _noteOnItsWay = false;
+
+  /// Whether a rule the Customer chose has not been answered yet: a cart
+  /// answer must not put the old rule back.
+  bool _ruleOnItsWay = false;
+
+  /// Counts the changes made in the cart; an answer for a change that a
+  /// later one replaced moves nothing.
+  int _changes = 0;
+  _SaveField? _markField;
+  ProductSaveState? _markState;
+  Timer? _markTimer;
+
+  /// How long «Сохранено» stands.
+  static const Duration _savedFor = Duration(milliseconds: 1600);
+
+  /// How long "В корзине" stands before the bar offers the cart.
+  static const Duration _addedFor = Duration(milliseconds: 1100);
+  Timer? _addedTimer;
+
+  /// The quantity the in-cart chip last showed, kept while it folds away.
+  String? _chipQuantity;
 
   /// This product's line in the cart as the screen last took it, which is
   /// what the controls are compared with; `null` while it is not in the cart.
@@ -62,6 +121,8 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   @override
   void initState() {
     super.initState();
+    _queue = ref.read(cartQuantityQueueProvider.notifier);
+    _noteFocus.addListener(_onNoteFocus);
     ref.listenManual<AsyncValue<Cart>>(
       currentCartProvider,
       (AsyncValue<Cart>? _, AsyncValue<Cart> next) => _onCart(next),
@@ -71,6 +132,17 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
 
   @override
   void dispose() {
+    _addedTimer?.cancel();
+    _markTimer?.cancel();
+    _noteTimer?.cancel();
+    // Leaving at once still sends the note; a waiting step goes with it. The
+    // send waits for the tree to finish unmounting: it changes providers.
+    if (_noteDirty && _line != null && _noteFits()) {
+      final String productId = widget.productId;
+      final CartLineDetails details = _details();
+      scheduleMicrotask(() => unawaited(_queue.describe(productId, details)));
+    }
+    _noteFocus.dispose();
     _note.dispose();
     super.dispose();
   }
@@ -79,14 +151,14 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   static String _plain(String quantity) =>
       QuantityRules.display(quantity).replaceAll(',', '.');
 
-  CartLinePatch _patch(CartLine line) {
-    final String note = trimLikeServer(_note.text);
-    return CartLinePatch.between(
-      line,
-      quantity: _quantity,
-      customerNote: note.isEmpty ? null : note,
-      substitutionPolicy: _policy,
-    );
+  /// This product's line in [cart], if it has one.
+  CartLine? _lineIn(Cart cart) {
+    for (final CartLine candidate in cart.lines) {
+      if (candidate.productId == widget.productId) {
+        return candidate;
+      }
+    }
+    return null;
   }
 
   void _onCart(AsyncValue<Cart> cart) {
@@ -95,82 +167,195 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     if (!cart.hasValue) {
       return;
     }
-    CartLine? line;
-    for (final CartLine candidate in cart.requireValue.lines) {
-      if (candidate.productId == widget.productId) {
-        line = candidate;
-        break;
-      }
-    }
+    final CartLine? line = _lineIn(cart.requireValue);
     final CartLine? before = _line;
     setState(() {
       _line = line;
       if (line == null) {
         if (before != null) {
-          // Removed elsewhere: a new add again.
+          // Removed here or elsewhere: a new add again.
           _quantity = '1';
           _policy = SubstitutionPolicy.allowSimilar;
           _note.clear();
+          _noteTimer?.cancel();
+          _noteDirty = false;
+          _noteOnItsWay = false;
+          _ruleOnItsWay = false;
         }
-      } else if (before == null || _patch(before).isEmpty) {
-        // The line first appears, or the server's line changed and the
-        // Customer has not edited it: show the server's values. Unsaved
-        // edits stay.
-        _quantity = _plain(line.quantity);
+        return;
+      }
+      // The server's line is shown unless the Customer's own change of it is
+      // still on its way or being typed.
+      if (!_ruleOnItsWay) {
         _policy = line.substitutionPolicy;
-        final String note = line.customerNote ?? '';
-        if (_note.text != note) {
-          _note.text = note;
-        }
+      }
+      final String note = line.customerNote ?? '';
+      if (!_noteFocus.hasFocus &&
+          !_noteDirty &&
+          !_noteOnItsWay &&
+          _note.text != note) {
+        _note.text = note;
       }
     });
   }
 
-  Future<void> _askQuantity(CatalogProduct product) async {
+  /// Whether the note is short enough for the server, counted as it counts.
+  bool _noteFits() =>
+      trimLikeServer(_note.text).runes.length <= cartNoteMaxLength;
+
+  /// The note and rule as the Customer has them now. A note that fits goes
+  /// with the rule; one too long does not, and the line keeps its own.
+  CartLineDetails _details() {
+    final String text = trimLikeServer(_note.text);
+    final bool carry = _noteFits();
+    if (carry) {
+      _noteTimer?.cancel();
+      _noteOnItsWay = _noteOnItsWay || _noteDirty;
+      _noteDirty = false;
+    }
+    return CartLineDetails(
+      customerNote: carry ? (text.isEmpty ? null : text) : _line?.customerNote,
+      substitutionPolicy: _policy,
+    );
+  }
+
+  /// Shows the mark for [field] while [answer] is awaited, then «Сохранено»;
+  /// a failure clears it and says why. An answer of a replaced change moves
+  /// nothing.
+  void _track(Future<ApiFailure?> answer, _SaveField field) {
+    final int mine = ++_changes;
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    _markTimer?.cancel();
+    setState(() {
+      _markField = field;
+      _markState = ProductSaveState.saving;
+    });
+    unawaited(
+      answer.then((ApiFailure? failure) {
+        if (failure != null && _line != null && _noteFits()) {
+          // A note the field holds that the line does not stays in the field
+          // and waits to go again, whichever change carried it and was then
+          // replaced: a cart answer does not overwrite it, and the next
+          // change, the field closing or leaving sends it.
+          final String text = trimLikeServer(_note.text);
+          if ((text.isEmpty ? null : text) != _line!.customerNote) {
+            _noteDirty = true;
+          }
+        }
+        if (mine != _changes) {
+          return;
+        }
+        _noteOnItsWay = false;
+        _ruleOnItsWay = false;
+        if (failure != null) {
+          if (mounted) {
+            setState(() => _markState = null);
+          }
+          showCartFailure(messenger, l10n, failure);
+          return;
+        }
+        if (!mounted) {
+          return;
+        }
+        setState(() => _markState = ProductSaveState.saved);
+        _markTimer = Timer(_savedFor, () {
+          if (mounted) {
+            setState(() => _markState = null);
+          }
+        });
+      }),
+    );
+  }
+
+  /// A step or an exact quantity of the line in the cart.
+  void _step(String quantity, {bool now = false}) {
+    _track(
+      _queue.want(widget.productId, quantity, now: now),
+      _SaveField.quantity,
+    );
+  }
+
+  void _setPolicy(SubstitutionPolicy policy) {
+    if (_line == null) {
+      setState(() => _policy = policy);
+      return;
+    }
+    _ruleOnItsWay = true;
+    setState(() => _policy = policy);
+    _track(_queue.describe(widget.productId, _details()), _SaveField.policy);
+  }
+
+  void _onNoteChanged(String _) {
+    if (_line == null) {
+      return;
+    }
+    _noteDirty = true;
+    _noteTimer?.cancel();
+    _noteTimer = Timer(_noteSettle, _sendNote);
+  }
+
+  void _onNoteFocus() {
+    if (!_noteFocus.hasFocus) {
+      _sendNote();
+    }
+    // The keyboard bar follows the focus.
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// Brings the note into view and focuses it, when it is too long to send.
+  void _showNote() {
+    final BuildContext? target = _noteKey.currentContext;
+    if (target != null) {
+      unawaited(
+        Scrollable.ensureVisible(
+          target,
+          alignment: 0.3,
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        ),
+      );
+    }
+    _noteFocus.requestFocus();
+  }
+
+  void _sendNote() {
+    _noteTimer?.cancel();
+    if (!_noteDirty || _line == null || !_noteFits()) {
+      return;
+    }
+    _track(_queue.describe(widget.productId, _details()), _SaveField.note);
+  }
+
+  Future<void> _askQuantity(CatalogProduct product, String current) async {
     final String? quantity = await showQuantitySheet(
       context,
       unit: product.unitCode,
-      current: _quantity,
+      current: current,
+      name: product.name(interfaceLanguage(context)),
+      unitPriceUzs: product.customerUnitPriceUzs,
     );
-    if (quantity != null && mounted) {
+    if (quantity == null || !mounted || _plain(quantity) == current) {
+      return;
+    }
+    if (_line == null) {
       setState(() => _quantity = quantity);
+    } else {
+      _step(quantity, now: true);
     }
   }
 
-  Future<void> _save(CartLine line) async {
-    if (!_form.currentState!.validate()) {
-      return;
-    }
-    final CartLinePatch patch = _patch(line);
-    if (patch.isEmpty) {
-      return;
-    }
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-
-    final Cart? answer = await ref
-        .read(cartLineProvider(line.id).notifier)
-        .change(patch);
-    if (!_current) {
-      return;
-    }
-    final ApiFailure? failure = answer == null
-        ? ref.read(cartLineProvider(line.id)).failure
+  /// The card's data, when this page was opened with it for this product.
+  ProductOpening? get _opening {
+    final ProductOpening? opening = widget.opening;
+    return opening != null && opening.product.id == widget.productId
+        ? opening
         : null;
-    final String? text = answer != null
-        ? l10n.cartLineSaved
-        : failure == null
-        ? null
-        : failureText(l10n, failure);
-    if (text != null) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(text)));
-    }
   }
-
-  /// Whether this product's page is still the one the Customer sees.
-  bool get _current => mounted && (ModalRoute.of(context)?.isCurrent ?? false);
 
   Future<void> _toggleHeart(CatalogProduct product) async {
     if (_heartBusy) {
@@ -200,65 +385,77 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     }
   }
 
+  /// Adds the product through the quantity queue. The button says so while
+  /// the server answers; a taken add shows "В корзине" for a moment, then
+  /// offers the cart. A line that appears another way goes straight to the
+  /// cart button (`DL-122`).
   Future<void> _add(CatalogProduct product) async {
-    if (!_form.currentState!.validate()) {
+    if (!_noteFits()) {
+      _showNote();
       return;
     }
     final AppLocalizations l10n = AppLocalizations.of(context);
-    // Kept before the wait: the snackbar may outlive this page.
-    final GoRouter router = GoRouter.of(context);
+    // Kept before the wait: the failure may outlive this page.
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final String name = product.name(interfaceLanguage(context));
+    final String quantity = _quantity;
+    final String spoken =
+        '${QuantityRules.display(quantity)} '
+        '${CatalogLabels.unit(l10n, product.unitCode)}';
     final String note = trimLikeServer(_note.text);
 
-    final Cart? answer = await ref
-        .read(addToCartProvider(product.id).notifier)
+    setState(() => _phase = _AddPhase.adding);
+    final ApiFailure? failure = await ref
+        .read(cartQuantityQueueProvider.notifier)
         .add(
           NewCartLine(
             productId: product.id,
-            quantity: _quantity,
+            quantity: quantity,
             customerNote: note.isEmpty ? null : note,
             substitutionPolicy: _policy,
           ),
         );
-    if (!_current) {
+    if (failure != null) {
+      if (mounted) {
+        setState(() => _phase = _AddPhase.idle);
+      }
+      showCartFailure(messenger, l10n, failure);
       return;
     }
-    if (answer != null) {
-      // A new notice replaces the last rather than queueing behind it.
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(l10n.cartAdded),
-            // With an action a snackbar would otherwise stay until dismissed,
-            // over the checkout's confirmation among others.
-            persist: false,
-            action: SnackBarAction(
-              label: l10n.cartOpen,
-              onPressed: () => router.push(CartPaths.cart),
-            ),
-          ),
-        );
+    if (!mounted) {
       return;
     }
-    final ApiFailure? failure = ref.read(addToCartProvider(product.id)).failure;
-    if (failure == null) {
+    // Read from the cart itself: the screen's own copy is updated a moment
+    // later. A line that holds another quantity than the one sent was there
+    // before (the add was refused as `cart_item_already_exists`), so it is
+    // no add of this screen and the bar goes straight to the cart.
+    final Cart? held = ref.read(currentCartProvider).value;
+    final CartLine? taken = held == null ? null : _lineIn(held);
+    if (taken == null || _plain(taken.quantity) != _plain(quantity)) {
+      // Refused, or not shown yet: the cart that follows decides what the
+      // bar offers.
+      setState(() => _phase = _AddPhase.idle);
       return;
     }
-    // A product already in the cart has been answered by the refreshed cart,
-    // which turns the screen into the in-cart state: no second line is made.
-    if (failure is ApiRefusal && failure.code == 'cart_item_already_exists') {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(l10n.productAlreadyInCart)));
-      return;
+    unawaited(HapticFeedback.lightImpact());
+    announce(context, l10n.cartCardAdded(name, spoken));
+    setState(() => _phase = _AddPhase.added);
+    _addedTimer?.cancel();
+    _addedTimer = Timer(_addedFor, () {
+      if (mounted) {
+        setState(() => _phase = _AddPhase.idle);
+      }
+    });
+  }
+
+  /// The sum under the bar's label: the line's own while the quantity shown
+  /// is the line's, else the estimate for the quantity shown.
+  int _sum(CatalogProduct product, CartLine? line, String shown) {
+    final int? own = line?.estimatedLineTotalUzs;
+    if (line != null && own != null && _plain(line.quantity) == shown) {
+      return own;
     }
-    final String? text = failureText(l10n, failure);
-    if (text != null) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(text)));
-    }
+    return EstimatePreview.lineUzs(product.customerUnitPriceUzs, shown);
   }
 
   @override
@@ -267,17 +464,50 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     final AsyncValue<CatalogProduct> product = ref.watch(
       catalogProductProvider(widget.productId),
     );
-    final CatalogProduct? shown = product.value;
+    final ProductOpening? opening = _opening;
+    final Object? error = product.hasError && product.value == null
+        ? product.error
+        : null;
+    final ApiFailure? loadFailure = error == null
+        ? null
+        : error is ApiFailure
+        ? error
+        : const UnexpectedFailure();
+    final bool gone = loadFailure is ApiRefusal && loadFailure.status == 404;
+    // The server's product once it has come, else the card's; a product the
+    // server says is gone is shown from neither.
+    final CatalogProduct? shown =
+        product.value ?? (gone ? null : opening?.product);
+    final bool reduced = MediaQuery.disableAnimationsOf(context);
+    final Object? heroTag = opening == null || reduced ? null : opening.heroTag;
     final AsyncValue<Cart> cart = ref.watch(currentCartProvider);
-    final MutationState adding = ref.watch(addToCartProvider(widget.productId));
     // The add waits while the cart is on its way: an add to a cart not yet
     // seen could not be told from one already holding the product.
     final bool cartKnown = cart.hasValue || cart.hasError;
     final CartLine? line = _line;
-    final bool saving =
-        line != null && ref.watch(cartLineProvider(line.id)).isBusy;
-    // What the Customer sets waits for the answer, which would overwrite it.
-    final bool locked = line == null ? adding.isBusy : saving;
+    final Map<String, String> wishes = ref.watch(cartQuantityQueueProvider);
+    // What the Customer sets waits for an add's answer, which would
+    // overwrite it; nothing waits in the cart.
+    final bool locked = line == null && _phase == _AddPhase.adding;
+    final String? wished = shownCartQuantity(wishes, widget.productId, line);
+    final String shownQuantity = line != null
+        ? _plain(wished ?? line.quantity)
+        : (wished != null ? _plain(wished) : _quantity);
+    final String? lineQuantity = line == null
+        ? null
+        : '${QuantityRules.display(shownQuantity)} '
+              '${CatalogLabels.unit(l10n, line.unit)}';
+    // Kept while the chip folds away, so it does not empty as it goes.
+    if (lineQuantity != null) {
+      _chipQuantity = lineQuantity;
+    }
+    final ProductBarAction action = line == null
+        ? (_phase == _AddPhase.adding
+              ? ProductBarAction.adding
+              : ProductBarAction.add)
+        : (_phase == _AddPhase.added
+              ? ProductBarAction.added
+              : ProductBarAction.openCart);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -288,62 +518,82 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
         ],
       ),
       body: UnderActiveMode(
-        child: product.when(
-          skipLoadingOnReload: false,
-          skipLoadingOnRefresh: !product.hasError,
-          data: (CatalogProduct product) => _Page(
-            product: product,
-            form: _form,
-            note: _note,
-            policy: _policy,
-            locked: locked,
-            inCart: line == null
-                ? null
-                : l10n.productInCart(
-                    '${QuantityRules.display(line.quantity)} '
-                    '${CatalogLabels.unit(l10n, line.unit)}',
+        child: gone
+            ? const _Gone()
+            : shown == null
+            ? loadFailure == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : _Retry(
+                      failure: loadFailure,
+                      onRetry: () => ref.invalidate(
+                        catalogProductProvider(widget.productId),
+                      ),
+                    )
+            : Column(
+                children: <Widget>[
+                  Expanded(
+                    child: _Page(
+                      product: shown,
+                      note: _note,
+                      noteFocus: _noteFocus,
+                      noteKey: _noteKey,
+                      onNoteChanged: _onNoteChanged,
+                      saveField: _markField,
+                      saveState: _markState,
+                      policy: _policy,
+                      locked: locked,
+                      heroTag: heroTag,
+                      fadeUp: opening != null && !reduced,
+                      chipQuantity: _chipQuantity,
+                      chipShown: line != null,
+                      onChipFolded: () => setState(() => _chipQuantity = null),
+                      onPolicy: _setPolicy,
+                    ),
                   ),
-            onPolicy: (SubstitutionPolicy policy) =>
-                setState(() => _policy = policy),
-          ),
-          error: (Object error, StackTrace _) {
-            final ApiFailure failure = error is ApiFailure
-                ? error
-                : const UnexpectedFailure();
-            if (failure is ApiRefusal && failure.status == 404) {
-              return const _Gone();
-            }
-            return _Retry(
-              failure: failure,
-              onRetry: () =>
-                  ref.invalidate(catalogProductProvider(widget.productId)),
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-        ),
+                  if (_noteFocus.hasFocus &&
+                      MediaQuery.viewInsetsOf(context).bottom > 0)
+                    KeyboardDoneBar(onDone: _noteFocus.unfocus),
+                ],
+              ),
       ),
       bottomNavigationBar: shown == null
           ? null
-          // The note is part of what "Сохранить" waits for.
-          : ListenableBuilder(
-              listenable: _note,
-              builder: (BuildContext context, Widget? _) => ProductBar(
-                product: shown,
-                quantity: _quantity,
-                onQuantity: (String quantity) =>
-                    setState(() => _quantity = quantity),
-                onQuantityTap: () => _askQuantity(shown),
-                actionKey: ValueKey<String>(
-                  line == null ? 'add-to-cart' : 'save-line',
-                ),
-                actionLabel: line == null
-                    ? l10n.productAddToCart
-                    : l10n.productSave,
-                onAction: line == null
-                    ? (cartKnown ? () => _add(shown) : null)
-                    : (_patch(line).isEmpty ? null : () => _save(line)),
-                busy: line == null ? adding.isBusy : saving,
-              ),
+          : ProductBar(
+              product: shown,
+              quantity: shownQuantity,
+              sumUzs: _sum(shown, line, shownQuantity),
+              onQuantity: line == null
+                  ? (String quantity) => setState(() => _quantity = quantity)
+                  : _step,
+              onQuantityTap: () => _askQuantity(shown, shownQuantity),
+              onRemove: line == null || locked
+                  ? null
+                  : () {
+                      _noteTimer?.cancel();
+                      _noteDirty = false;
+                      // A step still waiting is cancelled by the removal: its
+                      // answer is no save to mark.
+                      _changes++;
+                      _markTimer?.cancel();
+                      setState(() => _markState = null);
+                      unawaited(
+                        removeCartLine(
+                          context,
+                          ref,
+                          line: line,
+                          quantity: shownQuantity,
+                          name: shown.name(interfaceLanguage(context)),
+                        ),
+                      );
+                    },
+              locked: locked,
+              action: action,
+              onAction: switch (action) {
+                ProductBarAction.add ||
+                ProductBarAction.adding => cartKnown ? () => _add(shown) : null,
+                ProductBarAction.added => null,
+                ProductBarAction.openCart => () => context.push(CartPaths.cart),
+              },
             ),
     );
   }
@@ -374,24 +624,50 @@ class _Heart extends ConsumerWidget {
 class _Page extends StatelessWidget {
   const _Page({
     required this.product,
-    required this.form,
     required this.note,
+    required this.noteFocus,
+    required this.noteKey,
+    required this.onNoteChanged,
+    required this.saveField,
+    required this.saveState,
     required this.policy,
     required this.locked,
-    required this.inCart,
+    required this.heroTag,
+    required this.fadeUp,
+    required this.chipQuantity,
+    required this.chipShown,
+    required this.onChipFolded,
     required this.onPolicy,
   });
 
   final CatalogProduct product;
-  final GlobalKey<FormState> form;
   final TextEditingController note;
+  final FocusNode noteFocus;
+  final GlobalKey noteKey;
+  final ValueChanged<String> onNoteChanged;
+
+  /// The field the save mark stands by, and what it says; `null` when none.
+  final _SaveField? saveField;
+  final ProductSaveState? saveState;
   final SubstitutionPolicy policy;
 
-  /// Whether an add or a save is on its way: the controls wait.
+  /// Whether an add is on its way: the controls wait.
   final bool locked;
 
-  /// "В корзине: 2 кг" while the product has a line in the cart.
-  final String? inCart;
+  /// The tag the photo flies by, `null` when it does not fly.
+  final Object? heroTag;
+
+  /// Whether the page under the photo fades up (opened from a card).
+  final bool fadeUp;
+
+  /// The quantity the in-cart chip shows, `null` when there is no chip.
+  final String? chipQuantity;
+
+  /// Whether the product has a line in the cart: the chip unfolds.
+  final bool chipShown;
+
+  /// Called once the chip has folded away.
+  final VoidCallback onChipFolded;
   final ValueChanged<SubstitutionPolicy> onPolicy;
 
   static const double side = 20;
@@ -405,173 +681,248 @@ class _Page extends StatelessWidget {
       250,
       MediaQuery.sizeOf(context).width * 0.67,
     );
+    Widget? markOf(_SaveField field) => saveState != null && saveField == field
+        ? ProductSaveMark(
+            key: ValueKey<String>('product-save-mark-${field.name}'),
+            state: saveState!,
+          )
+        : null;
+    final Widget? quantityMark = markOf(_SaveField.quantity);
+    final Widget well = ProductPhotoWell(
+      imageUrl: product.imageUrl,
+      radius: 20,
+    );
 
     return SingleChildScrollView(
-      child: Form(
-        key: form,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: side),
-              child: SizedBox(
-                height: wellHeight,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: KitColors.card,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Center(
-                    child: ProductImage(
-                      url: product.imageUrl,
-                      size: wellHeight * 0.68,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: side),
+            child: SizedBox(
+              height: wellHeight,
+              child: heroTag == null
+                  ? well
+                  : Hero(
+                      tag: heroTag!,
+                      flightShuttleBuilder: productPhotoFlight(
+                        product.imageUrl,
+                      ),
+                      child: well,
                     ),
-                  ),
-                ),
-              ),
             ),
-            if (inCart != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(side, 16, side, 0),
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: _InCartChip(text: inCart!),
+          ),
+          _FadeUp(
+            enabled: fadeUp,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                const SizedBox(height: 6),
+                // First built in the cart it stands still; after an add it
+                // folds in, and away when the line goes.
+                Fold(
+                  shown: chipShown,
+                  onFolded: onChipFolded,
+                  child: chipQuantity == null
+                      ? const SizedBox.shrink()
+                      : Padding(
+                          padding: const EdgeInsets.fromLTRB(side, 10, side, 0),
+                          child: Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Flexible(
+                                  child: ProductInCartChip(
+                                    quantity: chipQuantity!,
+                                  ),
+                                ),
+                                if (quantityMark != null) ...<Widget>[
+                                  const SizedBox(width: 10),
+                                  Flexible(child: quantityMark),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
                 ),
-              ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                side,
-                inCart == null ? 16 : 10,
-                side,
-                0,
-              ),
-              child: Text(
-                product.name(language),
-                key: const ValueKey<String>('product-name'),
-                style: const TextStyle(
-                  fontSize: 20,
-                  height: 1.35,
-                  fontWeight: FontWeight.w700,
-                  color: KitColors.ink,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(side, 8, side, 0),
-              child: Wrap(
-                crossAxisAlignment: WrapCrossAlignment.end,
-                spacing: 8,
-                children: <Widget>[
-                  Text(
-                    l10n.catalogApproxPrice(
-                      MoneyFormat.uzs(product.customerUnitPriceUzs, language),
-                    ),
-                    key: const ValueKey<String>('product-price'),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(side, 10, side, 0),
+                  child: Text(
+                    product.name(language),
+                    key: const ValueKey<String>('product-name'),
                     style: const TextStyle(
-                      fontSize: 22,
+                      fontSize: 20,
+                      height: 1.35,
                       fontWeight: FontWeight.w700,
                       color: KitColors.ink,
                     ),
                   ),
-                  Text(
-                    l10n.catalogPerUnit(
-                      CatalogLabels.unit(l10n, product.unitCode),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(side, 8, side, 0),
+                  child: Semantics(
+                    key: const ValueKey<String>('product-price-row'),
+                    label: l10n.productPriceSpoken(
+                      MoneyFormat.uzs(product.customerUnitPriceUzs, language),
+                      product.unitCode.name,
                     ),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: KitColors.muted,
+                    excludeSemantics: true,
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.end,
+                      spacing: 8,
+                      children: <Widget>[
+                        Text(
+                          l10n.catalogApproxPrice(
+                            MoneyFormat.uzs(
+                              product.customerUnitPriceUzs,
+                              language,
+                            ),
+                          ),
+                          key: const ValueKey<String>('product-price'),
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: KitColors.ink,
+                          ),
+                        ),
+                        Text(
+                          l10n.catalogPerUnit(
+                            CatalogLabels.unit(l10n, product.unitCode),
+                          ),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: KitColors.muted,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            if (product.priceMode == PriceMode.estimate)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(side, 12, side, 0),
-                child: _EstimatePanel(text: l10n.catalogEstimateExplain),
-              ),
-            if (description != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(side, 12, side, 0),
-                child: _Description(text: description),
-              ),
-            const SizedBox(height: 16),
-            const _Rule(),
-            _Section(
-              title: l10n.productIfMissing,
-              child: RadioGroup<SubstitutionPolicy>(
-                groupValue: policy,
-                onChanged: (SubstitutionPolicy? option) {
-                  if (option != null && !locked) {
-                    onPolicy(option);
-                  }
-                },
-                child: Column(
-                  key: const ValueKey<String>('line-substitution'),
-                  children: <Widget>[
-                    for (final SubstitutionPolicy option
-                        in SubstitutionPolicy.values)
-                      _RuleRow(
-                        option: option,
-                        label: OrderLabels.substitution(l10n, option),
-                        onTap: locked ? null : () => onPolicy(option),
-                      ),
-                  ],
                 ),
-              ),
+                if (product.priceMode == PriceMode.estimate)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(side, 12, side, 0),
+                    child: const ProductEstimate(
+                      key: ValueKey<String>('product-estimate'),
+                    ),
+                  ),
+                if (description != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(side, 12, side, 0),
+                    child: _Description(text: description),
+                  ),
+                const SizedBox(height: 16),
+                const _Rule(),
+                _Section(
+                  title: l10n.productIfMissing,
+                  mark: markOf(_SaveField.policy),
+                  child: RadioGroup<SubstitutionPolicy>(
+                    groupValue: policy,
+                    onChanged: (SubstitutionPolicy? option) {
+                      if (option != null && !locked) {
+                        onPolicy(option);
+                      }
+                    },
+                    child: Column(
+                      key: const ValueKey<String>('line-substitution'),
+                      children: <Widget>[
+                        for (final SubstitutionPolicy option
+                            in SubstitutionPolicy.values)
+                          _RuleRow(
+                            option: option,
+                            label: OrderLabels.substitution(l10n, option),
+                            onTap: locked ? null : () => onPolicy(option),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const _Rule(),
+                _Section(
+                  title: l10n.cartNote,
+                  child: KeyedSubtree(
+                    key: noteKey,
+                    child: ProductNoteField(
+                      controller: note,
+                      focusNode: noteFocus,
+                      readOnly: locked,
+                      onChanged: onNoteChanged,
+                      mark: saveField == _SaveField.note ? saveState : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                MoreInCategory(product: product),
+                const SizedBox(height: 24),
+              ],
             ),
-            const _Rule(),
-            _Section(
-              title: l10n.cartNote,
-              child: _NoteField(controller: note, locked: locked),
-            ),
-            const SizedBox(height: 8),
-            MoreInCategory(product: product),
-            const SizedBox(height: 24),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// "В корзине: 2 кг" above the name.
-class _InCartChip extends StatelessWidget {
-  const _InCartChip({required this.text});
+/// The page under the photo comes up from 10 px lower and from nothing in
+/// 340 ms after 100 ms, once, when the product was opened from a card
+/// (`DL-122`). Not [enabled], it is only its child.
+class _FadeUp extends StatefulWidget {
+  const _FadeUp({required this.enabled, required this.child});
 
-  final String text;
+  final bool enabled;
+  final Widget child;
+
+  @override
+  State<_FadeUp> createState() => _FadeUpState();
+}
+
+class _FadeUpState extends State<_FadeUp> with SingleTickerProviderStateMixin {
+  static const Duration delay = Duration(milliseconds: 100);
+  static const Duration rise = Duration(milliseconds: 340);
+
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: delay + rise,
+  );
+  late final Animation<double> _curve = CurvedAnimation(
+    parent: _controller,
+    curve: Interval(
+      delay.inMilliseconds / (delay + rise).inMilliseconds,
+      1,
+      curve: const Cubic(0.2, 0.8, 0.2, 1),
+    ),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.enabled) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: KitColors.primarySoft,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const Icon(
-              Icons.shopping_bag_outlined,
-              size: 16,
-              color: KitColors.primaryDark,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                text,
-                key: const ValueKey<String>('product-in-cart'),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: KitColors.primaryDark,
-                ),
-              ),
-            ),
-          ],
+    if (!widget.enabled) {
+      return widget.child;
+    }
+    return FadeTransition(
+      key: const ValueKey<String>('product-page-fade'),
+      opacity: _curve,
+      child: AnimatedBuilder(
+        animation: _curve,
+        builder: (BuildContext context, Widget? child) => Transform.translate(
+          offset: Offset(0, 10 * (1 - _curve.value)),
+          child: child,
         ),
+        child: widget.child,
       ),
     );
   }
@@ -588,10 +939,13 @@ class _Rule extends StatelessWidget {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.child});
+  const _Section({required this.title, required this.child, this.mark});
 
   final String title;
   final Widget child;
+
+  /// The save mark beside the title, when there is one.
+  final Widget? mark;
 
   @override
   Widget build(BuildContext context) {
@@ -600,60 +954,30 @@ class _Section extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Semantics(
-            header: true,
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: KitColors.ink,
+          Row(
+            children: <Widget>[
+              Flexible(
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: KitColors.ink,
+                    ),
+                  ),
+                ),
               ),
-            ),
+              if (mark != null) ...<Widget>[
+                const SizedBox(width: 10),
+                Flexible(child: mark!),
+              ],
+            ],
           ),
           const SizedBox(height: 8),
           child,
         ],
-      ),
-    );
-  }
-}
-
-class _EstimatePanel extends StatelessWidget {
-  const _EstimatePanel({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: KitColors.primaryWash,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const Icon(
-              Icons.info_outline,
-              size: 20,
-              color: KitColors.primaryDark,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 12,
-                  height: 1.45,
-                  color: KitColors.ink2,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -774,57 +1098,6 @@ class _RuleRow extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _NoteField extends StatelessWidget {
-  const _NoteField({required this.controller, required this.locked});
-
-  final TextEditingController controller;
-  final bool locked;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        TextFormField(
-          key: const ValueKey<String>('line-note'),
-          controller: controller,
-          readOnly: locked,
-          minLines: 3,
-          maxLines: 5,
-          style: const TextStyle(fontSize: 14, color: KitColors.ink),
-          decoration: InputDecoration(
-            hintText: l10n.productNoteHint,
-            hintStyle: const TextStyle(fontSize: 14, color: KitColors.muted),
-            filled: true,
-            fillColor: KitColors.field,
-            contentPadding: const EdgeInsets.all(14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
-            ),
-          ),
-          validator: (String? text) =>
-              trimLikeServer(text ?? '').runes.length > cartNoteMaxLength
-              ? l10n.fieldTooLong(cartNoteMaxLength)
-              : null,
-        ),
-        const SizedBox(height: 4),
-        ValueListenableBuilder<TextEditingValue>(
-          valueListenable: controller,
-          builder: (BuildContext context, TextEditingValue value, Widget? _) =>
-              Text(
-                '${value.text.runes.length} / $cartNoteMaxLength',
-                key: const ValueKey<String>('product-note-count'),
-                textAlign: TextAlign.end,
-                style: const TextStyle(fontSize: 12, color: KitColors.muted),
-              ),
-        ),
-      ],
     );
   }
 }

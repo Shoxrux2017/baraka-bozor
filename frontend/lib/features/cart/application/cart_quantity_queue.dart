@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_failure.dart';
 import '../../../core/orders/order_values.dart';
-import '../../../core/orders/quantity_rules.dart';
 import '../../../core/session/customer_account.dart';
 import '../domain/cart.dart';
 import 'cart_controllers.dart';
@@ -24,16 +23,38 @@ String? shownCartQuantity(
   return wish == CartQuantityQueue.out ? null : wish;
 }
 
+/// The note and the substitution rule the Customer set on a line; a `null`
+/// note means "no note" (`DL-122`).
+final class CartLineDetails {
+  const CartLineDetails({
+    required this.customerNote,
+    required this.substitutionPolicy,
+  });
+
+  final String? customerNote;
+  final SubstitutionPolicy substitutionPolicy;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CartLineDetails &&
+      other.customerNote == customerNote &&
+      other.substitutionPolicy == substitutionPolicy;
+
+  @override
+  int get hashCode => Object.hash(customerNote, substitutionPolicy);
+}
+
 /// The one place the Customer's quantity changes of the cart go through, for
 /// the product card, the product screen and the cart line alike (`DL-119`).
 ///
 /// A step waits [settleDelay] after the last tap, so quick taps send one
 /// change; an add, an exact quantity, a removal and an undo go at once. One
 /// request per product runs at a time; a wish made meanwhile is sent after
-/// its answer. The state is every wish the server has not answered yet, so
-/// a surface can show it. It outlives any screen, so a step is still sent
-/// after its screen is left, and another account drops every wish without
-/// sending it (`frontend/AGENTS.md` sections 5 and 10).
+/// its answer. A line's note and rule travel the same way, one request at a
+/// time with the quantity (`DL-122`). The state is every wish the server has
+/// not answered yet, so a surface can show it. It outlives any screen, so a
+/// step is still sent after its screen is left, and another account drops
+/// every wish without sending it (`frontend/AGENTS.md` sections 5 and 10).
 class CartQuantityQueue extends Notifier<Map<String, String>> {
   /// The wish "this product is out of the cart".
   static const String out = '0';
@@ -50,8 +71,12 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
       <String, Completer<ApiFailure?>>{};
   final Map<String, NewCartLine> _templates = <String, NewCartLine>{};
 
-  /// The product ids with a request on its way, and what each one carries.
-  final Map<String, String> _sent = <String, String>{};
+  /// The notes and rules the server has not answered yet (`DL-122`).
+  final Map<String, CartLineDetails> _details = <String, CartLineDetails>{};
+
+  /// The product ids with a request on its way, and the quantity each one
+  /// carries (`null` when it carries only a note or a rule).
+  final Map<String, String?> _sent = <String, String?>{};
 
   /// The account this queue was built for; a wish never goes to another.
   String? _account;
@@ -70,6 +95,7 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
       _timers.clear();
       _callers.clear();
       _templates.clear();
+      _details.clear();
       _sent.clear();
     });
     return <String, String>{};
@@ -84,6 +110,39 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
     String quantity, {
     bool now = false,
   }) => _wish(productId, quantity, now: now);
+
+  /// Puts a note and a rule on the product's line at once; a waiting step of
+  /// the product loses its timer and travels in the same request. A product
+  /// with neither a line nor an add on its way sends nothing and completes
+  /// `null` (`DL-122`).
+  Future<ApiFailure?> describe(String productId, CartLineDetails details) {
+    if (_lineOf(productId) == null && !_sent.containsKey(productId)) {
+      return Future<ApiFailure?>.value();
+    }
+    final Completer<ApiFailure?>? previous = _callers[productId];
+    if (previous != null) {
+      _complete(previous, null);
+    }
+    final Completer<ApiFailure?> caller = Completer<ApiFailure?>();
+    _callers[productId] = caller;
+    _details[productId] = details;
+    _timers.remove(productId)?.cancel();
+    _send(productId);
+    return caller.future;
+  }
+
+  /// Adds [line] at once, with its note and rule as the add's template and
+  /// as the product's details (`DL-122`).
+  Future<ApiFailure?> add(NewCartLine line) => _wish(
+    line.productId,
+    line.quantity,
+    now: true,
+    template: line,
+    details: CartLineDetails(
+      customerNote: line.customerNote,
+      substitutionPolicy: line.substitutionPolicy,
+    ),
+  );
 
   /// Takes the product out of the cart at once.
   Future<ApiFailure?> remove(String productId) =>
@@ -103,7 +162,8 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
   /// answered; `true` when nothing failed.
   Future<bool> settle() async {
     final List<Future<ApiFailure?>> answers = <Future<ApiFailure?>>[];
-    for (final String id in state.keys.toList()) {
+    final Set<String> waiting = <String>{...state.keys, ..._details.keys};
+    for (final String id in waiting) {
       _timers.remove(id)?.cancel();
       _send(id);
       final Completer<ApiFailure?>? caller = _callers[id];
@@ -120,6 +180,7 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
     String quantity, {
     required bool now,
     NewCartLine? template,
+    CartLineDetails? details,
   }) {
     final Completer<ApiFailure?>? previous = _callers[id];
     if (previous != null) {
@@ -130,6 +191,9 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
     state = <String, String>{...state, id: quantity};
     if (template != null) {
       _templates[id] = template;
+    }
+    if (details != null) {
+      _details[id] = details;
     }
     _timers.remove(id)?.cancel();
     if (now || _lineOf(id) == null) {
@@ -170,6 +234,7 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
   void _done(String id, ApiFailure? failure) {
     _timers.remove(id)?.cancel();
     _templates.remove(id);
+    _details.remove(id);
     if (state.containsKey(id)) {
       state = <String, String>{...state}..remove(id);
     }
@@ -190,31 +255,55 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
       return;
     }
     final String? quantity = state[id];
-    if (quantity == null) {
+    final CartLineDetails? details = _details[id];
+    if (quantity == null && details == null) {
       return;
     }
     final CartLine? line = _lineOf(id);
     final NewCartLine? template = _templates[id];
-    if (quantity == out && line == null) {
-      _done(id, null);
+    if (quantity == out) {
+      // A removal needs no note or rule.
+      _details.remove(id);
+      if (line == null) {
+        _done(id, null);
+        return;
+      }
+      _sent[id] = quantity;
+      unawaited(_run(id, quantity, null, line, template, null));
       return;
     }
-    if (quantity != out &&
-        line != null &&
-        QuantityRules.thousandths(quantity) ==
-            QuantityRules.thousandths(line.quantity)) {
+    if (line == null) {
+      if (quantity == null) {
+        // A note or a rule with no line and no add on its way has no home.
+        _done(id, null);
+        return;
+      }
+      _sent[id] = quantity;
+      unawaited(_run(id, quantity, details, null, template, null));
+      return;
+    }
+    final CartLinePatch patch = CartLinePatch.between(
+      line,
+      quantity: quantity ?? line.quantity,
+      customerNote: details != null ? details.customerNote : line.customerNote,
+      substitutionPolicy:
+          details?.substitutionPolicy ?? line.substitutionPolicy,
+    );
+    if (patch.isEmpty) {
       _done(id, null);
       return;
     }
     _sent[id] = quantity;
-    unawaited(_run(id, quantity, line, template));
+    unawaited(_run(id, quantity, details, line, template, patch));
   }
 
   Future<void> _run(
     String id,
-    String quantity,
+    String? quantity,
+    CartLineDetails? details,
     CartLine? line,
     NewCartLine? template,
+    CartLinePatch? patch,
   ) async {
     final int generation = _generation;
     ApiFailure? failure;
@@ -246,9 +335,12 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
                 .add(
                   NewCartLine(
                     productId: id,
-                    quantity: quantity,
-                    customerNote: template?.customerNote,
+                    quantity: quantity!,
+                    customerNote: details != null
+                        ? details.customerNote
+                        : template?.customerNote,
                     substitutionPolicy:
+                        details?.substitutionPolicy ??
                         template?.substitutionPolicy ??
                         SubstitutionPolicy.allowSimilar,
                   ),
@@ -268,16 +360,7 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
       );
       try {
         answered =
-            await ref
-                .read(cartLineProvider(line.id).notifier)
-                .change(
-                  CartLinePatch.between(
-                    line,
-                    quantity: quantity,
-                    customerNote: line.customerNote,
-                    substitutionPolicy: line.substitutionPolicy,
-                  ),
-                ) !=
+            await ref.read(cartLineProvider(line.id).notifier).change(patch!) !=
             null;
         if (!ref.mounted || generation != _generation) {
           return;
@@ -302,7 +385,7 @@ class CartQuantityQueue extends Notifier<Map<String, String>> {
       _done(id, quiet ? null : failure);
       return;
     }
-    if (state[id] == quantity) {
+    if (state[id] == quantity && _details[id] == details) {
       _done(id, null);
     } else if (!_timers.containsKey(id)) {
       _send(id);

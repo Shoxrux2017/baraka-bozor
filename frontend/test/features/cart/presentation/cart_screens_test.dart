@@ -130,19 +130,22 @@ void main() {
         await tester.tap(byKey('product-plus'));
         await tester.pumpAndSettle();
         await tester.enterText(byKey('line-note'), '  Qizilini oling ');
-        await tapAndSettle(tester, byKey('add-to-cart'));
+        await tester.ensureVisible(byKey('add-to-cart'));
+        await tester.pumpAndSettle();
+        await tester.tap(byKey('add-to-cart'));
+        await tester.pump();
+        await tester.pump();
+        // The answer shows on the button itself.
+        expect(byKey('product-added'), findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 1100));
+        await tester.pumpAndSettle();
 
         final NewCartLine sent = cart.added.single;
         expect(sent.productId, tomatoProduct);
         expect(sent.quantity, '1.5');
         expect(sent.customerNote, 'Qizilini oling');
         expect(sent.substitutionPolicy, SubstitutionPolicy.allowSimilar);
-        expect(find.text(l10n(tester).cartAdded), findsOneWidget);
-
-        // The notice goes by itself, action or not.
-        await tester.pump(const Duration(seconds: 5));
-        await tester.pumpAndSettle();
-        expect(find.text(l10n(tester).cartAdded), findsNothing);
+        expect(byKey('open-cart'), findsOneWidget);
 
         // The cart holds the line the server answered.
         GoRouter.of(anywhere(tester)).push('/customer/cart');
@@ -217,70 +220,7 @@ void main() {
         expect(cart.calls, contains('cart'), reason: 'asked for again');
         expect(find.byType(CartScreen), findsNothing);
         expect(find.byType(BottomSheet), findsNothing);
-        expect(find.text(l10n(tester).cartAdded), findsNothing);
-      },
-    );
-
-    testWidgets('a second notice replaces the first rather than queueing', (
-      WidgetTester tester,
-    ) async {
-      await open(tester, at: '/customer/products/$tomatoProduct');
-      cart.answer = cartOf(<Map<String, Object?>>[
-        cartLineJson(productId: tomatoProduct, quantity: '1.500'),
-      ]);
-      await tester.tap(byKey('product-plus'));
-      await tester.pump();
-      // Frame by frame, so the notice's timer starts as it would.
-      Future<void> wait(Duration time) async {
-        for (int i = 0; i < time.inMilliseconds ~/ 100; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
-      }
-
-      await tester.tap(byKey('add-to-cart'));
-      await wait(const Duration(seconds: 1));
-
-      cart.answer = cartOf(<Map<String, Object?>>[
-        cartLineJson(productId: tomatoProduct, quantity: '1.500'),
-        cartLineJson(
-          id: breadLine,
-          productId: breadProduct,
-          unit: 'piece',
-          quantity: '1',
-        ),
-      ]);
-      GoRouter.of(anywhere(tester)).push('/customer/products/$breadProduct');
-      await wait(const Duration(milliseconds: 500));
-      await tester.tap(byKey('add-to-cart'));
-      await wait(const Duration(seconds: 1));
-      expect(find.text(l10n(tester).cartAdded), findsOneWidget);
-
-      // Queued, the second would only show once the first had gone, at about
-      // four and a half seconds in, and stay until about nine.
-      await wait(const Duration(seconds: 4));
-      expect(find.text(l10n(tester).cartAdded), findsNothing);
-    });
-
-    testWidgets(
-      'the notice stays behind when the Customer goes to the checkout',
-      (WidgetTester tester) async {
-        await open(tester, at: '/customer/products/$tomatoProduct');
-        cart.answer = cartOf(<Map<String, Object?>>[
-          cartLineJson(productId: tomatoProduct, quantity: '1.500'),
-        ]);
-        await tester.tap(byKey('product-plus'));
-        await tester.pump();
-        await tapAndSettle(tester, byKey('add-to-cart'));
-        // By the router: the notice's own action would dismiss the notice.
-        GoRouter.of(anywhere(tester)).push('/customer/cart');
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-        expect(find.text(l10n(tester).cartAdded), findsOneWidget);
-
-        await tester.tap(byKey('go-to-checkout'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-        expect(find.text(l10n(tester).cartAdded), findsNothing);
+        expect(byKey('product-added'), findsNothing);
       },
     );
 
@@ -311,25 +251,6 @@ void main() {
 
         expect(find.byType(CartScreen), findsOneWidget, reason: 'not a second');
         expect(find.byType(BottomSheet), findsNothing);
-      },
-    );
-
-    testWidgets(
-      "the snackbar's way to the cart works after the product was left",
-      (WidgetTester tester) async {
-        await open(tester, at: '/customer/products/$tomatoProduct');
-        cart.answer = cartOf(<Map<String, Object?>>[
-          cartLineJson(productId: tomatoProduct),
-        ]);
-        await tapAndSettle(tester, byKey('add-to-cart'));
-
-        GoRouter.of(anywhere(tester)).pop();
-        await tester.pump();
-        await tester.tap(find.text(l10n(tester).cartOpen));
-        await tester.pumpAndSettle();
-
-        expect(tester.takeException(), isNull);
-        expect(find.byType(CartScreen), findsOneWidget);
       },
     );
 
@@ -385,7 +306,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+        tester.widget<TextField>(byKey('line-note')).controller!.text,
         'Qizilini oling',
       );
       expect(

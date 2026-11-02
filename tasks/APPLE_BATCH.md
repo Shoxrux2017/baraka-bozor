@@ -4,7 +4,7 @@ From 2026-10-24 to 2026-10-29 the Owner reviewed every Customer screen, and the 
 
 Rules for every stage:
 
-- One stage is one branch `task/apple-<n>-<name>`, one plan in `docs/superpowers/plans/`, one pull request, one session.
+- One stage — or one of the pairs 8 + 9 and 17 + 22 (`DL-123`) — is one branch `task/apple-<n>-<name>`, one plan in `docs/superpowers/plans/`, one pull request, one session.
 - Stage 1's colours and 44 px controls are the baseline every later test was drawn on; later stages do not ask about them again.
 - Items marked **Owner** are the Owner's decisions (`AGENTS.md` §3) and go into `docs/DECISIONS.md` as Owner decisions in the stage that codes them. Every other choice a stage makes is the agent's and is recorded there too.
 - Items marked **server** need a backend change; the stage records it in `docs/DECISIONS.md` and `docs/09`, and runs `/security-review` before its pull request.
@@ -20,8 +20,8 @@ Rules for every stage:
 | 1 | Kit colours and sizes (all roles) | 7 | — | Merged (PR #121) |
 | 2 | Customer tabs | 5 | — | Merged (PR #122) |
 | 3 | Cart and the card's stepper | 8 | — | Merged (PR #123) |
-| 4 | Checkout | 10 | — | In review |
-| 5 | Product | 9 | — | Planned |
+| 4 | Checkout | 10 | — | Merged (PR #125) |
+| 5 | Product | 9 | — | In review |
 | 6 | Home and categories | 14 | working hours | Planned |
 | 7 | Category screen and product lists | 10 | — | Planned |
 | 8 | «Рекомендуем» and «Все товары» | 7 | list order | Planned |
@@ -348,6 +348,7 @@ Noticed in the reviews and left out; each needs its own decision before any code
 ## Risks
 
 - The 44 stepper squeezes the cart line's sum, which is scaled down to fit. Measured width of the sum: 68 to 52 px at 320 wide, 108 to 92 at 360, 123 to 107 at 375. On a 320 px phone a sum like "≈ 127 600 so'm" is drawn at about 40 % of its size. Stage 3 (`cart-7`) fixes it when it redraws the line (`DL-117` (9)). Fixed: the sum now stands over the stepper when the two do not fit side by side (`DL-119` (4)).
+- The app has no page transitions and no iOS back-swipe: go_router 18.0.1 recognises a Material app by `package:material_ui`'s `MaterialApp`, a different class from `package:flutter/material.dart`'s in Flutter 3.47.5, so every route gets go_router's `NoTransitionPage` (since the scaffold, `32bdcbb`). Stage 5 gives only the product route its own `MaterialPage`, so its photo can fly (`DL-122` (1)). The fix — one page builder for every route, then the tests that assume an instant push — is a task of its own; the Owner places it in the batch.
 
 ## Review findings not acted on
 
@@ -358,8 +359,11 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stage 3 review, minor: the quantity queue treats a cart that has not loaded yet as one without the product, so a step then adds at once, and an existing line answers `cart_item_already_exists` and the step is dropped quietly. Ruling: a card or line shows a stepper only once the cart or a wish is known, so the case needs a cart that never loaded; left as is.
 - Stage 3 review, minor: the product card starts and stops its grow and shrink from `build()`; a card that scrolls in while its product has a wish but no line yet grows instead of appearing. Ruling: no crash (traced), visual only; a `ref.listen` would be cleaner, taken with stage 5 or 7 when the card is touched.
 - Stage 3 review, minor: the cart footer's fit check hard-codes the button's 18 px side padding and the 12 + 1 + 12 divider. Ruling: correct today; whoever changes the button updates the check.
-- Stage 3 review, out of scope: the product screen still saves its quantity through the same cart controllers, so a queue send that meets its save on the same line is refused as busy and the queue's wish is dropped quietly. Ruling: stage 5 (`product-3`) moves the product screen onto the queue.
+- Stage 3 review, out of scope: the product screen still saves its quantity through the same cart controllers, so a queue send that meets its save on the same line is refused as busy and the queue's wish is dropped quietly. Ruling: stage 5 (`product-3`) moves the product screen onto the queue. Fixed in stage 5: the card, the cart line and the screen share one queue request per product (`DL-122` (3)).
 - Stage 3 review, for the Owner's look: at 100 % text on a 360 dp phone a six-digit line sum leaves about 92 px beside the stepper, so many lines stand their sum over the stepper rather than beside it as drawn. Ruling: the walk took a 360 dp screenshot (every line stacks there, five-digit sums too); the Owner chose to keep the stacked line (`DL-120` (1)).
 - Stage 4 review, minor: the checkout's address card gets only `address: null` and so cannot tell "no addresses" from "the list failed to load"; in the latter its link reads «Добавить» while it reloads the list (its title was already «Добавить адрес доставки» there before). Ruling: rare and harmless (the tap reloads); the card needs a "list failed" flag, taken with stage 18 or 19 when the address pieces are touched.
 - Stage 4 review, minor: `Fold` keeps the drawn height on a reversal but not the opacity (fold and unfold use different opacity curves), so the opacity steps by about 0.05–0.1 at the flip. Ruling: barely visible; derive the opacity the same way as the height when `Fold` is next touched.
 - Stage 4, minor: at text × 3 (iOS accessibility sizes; Android stops at × 2) a section title of the checkout overflows. Ruling: beyond the × 2 the tests pin; check the iOS accessibility sizes in the iOS pass before release.
+- Stage 4 walk, minor: the closed wish field was not dimmed, although the drawing has `.w-in:disabled{opacity:.45}`. Fixed in stage 5: `CheckoutWishField` is drawn at opacity 0.45 while it is not enabled (`DL-122`).
+- Stage 5, minor: at the bin the quantity's `decreasedValue` reads «0 кг» (Flutter needs a value with every decrease); `cartRemoveLine` would say what happens. Ruling: harmless — the bin removes with «Вернуть»; taken when the bar is next touched.
+- Stage 5 re-review, P3: the bin is not a tracked change, so when it is tapped while a note or a rule is on its way and the removal then fails, the screen's "on its way" flags stay set and the server's note and rule are not put back until the next change. Ruling: needs a pending note or rule, a bin tap and a failed removal at once, and the next change clears it; the fix (clear both flags in the bin's path) goes with the next stage that touches the product screen.

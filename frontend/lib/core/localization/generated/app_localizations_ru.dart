@@ -1874,9 +1874,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get cartAdded => 'Добавлено в корзину';
-
-  @override
   String get cartQuantity => 'Количество';
 
   @override
@@ -3575,10 +3572,23 @@ class AppLocalizationsRu extends AppLocalizations {
   String get productReadLess => 'Свернуть';
 
   @override
+  String get productEstimateTitle => 'Цена ориентировочная';
+
+  @override
+  String get productEstimatePromise =>
+      'Если выйдет дороже допустимого — спросим вас до покупки.';
+
+  @override
+  String get productEstimateHow => 'Как считаем';
+
+  @override
   String get productIfMissing => 'Если товара не будет';
 
   @override
   String get productNoteHint => 'Например: покрепче, не перезрелые';
+
+  @override
+  String get keyboardDone => 'Готово';
 
   @override
   String productMoreIn(String category) {
@@ -3607,17 +3617,79 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get productSave => 'Сохранить';
+  String get productSaving => 'Сохраняем…';
 
   @override
-  String get cartLineSaved => 'Корзина обновлена';
+  String get productLineSaved => 'Сохранено';
 
   @override
-  String get productAlreadyInCart =>
-      'Этот товар уже в корзине — можно изменить и сохранить';
+  String get productAdding => 'Добавляем…';
 
   @override
-  String get quantitySheetTitle => 'Количество';
+  String get productAdded => 'В корзине';
+
+  @override
+  String productSumFor(String quantity) {
+    return 'за $quantity';
+  }
+
+  @override
+  String productSumInCart(String quantity) {
+    return 'в корзине · $quantity';
+  }
+
+  @override
+  String productPriceSpoken(String price, String unit) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'kg': 'килограмм',
+      'gram': 'грамм',
+      'piece': 'штуку',
+      'liter': 'литр',
+      'package': 'упаковку',
+      'box': 'коробку',
+      'bundle': 'пучок',
+      'meter': 'метр',
+      'other': 'единицу',
+    });
+    return 'Цена примерно $price за $_temp0';
+  }
+
+  @override
+  String productQuantitySpoken(String name) {
+    return 'Количество, $name';
+  }
+
+  @override
+  String get productQuantityTapHint => 'ввести точное количество';
+
+  @override
+  String productAddSpoken(String name, String quantity, String sum) {
+    return 'Добавить в корзину: $name, $quantity, примерно $sum';
+  }
+
+  @override
+  String productOpenCartSpoken(String quantity) {
+    return 'Открыть корзину. В корзине $quantity';
+  }
+
+  @override
+  String quantitySheetAsk(String name, String unit) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'kg': 'килограммов',
+      'gram': 'граммов',
+      'piece': 'штук',
+      'liter': 'литров',
+      'package': 'упаковок',
+      'box': 'коробок',
+      'bundle': 'пучков',
+      'meter': 'метров',
+      'other': 'единиц',
+    });
+    return '$name — сколько $_temp0?';
+  }
+
+  @override
+  String get quantitySheetEmpty => 'Введите количество';
 
   @override
   String get quantitySheetDone => 'Готово';

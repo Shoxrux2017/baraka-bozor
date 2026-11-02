@@ -1,31 +1,49 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/formatting/money_format.dart';
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
-import '../../../core/orders/estimate_preview.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../cart/application/card_quantity.dart';
 import '../domain/catalog.dart';
 
+/// What the bar's action shows and does (`DL-122`).
+enum ProductBarAction {
+  /// "В корзину" over the sum.
+  add,
+
+  /// The add is on its way: the same green button with a spinner.
+  adding,
+
+  /// The add was taken: a check and "В корзине", for a moment.
+  added,
+
+  /// The product is in the cart: "Открыть корзину" over what is there.
+  openCart,
+}
+
 /// The product screen's bottom bar (drawing 18): the quantity stepper, which
 /// steps as the card does, and the action with the previewed sum under its
 /// label. The screen owns the quantity and what the action does; the bar
-/// only shows them. A null [onAction] disables the action, and while [busy]
-/// it waits and ignores taps.
+/// only shows them. A null [onAction] disables the action, and [locked]
+/// makes the stepper and the quantity wait.
 class ProductBar extends StatelessWidget {
   const ProductBar({
     required this.product,
     required this.quantity,
+    required this.sumUzs,
     required this.onQuantity,
-    required this.actionKey,
-    required this.actionLabel,
+    required this.action,
     required this.onAction,
-    required this.busy,
+    this.locked = false,
     this.onQuantityTap,
+    this.onRemove,
     super.key,
   });
 
@@ -33,93 +51,173 @@ class ProductBar extends StatelessWidget {
 
   /// The quantity as the API takes it: `1`, `1.5`.
   final String quantity;
+
+  /// The sum written under the label.
+  final int sumUzs;
   final ValueChanged<String> onQuantity;
-  final Key actionKey;
-  final String actionLabel;
+  final ProductBarAction action;
   final VoidCallback? onAction;
-  final bool busy;
+
+  /// Whether the stepper and the quantity wait for an answer.
+  final bool locked;
 
   /// Opens the entry of an exact quantity; the quantity is not a button
   /// without it.
   final VoidCallback? onQuantityTap;
+
+  /// Takes the product out of the cart. When set, the minus at the smallest
+  /// step is a bin that calls it (`DL-122`).
+  final VoidCallback? onRemove;
 
   static const double height = 54;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AppLanguage language = interfaceLanguage(context);
-    // While the add or the save waits the quantity stays as sent.
-    final String? lower = busy
+    // While the add waits the quantity stays as sent.
+    final String? lower = locked
         ? null
         : CardQuantity.previous(product.unitCode, quantity);
-    final String? upper = busy
+    final String? upper = locked
         ? null
         : CardQuantity.next(product.unitCode, quantity);
+    // At the smallest step there is nothing left to take away but the line.
+    final bool bin =
+        onRemove != null &&
+        !locked &&
+        lower == null &&
+        QuantityRules.thousandths(quantity) <=
+            QuantityRules.thousandths(CardQuantity.step(product.unitCode));
+    final AppLanguage language = interfaceLanguage(context);
     final String sum = l10n.catalogApproxPrice(
-      MoneyFormat.uzs(
-        EstimatePreview.lineUzs(product.customerUnitPriceUzs, quantity),
-        language,
-      ),
+      MoneyFormat.uzs(sumUzs, language),
     );
 
-    final String shownQuantity =
-        '${QuantityRules.display(quantity)} '
+    String quantityText(String value) =>
+        '${QuantityRules.display(value)} '
         '${CatalogLabels.unit(l10n, product.unitCode)}';
+    final String shownQuantity = quantityText(quantity);
+    final String name = product.name(language);
 
-    final Widget action = FilledButton(
-      key: actionKey,
-      style: FilledButton.styleFrom(
-        backgroundColor: KitColors.primary,
-        foregroundColor: Colors.white,
-        disabledBackgroundColor: KitColors.primarySoft,
-        disabledForegroundColor: Colors.white,
-        minimumSize: const Size(0, height),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    final String label = switch (action) {
+      ProductBarAction.add => l10n.productAddToCart,
+      ProductBarAction.adding => l10n.productAdding,
+      ProductBarAction.added => l10n.productAdded,
+      ProductBarAction.openCart => l10n.cartOpen,
+    };
+    final String? sumLine = switch (action) {
+      ProductBarAction.add || ProductBarAction.adding => sum,
+      ProductBarAction.added => null,
+      ProductBarAction.openCart => '$shownQuantity · $sum',
+    };
+    final String spoken = switch (action) {
+      ProductBarAction.add => l10n.productAddSpoken(
+        name,
+        shownQuantity,
+        MoneyFormat.uzs(sumUzs, language),
       ),
-      // While busy the tap is taken and does nothing, so the button keeps
-      // its colour and shows the wait.
-      onPressed: onAction == null ? null : (busy ? () {} : onAction),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          busy
-              ? SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                    semanticsLabel: l10n.cartSaving,
-                  ),
-                )
-              : Text(
-                  actionLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-          Text(
-            sum,
-            key: const ValueKey<String>('product-sum'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      ProductBarAction.adding => l10n.productAdding,
+      ProductBarAction.added => l10n.productAdded,
+      ProductBarAction.openCart => l10n.productOpenCartSpoken(shownQuantity),
+    };
+
+    Widget actionButton({required bool withSum}) {
+      final String? line = withSum ? sumLine : null;
+      return switch (action) {
+        ProductBarAction.add || ProductBarAction.adding => FilledButton(
+          key: const ValueKey<String>('add-to-cart'),
+          style: FilledButton.styleFrom(
+            backgroundColor: KitColors.primary,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: KitColors.primarySoft,
+            disabledForegroundColor: Colors.white,
+            minimumSize: const Size(0, height),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
           ),
-        ],
-      ),
-    );
+          // While adding the tap is taken and does nothing, so the button
+          // keeps its colour and shows the wait.
+          onPressed: onAction == null
+              ? null
+              : (action == ProductBarAction.adding ? () {} : onAction),
+          child: Semantics(
+            label: spoken,
+            excludeSemantics: true,
+            child: action == ProductBarAction.adding
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      const ExcludeSemantics(
+                        child: SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(child: _labelOverSum(label, line)),
+                    ],
+                  )
+                : _labelOverSum(label, line),
+          ),
+        ),
+        ProductBarAction.added => Semantics(
+          label: spoken,
+          excludeSemantics: true,
+          child: _AddedMark(text: label),
+        ),
+        ProductBarAction.openCart => OutlinedButton(
+          key: const ValueKey<String>('open-cart'),
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: KitColors.primaryDark,
+            side: const BorderSide(color: KitColors.primary, width: 1.5),
+            minimumSize: const Size(0, height),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          onPressed: onAction,
+          child: Semantics(
+            label: spoken,
+            excludeSemantics: true,
+            child: _labelOverSum(label, line),
+          ),
+        ),
+      };
+    }
 
-    Widget stepper() => _Stepper(
-      quantity: shownQuantity,
-      minusLabel: l10n.cartStepMinus,
-      plusLabel: l10n.cartStepPlus,
-      onQuantityTap: busy ? null : onQuantityTap,
-      onMinus: lower == null ? null : () => onQuantity(lower),
-      onPlus: upper == null ? null : () => onQuantity(upper),
+    final Widget stepper = Semantics(
+      label: l10n.productQuantitySpoken(name),
+      value: shownQuantity,
+      increasedValue: upper == null ? null : quantityText(upper),
+      decreasedValue: bin
+          ? quantityText('0')
+          : (lower == null ? null : quantityText(lower)),
+      onIncrease: upper == null ? null : () => onQuantity(upper),
+      onDecrease: bin
+          ? onRemove
+          : (lower == null ? null : () => onQuantity(lower)),
+      onTap: locked ? null : onQuantityTap,
+      onTapHint: l10n.productQuantityTapHint,
+      excludeSemantics: true,
+      child: _Stepper(
+        quantity: shownQuantity,
+        minusLabel: bin ? l10n.cartRemoveLine : l10n.cartStepMinus,
+        minusIcon: bin ? Icons.delete_outline : Icons.remove,
+        minusColor: bin ? KitColors.danger : KitColors.primaryDark,
+        plusLabel: l10n.cartStepPlus,
+        onQuantityTap: locked ? null : onQuantityTap,
+        onMinus: bin
+            ? onRemove
+            : (lower == null ? null : () => onQuantity(lower)),
+        onPlus: upper == null ? null : () => onQuantity(upper),
+      ),
     );
 
     return DecoratedBox(
@@ -142,27 +240,66 @@ class ProductBar extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            // The quantity is read at the Customer's text size and never
-            // shrunk: beside the action when both fit, else above it.
+            // Everything is measured at the Customer's text size and never
+            // shrunk: the action beside the stepper when both fit; else the
+            // sum moves out of the button, beside the stepper or under it,
+            // and the button takes the full width.
             final double stepperWidth = _Stepper.widthOf(
               context,
               shownQuantity,
             );
-            final bool beside =
-                stepperWidth + _gap + _actionMinWidth <= constraints.maxWidth;
-            if (beside) {
+            final double content =
+                <double>[
+                  textWidth(context, label, _labelStyle),
+                  if (sumLine != null) textWidth(context, sumLine, _lineStyle),
+                ].reduce(math.max) +
+                16 +
+                (action == ProductBarAction.added ? 30 : 0) +
+                (action == ProductBarAction.adding ? 26 : 0);
+            final double actionWidth = math.max(_actionMinWidth, content);
+            if (stepperWidth + _gap + actionWidth <= constraints.maxWidth) {
               return Row(
                 children: <Widget>[
-                  SizedBox(width: stepperWidth, child: stepper()),
+                  SizedBox(width: stepperWidth, child: stepper),
                   const SizedBox(width: _gap),
-                  Expanded(child: action),
+                  Expanded(child: actionButton(withSum: true)),
                 ],
               );
             }
+            final Widget sideSum = _SideSum(
+              amount: sum,
+              caption: action == ProductBarAction.openCart
+                  ? l10n.productSumInCart(shownQuantity)
+                  : l10n.productSumFor(shownQuantity),
+            );
+            final bool sumBeside =
+                stepperWidth +
+                    _gap +
+                    textWidth(context, sum, _SideSum.amountStyle) <=
+                constraints.maxWidth;
             return Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[stepper(), const SizedBox(height: 10), action],
+              children: <Widget>[
+                if (sumBeside)
+                  Row(
+                    children: <Widget>[
+                      SizedBox(width: stepperWidth, child: stepper),
+                      const SizedBox(width: _gap),
+                      Expanded(child: sideSum),
+                    ],
+                  )
+                else ...<Widget>[
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: SizedBox(width: stepperWidth, child: stepper),
+                  ),
+                  const SizedBox(height: 8),
+                  sideSum,
+                ],
+                const SizedBox(height: 10),
+                actionButton(withSum: false),
+              ],
             );
           },
         ),
@@ -170,16 +307,141 @@ class ProductBar extends StatelessWidget {
     );
   }
 
+  static const TextStyle _labelStyle = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+  );
+  static const TextStyle _lineStyle = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+  );
+
+  /// A label, with the sum under it when there is one; neither is shortened.
+  static Widget _labelOverSum(String label, String? sum) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: <Widget>[
+      Text(label, style: _labelStyle),
+      if (sum != null)
+        Text(
+          sum,
+          key: const ValueKey<String>('product-sum'),
+          style: _lineStyle,
+        ),
+    ],
+  );
+
   static const double _gap = 10;
 
   /// The least the action gets beside the stepper before it moves below.
   static const double _actionMinWidth = 120;
 }
 
+/// The sum when it has left the button: the amount over what it is for, at
+/// the Customer's text size and never shortened (`DL-122`).
+class _SideSum extends StatelessWidget {
+  const _SideSum({required this.amount, required this.caption});
+
+  final String amount;
+  final String caption;
+
+  static const TextStyle amountStyle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    color: KitColors.ink,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const ValueKey<String>('product-side-sum'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          amount,
+          key: const ValueKey<String>('product-side-amount'),
+          style: amountStyle,
+        ),
+        Text(
+          caption,
+          style: const TextStyle(fontSize: 12, color: KitColors.muted),
+        ),
+      ],
+    );
+  }
+}
+
+/// "В корзине" with a check that pops in from small and clear in 340 ms; with
+/// reduced motion it stands at once (`DL-122`).
+class _AddedMark extends StatelessWidget {
+  const _AddedMark({required this.text});
+
+  final String text;
+
+  static const Cubic _pop = Cubic(0.2, 0.9, 0.3, 1.3);
+
+  @override
+  Widget build(BuildContext context) {
+    const Widget check = Icon(
+      Icons.check_circle,
+      size: 22,
+      color: Colors.white,
+    );
+    return DecoratedBox(
+      key: const ValueKey<String>('product-added'),
+      decoration: BoxDecoration(
+        color: KitColors.primary,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: ProductBar.height),
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (MediaQuery.disableAnimationsOf(context))
+                check
+              else
+                TweenAnimationBuilder<double>(
+                  key: const ValueKey<String>('product-added-check'),
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 340),
+                  curve: _pop,
+                  builder: (BuildContext context, double t, Widget? child) =>
+                      Opacity(
+                        opacity: t.clamp(0.0, 1.0),
+                        child: Transform.scale(
+                          scale: 0.3 + 0.7 * t,
+                          child: child,
+                        ),
+                      ),
+                  child: check,
+                ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  text,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Stepper extends StatelessWidget {
   const _Stepper({
     required this.quantity,
     required this.minusLabel,
+    required this.minusIcon,
+    required this.minusColor,
     required this.plusLabel,
     required this.onQuantityTap,
     required this.onMinus,
@@ -189,6 +451,8 @@ class _Stepper extends StatelessWidget {
   final String quantity;
 
   final String minusLabel;
+  final IconData minusIcon;
+  final Color minusColor;
   final String plusLabel;
   final VoidCallback? onQuantityTap;
   final VoidCallback? onMinus;
@@ -224,7 +488,13 @@ class _Stepper extends StatelessWidget {
         (text > _quantityMinWidth ? text : _quantityMinWidth);
   }
 
-  Widget _button(Key key, IconData icon, String label, VoidCallback? onTap) {
+  Widget _button(
+    Key key,
+    IconData icon,
+    String label,
+    VoidCallback? onTap, {
+    Color color = KitColors.primaryDark,
+  }) {
     return SizedBox.square(
       dimension: _buttonSize,
       child: IconButton(
@@ -232,7 +502,7 @@ class _Stepper extends StatelessWidget {
         tooltip: label,
         padding: EdgeInsets.zero,
         iconSize: 22,
-        color: KitColors.primaryDark,
+        color: color,
         disabledColor: KitColors.muted,
         icon: Icon(icon),
         onPressed: onTap,
@@ -253,9 +523,10 @@ class _Stepper extends StatelessWidget {
           children: <Widget>[
             _button(
               const ValueKey<String>('product-minus'),
-              Icons.remove,
+              minusIcon,
               minusLabel,
               onMinus,
+              color: minusColor,
             ),
             // Not in a Center: it would take the whole height it is offered.
             Expanded(
@@ -269,9 +540,7 @@ class _Stepper extends StatelessWidget {
                   child: Text(
                     quantity,
                     key: const ValueKey<String>('product-qty'),
-                    maxLines: 1,
                     textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
                     style: quantityStyle,
                   ),
                 ),

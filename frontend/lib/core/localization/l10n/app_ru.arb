@@ -853,7 +853,6 @@
       }
     }
   },
-  "cartAdded": "Добавлено в корзину",
   "cartQuantity": "Количество",
   "cartQuantityFraction": "Число больше 0: до 4 цифр и до 3 знаков после запятой",
   "cartQuantityWhole": "Целое число от 1 до 9999",
@@ -2086,8 +2085,12 @@
   "productTitle": "О товаре",
   "productReadMore": "Читать далее",
   "productReadLess": "Свернуть",
+  "productEstimateTitle": "Цена ориентировочная",
+  "productEstimatePromise": "Если выйдет дороже допустимого — спросим вас до покупки.",
+  "productEstimateHow": "Как считаем",
   "productIfMissing": "Если товара не будет",
   "productNoteHint": "Например: покрепче, не перезрелые",
+  "keyboardDone": "Готово",
   "productMoreIn": "Ещё в «{category}»",
   "@productMoreIn": {
     "placeholders": {
@@ -2109,10 +2112,80 @@
       }
     }
   },
-  "productSave": "Сохранить",
-  "cartLineSaved": "Корзина обновлена",
-  "productAlreadyInCart": "Этот товар уже в корзине — можно изменить и сохранить",
-  "quantitySheetTitle": "Количество",
+  "productSaving": "Сохраняем…",
+  "productLineSaved": "Сохранено",
+  "productAdding": "Добавляем…",
+  "productAdded": "В корзине",
+  "productSumFor": "за {quantity}",
+  "@productSumFor": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "productSumInCart": "в корзине · {quantity}",
+  "@productSumInCart": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "productPriceSpoken": "Цена примерно {price} за {unit, select, kg{килограмм} gram{грамм} piece{штуку} liter{литр} package{упаковку} box{коробку} bundle{пучок} meter{метр} other{единицу}}",
+  "@productPriceSpoken": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "productQuantitySpoken": "Количество, {name}",
+  "@productQuantitySpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "productQuantityTapHint": "ввести точное количество",
+  "productAddSpoken": "Добавить в корзину: {name}, {quantity}, примерно {sum}",
+  "@productAddSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      },
+      "sum": {
+        "type": "String"
+      }
+    }
+  },
+  "productOpenCartSpoken": "Открыть корзину. В корзине {quantity}",
+  "@productOpenCartSpoken": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "quantitySheetAsk": "{name} — сколько {unit, select, kg{килограммов} gram{граммов} piece{штук} liter{литров} package{упаковок} box{коробок} bundle{пучков} meter{метров} other{единиц}}?",
+  "@quantitySheetAsk": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "quantitySheetEmpty": "Введите количество",
   "quantitySheetDone": "Готово",
   "cartUnitPrice": "≈ {price} за {unit}",
   "@cartUnitPrice": {

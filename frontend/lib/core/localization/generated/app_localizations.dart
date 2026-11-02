@@ -3392,12 +3392,6 @@ abstract class AppLocalizations {
   /// **'Savat: {count}'**
   String cartBadge(int count);
 
-  /// No description provided for @cartAdded.
-  ///
-  /// In uz, this message translates to:
-  /// **'Savatga qo\'shildi'**
-  String get cartAdded;
-
   /// No description provided for @cartQuantity.
   ///
   /// In uz, this message translates to:
@@ -6122,6 +6116,24 @@ abstract class AppLocalizations {
   /// **'Yig\'ish'**
   String get productReadLess;
 
+  /// No description provided for @productEstimateTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narx taxminiy'**
+  String get productEstimateTitle;
+
+  /// No description provided for @productEstimatePromise.
+  ///
+  /// In uz, this message translates to:
+  /// **'Ruxsat etilganidan qimmatroq chiqsa — xariddan oldin sizdan so\'raymiz.'**
+  String get productEstimatePromise;
+
+  /// No description provided for @productEstimateHow.
+  ///
+  /// In uz, this message translates to:
+  /// **'Qanday hisoblaymiz'**
+  String get productEstimateHow;
+
   /// No description provided for @productIfMissing.
   ///
   /// In uz, this message translates to:
@@ -6133,6 +6145,12 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Masalan: qattiqroq, pishib o\'tmagan'**
   String get productNoteHint;
+
+  /// No description provided for @keyboardDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor'**
+  String get keyboardDone;
 
   /// No description provided for @productMoreIn.
   ///
@@ -6176,29 +6194,83 @@ abstract class AppLocalizations {
   /// **'Savatda: {quantity}'**
   String productInCart(String quantity);
 
-  /// No description provided for @productSave.
+  /// No description provided for @productSaving.
   ///
   /// In uz, this message translates to:
-  /// **'Saqlash'**
-  String get productSave;
+  /// **'Saqlanmoqda…'**
+  String get productSaving;
 
-  /// No description provided for @cartLineSaved.
+  /// No description provided for @productLineSaved.
   ///
   /// In uz, this message translates to:
-  /// **'Savat yangilandi'**
-  String get cartLineSaved;
+  /// **'Saqlandi'**
+  String get productLineSaved;
 
-  /// No description provided for @productAlreadyInCart.
+  /// No description provided for @productAdding.
   ///
   /// In uz, this message translates to:
-  /// **'Bu mahsulot savatda bor — o\'zgartirib, saqlashingiz mumkin'**
-  String get productAlreadyInCart;
+  /// **'Qo\'shilmoqda…'**
+  String get productAdding;
 
-  /// No description provided for @quantitySheetTitle.
+  /// No description provided for @productAdded.
   ///
   /// In uz, this message translates to:
-  /// **'Miqdor'**
-  String get quantitySheetTitle;
+  /// **'Savatda'**
+  String get productAdded;
+
+  /// No description provided for @productSumFor.
+  ///
+  /// In uz, this message translates to:
+  /// **'{quantity} uchun'**
+  String productSumFor(String quantity);
+
+  /// No description provided for @productSumInCart.
+  ///
+  /// In uz, this message translates to:
+  /// **'savatda · {quantity}'**
+  String productSumInCart(String quantity);
+
+  /// No description provided for @productPriceSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Narxi taxminan {price}, 1 {unit, select, kg{kilogramm} gram{gramm} piece{dona} liter{litr} package{qadoq} box{quti} bundle{bog\'} meter{metr} other{birlik}} uchun'**
+  String productPriceSpoken(String price, String unit);
+
+  /// No description provided for @productQuantitySpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Miqdor, {name}'**
+  String productQuantitySpoken(String name);
+
+  /// No description provided for @productQuantityTapHint.
+  ///
+  /// In uz, this message translates to:
+  /// **'aniq miqdorni kiritish'**
+  String get productQuantityTapHint;
+
+  /// No description provided for @productAddSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga qo\'shish: {name}, {quantity}, taxminan {sum}'**
+  String productAddSpoken(String name, String quantity, String sum);
+
+  /// No description provided for @productOpenCartSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatni ochish. Savatda {quantity}'**
+  String productOpenCartSpoken(String quantity);
+
+  /// No description provided for @quantitySheetAsk.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name} — necha {unit, select, kg{kilogramm} gram{gramm} piece{dona} liter{litr} package{qadoq} box{quti} bundle{bog\'} meter{metr} other{birlik}}?'**
+  String quantitySheetAsk(String name, String unit);
+
+  /// No description provided for @quantitySheetEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Miqdorni kiriting'**
+  String get quantitySheetEmpty;
 
   /// No description provided for @quantitySheetDone.
   ///
