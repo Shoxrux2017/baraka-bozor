@@ -36,6 +36,38 @@ class StaleDataLine extends StatelessWidget {
     final String spoken = time == null
         ? reason
         : l10n.staleSpoken(reason, time);
+    // A large text leaves the words no room beside the button: it goes under
+    // them.
+    final bool stacked = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+    const Widget icon = ExcludeSemantics(
+      child: Padding(
+        padding: EdgeInsets.only(right: 8),
+        child: Icon(Icons.cloud_off, size: 18, color: KitColors.muted),
+      ),
+    );
+    final Widget message = Expanded(
+      child: Semantics(
+        liveRegion: true,
+        label: spoken,
+        excludeSemantics: true,
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 12, color: KitColors.ink2),
+        ),
+      ),
+    );
+    final Widget button = TextButton(
+      key: const ValueKey<String>('stale-retry'),
+      onPressed: onRetry,
+      style: TextButton.styleFrom(
+        minimumSize: const Size(44, 44),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        foregroundColor: KitColors.primaryDark,
+        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      ),
+      child: Text(time == null ? l10n.retryButton : l10n.staleRefresh),
+    );
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: 1),
       duration: MediaQuery.disableAnimationsOf(context)
@@ -51,42 +83,21 @@ class StaleDataLine extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.only(left: 12, right: 4),
-          child: Row(
-            children: <Widget>[
-              const ExcludeSemantics(
-                child: Icon(Icons.cloud_off, size: 18, color: KitColors.muted),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Semantics(
-                  liveRegion: true,
-                  label: spoken,
-                  excludeSemantics: true,
-                  child: Text(
-                    text,
-                    style: const TextStyle(fontSize: 12, color: KitColors.ink2),
-                  ),
-                ),
-              ),
-              TextButton(
-                key: const ValueKey<String>('stale-retry'),
-                onPressed: onRetry,
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(44, 44),
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  foregroundColor: KitColors.primaryDark,
-                  textStyle: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                child: Text(
-                  time == null ? l10n.retryButton : l10n.staleRefresh,
-                ),
-              ),
-            ],
-          ),
+          child: stacked
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Row(children: <Widget>[icon, message]),
+                    ),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: button,
+                    ),
+                  ],
+                )
+              : Row(children: <Widget>[icon, message, button]),
         ),
       ),
     );

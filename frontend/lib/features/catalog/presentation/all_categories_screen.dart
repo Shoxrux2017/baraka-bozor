@@ -9,6 +9,7 @@ import '../../../core/state/loaded.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/fade_in_sliver.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/skeleton_bar.dart';
 import '../../../core/widgets/stale_data_line.dart';
@@ -79,13 +80,12 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
     final double gridWidth = MediaQuery.sizeOf(context).width - safe.horizontal;
     final int columns = categoryColumns(gridWidth, scaler);
     final double tile = (gridWidth - 32 - _gap * (columns - 1)) / columns;
-    final int lines = columns == 2 ? 3 : 2;
     final SliverGridDelegate delegate =
         SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: columns,
           crossAxisSpacing: _gap,
           mainAxisSpacing: _gap,
-          mainAxisExtent: tile + 6 + scaler.scale(12) * 1.25 * lines + 2,
+          mainAxisExtent: categoryTileExtent(tile, scaler, columns),
         );
     final EdgeInsets gridPadding = EdgeInsets.fromLTRB(
       16 + safe.left,
@@ -155,7 +155,7 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
       final Set<String> known = Set<String>.of(_shown);
       _shown.addAll(rows.map((CatalogCategory c) => c.id));
       slivers.add(
-        _FadeInSliver(
+        FadeInSliver(
           key: const ValueKey<String>('category-tiles'),
           animate: _sawSkeleton,
           sliver: SliverPadding(
@@ -208,56 +208,6 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Fades its sliver in over 200 ms `easeOut` when [animate] is set (the data
-/// that replaces skeletons); with reduced motion, or without [animate], it is
-/// there at once.
-class _FadeInSliver extends StatefulWidget {
-  const _FadeInSliver({required this.animate, required this.sliver, super.key});
-
-  final bool animate;
-  final Widget sliver;
-
-  @override
-  State<_FadeInSliver> createState() => _FadeInSliverState();
-}
-
-class _FadeInSliverState extends State<_FadeInSliver>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 200),
-  );
-  bool _started = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_started) {
-      return;
-    }
-    _started = true;
-    if (widget.animate && !MediaQuery.disableAnimationsOf(context)) {
-      _controller.forward();
-    } else {
-      _controller.value = 1;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverFadeTransition(
-      opacity: CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-      sliver: widget.sliver,
     );
   }
 }

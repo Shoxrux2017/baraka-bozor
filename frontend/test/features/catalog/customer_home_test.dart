@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
+import 'package:baraka_bozor/core/widgets/skeleton_bar.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
@@ -12,13 +15,12 @@ import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dar
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
-import 'package:baraka_bozor/features/catalog/presentation/all_products_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
 import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -27,8 +29,10 @@ import '../../support/fake_address_map.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_cart_repository.dart';
 import '../../support/fake_catalog_repository.dart';
+import '../../support/fake_customer_orders_repository.dart';
 import '../../support/fake_customer_repositories.dart';
 import '../../support/in_memory_stores.dart';
+import '../../support/paragraphs.dart';
 
 /// The Customer's home in the kit look (`DL-80`), through the real router.
 void main() {
@@ -83,6 +87,9 @@ void main() {
     WidgetTester tester, {
     Locale device = const Locale('uz'),
     FakeCartRepository? cart,
+    FakeCustomerOrdersRepository? orders,
+    DateTime Function()? clock,
+    bool settle = true,
   }) async {
     await tester.pumpWidget(
       appUnderTest(
@@ -93,14 +100,46 @@ void main() {
         addresses: addresses,
         preferences: preferences,
         cart: cart,
+        orders: orders,
+        clock: clock,
         overrides: [addressMapProvider.overrideWithValue(FakeAddressMap())],
       ),
     );
-    await tester.pumpAndSettle();
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+    }
   }
 
   double top(WidgetTester tester, Finder finder) =>
       tester.getTopLeft(finder).dy;
+
+  Future<void> smallPhone(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  }
+
+  Future<void> asTwoSessionCustomer(
+    WidgetTester tester,
+    Locale device, {
+    FakeCustomerOrdersRepository? orders,
+  }) async {
+    tokens.tokens[SessionSlot.staff] = 's';
+    auth.identities[SessionSlot.staff] = user(id: 's', role: UserRole.courier);
+    await open(tester, device: device, orders: orders);
+    await tester.tap(byKey('staff-menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(byKey('switch-to-customer-button'));
+    await tester.pumpAndSettle();
+  }
+
+  final Finder verticalScrollables = find.byWidgetPredicate(
+    (Widget w) => w is Scrollable && w.axis == Axis.vertical,
+  );
 
   testWidgets('the tab bar switches to the orders and the profile tabs', (
     WidgetTester tester,
@@ -153,7 +192,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await open(tester);
-    await tester.drag(byKey('home-body'), const Offset(0, -2000));
+    await tester.drag(byKey('home-scroll'), const Offset(0, -2000));
     await tester.pumpAndSettle();
 
     expect(
@@ -173,7 +212,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await open(tester);
-    await tester.drag(byKey('home-body'), const Offset(0, -2000));
+    await tester.drag(byKey('home-scroll'), const Offset(0, -2000));
     await tester.pumpAndSettle();
 
     expect(find.text(l10n(tester).recommendedTitle), findsOneWidget);
@@ -201,11 +240,7 @@ void main() {
         top(tester, byKey('delivery-address')),
         lessThan(top(tester, byKey('catalog-search'))),
       );
-      expect(
-        tester.getCenter(byKey('open-sort')).dx,
-        greaterThan(tester.getCenter(byKey('catalog-search')).dx),
-      );
-      expect(tester.getSize(byKey('open-sort')), const Size(50, 50));
+      expect(byKey('open-sort'), findsNothing);
       expect(
         top(tester, byKey('catalog-search')),
         lessThan(top(tester, find.text(words.homeCategories))),
@@ -223,22 +258,15 @@ void main() {
     },
   );
 
-  testWidgets('eight of ten categories show, four to a row; "all" opens them '
-      'all', (WidgetTester tester) async {
+  testWidgets('eight of ten categories show; "all" opens them all', (
+    WidgetTester tester,
+  ) async {
     await open(tester);
     for (int i = 1; i <= 8; i++) {
       expect(byKey('category-c-$i'), findsOneWidget, reason: 'c-$i');
     }
     expect(byKey('category-c-9'), findsNothing);
     expect(byKey('category-c-10'), findsNothing);
-    expect(
-      top(tester, byKey('category-c-4')),
-      top(tester, byKey('category-c-1')),
-    );
-    expect(
-      top(tester, byKey('category-c-5')),
-      greaterThan(top(tester, byKey('category-c-1'))),
-    );
 
     await tester.tap(byKey('open-categories'));
     await tester.pumpAndSettle();
@@ -282,30 +310,23 @@ void main() {
     WidgetTester tester,
   ) async {
     catalog.nextFailure = const NetworkFailure();
-    await open(tester);
-    expect(find.text(l10n(tester).recommendedTitle), findsNothing);
+    await open(tester, device: const Locale('ru'));
+    // The row keeps still skeletons under the line; the categories stay.
+    expect(byKey('recommended-skeletons'), findsOneWidget);
+    expect(byKey('recommended-row'), findsNothing);
+    expect(
+      tester
+          .widgetList<SkeletonBar>(
+            find.descendant(
+              of: byKey('recommended-skeletons'),
+              matching: find.byType(SkeletonBar),
+            ),
+          )
+          .any((SkeletonBar b) => b.pulsing),
+      isFalse,
+    );
+    expect(find.textContaining('Нет связи'), findsOneWidget);
     expect(byKey('category-c-1'), findsOneWidget);
-  });
-
-  testWidgets('the filter button asks the sort and opens every product in it', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
-    await tester.tap(byKey('open-sort'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(l10n(tester).sortPriceAsc));
-    await tester.pumpAndSettle();
-    expect(find.byType(AllProductsScreen), findsOneWidget);
-
-    // Row-major order of the grid: Olma 3 500, Banan 9 000, Pomidor 18 400.
-    final List<String> names = <String>['Olma', 'Banan', 'Pomidor'];
-    double place(String name) {
-      final Offset at = tester.getTopLeft(find.text(name));
-      return at.dy * 1000 + at.dx;
-    }
-
-    final List<double> places = names.map(place).toList();
-    expect(places, orderedEquals(<double>[...places]..sort()));
   });
 
   testWidgets('the search field opens the search; no results show under it', (
@@ -320,18 +341,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(SearchScreen), findsNothing);
     expect(byKey('category-c-1'), findsOneWidget);
-  });
-
-  testWidgets('dismissing the sort sheet opens nothing', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
-    await tester.tap(byKey('open-sort'));
-    await tester.pumpAndSettle();
-    await tester.tapAt(const Offset(10, 10));
-    await tester.pumpAndSettle();
-    expect(find.byType(AllProductsScreen), findsNothing);
-    expect(find.byType(CatalogHomeScreen), findsOneWidget);
   });
 
   testWidgets(
@@ -497,8 +506,8 @@ void main() {
       catalog.categoriesFailure = const NetworkFailure();
       await open(tester);
 
-      expect(byKey('retry-load'), findsOneWidget);
-      expectClearOfBar(tester, byKey('retry-load'));
+      expect(byKey('stale-retry'), findsOneWidget);
+      expectClearOfBar(tester, byKey('stale-retry'));
     });
   });
 
@@ -630,43 +639,28 @@ void main() {
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets(
       'with the keyboard open at large text and two sessions the header '
-      'scrolls inside what is left and nothing overflows '
-      '(${device.languageCode})',
+      'scrolls with the page and nothing overflows (${device.languageCode})',
       (WidgetTester tester) async {
-        tester.view.physicalSize = const Size(320, 640);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.reset);
-        tester.platformDispatcher.textScaleFactorTestValue = 2;
-        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-        tokens.tokens[SessionSlot.staff] = 's';
-        auth.identities[SessionSlot.staff] = user(
-          id: 's',
-          role: UserRole.courier,
-        );
-        await open(tester, device: device);
-        await tester.tap(byKey('staff-menu'));
-        await tester.pumpAndSettle();
-        await tester.tap(byKey('switch-to-customer-button'));
-        await tester.pumpAndSettle();
+        await smallPhone(tester);
+        await asTwoSessionCustomer(tester, device);
 
         tester.view.viewInsets = const FakeViewPadding(bottom: 300);
         addTearDown(tester.view.resetViewInsets);
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
+        expect(verticalScrollables, findsOneWidget);
         final double above = 640 - 300;
-        final Rect header = tester.getRect(byKey('home-header'));
-        expect(
-          header.height,
-          lessThanOrEqualTo(above * CatalogHomeScreen.headerShare + 0.5),
-          reason: 'the cap is a share of what the keyboard leaves',
-        );
-        expect(header.bottom, lessThanOrEqualTo(above));
-        await tester.ensureVisible(byKey('catalog-search'));
+        final Rect scroll = tester.getRect(byKey('home-scroll'));
+        expect(scroll.bottom, lessThanOrEqualTo(above));
+        await tester.drag(byKey('home-scroll'), const Offset(0, -400));
         await tester.pumpAndSettle();
-        final Rect field = tester.getRect(byKey('catalog-search'));
-        expect(field.bottom, lessThanOrEqualTo(header.bottom));
-        expect(field.top, greaterThanOrEqualTo(header.top));
+        expect(
+          tester.getTopLeft(byKey('catalog-search')).dy,
+          tester.getTopLeft(byKey('home-scroll')).dy + 8,
+          reason: 'the search sticks inside what the keyboard leaves',
+        );
+        expect(byKey('catalog-search').hitTestable(), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -707,10 +701,9 @@ void main() {
           expect(find.text('Amir Temur, 12'), findsOneWidget);
 
           // The controls lie in what the header shows, not below its scroll.
-          final Rect visible = tester.getRect(byKey('home-header'));
+          final Rect visible = tester.getRect(byKey('home-scroll'));
           final List<String> keys = <String>[
             'catalog-search',
-            'open-sort',
             'open-cart',
             'delivery-address',
             if (twoSessions) ...<String>[
@@ -743,11 +736,11 @@ void main() {
             return;
           }
 
-          await tester.drag(byKey('home-body'), const Offset(0, -2000));
+          await tester.drag(byKey('home-scroll'), const Offset(0, -2000));
           await tester.pumpAndSettle();
           expect(byKey('recommended-row'), findsOneWidget);
           expect(tester.takeException(), isNull);
-          await tester.ensureVisible(byKey('category-c-1'));
+          await tester.drag(byKey('home-scroll'), const Offset(0, 2000));
           await tester.pumpAndSettle();
           await tester.tap(byKey('category-c-1'));
           await tester.pumpAndSettle();
@@ -757,7 +750,7 @@ void main() {
     }
   }
 
-  testWidgets('the search entry and the sort button expose a tap action', (
+  testWidgets('the search entry exposes a tap action', (
     WidgetTester tester,
   ) async {
     final SemanticsHandle handle = tester.ensureSemantics();
@@ -768,7 +761,6 @@ void main() {
     );
     for (final (String, String) entry in <(String, String)>[
       ('catalog-search', l10n.catalogSearchHint),
-      ('open-sort', l10n.sortTitle),
     ]) {
       final String key = entry.$1;
       final String label = entry.$2;
@@ -779,5 +771,326 @@ void main() {
       );
     }
     handle.dispose();
+  });
+
+  Map<String, Object?> pendingRow() => <String, Object?>{
+    'id': approvalOne,
+    'order_id': orderOne,
+    'order_number': 1001,
+    'expires_at': '2026-11-02T09:00:00Z',
+  };
+
+  Future<void> pull(WidgetTester tester) async {
+    await tester.drag(byKey('home-scroll'), const Offset(0, 300));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+  }
+
+  Iterable<String> announced(WidgetTester tester) => tester
+      .takeAnnouncements()
+      .map((CapturedAccessibilityAnnouncement a) => a.message);
+
+  for (final Locale device in const <Locale>[Locale('ru'), Locale('uz')]) {
+    testWidgets(
+      'one scroll: at text x2 with two sessions and a question the address '
+      'scrolls away and the search sticks (${device.languageCode})',
+      (WidgetTester tester) async {
+        await smallPhone(tester);
+        WidgetController.hitTestWarningShouldBeFatal = true;
+        addTearDown(() => WidgetController.hitTestWarningShouldBeFatal = false);
+        final FakeCustomerOrdersRepository orders =
+            FakeCustomerOrdersRepository()
+              ..pendingRows = <Map<String, Object?>>[pendingRow()];
+        await asTwoSessionCustomer(tester, device, orders: orders);
+
+        expect(verticalScrollables, findsOneWidget);
+        expect(byKey('question-banner'), findsOneWidget);
+        expect(byKey('delivery-address').hitTestable(), findsOneWidget);
+
+        await tester.drag(byKey('home-scroll'), const Offset(0, -400));
+        await tester.pumpAndSettle();
+
+        expect(top(tester, byKey('catalog-search')), 8);
+        expect(byKey('catalog-search').hitTestable(), findsOneWidget);
+        expect(byKey('delivery-address').hitTestable(), findsNothing);
+        final Rect title = tester.getRect(
+          find.text(l10n(tester).homeCategories),
+        );
+        expect(title.top, greaterThanOrEqualTo(0));
+        expect(title.bottom, lessThanOrEqualTo(640));
+        expect(tester.takeException(), isNull);
+
+        await tester.drag(byKey('home-scroll'), const Offset(0, 400));
+        await tester.pumpAndSettle();
+        expect(byKey('switch-to-staff-button').hitTestable(), findsOneWidget);
+      },
+    );
+  }
+
+  BoxDecoration searchDecoration(WidgetTester tester) =>
+      tester
+              .widget<AnimatedContainer>(
+                find.descendant(
+                  of: byKey('home-search-bar'),
+                  matching: find.byType(AnimatedContainer),
+                ),
+              )
+              .decoration!
+          as BoxDecoration;
+
+  testWidgets('the search sticks with a shadow only once scrolled', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 480);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await open(tester);
+
+    expect(searchDecoration(tester).boxShadow ?? const <BoxShadow>[], isEmpty);
+    await tester.drag(byKey('home-scroll'), const Offset(0, -150));
+    await tester.pumpAndSettle();
+    expect(top(tester, byKey('catalog-search')), lessThan(20));
+    expect(searchDecoration(tester).boxShadow, const <BoxShadow>[
+      BoxShadow(
+        color: Color(0x59151D16),
+        offset: Offset(0, 8),
+        blurRadius: 12,
+        spreadRadius: -10,
+      ),
+    ]);
+    await tester.drag(byKey('home-scroll'), const Offset(0, 400));
+    await tester.pumpAndSettle();
+    expect(searchDecoration(tester).boxShadow ?? const <BoxShadow>[], isEmpty);
+  });
+
+  testWidgets('no filter button; the search takes the full width', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await open(tester);
+
+    expect(byKey('open-sort'), findsNothing);
+    expect(find.byIcon(Icons.tune), findsNothing);
+    final Rect field = tester.getRect(byKey('catalog-search'));
+    expect(field.left, 16);
+    expect(field.right, 320 - 16);
+  });
+
+  testWidgets(
+    'loading shows bars for the address, eight tiles and three cards, then '
+    'the data fades in',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(520, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      addresses.loadHold = Completer<void>();
+      catalog.categoriesGate = Completer<void>();
+      catalog.gates[''] = Completer<void>();
+      await open(tester, settle: false);
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final Finder address = find.descendant(
+        of: byKey('delivery-address'),
+        matching: find.byType(SkeletonBar),
+      );
+      expect(
+        tester
+            .widgetList<SkeletonBar>(address)
+            .map((SkeletonBar b) => (b.width, b.height, b.pulsing)),
+        <(double, double, bool)>[(90, 14, true), (170, 10, true)],
+      );
+      expect(find.text('…'), findsNothing);
+      expect(
+        find.descendant(
+          of: byKey('category-skeletons'),
+          matching: find.byType(SkeletonBar),
+        ),
+        findsNWidgets(16),
+        reason: 'eight tiles, a picture and a name each',
+      );
+      expect(
+        find.descendant(
+          of: byKey('recommended-skeletons'),
+          matching: find.byType(SkeletonBar),
+        ),
+        findsNWidgets(12),
+        reason: 'three cards of four bars',
+      );
+      expect(find.text(l10n(tester).recommendedTitle), findsOneWidget);
+      expect(byKey('category-c-1'), findsNothing);
+
+      addresses.loadHold!.complete();
+      catalog.categoriesGate!.complete();
+      catalog.gates['']!.complete();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(
+        tester
+            .widget<SliverFadeTransition>(find.byType(SliverFadeTransition))
+            .opacity
+            .value,
+        inExclusiveRange(0, 1),
+      );
+      expect(
+        tester.widget<Opacity>(byKey('recommended-fade')).opacity,
+        inExclusiveRange(0, 1),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(SkeletonBar), findsNothing);
+      expect(byKey('category-c-1'), findsOneWidget);
+      expect(byKey('recommended-row'), findsOneWidget);
+      expect(find.text('Amir Temur, 12'), findsOneWidget);
+    },
+  );
+
+  testWidgets('pull to refresh reloads the categories and the recommended', (
+    WidgetTester tester,
+  ) async {
+    final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository();
+    final FakeCartRepository cart = FakeCartRepository();
+    await open(tester, orders: orders, cart: cart);
+    final int categories = catalog.categoryLoads;
+    final int products = catalog.requests.length;
+    int count(List<String> log, String entry) =>
+        log.where((String l) => l == entry).length;
+    final int questions = count(orders.loads, 'pending');
+    final int carts = count(cart.calls, 'cart');
+
+    await pull(tester);
+
+    expect(catalog.categoryLoads, categories + 1);
+    expect(catalog.requests.length, products + 1);
+    expect(count(orders.loads, 'pending'), questions + 1);
+    expect(count(cart.calls, 'cart'), carts + 1);
+    expect(announced(tester), contains('Yangilandi'));
+  });
+
+  testWidgets(
+    'offline after a load keeps everything under Нет связи · данные на 12:46',
+    (WidgetTester tester) async {
+      final DateTime at = DateTime.utc(2026, 11, 2, 7, 46);
+      final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository()
+        ..pendingRows = <Map<String, Object?>>[pendingRow()];
+      await open(
+        tester,
+        device: const Locale('ru'),
+        clock: () => at,
+        orders: orders,
+      );
+      expect(byKey('stale-line'), findsNothing);
+
+      catalog.categoriesFailure = const NetworkFailure();
+      await pull(tester);
+
+      expect(find.text('Нет связи · данные на 12:46'), findsOneWidget);
+      expect(byKey('category-c-1'), findsOneWidget);
+      expect(byKey('recommended-row'), findsOneWidget);
+      expect(byKey('question-banner'), findsOneWidget);
+      expect(
+        announced(tester),
+        contains('Нет связи. Показаны данные на 12:46'),
+      );
+
+      await pull(tester);
+      expect(byKey('stale-line'), findsNothing);
+      expect(announced(tester), contains('Обновлено'));
+    },
+  );
+
+  testWidgets('the recommended failing alone shows the line over the data', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, device: const Locale('ru'));
+    catalog.nextFailure = const UnexpectedFailure();
+    await pull(tester);
+
+    expect(byKey('stale-line'), findsOneWidget);
+    expect(byKey('category-c-1'), findsOneWidget);
+    expect(byKey('recommended-row'), findsOneWidget);
+  });
+
+  testWidgets('a first load that fails shows Нет связи · Повторить over still '
+      'skeletons', (WidgetTester tester) async {
+    catalog.categoriesFailure = const NetworkFailure();
+    await open(tester, device: const Locale('ru'));
+
+    expect(find.text('Нет связи'), findsOneWidget);
+    expect(find.text('Повторить'), findsOneWidget);
+    final Finder tiles = find.descendant(
+      of: byKey('category-skeletons'),
+      matching: find.byType(SkeletonBar),
+    );
+    expect(tiles, findsNWidgets(16));
+    expect(
+      tester.widgetList<SkeletonBar>(tiles).any((SkeletonBar b) => b.pulsing),
+      isFalse,
+    );
+    expect(byKey('recommended-row'), findsOneWidget, reason: 'it came');
+
+    await tester.tap(byKey('stale-retry'));
+    await tester.pumpAndSettle();
+    expect(byKey('stale-line'), findsNothing);
+    expect(byKey('category-c-1'), findsOneWidget);
+    expect(find.byType(SkeletonBar), findsNothing);
+  });
+
+  for (final Locale device in const <Locale>[Locale('ru'), Locale('uz')]) {
+    testWidgets(
+      'at text x2 the categories stand in two columns and the cards are 260 '
+      'wide with the price whole (${device.languageCode})',
+      (WidgetTester tester) async {
+        await smallPhone(tester);
+        await loadMontserrat();
+        await open(tester, device: device);
+
+        expect(
+          top(tester, byKey('category-c-2')),
+          top(tester, byKey('category-c-1')),
+        );
+        expect(
+          top(
+            tester,
+            find.byKey(
+              const ValueKey<String>('category-c-3'),
+              skipOffstage: false,
+            ),
+          ),
+          greaterThan(top(tester, byKey('category-c-1'))),
+        );
+        await tester.drag(byKey('home-scroll'), const Offset(0, -2000));
+        await tester.pumpAndSettle();
+        expect(tester.getSize(byKey('p-1')).width, 260);
+
+        final Finder price = find.descendant(
+          of: byKey('p-1'),
+          matching: find.byWidgetPredicate(
+            (Widget w) => w is Text && (w.data ?? '').startsWith('≈'),
+          ),
+        );
+        expect(
+          tester.renderObject<RenderParagraph>(price).didExceedMaxLines,
+          isFalse,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('lying at 812 eight categories stand in one row', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(812, 375);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await open(tester);
+
+    final double first = top(tester, byKey('category-c-1'));
+    for (int i = 2; i <= 8; i++) {
+      expect(top(tester, byKey('category-c-$i')), first, reason: 'c-$i');
+    }
+    expect(tester.takeException(), isNull);
   });
 }

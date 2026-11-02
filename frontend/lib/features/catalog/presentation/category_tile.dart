@@ -17,6 +17,12 @@ import 'catalog_paths.dart';
 int categoryColumns(double width, TextScaler scaler) =>
     math.max(2, ((width - 20) / (scaler.scale(88) + 12)).round());
 
+/// The height of a grid row of tiles [tile] wide in [columns] columns: the
+/// picture, the gap and the name's lines at the text size [scaler] gives
+/// (`DL-125`).
+double categoryTileExtent(double tile, TextScaler scaler, int columns) =>
+    tile + 6 + scaler.scale(12) * 1.25 * (columns == 2 ? 3 : 2) + 2;
+
 /// What a tile hands the category screen it opens (`DL-125`): the tag of the
 /// tile's own picture, so the picture flies from that tile into the rail and
 /// back to it.
