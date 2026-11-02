@@ -1762,7 +1762,9 @@ void main() {
       expect(quantityShown(tester), '0,75 кг');
     });
 
-    for (final String bad in <String>['0', 'abc']) {
+    // The field keeps letters out, so "abc" is an empty field, which asks for
+    // a quantity rather than naming an error; too many decimals are typed.
+    for (final String bad in <String>['0', '1,2345']) {
       testWidgets('"$bad" keeps the sheet open and the quantity as it was', (
         WidgetTester tester,
       ) async {

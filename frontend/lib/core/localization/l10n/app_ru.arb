@@ -2171,7 +2171,18 @@
       }
     }
   },
-  "quantitySheetTitle": "Количество",
+  "quantitySheetAsk": "{name} — сколько {unit, select, kg{килограммов} gram{граммов} piece{штук} liter{литров} package{упаковок} box{коробок} bundle{пучков} meter{метров} other{единиц}}?",
+  "@quantitySheetAsk": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "quantitySheetEmpty": "Введите количество",
   "quantitySheetDone": "Готово",
   "cartUnitPrice": "≈ {price} за {unit}",
   "@cartUnitPrice": {

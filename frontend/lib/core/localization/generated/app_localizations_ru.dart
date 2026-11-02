@@ -3663,7 +3663,23 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get quantitySheetTitle => 'Количество';
+  String quantitySheetAsk(String name, String unit) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'kg': 'килограммов',
+      'gram': 'граммов',
+      'piece': 'штук',
+      'liter': 'литров',
+      'package': 'упаковок',
+      'box': 'коробок',
+      'bundle': 'пучков',
+      'meter': 'метров',
+      'other': 'единиц',
+    });
+    return '$name — сколько $_temp0?';
+  }
+
+  @override
+  String get quantitySheetEmpty => 'Введите количество';
 
   @override
   String get quantitySheetDone => 'Готово';

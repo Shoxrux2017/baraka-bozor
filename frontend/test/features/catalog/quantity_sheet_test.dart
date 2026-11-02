@@ -1,10 +1,17 @@
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
+import 'package:baraka_bozor/core/formatting/money_format.dart';
+import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
+import 'package:baraka_bozor/core/orders/estimate_preview.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/features/catalog/presentation/quantity_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// The sheet that takes an exact quantity (drawing 18a), on its own.
+import '../../support/paragraphs.dart';
+
+/// The sheet that takes an exact quantity (drawing 18a, `DL-122`), on its
+/// own.
 void main() {
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
@@ -17,11 +24,15 @@ void main() {
     Locale locale = const Locale('ru'),
     Size size = const Size(400, 800),
     double textScale = 1,
+    int? price,
+    double keyboard = 0,
   }) async {
     answers.clear();
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
+    tester.view.viewInsets = FakeViewPadding(bottom: keyboard);
+    addTearDown(tester.view.resetViewInsets);
     tester.platformDispatcher.textScaleFactorTestValue = textScale;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
@@ -35,7 +46,13 @@ void main() {
             body: TextButton(
               key: const ValueKey<String>('open-sheet'),
               onPressed: () async => answers.add(
-                await showQuantitySheet(context, unit: unit, current: current),
+                await showQuantitySheet(
+                  context,
+                  unit: unit,
+                  current: current,
+                  name: 'Помидор',
+                  unitPriceUzs: price,
+                ),
               ),
               child: const Text('open'),
             ),
@@ -53,17 +70,109 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('shows the title and the current quantity as it is read', (
+  Material chip(WidgetTester tester, String quantity) =>
+      tester.widget<Material>(byKey('quantity-chip-$quantity'));
+
+  testWidgets('shows the question naming the product and the quantity', (
     WidgetTester tester,
   ) async {
     await open(tester, current: '1.5');
 
-    expect(find.text('Количество'), findsWidgets);
+    expect(find.text('Помидор — сколько килограммов?'), findsOneWidget);
     expect(find.text('Готово'), findsOneWidget);
     expect(
       tester.widget<TextFormField>(byKey('line-quantity')).controller!.text,
       '1,5',
     );
+  });
+
+  testWidgets('a piece product is asked for in pieces', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, unit: UnitCode.piece);
+
+    expect(find.text('Помидор — сколько штук?'), findsOneWidget);
+  });
+
+  testWidgets('the keyboard opens at once with the quantity selected', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, current: '1.5');
+
+    final EditableText text = tester.widget<EditableText>(
+      find.descendant(
+        of: byKey('line-quantity'),
+        matching: find.byType(EditableText),
+      ),
+    );
+    expect(text.focusNode.hasFocus, isTrue);
+    expect(
+      text.controller.selection,
+      const TextSelection(baseOffset: 0, extentOffset: 3),
+    );
+  });
+
+  testWidgets('a chip sets the quantity and is marked', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, price: 12075);
+    expect(chip(tester, '1').color, KitColors.primarySoft);
+    expect(chip(tester, '2').color, KitColors.field);
+
+    await tester.tap(byKey('quantity-chip-0.5'));
+    await tester.pump();
+
+    expect(
+      tester.widget<TextFormField>(byKey('line-quantity')).controller!.text,
+      '0,5',
+    );
+    expect(chip(tester, '0.5').color, KitColors.primarySoft);
+    expect(chip(tester, '1').color, KitColors.field);
+
+    await tester.tap(byKey('quantity-done'));
+    await tester.pumpAndSettle();
+    expect(answers, <String?>['0.5']);
+  });
+
+  testWidgets('a whole unit offers whole chips', (WidgetTester tester) async {
+    await open(tester, unit: UnitCode.piece, current: '5');
+
+    expect(byKey('quantity-chip-10'), findsOneWidget);
+    expect(byKey('quantity-chip-0.5'), findsNothing);
+    expect(chip(tester, '5').color, KitColors.primarySoft);
+  });
+
+  testWidgets('the sum follows the typing', (WidgetTester tester) async {
+    await open(tester, price: 12075);
+    await tester.enterText(byKey('line-quantity'), '0,5');
+    await tester.pump();
+
+    final String sum = MoneyFormat.uzs(
+      EstimatePreview.lineUzs(12075, '0.5'),
+      AppLanguage.ru,
+    );
+    expect(
+      tester.widget<Text>(byKey('quantity-preview')).data,
+      '≈ $sum за 0,5 кг',
+    );
+  });
+
+  testWidgets('without a price there is no sum', (WidgetTester tester) async {
+    await open(tester);
+
+    expect(byKey('quantity-preview'), findsNothing);
+  });
+
+  testWidgets('an empty field asks for a quantity, quietly', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, price: 12075);
+    await tester.enterText(byKey('line-quantity'), '');
+    await tester.pump();
+
+    final Text preview = tester.widget<Text>(byKey('quantity-preview'));
+    expect(preview.data, 'Введите количество');
+    expect(preview.style!.color, KitColors.muted);
   });
 
   testWidgets('a fraction is returned normalized', (WidgetTester tester) async {
@@ -74,20 +183,20 @@ void main() {
     expect(byKey('quantity-done'), findsNothing);
   });
 
-  for (final String bad in <String>['0', 'abc', '']) {
-    testWidgets('"$bad" shows the field error and keeps the sheet open', (
+  for (final String bad in <String>['0', '1,2345']) {
+    testWidgets('"$bad" shows the error as typed and keeps the sheet open', (
       WidgetTester tester,
     ) async {
-      await open(tester);
+      await open(tester, price: 12075);
       await done(tester, bad);
 
+      final Text preview = tester.widget<Text>(byKey('quantity-preview'));
       expect(
-        find.text(
-          AppLocalizations.of(tester.element(byKey('quantity-done')))
-              .cartQuantityFraction,
-        ),
-        findsOneWidget,
+        preview.data,
+        AppLocalizations.of(tester.element(byKey('quantity-done')))
+            .cartQuantityFraction,
       );
+      expect(preview.style!.color, KitColors.danger);
       expect(byKey('quantity-done'), findsOneWidget);
       expect(answers, isEmpty);
     });
@@ -110,7 +219,10 @@ void main() {
 
       for (final String bad in <String>['0', '']) {
         await done(tester, bad);
-        expect(find.text(l10n.cartQuantityWhole), findsOneWidget);
+        expect(
+          tester.widget<Text>(byKey('quantity-preview')).data,
+          bad.isEmpty ? l10n.quantitySheetEmpty : l10n.cartQuantityWhole,
+        );
         expect(byKey('quantity-done'), findsOneWidget);
         expect(answers, isEmpty);
       }
@@ -127,18 +239,43 @@ void main() {
   });
 
   for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
-    testWidgets('holds at 320x640 with text x2 in $locale', (
+    testWidgets('holds over the keyboard at 320x640 with text x2 in $locale', (
       WidgetTester tester,
     ) async {
+      await loadMontserrat();
       await open(
         tester,
         locale: locale,
         size: const Size(320, 640),
         textScale: 2,
+        price: 12075,
+        keyboard: 300,
       );
-
       expect(tester.takeException(), isNull);
-      expect(byKey('quantity-done'), findsOneWidget);
+
+      for (final Finder target in <Finder>[
+        byKey('line-quantity'),
+        byKey('quantity-chip-0.5'),
+        byKey('quantity-chip-3'),
+        byKey('quantity-preview'),
+        byKey('quantity-done'),
+      ]) {
+        await tester.ensureVisible(target);
+        await tester.pump();
+        expect(target.hitTestable(), findsOneWidget);
+        // The keyboard covers the lower 300 of 640.
+        expect(tester.getRect(target).bottom, lessThanOrEqualTo(340));
+      }
     });
   }
+
+  testWidgets('the sheet meets iOSTapTargetGuideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester, price: 12075);
+
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
 }

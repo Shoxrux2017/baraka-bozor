@@ -363,6 +363,8 @@ class _EditorState extends ConsumerState<_Editor> {
       context,
       unit: draft.unit,
       current: draft.quantity,
+      name: draft.name(interfaceLanguage(context)),
+      unitPriceUzs: draft.unitPriceUzs,
     );
     if (quantity != null && mounted) {
       setState(() => draft.quantity = quantity);

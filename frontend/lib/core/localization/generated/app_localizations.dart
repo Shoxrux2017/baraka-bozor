@@ -6242,11 +6242,17 @@ abstract class AppLocalizations {
   /// **'Savatni ochish. Savatda {quantity}'**
   String productOpenCartSpoken(String quantity);
 
-  /// No description provided for @quantitySheetTitle.
+  /// No description provided for @quantitySheetAsk.
   ///
   /// In uz, this message translates to:
-  /// **'Miqdor'**
-  String get quantitySheetTitle;
+  /// **'{name} — necha {unit, select, kg{kilogramm} gram{gramm} piece{dona} liter{litr} package{qadoq} box{quti} bundle{bog\'} meter{metr} other{birlik}}?'**
+  String quantitySheetAsk(String name, String unit);
+
+  /// No description provided for @quantitySheetEmpty.
+  ///
+  /// In uz, this message translates to:
+  /// **'Miqdorni kiriting'**
+  String get quantitySheetEmpty;
 
   /// No description provided for @quantitySheetDone.
   ///

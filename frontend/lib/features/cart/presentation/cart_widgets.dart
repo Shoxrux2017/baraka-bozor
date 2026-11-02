@@ -240,6 +240,21 @@ class LineOptionsFields extends StatelessWidget {
   }
 }
 
+/// The keyboard for a quantity in [unit]: with a decimal point only for a
+/// unit that takes a fraction.
+TextInputType quantityKeyboard(UnitCode unit) =>
+    TextInputType.numberWithOptions(decimal: unit.takesFraction);
+
+/// What a quantity field in [unit] lets through: digits (and a point or a
+/// comma for a fraction), at most 8 characters for a fraction, 4 otherwise.
+List<TextInputFormatter> quantityInputFormatters(UnitCode unit) =>
+    <TextInputFormatter>[
+      FilteringTextInputFormatter.allow(
+        RegExp(unit.takesFraction ? r'[0-9.,]' : '[0-9]'),
+      ),
+      LengthLimitingTextInputFormatter(unit.takesFraction ? 8 : 4),
+    ];
+
 /// A quantity in [unit]: a decimal field for a unit that takes a fraction,
 /// a field between a minus and a plus for one that does not
 /// (`tasks/WAVE_2.md` W2-12). The text is the quantity; it is never read
@@ -271,13 +286,8 @@ class QuantityField extends StatelessWidget {
       key: const ValueKey<String>('line-quantity'),
       controller: controller,
       focusNode: focus,
-      keyboardType: TextInputType.numberWithOptions(decimal: fraction),
-      inputFormatters: <TextInputFormatter>[
-        FilteringTextInputFormatter.allow(
-          RegExp(fraction ? r'[0-9.,]' : '[0-9]'),
-        ),
-        LengthLimitingTextInputFormatter(fraction ? 8 : 4),
-      ],
+      keyboardType: quantityKeyboard(unit),
+      inputFormatters: quantityInputFormatters(unit),
       decoration: InputDecoration(
         labelText: l10n.cartQuantity,
         suffixText: CatalogLabels.unit(l10n, unit),

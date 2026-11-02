@@ -329,6 +329,8 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
       context,
       unit: product.unitCode,
       current: current,
+      name: product.name(interfaceLanguage(context)),
+      unitPriceUzs: product.customerUnitPriceUzs,
     );
     if (quantity == null || !mounted || _plain(quantity) == current) {
       return;

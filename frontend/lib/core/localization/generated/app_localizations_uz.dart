@@ -3622,7 +3622,23 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get quantitySheetTitle => 'Miqdor';
+  String quantitySheetAsk(String name, String unit) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'kg': 'kilogramm',
+      'gram': 'gramm',
+      'piece': 'dona',
+      'liter': 'litr',
+      'package': 'qadoq',
+      'box': 'quti',
+      'bundle': 'bog\'',
+      'meter': 'metr',
+      'other': 'birlik',
+    });
+    return '$name — necha $_temp0?';
+  }
+
+  @override
+  String get quantitySheetEmpty => 'Miqdorni kiriting';
 
   @override
   String get quantitySheetDone => 'Tayyor';

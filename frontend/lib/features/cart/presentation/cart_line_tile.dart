@@ -93,6 +93,8 @@ class _CartLineTileState extends ConsumerState<CartLineTile> {
       context,
       unit: _line.unit,
       current: _shown(ref.read(cartQuantityQueueProvider)),
+      name: _line.name(interfaceLanguage(context)),
+      unitPriceUzs: _line.customerUnitPriceUzs,
     );
     if (quantity != null && mounted) {
       await _want(quantity, now: true);

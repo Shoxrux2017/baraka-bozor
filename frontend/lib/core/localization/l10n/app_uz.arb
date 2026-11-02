@@ -2337,7 +2337,18 @@
       }
     }
   },
-  "quantitySheetTitle": "Miqdor",
+  "quantitySheetAsk": "{name} — necha {unit, select, kg{kilogramm} gram{gramm} piece{dona} liter{litr} package{qadoq} box{quti} bundle{bog'} meter{metr} other{birlik}}?",
+  "@quantitySheetAsk": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "quantitySheetEmpty": "Miqdorni kiriting",
   "quantitySheetDone": "Tayyor",
   "cartUnitPrice": "{unit} uchun ≈ {price}",
   "@cartUnitPrice": {
