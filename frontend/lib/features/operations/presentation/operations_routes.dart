@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import '../../shells/presentation/panel_shell.dart';
@@ -17,24 +18,31 @@ final FeatureRoutes operationsRoutes = FeatureRoutes(
   feature: 'operations',
   routes: <RouteBase>[
     ShellRoute(
-      builder: (BuildContext context, GoRouterState state, Widget child) =>
-          PanelShell(location: state.uri.path, child: child),
+      pageBuilder: (BuildContext context, GoRouterState state, Widget child) =>
+          appPage(
+            state,
+            PanelShell(location: state.uri.path, child: child),
+            entry: true,
+          ),
       routes: <RouteBase>[
         GoRoute(
           path: AppPaths.operations,
           name: 'operations-board',
-          builder: (BuildContext context, GoRouterState state) =>
-              const BoardScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              appPage(state, const BoardScreen(), entry: true),
         ),
         GoRoute(
           path: OperationsPaths.orderPattern,
           name: 'operations-order',
-          builder: (BuildContext context, GoRouterState state) =>
-              // In lower case, as the API answers ids, so the page, its
-              // reloads and its controller all name one order.
-              OrderDetailScreen(
-                orderId: state.pathParameters['order']!.toLowerCase(),
-              ),
+          pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+            state,
+            // In lower case, as the API answers ids, so the page, its
+            // reloads and its controller all name one order.
+            OrderDetailScreen(
+              orderId: state.pathParameters['order']!.toLowerCase(),
+            ),
+            entry: true,
+          ),
         ),
       ],
     ),

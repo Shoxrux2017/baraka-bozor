@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_page.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'cart_paths.dart';
 import 'cart_screen.dart';
@@ -14,8 +15,8 @@ final FeatureRoutes cartRoutes = FeatureRoutes(
     GoRoute(
       path: CartPaths.cart,
       name: 'cart',
-      builder: (BuildContext context, GoRouterState state) =>
-          const CartScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const CartScreen()),
     ),
   ],
 );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'courier_list_screen.dart';
@@ -15,16 +16,18 @@ final FeatureRoutes courierRoutes = FeatureRoutes(
     GoRoute(
       path: AppPaths.courier,
       name: 'courier-orders',
-      builder: (BuildContext context, GoRouterState state) =>
-          const CourierOrdersScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const CourierOrdersScreen(), entry: true),
     ),
     GoRoute(
       path: AppPaths.courierOrderPattern,
       name: 'courier-order',
-      builder: (BuildContext context, GoRouterState state) =>
-          CourierOrderScreen(
-            orderId: state.pathParameters['order']!.toLowerCase(),
-          ),
+      pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+        state,
+        CourierOrderScreen(
+          orderId: state.pathParameters['order']!.toLowerCase(),
+        ),
+      ),
     ),
   ],
 );

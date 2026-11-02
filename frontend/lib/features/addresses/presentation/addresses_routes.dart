@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'addresses_screens.dart';
@@ -12,22 +13,24 @@ final FeatureRoutes addressesRoutes = FeatureRoutes(
     GoRoute(
       path: AppPaths.customerAddresses,
       name: 'customer-addresses',
-      builder: (BuildContext context, GoRouterState state) =>
-          const AddressesScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const AddressesScreen()),
     ),
     // Declared before the address pattern, which would otherwise read "new"
     // as an address id.
     GoRoute(
       path: AppPaths.customerNewAddress,
       name: 'customer-address-new',
-      builder: (BuildContext context, GoRouterState state) =>
-          const AddressFormScreen(addressId: null),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const AddressFormScreen(addressId: null)),
     ),
     GoRoute(
       path: AppPaths.customerAddressPattern,
       name: 'customer-address',
-      builder: (BuildContext context, GoRouterState state) =>
-          AddressFormScreen(addressId: state.pathParameters['address']),
+      pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+        state,
+        AddressFormScreen(addressId: state.pathParameters['address']),
+      ),
     ),
   ],
 );

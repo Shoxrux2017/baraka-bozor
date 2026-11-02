@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'auth_entry_screen.dart';
@@ -21,50 +22,50 @@ final FeatureRoutes authRoutes = FeatureRoutes(
     GoRoute(
       path: AppPaths.auth,
       name: 'customer-phone',
-      builder: (BuildContext context, GoRouterState state) =>
-          const AuthEntryScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const AuthEntryScreen(), entry: true),
     ),
     GoRoute(
       path: AppPaths.customerCode,
       name: 'customer-code',
-      builder: (BuildContext context, GoRouterState state) =>
-          const CodeScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const CodeScreen(), entry: true),
     ),
     GoRoute(
       path: AppPaths.staffLogin,
       name: 'staff-login',
-      builder: (BuildContext context, GoRouterState state) =>
-          const StaffLoginScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const StaffLoginScreen(), entry: true),
     ),
     GoRoute(
       path: AppPaths.changePassword,
       name: 'change-password',
-      builder: (BuildContext context, GoRouterState state) =>
-          const ChangePasswordScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const ChangePasswordScreen(), entry: true),
     ),
     GoRoute(
       path: AppPaths.staffPassword,
       name: 'staff-password',
-      builder: (BuildContext context, GoRouterState state) =>
-          const StaffPasswordScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const StaffPasswordScreen(), entry: true),
     ),
     GoRoute(
       path: AppPaths.customerName,
       name: 'customer-name',
-      builder: (BuildContext context, GoRouterState state) =>
-          const CustomerNameScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const CustomerNameScreen(), entry: true),
     ),
     GoRoute(
       path: AppPaths.unreachable,
       name: 'session-unreachable',
-      builder: (BuildContext context, GoRouterState state) =>
-          const UnreachableScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const UnreachableScreen(), entry: true),
     ),
     GoRoute(
       path: AppPaths.wrongSurface,
       name: 'wrong-surface',
-      builder: (BuildContext context, GoRouterState state) =>
-          const WrongSurfaceScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const WrongSurfaceScreen(), entry: true),
     ),
   ],
 );
