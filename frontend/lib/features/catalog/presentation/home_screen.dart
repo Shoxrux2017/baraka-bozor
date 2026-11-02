@@ -226,6 +226,7 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
                 pinned: true,
                 delegate: _SearchHeader(
                   hint: l10n.catalogSearchHint,
+                  spoken: l10n.catalogSearchSpoken,
                   extent: _SearchHeader.extentFor(
                     context,
                     l10n.catalogSearchHint,
@@ -251,6 +252,7 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
                 child: SectionTitle(
                   title: l10n.homeCategories,
                   seeAllKey: 'open-categories',
+                  seeAllLabel: l10n.homeCategoriesAll,
                   onSeeAll: () => context.push<void>(CatalogPaths.categories),
                 ),
               ),
@@ -273,11 +275,13 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
 class _SearchHeader extends SliverPersistentHeaderDelegate {
   const _SearchHeader({
     required this.hint,
+    required this.spoken,
     required this.extent,
     required this.reduceMotion,
   });
 
   final String hint;
+  final String spoken;
   final double extent;
   final bool reduceMotion;
 
@@ -328,13 +332,14 @@ class _SearchHeader extends SliverPersistentHeaderDelegate {
             : const <BoxShadow>[],
       ),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: _SearchEntry(hint: hint),
+      child: _SearchEntry(hint: hint, spoken: spoken),
     );
   }
 
   @override
   bool shouldRebuild(_SearchHeader oldDelegate) =>
       hint != oldDelegate.hint ||
+      spoken != oldDelegate.spoken ||
       extent != oldDelegate.extent ||
       reduceMotion != oldDelegate.reduceMotion;
 }
@@ -342,15 +347,16 @@ class _SearchHeader extends SliverPersistentHeaderDelegate {
 /// The search field of the home: it looks like the field and opens the
 /// search screen when tapped.
 class _SearchEntry extends StatelessWidget {
-  const _SearchEntry({required this.hint});
+  const _SearchEntry({required this.hint, required this.spoken});
 
   final String hint;
+  final String spoken;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: hint,
+      label: spoken,
       excludeSemantics: true,
       onTap: () => context.push<void>(CatalogPaths.search),
       child: Material(

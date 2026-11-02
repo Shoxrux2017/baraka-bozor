@@ -7435,6 +7435,66 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Savat: {count}, taxminan {sum}. Savatga'**
   String cartSummarySpoken(String count, String sum);
+
+  /// No description provided for @deliveryAddressSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yetkazib berish manzili: {address}. O\'zgartirish'**
+  String deliveryAddressSpoken(String address);
+
+  /// No description provided for @catalogSearchSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Mahsulotlarni qidirish'**
+  String get catalogSearchSpoken;
+
+  /// No description provided for @homeCategoriesAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha kategoriyalar'**
+  String get homeCategoriesAll;
+
+  /// No description provided for @recommendedAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha tavsiyalar'**
+  String get recommendedAll;
+
+  /// No description provided for @cardSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, taxminan {price}, 1 {unit, select, kg{kilogramm} gram{gramm} piece{dona} liter{litr} package{qadoq} box{quti} bundle{bog\'} meter{metr} other{birlik}} uchun'**
+  String cardSpoken(String name, String price, String unit);
+
+  /// No description provided for @cardInCartSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{card}. Savatda {quantity}'**
+  String cardInCartSpoken(String card, String quantity);
+
+  /// No description provided for @cardAddSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatga qo\'shish: {name}'**
+  String cardAddSpoken(String name);
+
+  /// No description provided for @cardStepperSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name} savatda'**
+  String cardStepperSpoken(String name);
+
+  /// No description provided for @favoriteAddSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilarga qo\'shish: {name}'**
+  String favoriteAddSpoken(String name);
+
+  /// No description provided for @favoriteRemoveSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilardan olib tashlash: {name}'**
+  String favoriteRemoveSpoken(String name);
 }
 
 class _AppLocalizationsDelegate

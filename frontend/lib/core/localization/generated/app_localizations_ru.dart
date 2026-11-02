@@ -4442,4 +4442,59 @@ class AppLocalizationsRu extends AppLocalizations {
   String cartSummarySpoken(String count, String sum) {
     return 'Корзина: $count, примерно $sum. В корзину';
   }
+
+  @override
+  String deliveryAddressSpoken(String address) {
+    return 'Адрес доставки: $address. Изменить';
+  }
+
+  @override
+  String get catalogSearchSpoken => 'Поиск товаров';
+
+  @override
+  String get homeCategoriesAll => 'Все категории';
+
+  @override
+  String get recommendedAll => 'Все рекомендуемые';
+
+  @override
+  String cardSpoken(String name, String price, String unit) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'kg': 'килограмм',
+      'gram': 'грамм',
+      'piece': 'штуку',
+      'liter': 'литр',
+      'package': 'упаковку',
+      'box': 'коробку',
+      'bundle': 'пучок',
+      'meter': 'метр',
+      'other': 'единицу',
+    });
+    return '$name, примерно $price за $_temp0';
+  }
+
+  @override
+  String cardInCartSpoken(String card, String quantity) {
+    return '$card. В корзине $quantity';
+  }
+
+  @override
+  String cardAddSpoken(String name) {
+    return 'Добавить в корзину: $name';
+  }
+
+  @override
+  String cardStepperSpoken(String name) {
+    return '$name в корзине';
+  }
+
+  @override
+  String favoriteAddSpoken(String name) {
+    return 'Добавить в избранное: $name';
+  }
+
+  @override
+  String favoriteRemoveSpoken(String name) {
+    return 'Убрать из избранного: $name';
+  }
 }

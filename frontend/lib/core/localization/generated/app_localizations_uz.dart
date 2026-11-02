@@ -4390,4 +4390,59 @@ class AppLocalizationsUz extends AppLocalizations {
   String cartSummarySpoken(String count, String sum) {
     return 'Savat: $count, taxminan $sum. Savatga';
   }
+
+  @override
+  String deliveryAddressSpoken(String address) {
+    return 'Yetkazib berish manzili: $address. O\'zgartirish';
+  }
+
+  @override
+  String get catalogSearchSpoken => 'Mahsulotlarni qidirish';
+
+  @override
+  String get homeCategoriesAll => 'Barcha kategoriyalar';
+
+  @override
+  String get recommendedAll => 'Barcha tavsiyalar';
+
+  @override
+  String cardSpoken(String name, String price, String unit) {
+    String _temp0 = intl.Intl.selectLogic(unit, {
+      'kg': 'kilogramm',
+      'gram': 'gramm',
+      'piece': 'dona',
+      'liter': 'litr',
+      'package': 'qadoq',
+      'box': 'quti',
+      'bundle': 'bog\'',
+      'meter': 'metr',
+      'other': 'birlik',
+    });
+    return '$name, taxminan $price, 1 $_temp0 uchun';
+  }
+
+  @override
+  String cardInCartSpoken(String card, String quantity) {
+    return '$card. Savatda $quantity';
+  }
+
+  @override
+  String cardAddSpoken(String name) {
+    return 'Savatga qo\'shish: $name';
+  }
+
+  @override
+  String cardStepperSpoken(String name) {
+    return '$name savatda';
+  }
+
+  @override
+  String favoriteAddSpoken(String name) {
+    return 'Sevimlilarga qo\'shish: $name';
+  }
+
+  @override
+  String favoriteRemoveSpoken(String name) {
+    return 'Sevimlilardan olib tashlash: $name';
+  }
 }

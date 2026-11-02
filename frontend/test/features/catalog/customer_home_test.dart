@@ -760,7 +760,7 @@ void main() {
       tester.element(find.byType(Scaffold).first),
     );
     for (final (String, String) entry in <(String, String)>[
-      ('catalog-search', l10n.catalogSearchHint),
+      ('catalog-search', l10n.catalogSearchSpoken),
     ]) {
       final String key = entry.$1;
       final String label = entry.$2;
@@ -1092,5 +1092,81 @@ void main() {
       expect(top(tester, byKey('category-c-$i')), first, reason: 'c-$i');
     }
     expect(tester.takeException(), isNull);
+  });
+
+  group('for a screen reader (DL-125)', () {
+    testWidgets('the address says доставка', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await open(tester, device: const Locale('ru'));
+
+      expect(
+        tester.getSemantics(byKey('delivery-address')),
+        matchesSemantics(
+          isButton: true,
+          hasTapAction: true,
+          label: 'Адрес доставки: Uy, Amir Temur, 12. Изменить',
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('the address with a label reads label, then street', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      addresses.rows = <Address>[
+        address(id: 'a-1', label: 'Ish', street: 'Bobur', house: '7'),
+      ];
+      await open(tester, device: const Locale('ru'));
+
+      expect(
+        tester.getSemantics(byKey('delivery-address')).label,
+        'Адрес доставки: Ish, Bobur, 7. Изменить',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('«Все» says what it opens and the titles are headings', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await open(tester, device: const Locale('ru'));
+
+      expect(
+        tester.getSemantics(byKey('open-categories')).label,
+        'Все категории',
+      );
+      expect(
+        tester.getSemantics(byKey('open-recommended')).label,
+        'Все рекомендуемые',
+      );
+      for (final String title in <String>['Категории', 'Рекомендуем']) {
+        expect(
+          tester
+              .getSemantics(find.text(title))
+              .getSemanticsData()
+              .flagsCollection
+              .isHeader,
+          isTrue,
+          reason: title,
+        );
+      }
+      handle.dispose();
+    });
+
+    testWidgets('the search reads Поиск товаров', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await open(tester, device: const Locale('ru'));
+
+      expect(
+        tester.getSemantics(byKey('catalog-search')),
+        matchesSemantics(
+          isButton: true,
+          hasTapAction: true,
+          label: 'Поиск товаров',
+        ),
+      );
+      handle.dispose();
+    });
   });
 }

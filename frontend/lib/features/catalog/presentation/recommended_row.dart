@@ -109,6 +109,7 @@ class _RecommendedRowState extends ConsumerState<RecommendedRow> {
         SectionTitle(
           title: widget.title ?? l10n.recommendedTitle,
           seeAllKey: 'open-recommended',
+          seeAllLabel: l10n.recommendedAll,
           onSeeAll: widget.showAll && !skeletons
               ? () => context.push<void>(CatalogPaths.recommended)
               : null,

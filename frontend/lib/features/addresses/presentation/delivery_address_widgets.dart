@@ -53,7 +53,7 @@ class DeliveryAddressLine extends ConsumerWidget {
       _ => ('', null, null),
     };
 
-    return InkWell(
+    final Widget line = InkWell(
       key: const ValueKey<String>('delivery-address'),
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -116,6 +116,23 @@ class DeliveryAddressLine extends ConsumerWidget {
           ],
         ),
       ),
+    );
+    // With an address the line is one button that says where the order goes
+    // (`DL-125`).
+    final Address? chosen = current.value;
+    if (current is! AsyncData<Address?> || chosen == null) {
+      return line;
+    }
+    return Semantics(
+      button: true,
+      excludeSemantics: true,
+      label: l10n.deliveryAddressSpoken(
+        chosen.label == null
+            ? chosen.streetLine
+            : '${chosen.label}, ${chosen.streetLine}',
+      ),
+      onTap: onTap,
+      child: line,
     );
   }
 }

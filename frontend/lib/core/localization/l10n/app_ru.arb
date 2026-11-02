@@ -2590,5 +2590,15 @@
   "deadlineLeft": "Осталось {minutes} мин",
   "deadlineLeftSpoken": "осталось {minutes, plural, one{# минута} few{# минуты} many{# минут} other{# минуты}}",
   "refreshDone": "Обновлено",
-  "cartSummarySpoken": "Корзина: {count}, примерно {sum}. В корзину"
+  "cartSummarySpoken": "Корзина: {count}, примерно {sum}. В корзину",
+  "deliveryAddressSpoken": "Адрес доставки: {address}. Изменить",
+  "catalogSearchSpoken": "Поиск товаров",
+  "homeCategoriesAll": "Все категории",
+  "recommendedAll": "Все рекомендуемые",
+  "cardSpoken": "{name}, примерно {price} за {unit, select, kg{килограмм} gram{грамм} piece{штуку} liter{литр} package{упаковку} box{коробку} bundle{пучок} meter{метр} other{единицу}}",
+  "cardInCartSpoken": "{card}. В корзине {quantity}",
+  "cardAddSpoken": "Добавить в корзину: {name}",
+  "cardStepperSpoken": "{name} в корзине",
+  "favoriteAddSpoken": "Добавить в избранное: {name}",
+  "favoriteRemoveSpoken": "Убрать из избранного: {name}"
 }

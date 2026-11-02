@@ -2972,5 +2972,73 @@
         "type": "String"
       }
     }
+  },
+  "deliveryAddressSpoken": "Yetkazib berish manzili: {address}. O'zgartirish",
+  "@deliveryAddressSpoken": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogSearchSpoken": "Mahsulotlarni qidirish",
+  "homeCategoriesAll": "Barcha kategoriyalar",
+  "recommendedAll": "Barcha tavsiyalar",
+  "cardSpoken": "{name}, taxminan {price}, 1 {unit, select, kg{kilogramm} gram{gramm} piece{dona} liter{litr} package{qadoq} box{quti} bundle{bog'} meter{metr} other{birlik}} uchun",
+  "@cardSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "cardInCartSpoken": "{card}. Savatda {quantity}",
+  "@cardInCartSpoken": {
+    "placeholders": {
+      "card": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "cardAddSpoken": "Savatga qo'shish: {name}",
+  "@cardAddSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cardStepperSpoken": "{name} savatda",
+  "@cardStepperSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "favoriteAddSpoken": "Sevimlilarga qo'shish: {name}",
+  "@favoriteAddSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "favoriteRemoveSpoken": "Sevimlilardan olib tashlash: {name}",
+  "@favoriteRemoveSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

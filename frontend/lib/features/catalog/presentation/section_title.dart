@@ -10,6 +10,7 @@ class SectionTitle extends StatelessWidget {
     required this.title,
     required this.seeAllKey,
     required this.onSeeAll,
+    this.seeAllLabel,
     super.key,
   });
 
@@ -19,14 +20,21 @@ class SectionTitle extends StatelessWidget {
   /// `null` leaves "Все" out.
   final VoidCallback? onSeeAll;
 
+  /// What "Все" opens, for a screen reader; the title is a heading
+  /// (`DL-125`).
+  final String? seeAllLabel;
+
   @override
   Widget build(BuildContext context) {
-    final Widget title = Text(
-      this.title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-        color: KitColors.ink,
+    final Widget title = Semantics(
+      header: true,
+      child: Text(
+        this.title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: KitColors.ink,
+        ),
       ),
     );
     final VoidCallback? onSeeAll = this.onSeeAll;
@@ -42,7 +50,11 @@ class SectionTitle extends StatelessWidget {
               ),
             ),
             onPressed: onSeeAll,
-            child: Text(AppLocalizations.of(context).homeSeeAll),
+            child: Semantics(
+              label: seeAllLabel,
+              excludeSemantics: seeAllLabel != null,
+              child: Text(AppLocalizations.of(context).homeSeeAll),
+            ),
           );
     // A large text leaves the title no room beside "Все": it goes under it
     // (`DL-125`).
