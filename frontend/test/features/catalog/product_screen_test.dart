@@ -7,10 +7,11 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/widgets/fold.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
-import 'package:baraka_bozor/features/cart/presentation/cart_paths.dart';
 import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
@@ -22,6 +23,7 @@ import 'package:baraka_bozor/features/catalog/application/catalog_controllers.da
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -354,10 +356,9 @@ void main() {
               product: item(unitCode: UnitCode.piece),
               quantity: '9999',
               onQuantity: asked.add,
-              actionKey: const ValueKey<String>('add-to-cart'),
-              actionLabel: 'В корзину',
+              sumUzs: 1000,
+              action: ProductBarAction.add,
               onAction: () {},
-              busy: false,
             ),
           ),
         ),
@@ -386,6 +387,10 @@ void main() {
       await tester.tap(byKey('substitution-contact_before_substitution'));
       await tester.pumpAndSettle();
       await tester.tap(byKey('add-to-cart'));
+      await tester.pump();
+      await tester.pump();
+      expect(byKey('product-added'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 1100));
       await tester.pumpAndSettle();
 
       final NewCartLine sent = cart.added.single;
@@ -393,8 +398,7 @@ void main() {
       expect(sent.quantity, '1.5');
       expect(sent.customerNote, 'Покрепче');
       expect(sent.substitutionPolicy, SubstitutionPolicy.contactBefore);
-      expect(find.text(l10n(tester).cartAdded), findsOneWidget);
-      expect(find.text(l10n(tester).cartOpen), findsOneWidget);
+      expect(byKey('open-cart'), findsOneWidget);
     });
 
     testWidgets('an empty note is sent as no note', (
@@ -677,10 +681,9 @@ void main() {
           reason: 'the cart was asked again',
         );
         expect(find.byType(CartScreen), findsNothing);
-        expect(find.text(l10n(tester).cartAdded), findsNothing);
-        expect(find.text(l10n(tester).productAlreadyInCart), findsOneWidget);
+        expect(byKey('product-added'), findsNothing);
         expect(byKey('add-to-cart'), findsNothing);
-        expect(byKey('save-line'), findsOneWidget);
+        expect(byKey('open-cart'), findsOneWidget);
         expect(quantityShown(tester), '2 кг');
         expect(
           tester.widget<TextFormField>(byKey('line-note')).controller!.text,
@@ -689,82 +692,6 @@ void main() {
         expect(cart.added, hasLength(1), reason: 'no second add');
       },
     );
-
-    testWidgets(
-      'the snackbar opens the cart, also after the product was left',
-      (WidgetTester tester) async {
-        await open(tester);
-        cart.answer = cartOf(<Map<String, Object?>>[
-          cartLineJson(productId: tomatoProduct),
-        ]);
-        await tester.tap(byKey('add-to-cart'));
-        await tester.pumpAndSettle();
-
-        GoRouter.of(anywhere(tester)).pop();
-        // The page leaves by its own transition (DL-122).
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(l10n(tester).cartOpen));
-        await tester.pumpAndSettle();
-
-        expect(tester.takeException(), isNull);
-        expect(find.byType(CartScreen), findsOneWidget);
-      },
-    );
-
-    testWidgets('a second notice replaces the first rather than queueing', (
-      WidgetTester tester,
-    ) async {
-      await open(tester);
-      cart.answer = cartOf(<Map<String, Object?>>[
-        cartLineJson(productId: tomatoProduct, quantity: '1.000'),
-      ]);
-      // Frame by frame, so the notice's timer starts as it would.
-      Future<void> wait(Duration time) async {
-        for (int i = 0; i < time.inMilliseconds ~/ 100; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
-      }
-
-      await tester.tap(byKey('add-to-cart'));
-      await wait(const Duration(seconds: 1));
-
-      cart.answer = cartOf(<Map<String, Object?>>[
-        cartLineJson(productId: tomatoProduct, quantity: '1.000'),
-        cartLineJson(id: breadLine, productId: breadProduct, unit: 'piece'),
-      ]);
-      GoRouter.of(anywhere(tester)).push('/customer/products/$breadProduct');
-      await wait(const Duration(milliseconds: 500));
-      await tester.tap(byKey('add-to-cart'));
-      await wait(const Duration(seconds: 1));
-      expect(find.text(l10n(tester).cartAdded), findsOneWidget);
-
-      // Queued, the second would only show once the first had gone, at about
-      // four and a half seconds in, and stay until about nine.
-      await wait(const Duration(seconds: 4));
-      expect(find.text(l10n(tester).cartAdded), findsNothing);
-    });
-
-    testWidgets('the notice stays behind when the Customer goes to checkout', (
-      WidgetTester tester,
-    ) async {
-      await open(tester);
-      cart.answer = cartOf(<Map<String, Object?>>[
-        cartLineJson(productId: tomatoProduct),
-      ]);
-      await tester.tap(byKey('add-to-cart'));
-      await tester.pumpAndSettle();
-      // The Customer reaches the cart by another way than the notice's
-      // action, which would dismiss the notice itself.
-      GoRouter.of(anywhere(tester)).push(CartPaths.cart);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text(l10n(tester).cartAdded), findsOneWidget);
-
-      await tester.tap(byKey('go-to-checkout'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text(l10n(tester).cartAdded), findsNothing);
-    });
 
     testWidgets(
       'an answer that arrives after the Customer left the product navigates nowhere',
@@ -935,6 +862,227 @@ void main() {
       await tester.tap(byKey('retry-load'));
       await tester.pumpAndSettle();
       expect(byKey('product-name'), findsOneWidget);
+    });
+  });
+
+  group('the add answers on its button', () {
+    final List<MethodCall> platformCalls = <MethodCall>[];
+
+    setUp(() {
+      platformCalls.clear();
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (
+            MethodCall call,
+          ) async {
+            platformCalls.add(call);
+            return null;
+          });
+    });
+
+    tearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+
+    Cart tomatoOne() => cartOf(<Map<String, Object?>>[
+      cartLineJson(quantity: '1.000', price: 12075, total: 12075),
+    ]);
+
+    Color? fillOf(WidgetTester tester, String key) => tester
+        .widget<ButtonStyleButton>(byKey(key))
+        .style
+        ?.backgroundColor
+        ?.resolve(<WidgetState>{});
+
+    testWidgets('adding says Добавляем… on the green button', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      final Completer<void> hold = Completer<void>();
+      cart.hold = hold;
+
+      await tester.tap(byKey('add-to-cart'));
+      await tester.pump();
+
+      expect(
+        find.descendant(
+          of: byKey('add-to-cart'),
+          matching: find.text(l10n(tester).productAdding),
+        ),
+        findsOneWidget,
+      );
+      final Finder spinner = find.descendant(
+        of: byKey('add-to-cart'),
+        matching: find.byType(CircularProgressIndicator),
+      );
+      expect(spinner, findsOneWidget);
+      expect(
+        find.ancestor(of: spinner, matching: find.byType(ExcludeSemantics)),
+        findsWidgets,
+      );
+      expect(fillOf(tester, 'add-to-cart'), KitColors.primary);
+      expect(iconEnabled(tester, 'product-plus'), isFalse);
+
+      cart.hold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+      'an added product shows В корзине with a light haptic, then Открыть корзину',
+      (WidgetTester tester) async {
+        await open(tester);
+        cart.answer = tomatoOne();
+
+        await tester.tap(byKey('add-to-cart'));
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          platformCalls.where(
+            (MethodCall c) =>
+                c.method == 'HapticFeedback.vibrate' &&
+                c.arguments == 'HapticFeedbackType.lightImpact',
+          ),
+          hasLength(1),
+        );
+        expect(byKey('product-added'), findsOneWidget);
+        expect(find.byIcon(Icons.check_circle), findsOneWidget);
+        expect(find.text(l10n(tester).productAdded), findsOneWidget);
+        expect(find.byType(SnackBar), findsNothing);
+        expect(
+          tester.takeAnnouncements().map(
+            (CapturedAccessibilityAnnouncement a) => a.message,
+          ),
+          <String>[l10n(tester).cartCardAdded('Помидор', '1 кг')],
+        );
+
+        await tester.pump(const Duration(milliseconds: 1000));
+        expect(byKey('product-added'), findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pumpAndSettle();
+
+        expect(byKey('product-added'), findsNothing);
+        expect(byKey('open-cart'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: byKey('open-cart'),
+            matching: find.text(l10n(tester).cartOpen),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: byKey('open-cart'),
+            matching: find.text('1 кг · ${approx(12075)}'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('the check pops in; with reduced motion it stands at once', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      cart.answer = tomatoOne();
+      await tester.tap(byKey('add-to-cart'));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 50));
+      final double early = tester
+          .widget<Opacity>(
+            find.descendant(
+              of: byKey('product-added'),
+              matching: find.byType(Opacity),
+            ),
+          )
+          .opacity;
+      expect(early, lessThan(1));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        tester
+            .widget<Opacity>(
+              find.descendant(
+                of: byKey('product-added'),
+                matching: find.byType(Opacity),
+              ),
+            )
+            .opacity,
+        1,
+      );
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('with reduced motion the check stands at once', (
+      WidgetTester tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await open(tester);
+      cart.answer = tomatoOne();
+
+      await tester.tap(byKey('add-to-cart'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(byKey('product-added'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('product-added'),
+          matching: find.byType(Opacity),
+        ),
+        findsNothing,
+      );
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+      'the in-cart chip folds in after the add and stands still when opened '
+      'in the cart',
+      (WidgetTester tester) async {
+        await open(tester);
+        expect(tester.getSize(find.byType(Fold).first).height, 0);
+        cart.answer = tomatoOne();
+
+        await tester.tap(byKey('add-to-cart'));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        final double mid = tester.getSize(find.byType(Fold).first).height;
+        expect(mid, greaterThan(0));
+        await tester.pumpAndSettle();
+        final double full = tester.getSize(find.byType(Fold).first).height;
+        expect(mid, lessThan(full));
+        expect(byKey('product-in-cart'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the chip is whole at the first frame when opened in the cart',
+      (WidgetTester tester) async {
+        cart.current = tomatoOne();
+        await open(tester, push: false);
+        GoRouter.of(anywhere(tester)).push('/customer/products/$tomatoProduct');
+        await tester.pumpAndSettle();
+
+        expect(byKey('product-in-cart'), findsOneWidget);
+        expect(tester.getSize(find.byType(Fold).first).height, greaterThan(0));
+      },
+    );
+
+    testWidgets('Открыть корзину opens the cart', (WidgetTester tester) async {
+      cart.current = tomatoOne();
+      await open(tester);
+
+      await tester.tap(byKey('open-cart'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CartScreen), findsOneWidget);
     });
   });
 
@@ -1113,11 +1261,11 @@ void main() {
       );
       await tester.tap(byKey('add-to-cart'));
       await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 1100));
+      await tester.pumpAndSettle();
 
-      expect(find.text(l10n(tester).cartAdded), findsOneWidget);
       expect(byKey('add-to-cart'), findsNothing);
-      expect(byKey('save-line'), findsOneWidget);
-      expect(enabled(tester, 'save-line'), isFalse);
+      expect(byKey('open-cart'), findsOneWidget);
       expect(chipShown(tester), 'В корзине: 1,5 кг');
       expect(cart.added, hasLength(1));
     });
@@ -1127,12 +1275,12 @@ void main() {
     ) async {
       cart.current = tomatoInCart();
       await open(tester);
-      expect(byKey('save-line'), findsOneWidget);
+      expect(byKey('open-cart'), findsOneWidget);
 
       cart.current = cartOf(<Map<String, Object?>>[]);
       await refreshCart(tester);
 
-      expect(byKey('save-line'), findsNothing);
+      expect(byKey('open-cart'), findsNothing);
       expect(byKey('product-in-cart'), findsNothing);
       expect(enabled(tester, 'add-to-cart'), isTrue);
       expect(quantityShown(tester), '1 кг');

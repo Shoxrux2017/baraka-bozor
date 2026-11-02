@@ -1844,9 +1844,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get cartAdded => 'Savatga qo\'shildi';
-
-  @override
   String get cartQuantity => 'Miqdori';
 
   @override
@@ -3572,8 +3569,10 @@ class AppLocalizationsUz extends AppLocalizations {
   String get cartLineSaved => 'Savat yangilandi';
 
   @override
-  String get productAlreadyInCart =>
-      'Bu mahsulot savatda bor — o\'zgartirib, saqlashingiz mumkin';
+  String get productAdding => 'Qo\'shilmoqda…';
+
+  @override
+  String get productAdded => 'Savatda';
 
   @override
   String get quantitySheetTitle => 'Miqdor';

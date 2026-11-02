@@ -946,7 +946,6 @@
       }
     }
   },
-  "cartAdded": "Savatga qo'shildi",
   "cartQuantity": "Miqdori",
   "cartQuantityFraction": "0 dan katta son: ko'pi bilan 4 xona va 3 kasr",
   "cartQuantityWhole": "1 dan 9999 gacha butun son",
@@ -2277,7 +2276,8 @@
   },
   "productSave": "Saqlash",
   "cartLineSaved": "Savat yangilandi",
-  "productAlreadyInCart": "Bu mahsulot savatda bor — o'zgartirib, saqlashingiz mumkin",
+  "productAdding": "Qo'shilmoqda…",
+  "productAdded": "Savatda",
   "quantitySheetTitle": "Miqdor",
   "quantitySheetDone": "Tayyor",
   "cartUnitPrice": "{unit} uchun ≈ {price}",

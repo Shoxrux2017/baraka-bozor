@@ -1,29 +1,34 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/catalog/catalog_values.dart';
+import '../../../core/accessibility/announce.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/formatting/server_text.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
-import '../../../core/localization/failure_text.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/localization/order_labels.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/orders/estimate_preview.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
 import '../../../core/routing/app_paths.dart';
-import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/fold.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../cart/application/cart_controllers.dart';
+import '../../cart/application/cart_quantity_queue.dart';
 import '../../cart/domain/cart.dart';
+import '../../cart/presentation/cart_feedback.dart';
 import '../../cart/presentation/cart_paths.dart';
 import '../../cart/presentation/cart_widgets.dart';
 import '../../favorites/application/favorites_controllers.dart';
@@ -32,6 +37,7 @@ import '../domain/catalog.dart';
 import 'more_in_category.dart';
 import 'product_bar.dart';
 import 'product_photo.dart';
+import 'product_sections.dart';
 import 'quantity_sheet.dart';
 
 /// One product (drawing 18): its picture, name, approximate price and what an
@@ -55,12 +61,23 @@ class ProductScreen extends ConsumerStatefulWidget {
   ConsumerState<ProductScreen> createState() => _ProductScreenState();
 }
 
+/// Where the screen's add stands (`DL-122`).
+enum _AddPhase { idle, adding, added }
+
 class _ProductScreenState extends ConsumerState<ProductScreen> {
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
   final TextEditingController _note = TextEditingController();
   String _quantity = '1';
   SubstitutionPolicy _policy = SubstitutionPolicy.allowSimilar;
   bool _heartBusy = false;
+  _AddPhase _phase = _AddPhase.idle;
+
+  /// How long "В корзине" stands before the bar offers the cart.
+  static const Duration _addedFor = Duration(milliseconds: 1100);
+  Timer? _addedTimer;
+
+  /// The quantity the in-cart chip last showed, kept while it folds away.
+  String? _chipQuantity;
 
   /// This product's line in the cart as the screen last took it, which is
   /// what the controls are compared with; `null` while it is not in the cart.
@@ -78,6 +95,7 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
 
   @override
   void dispose() {
+    _addedTimer?.cancel();
     _note.dispose();
     super.dispose();
   }
@@ -96,19 +114,23 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     );
   }
 
+  /// This product's line in [cart], if it has one.
+  CartLine? _lineIn(Cart cart) {
+    for (final CartLine candidate in cart.lines) {
+      if (candidate.productId == widget.productId) {
+        return candidate;
+      }
+    }
+    return null;
+  }
+
   void _onCart(AsyncValue<Cart> cart) {
     // A cart on its way, or one that failed with nothing before it, says
     // nothing about the line.
     if (!cart.hasValue) {
       return;
     }
-    CartLine? line;
-    for (final CartLine candidate in cart.requireValue.lines) {
-      if (candidate.productId == widget.productId) {
-        line = candidate;
-        break;
-      }
-    }
+    final CartLine? line = _lineIn(cart.requireValue);
     final CartLine? before = _line;
     setState(() {
       _line = line;
@@ -144,38 +166,6 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     }
   }
 
-  Future<void> _save(CartLine line) async {
-    if (!_form.currentState!.validate()) {
-      return;
-    }
-    final CartLinePatch patch = _patch(line);
-    if (patch.isEmpty) {
-      return;
-    }
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-
-    final Cart? answer = await ref
-        .read(cartLineProvider(line.id).notifier)
-        .change(patch);
-    if (!_current) {
-      return;
-    }
-    final ApiFailure? failure = answer == null
-        ? ref.read(cartLineProvider(line.id)).failure
-        : null;
-    final String? text = answer != null
-        ? l10n.cartLineSaved
-        : failure == null
-        ? null
-        : failureText(l10n, failure);
-    if (text != null) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(text)));
-    }
-  }
-
   /// The card's data, when this page was opened with it for this product.
   ProductOpening? get _opening {
     final ProductOpening? opening = widget.opening;
@@ -183,9 +173,6 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
         ? opening
         : null;
   }
-
-  /// Whether this product's page is still the one the Customer sees.
-  bool get _current => mounted && (ModalRoute.of(context)?.isCurrent ?? false);
 
   Future<void> _toggleHeart(CatalogProduct product) async {
     if (_heartBusy) {
@@ -215,65 +202,76 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     }
   }
 
+  /// Adds the product through the quantity queue. The button says so while
+  /// the server answers; a taken add shows "В корзине" for a moment, then
+  /// offers the cart. A line that appears another way goes straight to the
+  /// cart button (`DL-122`).
   Future<void> _add(CatalogProduct product) async {
     if (!_form.currentState!.validate()) {
       return;
     }
     final AppLocalizations l10n = AppLocalizations.of(context);
-    // Kept before the wait: the snackbar may outlive this page.
-    final GoRouter router = GoRouter.of(context);
+    // Kept before the wait: the failure may outlive this page.
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final String name = product.name(interfaceLanguage(context));
+    final String quantity = _quantity;
+    final String spoken =
+        '${QuantityRules.display(quantity)} '
+        '${CatalogLabels.unit(l10n, product.unitCode)}';
     final String note = trimLikeServer(_note.text);
 
-    final Cart? answer = await ref
-        .read(addToCartProvider(product.id).notifier)
+    setState(() => _phase = _AddPhase.adding);
+    final ApiFailure? failure = await ref
+        .read(cartQuantityQueueProvider.notifier)
         .add(
           NewCartLine(
             productId: product.id,
-            quantity: _quantity,
+            quantity: quantity,
             customerNote: note.isEmpty ? null : note,
             substitutionPolicy: _policy,
           ),
         );
-    if (!_current) {
+    if (failure != null) {
+      if (mounted) {
+        setState(() => _phase = _AddPhase.idle);
+      }
+      showCartFailure(messenger, l10n, failure);
       return;
     }
-    if (answer != null) {
-      // A new notice replaces the last rather than queueing behind it.
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(l10n.cartAdded),
-            // With an action a snackbar would otherwise stay until dismissed,
-            // over the checkout's confirmation among others.
-            persist: false,
-            action: SnackBarAction(
-              label: l10n.cartOpen,
-              onPressed: () => router.push(CartPaths.cart),
-            ),
-          ),
-        );
+    if (!mounted) {
       return;
     }
-    final ApiFailure? failure = ref.read(addToCartProvider(product.id)).failure;
-    if (failure == null) {
+    // Read from the cart itself: the screen's own copy is updated a moment
+    // later. A line that holds another quantity than the one sent was there
+    // before (the add was refused as `cart_item_already_exists`), so it is
+    // no add of this screen and the bar goes straight to the cart.
+    final Cart? held = ref.read(currentCartProvider).value;
+    final CartLine? taken = held == null ? null : _lineIn(held);
+    if (taken == null || _plain(taken.quantity) != _plain(quantity)) {
+      // Refused, or not shown yet: the cart that follows decides what the
+      // bar offers.
+      setState(() => _phase = _AddPhase.idle);
       return;
     }
-    // A product already in the cart has been answered by the refreshed cart,
-    // which turns the screen into the in-cart state: no second line is made.
-    if (failure is ApiRefusal && failure.code == 'cart_item_already_exists') {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(l10n.productAlreadyInCart)));
-      return;
+    unawaited(HapticFeedback.lightImpact());
+    announce(context, l10n.cartCardAdded(name, spoken));
+    setState(() => _phase = _AddPhase.added);
+    _addedTimer?.cancel();
+    _addedTimer = Timer(_addedFor, () {
+      if (mounted) {
+        setState(() => _phase = _AddPhase.idle);
+      }
+    });
+  }
+
+  /// The sum under the bar's label: the line's own while the quantity shown
+  /// is the line's, else the estimate for the quantity shown.
+  int _sum(CatalogProduct product, CartLine? line) {
+    final int? own = line?.estimatedLineTotalUzs;
+    if (line != null && own != null && _plain(line.quantity) == _quantity) {
+      return own;
     }
-    final String? text = failureText(l10n, failure);
-    if (text != null) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(text)));
-    }
+    return EstimatePreview.lineUzs(product.customerUnitPriceUzs, _quantity);
   }
 
   @override
@@ -299,15 +297,28 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     final bool reduced = MediaQuery.disableAnimationsOf(context);
     final Object? heroTag = opening == null || reduced ? null : opening.heroTag;
     final AsyncValue<Cart> cart = ref.watch(currentCartProvider);
-    final MutationState adding = ref.watch(addToCartProvider(widget.productId));
     // The add waits while the cart is on its way: an add to a cart not yet
     // seen could not be told from one already holding the product.
     final bool cartKnown = cart.hasValue || cart.hasError;
     final CartLine? line = _line;
-    final bool saving =
-        line != null && ref.watch(cartLineProvider(line.id)).isBusy;
-    // What the Customer sets waits for the answer, which would overwrite it.
-    final bool locked = line == null ? adding.isBusy : saving;
+    // What the Customer sets waits for the add's answer, which would
+    // overwrite it.
+    final bool locked = _phase == _AddPhase.adding;
+    final String? lineQuantity = line == null
+        ? null
+        : '${QuantityRules.display(line.quantity)} '
+              '${CatalogLabels.unit(l10n, line.unit)}';
+    // Kept while the chip folds away, so it does not empty as it goes.
+    if (lineQuantity != null) {
+      _chipQuantity = lineQuantity;
+    }
+    final ProductBarAction action = line == null
+        ? (_phase == _AddPhase.adding
+              ? ProductBarAction.adding
+              : ProductBarAction.add)
+        : (_phase == _AddPhase.added
+              ? ProductBarAction.added
+              : ProductBarAction.openCart);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -337,38 +348,30 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
                 locked: locked,
                 heroTag: heroTag,
                 fadeUp: opening != null && !reduced,
-                inCart: line == null
-                    ? null
-                    : l10n.productInCart(
-                        '${QuantityRules.display(line.quantity)} '
-                        '${CatalogLabels.unit(l10n, line.unit)}',
-                      ),
+                chipQuantity: _chipQuantity,
+                chipShown: line != null,
+                onChipFolded: () => setState(() => _chipQuantity = null),
                 onPolicy: (SubstitutionPolicy policy) =>
                     setState(() => _policy = policy),
               ),
       ),
       bottomNavigationBar: shown == null
           ? null
-          // The note is part of what "Сохранить" waits for.
-          : ListenableBuilder(
-              listenable: _note,
-              builder: (BuildContext context, Widget? _) => ProductBar(
-                product: shown,
-                quantity: _quantity,
-                onQuantity: (String quantity) =>
-                    setState(() => _quantity = quantity),
-                onQuantityTap: () => _askQuantity(shown),
-                actionKey: ValueKey<String>(
-                  line == null ? 'add-to-cart' : 'save-line',
-                ),
-                actionLabel: line == null
-                    ? l10n.productAddToCart
-                    : l10n.productSave,
-                onAction: line == null
-                    ? (cartKnown ? () => _add(shown) : null)
-                    : (_patch(line).isEmpty ? null : () => _save(line)),
-                busy: line == null ? adding.isBusy : saving,
-              ),
+          : ProductBar(
+              product: shown,
+              quantity: _quantity,
+              sumUzs: _sum(shown, line),
+              onQuantity: (String quantity) =>
+                  setState(() => _quantity = quantity),
+              onQuantityTap: () => _askQuantity(shown),
+              locked: locked,
+              action: action,
+              onAction: switch (action) {
+                ProductBarAction.add ||
+                ProductBarAction.adding => cartKnown ? () => _add(shown) : null,
+                ProductBarAction.added => null,
+                ProductBarAction.openCart => () => context.push(CartPaths.cart),
+              },
             ),
     );
   }
@@ -405,7 +408,9 @@ class _Page extends StatelessWidget {
     required this.locked,
     required this.heroTag,
     required this.fadeUp,
-    required this.inCart,
+    required this.chipQuantity,
+    required this.chipShown,
+    required this.onChipFolded,
     required this.onPolicy,
   });
 
@@ -423,8 +428,14 @@ class _Page extends StatelessWidget {
   /// Whether the page under the photo fades up (opened from a card).
   final bool fadeUp;
 
-  /// "В корзине: 2 кг" while the product has a line in the cart.
-  final String? inCart;
+  /// The quantity the in-cart chip shows, `null` when there is no chip.
+  final String? chipQuantity;
+
+  /// Whether the product has a line in the cart: the chip unfolds.
+  final bool chipShown;
+
+  /// Called once the chip has folded away.
+  final VoidCallback onChipFolded;
   final ValueChanged<SubstitutionPolicy> onPolicy;
 
   static const double side = 20;
@@ -467,21 +478,29 @@ class _Page extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  if (inCart != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(side, 16, side, 0),
-                      child: Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: _InCartChip(text: inCart!),
-                      ),
-                    ),
+                  const SizedBox(height: 6),
+                  // First built in the cart it stands still; after an add it
+                  // folds in, and away when the line goes.
+                  Fold(
+                    shown: chipShown,
+                    onFolded: onChipFolded,
+                    child: chipQuantity == null
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              side,
+                              10,
+                              side,
+                              0,
+                            ),
+                            child: Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: ProductInCartChip(quantity: chipQuantity!),
+                            ),
+                          ),
+                  ),
                   Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      side,
-                      inCart == null ? 16 : 10,
-                      side,
-                      0,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(side, 10, side, 0),
                     child: Text(
                       product.name(language),
                       key: const ValueKey<String>('product-name'),
@@ -637,48 +656,6 @@ class _FadeUpState extends State<_FadeUp> with SingleTickerProviderStateMixin {
           child: child,
         ),
         child: widget.child,
-      ),
-    );
-  }
-}
-
-/// "В корзине: 2 кг" above the name.
-class _InCartChip extends StatelessWidget {
-  const _InCartChip({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: KitColors.primarySoft,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const Icon(
-              Icons.shopping_bag_outlined,
-              size: 16,
-              color: KitColors.primaryDark,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                text,
-                key: const ValueKey<String>('product-in-cart'),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: KitColors.primaryDark,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

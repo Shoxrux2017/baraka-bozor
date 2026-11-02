@@ -3392,12 +3392,6 @@ abstract class AppLocalizations {
   /// **'Savat: {count}'**
   String cartBadge(int count);
 
-  /// No description provided for @cartAdded.
-  ///
-  /// In uz, this message translates to:
-  /// **'Savatga qo\'shildi'**
-  String get cartAdded;
-
   /// No description provided for @cartQuantity.
   ///
   /// In uz, this message translates to:
@@ -6188,11 +6182,17 @@ abstract class AppLocalizations {
   /// **'Savat yangilandi'**
   String get cartLineSaved;
 
-  /// No description provided for @productAlreadyInCart.
+  /// No description provided for @productAdding.
   ///
   /// In uz, this message translates to:
-  /// **'Bu mahsulot savatda bor — o\'zgartirib, saqlashingiz mumkin'**
-  String get productAlreadyInCart;
+  /// **'Qo\'shilmoqda…'**
+  String get productAdding;
+
+  /// No description provided for @productAdded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Savatda'**
+  String get productAdded;
 
   /// No description provided for @quantitySheetTitle.
   ///

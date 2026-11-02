@@ -1874,9 +1874,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get cartAdded => 'Добавлено в корзину';
-
-  @override
   String get cartQuantity => 'Количество';
 
   @override
@@ -3613,8 +3610,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get cartLineSaved => 'Корзина обновлена';
 
   @override
-  String get productAlreadyInCart =>
-      'Этот товар уже в корзине — можно изменить и сохранить';
+  String get productAdding => 'Добавляем…';
+
+  @override
+  String get productAdded => 'В корзине';
 
   @override
   String get quantitySheetTitle => 'Количество';
