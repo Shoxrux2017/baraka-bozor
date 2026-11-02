@@ -128,6 +128,15 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
           mainAxisSpacing: _gap,
           mainAxisExtent: categoryTileExtent(tile, scaler, columns),
         );
+    // Skeletons pulse while a load runs, and stand still after it failed.
+    final bool pulsing = !categories.hasError || categories.isLoading;
+    // The one style the hint is measured and drawn in: the theme's body text
+    // at 14, so a large text never clips it.
+    final TextStyle hintStyle =
+        (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(
+          fontSize: 14,
+          color: KitColors.muted,
+        );
     const EdgeInsets gridPadding = EdgeInsets.fromLTRB(16, 8, 16, 8);
 
     final Widget categoryGrid;
@@ -146,14 +155,14 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
                   width: tile,
                   height: tile,
                   radius: 14,
-                  pulsing: !categories.hasError,
+                  pulsing: pulsing,
                 ),
                 const SizedBox(height: 6),
                 Align(
                   child: SkeletonBar(
                     width: tile * 0.6,
                     height: 10,
-                    pulsing: !categories.hasError,
+                    pulsing: pulsing,
                   ),
                 ),
               ],
@@ -227,10 +236,12 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
                 pinned: true,
                 delegate: _SearchHeader(
                   hint: l10n.catalogSearchHint,
+                  hintStyle: hintStyle,
                   spoken: l10n.catalogSearchSpoken,
                   extent: _SearchHeader.extentFor(
                     context,
                     l10n.catalogSearchHint,
+                    hintStyle,
                   ),
                   reduceMotion: MediaQuery.disableAnimationsOf(context),
                 ),
@@ -246,6 +257,7 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
                       failure: failure,
                       shownAt: loaded?.at,
                       onRetry: _refresh,
+                      busy: categories.isLoading || recommended.isLoading,
                     ),
                   ),
                 ),
@@ -276,12 +288,14 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
 class _SearchHeader extends SliverPersistentHeaderDelegate {
   const _SearchHeader({
     required this.hint,
+    required this.hintStyle,
     required this.spoken,
     required this.extent,
     required this.reduceMotion,
   });
 
   final String hint;
+  final TextStyle hintStyle;
   final String spoken;
   final double extent;
   final bool reduceMotion;
@@ -295,12 +309,9 @@ class _SearchHeader extends SliverPersistentHeaderDelegate {
 
   /// 16 of padding and the field: 50, or the hint's line plus 28 when the
   /// text is large.
-  static double extentFor(BuildContext context, String hint) {
+  static double extentFor(BuildContext context, String hint, TextStyle style) {
     final TextPainter line = TextPainter(
-      text: TextSpan(
-        text: hint,
-        style: DefaultTextStyle.of(context).style.copyWith(fontSize: 14),
-      ),
+      text: TextSpan(text: hint, style: style),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
       maxLines: 1,
@@ -333,13 +344,14 @@ class _SearchHeader extends SliverPersistentHeaderDelegate {
             : const <BoxShadow>[],
       ),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: _SearchEntry(hint: hint, spoken: spoken),
+      child: _SearchEntry(hint: hint, style: hintStyle, spoken: spoken),
     );
   }
 
   @override
   bool shouldRebuild(_SearchHeader oldDelegate) =>
       hint != oldDelegate.hint ||
+      hintStyle != oldDelegate.hintStyle ||
       spoken != oldDelegate.spoken ||
       extent != oldDelegate.extent ||
       reduceMotion != oldDelegate.reduceMotion;
@@ -348,9 +360,14 @@ class _SearchHeader extends SliverPersistentHeaderDelegate {
 /// The search field of the home: it looks like the field and opens the
 /// search screen when tapped.
 class _SearchEntry extends StatelessWidget {
-  const _SearchEntry({required this.hint, required this.spoken});
+  const _SearchEntry({
+    required this.hint,
+    required this.style,
+    required this.spoken,
+  });
 
   final String hint;
+  final TextStyle style;
   final String spoken;
 
   @override
@@ -380,10 +397,7 @@ class _SearchEntry extends StatelessWidget {
                       hint,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: KitColors.muted,
-                        fontSize: 14,
-                      ),
+                      style: style,
                     ),
                   ),
                 ],

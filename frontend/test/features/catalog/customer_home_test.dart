@@ -316,9 +316,8 @@ void main() {
     expect(byKey('category-c-1'), findsOneWidget);
   });
 
-  testWidgets('no recommended section when its request fails', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('a failed recommended request keeps still skeletons under the '
+      'line', (WidgetTester tester) async {
     catalog.nextFailure = const NetworkFailure();
     await open(tester, device: const Locale('ru'));
     // The row keeps still skeletons under the line; the categories stay.
@@ -986,7 +985,7 @@ void main() {
   testWidgets(
     'offline after a load keeps everything under Нет связи · данные на 12:46',
     (WidgetTester tester) async {
-      final DateTime at = DateTime.utc(2026, 11, 2, 7, 46);
+      DateTime at = DateTime.utc(2026, 11, 2, 7, 46);
       final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository()
         ..pendingRows = <Map<String, Object?>>[pendingRow()];
       await open(
@@ -997,6 +996,8 @@ void main() {
       );
       expect(byKey('stale-line'), findsNothing);
 
+      // Half an hour on: the line still names the first load's time.
+      at = at.add(const Duration(minutes: 30));
       catalog.categoriesFailure = const NetworkFailure();
       await pull(tester);
 
@@ -1500,10 +1501,12 @@ void main() {
     });
   });
 
-  for (final double scale in <double>[1, 2]) {
-    testWidgets(
-      'every target of the home meets iOSTapTargetGuideline (text x$scale)',
-      (WidgetTester tester) async {
+  for (final Locale device in const <Locale>[Locale('ru'), Locale('uz')]) {
+    for (final double scale in <double>[1, 2]) {
+      testWidgets('every target of the home meets iOSTapTargetGuideline '
+          '(text x$scale, ${device.languageCode})', (
+        WidgetTester tester,
+      ) async {
         final SemanticsHandle semantics = tester.ensureSemantics();
         tester.view.physicalSize = const Size(320, 640);
         tester.view.devicePixelRatio = 1;
@@ -1526,7 +1529,7 @@ void main() {
         catalog.nextFailure = const UnexpectedFailure();
         await asTwoSessionCustomer(
           tester,
-          const Locale('ru'),
+          device,
           orders: orders,
           clock: () => night,
           cart: FakeCartRepository(
@@ -1565,7 +1568,175 @@ void main() {
         expect(byKey('stale-line'), findsOneWidget);
         await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
         semantics.dispose();
-      },
-    );
+      });
+    }
   }
+
+  group('the final review', () {
+    testWidgets('the search hint is not clipped at text x2 (P2-1)', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await loadMontserrat();
+      await open(tester, device: const Locale('ru'));
+
+      final RenderParagraph hint = tester.renderObject<RenderParagraph>(
+        find.descendant(
+          of: byKey('catalog-search'),
+          matching: find.text('Найти: огурцы, лепёшки…'),
+        ),
+      );
+      final double field = tester.getSize(byKey('catalog-search')).height;
+      expect(
+        field,
+        greaterThanOrEqualTo(hint.size.height + 28 - 0.01),
+        reason: 'the field holds the hint with its 14 padding above and below',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a retry after a failure shows its progress (P2-2)', (
+      WidgetTester tester,
+    ) async {
+      catalog.categoriesFailure = const NetworkFailure();
+      await open(tester, device: const Locale('ru'));
+      final int loads = catalog.categoryLoads;
+      catalog.categoriesGate = Completer<void>();
+
+      await tester.tap(byKey('stale-retry'));
+      await tester.pump();
+
+      expect(
+        tester
+            .widgetList<SkeletonBar>(
+              find.descendant(
+                of: byKey('category-skeletons'),
+                matching: find.byType(SkeletonBar),
+              ),
+            )
+            .every((SkeletonBar b) => b.pulsing),
+        isTrue,
+      );
+      expect(
+        find.descendant(
+          of: byKey('stale-retry'),
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.widget<TextButton>(byKey('stale-retry')).onPressed, isNull);
+      expect(
+        tester.getSize(byKey('stale-retry')).height,
+        greaterThanOrEqualTo(44),
+      );
+      await tester.tap(byKey('stale-retry'), warnIfMissed: false);
+      await tester.pump();
+      expect(catalog.categoryLoads, loads + 1, reason: 'one request');
+
+      catalog.categoriesGate!.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('stale-line'), findsNothing);
+      expect(byKey('category-c-1'), findsOneWidget);
+    });
+
+    testWidgets('a retry over kept data is busy and starts one request', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, device: const Locale('ru'));
+      catalog.categoriesFailure = const NetworkFailure();
+      await pull(tester);
+      expect(byKey('stale-line'), findsOneWidget);
+      final int loads = catalog.categoryLoads;
+      catalog.categoriesGate = Completer<void>();
+
+      await tester.tap(byKey('stale-retry'));
+      await tester.pump();
+      expect(
+        find.descendant(
+          of: byKey('stale-retry'),
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(byKey('stale-retry'), warnIfMissed: false);
+      await tester.pump();
+      expect(catalog.categoryLoads, loads + 1);
+
+      catalog.categoriesGate!.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('stale-line'), findsNothing);
+    });
+
+    Future<void> backToTheApp(WidgetTester tester) async {
+      for (final AppLifecycleState state in <AppLifecycleState>[
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        tester.binding.handleAppLifecycleStateChanged(state);
+      }
+      await tester.pump();
+    }
+
+    testWidgets('the closed line re-reads the clock when the app resumes '
+        '(P2-3)', (WidgetTester tester) async {
+      DateTime now = DateTime.utc(2026, 11, 2, 2, 59); // 07:59 in Tashkent
+      cartWithHours() => FakeCartRepository(
+        cart: cartOf(
+          <Map<String, Object?>>[],
+          workingHours: <String, Object?>{
+            'opens_at': '08:00',
+            'closes_at': '22:00',
+          },
+        ),
+      );
+      await open(
+        tester,
+        device: const Locale('ru'),
+        cart: cartWithHours(),
+        clock: () => now,
+      );
+      expect(byKey('store-closed'), findsOneWidget);
+
+      // The device slept past opening: no timer ran.
+      now = DateTime.utc(2026, 11, 2, 3, 30);
+      await backToTheApp(tester);
+      await tester.pumpAndSettle();
+      expect(byKey('store-closed'), findsNothing);
+    });
+
+    testWidgets('an expired question drops at once when the app resumes '
+        '(P2-3)', (WidgetTester tester) async {
+      DateTime now = DateTime.utc(2026, 11, 2, 7);
+      final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository()
+        ..pendingRows = <Map<String, Object?>>[
+          <String, Object?>{
+            'id': approvalOne,
+            'order_id': orderOne,
+            'order_number': 1044,
+            'expires_at': '2026-11-02T07:09:00Z',
+          },
+        ];
+      await open(
+        tester,
+        device: const Locale('ru'),
+        orders: orders,
+        clock: () => now,
+      );
+      expect(byKey('orders-badge'), findsOneWidget);
+
+      now = DateTime.utc(2026, 11, 2, 7, 30);
+      await backToTheApp(tester);
+      expect(byKey('orders-badge'), findsNothing);
+      await tester.pumpAndSettle();
+      expect(byKey('question-banner'), findsNothing);
+    });
+  });
 }

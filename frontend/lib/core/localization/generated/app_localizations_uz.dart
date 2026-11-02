@@ -3421,9 +3421,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get catalogAdd => 'Qo\'shish';
-
-  @override
   String get catalogUnavailable => 'Sotuvda yo\'q';
 
   @override

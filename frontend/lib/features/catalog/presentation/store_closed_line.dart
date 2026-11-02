@@ -24,6 +24,16 @@ class StoreClosedLine extends ConsumerStatefulWidget {
 class _StoreClosedLineState extends ConsumerState<StoreClosedLine> {
   Timer? _timer;
 
+  /// A timer stops while the device sleeps: coming back to the app reads
+  /// the clock again (`DL-125`).
+  late final AppLifecycleListener _lifecycle = AppLifecycleListener(
+    onResume: () {
+      if (mounted) {
+        setState(() {});
+      }
+    },
+  );
+
   /// The hours last known, kept while the line folds away.
   StoreHours? _hours;
 
@@ -49,7 +59,14 @@ class _StoreClosedLineState extends ConsumerState<StoreClosedLine> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _lifecycle;
+  }
+
+  @override
   void dispose() {
+    _lifecycle.dispose();
     _timer?.cancel();
     super.dispose();
   }

@@ -15,12 +15,17 @@ class StaleDataLine extends StatelessWidget {
     required this.failure,
     required this.shownAt,
     required this.onRetry,
+    this.busy = false,
     super.key,
   });
 
   final ApiFailure failure;
   final DateTime? shownAt;
   final VoidCallback onRetry;
+
+  /// A load is on its way: the button shows a small spinner in place of its
+  /// word and takes no tap, so a second tap starts no second request.
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +63,7 @@ class StaleDataLine extends StatelessWidget {
     );
     final Widget button = TextButton(
       key: const ValueKey<String>('stale-retry'),
-      onPressed: onRetry,
+      onPressed: busy ? null : onRetry,
       style: TextButton.styleFrom(
         minimumSize: const Size(44, 44),
         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -66,7 +71,15 @@ class StaleDataLine extends StatelessWidget {
         foregroundColor: KitColors.primaryDark,
         textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
       ),
-      child: Text(time == null ? l10n.retryButton : l10n.staleRefresh),
+      child: busy
+          ? const SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: KitColors.primary,
+              ),
+            )
+          : Text(time == null ? l10n.retryButton : l10n.staleRefresh),
     );
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: 1),

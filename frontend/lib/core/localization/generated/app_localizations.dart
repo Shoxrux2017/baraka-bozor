@@ -5930,12 +5930,6 @@ abstract class AppLocalizations {
   /// **'{unit} uchun'**
   String catalogPerUnit(String unit);
 
-  /// No description provided for @catalogAdd.
-  ///
-  /// In uz, this message translates to:
-  /// **'Qo\'shish'**
-  String get catalogAdd;
-
   /// No description provided for @catalogUnavailable.
   ///
   /// In uz, this message translates to:

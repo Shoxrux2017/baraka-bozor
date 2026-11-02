@@ -35,10 +35,13 @@ class CategoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
-    final AsyncValue<List<CatalogCategory>> categories = ref
-        .watch(catalogCategoriesProvider)
-        .whenData((Loaded<List<CatalogCategory>> loaded) => loaded.data);
-    final CatalogCategory? category = categories.value
+    final AsyncValue<Loaded<List<CatalogCategory>>> async = ref.watch(
+      catalogCategoriesProvider,
+    );
+    // The categories kept from the last load stand even when a refresh
+    // failed (`DL-125`); only without any is the failure shown.
+    final List<CatalogCategory>? rows = async.value?.data;
+    final CatalogCategory? category = rows
         ?.where((CatalogCategory c) => c.id == categoryId)
         .firstOrNull;
 
@@ -48,10 +51,19 @@ class CategoryScreen extends ConsumerWidget {
       // The mode stays visible while two sessions exist (DL-75), whatever
       // the body shows: loading, an error, not found or the products.
       body: UnderActiveMode(
-        child: categories.when(
-          skipLoadingOnReload: false,
-          skipLoadingOnRefresh: !categories.hasError,
-          data: (List<CatalogCategory> rows) {
+        child: Builder(
+          builder: (BuildContext context) {
+            if (rows == null) {
+              final Object? error = async.error;
+              return async.hasError
+                  ? CategoriesFailure(
+                      failure: error is ApiFailure
+                          ? error
+                          : const UnexpectedFailure(),
+                      onRetry: () => ref.invalidate(catalogCategoriesProvider),
+                    )
+                  : const Center(child: CircularProgressIndicator());
+            }
             if (category == null) {
               return Center(child: Text(l10n.errorNotFound));
             }
@@ -98,11 +110,6 @@ class CategoryScreen extends ConsumerWidget {
               ],
             );
           },
-          error: (Object error, StackTrace _) => CategoriesFailure(
-            failure: error is ApiFailure ? error : const UnexpectedFailure(),
-            onRetry: () => ref.invalidate(catalogCategoriesProvider),
-          ),
-          loading: () => const Center(child: CircularProgressIndicator()),
         ),
       ),
     );

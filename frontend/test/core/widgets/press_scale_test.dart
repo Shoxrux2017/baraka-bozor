@@ -1,4 +1,4 @@
-﻿import 'package:baraka_bozor/core/widgets/press_scale.dart';
+import 'package:baraka_bozor/core/widgets/press_scale.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

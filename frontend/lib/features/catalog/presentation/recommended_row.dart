@@ -86,8 +86,10 @@ class _RecommendedRowState extends ConsumerState<RecommendedRow> {
           ? _list(
               key: const ValueKey<String>('recommended-skeletons'),
               count: RecommendedRow.skeletonCards,
-              card: (int index) =>
-                  _SkeletonCard(width: width, pulsing: !async.hasError),
+              card: (int index) => _SkeletonCard(
+                width: width,
+                pulsing: !async.hasError || async.isLoading,
+              ),
             )
           : _list(
               key: ValueKey<String>(widget.rowKey),

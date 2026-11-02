@@ -352,7 +352,7 @@ void main() {
     testWidgets('offline after a load keeps the tiles with the stale line and '
         'its time', (WidgetTester tester) async {
       // 12:46 in Tashkent.
-      final DateTime at = DateTime.utc(2026, 11, 2, 7, 46);
+      DateTime at = DateTime.utc(2026, 11, 2, 7, 46);
       await open(
         tester,
         CatalogPaths.categories,
@@ -361,6 +361,8 @@ void main() {
       );
       expect(byKey('stale-line'), findsNothing);
 
+      // Half an hour on: the line still names the first load's time.
+      at = at.add(const Duration(minutes: 30));
       catalog.categoriesFailure = const NetworkFailure();
       await pull(tester);
 
@@ -395,6 +397,108 @@ void main() {
       expect(byKey('stale-line'), findsNothing);
       expect(byKey('category-c-1'), findsOneWidget);
       expect(find.byType(SkeletonBar), findsNothing);
+    });
+
+    testWidgets('a pull announces Обновлено, or the stale words (P3-3)', (
+      WidgetTester tester,
+    ) async {
+      DateTime at = DateTime.utc(2026, 11, 2, 7, 46);
+      await open(
+        tester,
+        CatalogPaths.categories,
+        locale: const Locale('ru'),
+        clock: () => at,
+      );
+      tester.takeAnnouncements();
+
+      await pull(tester);
+      expect(
+        tester.takeAnnouncements().map((a) => a.message),
+        contains('Обновлено'),
+      );
+
+      at = at.add(const Duration(minutes: 30));
+      catalog.categoriesFailure = const NetworkFailure();
+      await pull(tester);
+      expect(
+        tester.takeAnnouncements().map((a) => a.message),
+        contains('Нет связи. Показаны данные на 12:46'),
+      );
+
+      // The line's own retry does what the pull does.
+      await tester.tap(byKey('stale-retry'));
+      await tester.pumpAndSettle();
+      expect(byKey('stale-line'), findsNothing);
+      expect(
+        tester.takeAnnouncements().map((a) => a.message),
+        contains('Обновлено'),
+      );
+    });
+
+    testWidgets('a retry after a failure shows its progress (P2-2)', (
+      WidgetTester tester,
+    ) async {
+      catalog.categoriesFailure = const NetworkFailure();
+      await open(tester, CatalogPaths.categories, locale: const Locale('ru'));
+      final int loads = catalog.categoryLoads;
+      catalog.categoriesGate = Completer<void>();
+
+      await tester.tap(byKey('stale-retry'));
+      await tester.pump();
+
+      expect(
+        tester
+            .widgetList<SkeletonBar>(
+              find.descendant(
+                of: byKey('category-skeletons'),
+                matching: find.byType(SkeletonBar),
+              ),
+            )
+            .every((SkeletonBar b) => b.pulsing),
+        isTrue,
+      );
+      expect(
+        find.descendant(
+          of: byKey('stale-retry'),
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.widget<TextButton>(byKey('stale-retry')).onPressed, isNull);
+      await tester.tap(byKey('stale-retry'), warnIfMissed: false);
+      await tester.pump();
+      expect(catalog.categoryLoads, loads + 1, reason: 'one request');
+
+      catalog.categoriesGate!.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('stale-line'), findsNothing);
+    });
+
+    testWidgets('a retry over kept tiles is busy and starts one request', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, CatalogPaths.categories, locale: const Locale('ru'));
+      catalog.categoriesFailure = const NetworkFailure();
+      await pull(tester);
+      final int loads = catalog.categoryLoads;
+      catalog.categoriesGate = Completer<void>();
+
+      await tester.tap(byKey('stale-retry'));
+      await tester.pump();
+      expect(
+        find.descendant(
+          of: byKey('stale-retry'),
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(byKey('stale-retry'), warnIfMissed: false);
+      await tester.pump();
+      expect(catalog.categoryLoads, loads + 1);
+
+      catalog.categoriesGate!.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('stale-line'), findsNothing);
     });
 
     testWidgets('a tile reads as its name and a button, a letter tile without '
@@ -669,6 +773,21 @@ void main() {
   });
 
   group('category screen', () {
+    testWidgets('a failed refresh keeps the rail (P3-1)', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, CatalogPaths.category('c-1'));
+      expect(byKey('rail-c-1'), findsOneWidget);
+
+      catalog.categoriesFailure = const NetworkFailure();
+      ProviderScope.containerOf(tester.element(find.byType(CategoryScreen)))
+          .invalidate(catalogCategoriesProvider);
+      await tester.pumpAndSettle();
+
+      expect(byKey('rail-c-1'), findsOneWidget);
+      expect(byKey('retry-load'), findsNothing);
+    });
+
     testWidgets('shows the rail with the current one selected, and products', (
       WidgetTester tester,
     ) async {

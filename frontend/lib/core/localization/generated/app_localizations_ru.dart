@@ -3457,9 +3457,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get catalogAdd => 'Добавить';
-
-  @override
   String get catalogUnavailable => 'Нет в продаже';
 
   @override

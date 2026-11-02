@@ -39,6 +39,24 @@ class _QuestionBannerState extends ConsumerState<QuestionBanner> {
   /// Whether the banner in the tree unfolds on its first frame.
   bool _appear = false;
 
+  /// A timer stops while the device sleeps: coming back to the app drops the
+  /// questions that expired meanwhile (`DL-125`).
+  late final AppLifecycleListener _lifecycle = AppLifecycleListener(
+    onResume: () => ref.invalidate(openQuestionsProvider),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle;
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
   void _onOpenChanged(
     List<PendingQuestion>? before,
     List<PendingQuestion> after,
@@ -182,8 +200,6 @@ class _Card extends ConsumerWidget {
                             '${question.orderNumber}',
                             TashkentTime.time(question.expiresAt),
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
