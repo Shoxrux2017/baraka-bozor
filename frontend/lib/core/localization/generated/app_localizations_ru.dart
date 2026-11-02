@@ -3892,11 +3892,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get questionBannerTitle => 'Сборщик ждёт вашего ответа';
 
   @override
-  String questionBannerOrder(String number, String time) {
-    return 'Заказ № $number · ответьте до $time';
-  }
-
-  @override
   String get questionAnswer => 'Ответить';
 
   @override
@@ -4427,10 +4422,10 @@ class AppLocalizationsRu extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       minutes,
       locale: localeName,
-      other: '# минуты',
-      many: '# минут',
-      few: '# минуты',
-      one: '# минута',
+      other: '$minutes минуты',
+      many: '$minutes минут',
+      few: '$minutes минуты',
+      one: '$minutes минута',
     );
     return 'осталось $_temp0';
   }
@@ -4496,5 +4491,28 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String favoriteRemoveSpoken(String name) {
     return 'Убрать из избранного: $name';
+  }
+
+  @override
+  String questionBannerUntil(String number, String time) {
+    return 'Заказ № $number · до $time';
+  }
+
+  @override
+  String questionSpoken(String number, String left) {
+    return 'Сборщик ждёт вашего ответа. Заказ № $number, $left. Ответить';
+  }
+
+  @override
+  String questionArrived(String number, String left) {
+    return 'Сборщик спрашивает про заказ № $number. $left';
+  }
+
+  @override
+  String get questionExpired => 'Время на ответ вышло';
+
+  @override
+  String homeNavOrdersWaiting(int count) {
+    return 'Заказы, ждут ответа: $count';
   }
 }

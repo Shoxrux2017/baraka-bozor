@@ -78,12 +78,14 @@ class _DeadlineChipState extends ConsumerState<DeadlineChip> {
             children: <Widget>[
               Icon(Icons.timer, size: 16, color: color),
               const SizedBox(width: 4),
-              Text(
-                AppLocalizations.of(context).deadlineLeft(minutes),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: color,
+              Flexible(
+                child: Text(
+                  AppLocalizations.of(context).deadlineLeft(minutes),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
                 ),
               ),
             ],

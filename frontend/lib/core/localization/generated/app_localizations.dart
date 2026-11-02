@@ -6560,12 +6560,6 @@ abstract class AppLocalizations {
   /// **'Yig\'uvchi javobingizni kutmoqda'**
   String get questionBannerTitle;
 
-  /// No description provided for @questionBannerOrder.
-  ///
-  /// In uz, this message translates to:
-  /// **'Buyurtma № {number} · {time} gacha javob bering'**
-  String questionBannerOrder(String number, String time);
-
   /// No description provided for @questionAnswer.
   ///
   /// In uz, this message translates to:
@@ -7495,6 +7489,36 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Sevimlilardan olib tashlash: {name}'**
   String favoriteRemoveSpoken(String name);
+
+  /// No description provided for @questionBannerUntil.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} · {time} gacha'**
+  String questionBannerUntil(String number, String time);
+
+  /// No description provided for @questionSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi javobingizni kutmoqda. Buyurtma № {number}, {left}. Javob berish'**
+  String questionSpoken(String number, String left);
+
+  /// No description provided for @questionArrived.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi № {number} buyurtma haqida so\'ramoqda. {left}'**
+  String questionArrived(String number, String left);
+
+  /// No description provided for @questionExpired.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob berish vaqti tugadi'**
+  String get questionExpired;
+
+  /// No description provided for @homeNavOrdersWaiting.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar, javob kutilmoqda: {count}'**
+  String homeNavOrdersWaiting(int count);
 }
 
 class _AppLocalizationsDelegate

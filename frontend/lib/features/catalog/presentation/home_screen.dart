@@ -76,7 +76,7 @@ class _CatalogHomeScreenState extends ConsumerState<CatalogHomeScreen> {
   Future<void> _refresh() async {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final String? account = ref.read(customerAccountProvider);
-    ref.invalidate(pendingQuestionProvider);
+    ref.invalidate(pendingQuestionsProvider);
     final List<Object?> errors = await Future.wait(<Future<Object?>>[
       _errorOf(ref.refresh(catalogCategoriesProvider.future)),
       _errorOf(ref.refresh(productListProvider(_featured).future)),

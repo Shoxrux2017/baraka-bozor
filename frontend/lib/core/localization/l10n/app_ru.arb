@@ -2299,7 +2299,6 @@
   "reorderRepeatOrder": "Повторить заказ",
   "reorderSending": "Добавляем в корзину",
   "questionBannerTitle": "Сборщик ждёт вашего ответа",
-  "questionBannerOrder": "Заказ № {number} · ответьте до {time}",
   "questionAnswer": "Ответить",
   "ordersTabCurrent": "Текущие",
   "ordersTabPast": "Прошлые",
@@ -2588,7 +2587,7 @@
   "staleRefresh": "Обновить",
   "staleSpoken": "{reason}. Показаны данные на {time}",
   "deadlineLeft": "Осталось {minutes} мин",
-  "deadlineLeftSpoken": "осталось {minutes, plural, one{# минута} few{# минуты} many{# минут} other{# минуты}}",
+  "deadlineLeftSpoken": "осталось {minutes, plural, one{{minutes} минута} few{{minutes} минуты} many{{minutes} минут} other{{minutes} минуты}}",
   "refreshDone": "Обновлено",
   "cartSummarySpoken": "Корзина: {count}, примерно {sum}. В корзину",
   "deliveryAddressSpoken": "Адрес доставки: {address}. Изменить",
@@ -2600,5 +2599,10 @@
   "cardAddSpoken": "Добавить в корзину: {name}",
   "cardStepperSpoken": "{name} в корзине",
   "favoriteAddSpoken": "Добавить в избранное: {name}",
-  "favoriteRemoveSpoken": "Убрать из избранного: {name}"
+  "favoriteRemoveSpoken": "Убрать из избранного: {name}",
+  "questionBannerUntil": "Заказ № {number} · до {time}",
+  "questionSpoken": "Сборщик ждёт вашего ответа. Заказ № {number}, {left}. Ответить",
+  "questionArrived": "Сборщик спрашивает про заказ № {number}. {left}",
+  "questionExpired": "Время на ответ вышло",
+  "homeNavOrdersWaiting": "Заказы, ждут ответа: {count}"
 }

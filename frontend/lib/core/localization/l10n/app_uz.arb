@@ -2519,17 +2519,6 @@
   "reorderRepeatOrder": "Buyurtmani takrorlash",
   "reorderSending": "Savatga qo'shilmoqda",
   "questionBannerTitle": "Yig'uvchi javobingizni kutmoqda",
-  "questionBannerOrder": "Buyurtma № {number} · {time} gacha javob bering",
-  "@questionBannerOrder": {
-    "placeholders": {
-      "number": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "questionAnswer": "Javob berish",
   "ordersTabCurrent": "Joriy",
   "ordersTabPast": "O'tgan",
@@ -3038,6 +3027,48 @@
     "placeholders": {
       "name": {
         "type": "String"
+      }
+    }
+  },
+  "questionBannerUntil": "Buyurtma № {number} · {time} gacha",
+  "@questionBannerUntil": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "questionSpoken": "Yig'uvchi javobingizni kutmoqda. Buyurtma № {number}, {left}. Javob berish",
+  "@questionSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "questionArrived": "Yig'uvchi № {number} buyurtma haqida so'ramoqda. {left}",
+  "@questionArrived": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "questionExpired": "Javob berish vaqti tugadi",
+  "homeNavOrdersWaiting": "Buyurtmalar, javob kutilmoqda: {count}",
+  "@homeNavOrdersWaiting": {
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   }

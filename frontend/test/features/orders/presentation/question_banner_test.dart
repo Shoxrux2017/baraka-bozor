@@ -33,6 +33,8 @@ void main() {
   late InMemoryTokenStore tokens;
   late FakeAuthRepository auth;
   late FakeCustomerOrdersRepository orders;
+  // 12:00 in Tashkent on the day the rows below expire.
+  DateTime now = DateTime.utc(2026, 10, 19, 7);
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
@@ -50,6 +52,7 @@ void main() {
       orders.loads.where((String load) => load == 'pending').length;
 
   setUp(() {
+    now = DateTime.utc(2026, 10, 19, 7);
     tokens = InMemoryTokenStore()..tokens[SessionSlot.customer] = 'c';
     auth = FakeAuthRepository()
       ..identities[SessionSlot.customer] = user(id: 'c');
@@ -84,6 +87,7 @@ void main() {
         orders: orders,
         cart: FakeCartRepository(),
         device: device,
+        clock: () => now,
       ),
     );
     await tester.pumpAndSettle();
@@ -101,7 +105,7 @@ void main() {
     expect(find.byType(CatalogHomeScreen), findsOneWidget);
     expect(byKey('question-banner'), findsOneWidget);
     expect(find.text('Сборщик ждёт вашего ответа'), findsOneWidget);
-    expect(find.text('Заказ № 1044 · ответьте до 12:55'), findsOneWidget);
+    expect(find.text('Заказ № 1044 · до 12:55'), findsOneWidget);
 
     await tester.tap(byKey('question-banner-answer'));
     await tester.pumpAndSettle();

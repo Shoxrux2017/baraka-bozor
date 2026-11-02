@@ -3847,11 +3847,6 @@ class AppLocalizationsUz extends AppLocalizations {
   String get questionBannerTitle => 'Yig\'uvchi javobingizni kutmoqda';
 
   @override
-  String questionBannerOrder(String number, String time) {
-    return 'Buyurtma № $number · $time gacha javob bering';
-  }
-
-  @override
   String get questionAnswer => 'Javob berish';
 
   @override
@@ -4444,5 +4439,28 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String favoriteRemoveSpoken(String name) {
     return 'Sevimlilardan olib tashlash: $name';
+  }
+
+  @override
+  String questionBannerUntil(String number, String time) {
+    return 'Buyurtma № $number · $time gacha';
+  }
+
+  @override
+  String questionSpoken(String number, String left) {
+    return 'Yig\'uvchi javobingizni kutmoqda. Buyurtma № $number, $left. Javob berish';
+  }
+
+  @override
+  String questionArrived(String number, String left) {
+    return 'Yig\'uvchi № $number buyurtma haqida so\'ramoqda. $left';
+  }
+
+  @override
+  String get questionExpired => 'Javob berish vaqti tugadi';
+
+  @override
+  String homeNavOrdersWaiting(int count) {
+    return 'Buyurtmalar, javob kutilmoqda: $count';
   }
 }

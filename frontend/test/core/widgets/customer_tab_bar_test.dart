@@ -1,13 +1,27 @@
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
+import 'package:baraka_bozor/core/platform/clock.dart';
+import 'package:baraka_bozor/core/session/customer_account.dart';
+import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../support/fake_customer_orders_repository.dart';
 
 /// The tab bar's look on a stand-in screen. How a tab is reached is tested on
 /// the real app in `features/shells/presentation/customer_tabs_test.dart`.
 void main() {
+  late FakeCustomerOrdersRepository orders;
+  late DateTime now;
+
+  setUp(() {
+    orders = FakeCustomerOrdersRepository();
+    now = DateTime.utc(2026, 11, 2, 7);
+  });
+
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
   Future<void> open(
@@ -15,13 +29,21 @@ void main() {
     Locale locale = const Locale('uz'),
   }) async {
     await tester.pumpWidget(
-      MaterialApp(
-        locale: locale,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(
-          body: Text('stand-in home'),
-          bottomNavigationBar: CustomerTabBar(current: CustomerTab.home),
+      ProviderScope(
+        retry: (int count, Object error) => null,
+        overrides: [
+          customerAccountProvider.overrideWithValue('c'),
+          customerOrdersRepositoryProvider.overrideWithValue(orders),
+          clockProvider.overrideWithValue(() => now),
+        ],
+        child: MaterialApp(
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(
+            body: Text('stand-in home'),
+            bottomNavigationBar: CustomerTabBar(current: CustomerTab.home),
+          ),
         ),
       ),
     );
@@ -91,17 +113,20 @@ void main() {
 
   testWidgets('labels stop growing at 15 px', (WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('uz'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        builder: (BuildContext context, Widget? child) => MediaQuery(
-          data: MediaQuery.of(context)
-              .copyWith(textScaler: const TextScaler.linear(2)),
-          child: child!,
-        ),
-        home: const Scaffold(
-          bottomNavigationBar: CustomerTabBar(current: CustomerTab.home),
+      ProviderScope(
+        overrides: [customerAccountProvider.overrideWithValue(null)],
+        child: MaterialApp(
+          locale: const Locale('uz'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (BuildContext context, Widget? child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const Scaffold(
+            bottomNavigationBar: CustomerTabBar(current: CustomerTab.home),
+          ),
         ),
       ),
     );
@@ -120,17 +145,20 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('uz'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        builder: (BuildContext context, Widget? child) => MediaQuery(
-          data: MediaQuery.of(context)
-              .copyWith(textScaler: const TextScaler.linear(2)),
-          child: child!,
-        ),
-        home: const Scaffold(
-          bottomNavigationBar: CustomerTabBar(current: CustomerTab.orders),
+      ProviderScope(
+        overrides: [customerAccountProvider.overrideWithValue(null)],
+        child: MaterialApp(
+          locale: const Locale('uz'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (BuildContext context, Widget? child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const Scaffold(
+            bottomNavigationBar: CustomerTabBar(current: CustomerTab.orders),
+          ),
         ),
       ),
     );
@@ -153,23 +181,28 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('uz'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        builder: (BuildContext context, Widget? child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(disableAnimations: true),
-          child: child!,
-        ),
-        home: Scaffold(
-          body: ListView(
-            primary: true,
-            children: <Widget>[
-              for (int i = 0; i < 40; i++)
-                SizedBox(height: 80, child: Text('$i')),
-            ],
+      ProviderScope(
+        overrides: [customerAccountProvider.overrideWithValue(null)],
+        child: MaterialApp(
+          locale: const Locale('uz'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (BuildContext context, Widget? child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: child!,
           ),
-          bottomNavigationBar: const CustomerTabBar(current: CustomerTab.home),
+          home: Scaffold(
+            body: ListView(
+              primary: true,
+              children: <Widget>[
+                for (int i = 0; i < 40; i++)
+                  SizedBox(height: 80, child: Text('$i')),
+              ],
+            ),
+            bottomNavigationBar: const CustomerTabBar(
+              current: CustomerTab.home,
+            ),
+          ),
         ),
       ),
     );
@@ -184,5 +217,62 @@ void main() {
     await tester.pump();
 
     expect(list.position.pixels, 0);
+  });
+
+  testWidgets('Заказы shows how many questions wait, until their expiry', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    orders.pendingRows = <Map<String, Object?>>[
+      <String, Object?>{
+        'id': approvalOne,
+        'order_id': orderOne,
+        'order_number': 1001,
+        'expires_at': '2026-11-02T07:10:00Z',
+      },
+      <String, Object?>{
+        'id': '0192f0a0-0000-7000-8000-00000000c032',
+        'order_id': orderOne,
+        'order_number': 1002,
+        'expires_at': '2026-11-02T07:05:00Z',
+      },
+    ];
+    await open(tester, locale: const Locale('ru'));
+
+    expect(
+      tester
+          .widget<Text>(
+            find.descendant(
+              of: byKey('orders-badge'),
+              matching: find.byType(Text),
+            ),
+          )
+          .data,
+      '2',
+    );
+    expect(find.bySemanticsLabel('Заказы, ждут ответа: 2'), findsOneWidget);
+    expect(
+      tester.getSize(byKey('orders-badge')).width,
+      greaterThanOrEqualTo(18),
+    );
+    final Rect badge = tester.getRect(byKey('orders-badge'));
+    final Rect icon = tester.getRect(
+      find.descendant(of: byKey('open-orders'), matching: find.byType(Icon)),
+    );
+    expect(badge.left, closeTo(icon.center.dx + 6, 0.5));
+    expect(
+      badge.top - tester.getTopLeft(byKey('open-orders')).dy,
+      closeTo(8, 0.5),
+    );
+
+    now = now.add(const Duration(minutes: 5));
+    await tester.pump(const Duration(minutes: 5));
+    expect(find.bySemanticsLabel('Заказы, ждут ответа: 1'), findsOneWidget);
+
+    now = now.add(const Duration(minutes: 5));
+    await tester.pump(const Duration(minutes: 5));
+    expect(byKey('orders-badge'), findsNothing);
+    expect(find.bySemanticsLabel('Заказы'), findsOneWidget);
+    semantics.dispose();
   });
 }

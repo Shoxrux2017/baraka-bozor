@@ -6,6 +6,7 @@ import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
+import 'package:baraka_bozor/core/widgets/fold.dart';
 import 'package:baraka_bozor/core/widgets/skeleton_bar.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/addresses/application/delivery_address.dart';
@@ -21,6 +22,7 @@ import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.da
 import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -127,10 +129,11 @@ void main() {
     WidgetTester tester,
     Locale device, {
     FakeCustomerOrdersRepository? orders,
+    DateTime Function()? clock,
   }) async {
     tokens.tokens[SessionSlot.staff] = 's';
     auth.identities[SessionSlot.staff] = user(id: 's', role: UserRole.courier);
-    await open(tester, device: device, orders: orders);
+    await open(tester, device: device, orders: orders, clock: clock);
     await tester.tap(byKey('staff-menu'));
     await tester.pumpAndSettle();
     await tester.tap(byKey('switch-to-customer-button'));
@@ -802,7 +805,12 @@ void main() {
         final FakeCustomerOrdersRepository orders =
             FakeCustomerOrdersRepository()
               ..pendingRows = <Map<String, Object?>>[pendingRow()];
-        await asTwoSessionCustomer(tester, device, orders: orders);
+        await asTwoSessionCustomer(
+          tester,
+          device,
+          orders: orders,
+          clock: () => DateTime.utc(2026, 11, 2, 8),
+        );
 
         expect(verticalScrollables, findsOneWidget);
         expect(byKey('question-banner'), findsOneWidget);
@@ -1167,6 +1175,195 @@ void main() {
         ),
       );
       handle.dispose();
+    });
+  });
+
+  group('the question banner', () {
+    late DateTime now;
+    late FakeCustomerOrdersRepository orders;
+    late List<MethodCall> platformCalls;
+
+    Map<String, Object?> row({
+      String approval = approvalOne,
+      int number = 1044,
+      String expires = '2026-11-02T07:09:00Z',
+    }) => <String, Object?>{
+      'id': approval,
+      'order_id': orderOne,
+      'order_number': number,
+      'expires_at': expires,
+    };
+
+    setUp(() {
+      now = DateTime.utc(2026, 11, 2, 7);
+      orders = FakeCustomerOrdersRepository();
+      platformCalls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (
+            MethodCall call,
+          ) async {
+            platformCalls.add(call);
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+    });
+
+    Future<void> home(WidgetTester tester) => open(
+      tester,
+      device: const Locale('ru'),
+      orders: orders,
+      clock: () => now,
+    );
+
+    /// Moves the clock and the fake time together.
+    Future<void> advance(WidgetTester tester, Duration by) async {
+      now = now.add(by);
+      await tester.pump(by);
+    }
+
+    int buzzes() => platformCalls
+        .where(
+          (MethodCall c) =>
+              c.method == 'HapticFeedback.vibrate' &&
+              c.arguments == 'HapticFeedbackType.lightImpact',
+        )
+        .length;
+
+    Iterable<String> said(WidgetTester tester) => tester
+        .takeAnnouncements()
+        .map((CapturedAccessibilityAnnouncement a) => a.message);
+
+    double unfolded(WidgetTester tester) => tester
+        .widget<Align>(
+          find
+              .descendant(of: find.byType(Fold), matching: find.byType(Align))
+              .first,
+        )
+        .heightFactor!;
+
+    testWidgets('a question that arrives unfolds, buzzes and is announced', (
+      WidgetTester tester,
+    ) async {
+      await home(tester);
+      expect(byKey('question-banner'), findsNothing);
+      tester.takeAnnouncements();
+
+      orders.pendingRows = <Map<String, Object?>>[row()];
+      await advance(tester, const Duration(seconds: 30));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(byKey('question-banner'), findsOneWidget);
+      expect(unfolded(tester), inExclusiveRange(0, 1));
+      expect(buzzes(), 1);
+      expect(
+        said(tester),
+        contains('Сборщик спрашивает про заказ № 1044. осталось 9 минут'),
+      );
+      await tester.pumpAndSettle();
+      expect(unfolded(tester), 1);
+    });
+
+    testWidgets('a question known at the first build stands still and silent', (
+      WidgetTester tester,
+    ) async {
+      orders.pendingRows = <Map<String, Object?>>[row()];
+      await home(tester);
+
+      expect(byKey('question-banner'), findsOneWidget);
+      expect(unfolded(tester), 1);
+      expect(buzzes(), 0);
+      expect(said(tester), isEmpty);
+    });
+
+    testWidgets(
+      'Осталось 9 мин turns red at 3 and the banner folds at its expiry',
+      (WidgetTester tester) async {
+        orders.pendingRows = <Map<String, Object?>>[row()];
+        await home(tester);
+        Color chipColor(String text) =>
+            tester.widget<Text>(find.text(text)).style!.color!;
+
+        expect(find.text('Осталось 9 мин'), findsOneWidget);
+        expect(chipColor('Осталось 9 мин'), KitColors.warningDark);
+        expect(byKey('orders-badge'), findsOneWidget);
+
+        await advance(tester, const Duration(minutes: 6, seconds: 30));
+        expect(find.text('Осталось 3 мин'), findsOneWidget);
+        expect(chipColor('Осталось 3 мин'), KitColors.danger);
+        tester.takeAnnouncements();
+
+        await advance(tester, const Duration(minutes: 2, seconds: 30));
+        expect(byKey('orders-badge'), findsNothing, reason: 'the same pump');
+        expect(said(tester), contains('Время на ответ вышло'));
+        await tester.pumpAndSettle();
+        expect(byKey('question-banner'), findsNothing);
+      },
+    );
+
+    testWidgets('an answered question folds without a word', (
+      WidgetTester tester,
+    ) async {
+      orders.pendingRows = <Map<String, Object?>>[row()];
+      await home(tester);
+      tester.takeAnnouncements();
+
+      orders.pendingRows = <Map<String, Object?>>[];
+      await advance(tester, const Duration(seconds: 30));
+      await tester.pumpAndSettle();
+
+      expect(byKey('question-banner'), findsNothing);
+      expect(byKey('orders-badge'), findsNothing);
+      expect(said(tester), isEmpty);
+    });
+
+    testWidgets('the banner is one stop that opens the order', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      orders.pendingRows = <Map<String, Object?>>[row()];
+      await home(tester);
+
+      expect(
+        tester.getSemantics(byKey('question-banner')),
+        matchesSemantics(
+          isButton: true,
+          hasTapAction: true,
+          label:
+              'Сборщик ждёт вашего ответа. Заказ № 1044, осталось 9 минут. '
+              'Ответить',
+        ),
+      );
+      await tester.tap(byKey('question-banner'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CatalogHomeScreen), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('with reduced motion it stands and goes at once', (
+      WidgetTester tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await home(tester);
+
+      orders.pendingRows = <Map<String, Object?>>[row()];
+      await advance(tester, const Duration(seconds: 30));
+      await tester.pump();
+      expect(byKey('question-banner'), findsOneWidget);
+      expect(unfolded(tester), 1);
+
+      orders.pendingRows = <Map<String, Object?>>[];
+      await advance(tester, const Duration(seconds: 30));
+      await tester.pump();
+      await tester.pump();
+      expect(byKey('question-banner'), findsNothing);
     });
   });
 }
