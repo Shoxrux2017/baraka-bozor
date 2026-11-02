@@ -2274,8 +2274,8 @@
       }
     }
   },
-  "productSave": "Saqlash",
-  "cartLineSaved": "Savat yangilandi",
+  "productSaving": "Saqlanmoqda…",
+  "productLineSaved": "Saqlandi",
   "productAdding": "Qo'shilmoqda…",
   "productAdded": "Savatda",
   "quantitySheetTitle": "Miqdor",

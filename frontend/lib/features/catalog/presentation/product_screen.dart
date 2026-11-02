@@ -64,6 +64,9 @@ class ProductScreen extends ConsumerStatefulWidget {
 /// Where the screen's add stands (`DL-122`).
 enum _AddPhase { idle, adding, added }
 
+/// The field whose change the save mark follows (`DL-122`).
+enum _SaveField { quantity, policy, note }
+
 class _ProductScreenState extends ConsumerState<ProductScreen> {
   final GlobalKey<FormState> _form = GlobalKey<FormState>();
   final TextEditingController _note = TextEditingController();
@@ -71,6 +74,31 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   SubstitutionPolicy _policy = SubstitutionPolicy.allowSimilar;
   bool _heartBusy = false;
   _AddPhase _phase = _AddPhase.idle;
+
+  /// Read once so [dispose] can still send a waiting note.
+  late final CartQuantityQueue _queue;
+  final FocusNode _noteFocus = FocusNode();
+
+  /// How long the note waits after its last key.
+  static const Duration _noteSettle = Duration(seconds: 1);
+  Timer? _noteTimer;
+
+  /// Whether the Customer changed the note and it is not sent yet.
+  bool _noteDirty = false;
+
+  /// Whether a rule the Customer chose has not been answered yet: a cart
+  /// answer must not put the old rule back.
+  bool _ruleOnItsWay = false;
+
+  /// Counts the changes made in the cart; an answer for a change that a
+  /// later one replaced moves nothing.
+  int _changes = 0;
+  _SaveField? _markField;
+  ProductSaveState? _markState;
+  Timer? _markTimer;
+
+  /// How long «Сохранено» stands.
+  static const Duration _savedFor = Duration(milliseconds: 1600);
 
   /// How long "В корзине" stands before the bar offers the cart.
   static const Duration _addedFor = Duration(milliseconds: 1100);
@@ -86,6 +114,8 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   @override
   void initState() {
     super.initState();
+    _queue = ref.read(cartQuantityQueueProvider.notifier);
+    _noteFocus.addListener(_onNoteFocus);
     ref.listenManual<AsyncValue<Cart>>(
       currentCartProvider,
       (AsyncValue<Cart>? _, AsyncValue<Cart> next) => _onCart(next),
@@ -96,6 +126,13 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   @override
   void dispose() {
     _addedTimer?.cancel();
+    _markTimer?.cancel();
+    _noteTimer?.cancel();
+    // Leaving at once still sends the note; a waiting step goes with it.
+    if (_noteDirty && _line != null && _noteFits()) {
+      unawaited(_queue.describe(widget.productId, _details()));
+    }
+    _noteFocus.dispose();
     _note.dispose();
     super.dispose();
   }
@@ -103,16 +140,6 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   /// A quantity as the stepper holds it: `2.000` is `2`.
   static String _plain(String quantity) =>
       QuantityRules.display(quantity).replaceAll(',', '.');
-
-  CartLinePatch _patch(CartLine line) {
-    final String note = trimLikeServer(_note.text);
-    return CartLinePatch.between(
-      line,
-      quantity: _quantity,
-      customerNote: note.isEmpty ? null : note,
-      substitutionPolicy: _policy,
-    );
-  }
 
   /// This product's line in [cart], if it has one.
   CartLine? _lineIn(Cart cart) {
@@ -136,33 +163,139 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
       _line = line;
       if (line == null) {
         if (before != null) {
-          // Removed elsewhere: a new add again.
+          // Removed here or elsewhere: a new add again.
           _quantity = '1';
           _policy = SubstitutionPolicy.allowSimilar;
           _note.clear();
+          _noteTimer?.cancel();
+          _noteDirty = false;
+          _ruleOnItsWay = false;
         }
-      } else if (before == null || _patch(before).isEmpty) {
-        // The line first appears, or the server's line changed and the
-        // Customer has not edited it: show the server's values. Unsaved
-        // edits stay.
-        _quantity = _plain(line.quantity);
+        return;
+      }
+      // The server's line is shown unless the Customer's own change of it is
+      // still on its way or being typed.
+      if (!_ruleOnItsWay) {
         _policy = line.substitutionPolicy;
-        final String note = line.customerNote ?? '';
-        if (_note.text != note) {
-          _note.text = note;
-        }
+      }
+      final String note = line.customerNote ?? '';
+      if (!_noteFocus.hasFocus && !_noteDirty && _note.text != note) {
+        _note.text = note;
       }
     });
   }
 
-  Future<void> _askQuantity(CatalogProduct product) async {
+  /// Whether the note is short enough for the server, counted as it counts.
+  bool _noteFits() =>
+      trimLikeServer(_note.text).runes.length <= cartNoteMaxLength;
+
+  /// The note and rule as the Customer has them now. A note that fits goes
+  /// with the rule; one too long does not, and the line keeps its own.
+  CartLineDetails _details() {
+    final String text = trimLikeServer(_note.text);
+    final bool carry = _noteFits();
+    if (carry) {
+      _noteTimer?.cancel();
+      _noteDirty = false;
+    }
+    return CartLineDetails(
+      customerNote: carry ? (text.isEmpty ? null : text) : _line?.customerNote,
+      substitutionPolicy: _policy,
+    );
+  }
+
+  /// Shows the mark for [field] while [answer] is awaited, then «Сохранено»;
+  /// a failure clears it and says why. An answer of a replaced change moves
+  /// nothing.
+  void _track(Future<ApiFailure?> answer, _SaveField field) {
+    final int mine = ++_changes;
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    _markTimer?.cancel();
+    setState(() {
+      _markField = field;
+      _markState = ProductSaveState.saving;
+    });
+    unawaited(
+      answer.then((ApiFailure? failure) {
+        if (mine != _changes) {
+          return;
+        }
+        _ruleOnItsWay = false;
+        if (failure != null) {
+          if (mounted) {
+            setState(() => _markState = null);
+          }
+          showCartFailure(messenger, l10n, failure);
+          return;
+        }
+        if (!mounted) {
+          return;
+        }
+        setState(() => _markState = ProductSaveState.saved);
+        _markTimer = Timer(_savedFor, () {
+          if (mounted) {
+            setState(() => _markState = null);
+          }
+        });
+      }),
+    );
+  }
+
+  /// A step or an exact quantity of the line in the cart.
+  void _step(String quantity, {bool now = false}) {
+    _track(
+      _queue.want(widget.productId, quantity, now: now),
+      _SaveField.quantity,
+    );
+  }
+
+  void _setPolicy(SubstitutionPolicy policy) {
+    if (_line == null) {
+      setState(() => _policy = policy);
+      return;
+    }
+    _ruleOnItsWay = true;
+    setState(() => _policy = policy);
+    _track(_queue.describe(widget.productId, _details()), _SaveField.policy);
+  }
+
+  void _onNoteChanged(String _) {
+    if (_line == null) {
+      return;
+    }
+    _noteDirty = true;
+    _noteTimer?.cancel();
+    _noteTimer = Timer(_noteSettle, _sendNote);
+  }
+
+  void _onNoteFocus() {
+    if (!_noteFocus.hasFocus) {
+      _sendNote();
+    }
+  }
+
+  void _sendNote() {
+    _noteTimer?.cancel();
+    if (!_noteDirty || _line == null || !_noteFits()) {
+      return;
+    }
+    _track(_queue.describe(widget.productId, _details()), _SaveField.note);
+  }
+
+  Future<void> _askQuantity(CatalogProduct product, String current) async {
     final String? quantity = await showQuantitySheet(
       context,
       unit: product.unitCode,
-      current: _quantity,
+      current: current,
     );
-    if (quantity != null && mounted) {
+    if (quantity == null || !mounted || _plain(quantity) == current) {
+      return;
+    }
+    if (_line == null) {
       setState(() => _quantity = quantity);
+    } else {
+      _step(quantity, now: true);
     }
   }
 
@@ -266,12 +399,12 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
 
   /// The sum under the bar's label: the line's own while the quantity shown
   /// is the line's, else the estimate for the quantity shown.
-  int _sum(CatalogProduct product, CartLine? line) {
+  int _sum(CatalogProduct product, CartLine? line, String shown) {
     final int? own = line?.estimatedLineTotalUzs;
-    if (line != null && own != null && _plain(line.quantity) == _quantity) {
+    if (line != null && own != null && _plain(line.quantity) == shown) {
       return own;
     }
-    return EstimatePreview.lineUzs(product.customerUnitPriceUzs, _quantity);
+    return EstimatePreview.lineUzs(product.customerUnitPriceUzs, shown);
   }
 
   @override
@@ -301,12 +434,17 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     // seen could not be told from one already holding the product.
     final bool cartKnown = cart.hasValue || cart.hasError;
     final CartLine? line = _line;
-    // What the Customer sets waits for the add's answer, which would
-    // overwrite it.
-    final bool locked = _phase == _AddPhase.adding;
+    final Map<String, String> wishes = ref.watch(cartQuantityQueueProvider);
+    // What the Customer sets waits for an add's answer, which would
+    // overwrite it; nothing waits in the cart.
+    final bool locked = line == null && _phase == _AddPhase.adding;
+    final String? wished = shownCartQuantity(wishes, widget.productId, line);
+    final String shownQuantity = line != null
+        ? _plain(wished ?? line.quantity)
+        : (wished != null ? _plain(wished) : _quantity);
     final String? lineQuantity = line == null
         ? null
-        : '${QuantityRules.display(line.quantity)} '
+        : '${QuantityRules.display(shownQuantity)} '
               '${CatalogLabels.unit(l10n, line.unit)}';
     // Kept while the chip folds away, so it does not empty as it goes.
     if (lineQuantity != null) {
@@ -344,6 +482,10 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
                 product: shown,
                 form: _form,
                 note: _note,
+                noteFocus: _noteFocus,
+                onNoteChanged: _onNoteChanged,
+                saveField: _markField,
+                saveState: _markState,
                 policy: _policy,
                 locked: locked,
                 heroTag: heroTag,
@@ -351,19 +493,34 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
                 chipQuantity: _chipQuantity,
                 chipShown: line != null,
                 onChipFolded: () => setState(() => _chipQuantity = null),
-                onPolicy: (SubstitutionPolicy policy) =>
-                    setState(() => _policy = policy),
+                onPolicy: _setPolicy,
               ),
       ),
       bottomNavigationBar: shown == null
           ? null
           : ProductBar(
               product: shown,
-              quantity: _quantity,
-              sumUzs: _sum(shown, line),
-              onQuantity: (String quantity) =>
-                  setState(() => _quantity = quantity),
-              onQuantityTap: () => _askQuantity(shown),
+              quantity: shownQuantity,
+              sumUzs: _sum(shown, line, shownQuantity),
+              onQuantity: line == null
+                  ? (String quantity) => setState(() => _quantity = quantity)
+                  : _step,
+              onQuantityTap: () => _askQuantity(shown, shownQuantity),
+              onRemove: line == null || locked
+                  ? null
+                  : () {
+                      _noteTimer?.cancel();
+                      _noteDirty = false;
+                      unawaited(
+                        removeCartLine(
+                          context,
+                          ref,
+                          line: line,
+                          quantity: shownQuantity,
+                          name: shown.name(interfaceLanguage(context)),
+                        ),
+                      );
+                    },
               locked: locked,
               action: action,
               onAction: switch (action) {
@@ -404,6 +561,10 @@ class _Page extends StatelessWidget {
     required this.product,
     required this.form,
     required this.note,
+    required this.noteFocus,
+    required this.onNoteChanged,
+    required this.saveField,
+    required this.saveState,
     required this.policy,
     required this.locked,
     required this.heroTag,
@@ -417,9 +578,15 @@ class _Page extends StatelessWidget {
   final CatalogProduct product;
   final GlobalKey<FormState> form;
   final TextEditingController note;
+  final FocusNode noteFocus;
+  final ValueChanged<String> onNoteChanged;
+
+  /// The field the save mark stands by, and what it says; `null` when none.
+  final _SaveField? saveField;
+  final ProductSaveState? saveState;
   final SubstitutionPolicy policy;
 
-  /// Whether an add or a save is on its way: the controls wait.
+  /// Whether an add is on its way: the controls wait.
   final bool locked;
 
   /// The tag the photo flies by, `null` when it does not fly.
@@ -449,6 +616,13 @@ class _Page extends StatelessWidget {
       250,
       MediaQuery.sizeOf(context).width * 0.67,
     );
+    Widget? markOf(_SaveField field) => saveState != null && saveField == field
+        ? ProductSaveMark(
+            key: ValueKey<String>('product-save-mark-${field.name}'),
+            state: saveState!,
+          )
+        : null;
+    final Widget? quantityMark = markOf(_SaveField.quantity);
     final Widget well = ProductPhotoWell(
       imageUrl: product.imageUrl,
       radius: 20,
@@ -495,7 +669,20 @@ class _Page extends StatelessWidget {
                             ),
                             child: Align(
                               alignment: AlignmentDirectional.centerStart,
-                              child: ProductInCartChip(quantity: chipQuantity!),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  Flexible(
+                                    child: ProductInCartChip(
+                                      quantity: chipQuantity!,
+                                    ),
+                                  ),
+                                  if (quantityMark != null) ...<Widget>[
+                                    const SizedBox(width: 10),
+                                    Flexible(child: quantityMark),
+                                  ],
+                                ],
+                              ),
                             ),
                           ),
                   ),
@@ -558,6 +745,7 @@ class _Page extends StatelessWidget {
                   const _Rule(),
                   _Section(
                     title: l10n.productIfMissing,
+                    mark: markOf(_SaveField.policy),
                     child: RadioGroup<SubstitutionPolicy>(
                       groupValue: policy,
                       onChanged: (SubstitutionPolicy? option) {
@@ -582,7 +770,13 @@ class _Page extends StatelessWidget {
                   const _Rule(),
                   _Section(
                     title: l10n.cartNote,
-                    child: _NoteField(controller: note, locked: locked),
+                    child: _NoteField(
+                      controller: note,
+                      focusNode: noteFocus,
+                      onChanged: onNoteChanged,
+                      locked: locked,
+                      mark: markOf(_SaveField.note),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   MoreInCategory(product: product),
@@ -672,10 +866,13 @@ class _Rule extends StatelessWidget {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.child});
+  const _Section({required this.title, required this.child, this.mark});
 
   final String title;
   final Widget child;
+
+  /// The save mark beside the title, when there is one.
+  final Widget? mark;
 
   @override
   Widget build(BuildContext context) {
@@ -684,16 +881,26 @@ class _Section extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Semantics(
-            header: true,
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: KitColors.ink,
+          Row(
+            children: <Widget>[
+              Flexible(
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: KitColors.ink,
+                    ),
+                  ),
+                ),
               ),
-            ),
+              if (mark != null) ...<Widget>[
+                const SizedBox(width: 10),
+                Flexible(child: mark!),
+              ],
+            ],
           ),
           const SizedBox(height: 8),
           child,
@@ -863,10 +1070,21 @@ class _RuleRow extends StatelessWidget {
 }
 
 class _NoteField extends StatelessWidget {
-  const _NoteField({required this.controller, required this.locked});
+  const _NoteField({
+    required this.controller,
+    required this.focusNode,
+    required this.onChanged,
+    required this.locked,
+    this.mark,
+  });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
+  final ValueChanged<String> onChanged;
   final bool locked;
+
+  /// The save mark at the start of the counter row, when there is one.
+  final Widget? mark;
 
   @override
   Widget build(BuildContext context) {
@@ -877,6 +1095,8 @@ class _NoteField extends StatelessWidget {
         TextFormField(
           key: const ValueKey<String>('line-note'),
           controller: controller,
+          focusNode: focusNode,
+          onChanged: onChanged,
           readOnly: locked,
           minLines: 3,
           maxLines: 5,
@@ -898,15 +1118,29 @@ class _NoteField extends StatelessWidget {
               : null,
         ),
         const SizedBox(height: 4),
-        ValueListenableBuilder<TextEditingValue>(
-          valueListenable: controller,
-          builder: (BuildContext context, TextEditingValue value, Widget? _) =>
-              Text(
-                '${value.text.runes.length} / $cartNoteMaxLength',
-                key: const ValueKey<String>('product-note-count'),
-                textAlign: TextAlign.end,
-                style: const TextStyle(fontSize: 12, color: KitColors.muted),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: mark ?? const SizedBox.shrink(),
               ),
+            ),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: controller,
+              builder:
+                  (BuildContext context, TextEditingValue value, Widget? _) =>
+                      Text(
+                        '${value.text.runes.length} / $cartNoteMaxLength',
+                        key: const ValueKey<String>('product-note-count'),
+                        textAlign: TextAlign.end,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: KitColors.muted,
+                        ),
+                      ),
+            ),
+          ],
         ),
       ],
     );

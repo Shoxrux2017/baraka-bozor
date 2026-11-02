@@ -51,3 +51,63 @@ class ProductInCartChip extends StatelessWidget {
     );
   }
 }
+
+/// Where the last change of a line in the cart stands (`DL-122`).
+enum ProductSaveState { saving, saved }
+
+/// The small mark beside a field that says its change is on its way or kept:
+/// a spinner and «Сохраняем…», then a check and «Сохранено». It fades in over
+/// 200 ms, and a screen reader hears it as a live region.
+class ProductSaveMark extends StatelessWidget {
+  const ProductSaveMark({required this.state, super.key});
+
+  final ProductSaveState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool saving = state == ProductSaveState.saving;
+    final Color colour = saving ? KitColors.muted : KitColors.primaryDark;
+    final Widget row = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        ExcludeSemantics(
+          child: saving
+              ? SizedBox.square(
+                  dimension: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: KitColors.primary,
+                    backgroundColor: KitColors.primary.withValues(alpha: 0.2),
+                  ),
+                )
+              : Icon(Icons.check, size: 16, color: colour),
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            saving ? l10n.productSaving : l10n.productLineSaved,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: colour,
+            ),
+          ),
+        ),
+      ],
+    );
+    return Semantics(
+      liveRegion: true,
+      child: MediaQuery.disableAnimationsOf(context)
+          ? row
+          : TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0, end: 1),
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              builder: (BuildContext context, double opacity, Widget? child) =>
+                  Opacity(opacity: opacity, child: child),
+              child: row,
+            ),
+    );
+  }
+}

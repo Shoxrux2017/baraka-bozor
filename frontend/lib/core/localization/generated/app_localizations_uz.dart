@@ -3563,10 +3563,10 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get productSave => 'Saqlash';
+  String get productSaving => 'Saqlanmoqda…';
 
   @override
-  String get cartLineSaved => 'Savat yangilandi';
+  String get productLineSaved => 'Saqlandi';
 
   @override
   String get productAdding => 'Qo\'shilmoqda…';

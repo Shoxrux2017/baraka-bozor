@@ -39,6 +39,7 @@ class ProductBar extends StatelessWidget {
     required this.onAction,
     this.locked = false,
     this.onQuantityTap,
+    this.onRemove,
     super.key,
   });
 
@@ -60,6 +61,10 @@ class ProductBar extends StatelessWidget {
   /// without it.
   final VoidCallback? onQuantityTap;
 
+  /// Takes the product out of the cart. When set, the minus at the smallest
+  /// step is a bin that calls it (`DL-122`).
+  final VoidCallback? onRemove;
+
   static const double height = 54;
 
   @override
@@ -72,6 +77,13 @@ class ProductBar extends StatelessWidget {
     final String? upper = locked
         ? null
         : CardQuantity.next(product.unitCode, quantity);
+    // At the smallest step there is nothing left to take away but the line.
+    final bool bin =
+        onRemove != null &&
+        !locked &&
+        lower == null &&
+        QuantityRules.thousandths(quantity) <=
+            QuantityRules.thousandths(CardQuantity.step(product.unitCode));
     final String sum = l10n.catalogApproxPrice(
       MoneyFormat.uzs(sumUzs, interfaceLanguage(context)),
     );
@@ -138,10 +150,14 @@ class ProductBar extends StatelessWidget {
 
     Widget stepper() => _Stepper(
       quantity: shownQuantity,
-      minusLabel: l10n.cartStepMinus,
+      minusLabel: bin ? l10n.cartRemoveLine : l10n.cartStepMinus,
+      minusIcon: bin ? Icons.delete_outline : Icons.remove,
+      minusColor: bin ? KitColors.danger : KitColors.primaryDark,
       plusLabel: l10n.cartStepPlus,
       onQuantityTap: locked ? null : onQuantityTap,
-      onMinus: lower == null ? null : () => onQuantity(lower),
+      onMinus: bin
+          ? onRemove
+          : (lower == null ? null : () => onQuantity(lower)),
       onPlus: upper == null ? null : () => onQuantity(upper),
     );
 
@@ -292,6 +308,8 @@ class _Stepper extends StatelessWidget {
   const _Stepper({
     required this.quantity,
     required this.minusLabel,
+    required this.minusIcon,
+    required this.minusColor,
     required this.plusLabel,
     required this.onQuantityTap,
     required this.onMinus,
@@ -301,6 +319,8 @@ class _Stepper extends StatelessWidget {
   final String quantity;
 
   final String minusLabel;
+  final IconData minusIcon;
+  final Color minusColor;
   final String plusLabel;
   final VoidCallback? onQuantityTap;
   final VoidCallback? onMinus;
@@ -336,7 +356,13 @@ class _Stepper extends StatelessWidget {
         (text > _quantityMinWidth ? text : _quantityMinWidth);
   }
 
-  Widget _button(Key key, IconData icon, String label, VoidCallback? onTap) {
+  Widget _button(
+    Key key,
+    IconData icon,
+    String label,
+    VoidCallback? onTap, {
+    Color color = KitColors.primaryDark,
+  }) {
     return SizedBox.square(
       dimension: _buttonSize,
       child: IconButton(
@@ -344,7 +370,7 @@ class _Stepper extends StatelessWidget {
         tooltip: label,
         padding: EdgeInsets.zero,
         iconSize: 22,
-        color: KitColors.primaryDark,
+        color: color,
         disabledColor: KitColors.muted,
         icon: Icon(icon),
         onPressed: onTap,
@@ -365,9 +391,10 @@ class _Stepper extends StatelessWidget {
           children: <Widget>[
             _button(
               const ValueKey<String>('product-minus'),
-              Icons.remove,
+              minusIcon,
               minusLabel,
               onMinus,
+              color: minusColor,
             ),
             // Not in a Center: it would take the whole height it is offered.
             Expanded(

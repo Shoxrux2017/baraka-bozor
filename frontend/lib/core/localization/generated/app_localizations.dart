@@ -6170,17 +6170,17 @@ abstract class AppLocalizations {
   /// **'Savatda: {quantity}'**
   String productInCart(String quantity);
 
-  /// No description provided for @productSave.
+  /// No description provided for @productSaving.
   ///
   /// In uz, this message translates to:
-  /// **'Saqlash'**
-  String get productSave;
+  /// **'Saqlanmoqda…'**
+  String get productSaving;
 
-  /// No description provided for @cartLineSaved.
+  /// No description provided for @productLineSaved.
   ///
   /// In uz, this message translates to:
-  /// **'Savat yangilandi'**
-  String get cartLineSaved;
+  /// **'Saqlandi'**
+  String get productLineSaved;
 
   /// No description provided for @productAdding.
   ///

@@ -2108,8 +2108,8 @@
       }
     }
   },
-  "productSave": "Сохранить",
-  "cartLineSaved": "Корзина обновлена",
+  "productSaving": "Сохраняем…",
+  "productLineSaved": "Сохранено",
   "productAdding": "Добавляем…",
   "productAdded": "В корзине",
   "quantitySheetTitle": "Количество",

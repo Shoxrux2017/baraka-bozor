@@ -3604,10 +3604,10 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get productSave => 'Сохранить';
+  String get productSaving => 'Сохраняем…';
 
   @override
-  String get cartLineSaved => 'Корзина обновлена';
+  String get productLineSaved => 'Сохранено';
 
   @override
   String get productAdding => 'Добавляем…';
