@@ -14,7 +14,12 @@ import 'package:baraka_bozor/features/cart/presentation/cart_paths.dart';
 import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
 import 'package:baraka_bozor/features/catalog/presentation/product_bar.dart';
+import 'package:baraka_bozor/features/catalog/presentation/product_photo.dart';
+import 'package:baraka_bozor/features/catalog/presentation/product_screen.dart';
+import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
+import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -120,6 +125,8 @@ void main() {
     Size size = const Size(400, 1400),
     double textScale = 1,
     Locale device = const Locale('ru'),
+    ProductOpening? opening,
+    bool push = true,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -138,7 +145,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    GoRouter.of(anywhere(tester)).push('/customer/products/$id');
+    if (!push) {
+      return;
+    }
+    GoRouter.of(anywhere(tester))
+        .push('/customer/products/$id', extra: opening);
     await tester.pumpAndSettle();
   }
 
@@ -690,7 +701,8 @@ void main() {
         await tester.pumpAndSettle();
 
         GoRouter.of(anywhere(tester)).pop();
-        await tester.pump();
+        // The page leaves by its own transition (DL-122).
+        await tester.pumpAndSettle();
         await tester.tap(find.text(l10n(tester).cartOpen));
         await tester.pumpAndSettle();
 
@@ -1271,6 +1283,208 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+  });
+
+  group('opening from a card', () {
+    ProductOpening cardOf(CatalogProduct product) =>
+        ProductOpening(product: product, heroTag: Object());
+
+    Finder spinner() => find.byType(CircularProgressIndicator);
+
+    double fadeOpacity(WidgetTester tester) =>
+        tester.widget<FadeTransition>(byKey('product-page-fade')).opacity.value;
+
+    /// Taps the home card of the tomato and leaves the route running.
+    Future<void> tapHomeCard(WidgetTester tester) async {
+      catalog.featuredIds = <String>{tomatoProduct};
+      await open(tester, push: false);
+      await tester.tap(
+        find
+            .descendant(
+              of: byKey('product-card-$tomatoProduct'),
+              matching: find.text('Помидор'),
+            )
+            .first,
+      );
+      await tester.pump();
+    }
+
+    testWidgets(
+      "opened from a card it shows the card's product at once, the heart and the bar too",
+      (WidgetTester tester) async {
+        catalog.productHold = Completer<void>();
+        await open(tester, opening: cardOf(item()));
+
+        expect(byKey('product-name'), findsOneWidget);
+        expect(byKey('product-price'), findsOneWidget);
+        expect(byKey('product-heart'), findsOneWidget);
+        expect(byKey('add-to-cart'), findsOneWidget);
+        expect(spinner(), findsNothing);
+        catalog.productHold!.complete();
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets("the server's answer replaces the card's figures", (
+      WidgetTester tester,
+    ) async {
+      catalog.productHold = Completer<void>();
+      catalog.productRows = <CatalogProduct>[item(customerUnitPriceUzs: 13000)];
+      await open(tester, opening: cardOf(item(customerUnitPriceUzs: 12075)));
+      expect(tester.widget<Text>(byKey('product-price')).data, approx(12075));
+
+      catalog.productHold!.complete();
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<Text>(byKey('product-price')).data, approx(13000));
+    });
+
+    testWidgets("a 404 after the card's data shows the product gone", (
+      WidgetTester tester,
+    ) async {
+      catalog.productHold = Completer<void>();
+      catalog.productRows = <CatalogProduct>[];
+      await open(tester, opening: cardOf(item()));
+      expect(byKey('product-name'), findsOneWidget);
+
+      catalog.productHold!.complete();
+      await tester.pumpAndSettle();
+
+      expect(byKey('product-gone'), findsOneWidget);
+      expect(byKey('product-name'), findsNothing);
+      expect(byKey('add-to-cart'), findsNothing);
+    });
+
+    testWidgets("another failure keeps the card's page quietly", (
+      WidgetTester tester,
+    ) async {
+      catalog.productHold = Completer<void>();
+      catalog.productFailure = const NetworkFailure();
+      await open(tester, opening: cardOf(item()));
+
+      catalog.productHold!.complete();
+      await tester.pumpAndSettle();
+
+      expect(byKey('retry-load'), findsNothing);
+      expect(byKey('product-name'), findsOneWidget);
+      expect(byKey('add-to-cart'), findsOneWidget);
+    });
+
+    testWidgets('the photo flies from the card', (WidgetTester tester) async {
+      await tapHomeCard(tester);
+      await tester.pump(const Duration(milliseconds: 150));
+
+      expect(byKey('product-photo-flight'), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(byKey('product-photo-flight'), findsNothing);
+      expect(find.byType(ProductPhotoWell), findsOneWidget);
+    });
+
+    testWidgets('the page fades up after the photo', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, push: false);
+      GoRouter.of(anywhere(tester))
+          .push('/customer/products/$tomatoProduct', extra: cardOf(item()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(fadeOpacity(tester), 0);
+
+      await tester.pump(const Duration(milliseconds: 390));
+      expect(fadeOpacity(tester), 1);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('with reduced motion nothing flies or fades', (
+      WidgetTester tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      catalog.productRows = <CatalogProduct>[item()];
+      await open(tester, push: false);
+      GoRouter.of(anywhere(tester))
+          .push('/customer/products/$tomatoProduct', extra: cardOf(item()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(
+        find.descendant(
+          of: find.byType(ProductScreen),
+          matching: find.byType(Hero),
+        ),
+        findsNothing,
+      );
+      expect(byKey('product-page-fade'), findsNothing);
+      expect(byKey('product-name'), findsOneWidget);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('one product twice on a screen opens without a hero clash', (
+      WidgetTester tester,
+    ) async {
+      final CatalogProduct tomato = item();
+      final GoRouter router = GoRouter(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/',
+            builder: (BuildContext context, GoRouterState state) => Scaffold(
+              body: Column(
+                children: <Widget>[
+                  for (int i = 0; i < 2; i++)
+                    SizedBox(
+                      width: 161,
+                      child: KitProductCard(product: tomato),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/customer/products/:product',
+            builder: (BuildContext context, GoRouterState state) =>
+                ProductScreen(
+                  productId: state.pathParameters['product']!,
+                  opening: state.extra as ProductOpening?,
+                ),
+          ),
+        ],
+      );
+      tester.view.physicalSize = const Size(400, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: (int count, Object error) => null,
+          overrides: [
+            customerAccountProvider.overrideWithValue('c'),
+            catalogRepositoryProvider.overrideWithValue(catalog),
+            cartRepositoryProvider.overrideWithValue(cart),
+            favoritesRepositoryProvider.overrideWithValue(favorites),
+          ],
+          child: MaterialApp.router(
+            routerConfig: router,
+            locale: const Locale('ru'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Помидор').last);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(byKey('product-name'), findsOneWidget);
+
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(byKey('product-name'), findsNothing);
+    });
   });
 
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {

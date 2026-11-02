@@ -324,7 +324,8 @@ void main() {
         await tapAndSettle(tester, byKey('add-to-cart'));
 
         GoRouter.of(anywhere(tester)).pop();
-        await tester.pump();
+        // The page leaves by its own transition (DL-122).
+        await tester.pumpAndSettle();
         await tester.tap(find.text(l10n(tester).cartOpen));
         await tester.pumpAndSettle();
 

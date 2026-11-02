@@ -22,7 +22,6 @@ import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit_app_bar.dart';
-import '../../../core/widgets/product_image.dart';
 import '../../cart/application/cart_controllers.dart';
 import '../../cart/domain/cart.dart';
 import '../../cart/presentation/cart_paths.dart';
@@ -32,6 +31,7 @@ import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 import 'more_in_category.dart';
 import 'product_bar.dart';
+import 'product_photo.dart';
 import 'quantity_sheet.dart';
 
 /// One product (drawing 18): its picture, name, approximate price and what an
@@ -39,10 +39,17 @@ import 'quantity_sheet.dart';
 /// note to the Shopper, more of its category, and a bottom bar with the
 /// stepper and "В корзину". A product that can no longer be seen shows that
 /// it is gone (drawing 18b).
+///
+/// Opened from a card it is given the card's product ([opening]) and shows it
+/// at once while the server's answer is on its way; the photo flies from the
+/// card and the page under it fades up (`DL-122`).
 class ProductScreen extends ConsumerStatefulWidget {
-  const ProductScreen({required this.productId, super.key});
+  const ProductScreen({required this.productId, this.opening, super.key});
 
   final String productId;
+
+  /// What the card handed over; ignored when it is for another product.
+  final ProductOpening? opening;
 
   @override
   ConsumerState<ProductScreen> createState() => _ProductScreenState();
@@ -169,6 +176,14 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     }
   }
 
+  /// The card's data, when this page was opened with it for this product.
+  ProductOpening? get _opening {
+    final ProductOpening? opening = widget.opening;
+    return opening != null && opening.product.id == widget.productId
+        ? opening
+        : null;
+  }
+
   /// Whether this product's page is still the one the Customer sees.
   bool get _current => mounted && (ModalRoute.of(context)?.isCurrent ?? false);
 
@@ -267,7 +282,22 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     final AsyncValue<CatalogProduct> product = ref.watch(
       catalogProductProvider(widget.productId),
     );
-    final CatalogProduct? shown = product.value;
+    final ProductOpening? opening = _opening;
+    final Object? error = product.hasError && product.value == null
+        ? product.error
+        : null;
+    final ApiFailure? loadFailure = error == null
+        ? null
+        : error is ApiFailure
+        ? error
+        : const UnexpectedFailure();
+    final bool gone = loadFailure is ApiRefusal && loadFailure.status == 404;
+    // The server's product once it has come, else the card's; a product the
+    // server says is gone is shown from neither.
+    final CatalogProduct? shown =
+        product.value ?? (gone ? null : opening?.product);
+    final bool reduced = MediaQuery.disableAnimationsOf(context);
+    final Object? heroTag = opening == null || reduced ? null : opening.heroTag;
     final AsyncValue<Cart> cart = ref.watch(currentCartProvider);
     final MutationState adding = ref.watch(addToCartProvider(widget.productId));
     // The add waits while the cart is on its way: an add to a cart not yet
@@ -288,39 +318,34 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
         ],
       ),
       body: UnderActiveMode(
-        child: product.when(
-          skipLoadingOnReload: false,
-          skipLoadingOnRefresh: !product.hasError,
-          data: (CatalogProduct product) => _Page(
-            product: product,
-            form: _form,
-            note: _note,
-            policy: _policy,
-            locked: locked,
-            inCart: line == null
-                ? null
-                : l10n.productInCart(
-                    '${QuantityRules.display(line.quantity)} '
-                    '${CatalogLabels.unit(l10n, line.unit)}',
-                  ),
-            onPolicy: (SubstitutionPolicy policy) =>
-                setState(() => _policy = policy),
-          ),
-          error: (Object error, StackTrace _) {
-            final ApiFailure failure = error is ApiFailure
-                ? error
-                : const UnexpectedFailure();
-            if (failure is ApiRefusal && failure.status == 404) {
-              return const _Gone();
-            }
-            return _Retry(
-              failure: failure,
-              onRetry: () =>
-                  ref.invalidate(catalogProductProvider(widget.productId)),
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-        ),
+        child: gone
+            ? const _Gone()
+            : shown == null
+            ? loadFailure == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : _Retry(
+                      failure: loadFailure,
+                      onRetry: () => ref.invalidate(
+                        catalogProductProvider(widget.productId),
+                      ),
+                    )
+            : _Page(
+                product: shown,
+                form: _form,
+                note: _note,
+                policy: _policy,
+                locked: locked,
+                heroTag: heroTag,
+                fadeUp: opening != null && !reduced,
+                inCart: line == null
+                    ? null
+                    : l10n.productInCart(
+                        '${QuantityRules.display(line.quantity)} '
+                        '${CatalogLabels.unit(l10n, line.unit)}',
+                      ),
+                onPolicy: (SubstitutionPolicy policy) =>
+                    setState(() => _policy = policy),
+              ),
       ),
       bottomNavigationBar: shown == null
           ? null
@@ -378,6 +403,8 @@ class _Page extends StatelessWidget {
     required this.note,
     required this.policy,
     required this.locked,
+    required this.heroTag,
+    required this.fadeUp,
     required this.inCart,
     required this.onPolicy,
   });
@@ -389,6 +416,12 @@ class _Page extends StatelessWidget {
 
   /// Whether an add or a save is on its way: the controls wait.
   final bool locked;
+
+  /// The tag the photo flies by, `null` when it does not fly.
+  final Object? heroTag;
+
+  /// Whether the page under the photo fades up (opened from a card).
+  final bool fadeUp;
 
   /// "В корзине: 2 кг" while the product has a line in the cart.
   final String? inCart;
@@ -405,6 +438,10 @@ class _Page extends StatelessWidget {
       250,
       MediaQuery.sizeOf(context).width * 0.67,
     );
+    final Widget well = ProductPhotoWell(
+      imageUrl: product.imageUrl,
+      radius: 20,
+    );
 
     return SingleChildScrollView(
       child: Form(
@@ -416,120 +453,190 @@ class _Page extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: side),
               child: SizedBox(
                 height: wellHeight,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: KitColors.card,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Center(
-                    child: ProductImage(
-                      url: product.imageUrl,
-                      size: wellHeight * 0.68,
-                    ),
-                  ),
-                ),
+                child: heroTag == null
+                    ? well
+                    : Hero(
+                        tag: heroTag!,
+                        flightShuttleBuilder: productPhotoFlight,
+                        child: well,
+                      ),
               ),
             ),
-            if (inCart != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(side, 16, side, 0),
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: _InCartChip(text: inCart!),
-                ),
-              ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                side,
-                inCart == null ? 16 : 10,
-                side,
-                0,
-              ),
-              child: Text(
-                product.name(language),
-                key: const ValueKey<String>('product-name'),
-                style: const TextStyle(
-                  fontSize: 20,
-                  height: 1.35,
-                  fontWeight: FontWeight.w700,
-                  color: KitColors.ink,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(side, 8, side, 0),
-              child: Wrap(
-                crossAxisAlignment: WrapCrossAlignment.end,
-                spacing: 8,
+            _FadeUp(
+              enabled: fadeUp,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  Text(
-                    l10n.catalogApproxPrice(
-                      MoneyFormat.uzs(product.customerUnitPriceUzs, language),
+                  if (inCart != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(side, 16, side, 0),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: _InCartChip(text: inCart!),
+                      ),
                     ),
-                    key: const ValueKey<String>('product-price'),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: KitColors.ink,
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      side,
+                      inCart == null ? 16 : 10,
+                      side,
+                      0,
+                    ),
+                    child: Text(
+                      product.name(language),
+                      key: const ValueKey<String>('product-name'),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        height: 1.35,
+                        fontWeight: FontWeight.w700,
+                        color: KitColors.ink,
+                      ),
                     ),
                   ),
-                  Text(
-                    l10n.catalogPerUnit(
-                      CatalogLabels.unit(l10n, product.unitCode),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: KitColors.muted,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(side, 8, side, 0),
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.end,
+                      spacing: 8,
+                      children: <Widget>[
+                        Text(
+                          l10n.catalogApproxPrice(
+                            MoneyFormat.uzs(
+                              product.customerUnitPriceUzs,
+                              language,
+                            ),
+                          ),
+                          key: const ValueKey<String>('product-price'),
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: KitColors.ink,
+                          ),
+                        ),
+                        Text(
+                          l10n.catalogPerUnit(
+                            CatalogLabels.unit(l10n, product.unitCode),
+                          ),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: KitColors.muted,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  if (product.priceMode == PriceMode.estimate)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(side, 12, side, 0),
+                      child: _EstimatePanel(text: l10n.catalogEstimateExplain),
+                    ),
+                  if (description != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(side, 12, side, 0),
+                      child: _Description(text: description),
+                    ),
+                  const SizedBox(height: 16),
+                  const _Rule(),
+                  _Section(
+                    title: l10n.productIfMissing,
+                    child: RadioGroup<SubstitutionPolicy>(
+                      groupValue: policy,
+                      onChanged: (SubstitutionPolicy? option) {
+                        if (option != null && !locked) {
+                          onPolicy(option);
+                        }
+                      },
+                      child: Column(
+                        key: const ValueKey<String>('line-substitution'),
+                        children: <Widget>[
+                          for (final SubstitutionPolicy option
+                              in SubstitutionPolicy.values)
+                            _RuleRow(
+                              option: option,
+                              label: OrderLabels.substitution(l10n, option),
+                              onTap: locked ? null : () => onPolicy(option),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const _Rule(),
+                  _Section(
+                    title: l10n.cartNote,
+                    child: _NoteField(controller: note, locked: locked),
+                  ),
+                  const SizedBox(height: 8),
+                  MoreInCategory(product: product),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
-            if (product.priceMode == PriceMode.estimate)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(side, 12, side, 0),
-                child: _EstimatePanel(text: l10n.catalogEstimateExplain),
-              ),
-            if (description != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(side, 12, side, 0),
-                child: _Description(text: description),
-              ),
-            const SizedBox(height: 16),
-            const _Rule(),
-            _Section(
-              title: l10n.productIfMissing,
-              child: RadioGroup<SubstitutionPolicy>(
-                groupValue: policy,
-                onChanged: (SubstitutionPolicy? option) {
-                  if (option != null && !locked) {
-                    onPolicy(option);
-                  }
-                },
-                child: Column(
-                  key: const ValueKey<String>('line-substitution'),
-                  children: <Widget>[
-                    for (final SubstitutionPolicy option
-                        in SubstitutionPolicy.values)
-                      _RuleRow(
-                        option: option,
-                        label: OrderLabels.substitution(l10n, option),
-                        onTap: locked ? null : () => onPolicy(option),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const _Rule(),
-            _Section(
-              title: l10n.cartNote,
-              child: _NoteField(controller: note, locked: locked),
-            ),
-            const SizedBox(height: 8),
-            MoreInCategory(product: product),
-            const SizedBox(height: 24),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The page under the photo comes up from 10 px lower and from nothing in
+/// 340 ms after 100 ms, once, when the product was opened from a card
+/// (`DL-122`). Not [enabled], it is only its child.
+class _FadeUp extends StatefulWidget {
+  const _FadeUp({required this.enabled, required this.child});
+
+  final bool enabled;
+  final Widget child;
+
+  @override
+  State<_FadeUp> createState() => _FadeUpState();
+}
+
+class _FadeUpState extends State<_FadeUp> with SingleTickerProviderStateMixin {
+  static const Duration delay = Duration(milliseconds: 100);
+  static const Duration rise = Duration(milliseconds: 340);
+
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: delay + rise,
+  );
+  late final Animation<double> _curve = CurvedAnimation(
+    parent: _controller,
+    curve: Interval(
+      delay.inMilliseconds / (delay + rise).inMilliseconds,
+      1,
+      curve: const Cubic(0.2, 0.8, 0.2, 1),
+    ),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.enabled) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.enabled) {
+      return widget.child;
+    }
+    return FadeTransition(
+      key: const ValueKey<String>('product-page-fade'),
+      opacity: _curve,
+      child: AnimatedBuilder(
+        animation: _curve,
+        builder: (BuildContext context, Widget? child) => Transform.translate(
+          offset: Offset(0, 10 * (1 - _curve.value)),
+          child: child,
+        ),
+        child: widget.child,
       ),
     );
   }

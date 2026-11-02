@@ -6,6 +6,7 @@ import '../../../core/routing/feature_routes.dart';
 import 'catalog_paths.dart';
 import 'all_products_screen.dart';
 import 'all_categories_screen.dart';
+import 'product_photo.dart';
 import 'product_screen.dart';
 import 'home_screen.dart';
 import 'category_screen.dart';
@@ -61,8 +62,26 @@ final FeatureRoutes catalogRoutes = FeatureRoutes(
     GoRoute(
       path: CatalogPaths.productPattern,
       name: 'catalog-product',
-      builder: (BuildContext context, GoRouterState state) =>
-          ProductScreen(productId: state.pathParameters['product']!),
+      // A page of its own, not the router's default: the photo flies by the
+      // route's own transition, which the default page does not have
+      // (`DL-122`).
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          MaterialPage<void>(
+            key: state.pageKey,
+            name: state.name ?? state.path,
+            arguments: <String, String>{
+              ...state.pathParameters,
+              ...state.uri.queryParameters,
+            },
+            restorationId: state.pageKey.value,
+            child: ProductScreen(
+              productId: state.pathParameters['product']!,
+              opening: switch (state.extra) {
+                final ProductOpening opening => opening,
+                _ => null,
+              },
+            ),
+          ),
     ),
   ],
 );

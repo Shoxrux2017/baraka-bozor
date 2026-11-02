@@ -16,6 +16,7 @@ import 'package:baraka_bozor/features/cart/domain/cart.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
+import 'package:baraka_bozor/features/catalog/presentation/product_photo.dart';
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,6 +37,7 @@ void main() {
   late FakeCartRepository cart;
   late FakeFavoritesRepository favorites;
   String? opened;
+  Object? openedExtra;
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
@@ -50,6 +52,7 @@ void main() {
     bool reduced = false,
   }) async {
     opened = null;
+    openedExtra = null;
     final GoRouter router = GoRouter(
       routes: <RouteBase>[
         GoRoute(
@@ -73,6 +76,7 @@ void main() {
           path: '/customer/products/:product',
           builder: (BuildContext context, GoRouterState state) {
             opened = state.uri.path;
+            openedExtra = state.extra;
             return const Scaffold(body: Text('product page'));
           },
         ),
@@ -874,6 +878,18 @@ void main() {
       opened,
       CatalogPaths.product('0192f0a0-0000-7000-8000-0000000000a1'),
     );
+  });
+
+  testWidgets("a tap opens the product with the card's data", (
+    WidgetTester tester,
+  ) async {
+    await show(tester, tomato);
+    await tester.tap(find.text('Помидор'));
+    await tester.pumpAndSettle();
+
+    final Object? extra = openedExtra;
+    expect(extra, isA<ProductOpening>());
+    expect((extra! as ProductOpening).product, same(tomato));
   });
 
   group('TalkBack', () {
