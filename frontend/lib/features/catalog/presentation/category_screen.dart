@@ -22,11 +22,14 @@ import 'kit_product_grid.dart';
 /// One category (drawing 12): a rail of every category on the left, as the
 /// kit's subcategory rail, and the category's products on the right. Choosing
 /// another category replaces the location, so back returns to where the
-/// Customer came from.
+/// Customer came from. Opened from a tile it takes that tile's [opening], so
+/// the tile's picture flies into the rail's well (`DL-125`); a rail switch
+/// carries none.
 class CategoryScreen extends ConsumerWidget {
-  const CategoryScreen({required this.categoryId, super.key});
+  const CategoryScreen({required this.categoryId, this.opening, super.key});
 
   final String categoryId;
+  final CategoryOpening? opening;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,7 +61,15 @@ class CategoryScreen extends ConsumerWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      _CategoryRail(categories: rows, selectedId: categoryId),
+                      _CategoryRail(
+                        categories: rows,
+                        selectedId: categoryId,
+                        heroTag:
+                            opening == null ||
+                                MediaQuery.disableAnimationsOf(context)
+                            ? null
+                            : opening!.heroTag,
+                      ),
                       Expanded(
                         child: ColoredBox(
                           color: KitColors.card,
@@ -99,10 +110,17 @@ class CategoryScreen extends ConsumerWidget {
 }
 
 class _CategoryRail extends StatefulWidget {
-  const _CategoryRail({required this.categories, required this.selectedId});
+  const _CategoryRail({
+    required this.categories,
+    required this.selectedId,
+    required this.heroTag,
+  });
 
   final List<CatalogCategory> categories;
   final String selectedId;
+
+  /// The tag of the tile's picture that flies into the selected well.
+  final Object? heroTag;
 
   @override
   State<_CategoryRail> createState() => _CategoryRailState();
@@ -138,6 +156,7 @@ class _CategoryRailState extends State<_CategoryRail> {
                 key: c.id == widget.selectedId ? _selected : null,
                 category: c,
                 selected: c.id == widget.selectedId,
+                heroTag: c.id == widget.selectedId ? widget.heroTag : null,
                 onTap: () => context.replace(CatalogPaths.category(c.id)),
               ),
           ],
@@ -151,17 +170,26 @@ class _RailItem extends StatelessWidget {
   const _RailItem({
     required this.category,
     required this.selected,
+    required this.heroTag,
     required this.onTap,
     super.key,
   });
 
   final CatalogCategory category;
   final bool selected;
+  final Object? heroTag;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final String name = category.name(interfaceLanguage(context));
+    final Widget well = CategoryPictureWell(
+      category: category,
+      size: 70,
+      radius: 12,
+      pictureSize: 44,
+      color: selected ? KitColors.primaryWash : KitColors.card,
+    );
     return InkWell(
       key: ValueKey<String>('rail-${category.id}'),
       onTap: selected ? null : onTap,
@@ -172,13 +200,13 @@ class _RailItem extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                CategoryPictureWell(
-                  category: category,
-                  size: 70,
-                  radius: 12,
-                  pictureSize: 44,
-                  color: selected ? KitColors.primaryWash : KitColors.card,
-                ),
+                heroTag == null
+                    ? well
+                    : Hero(
+                        tag: heroTag!,
+                        flightShuttleBuilder: categoryWellFlight,
+                        child: well,
+                      ),
                 const SizedBox(height: 6),
                 Text(
                   name,

@@ -6,14 +6,17 @@ import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/platform/clock.dart';
+import 'package:baraka_bozor/core/routing/app_page.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/core/session/session_controller.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
+import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/active_mode_bar.dart';
 import 'package:baraka_bozor/core/widgets/press_scale.dart';
 import 'package:baraka_bozor/core/widgets/product_image.dart';
 import 'package:baraka_bozor/core/widgets/skeleton_bar.dart';
+import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
@@ -21,6 +24,7 @@ import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/category_tile.dart';
 import 'package:baraka_bozor/features/catalog/presentation/kit_product_grid.dart';
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:flutter/gestures.dart';
@@ -30,10 +34,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../support/app_harness.dart';
+import '../../support/fake_address_map.dart';
 import '../../support/fake_auth_repository.dart';
 import '../../support/fake_cart_repository.dart';
 import '../../support/fake_catalog_repository.dart';
+import '../../support/fake_customer_repositories.dart';
 import '../../support/fake_favorites_repository.dart';
+import '../../support/in_memory_stores.dart';
 
 /// Both sessions signed in, the Customer's active.
 class _TwoSessions extends SessionController {
@@ -94,13 +102,20 @@ void main() {
         ),
         GoRoute(
           path: CatalogPaths.categories,
-          builder: (BuildContext context, GoRouterState state) =>
-              const AllCategoriesScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              appPage(state, const AllCategoriesScreen()),
         ),
         GoRoute(
           path: CatalogPaths.categoryPattern,
-          builder: (BuildContext context, GoRouterState state) =>
-              CategoryScreen(categoryId: state.pathParameters['category']!),
+          pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+            state,
+            CategoryScreen(
+              categoryId: state.pathParameters['category']!,
+              opening: state.extra is CategoryOpening
+                  ? state.extra! as CategoryOpening
+                  : null,
+            ),
+          ),
         ),
       ],
     );
@@ -446,6 +461,185 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(CategoryScreen), findsOneWidget);
+    });
+  });
+
+  group('opening from a tile', () {
+    Finder flight() => byKey('category-well-flight');
+
+    Finder categoryHeroes() => find.byWidgetPredicate(
+      (Widget w) => w is Hero && w.flightShuttleBuilder == categoryWellFlight,
+    );
+
+    List<CatalogCategory> many(int n) => <CatalogCategory>[
+      for (int i = 1; i <= n; i++)
+        catalogCategory(id: 'c-$i', nameUz: 'Bolim $i', nameRu: 'Раздел $i'),
+    ];
+
+    Future<void> openApp(WidgetTester tester) async {
+      final InMemoryTokenStore tokens = InMemoryTokenStore()
+        ..tokens[SessionSlot.customer] = 'c';
+      final FakeAuthRepository auth = FakeAuthRepository()
+        ..identities[SessionSlot.customer] = user(id: 'c');
+      await tester.pumpWidget(
+        appUnderTest(
+          tokens: tokens,
+          repository: auth,
+          catalog: catalog,
+          addresses: FakeAddressesRepository(),
+          preferences: InMemoryPreferenceStore(),
+          overrides: [addressMapProvider.overrideWithValue(FakeAddressMap())],
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> pop(WidgetTester tester) async {
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+    }
+
+    testWidgets('the picture flies from the tile into the rail, and back on '
+        'pop', (WidgetTester tester) async {
+      await open(tester, CatalogPaths.categories);
+
+      await tester.tap(byKey('category-c-2'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(flight(), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(flight(), findsNothing);
+      expect(byKey('rail-c-2'), findsOneWidget);
+
+      await pop(tester);
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(flight(), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(flight(), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets("from the home's tile too", (WidgetTester tester) async {
+      await openApp(tester);
+
+      await tester.tap(byKey('category-c-2'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(flight(), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(flight(), findsNothing);
+
+      await pop(tester);
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(flight(), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a category far down the rail lands where its well ends up', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(375, 667);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      catalog.categoryRows = many(12);
+      await open(tester, CatalogPaths.categories);
+
+      await tester.drag(byKey('category-grid'), const Offset(0, -3000));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('category-c-12'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      // The last frame the shuttle is drawn in.
+      Rect shuttle = tester.getRect(flight());
+      for (int i = 0; i < 200 && flight().evaluate().isNotEmpty; i++) {
+        shuttle = tester.getRect(flight());
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+
+      await tester.pumpAndSettle();
+      final Rect landed = tester.getRect(
+        find.descendant(
+          of: byKey('rail-c-12'),
+          matching: find.byType(CategoryPictureWell),
+        ),
+      );
+      expect((shuttle.left - landed.left).abs(), lessThan(1));
+      expect((shuttle.top - landed.top).abs(), lessThan(1));
+      expect((shuttle.width - landed.width).abs(), lessThan(1));
+    });
+
+    testWidgets('one category on two screens opens and closes without a hero '
+        'clash', (WidgetTester tester) async {
+      await openApp(tester);
+      expect(byKey('category-c-1'), findsOneWidget);
+
+      await tester.tap(byKey('open-categories'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(AllCategoriesScreen), findsOneWidget);
+
+      await tester.tap(byKey('category-c-1'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      await pop(tester);
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
+      expect(find.byType(AllCategoriesScreen), findsOneWidget);
+
+      await pop(tester);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(byKey('category-c-1'), findsOneWidget);
+    });
+
+    testWidgets('after a rail switch back flies nothing', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, CatalogPaths.categories);
+      await tester.tap(byKey('category-c-1'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(byKey('rail-c-2'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      await pop(tester);
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(flight(), findsNothing);
+      await tester.pumpAndSettle();
+      expect(find.byType(AllCategoriesScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('with reduced motion no Hero', (WidgetTester tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await open(tester, CatalogPaths.categories);
+      expect(categoryHeroes(), findsNothing);
+
+      await tester.tap(byKey('category-c-2'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(categoryHeroes(), findsNothing);
+      expect(flight(), findsNothing);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('with motion every tile and the rail carry a Hero', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, CatalogPaths.categories);
+      expect(categoryHeroes(), findsNWidgets(3));
     });
   });
 

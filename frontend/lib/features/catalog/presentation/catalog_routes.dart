@@ -5,6 +5,7 @@ import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'catalog_paths.dart';
+import 'category_tile.dart';
 import 'all_products_screen.dart';
 import 'all_categories_screen.dart';
 import 'product_photo.dart';
@@ -41,7 +42,13 @@ final FeatureRoutes catalogRoutes = FeatureRoutes(
       name: 'catalog-category',
       pageBuilder: (BuildContext context, GoRouterState state) => appPage(
         state,
-        CategoryScreen(categoryId: state.pathParameters['category']!),
+        CategoryScreen(
+          categoryId: state.pathParameters['category']!,
+          opening: switch (state.extra) {
+            final CategoryOpening opening => opening,
+            _ => null,
+          },
+        ),
       ),
     ),
     GoRoute(
