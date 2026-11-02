@@ -1,8 +1,10 @@
 import 'package:baraka_bozor/core/catalog/catalog_values.dart';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
+import 'package:baraka_bozor/core/localization/catalog_labels.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/orders/estimate_preview.dart';
+import 'package:baraka_bozor/core/orders/quantity_rules.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/features/catalog/presentation/quantity_sheet.dart';
 import 'package:flutter/material.dart';
@@ -140,6 +142,32 @@ void main() {
     expect(byKey('quantity-chip-10'), findsOneWidget);
     expect(byKey('quantity-chip-0.5'), findsNothing);
     expect(chip(tester, '5').color, KitColors.primarySoft);
+  });
+
+  testWidgets('the chips name the unit', (WidgetTester tester) async {
+    Future<void> expectChips(UnitCode unit, List<String> values) async {
+      await open(tester, unit: unit);
+      final AppLocalizations l10n = AppLocalizations.of(
+        tester.element(byKey('quantity-done')),
+      );
+      final String word = CatalogLabels.unit(l10n, unit);
+      for (final String value in values) {
+        final String text = '${QuantityRules.display(value)} $word';
+        expect(
+          find.descendant(
+            of: byKey('quantity-chip-$value'),
+            matching: find.text(text),
+          ),
+          findsOneWidget,
+        );
+        expect(find.bySemanticsLabel(text), findsOneWidget);
+      }
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+    }
+
+    await expectChips(UnitCode.kg, <String>['0.5', '1', '1.5', '2', '3']);
+    await expectChips(UnitCode.piece, <String>['1', '2', '3', '5', '10']);
   });
 
   testWidgets('the sum follows the typing', (WidgetTester tester) async {

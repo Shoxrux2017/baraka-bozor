@@ -147,6 +147,7 @@ class _QuantitySheetState extends State<_QuantitySheet> {
                   for (final String chip in chips)
                     _Chip(
                       value: chip,
+                      text: '${QuantityRules.display(chip)} $unitLabel',
                       selected:
                           quantity != null &&
                           QuantityRules.thousandths(quantity) ==
@@ -277,11 +278,15 @@ class _QuantitySheetState extends State<_QuantitySheet> {
 class _Chip extends StatelessWidget {
   const _Chip({
     required this.value,
+    required this.text,
     required this.selected,
     required this.onTap,
   });
 
   final String value;
+
+  /// The quantity with its unit, as shown and as read aloud.
+  final String text;
   final bool selected;
   final VoidCallback onTap;
 
@@ -291,7 +296,7 @@ class _Chip extends StatelessWidget {
       button: true,
       selected: selected,
       excludeSemantics: true,
-      label: QuantityRules.display(value),
+      label: text,
       onTap: onTap,
       child: Material(
         key: ValueKey<String>('quantity-chip-$value'),
@@ -314,7 +319,8 @@ class _Chip extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
-                  QuantityRules.display(value),
+                  text,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
