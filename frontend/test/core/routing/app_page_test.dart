@@ -93,7 +93,9 @@ void main() {
     expect(appPage(stateFor(name: null), child).name, '/p/:id');
   });
 
-  testWidgets('a pushed page slides over the one beneath', (tester) async {
+  testWidgets('a pushed page slides over the one beneath', (
+    WidgetTester tester,
+  ) async {
     final GoRouter router = await _pumpApp(tester);
     router.push('/second');
     await tester.pump();
@@ -104,7 +106,9 @@ void main() {
     expect(find.text('first'), findsNothing);
   });
 
-  testWidgets('on iOS an edge swipe takes the page back', (tester) async {
+  testWidgets('on iOS an edge swipe takes the page back', (
+    WidgetTester tester,
+  ) async {
     final GoRouter router = await _pumpApp(tester);
     router.push('/second');
     await tester.pumpAndSettle();
@@ -115,7 +119,7 @@ void main() {
   }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
   testWidgets('on iOS a page that holds its back stays under a swipe', (
-    tester,
+    WidgetTester tester,
   ) async {
     final GoRouter router = await _pumpApp(tester);
     router.push('/held');

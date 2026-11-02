@@ -120,7 +120,7 @@ void main() {
   });
 
   testWidgets('the flat routes stand in place and the rest slide in', (
-    tester,
+    WidgetTester tester,
   ) async {
     await tester.pumpWidget(const SizedBox());
     final BuildContext context = tester.element(find.byType(SizedBox));
@@ -129,7 +129,9 @@ void main() {
     final Set<String> standing = <String>{};
     final Set<String> sliding = <String>{};
     for (final RouteBase route in _all(router)) {
-      if (route is! GoRoute || route.pageBuilder == null) continue;
+      if (route is! GoRoute || route.pageBuilder == null) {
+        continue;
+      }
       final Page<dynamic> page = route.pageBuilder!(
         context,
         _stateFor(router, route.name, route.path),
@@ -146,7 +148,7 @@ void main() {
     expect(sliding, _pageNames);
   });
 
-  testWidgets('the panel shells stand in place', (tester) async {
+  testWidgets('the panel shells stand in place', (WidgetTester tester) async {
     await tester.pumpWidget(const SizedBox());
     final BuildContext context = tester.element(find.byType(SizedBox));
     final GoRouter router = buildRouter();
