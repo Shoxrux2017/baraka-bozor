@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'shopper_done_screen.dart';
@@ -18,25 +19,29 @@ final FeatureRoutes shopperRoutes = FeatureRoutes(
     GoRoute(
       path: AppPaths.shopper,
       name: 'shopper-orders',
-      builder: (BuildContext context, GoRouterState state) =>
-          const ShopperOrdersScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const ShopperOrdersScreen(), entry: true),
     ),
     GoRoute(
       path: AppPaths.shopperOrderPattern,
       name: 'shopper-order',
-      builder: (BuildContext context, GoRouterState state) =>
-          ShopperOrderScreen(
-            orderId: state.pathParameters['order']!.toLowerCase(),
-          ),
+      pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+        state,
+        ShopperOrderScreen(
+          orderId: state.pathParameters['order']!.toLowerCase(),
+        ),
+      ),
     ),
     GoRoute(
       path: AppPaths.shopperReplacePattern,
       name: 'shopper-replace',
-      builder: (BuildContext context, GoRouterState state) =>
-          ShopperReplaceScreen(
-            orderId: state.pathParameters['order']!.toLowerCase(),
-            itemId: state.pathParameters['item']!.toLowerCase(),
-          ),
+      pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+        state,
+        ShopperReplaceScreen(
+          orderId: state.pathParameters['order']!.toLowerCase(),
+          itemId: state.pathParameters['item']!.toLowerCase(),
+        ),
+      ),
     ),
     GoRoute(
       path: AppPaths.shopperDonePattern,
@@ -44,8 +49,11 @@ final FeatureRoutes shopperRoutes = FeatureRoutes(
       // Only an order number: anything else is no closing screen.
       redirect: (BuildContext context, GoRouterState state) =>
           _orderNumber(state) == null ? AppPaths.shopper : null,
-      builder: (BuildContext context, GoRouterState state) =>
-          ShopperDoneScreen(orderNumber: _orderNumber(state)!),
+      pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+        state,
+        ShopperDoneScreen(orderNumber: _orderNumber(state)!),
+        entry: true,
+      ),
     ),
   ],
 );

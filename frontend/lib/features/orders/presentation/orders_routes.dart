@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import '../../catalog/domain/catalog.dart';
@@ -14,7 +15,8 @@ import 'rate_order_screen.dart';
 final GoRoute ordersTabRoute = GoRoute(
   path: AppPaths.customerOrders,
   name: 'customer-orders',
-  builder: (BuildContext context, GoRouterState state) => const OrdersScreen(),
+  pageBuilder: (BuildContext context, GoRouterState state) =>
+      appPage(state, const OrdersScreen(), entry: true),
 );
 
 /// The Customer's orders, inside the Customer area: an order, its
@@ -27,19 +29,24 @@ final FeatureRoutes ordersRoutes = FeatureRoutes(
     GoRoute(
       path: AppPaths.customerOrderPattern,
       name: 'customer-order',
-      builder: (BuildContext context, GoRouterState state) =>
-          OrderScreen(orderId: state.pathParameters['order']!.toLowerCase()),
+      pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+        state,
+        OrderScreen(orderId: state.pathParameters['order']!.toLowerCase()),
+      ),
     ),
     GoRoute(
       path: AppPaths.customerOrderEditPattern,
       name: 'customer-order-edit',
       // A product picked by a picker opened alone comes along (`DL-52` (1)).
-      builder: (BuildContext context, GoRouterState state) => OrderEditScreen(
-        orderId: state.pathParameters['order']!.toLowerCase(),
-        adding: switch (state.extra) {
-          final CatalogProduct product => product,
-          _ => null,
-        },
+      pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+        state,
+        OrderEditScreen(
+          orderId: state.pathParameters['order']!.toLowerCase(),
+          adding: switch (state.extra) {
+            final CatalogProduct product => product,
+            _ => null,
+          },
+        ),
       ),
     ),
     GoRoute(
@@ -47,23 +54,28 @@ final FeatureRoutes ordersRoutes = FeatureRoutes(
       name: 'customer-order-add',
       // The products the editor keeps come along, to mark them; opened by
       // its address alone, the picker reads them from the order.
-      builder: (BuildContext context, GoRouterState state) =>
-          OrderProductPickerScreen(
-            orderId: state.pathParameters['order']!.toLowerCase(),
-            productIds: switch (state.extra) {
-              final Set<String> ids => ids,
-              _ => null,
-            },
-          ),
+      pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+        state,
+        OrderProductPickerScreen(
+          orderId: state.pathParameters['order']!.toLowerCase(),
+          productIds: switch (state.extra) {
+            final Set<String> ids => ids,
+            _ => null,
+          },
+        ),
+      ),
     ),
     GoRoute(
       path: AppPaths.customerOrderRatePattern,
       name: 'customer-order-rate',
       // The stars tapped before the screen opened; anything but 1 to 5 is
       // ignored.
-      builder: (BuildContext context, GoRouterState state) => RateOrderScreen(
-        orderId: state.pathParameters['order']!.toLowerCase(),
-        stars: int.tryParse(state.uri.queryParameters['stars'] ?? ''),
+      pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+        state,
+        RateOrderScreen(
+          orderId: state.pathParameters['order']!.toLowerCase(),
+          stars: int.tryParse(state.uri.queryParameters['stars'] ?? ''),
+        ),
       ),
     ),
   ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'favorites_screen.dart';
@@ -10,8 +11,8 @@ import 'favorites_screen.dart';
 final GoRoute favoritesTabRoute = GoRoute(
   path: AppPaths.customerFavorites,
   name: 'customer-favorites',
-  builder: (BuildContext context, GoRouterState state) =>
-      const FavoritesScreen(),
+  pageBuilder: (BuildContext context, GoRouterState state) =>
+      appPage(state, const FavoritesScreen(), entry: true),
 );
 
 /// The favourites' screen is a tab, so this fragment has no route of its

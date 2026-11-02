@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'account_deleted_screen.dart';
@@ -14,7 +15,8 @@ import 'profile_screen.dart';
 final GoRoute profileTabRoute = GoRoute(
   path: AppPaths.customerProfile,
   name: 'customer-profile',
-  builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
+  pageBuilder: (BuildContext context, GoRouterState state) =>
+      appPage(state, const ProfileScreen(), entry: true),
 );
 
 /// The profile's editors and the screen after a deleted account.
@@ -24,20 +26,20 @@ final FeatureRoutes profileRoutes = FeatureRoutes(
     GoRoute(
       path: AppPaths.customerEditProfile,
       name: 'customer-edit-profile',
-      builder: (BuildContext context, GoRouterState state) =>
-          const EditProfileScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const EditProfileScreen()),
     ),
     GoRoute(
       path: AppPaths.customerDeleteAccount,
       name: 'customer-delete-account',
-      builder: (BuildContext context, GoRouterState state) =>
-          const DeleteAccountScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const DeleteAccountScreen()),
     ),
     GoRoute(
       path: AppPaths.accountDeleted,
       name: 'account-deleted',
-      builder: (BuildContext context, GoRouterState state) =>
-          const AccountDeletedScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const AccountDeletedScreen(), entry: true),
     ),
   ],
 );

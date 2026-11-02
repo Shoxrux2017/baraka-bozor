@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'checkout_screen.dart';
@@ -13,8 +14,8 @@ final FeatureRoutes checkoutRoutes = FeatureRoutes(
     GoRoute(
       path: AppPaths.customerCheckout,
       name: 'checkout',
-      builder: (BuildContext context, GoRouterState state) =>
-          const CheckoutScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const CheckoutScreen()),
     ),
   ],
 );

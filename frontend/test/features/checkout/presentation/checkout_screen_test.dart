@@ -1317,10 +1317,12 @@ void main() {
 
   double cardOpacity(WidgetTester tester) => tester
       .widget<FadeTransition>(
-        find.ancestor(
-          of: byKey('checkout-placed-card'),
-          matching: find.byType(FadeTransition),
-        ),
+        find
+            .ancestor(
+              of: byKey('checkout-placed-card'),
+              matching: find.byType(FadeTransition),
+            )
+            .first,
       )
       .opacity
       .value;

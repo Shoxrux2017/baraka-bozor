@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import '../../shells/presentation/panel_shell.dart';
@@ -21,8 +22,12 @@ final FeatureRoutes adminRoutes = FeatureRoutes(
   feature: 'admin',
   routes: <RouteBase>[
     ShellRoute(
-      builder: (BuildContext context, GoRouterState state, Widget child) =>
-          PanelShell(location: state.uri.path, child: child),
+      pageBuilder: (BuildContext context, GoRouterState state, Widget child) =>
+          appPage(
+            state,
+            PanelShell(location: state.uri.path, child: child),
+            entry: true,
+          ),
       routes: <RouteBase>[
         GoRoute(
           path: AppPaths.admin,
@@ -33,52 +38,58 @@ final FeatureRoutes adminRoutes = FeatureRoutes(
         GoRoute(
           path: AdminPaths.categories,
           name: 'admin-categories',
-          builder: (BuildContext context, GoRouterState state) =>
-              const CategoriesScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              appPage(state, const CategoriesScreen(), entry: true),
         ),
         GoRoute(
           path: AdminPaths.products,
           name: 'admin-products',
-          builder: (BuildContext context, GoRouterState state) =>
-              const ProductsScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              appPage(state, const ProductsScreen(), entry: true),
         ),
         // Declared before the product pattern, which would otherwise read
         // "new" as a product id.
         GoRoute(
           path: AdminPaths.newProduct,
           name: 'admin-product-new',
-          builder: (BuildContext context, GoRouterState state) =>
-              const ProductEditScreen(productId: null),
+          pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+            state,
+            const ProductEditScreen(productId: null),
+            entry: true,
+          ),
         ),
         GoRoute(
           path: AdminPaths.productPattern,
           name: 'admin-product',
-          builder: (BuildContext context, GoRouterState state) =>
-              ProductEditScreen(productId: state.pathParameters['product']),
+          pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+            state,
+            ProductEditScreen(productId: state.pathParameters['product']),
+            entry: true,
+          ),
         ),
         GoRoute(
           path: AdminPaths.staff,
           name: 'admin-staff',
-          builder: (BuildContext context, GoRouterState state) =>
-              const StaffScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              appPage(state, const StaffScreen(), entry: true),
         ),
         GoRoute(
           path: AdminPaths.customers,
           name: 'admin-customers',
-          builder: (BuildContext context, GoRouterState state) =>
-              const CustomersScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              appPage(state, const CustomersScreen(), entry: true),
         ),
         GoRoute(
           path: AdminPaths.legalDocuments,
           name: 'admin-legal-documents',
-          builder: (BuildContext context, GoRouterState state) =>
-              const LegalDocumentsScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              appPage(state, const LegalDocumentsScreen(), entry: true),
         ),
         GoRoute(
           path: AdminPaths.settings,
           name: 'admin-settings',
-          builder: (BuildContext context, GoRouterState state) =>
-              const SettingsScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              appPage(state, const SettingsScreen(), entry: true),
         ),
       ],
     ),

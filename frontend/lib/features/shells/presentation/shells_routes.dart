@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import '../../auth/domain/app_user.dart';
@@ -21,11 +22,11 @@ final FeatureRoutes shellsRoutes = FeatureRoutes(
     // is shown. Each tab draws its own bar. A tab's path is reached by the
     // bar or `go`, never pushed.
     StatefulShellRoute(
-      builder: (
+      pageBuilder: (
         BuildContext context,
         GoRouterState state,
         StatefulNavigationShell shell,
-      ) => shell,
+      ) => appPage(state, shell, entry: true),
       navigatorContainerBuilder: _tabsContainer,
       branches: <StatefulShellBranch>[
         StatefulShellBranch(routes: <RouteBase>[catalogHomeRoute]),
@@ -49,8 +50,8 @@ final FeatureRoutes shellsRoutes = FeatureRoutes(
         GoRoute(
           path: AppPaths.homeOf(role),
           name: 'shell-${role.code}',
-          builder: (BuildContext context, GoRouterState state) =>
-              RoleShellScreen(role: role),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              appPage(state, RoleShellScreen(role: role), entry: true),
         ),
   ],
 );

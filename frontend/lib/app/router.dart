@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/routing/app_page.dart';
 import '../core/routing/app_paths.dart';
 import '../core/routing/feature_routes.dart';
 import '../core/widgets/brand_wordmark.dart';
@@ -91,8 +92,8 @@ final FeatureRoutes _bootstrapFragment = FeatureRoutes(
     GoRoute(
       path: AppPaths.bootstrap,
       name: 'bootstrap',
-      builder: (BuildContext context, GoRouterState state) =>
-          const _BootstrapScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const _BootstrapScreen(), entry: true),
     ),
   ],
 );

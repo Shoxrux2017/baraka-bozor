@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
 import 'catalog_paths.dart';
@@ -18,8 +19,8 @@ import 'search_screen.dart';
 final GoRoute catalogHomeRoute = GoRoute(
   path: AppPaths.customer,
   name: 'catalog-home',
-  builder: (BuildContext context, GoRouterState state) =>
-      const CatalogHomeScreen(),
+  pageBuilder: (BuildContext context, GoRouterState state) =>
+      appPage(state, const CatalogHomeScreen(), entry: true),
 );
 
 /// The Customer catalog is the Customer area's home (`docs/07-architecture.md`
@@ -32,56 +33,49 @@ final FeatureRoutes catalogRoutes = FeatureRoutes(
     GoRoute(
       path: CatalogPaths.categories,
       name: 'catalog-categories',
-      builder: (BuildContext context, GoRouterState state) =>
-          const AllCategoriesScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const AllCategoriesScreen()),
     ),
     GoRoute(
       path: CatalogPaths.categoryPattern,
       name: 'catalog-category',
-      builder: (BuildContext context, GoRouterState state) =>
-          CategoryScreen(categoryId: state.pathParameters['category']!),
+      pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+        state,
+        CategoryScreen(categoryId: state.pathParameters['category']!),
+      ),
     ),
     GoRoute(
       path: CatalogPaths.recommended,
       name: 'catalog-recommended',
-      builder: (BuildContext context, GoRouterState state) =>
-          const RecommendedScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const RecommendedScreen()),
     ),
     GoRoute(
       path: CatalogPaths.search,
       name: 'catalog-search',
-      builder: (BuildContext context, GoRouterState state) =>
-          const SearchScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const SearchScreen()),
     ),
     GoRoute(
       path: CatalogPaths.products,
       name: 'catalog-all-products',
-      builder: (BuildContext context, GoRouterState state) =>
-          const AllProductsScreen(),
+      pageBuilder: (BuildContext context, GoRouterState state) =>
+          appPage(state, const AllProductsScreen()),
     ),
     GoRoute(
       path: CatalogPaths.productPattern,
       name: 'catalog-product',
-      // A page of its own, not the router's default: the photo flies by the
-      // route's own transition, which the default page does not have
-      // (`DL-122`).
-      pageBuilder: (BuildContext context, GoRouterState state) =>
-          MaterialPage<void>(
-            key: state.pageKey,
-            name: state.name ?? state.path,
-            arguments: <String, String>{
-              ...state.pathParameters,
-              ...state.uri.queryParameters,
-            },
-            restorationId: state.pageKey.value,
-            child: ProductScreen(
-              productId: state.pathParameters['product']!,
-              opening: switch (state.extra) {
-                final ProductOpening opening => opening,
-                _ => null,
-              },
-            ),
-          ),
+      // The photo flies by the shared page's transition (`DL-122`, `DL-124`).
+      pageBuilder: (BuildContext context, GoRouterState state) => appPage(
+        state,
+        ProductScreen(
+          productId: state.pathParameters['product']!,
+          opening: switch (state.extra) {
+            final ProductOpening opening => opening,
+            _ => null,
+          },
+        ),
+      ),
     ),
   ],
 );
