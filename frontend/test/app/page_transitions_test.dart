@@ -4,6 +4,7 @@ import 'package:baraka_bozor/features/cart/presentation/cart_paths.dart';
 import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/product_screen.dart';
 import 'package:baraka_bozor/features/favorites/domain/favorites.dart';
 import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
 import 'package:baraka_bozor/features/orders/presentation/orders_screens.dart';
@@ -140,6 +141,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     await tester.tapAt(at);
     await tester.pumpAndSettle();
+    expect(find.byType(ProductScreen), findsOneWidget);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
 
