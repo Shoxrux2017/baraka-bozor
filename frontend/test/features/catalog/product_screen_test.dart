@@ -2148,4 +2148,57 @@ void main() {
       },
     );
   }
+
+  group('the whole screen', () {
+    testWidgets('every target of the product screen meets '
+        'iOSTapTargetGuideline', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+
+      // Out of the cart, the estimate open.
+      await open(tester);
+      await tapAndSettle(tester, byKey('product-estimate-how'));
+      expect(find.text(l10n(tester).catalogEstimateExplain), findsOneWidget);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+      await tester.pumpWidget(const SizedBox());
+      // In the cart, a save mark shown.
+      cart.current = cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          quantity: '2.000',
+          note: 'Покрепче',
+          price: 21850,
+          total: 43700,
+        ),
+      ]);
+      await open(tester);
+      final Completer<void> hold = Completer<void>();
+      await tester.tap(byKey('product-plus'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(byKey('product-save-mark-quantity'), findsOneWidget);
+      cart.hold = hold;
+      cart.answer = cartOf(<Map<String, Object?>>[
+        cartLineJson(
+          quantity: '2.500',
+          note: 'Покрепче',
+          price: 21850,
+          total: 54625,
+        ),
+      ]);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      hold.complete();
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const SizedBox());
+      // The note focused over a 300 px keyboard.
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      await open(tester, size: const Size(400, 800));
+      tester.widget<TextField>(byKey('line-note')).focusNode!.requestFocus();
+      await tester.pumpAndSettle();
+      expect(byKey('keyboard-done'), findsOneWidget);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      handle.dispose();
+    });
+  });
 }
