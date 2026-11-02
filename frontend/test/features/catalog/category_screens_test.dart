@@ -40,6 +40,7 @@ import '../../support/fake_auth_repository.dart';
 import '../../support/fake_cart_repository.dart';
 import '../../support/fake_catalog_repository.dart';
 import '../../support/fake_customer_repositories.dart';
+import '../../support/nonlinear_text_scaler.dart';
 import '../../support/fake_favorites_repository.dart';
 import '../../support/in_memory_stores.dart';
 
@@ -92,6 +93,7 @@ void main() {
     bool settle = true,
     FakeCartRepository? cart,
     DateTime Function()? clock,
+    TextScaler? textScaler,
   }) async {
     router = GoRouter(
       routes: <RouteBase>[
@@ -140,6 +142,12 @@ void main() {
           locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          builder: textScaler == null
+              ? null
+              : (BuildContext context, Widget? child) => MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+                  child: child!,
+                ),
         ),
       ),
     );
@@ -500,6 +508,30 @@ void main() {
       await tester.pumpAndSettle();
       expect(byKey('stale-line'), findsNothing);
     });
+
+    testWidgets(
+      "with Android's nonlinear text at 200 % the categories stand in two "
+      'columns',
+      (WidgetTester tester) async {
+        size(tester, 375, 812);
+        await open(
+          tester,
+          CatalogPaths.categories,
+          locale: const Locale('ru'),
+          textScaler: const NonlinearTextScaler(2),
+        );
+
+        expect(
+          tester.getTopLeft(byKey('category-c-2')).dy,
+          tester.getTopLeft(byKey('category-c-1')).dy,
+        );
+        expect(
+          tester.getTopLeft(byKey('category-c-3')).dy,
+          greaterThan(tester.getTopLeft(byKey('category-c-1')).dy),
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('a tile reads as its name and a button, a letter tile without '
         'the letter', (WidgetTester tester) async {

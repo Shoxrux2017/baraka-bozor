@@ -34,6 +34,7 @@ import '../../support/fake_catalog_repository.dart';
 import '../../support/fake_customer_orders_repository.dart';
 import '../../support/fake_customer_repositories.dart';
 import '../../support/in_memory_stores.dart';
+import '../../support/nonlinear_text_scaler.dart';
 import '../../support/paragraphs.dart';
 
 /// The Customer's home in the kit look (`DL-80`), through the real router.
@@ -92,6 +93,7 @@ void main() {
     FakeCustomerOrdersRepository? orders,
     DateTime Function()? clock,
     bool settle = true,
+    TextScaler? textScaler,
   }) async {
     await tester.pumpWidget(
       appUnderTest(
@@ -104,6 +106,7 @@ void main() {
         cart: cart,
         orders: orders,
         clock: clock,
+        textScaler: textScaler,
         overrides: [addressMapProvider.overrideWithValue(FakeAddressMap())],
       ),
     );
@@ -1737,6 +1740,60 @@ void main() {
       expect(byKey('orders-badge'), findsNothing);
       await tester.pumpAndSettle();
       expect(byKey('question-banner'), findsNothing);
+    });
+  });
+
+  group("Android's nonlinear text at 200 %", () {
+    Future<void> android(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(375, 812);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await loadMontserrat();
+      await open(
+        tester,
+        device: const Locale('ru'),
+        textScaler: const NonlinearTextScaler(2),
+      );
+    }
+
+    testWidgets("with Android's nonlinear text at 200 % the home's categories "
+        'stand in two columns', (WidgetTester tester) async {
+      await android(tester);
+
+      expect(
+        top(tester, byKey('category-c-2')),
+        top(tester, byKey('category-c-1')),
+      );
+      expect(
+        top(
+          tester,
+          find.byKey(
+            const ValueKey<String>('category-c-3'),
+            skipOffstage: false,
+          ),
+        ),
+        greaterThan(top(tester, byKey('category-c-1'))),
+      );
+    });
+
+    testWidgets("with Android's nonlinear text at 200 % the recommended cards "
+        'are 260 wide with the price whole', (WidgetTester tester) async {
+      await android(tester);
+      await tester.drag(byKey('home-scroll'), const Offset(0, -2000));
+      await tester.pumpAndSettle();
+
+      expect(tester.getSize(byKey('p-1')).width, 260);
+      final Finder price = find.descendant(
+        of: byKey('p-1'),
+        matching: find.byWidgetPredicate(
+          (Widget w) => w is Text && (w.data ?? '').startsWith('≈'),
+        ),
+      );
+      expect(
+        tester.renderObject<RenderParagraph>(price).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
     });
   });
 }

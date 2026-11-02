@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/widgets/skeleton_bar.dart';
 import '../application/catalog_controllers.dart';
@@ -42,8 +43,12 @@ class RecommendedRow extends ConsumerStatefulWidget {
   static const double imageHeight = 130;
 
   /// A card's width: 150, and wider with the text size, up to 260 (`DL-125`).
-  static double cardWidth(TextScaler scaler) =>
-      math.min(260, math.max(150, scaler.scale(150)));
+  /// The card holds its price, so the factor is read at the price's size
+  /// (`DL-126`).
+  static double cardWidth(TextScaler scaler) => math.min(
+    260,
+    math.max(150, 150 * textScaleAt(scaler, KitCardType.regular.priceSize)),
+  );
 
   @override
   ConsumerState<RecommendedRow> createState() => _RecommendedRowState();
