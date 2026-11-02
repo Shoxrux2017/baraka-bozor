@@ -60,6 +60,8 @@ Route guards are UX only; backend authorization remains authoritative.
 
 Navigation after async completion must happen only if the originating session/target/operation remains current.
 
+Every route builds its page with `appPage` (`lib/core/routing/app_page.dart`); a route never uses go_router's `builder:` (`DL-124`).
+
 ## 7. Dio and Data Layer
 
 Use one configured API client for base URL, bearer token, timeouts, shared envelope parsing, auth reconciliation, and safe logging.
