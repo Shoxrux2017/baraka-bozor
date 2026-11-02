@@ -51,37 +51,20 @@ class ProductPhotoWell extends StatelessWidget {
 /// The flight of the photo between a card and the product screen: the well's
 /// corners grow from 12 to 20 on the way in and shrink back on the way out.
 /// The route's animation runs 0 to 1 in and 1 to 0 out, so one lerp serves
-/// both.
-Widget productPhotoFlight(
-  BuildContext flightContext,
-  Animation<double> animation,
-  HeroFlightDirection direction,
-  BuildContext fromContext,
-  BuildContext toContext,
-) {
-  final String? url = _imageUrlIn(fromContext) ?? _imageUrlIn(toContext);
-  return AnimatedBuilder(
+/// both. The picture is the product's own, [imageUrl].
+HeroFlightShuttleBuilder productPhotoFlight(String? imageUrl) {
+  return (
+    BuildContext flightContext,
+    Animation<double> animation,
+    HeroFlightDirection direction,
+    BuildContext fromContext,
+    BuildContext toContext,
+  ) => AnimatedBuilder(
     animation: animation,
     builder: (BuildContext context, Widget? _) => ProductPhotoWell(
       key: const ValueKey<String>('product-photo-flight'),
-      imageUrl: url,
+      imageUrl: imageUrl,
       radius: lerpDouble(12, 20, animation.value)!,
     ),
   );
-}
-
-/// The address of the first product picture under [context], if any.
-String? _imageUrlIn(BuildContext context) {
-  String? found;
-  void visit(Element element) {
-    final Widget widget = element.widget;
-    if (widget is ProductImage) {
-      found = widget.url;
-      return;
-    }
-    element.visitChildren(visit);
-  }
-
-  (context as Element).visitChildren(visit);
-  return found;
 }

@@ -316,22 +316,15 @@ class ProductBar extends StatelessWidget {
     fontWeight: FontWeight.w600,
   );
 
-  /// A label, with the sum under it when there is one; one line each.
+  /// A label, with the sum under it when there is one; neither is shortened.
   static Widget _labelOverSum(String label, String? sum) => Column(
     mainAxisSize: MainAxisSize.min,
     children: <Widget>[
-      Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: _labelStyle,
-      ),
+      Text(label, style: _labelStyle),
       if (sum != null)
         Text(
           sum,
           key: const ValueKey<String>('product-sum'),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: _lineStyle,
         ),
     ],
@@ -547,9 +540,7 @@ class _Stepper extends StatelessWidget {
                   child: Text(
                     quantity,
                     key: const ValueKey<String>('product-qty'),
-                    maxLines: 1,
                     textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
                     style: quantityStyle,
                   ),
                 ),

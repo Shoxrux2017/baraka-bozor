@@ -751,6 +751,46 @@ void main() {
       });
     }
 
+    for (final Locale device in const <Locale>[Locale('ru'), Locale('uz')]) {
+      for (final bool inCart in const <bool>[false, true]) {
+        testWidgets(
+          'at 320 and text x2 no bar text is cut (${device.languageCode}'
+          ', ${inCart ? 'in the cart' : 'to add'})',
+          (WidgetTester tester) async {
+            if (inCart) {
+              cart.current = cartOf(<Map<String, Object?>>[cartLineJson()]);
+            }
+            await open(
+              tester,
+              size: const Size(320, 640),
+              textScale: 2,
+              device: device,
+            );
+
+            expect(
+              byKey(inCart ? 'open-cart' : 'add-to-cart').hitTestable(),
+              findsOneWidget,
+            );
+            final Finder texts = find.descendant(
+              of: find.byType(ProductBar),
+              matching: find.byType(RichText),
+            );
+            expect(texts, findsWidgets);
+            for (final Element element in texts.evaluate()) {
+              final RenderParagraph paragraph =
+                  element.renderObject! as RenderParagraph;
+              expect(
+                paragraph.didExceedMaxLines,
+                isFalse,
+                reason: paragraph.text.toPlainText(),
+              );
+            }
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
+    }
+
     for (final double width in <double>[390]) {
       testWidgets('at $width and text x2 the sum stands beside the stepper', (
         WidgetTester tester,
@@ -1600,6 +1640,9 @@ void main() {
         await open(tester);
 
         await tester.enterText(byKey('line-note'), 'Помягче');
+        // The reload after a failure answers with a cart of its own: only a
+        // new instance is announced, as a real answer is.
+        cart.current = tomatoInCart();
         cart.failure = const UnexpectedFailure();
         FocusManager.instance.primaryFocus?.unfocus();
         await tester.pump();
@@ -1622,6 +1665,108 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets('a note typed before a step that fails is kept and resent', (
+      WidgetTester tester,
+    ) async {
+      cart.current = tomatoInCart();
+      await open(tester);
+      final Completer<void> hold = Completer<void>();
+
+      await tester.tap(byKey('line-note'));
+      await tester.enterText(byKey('line-note'), 'Помягче');
+      cart.hold = hold;
+      await tester.tap(byKey('product-plus'));
+      await tester.pump();
+      // The note went alone, and the step now waits behind it.
+      expect(cart.patches.single.customerNote, 'Помягче');
+      cart.current = tomatoInCart();
+      cart.failure = const UnexpectedFailure();
+      hold.complete();
+      cart.hold = null;
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(
+        tester.widget<TextField>(byKey('line-note')).controller!.text,
+        'Помягче',
+      );
+      await tester.pump(const Duration(seconds: 7));
+
+      cart.answer = tomatoInCart(note: 'Помягче');
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(cart.patches.length, greaterThanOrEqualTo(2));
+      expect(cart.patches.last.customerNote, 'Помягче');
+      expect(cart.patches.last.noteChanged, isTrue);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets("an older note's answer does not overwrite a newer one on "
+        'its way', (WidgetTester tester) async {
+      cart.current = tomatoInCart();
+      await open(tester);
+      final Completer<void> first = Completer<void>();
+      final Completer<void> second = Completer<void>();
+
+      await tester.enterText(byKey('line-note'), 'abc');
+      cart.hold = first;
+      await tester.pump(const Duration(milliseconds: 1100));
+      expect(cart.patches.single.customerNote, 'abc');
+
+      await tester.enterText(byKey('line-note'), 'abcd');
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      cart.hold = second;
+      cart.answer = tomatoInCart(note: 'abc');
+      first.complete();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(
+        tester.widget<TextField>(byKey('line-note')).controller!.text,
+        'abcd',
+      );
+      cart.answer = tomatoInCart(note: 'abcd');
+      cart.hold = null;
+      second.complete();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(cart.patches.last.customerNote, 'abcd');
+      expect(
+        tester.widget<TextField>(byKey('line-note')).controller!.text,
+        'abcd',
+      );
+      await tester.pump(const Duration(seconds: 2));
+    });
+
+    testWidgets('the bin right after a step shows no Сохранено', (
+      WidgetTester tester,
+    ) async {
+      cart.current = tomatoInCart(quantity: '0.500');
+      await open(tester);
+
+      await tester.tap(byKey('product-plus'));
+      await tester.pump();
+      await tester.tap(byKey('product-minus'));
+      await tester.pump();
+      expect(
+        find.descendant(
+          of: byKey('product-minus'),
+          matching: find.byIcon(Icons.delete_outline),
+        ),
+        findsOneWidget,
+      );
+      cart.answer = cartOf(<Map<String, Object?>>[]);
+      await tester.tap(byKey('product-minus'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(cart.calls, contains('remove:$tomatoLine'));
+      expect(find.text('Сохранено'), findsNothing);
+      expect(mark('quantity'), findsNothing);
+      await tester.pumpAndSettle();
+    });
 
     testWidgets('a cart answer does not undo a rule still on its way', (
       WidgetTester tester,

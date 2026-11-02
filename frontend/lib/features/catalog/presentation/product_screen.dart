@@ -44,7 +44,7 @@ import 'quantity_sheet.dart';
 /// One product (drawing 18): its picture, name, approximate price and what an
 /// estimate means, its description, the rule for when it is missing and a
 /// note to the Shopper, more of its category, and a bottom bar with the
-/// stepper and "Ð’ ÐºÐ¾Ñ€Ð·Ð¸Ð½Ñƒ". A product that can no longer be seen shows that
+/// stepper and "В корзину". A product that can no longer be seen shows that
 /// it is gone (drawing 18b).
 ///
 /// Opened from a card it is given the card's product ([opening]) and shows it
@@ -89,9 +89,9 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   /// Whether the Customer changed the note and it is not sent yet.
   bool _noteDirty = false;
 
-  /// Whether the details last handed to the queue carried a note that was
-  /// waiting, which a failed save must put back to waiting.
-  bool _carriedNote = false;
+  /// Whether a note handed to the queue has not been answered yet: a cart
+  /// answer must not put the older note into the field over a newer one.
+  bool _noteOnItsWay = false;
 
   /// Whether a rule the Customer chose has not been answered yet: a cart
   /// answer must not put the old rule back.
@@ -104,10 +104,10 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   ProductSaveState? _markState;
   Timer? _markTimer;
 
-  /// How long Â«Ð¡Ð¾Ñ…Ñ€Ð°Ð½ÐµÐ½Ð¾Â» stands.
+  /// How long «Сохранено» stands.
   static const Duration _savedFor = Duration(milliseconds: 1600);
 
-  /// How long "Ð’ ÐºÐ¾Ñ€Ð·Ð¸Ð½Ðµ" stands before the bar offers the cart.
+  /// How long "В корзине" stands before the bar offers the cart.
   static const Duration _addedFor = Duration(milliseconds: 1100);
   Timer? _addedTimer;
 
@@ -179,6 +179,7 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
           _note.clear();
           _noteTimer?.cancel();
           _noteDirty = false;
+          _noteOnItsWay = false;
           _ruleOnItsWay = false;
         }
         return;
@@ -189,7 +190,10 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
         _policy = line.substitutionPolicy;
       }
       final String note = line.customerNote ?? '';
-      if (!_noteFocus.hasFocus && !_noteDirty && _note.text != note) {
+      if (!_noteFocus.hasFocus &&
+          !_noteDirty &&
+          !_noteOnItsWay &&
+          _note.text != note) {
         _note.text = note;
       }
     });
@@ -206,7 +210,7 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     final bool carry = _noteFits();
     if (carry) {
       _noteTimer?.cancel();
-      _carriedNote = _noteDirty;
+      _noteOnItsWay = _noteOnItsWay || _noteDirty;
       _noteDirty = false;
     }
     return CartLineDetails(
@@ -215,13 +219,11 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     );
   }
 
-  /// Shows the mark for [field] while [answer] is awaited, then Â«Ð¡Ð¾Ñ…Ñ€Ð°Ð½ÐµÐ½Ð¾Â»;
+  /// Shows the mark for [field] while [answer] is awaited, then «Сохранено»;
   /// a failure clears it and says why. An answer of a replaced change moves
   /// nothing.
   void _track(Future<ApiFailure?> answer, _SaveField field) {
     final int mine = ++_changes;
-    final bool carried = _carriedNote;
-    _carriedNote = false;
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     final AppLocalizations l10n = AppLocalizations.of(context);
     _markTimer?.cancel();
@@ -231,15 +233,20 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     });
     unawaited(
       answer.then((ApiFailure? failure) {
-        if (failure != null && carried && _line != null) {
-          // The text stays in the field and waits to go again: a cart answer
-          // does not overwrite it, and the next change, the field closing or
-          // leaving sends it.
-          _noteDirty = true;
+        if (failure != null && _line != null && _noteFits()) {
+          // A note the field holds that the line does not stays in the field
+          // and waits to go again, whichever change carried it and was then
+          // replaced: a cart answer does not overwrite it, and the next
+          // change, the field closing or leaving sends it.
+          final String text = trimLikeServer(_note.text);
+          if ((text.isEmpty ? null : text) != _line!.customerNote) {
+            _noteDirty = true;
+          }
         }
         if (mine != _changes) {
           return;
         }
+        _noteOnItsWay = false;
         _ruleOnItsWay = false;
         if (failure != null) {
           if (mounted) {
@@ -379,7 +386,7 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
   }
 
   /// Adds the product through the quantity queue. The button says so while
-  /// the server answers; a taken add shows "Ð’ ÐºÐ¾Ñ€Ð·Ð¸Ð½Ðµ" for a moment, then
+  /// the server answers; a taken add shows "В корзине" for a moment, then
   /// offers the cart. A line that appears another way goes straight to the
   /// cart button (`DL-122`).
   Future<void> _add(CatalogProduct product) async {
@@ -564,6 +571,11 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
                   : () {
                       _noteTimer?.cancel();
                       _noteDirty = false;
+                      // A step still waiting is cancelled by the removal: its
+                      // answer is no save to mark.
+                      _changes++;
+                      _markTimer?.cancel();
+                      setState(() => _markState = null);
                       unawaited(
                         removeCartLine(
                           context,
@@ -694,7 +706,9 @@ class _Page extends StatelessWidget {
                   ? well
                   : Hero(
                       tag: heroTag!,
-                      flightShuttleBuilder: productPhotoFlight,
+                      flightShuttleBuilder: productPhotoFlight(
+                        product.imageUrl,
+                      ),
                       child: well,
                     ),
             ),

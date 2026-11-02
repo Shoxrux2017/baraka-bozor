@@ -51,10 +51,10 @@ final class CartLineDetails {
 /// change; an add, an exact quantity, a removal and an undo go at once. One
 /// request per product runs at a time; a wish made meanwhile is sent after
 /// its answer. A line's note and rule travel the same way, one request at a
-/// time with the quantity (`DL-122`). The state is every wish the server has not answered yet, so
-/// a surface can show it. It outlives any screen, so a step is still sent
-/// after its screen is left, and another account drops every wish without
-/// sending it (`frontend/AGENTS.md` sections 5 and 10).
+/// time with the quantity (`DL-122`). The state is every wish the server has
+/// not answered yet, so a surface can show it. It outlives any screen, so a
+/// step is still sent after its screen is left, and another account drops
+/// every wish without sending it (`frontend/AGENTS.md` sections 5 and 10).
 class CartQuantityQueue extends Notifier<Map<String, String>> {
   /// The wish "this product is out of the cart".
   static const String out = '0';

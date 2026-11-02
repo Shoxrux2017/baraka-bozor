@@ -347,7 +347,9 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
                           _sidePadded(
                             Hero(
                               tag: _heroTag,
-                              flightShuttleBuilder: productPhotoFlight,
+                              flightShuttleBuilder: productPhotoFlight(
+                                product.imageUrl,
+                              ),
                               child: SizedBox(
                                 height: imageHeight,
                                 child: DecoratedBox(
