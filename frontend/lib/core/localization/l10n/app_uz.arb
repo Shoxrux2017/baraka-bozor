@@ -2253,6 +2253,7 @@
   "productReadLess": "Yig'ish",
   "productIfMissing": "Mahsulot bo'lmasa",
   "productNoteHint": "Masalan: qattiqroq, pishib o'tmagan",
+  "keyboardDone": "Tayyor",
   "productMoreIn": "«{category}» bo'limidan yana",
   "@productMoreIn": {
     "placeholders": {

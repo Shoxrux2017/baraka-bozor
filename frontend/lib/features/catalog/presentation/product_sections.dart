@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/formatting/server_text.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/soft_change.dart';
+import '../../cart/presentation/cart_widgets.dart';
 
 /// "В корзине: 2 кг" above the name; the quantity rises softly when it
 /// changes (`DL-122`).
@@ -108,6 +110,139 @@ class ProductSaveMark extends StatelessWidget {
                   Opacity(opacity: opacity, child: child),
               child: row,
             ),
+    );
+  }
+}
+
+/// The note to the Shopper (`DL-122`): three to five lines, a green border
+/// while it is typed in, a red one and the reason as soon as it is too long,
+/// as the server counts it. Under it a row holds the reason, the [mark] and
+/// from 250 characters the count. A tap outside closes the keyboard.
+class ProductNoteField extends StatelessWidget {
+  const ProductNoteField({
+    required this.controller,
+    required this.focusNode,
+    required this.readOnly,
+    this.onChanged,
+    this.mark,
+    super.key,
+  });
+
+  /// The length from which the counter is shown.
+  static const int counterFrom = 250;
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool readOnly;
+
+  /// Called with the text after the Customer changed it.
+  final ValueChanged<String>? onChanged;
+
+  /// The save mark in the footer row, when there is one.
+  final ProductSaveState? mark;
+
+  static OutlineInputBorder _border(Color? colour) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(14),
+    borderSide: colour == null
+        ? BorderSide.none
+        : BorderSide(color: colour, width: 1.5),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return ListenableBuilder(
+      listenable: Listenable.merge(<Listenable>[controller, focusNode]),
+      builder: (BuildContext context, Widget? _) {
+        final int length = trimLikeServer(controller.text).runes.length;
+        final bool over = length > cartNoteMaxLength;
+        final OutlineInputBorder resting = _border(
+          over ? KitColors.danger : null,
+        );
+        final OutlineInputBorder focused = _border(
+          over ? KitColors.danger : KitColors.primary,
+        );
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            TextField(
+              key: const ValueKey<String>('line-note'),
+              controller: controller,
+              focusNode: focusNode,
+              readOnly: readOnly,
+              onChanged: onChanged,
+              minLines: 3,
+              maxLines: 5,
+              onTapOutside: (PointerDownEvent _) => focusNode.unfocus(),
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.45,
+                color: KitColors.ink,
+              ),
+              decoration: InputDecoration(
+                hintText: l10n.productNoteHint,
+                hintStyle: const TextStyle(
+                  fontSize: 14,
+                  color: KitColors.muted,
+                ),
+                filled: true,
+                fillColor: KitColors.field,
+                contentPadding: const EdgeInsets.all(14),
+                border: resting,
+                enabledBorder: resting,
+                focusedBorder: focused,
+              ),
+            ),
+            const SizedBox(height: 4),
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 20),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  Expanded(
+                    child: Wrap(
+                      spacing: 10,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: <Widget>[
+                        if (over)
+                          Semantics(
+                            liveRegion: true,
+                            child: Text(
+                              l10n.fieldTooLong(cartNoteMaxLength),
+                              key: const ValueKey<String>('product-note-error'),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: KitColors.danger,
+                              ),
+                            ),
+                          ),
+                        if (mark != null)
+                          ProductSaveMark(
+                            key: const ValueKey<String>(
+                              'product-save-mark-note',
+                            ),
+                            state: mark!,
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (length >= counterFrom)
+                    Text(
+                      '$length / $cartNoteMaxLength',
+                      key: const ValueKey<String>('product-note-count'),
+                      textAlign: TextAlign.end,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: over ? KitColors.danger : KitColors.muted,
+                        fontWeight: over ? FontWeight.w600 : null,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

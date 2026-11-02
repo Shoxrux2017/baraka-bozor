@@ -9,6 +9,7 @@ import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/fold.dart';
+import 'package:baraka_bozor/core/widgets/keyboard_done_bar.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
@@ -292,12 +293,140 @@ void main() {
         expect(byKey('substitution-${option.code}'), findsOneWidget);
       }
       expect(radioChosen(tester, 'allow_similar_substitution'), isTrue);
-      expect(find.text('0 / 300'), findsOneWidget);
+      expect(byKey('product-note-count'), findsNothing);
       expect(find.text('Например: покрепче, не перезрелые'), findsOneWidget);
 
       await tester.enterText(byKey('line-note'), 'Покрепче');
       await tester.pump();
-      expect(find.text('8 / 300'), findsOneWidget);
+      expect(byKey('product-note-count'), findsNothing);
+    });
+  });
+
+  group('the note and its keyboard', () {
+    Future<void> openWithKeyboard(
+      WidgetTester tester, {
+      Size size = const Size(400, 1400),
+    }) async {
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      await open(tester, size: size);
+    }
+
+    FocusNode noteFocus(WidgetTester tester) =>
+        tester.widget<TextField>(byKey('line-note')).focusNode!;
+
+    Future<void> focusNote(WidgetTester tester) async {
+      noteFocus(tester).requestFocus();
+      await tester.pumpAndSettle();
+    }
+
+    Finder page(WidgetTester tester) => find
+        .descendant(
+          of: find.byType(Scaffold).last,
+          matching: find.byType(Scrollable),
+        )
+        .first;
+
+    BorderSide enabledSide(WidgetTester tester) =>
+        (tester.widget<TextField>(byKey('line-note')).decoration!.enabledBorder!
+                as OutlineInputBorder)
+            .borderSide;
+
+    testWidgets('with the keyboard open the note has Готово, and a tap '
+        'outside or a drag closes it', (WidgetTester tester) async {
+      await openWithKeyboard(tester);
+      expect(byKey('keyboard-done'), findsNothing);
+
+      await focusNote(tester);
+      expect(byKey('keyboard-done'), findsOneWidget);
+      expect(
+        tester.getBottomLeft(find.byType(KeyboardDoneBar)).dy,
+        lessThanOrEqualTo(1400 - 300),
+      );
+      expect(l10n(tester).keyboardDone, 'Готово');
+      await tester.tap(byKey('keyboard-done'));
+      await tester.pumpAndSettle();
+      expect(noteFocus(tester).hasFocus, isFalse);
+      expect(byKey('keyboard-done'), findsNothing);
+
+      await focusNote(tester);
+      await tester.tap(find.byType(ProductPhotoWell).first);
+      await tester.pumpAndSettle();
+      expect(noteFocus(tester).hasFocus, isFalse);
+    });
+
+    testWidgets('a drag of the page closes the keyboard', (
+      WidgetTester tester,
+    ) async {
+      await openWithKeyboard(tester, size: const Size(400, 900));
+      await focusNote(tester);
+      expect(noteFocus(tester).hasFocus, isTrue);
+
+      await tester.drag(page(tester), const Offset(0, -40));
+      await tester.pumpAndSettle();
+      expect(noteFocus(tester).hasFocus, isFalse);
+    });
+
+    testWidgets(
+      'the counter shows from 250 characters and turns red over 300',
+      (WidgetTester tester) async {
+        await open(tester);
+        TextStyle style() =>
+            tester.widget<Text>(byKey('product-note-count')).style!;
+
+        await tester.enterText(byKey('line-note'), 'а' * 249);
+        await tester.pump();
+        expect(byKey('product-note-count'), findsNothing);
+
+        await tester.enterText(byKey('line-note'), 'а' * 250);
+        await tester.pump();
+        expect(find.text('250 / 300'), findsOneWidget);
+        expect(style().color, KitColors.muted);
+        expect(style().fontSize, 12);
+
+        await tester.enterText(byKey('line-note'), 'а' * 301);
+        await tester.pump();
+        expect(find.text('301 / 300'), findsOneWidget);
+        expect(style().color, KitColors.danger);
+        expect(style().fontWeight, FontWeight.w600);
+      },
+    );
+
+    testWidgets('the error shows while typing', (WidgetTester tester) async {
+      await open(tester);
+
+      expect(byKey('product-note-error'), findsNothing);
+      await tester.enterText(byKey('line-note'), 'а' * 301);
+      await tester.pump();
+      expect(byKey('product-note-error'), findsOneWidget);
+      expect(find.text(l10n(tester).fieldTooLong(300)), findsOneWidget);
+      expect(enabledSide(tester).color, KitColors.danger);
+      expect(enabledSide(tester).width, 1.5);
+
+      await tester.enterText(byKey('line-note'), 'а' * 300);
+      await tester.pump();
+      expect(byKey('product-note-error'), findsNothing);
+      expect(enabledSide(tester).style, BorderStyle.none);
+    });
+
+    testWidgets('В корзину with an over-long note brings the field into view '
+        'and focuses it', (WidgetTester tester) async {
+      await open(tester, size: const Size(400, 700));
+      await tester.enterText(byKey('line-note'), 'а' * 301);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      tester.state<ScrollableState>(page(tester)).position.jumpTo(0);
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(byKey('line-note')).dy, greaterThan(700));
+
+      await tester.tap(byKey('add-to-cart'));
+      await tester.pumpAndSettle();
+
+      expect(cart.added, isEmpty);
+      expect(noteFocus(tester).hasFocus, isTrue);
+      final double top = tester.getTopLeft(byKey('line-note')).dy;
+      expect(top, greaterThan(0));
+      expect(top, lessThan(500));
     });
   });
 
@@ -434,17 +563,7 @@ void main() {
       await tester.tap(byKey('substitution-contact_before_substitution'));
       await tester.pump();
       expect(radioChosen(tester, 'allow_similar_substitution'), isTrue);
-      expect(
-        tester
-            .widget<TextField>(
-              find.descendant(
-                of: byKey('line-note'),
-                matching: find.byType(TextField),
-              ),
-            )
-            .readOnly,
-        isTrue,
-      );
+      expect(tester.widget<TextField>(byKey('line-note')).readOnly, isTrue);
 
       cart.hold = null;
       hold.complete();
@@ -559,6 +678,8 @@ void main() {
         byKey('line-note'),
         List<String>.filled(151, '\u{1F1FA}\u{1F1FF}').join(),
       );
+      await tester.pump();
+      expect(find.text(l10n(tester).fieldTooLong(300)), findsOneWidget);
       await tapAndSettle(tester, byKey('add-to-cart'));
       expect(find.text(l10n(tester).fieldTooLong(300)), findsOneWidget);
       expect(cart.added, isEmpty);
@@ -566,11 +687,15 @@ void main() {
       // 300 tomatoes: 300 code points, 600 UTF-16 units: within the limit.
       final String tomatoes = List<String>.filled(300, '\u{1F345}').join();
       await tester.enterText(byKey('line-note'), tomatoes);
+      await tester.pump();
+      expect(find.text(l10n(tester).fieldTooLong(300)), findsNothing);
       await tapAndSettle(tester, byKey('add-to-cart'));
       expect(cart.added.single.customerNote, tomatoes);
 
       // A trailing zero-width space is trimmed by the server, not counted.
-      await tester.enterText(byKey('line-note'), '$tomatoes​');
+      await tester.enterText(byKey('line-note'), '$tomatoes\u200b');
+      await tester.pump();
+      expect(find.text(l10n(tester).fieldTooLong(300)), findsNothing);
       await tapAndSettle(tester, byKey('add-to-cart'));
       expect(cart.added, hasLength(2), reason: 'sent, not refused');
       expect(cart.added.last.customerNote, tomatoes);
@@ -618,7 +743,7 @@ void main() {
       );
 
       expect(
-        tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+        tester.widget<TextField>(byKey('line-note')).controller!.text,
         'Покрепче',
       );
       expect(quantityShown(tester), '1,5 кг');
@@ -686,7 +811,7 @@ void main() {
         expect(byKey('open-cart'), findsOneWidget);
         expect(quantityShown(tester), '2 кг');
         expect(
-          tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+          tester.widget<TextField>(byKey('line-note')).controller!.text,
           'Покрепче',
         );
         expect(cart.added, hasLength(1), reason: 'no second add');
@@ -1135,7 +1260,7 @@ void main() {
       expect(sumShown(tester), '2 кг · ${approx(43700)}');
       expect(radioChosen(tester, 'contact_before_substitution'), isTrue);
       expect(
-        tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+        tester.widget<TextField>(byKey('line-note')).controller!.text,
         'Покрепче',
       );
       expect(byKey('add-to-cart'), findsNothing);
@@ -1286,6 +1411,36 @@ void main() {
       await tester.pump(const Duration(seconds: 7));
     });
 
+    testWidgets(
+      'a failed note save keeps the text and sends it again when the screen goes',
+      (WidgetTester tester) async {
+        cart.current = tomatoInCart();
+        await open(tester);
+
+        await tester.enterText(byKey('line-note'), 'Помягче');
+        cart.failure = const UnexpectedFailure();
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(cart.patches, hasLength(1));
+
+        expect(
+          tester.widget<TextField>(byKey('line-note')).controller!.text,
+          'Помягче',
+        );
+        await tester.pump(const Duration(seconds: 7));
+
+        cart.answer = tomatoInCart(note: 'Помягче');
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(cart.patches, hasLength(2));
+        expect(cart.patches.last.customerNote, 'Помягче');
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     testWidgets('a cart answer does not undo a rule still on its way', (
       WidgetTester tester,
     ) async {
@@ -1411,7 +1566,7 @@ void main() {
       expect(quantityShown(tester), '1 кг');
       expect(radioChosen(tester, 'allow_similar_substitution'), isTrue);
       expect(
-        tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+        tester.widget<TextField>(byKey('line-note')).controller!.text,
         isEmpty,
       );
     });
@@ -1429,7 +1584,7 @@ void main() {
 
       expect(quantityShown(tester), '2,5 кг');
       expect(
-        tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+        tester.widget<TextField>(byKey('line-note')).controller!.text,
         'Помягче',
       );
       await tester.pump(const Duration(seconds: 2));
@@ -1446,7 +1601,7 @@ void main() {
 
       expect(quantityShown(tester), '3 кг');
       expect(
-        tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+        tester.widget<TextField>(byKey('line-note')).controller!.text,
         isEmpty,
       );
     });
@@ -1463,7 +1618,7 @@ void main() {
 
       expect(quantityShown(tester), '3 кг');
       expect(
-        tester.widget<TextFormField>(byKey('line-note')).controller!.text,
+        tester.widget<TextField>(byKey('line-note')).controller!.text,
         'Помягче',
         reason: 'the note being typed stays',
       );

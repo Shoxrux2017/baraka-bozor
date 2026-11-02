@@ -3537,6 +3537,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get productNoteHint => 'Masalan: qattiqroq, pishib o\'tmagan';
 
   @override
+  String get keyboardDone => 'Tayyor';
+
+  @override
   String productMoreIn(String category) {
     return '«$category» bo\'limidan yana';
   }

@@ -6128,6 +6128,12 @@ abstract class AppLocalizations {
   /// **'Masalan: qattiqroq, pishib o\'tmagan'**
   String get productNoteHint;
 
+  /// No description provided for @keyboardDone.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tayyor'**
+  String get keyboardDone;
+
   /// No description provided for @productMoreIn.
   ///
   /// In uz, this message translates to:

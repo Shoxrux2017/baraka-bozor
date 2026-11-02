@@ -3578,6 +3578,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get productNoteHint => 'Например: покрепче, не перезрелые';
 
   @override
+  String get keyboardDone => 'Готово';
+
+  @override
   String productMoreIn(String category) {
     return 'Ещё в «$category»';
   }

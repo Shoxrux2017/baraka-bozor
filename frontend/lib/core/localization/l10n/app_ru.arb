@@ -2087,6 +2087,7 @@
   "productReadLess": "Свернуть",
   "productIfMissing": "Если товара не будет",
   "productNoteHint": "Например: покрепче, не перезрелые",
+  "keyboardDone": "Готово",
   "productMoreIn": "Ещё в «{category}»",
   "@productMoreIn": {
     "placeholders": {
