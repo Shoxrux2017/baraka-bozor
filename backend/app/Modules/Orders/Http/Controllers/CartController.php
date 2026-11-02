@@ -17,6 +17,7 @@ use App\Modules\Orders\Http\Requests\AddCartItemRequest;
 use App\Modules\Orders\Http\Requests\UpdateCartItemRequest;
 use App\Modules\Orders\Http\Resources\CartResource;
 use App\Modules\Settings\CustomerPriceCalculator;
+use App\Modules\Settings\WorkingHours;
 use App\Support\Money\Percentage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -59,7 +60,11 @@ final class CartController extends Controller
         $settings = BusinessSettings::current();
         $view = CartView::of($cart, new CustomerPriceCalculator(Percentage::fromString($settings->markup_percent)));
 
-        return new CartResource($view, CartCharges::of($view, $settings));
+        $hours = $settings->opens_at === null || $settings->closes_at === null
+            ? null
+            : WorkingHours::of($settings->opens_at, $settings->closes_at);
+
+        return new CartResource($view, CartCharges::of($view, $settings), $hours);
     }
 
     private function customer(Request $request): User

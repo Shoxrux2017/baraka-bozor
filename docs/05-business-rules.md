@@ -142,7 +142,7 @@
 
 **BR-CHK-008** — Order creation converts the cart and creates a new empty active cart atomically.
 
-**BR-CHK-009** — An order placed outside working hours is accepted; the preview tells the Customer it will be collected after opening.
+**BR-CHK-009** — An order placed outside working hours is accepted; the preview tells the Customer it will be collected after opening; the home says so while the business is closed (`DL-125`).
 
 # 9. Order States
 

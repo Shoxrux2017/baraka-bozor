@@ -137,7 +137,7 @@ Before shopping starts the Customer cancels directly. After shopping starts and 
 
 A shopped order that is paid (online) or payable at the door (cash) is assigned to one active Courier. The Courier collects the packed order at the handoff point, accepts the assignment, starts, delivers, and records the cash received for a cash order. Until a handoff point exists, the Courier instead sees the Shopper's phone number and they meet at the market (server configuration, topic 1.1 fallback). If delivery fails — nobody answers, the Customer refuses, the address is wrong — the Courier marks it not delivered with the reason; the order returns to the pool and an Operator reassigns it or cancels it.
 
-Orders are collected and delivered as soon as possible inside the working hours in business settings. An order placed outside working hours is accepted and collected after opening; the Customer sees that at checkout. No delivery slots.
+Orders are collected and delivered as soon as possible inside the working hours in business settings. An order placed outside working hours is accepted and collected after opening; the Customer sees that on the home and at checkout (`DL-125`). No delivery slots.
 
 ## 16. Notifications
 

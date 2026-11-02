@@ -28,6 +28,7 @@ final class WorkingHoursAndFeeTest extends TestCase
         $this->assertTrue($hours->isOpenAt($this->tashkent('21:59')));
         $this->assertFalse($hours->isOpenAt($this->tashkent('22:00')));
         $this->assertSame('08:00', $hours->opensAt());
+        $this->assertSame('22:00', $hours->closesAt());
         $this->assertFalse($hours->isAlwaysOpen());
     }
 
