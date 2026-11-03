@@ -2067,6 +2067,7 @@
   "sortShop": "Как в магазине",
   "sortPriceAsc": "Сначала дешевле",
   "sortPriceDesc": "Сначала дороже",
+  "sortSpoken": "Порядок: {sort}",
   "allProductsTitle": "Все товары",
   "recommendedTitle": "Рекомендуем",
   "recommendedEmpty": "Пока нет рекомендованных товаров",

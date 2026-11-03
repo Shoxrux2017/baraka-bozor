@@ -6008,6 +6008,12 @@ abstract class AppLocalizations {
   /// **'Avval qimmatlari'**
   String get sortPriceDesc;
 
+  /// No description provided for @sortSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tartib: {sort}'**
+  String sortSpoken(String sort);
+
   /// No description provided for @allProductsTitle.
   ///
   /// In uz, this message translates to:

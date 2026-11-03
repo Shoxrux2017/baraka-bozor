@@ -3461,6 +3461,11 @@ class AppLocalizationsUz extends AppLocalizations {
   String get sortPriceDesc => 'Avval qimmatlari';
 
   @override
+  String sortSpoken(String sort) {
+    return 'Tartib: $sort';
+  }
+
+  @override
   String get allProductsTitle => 'Barcha mahsulotlar';
 
   @override

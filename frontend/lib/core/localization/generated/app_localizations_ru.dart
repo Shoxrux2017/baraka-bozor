@@ -3497,6 +3497,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get sortPriceDesc => 'Сначала дороже';
 
   @override
+  String sortSpoken(String sort) {
+    return 'Порядок: $sort';
+  }
+
+  @override
   String get allProductsTitle => 'Все товары';
 
   @override

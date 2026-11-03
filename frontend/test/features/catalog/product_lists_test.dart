@@ -17,7 +17,7 @@ import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
 import 'package:baraka_bozor/features/catalog/presentation/kit_product_grid.dart';
 import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
-import 'package:baraka_bozor/features/catalog/presentation/sort_sheet.dart';
+import 'package:baraka_bozor/features/catalog/presentation/sort_menu.dart';
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -183,21 +183,28 @@ void main() {
     expect(find.text('Хлеб'), findsNothing);
   });
 
-  testWidgets('every product follows the shop order and the chip sorts it', (
-    WidgetTester tester,
-  ) async {
-    await open(tester, CatalogPaths.products);
-    expect(find.text('Все товары'), findsOneWidget);
-    expect(shownNames(tester), <String>['Яблоко', 'Помидор', 'Хлеб']);
+  testWidgets('Рекомендуем shows 3 товара · Как в магазине and the menu '
+      're-sorts it', (WidgetTester tester) async {
+    allFeatured();
+    await open(tester, CatalogPaths.recommended);
+    expect(byKey('list-count-row'), findsOneWidget);
     expect(
       find.descendant(
-        of: byKey('sort-chip'),
+        of: byKey('list-count-row'),
+        matching: find.text('3 товара', findRichText: true),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: byKey('list-sort'),
         matching: find.text('Как в магазине'),
       ),
       findsOneWidget,
     );
+    expect(shownNames(tester), <String>['Яблоко', 'Помидор', 'Хлеб']);
 
-    await tester.tap(byKey('sort-chip'));
+    await tester.tap(byKey('list-sort'));
     await tester.pumpAndSettle();
     await tester.tap(byKey('sort-price-asc'));
     await tester.pumpAndSettle();
@@ -205,52 +212,179 @@ void main() {
     expect(shownNames(tester), <String>['Хлеб', 'Помидор', 'Яблоко']);
     expect(
       find.descendant(
-        of: byKey('sort-chip'),
+        of: byKey('list-sort'),
         matching: find.text('Сначала дешевле'),
       ),
       findsOneWidget,
     );
     final ProviderContainer container = ProviderScope.containerOf(
-      tester.element(byKey('sort-chip')),
+      tester.element(byKey('list-sort')),
     );
     expect(container.read(productSortProvider), ProductSort.priceAsc);
   });
 
-  testWidgets('the sheet marks the current choice and returns the tapped one', (
+  testWidgets('Все товары has the count row instead of the chip', (
     WidgetTester tester,
   ) async {
+    await open(tester, CatalogPaths.products);
+    expect(byKey('sort-chip'), findsNothing);
+    expect(byKey('list-count-row'), findsOneWidget);
+    expect(find.text('3 товара', findRichText: true), findsOneWidget);
+    expect(shownNames(tester), <String>['Яблоко', 'Помидор', 'Хлеб']);
+
+    await tester.tap(byKey('list-sort'));
+    await tester.pumpAndSettle();
+    await tester.tap(byKey('sort-price-desc'));
+    await tester.pumpAndSettle();
+    expect(shownNames(tester), <String>['Яблоко', 'Помидор', 'Хлеб']);
+    expect(
+      find.descendant(
+        of: byKey('list-sort'),
+        matching: find.text('Сначала дороже'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  group('the order menu', () {
     ProductSort? result;
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('ru'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Builder(
-          builder: (BuildContext context) => Scaffold(
-            body: TextButton(
-              onPressed: () async =>
-                  result = await showSortSheet(context, ProductSort.priceDesc),
-              child: const Text('open'),
+    Rect? lastButton;
+
+    Future<void> openMenu(
+      WidgetTester tester, {
+      ProductSort current = ProductSort.priceDesc,
+      Size size = const Size(375, 667),
+      Offset at = const Offset(250, 100),
+      FakeViewPadding padding = FakeViewPadding.zero,
+    }) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      tester.view.padding = padding;
+      addTearDown(tester.view.reset);
+      result = null;
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Stack(
+              children: <Widget>[
+                Positioned(
+                  left: at.dx,
+                  top: at.dy,
+                  child: Builder(
+                    builder: (BuildContext context) => SizedBox(
+                      key: const ValueKey<String>('anchor'),
+                      width: 100,
+                      height: 44,
+                      child: TextButton(
+                        onPressed: () async =>
+                            result = await showSortMenu(context, current),
+                        child: const Text('open'),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-      ),
-    );
-    await tester.tap(find.text('open'));
-    await tester.pumpAndSettle();
+      );
+      lastButton = tester.getRect(byKey('anchor'));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    }
 
-    expect(find.text('Сортировка'), findsOneWidget);
-    Finder check(String key) => find.descendant(
-      of: byKey(key),
-      matching: find.byIcon(Icons.check_circle),
-    );
-    expect(check('sort-price-desc'), findsOneWidget);
-    expect(check('sort-shop'), findsNothing);
-    expect(check('sort-price-asc'), findsNothing);
+    testWidgets('the menu opens at its button with a check on the current '
+        'order, without a dim, and a tap outside closes it', (
+      WidgetTester tester,
+    ) async {
+      await openMenu(tester);
 
-    await tester.tap(byKey('sort-shop'));
-    await tester.pumpAndSettle();
-    expect(result, ProductSort.shop);
+      final Rect menu = tester.getRect(byKey('sort-menu'));
+      expect(menu.width, 232);
+      expect(menu.top, lastButton!.bottom + 2);
+      expect(menu.right, lastButton!.right - 6);
+      expect(
+        tester
+            .widgetList<ModalBarrier>(find.byType(ModalBarrier))
+            .where((ModalBarrier b) => b.color != null && b.color!.a > 0),
+        isEmpty,
+        reason: 'no dim',
+      );
+      Finder check(String key) =>
+          find.descendant(of: byKey(key), matching: find.byIcon(Icons.check));
+      expect(check('sort-price-desc'), findsOneWidget);
+      expect(check('sort-shop'), findsNothing);
+      expect(check('sort-price-asc'), findsNothing);
+
+      await tester.tapAt(const Offset(10, 600));
+      await tester.pumpAndSettle();
+      expect(byKey('sort-menu'), findsNothing);
+      expect(result, isNull);
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('sort-shop'));
+      await tester.pumpAndSettle();
+      expect(byKey('sort-menu'), findsNothing);
+      expect(result, ProductSort.shop);
+    });
+
+    testWidgets('menu items read their name, selected or not', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle semantics = tester.ensureSemantics();
+      await openMenu(tester);
+
+      expect(
+        tester.getSemantics(byKey('sort-price-desc')),
+        matchesSemantics(
+          label: 'Сначала дороже',
+          isButton: true,
+          hasTapAction: true,
+          hasSelectedState: true,
+          isSelected: true,
+          isInMutuallyExclusiveGroup: true,
+        ),
+      );
+      expect(
+        tester.getSemantics(byKey('sort-shop')),
+        matchesSemantics(
+          label: 'Как в магазине',
+          isButton: true,
+          hasTapAction: true,
+          hasSelectedState: true,
+          isInMutuallyExclusiveGroup: true,
+        ),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('lying, the menu stays inside the screen', (
+      WidgetTester tester,
+    ) async {
+      await openMenu(
+        tester,
+        size: const Size(812, 375),
+        at: const Offset(660, 300),
+        padding: const FakeViewPadding(left: 47, right: 47),
+      );
+
+      final Rect menu = tester.getRect(byKey('sort-menu'));
+      expect(menu.right, lessThanOrEqualTo(812 - 47 - 8));
+      expect(menu.left, greaterThanOrEqualTo(47 + 8));
+      expect(menu.bottom, lessThanOrEqualTo(375 - 8));
+      expect(menu.top, greaterThanOrEqualTo(8));
+    });
+
+    testWidgets('the open menu meets the tap target guideline', (
+      WidgetTester tester,
+    ) async {
+      await openMenu(tester);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    });
   });
 
   testWidgets('the cart bar appears after a quick add and opens the cart', (
@@ -823,7 +957,7 @@ void main() {
           expect(tester.takeException(), isNull);
           expect(byKey('cart-summary'), findsOneWidget);
           if (path == CatalogPaths.products) {
-            await tester.tap(byKey('sort-chip'));
+            await tester.tap(byKey('list-sort'));
             await tester.pumpAndSettle();
             expect(tester.takeException(), isNull);
             expect(byKey('sort-price-asc'), findsOneWidget);

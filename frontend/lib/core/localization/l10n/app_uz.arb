@@ -2212,6 +2212,14 @@
   "sortShop": "Do'kondagidek",
   "sortPriceAsc": "Avval arzonlari",
   "sortPriceDesc": "Avval qimmatlari",
+  "sortSpoken": "Tartib: {sort}",
+  "@sortSpoken": {
+    "placeholders": {
+      "sort": {
+        "type": "String"
+      }
+    }
+  },
   "allProductsTitle": "Barcha mahsulotlar",
   "recommendedTitle": "Tavsiya etamiz",
   "recommendedEmpty": "Hozircha tavsiya etilgan mahsulot yo'q",

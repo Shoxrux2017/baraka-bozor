@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../cart/presentation/cart_summary_bar.dart';
+import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 import 'kit_product_grid.dart';
+import 'sort_menu.dart';
 
-/// "Рекомендуем": the products the shop recommends, as kit cards. The
-/// header's search arrives with the search screen (kit stage 3).
-class RecommendedScreen extends StatelessWidget {
+/// "Рекомендуем": the products the shop recommends, as kit cards, under a
+/// count row with the order menu (`DL-127`). The header's search arrives with
+/// the search screen (kit stage 3).
+class RecommendedScreen extends ConsumerWidget {
   const RecommendedScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final ProductSort sort = ref.watch(productSortProvider);
+    final ProductListQuery query = ProductListQuery(
+      featuredOnly: true,
+      sort: sort,
+    );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -29,7 +38,20 @@ class RecommendedScreen extends StatelessWidget {
             children: <Widget>[
               Positioned.fill(
                 child: KitProductGrid(
-                  query: const ProductListQuery(featuredOnly: true),
+                  query: query,
+                  header: <Widget>[
+                    SliverToBoxAdapter(
+                      child: ProductListCountRow(
+                        key: const ValueKey<String>('list-count-row'),
+                        total: ref
+                            .watch(productListProvider(query))
+                            .value
+                            ?.total,
+                        sort: sort,
+                        onSort: ref.read(productSortProvider.notifier).set,
+                      ),
+                    ),
+                  ],
                   padding: EdgeInsets.fromLTRB(
                     16,
                     8,

@@ -655,6 +655,18 @@ void main() {
   });
 
   group('the sort button', () {
+    testWidgets('the sort button opens the menu', (WidgetTester tester) async {
+      await openSearch(tester);
+      await typeAndPause(tester, 'pom');
+
+      final Rect button = tester.getRect(byKey('search-sort'));
+      await tester.tap(byKey('search-sort'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('sort-menu'), findsOneWidget);
+      expect(tester.getRect(byKey('sort-menu')).top, button.bottom + 2);
+    });
+
     testWidgets('exposes a tap action to TalkBack', (
       WidgetTester tester,
     ) async {
