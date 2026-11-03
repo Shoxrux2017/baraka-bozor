@@ -31,6 +31,7 @@ final class CustomerCategoryResource extends JsonResource
             'description_ru' => $this->resource->description_ru,
             'sort_order' => $this->resource->sort_order,
             'image_url' => CategoryImages::url($this->resource->image),
+            'product_count' => (int) $this->resource->getAttribute('product_count'),
         ];
     }
 }

@@ -11,6 +11,7 @@ CatalogCategory catalogCategory({
   String nameUz = 'Sabzavotlar',
   String nameRu = 'Овощи',
   String? imageUrl,
+  int productCount = 1,
 }) => CatalogCategory(
   id: id,
   nameUz: nameUz,
@@ -19,6 +20,7 @@ CatalogCategory catalogCategory({
   descriptionRu: null,
   sortOrder: 0,
   imageUrl: imageUrl,
+  productCount: productCount,
 );
 
 CatalogProduct catalogProduct({
