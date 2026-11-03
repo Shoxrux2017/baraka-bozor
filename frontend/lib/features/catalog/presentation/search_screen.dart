@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/routing/app_paths.dart';
+import '../../../core/routing/flight_page.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
@@ -19,8 +20,8 @@ import 'kit_product_grid.dart';
 import 'recommended_row.dart';
 import 'sort_menu.dart';
 
-/// The search on its own screen (`DL-83`, drawings 15 to 17): the field with
-/// the sort button, the Customer's recent queries and the recommended
+/// The search on its own screen (`DL-83`, drawings 15 to 17): the field, the
+/// Customer's recent queries and the recommended
 /// products while the field is empty, and the products it finds with their
 /// count, or the nothing-found state, once a query stands.
 class SearchScreen extends ConsumerStatefulWidget {
@@ -110,21 +111,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
   }
 
-  /// Opens the order menu under the button it was tapped on (`DL-127`).
-  Future<void> _openSort(BuildContext anchor) async {
-    final ProductSort? chosen = await showSortMenu(
-      anchor,
-      ref.read(productSortProvider),
-    );
-    if (chosen != null && mounted) {
-      ref.read(productSortProvider.notifier).set(chosen);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ProductSort sort = ref.watch(productSortProvider);
+    final bool keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -135,26 +126,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             children: <Widget>[
               _topRow(l10n),
               Expanded(
-                child: _query.isEmpty
-                    ? _EmptyField(account: _account, onPick: _pick)
-                    : Stack(
-                        children: <Widget>[
-                          Positioned.fill(
-                            child: _Results(
+                child: Stack(
+                  children: <Widget>[
+                    Positioned.fill(
+                      child: _query.isEmpty
+                          ? _EmptyField(account: _account, onPick: _pick)
+                          : _Results(
                               query: ProductListQuery(
                                 search: _query,
                                 sort: sort,
                               ),
                             ),
-                          ),
-                          const Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            child: CartSummaryBar(),
-                          ),
-                        ],
-                      ),
+                    ),
+                    // The bar and the keyboard take turns (`DL-128`).
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: CartSummaryBar(hidden: keyboardUp),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -187,77 +179,56 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             onPressed: _back,
           ),
           Expanded(
-            child: TextField(
-              key: const ValueKey<String>('search-field'),
-              controller: _field,
-              focusNode: _focus,
-              autofocus: true,
-              textInputAction: TextInputAction.search,
-              inputFormatters: <TextInputFormatter>[
-                LengthLimitingTextInputFormatter(
-                  ProductListQuery.searchMaxLength,
-                ),
-              ],
-              style: const TextStyle(color: KitColors.ink, fontSize: 14),
-              decoration: InputDecoration(
-                hintText: l10n.catalogSearchHint,
-                hintStyle: const TextStyle(
-                  color: KitColors.muted,
-                  fontSize: 14,
-                ),
-                filled: true,
-                fillColor: KitColors.field,
-                constraints: const BoxConstraints(minHeight: 50),
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                prefixIcon: const Icon(
-                  Icons.search,
-                  size: 22,
-                  color: KitColors.muted,
-                ),
-                suffixIcon: _field.text.isEmpty
-                    ? null
-                    : IconButton(
-                        key: const ValueKey<String>('search-clear'),
-                        icon: const Icon(
-                          Icons.close,
-                          size: 20,
-                          color: KitColors.muted,
+            child: FlightTarget(
+              id: 'search-field',
+              child: TextField(
+                key: const ValueKey<String>('search-field'),
+                controller: _field,
+                focusNode: _focus,
+                autofocus: true,
+                textInputAction: TextInputAction.search,
+                inputFormatters: <TextInputFormatter>[
+                  LengthLimitingTextInputFormatter(
+                    ProductListQuery.searchMaxLength,
+                  ),
+                ],
+                style: const TextStyle(color: KitColors.ink, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: l10n.catalogSearchHint,
+                  hintStyle: const TextStyle(
+                    color: KitColors.muted,
+                    fontSize: 14,
+                  ),
+                  filled: true,
+                  fillColor: KitColors.field,
+                  constraints: const BoxConstraints(minHeight: 50),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    size: 22,
+                    color: KitColors.muted,
+                  ),
+                  suffixIcon: _field.text.isEmpty
+                      ? null
+                      : IconButton(
+                          key: const ValueKey<String>('search-clear'),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 20,
+                            color: KitColors.muted,
+                          ),
+                          tooltip: l10n.catalogSearchClear,
+                          onPressed: _clear,
                         ),
-                        tooltip: l10n.catalogSearchClear,
-                        onPressed: _clear,
-                      ),
-                border: plain,
-                enabledBorder: plain,
-                focusedBorder: _focus.hasFocus ? ring : plain,
+                  border: plain,
+                  enabledBorder: plain,
+                  focusedBorder: _focus.hasFocus ? ring : plain,
+                ),
+                onChanged: _onTyped,
+                onSubmitted: _submit,
               ),
-              onChanged: _onTyped,
-              onSubmitted: _submit,
             ),
           ),
-          if (_query.isNotEmpty) ...<Widget>[
-            const SizedBox(width: 10),
-            Builder(
-              builder: (BuildContext anchor) => Semantics(
-                button: true,
-                label: l10n.sortTitle,
-                excludeSemantics: true,
-                onTap: () => _openSort(anchor),
-                child: Material(
-                  color: KitColors.primary,
-                  borderRadius: BorderRadius.circular(14),
-                  child: InkWell(
-                    key: const ValueKey<String>('search-sort'),
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: () => _openSort(anchor),
-                    child: const SizedBox.square(
-                      dimension: 50,
-                      child: Icon(Icons.tune, color: Colors.white),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -280,7 +251,8 @@ class _EmptyField extends ConsumerWidget {
         : ref.watch(recentSearchesProvider(owner)).value ?? const <String>[];
 
     return ListView(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: 16 + CartSummaryBar.reserved(context)),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       children: <Widget>[
         if (owner != null && recent.isNotEmpty) ...<Widget>[
           Padding(
@@ -372,8 +344,8 @@ class _RecentChip extends StatelessWidget {
   }
 }
 
-/// A standing query (drawing 16): the count of what was found, then the
-/// products in the current sort, or the nothing-found state.
+/// A standing query (drawing 16): the count of what was found with the order
+/// button, then the products in the current sort, or the nothing-found state.
 class _Results extends ConsumerWidget {
   const _Results({required this.query});
 
@@ -381,61 +353,38 @@ class _Results extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final int total = ref.watch(productListProvider(query)).value?.total ?? 0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        if (total > 0) _FoundLine(count: total),
-        Expanded(
-          child: KitProductGrid(
-            query: query,
-            padding: EdgeInsets.fromLTRB(
-              16,
-              8,
-              16,
-              16 + CartSummaryBar.reserved(context),
-            ),
-            empty: _NothingFound(query: query.search),
-          ),
-        ),
-      ],
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AsyncValue<ProductListState> list = ref.watch(
+      productListProvider(query),
     );
-  }
-}
+    // Nothing is counted for a search that found nothing or failed.
+    final bool counted = list.value != null
+        ? list.value!.total > 0
+        : !list.hasError;
 
-class _FoundLine extends StatelessWidget {
-  const _FoundLine({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final String text = AppLocalizations.of(context).searchFound(count);
-    final String number = '$count';
-    final int at = text.indexOf(number);
-    const TextStyle muted = TextStyle(fontSize: 13, color: KitColors.muted);
-    return Padding(
-      key: const ValueKey<String>('search-found'),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-      child: at < 0
-          ? Text(text, style: muted)
-          : Text.rich(
-              TextSpan(
-                style: muted,
-                children: <InlineSpan>[
-                  TextSpan(text: text.substring(0, at)),
-                  TextSpan(
-                    text: number,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: KitColors.ink,
-                    ),
-                  ),
-                  TextSpan(text: text.substring(at + number.length)),
-                ],
-              ),
+    return KitProductGrid(
+      query: query,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      header: <Widget>[
+        if (counted)
+          SliverToBoxAdapter(
+            child: ProductListCountRow(
+              key: const ValueKey<String>('search-found'),
+              query: query,
+              sort: query.sort,
+              onSort: ref.read(productSortProvider.notifier).set,
+              countText: l10n.searchFound,
+              keepAcrossSearch: true,
             ),
+          ),
+      ],
+      padding: EdgeInsets.fromLTRB(
+        16,
+        8,
+        16,
+        16 + CartSummaryBar.reserved(context),
+      ),
+      empty: _NothingFound(query: query.search),
     );
   }
 }

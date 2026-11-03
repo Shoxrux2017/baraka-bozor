@@ -434,15 +434,19 @@ void main() {
     await tester.pumpAndSettle();
     // The search screen has no flight to Рекомендуем without the row's tap:
     // a plain push of the route carries no opening.
+    // The search page itself is a flight page now, so its fade stays in the
+    // tree; the pushed route adds none.
+    final Finder fades = find.byKey(
+      const ValueKey<String>('flight-page-fade'),
+      skipOffstage: false,
+    );
+    final int before = tester.widgetList(fades).length;
     final BuildContext context = tester.element(find.byType(Scaffold).last);
     unawaited(GoRouter.of(context).push<void>(CatalogPaths.recommended));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(
-      find.byKey(const ValueKey<String>('flight-page-fade')),
-      findsNothing,
-    );
+    expect(tester.widgetList(fades).length, before);
     expect(find.byKey(const ValueKey<String>('flight-card-p-1')), findsNothing);
     await tester.pumpAndSettle();
     expect(find.byType(RecommendedScreen), findsOneWidget);

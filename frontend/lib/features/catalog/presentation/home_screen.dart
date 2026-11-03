@@ -7,6 +7,7 @@ import '../../../core/accessibility/announce.dart';
 import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/routing/flight_page.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/session/session_state.dart';
 import '../../../core/state/loaded.dart';
@@ -358,8 +359,9 @@ class _SearchHeader extends SliverPersistentHeaderDelegate {
 }
 
 /// The search field of the home: it looks like the field and opens the
-/// search screen when tapped.
-class _SearchEntry extends StatelessWidget {
+/// search screen when tapped. Its copy flies up and stretches into the search
+/// screen's field while the field here waits at opacity 0 (`DL-128`).
+class _SearchEntry extends StatefulWidget {
   const _SearchEntry({
     required this.hint,
     required this.style,
@@ -371,36 +373,106 @@ class _SearchEntry extends StatelessWidget {
   final String spoken;
 
   @override
+  State<_SearchEntry> createState() => _SearchEntryState();
+}
+
+class _SearchEntryState extends State<_SearchEntry> {
+  /// True while the field's copy flies. One notifier for the State's whole
+  /// life, never disposed: the flight page writes it from its own dispose,
+  /// which may come after this one's.
+  final ValueNotifier<bool> _holding = ValueNotifier<bool>(false);
+
+  /// What the field looks like, here and as the flight's copy: the copy's
+  /// hint starts 48 in, where the search screen's own does.
+  static Widget _look(String hint, TextStyle style) => Material(
+    color: KitColors.field,
+    borderRadius: BorderRadius.circular(14),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.search, size: 22, color: KitColors.muted),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              hint,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: style,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  void _open() {
+    final List<FlightItem> items = <FlightItem>[];
+    final RenderObject? box = context.findRenderObject();
+    if (!MediaQuery.disableAnimationsOf(context) &&
+        box is RenderBox &&
+        box.attached &&
+        box.hasSize) {
+      final String hint = widget.hint;
+      final TextStyle style = widget.style;
+      items.add(
+        FlightItem(
+          id: 'search-field',
+          from: box.localToGlobal(Offset.zero) & box.size,
+          fit: FlightFit.stretch,
+          builder: (BuildContext context) => _look(hint, style),
+        ),
+      );
+    }
+    context.push<void>(
+      CatalogPaths.search,
+      extra: FlightOpening(
+        items: items,
+        screen: MediaQuery.sizeOf(context),
+        holding: _holding,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: spoken,
-      excludeSemantics: true,
-      onTap: () => context.push<void>(CatalogPaths.search),
-      child: Material(
-        color: KitColors.field,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          key: const ValueKey<String>('catalog-search'),
+    return ValueListenableBuilder<bool>(
+      valueListenable: _holding,
+      builder: (BuildContext context, bool held, Widget? child) =>
+          Opacity(opacity: held ? 0 : 1, child: child),
+      child: Semantics(
+        button: true,
+        label: widget.spoken,
+        excludeSemantics: true,
+        onTap: _open,
+        child: Material(
+          color: KitColors.field,
           borderRadius: BorderRadius.circular(14),
-          onTap: () => context.push<void>(CatalogPaths.search),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 50),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-              child: Row(
-                children: <Widget>[
-                  const Icon(Icons.search, color: KitColors.muted),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      hint,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: style,
+          child: InkWell(
+            key: const ValueKey<String>('catalog-search'),
+            borderRadius: BorderRadius.circular(14),
+            onTap: _open,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 50),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    const Icon(Icons.search, size: 22, color: KitColors.muted),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        widget.hint,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: widget.style,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

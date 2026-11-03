@@ -22,8 +22,13 @@ import 'cart_paths.dart';
 /// slides it up, an emptied cart slides it down (a fade with reduced motion);
 /// a new total rolls in and a new last line's picture comes in. At large text
 /// an arrow replaces the words and the count and the total may take two lines.
+/// While [hidden] it leaves as an emptied cart's bar does and comes back as a
+/// first line's does, so a screen can clear the way for the keyboard
+/// (`DL-128`).
 class CartSummaryBar extends ConsumerStatefulWidget {
-  const CartSummaryBar({super.key});
+  const CartSummaryBar({this.hidden = false, super.key});
+
+  final bool hidden;
 
   /// The room the bar and its fade take at the foot of a list: the bar's
   /// own height at the current text scale, its paddings, and the bottom
@@ -66,11 +71,19 @@ class _CartSummaryBarState extends ConsumerState<CartSummaryBar>
   void initState() {
     super.initState();
     final Cart? cart = ref.read(currentCartProvider).value;
-    if (cart != null && cart.lines.isNotEmpty) {
+    if (!widget.hidden && cart != null && cart.lines.isNotEmpty) {
       _shown = cart;
       _slide.value = 1;
     }
     ref.listenManual(currentCartProvider, _follow);
+  }
+
+  @override
+  void didUpdateWidget(CartSummaryBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.hidden != oldWidget.hidden) {
+      _run(ref.read(currentCartProvider).value);
+    }
   }
 
   @override
@@ -87,14 +100,31 @@ class _CartSummaryBarState extends ConsumerState<CartSummaryBar>
       _slide.value = 0;
       return;
     }
+    _run(cart);
+  }
+
+  /// Slides the bar in when [cart] holds a line and the bar is not hidden, and
+  /// out otherwise; it keeps the last cart that held lines while it leaves.
+  void _run(Cart? cart) {
     final bool reduced = MediaQuery.disableAnimationsOf(context);
     _slide.duration = Duration(milliseconds: reduced ? 200 : 360);
     _slide.reverseDuration = Duration(milliseconds: reduced ? 200 : 240);
-    if (cart.lines.isNotEmpty) {
-      setState(() => _shown = cart);
-      _slide.forward();
-    } else {
-      _slide.reverse();
+    if (cart != null && cart.lines.isNotEmpty) {
+      if (!widget.hidden) {
+        _shown = cart;
+        _slide.forward();
+        if (mounted) {
+          setState(() {});
+        }
+        return;
+      }
+      if (_shown != null) {
+        _shown = cart;
+      }
+    }
+    _slide.reverse();
+    if (_slide.isDismissed && _shown != null) {
+      setState(() => _shown = null);
     }
   }
 

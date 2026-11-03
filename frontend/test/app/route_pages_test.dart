@@ -155,9 +155,10 @@ void main() {
     expect(sliding, _pageNames);
   });
 
-  for (final String name in <String>[
-    'catalog-recommended',
-    'catalog-all-products',
+  for (final (String name, int ms) in <(String, int)>[
+    ('catalog-recommended', 420),
+    ('catalog-all-products', 420),
+    ('catalog-search', 400),
   ]) {
     testWidgets('$name opens with a flight when it is given an opening', (
       WidgetTester tester,
@@ -182,7 +183,7 @@ void main() {
       expect(flying, isNot(isA<NoTransitionPage<dynamic>>()));
       expect(
         (flying.createRoute(context) as PageRoute<dynamic>).transitionDuration,
-        const Duration(milliseconds: 420),
+        Duration(milliseconds: ms),
       );
       // Any other extra, or none, is the platform's page.
       final Page<dynamic> plain = route.pageBuilder!(

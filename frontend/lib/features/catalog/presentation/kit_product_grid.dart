@@ -91,6 +91,7 @@ class KitProductGrid extends ConsumerStatefulWidget {
     this.spokenOnQuery,
     this.emptyAlignment = Alignment.center,
     this.aisles,
+    this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
     super.key,
   });
 
@@ -122,6 +123,9 @@ class KitProductGrid extends ConsumerStatefulWidget {
 
   /// The aisles of the shop's order; the list is flat without them.
   final ProductAisles? aisles;
+
+  /// Whether a drag over the list puts the keyboard away (`DL-128`).
+  final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
 
   @override
   ConsumerState<KitProductGrid> createState() => _KitProductGridState();
@@ -703,6 +707,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
                     key: const ValueKey<String>('product-grid'),
                     controller: widget.controller ?? _own,
                     physics: const AlwaysScrollableScrollPhysics(),
+                    keyboardDismissBehavior: widget.keyboardDismissBehavior,
                     slivers: slivers,
                   ),
                 ),

@@ -39,6 +39,9 @@ void main() {
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
   final Finder field = byKey('search-field');
 
+  bool focused(WidgetTester tester) =>
+      tester.widget<TextField>(field).focusNode!.hasFocus;
+
   AppLocalizations l10n(WidgetTester tester) =>
       AppLocalizations.of(tester.element(find.byType(Scaffold).first));
 
@@ -295,7 +298,7 @@ void main() {
       await typeAndPause(tester, 'tur');
       expect(find.text('Topildi: 4 ta mahsulot'), findsOneWidget);
       expect(byKey('search-found'), findsOneWidget);
-      expect(byKey('search-sort'), findsOneWidget);
+      expect(byKey('list-sort'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await openSearch(tester, device: const Locale('ru'));
@@ -326,7 +329,7 @@ void main() {
         reason: 'the shop order before a sort is chosen',
       );
 
-      await tester.tap(byKey('search-sort'));
+      await tester.tap(byKey('list-sort'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l10n(tester).sortPriceAsc));
       await tester.pumpAndSettle();
@@ -350,7 +353,7 @@ void main() {
     ) async {
       await openSearch(tester);
       await typeAndPause(tester, 'o');
-      await tester.tap(byKey('search-sort'));
+      await tester.tap(byKey('list-sort'));
       await tester.pumpAndSettle();
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
@@ -600,7 +603,7 @@ void main() {
 
       await typeAndPause(tester, 'o');
       expect(tester.takeException(), isNull);
-      for (final String key in <String>['search-back', 'search-sort']) {
+      for (final String key in <String>['search-back', 'list-sort']) {
         final Rect rect = tester.getRect(byKey(key));
         expect(rect.left, greaterThanOrEqualTo(0), reason: key);
         expect(rect.right, lessThanOrEqualTo(320), reason: key);
@@ -654,17 +657,77 @@ void main() {
     });
   });
 
-  group('the sort button', () {
-    testWidgets('the sort button opens the menu', (WidgetTester tester) async {
+  group('the order button', () {
+    testWidgets('the field stays full width with a query; Найдено: 4 товара · '
+        'Как в магазине sits above the cards', (WidgetTester tester) async {
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 1; i <= 4; i++)
+          catalogProduct(id: 't-$i', nameUz: 'Tur $i', nameRu: 'Вид $i'),
+      ];
+      await openSearch(tester, device: const Locale('ru'));
+      final Rect empty = tester.getRect(field);
+      await typeAndPause(tester, 'вид');
+
+      expect(byKey('search-sort'), findsNothing);
+      expect(tester.getRect(field), empty, reason: 'the field does not move');
+      expect(tester.getRect(field).right, 800 - 16);
+      expect(byKey('search-found'), findsOneWidget);
+      expect(find.text('Найдено: 4 товара'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('list-sort'),
+          matching: find.text('Как в магазине'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.getRect(byKey('search-found')).bottom,
+        lessThanOrEqualTo(tester.getRect(find.text('Вид 1')).top),
+        reason: 'the row is above the cards',
+      );
+      expect(
+        tester.getRect(byKey('list-sort')).top,
+        tester.getRect(byKey('search-found')).top,
+        reason: 'the order button is in the row',
+      );
+    });
+
+    testWidgets('the order button opens the menu', (WidgetTester tester) async {
       await openSearch(tester);
       await typeAndPause(tester, 'pom');
 
-      final Rect button = tester.getRect(byKey('search-sort'));
-      await tester.tap(byKey('search-sort'));
+      final Rect button = tester.getRect(byKey('list-sort'));
+      await tester.tap(byKey('list-sort'));
       await tester.pumpAndSettle();
 
       expect(byKey('sort-menu'), findsOneWidget);
       expect(tester.getRect(byKey('sort-menu')).top, button.bottom + 2);
+    });
+
+    testWidgets('the count stays while another search loads and goes when '
+        'it fails', (WidgetTester tester) async {
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 1; i <= 4; i++)
+          catalogProduct(id: 't-$i', nameUz: 'Tur $i', nameRu: 'Вид $i'),
+      ];
+      await openSearch(tester, device: const Locale('ru'));
+      await typeAndPause(tester, 'вид');
+      expect(find.text('Найдено: 4 товара'), findsOneWidget);
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['вид2'] = slow;
+      await tester.enterText(field, 'вид2');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      expect(byKey('search-found'), findsOneWidget);
+      expect(find.text('Найдено: 4 товара'), findsOneWidget);
+
+      slow.complete();
+      await tester.pumpAndSettle();
+      catalog.nextFailure = const NetworkFailure();
+      await typeAndPause(tester, 'вид3');
+      expect(byKey('stale-retry'), findsOneWidget);
+      expect(find.text('Найдено: 4 товара'), findsNothing);
     });
 
     testWidgets('exposes a tap action to TalkBack', (
@@ -674,16 +737,169 @@ void main() {
       await openSearch(tester);
       await typeAndPause(tester, 'pom');
 
-      expect(
-        tester.getSemantics(byKey('search-sort')),
-        matchesSemantics(
-          label: l10n(tester).sortTitle,
-          isButton: true,
-          hasTapAction: true,
-          hasEnabledState: false,
-        ),
-      );
+      final SemanticsNode node = tester.getSemantics(byKey('list-sort'));
+      expect(node.label, contains(l10n(tester).sortShop));
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
       handle.dispose();
+    });
+  });
+
+  group('the keyboard and the cart bar', () {
+    void keyboardUp(WidgetTester tester) {
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+    }
+
+    testWidgets('scrolling the results hides the keyboard', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 1; i <= 30; i++)
+          catalogProduct(id: 't-$i', nameUz: 'Tur $i', nameRu: 'Вид $i'),
+      ];
+      await openSearch(tester);
+      await typeAndPause(tester, 'tur');
+      await tester.showKeyboard(field);
+      expect(focused(tester), isTrue);
+
+      await tester.drag(byKey('product-grid'), const Offset(0, -200));
+      await tester.pumpAndSettle();
+
+      expect(focused(tester), isFalse);
+      expect(tester.testTextInput.isVisible, isFalse);
+    });
+
+    testWidgets('scrolling the landing hides the keyboard', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(375, 420);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      remembered('c', <String>['olma', 'pomidor', 'banan']);
+      await openSearch(tester);
+      expect(focused(tester), isTrue);
+
+      await tester.drag(find.byType(ListView).first, const Offset(0, -150));
+      await tester.pumpAndSettle();
+
+      expect(focused(tester), isFalse);
+    });
+
+    testWidgets('no cart bar while the keyboard is up; it comes back when '
+        'it goes down', (WidgetTester tester) async {
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[cartLineJson(total: 18400)]),
+      );
+      await openSearch(tester);
+      await typeAndPause(tester, 'pom');
+      expect(byKey('cart-summary'), findsOneWidget);
+
+      keyboardUp(tester);
+      await tester.pumpAndSettle();
+      expect(byKey('cart-summary'), findsNothing);
+      expect(find.text('Pomidor'), findsOneWidget);
+
+      tester.view.resetViewInsets();
+      await tester.pumpAndSettle();
+      expect(byKey('cart-summary'), findsOneWidget);
+    });
+
+    testWidgets('the landing shows the cart bar', (WidgetTester tester) async {
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[cartLineJson(total: 18400)]),
+      );
+      await openSearch(tester);
+      expect(byKey('recent-clear'), findsNothing);
+      expect(byKey('cart-summary'), findsOneWidget);
+
+      keyboardUp(tester);
+      await tester.pumpAndSettle();
+      expect(byKey('cart-summary'), findsNothing);
+    });
+  });
+
+  group('the field flies', () {
+    testWidgets('the home field flies up and stretches into the search '
+        'field', (WidgetTester tester) async {
+      await openHome(tester, device: const Locale('ru'));
+      final Rect home = tester.getRect(byKey('catalog-search'));
+
+      await tester.tap(byKey('catalog-search'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 190));
+
+      final Rect target = tester.getRect(field);
+      final Rect copy = tester.getRect(
+        find.byKey(const ValueKey<String>('flight-search-field')),
+      );
+      expect(copy.width, inExclusiveRange(target.width, home.width));
+      expect(copy.left, inExclusiveRange(home.left, target.left));
+      expect(
+        tester
+            .widget<Opacity>(
+              find
+                  .ancestor(
+                    of: byKey('catalog-search'),
+                    matching: find.byType(Opacity),
+                  )
+                  .first,
+            )
+            .opacity,
+        0,
+        reason: 'the home field is hidden while its copy flies',
+      );
+      expect(focused(tester), isTrue);
+
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('flight-search-field')),
+        findsNothing,
+      );
+      expect(field.hitTestable(), findsOneWidget);
+
+      await tester.tap(byKey('search-back'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CatalogHomeScreen), findsOneWidget);
+      expect(
+        tester
+            .widget<Opacity>(
+              find
+                  .ancestor(
+                    of: byKey('catalog-search'),
+                    matching: find.byType(Opacity),
+                  )
+                  .first,
+            )
+            .opacity,
+        1,
+        reason: 'nothing stays hidden',
+      );
+    });
+
+    testWidgets('with reduced motion search fades in', (
+      WidgetTester tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await openHome(tester, device: const Locale('ru'));
+      await tester.tap(byKey('catalog-search'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(SearchScreen), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('flight-search-field')),
+        findsNothing,
+      );
+      final double opacity = tester
+          .widget<FadeTransition>(byKey('flight-page-fade'))
+          .opacity
+          .value;
+      expect(opacity, inExclusiveRange(0, 1));
+      await tester.pumpAndSettle();
     });
   });
 }
