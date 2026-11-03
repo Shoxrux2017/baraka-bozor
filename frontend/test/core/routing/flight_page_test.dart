@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -288,6 +289,68 @@ void main() {
     expect(_pageOpacity(tester), 1);
     expect(rig.holding.value, isFalse);
   }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+  testWidgets(
+    'an Android predictive back let go turns back from where the pieces are',
+    (WidgetTester tester) async {
+      final _Rig rig = await _pumpApp(tester);
+      await _open(tester, rig);
+      await tester.pumpAndSettle();
+
+      Future<void> send(String method, [Map<String, Object?>? arguments]) {
+        return tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+          'flutter/backgesture',
+          const StandardMethodCodec().encodeMethodCall(
+            MethodCall(method, arguments),
+          ),
+          (ByteData? _) {},
+        );
+      }
+
+      await send('startBackGesture', <String, Object?>{
+        'touchOffset': <double>[5, 300],
+        'progress': 0.0,
+        'swipeEdge': 0,
+      });
+      await tester.pump();
+      await send('updateBackGestureProgress', <String, Object?>{
+        'x': 100.0,
+        'y': 300.0,
+        'progress': 0.6,
+        'swipeEdge': 0,
+      });
+      await tester.pump();
+      final double beforeCommit = _pageOpacity(tester);
+      expect(beforeCommit, closeTo(0.4, 0.02));
+
+      await send('commitBackGesture');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 5));
+      double last = _pageOpacity(tester);
+      expect(last, lessThanOrEqualTo(beforeCommit + 0.001));
+      Rect copy = _copyRect(tester);
+      expect(copy.left, greaterThan(_from.left));
+      expect(copy.left, lessThan(place.left));
+      for (int i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+        if (find.byKey(_fade).evaluate().isEmpty) {
+          break;
+        }
+        final double now = _pageOpacity(tester);
+        expect(now, lessThanOrEqualTo(last + 0.001));
+        last = now;
+        if (find.byKey(_copy).evaluate().isNotEmpty) {
+          copy = _copyRect(tester);
+          expect(copy.left, lessThanOrEqualTo(place.left + 0.5));
+          expect(copy.left, greaterThanOrEqualTo(_from.left - 0.5));
+        }
+      }
+      await tester.pumpAndSettle();
+      expect(find.byKey(_target), findsNothing);
+      expect(rig.holding.value, isFalse);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
 
   testWidgets('a back-swipe past half closes the page', (
     WidgetTester tester,

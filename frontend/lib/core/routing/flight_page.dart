@@ -219,6 +219,25 @@ class _FlightRoute extends PageRoute<void> {
     vsync: navigator!,
   );
 
+  /// A committed back gesture pops the route and lets the scene turn back from
+  /// where the pieces are. The framework would jump the controller to its end
+  /// first and replay the way back linearly; the gesture ends before the pop,
+  /// so the scene sees an ordinary reverse.
+  @override
+  void handleCommitBackGesture() {
+    if (!isCurrent) {
+      super.handleCommitBackGesture();
+      return;
+    }
+    navigator?.didStopUserGesture();
+    navigator?.pop();
+  }
+
+  /// Keeps the scene alive when a platform builder wraps it differently (the
+  /// Android predictive back does, from the start of a gesture to its end).
+  final GlobalKey<State<_FlightScene>> _sceneKey =
+      GlobalKey<State<_FlightScene>>();
+
   /// The route's own run, 0 to 1. [animation] is swapped for a finished one
   /// while the page is first built off stage, so the scene reads this instead.
   Animation<double> get run => controller!.view;
@@ -251,6 +270,7 @@ class _FlightRoute extends PageRoute<void> {
     Widget child,
   ) {
     final Widget scene = _FlightScene(
+      key: _sceneKey,
       route: this,
       opening: _page.opening,
       flight: _page.flight,
@@ -276,6 +296,7 @@ class _FlightScene extends StatefulWidget {
     required this.flight,
     required this.flightBack,
     required this.child,
+    super.key,
   });
 
   final _FlightRoute route;
@@ -350,7 +371,11 @@ class _FlightSceneState extends State<_FlightScene>
     if (holding != null &&
         holding.value &&
         _routeAnimation.status != AnimationStatus.dismissed) {
-      holding.value = false;
+      // The tree is locked while a State is disposed; the notifier outlives
+      // this page, so it is written once the frame is done.
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        holding.value = false;
+      });
     }
     _fly.dispose();
     _fade.dispose();

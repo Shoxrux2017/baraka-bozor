@@ -370,6 +370,59 @@ void main() {
       );
     });
 
+    testWidgets(
+      'the count of «Все товары» is not shown above the skeletons of a first '
+      'search',
+      (WidgetTester tester) async {
+        await openHome(tester);
+        final GoRouter router = GoRouter.of(screenContext(tester));
+        unawaited(router.push(CatalogPaths.products));
+        await tester.pumpAndSettle();
+        expect(find.text('3 ta mahsulot'), findsOneWidget);
+        router.pop();
+        await tester.pumpAndSettle();
+
+        final Completer<void> slow = Completer<void>();
+        catalog.gates['pom'] = slow;
+        await tester.tap(byKey('catalog-search'));
+        await tester.pumpAndSettle();
+        await tester.enterText(field, 'pom');
+        await tester.pump(SearchScreen.searchPause);
+        await tester.pump();
+
+        expect(byKey('product-skeletons'), findsOneWidget);
+        expect(find.textContaining('ta mahsulot'), findsNothing);
+
+        slow.complete();
+        await tester.pumpAndSettle();
+        expect(find.text('Topildi: 1 ta mahsulot'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the count of a search is not shown above the skeletons of «Все товары»',
+      (WidgetTester tester) async {
+        await openSearch(tester);
+        await typeAndPause(tester, 'pom');
+        expect(find.text('Topildi: 1 ta mahsulot'), findsOneWidget);
+        final GoRouter router = GoRouter.of(screenContext(tester));
+        router.pop();
+        await tester.pumpAndSettle();
+
+        final Completer<void> slow = Completer<void>();
+        catalog.gates[''] = slow;
+        unawaited(router.push(CatalogPaths.products));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.textContaining('ta mahsulot'), findsNothing);
+
+        slow.complete();
+        await tester.pumpAndSettle();
+        expect(find.text('3 ta mahsulot'), findsOneWidget);
+      },
+    );
+
     testWidgets('a failed page shows the retry, and nothing is counted', (
       WidgetTester tester,
     ) async {

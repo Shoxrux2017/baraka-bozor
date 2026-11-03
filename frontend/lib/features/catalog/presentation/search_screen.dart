@@ -45,6 +45,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Timer? _pause;
   String _query = '';
 
+  /// The count of the last found list of this visit; a search never shares it
+  /// with «Все товары» or an earlier visit.
+  final ListTotalMemo _found = ListTotalMemo();
+
   /// The account the screen opened for, and its recent queries, captured
   /// while mounted so `dispose` never needs a `ref`.
   late final String? _account;
@@ -249,6 +253,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                 sort: sort,
                               ),
                               sections: sections,
+                              found: _found,
                             ),
                     ),
                     // The bar and the keyboard take turns (`DL-128`).
@@ -851,10 +856,15 @@ class _SectionRow extends StatelessWidget {
 /// A standing query (drawing 16): the count of what was found with the order
 /// button, then the products in the current sort, or the nothing-found state.
 class _Results extends ConsumerWidget {
-  const _Results({required this.query, required this.sections});
+  const _Results({
+    required this.query,
+    required this.sections,
+    required this.found,
+  });
 
   final ProductListQuery query;
   final Widget sections;
+  final ListTotalMemo found;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -882,6 +892,7 @@ class _Results extends ConsumerWidget {
               onSort: ref.read(productSortProvider.notifier).set,
               countText: l10n.searchFound,
               keepAcrossSearch: true,
+              memo: found,
             ),
           ),
       ],

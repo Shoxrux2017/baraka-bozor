@@ -320,6 +320,7 @@ class ProductListCountRow extends ConsumerWidget {
     required this.onSort,
     this.countText,
     this.keepAcrossSearch = false,
+    this.memo,
     super.key,
   });
 
@@ -328,6 +329,11 @@ class ProductListCountRow extends ConsumerWidget {
   final ValueChanged<ProductSort> onSort;
   final String Function(int count)? countText;
   final bool keepAcrossSearch;
+
+  /// Where the last total is kept, when the caller owns it: a search keeps
+  /// its count between its own queries only, never one it shares with a list
+  /// of the same filter.
+  final ListTotalMemo? memo;
 
   Future<void> _open(BuildContext anchor) async {
     final ProductSort? chosen = await showSortMenu(anchor, sort);
@@ -339,15 +345,17 @@ class ProductListCountRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final ListTotalMemo memo = ref.read(
-      listTotalMemoProvider(
-        ProductListQuery(
-          categoryId: query.categoryId,
-          search: keepAcrossSearch ? '' : query.search,
-          featuredOnly: query.featuredOnly,
-        ),
-      ),
-    );
+    final ListTotalMemo memo =
+        this.memo ??
+        ref.read(
+          listTotalMemoProvider(
+            ProductListQuery(
+              categoryId: query.categoryId,
+              search: keepAcrossSearch ? '' : query.search,
+              featuredOnly: query.featuredOnly,
+            ),
+          ),
+        );
     final AsyncValue<ProductListState> list = ref.watch(
       productListProvider(query),
     );
