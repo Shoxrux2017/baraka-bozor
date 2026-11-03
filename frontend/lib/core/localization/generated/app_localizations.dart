@@ -7484,6 +7484,18 @@ abstract class AppLocalizations {
   /// **'Barcha tavsiyalar'**
   String get recommendedAll;
 
+  /// No description provided for @homeSeeAllCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barchasi {count}'**
+  String homeSeeAllCount(int count);
+
+  /// No description provided for @recommendedAllSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha {count} ta tavsiya etilgan mahsulot'**
+  String recommendedAllSpoken(int count);
+
   /// No description provided for @cardSpoken.
   ///
   /// In uz, this message translates to:

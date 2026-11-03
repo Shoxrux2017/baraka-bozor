@@ -4475,6 +4475,23 @@ class AppLocalizationsRu extends AppLocalizations {
   String get recommendedAll => 'Все рекомендуемые';
 
   @override
+  String homeSeeAllCount(int count) {
+    return 'Все $count';
+  }
+
+  @override
+  String recommendedAllSpoken(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Все $count рекомендуемых товаров',
+      few: 'Все $count рекомендуемых товара',
+      one: 'Все $count рекомендуемый товар',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String cardSpoken(String name, String price, String unit) {
     String _temp0 = intl.Intl.selectLogic(unit, {
       'kg': 'килограмм',

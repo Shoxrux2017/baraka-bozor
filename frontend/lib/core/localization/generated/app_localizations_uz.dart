@@ -4423,6 +4423,16 @@ class AppLocalizationsUz extends AppLocalizations {
   String get recommendedAll => 'Barcha tavsiyalar';
 
   @override
+  String homeSeeAllCount(int count) {
+    return 'Barchasi $count';
+  }
+
+  @override
+  String recommendedAllSpoken(int count) {
+    return 'Barcha $count ta tavsiya etilgan mahsulot';
+  }
+
+  @override
   String cardSpoken(String name, String price, String unit) {
     String _temp0 = intl.Intl.selectLogic(unit, {
       'kg': 'kilogramm',

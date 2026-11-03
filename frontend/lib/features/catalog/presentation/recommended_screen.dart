@@ -27,7 +27,11 @@ class RecommendedScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: kitAppBar(title: l10n.recommendedTitle, search: true),
+      appBar: kitAppBar(
+        title: l10n.recommendedTitle,
+        search: true,
+        titleFlight: true,
+      ),
       // The mode stays visible while two sessions exist (DL-75).
       // Side insets (a camera at the side, lying) are kept clear (DL-127).
       body: SafeArea(

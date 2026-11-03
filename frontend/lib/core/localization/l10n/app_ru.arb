@@ -2622,6 +2622,22 @@
   "catalogSearchSpoken": "Поиск товаров",
   "homeCategoriesAll": "Все категории",
   "recommendedAll": "Все рекомендуемые",
+  "homeSeeAllCount": "Все {count}",
+  "@homeSeeAllCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recommendedAllSpoken": "{count, plural, one{Все {count} рекомендуемый товар} few{Все {count} рекомендуемых товара} other{Все {count} рекомендуемых товаров}}",
+  "@recommendedAllSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cardSpoken": "{name}, примерно {price} за {unit, select, kg{килограмм} gram{грамм} piece{штуку} liter{литр} package{упаковку} box{коробку} bundle{пучок} meter{метр} other{единицу}}",
   "cardInCartSpoken": "{card}. В корзине {quantity}",
   "cardAddSpoken": "Добавить в корзину: {name}",

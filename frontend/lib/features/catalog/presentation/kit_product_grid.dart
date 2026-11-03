@@ -9,6 +9,7 @@ import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/layout/text_width.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/routing/flight_page.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/fade_in_sliver.dart';
 import '../../../core/widgets/list_scroll_indicator.dart';
@@ -297,11 +298,14 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
         Widget cardsOf(List<CatalogProduct> items, {Widget? end}) =>
             cardRows(items.length, (int index) {
               final String id = items[index].id;
-              final Widget card = KitProductCard(
-                key: ValueKey<String>(id),
-                product: items[index],
-                size: widget.size,
-                imageHeight: widget.imageHeight,
+              final Widget card = FlightTarget(
+                id: 'card-$id',
+                child: KitProductCard(
+                  key: ValueKey<String>(id),
+                  product: items[index],
+                  size: widget.size,
+                  imageHeight: widget.imageHeight,
+                ),
               );
               return _paged.contains(id)
                   ? _PageFade(

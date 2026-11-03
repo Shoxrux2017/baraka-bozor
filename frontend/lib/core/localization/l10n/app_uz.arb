@@ -3008,6 +3008,22 @@
   "catalogSearchSpoken": "Mahsulotlarni qidirish",
   "homeCategoriesAll": "Barcha kategoriyalar",
   "recommendedAll": "Barcha tavsiyalar",
+  "homeSeeAllCount": "Barchasi {count}",
+  "@homeSeeAllCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recommendedAllSpoken": "Barcha {count} ta tavsiya etilgan mahsulot",
+  "@recommendedAllSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cardSpoken": "{name}, taxminan {price}, 1 {unit, select, kg{kilogramm} gram{gramm} piece{dona} liter{litr} package{qadoq} box{quti} bundle{bog'} meter{metr} other{birlik}} uchun",
   "@cardSpoken": {
     "placeholders": {
