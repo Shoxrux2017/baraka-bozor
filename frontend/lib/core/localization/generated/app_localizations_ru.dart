@@ -1122,6 +1122,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get catalogLoadMore => 'Загрузить ещё';
 
   @override
+  String get catalogMoreOffline =>
+      'Нет связи — следующие товары не загрузились';
+
+  @override
+  String get catalogMoreFailed => 'Следующие товары не загрузились';
+
+  @override
   String get homeNavHome => 'Главная';
 
   @override

@@ -248,7 +248,7 @@ void main() {
       300,
       scrollable: productScrollable,
     );
-    expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+    expect(find.text(l10n(tester).catalogMoreOffline), findsOneWidget);
     expect(find.text('Mahsulot 1'), findsNothing, reason: 'scrolled past');
 
     await tester.ensureVisible(byKey('load-more'));

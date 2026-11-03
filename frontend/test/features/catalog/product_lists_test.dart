@@ -14,6 +14,8 @@ import 'package:baraka_bozor/features/catalog/application/catalog_controllers.da
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_products_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
+import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
+import 'package:baraka_bozor/features/catalog/presentation/kit_product_grid.dart';
 import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/sort_sheet.dart';
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
@@ -319,26 +321,209 @@ void main() {
     expect(byKey('stale-line'), findsNothing);
   });
 
-  testWidgets('a failed next page keeps the loaded ones and offers a retry', (
-    WidgetTester tester,
-  ) async {
-    catalog.pageSize = 30;
-    catalog.productRows = <CatalogProduct>[
-      for (int i = 0; i < 60; i++)
-        catalogProduct(id: 'q-$i', nameRu: 'Товар $i', nameUz: 'Mahsulot $i'),
-    ];
-    await open(tester, CatalogPaths.products);
-    expect(find.text('Товар 0'), findsOneWidget);
-    catalog.nextFailure = const UnexpectedFailure();
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -9000));
-    await tester.pumpAndSettle();
-    expect(byKey('load-more'), findsOneWidget);
-    await tester.tap(byKey('load-more'));
-    await tester.pumpAndSettle();
-    expect(byKey('load-more'), findsNothing);
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -9000));
-    await tester.pumpAndSettle();
-    expect(find.text('Товар 59'), findsOneWidget);
+  group('the end of the list', () {
+    setUp(() {
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 0; i < 60; i++)
+          catalogProduct(id: 'q-$i', nameRu: 'Товар $i', nameUz: 'Mahsulot $i'),
+      ];
+    });
+
+    ScrollPosition positionOf(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: byKey('product-grid'),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position;
+
+    double rowOf() =>
+        kitCardExtent(
+          TextScaler.noScaling,
+          size: KitCardSize.regular,
+          imageHeight: 150,
+        ) +
+        12;
+
+    Future<void> openNarrow(WidgetTester tester, {double height = 812}) async {
+      tester.view.physicalSize = Size(375, height);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await open(tester, CatalogPaths.products);
+    }
+
+    /// Scrolls so that [after] pixels of content stay below the screen.
+    Future<void> scrollToExtentAfter(WidgetTester tester, double after) async {
+      final ScrollPosition position = positionOf(tester);
+      position.jumpTo(position.maxScrollExtent - after);
+      await tester.pump();
+    }
+
+    testWidgets('the next page is asked two rows before the end', (
+      WidgetTester tester,
+    ) async {
+      catalog.pageSize = 20;
+      await openNarrow(tester);
+      expect(catalog.requests, <String>['|null|1']);
+
+      await scrollToExtentAfter(tester, 3 * rowOf() + 5);
+      expect(catalog.requests, <String>['|null|1']);
+
+      await scrollToExtentAfter(tester, 3 * rowOf() - 15);
+      expect(catalog.requests, contains('|null|2'));
+      final Finder placeholders = byKey('product-placeholders');
+      if (placeholders.evaluate().isNotEmpty) {
+        expect(
+          tester.getTopLeft(placeholders).dy,
+          greaterThanOrEqualTo(tester.view.physicalSize.height),
+        );
+      }
+    });
+
+    testWidgets(
+      'while the next page loads the placeholders stand at the end; then the '
+      'new cards fade in',
+      (WidgetTester tester) async {
+        catalog.pageSize = 20;
+        await openNarrow(tester);
+        catalog.gates[''] = Completer<void>();
+        await scrollToExtentAfter(tester, rowOf());
+        final ScrollPosition position = positionOf(tester);
+        position.jumpTo(position.maxScrollExtent);
+        await tester.pump();
+
+        expect(byKey('product-placeholders'), findsOneWidget);
+        final List<SkeletonBar> bars = tester
+            .widgetList<SkeletonBar>(
+              find.descendant(
+                of: byKey('product-placeholders'),
+                matching: find.byType(SkeletonBar),
+              ),
+            )
+            .toList();
+        expect(bars, hasLength(8));
+        expect(bars.every((SkeletonBar b) => b.pulsing), isTrue);
+
+        catalog.gates['']!.complete();
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        final Finder fade = find.descendant(
+          of: byKey('card-fade-q-20'),
+          matching: find.byType(FadeTransition),
+        );
+        expect(byKey('product-card-q-20'), findsOneWidget);
+        expect(
+          tester.widget<FadeTransition>(fade.first).opacity.value,
+          lessThan(1),
+        );
+        await tester.pump(const Duration(milliseconds: 160));
+        expect(tester.widget<FadeTransition>(fade.first).opacity.value, 1);
+      },
+    );
+
+    testWidgets('a short first page asks for the next at once', (
+      WidgetTester tester,
+    ) async {
+      catalog.pageSize = 4;
+      catalog.productRows = catalog.productRows.take(10).toList();
+      await openNarrow(tester, height: 800);
+      expect(catalog.requests, contains('|null|2'));
+    });
+
+    testWidgets(
+      'a failed next page keeps the cards and offers Повторить in place of '
+      'the placeholders',
+      (WidgetTester tester) async {
+        catalog.pageSize = 30;
+        await openNarrow(tester);
+        expect(find.text('Товар 0'), findsOneWidget);
+        catalog.nextFailure = const UnexpectedFailure();
+        final ScrollPosition position = positionOf(tester);
+        position.jumpTo(position.maxScrollExtent);
+        await tester.pumpAndSettle();
+
+        expect(byKey('product-page-failure'), findsOneWidget);
+        expect(byKey('product-placeholders'), findsNothing);
+        expect(find.text('Следующие товары не загрузились'), findsOneWidget);
+        expect(find.text('Товар 29'), findsOneWidget);
+        final Size retry = tester.getSize(byKey('load-more'));
+        expect(retry.height, greaterThanOrEqualTo(44));
+        expect(retry.width, greaterThanOrEqualTo(44));
+        expect(
+          tester.getSize(byKey('product-page-failure')).height,
+          greaterThanOrEqualTo(56),
+        );
+        expect(
+          find.descendant(
+            of: byKey('load-more'),
+            matching: find.text('Повторить'),
+          ),
+          findsOneWidget,
+        );
+
+        // Scrolling about asks for nothing until «Повторить».
+        position.jumpTo(position.maxScrollExtent - 600);
+        await tester.pump();
+        position.jumpTo(position.maxScrollExtent);
+        await tester.pumpAndSettle();
+        expect(catalog.requests, <String>['|null|1', '|null|2']);
+
+        await tester.tap(byKey('load-more'));
+        await tester.pumpAndSettle();
+        expect(byKey('product-page-failure'), findsNothing);
+        expect(catalog.requests, <String>['|null|1', '|null|2', '|null|2']);
+        position.jumpTo(position.maxScrollExtent);
+        await tester.pumpAndSettle();
+        expect(find.text('Товар 59'), findsOneWidget);
+      },
+    );
+
+    testWidgets('offline, the failed page says there is no connection', (
+      WidgetTester tester,
+    ) async {
+      catalog.pageSize = 30;
+      await openNarrow(tester);
+      catalog.nextFailure = const NetworkFailure();
+      final ScrollPosition position = positionOf(tester);
+      position.jumpTo(position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Нет связи — следующие товары не загрузились'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets("the scroll indicator's length follows the total", (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 0; i < 40; i++)
+          catalogProduct(id: 'q-$i', nameRu: 'Товар $i', nameUz: 'Mahsulot $i'),
+      ];
+      catalog.pageSize = 20;
+      await openNarrow(tester);
+      final ScrollPosition position = positionOf(tester);
+      position.jumpTo(50);
+      await tester.pump();
+
+      final double row = rowOf();
+      final double full =
+          position.maxScrollExtent +
+          position.viewportDimension +
+          (20 - 10) * row -
+          row;
+      final double bottom = tester
+          .widget<KitProductGrid>(find.byType(KitProductGrid))
+          .padding
+          .bottom;
+      final double track = position.viewportDimension - 8 - bottom;
+      expect(
+        tester.getSize(byKey('scroll-indicator')).height,
+        closeTo(track * position.viewportDimension / full, 1),
+      );
+    });
   });
 
   for (final String path in <String>[

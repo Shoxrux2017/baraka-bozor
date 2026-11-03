@@ -2078,6 +2078,18 @@ abstract class AppLocalizations {
   /// **'Yana yuklash'**
   String get catalogLoadMore;
 
+  /// No description provided for @catalogMoreOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q — keyingi mahsulotlar yuklanmadi'**
+  String get catalogMoreOffline;
+
+  /// No description provided for @catalogMoreFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Keyingi mahsulotlar yuklanmadi'**
+  String get catalogMoreFailed;
+
   /// No description provided for @homeNavHome.
   ///
   /// In uz, this message translates to:

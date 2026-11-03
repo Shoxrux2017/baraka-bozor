@@ -1106,6 +1106,13 @@ class AppLocalizationsUz extends AppLocalizations {
   String get catalogLoadMore => 'Yana yuklash';
 
   @override
+  String get catalogMoreOffline =>
+      'Aloqa yo\'q — keyingi mahsulotlar yuklanmadi';
+
+  @override
+  String get catalogMoreFailed => 'Keyingi mahsulotlar yuklanmadi';
+
+  @override
   String get homeNavHome => 'Bosh sahifa';
 
   @override
