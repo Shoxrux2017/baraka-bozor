@@ -32,6 +32,7 @@ class ListScrollIndicator extends StatefulWidget {
 
 class _ListScrollIndicatorState extends State<ListScrollIndicator>
     with SingleTickerProviderStateMixin {
+  static const double _leastLength = 32;
   static const Duration _total = Duration(milliseconds: 1200);
 
   /// Time since the last scroll, 0 to 1 over [_total]; the fade is its last
@@ -77,9 +78,11 @@ class _ListScrollIndicatorState extends State<ListScrollIndicator>
         widget.fullExtent(metrics),
         metrics.maxScrollExtent + viewport,
       );
-      if (full > viewport) {
-        final double track = viewport - 8 - widget.bottomInset;
-        final double length = math.max(32, track * viewport / full);
+      final double track = viewport - 8 - widget.bottomInset;
+      // A track shorter than the thumb's least length takes no thumb: it
+      // would run against the scroll.
+      if (full > viewport && track >= _leastLength) {
+        final double length = math.max(_leastLength, track * viewport / full);
         final double progress = ((metrics.pixels) / (full - viewport)).clamp(
           0,
           1,
@@ -92,7 +95,7 @@ class _ListScrollIndicatorState extends State<ListScrollIndicator>
           ),
         );
         thumb = Positioned(
-          top: 4 + (track - length) * progress,
+          top: 4 + math.max(0, track - length) * progress,
           right: 2,
           width: 3,
           height: length,

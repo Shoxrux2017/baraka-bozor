@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/accessibility/announce.dart';
@@ -184,6 +185,9 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
           ref.read(productListProvider(widget.query).notifier).loadMore();
         }
       });
+      // The metrics come after the frame; with nothing animating no other
+      // frame would run the ask.
+      SchedulerBinding.instance.scheduleFrame();
     }
     return false;
   }
@@ -225,7 +229,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
     final AsyncValue<ProductListState> list = ref.watch(
       productListProvider(query),
     );
-    final ProductListState? state = list.value;
+    final ProductListState? state = list.isReloading ? null : list.value;
     final Object? error = list.hasError ? list.error : null;
     final ApiFailure? listFailure = list.hasError
         ? (error is ApiFailure ? error : const UnexpectedFailure())
@@ -326,7 +330,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
               (int c) => _SkeletonCard(
                 size: widget.size,
                 imageHeight: widget.imageHeight,
-                pulsing: true,
+                pulsing: !list.hasError,
               ),
             ),
           );

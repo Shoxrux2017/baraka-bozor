@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/press_scale.dart';
+import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 
 /// The words of a sort, as the menu and the count row show them.
@@ -303,16 +305,18 @@ class _SortItem extends StatelessWidget {
 
 /// The row above the cards of a product list (`DL-127`): how many products
 /// there are, and the current order as a button that opens [showSortMenu].
-/// Nothing is counted while [total] is `null`.
-class ProductListCountRow extends StatelessWidget {
+/// It counts the products of [query]'s list; while another order of the same
+/// products loads it keeps the last total, and nothing is counted before any
+/// is known.
+class ProductListCountRow extends ConsumerWidget {
   const ProductListCountRow({
-    required this.total,
+    required this.query,
     required this.sort,
     required this.onSort,
     super.key,
   });
 
-  final int? total;
+  final ProductListQuery query;
   final ProductSort sort;
   final ValueChanged<ProductSort> onSort;
 
@@ -324,9 +328,22 @@ class ProductListCountRow extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final int? count = total;
+    final ListTotalMemo memo = ref.read(
+      listTotalMemoProvider(
+        ProductListQuery(
+          categoryId: query.categoryId,
+          search: query.search,
+          featuredOnly: query.featuredOnly,
+        ),
+      ),
+    );
+    final int? known = ref.watch(productListProvider(query)).value?.total;
+    if (known != null) {
+      memo.total = known;
+    }
+    final int? count = known ?? memo.total;
     final String label = sortLabel(l10n, sort);
 
     return Padding(

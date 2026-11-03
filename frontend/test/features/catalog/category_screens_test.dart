@@ -1282,6 +1282,52 @@ void main() {
       expect(item.bottom, lessThanOrEqualTo(rail.bottom));
     });
 
+    testWidgets('with an empty cart a wholly visible rail item near the foot '
+        'does not scroll the rail', (WidgetTester tester) async {
+      // Short enough that the fourth item ends where the cart bar would stand.
+      tester.view.physicalSize = const Size(375, 620);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      catalog.categoryRows = manyCategories(12);
+      await open(tester, CatalogPaths.category('c-1'));
+      expect(byKey('cart-summary'), findsNothing);
+
+      final Rect rail = tester.getRect(byKey('category-rail'));
+      String? lowest;
+      for (int i = 2; i <= 12; i++) {
+        final Rect item = tester.getRect(byKey('rail-c-$i'));
+        if (item.bottom <= rail.bottom) {
+          lowest = 'c-$i';
+        }
+      }
+      expect(lowest, isNotNull);
+      expect(
+        tester.getRect(byKey('rail-$lowest')).bottom,
+        greaterThan(
+          rail.bottom -
+              CartSummaryBar.reserved(tester.element(byKey('category-rail'))),
+        ),
+        reason: 'it stands where the cart bar would be',
+      );
+
+      await tester.tap(byKey('rail-$lowest'));
+      await tester.pumpAndSettle();
+
+      expect(railOffset(tester), 0);
+    });
+
+    testWidgets('an unknown category asks for no products', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, CatalogPaths.category('c-404'));
+
+      expect(
+        catalog.requests.where((String r) => r.contains('c-404')),
+        isEmpty,
+      );
+      expect(catalog.requests, isEmpty);
+    });
+
     testWidgets('rail items read name, selected or button, and N из M; a '
         'letter is not read', (WidgetTester tester) async {
       final SemanticsHandle handle = tester.ensureSemantics();
@@ -1743,9 +1789,10 @@ void main() {
       testWidgets('at text x2 with two sessions and a cart nothing overflows '
           '(${device.languageCode})', (WidgetTester tester) async {
         small(tester);
+        eightMore();
         await open(
           tester,
-          CatalogPaths.category('c-3'),
+          CatalogPaths.category('c-1'),
           locale: device,
           twoSessions: true,
           cart: oneLine(),
@@ -1757,6 +1804,12 @@ void main() {
         expect(byKey('stale-line'), findsOneWidget);
         expect(byKey('category-chips'), findsOneWidget);
         expect(find.byType(CartSummaryBar), findsOneWidget);
+        expect(find.byType(KitProductCard), findsWidgets);
+        expect(byKey('list-count-row'), findsOneWidget);
+
+        await tester.drag(find.byType(KitProductGrid), const Offset(0, -3000));
+        await tester.pumpAndSettle();
+        expect(find.byType(KitProductCard), findsWidgets);
         expect(tester.takeException(), isNull);
       });
     }

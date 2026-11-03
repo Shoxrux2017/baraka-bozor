@@ -8,6 +8,7 @@ Future<ScrollController> _open(
   WidgetTester tester, {
   required double contentHeight,
   required double full,
+  double bottomInset = 0,
 }) async {
   tester.view.physicalSize = const Size(400, 600);
   tester.view.devicePixelRatio = 1;
@@ -19,6 +20,7 @@ Future<ScrollController> _open(
       home: Scaffold(
         body: ListScrollIndicator(
           fullExtent: (ScrollMetrics metrics) => full,
+          bottomInset: bottomInset,
           child: ListView(
             controller: controller,
             children: <Widget>[SizedBox(height: contentHeight)],
@@ -92,6 +94,18 @@ void main() {
       lessThan(600 - 4 - 100),
     );
     expect(tester.getTopRight(find.byKey(_thumb)).dx, 400 - 2);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('no thumb when the track is shorter than the thumb', (
+    WidgetTester tester,
+  ) async {
+    // 600 - 8 - 570 leaves a track of 22, under the thumb's least length.
+    await _open(tester, contentHeight: 1200, full: 2400, bottomInset: 570);
+    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.pump();
+
+    expect(find.byKey(_thumb), findsNothing);
     await tester.pumpAndSettle();
   });
 

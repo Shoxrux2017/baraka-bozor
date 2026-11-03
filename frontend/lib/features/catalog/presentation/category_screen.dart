@@ -13,6 +13,8 @@ import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/press_scale.dart';
+import '../../cart/application/cart_controllers.dart';
+import '../../cart/domain/cart.dart';
 import '../../cart/presentation/cart_summary_bar.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
@@ -126,14 +128,22 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
         ?.where((CatalogCategory c) => c.id == _selectedId)
         .firstOrNull;
     final ProductSort sort = ref.watch(productSortProvider);
+    final bool cartShown = ref.watch(
+      currentCartProvider.select(
+        (AsyncValue<Cart> cart) => cart.value?.lines.isNotEmpty ?? false,
+      ),
+    );
     final ProductListQuery query = ProductListQuery(
       categoryId: _selectedId,
       sort: sort,
     );
-    _kept.putIfAbsent(
-      query,
-      () => ref.listenManual(productListProvider(query), (previous, next) {}),
-    );
+    // A category that does not exist asks for no products.
+    if (category != null) {
+      _kept.putIfAbsent(
+        query,
+        () => ref.listenManual(productListProvider(query), (previous, next) {}),
+      );
+    }
     final Loaded<List<CatalogCategory>>? loaded = async.value;
     final Object? categoriesError = async.hasError ? async.error : null;
 
@@ -200,10 +210,7 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
                     SliverToBoxAdapter(
                       child: ProductListCountRow(
                         key: const ValueKey<String>('list-count-row'),
-                        total: ref
-                            .watch(productListProvider(query))
-                            .value
-                            ?.total,
+                        query: query,
                         sort: sort,
                         onSort: ref.read(productSortProvider.notifier).set,
                       ),
@@ -248,6 +255,7 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
                                 categories: rows,
                                 selectedId: _selectedId,
                                 openedId: widget.categoryId,
+                                cartShown: cartShown,
                                 heroTag:
                                     widget.opening == null ||
                                         MediaQuery.disableAnimationsOf(context)
@@ -334,6 +342,7 @@ class _CategoryRail extends StatefulWidget {
     required this.categories,
     required this.selectedId,
     required this.openedId,
+    required this.cartShown,
     required this.heroTag,
     required this.onSelect,
   });
@@ -344,6 +353,9 @@ class _CategoryRail extends StatefulWidget {
   /// The category the screen was opened on, the only one whose well the tile's
   /// picture flies into.
   final String openedId;
+
+  /// Whether the cart bar stands over the rail's foot.
+  final bool cartShown;
 
   /// The tag of the tile's picture that flies into the opened category's well.
   final Object? heroTag;
@@ -424,9 +436,11 @@ class _CategoryRailState extends State<_CategoryRail> {
     }
     final ScrollPosition position = _scroll.position;
     final double bottom = box.top + box.height;
-    // The cart bar covers the rail's foot: an item under it is not in view.
+    // The cart bar, while the cart holds lines, covers the rail's foot: an
+    // item under it is not in view.
     final double visible =
-        position.viewportDimension - CartSummaryBar.reserved(context);
+        position.viewportDimension -
+        (widget.cartShown ? CartSummaryBar.reserved(context) : 0);
     final double shownBottom = position.pixels + visible;
     final double? target = box.top < position.pixels
         ? box.top

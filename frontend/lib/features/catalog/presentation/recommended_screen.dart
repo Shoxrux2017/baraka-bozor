@@ -43,10 +43,7 @@ class RecommendedScreen extends ConsumerWidget {
                     SliverToBoxAdapter(
                       child: ProductListCountRow(
                         key: const ValueKey<String>('list-count-row'),
-                        total: ref
-                            .watch(productListProvider(query))
-                            .value
-                            ?.total,
+                        query: query,
                         sort: sort,
                         onSort: ref.read(productSortProvider.notifier).set,
                       ),

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart'
-    show AsyncNotifierProviderFamily, FutureProviderFamily;
+    show AsyncNotifierProviderFamily, FutureProviderFamily, ProviderFamily;
 
 import '../../../app/providers.dart';
 import '../../../core/errors/report_unexpected_error.dart';
@@ -111,11 +111,13 @@ class ProductListController extends AsyncNotifier<ProductListState> {
     final ProductListState? current = state.value;
     final int? page = current?.nextPage;
     // While the list is rebuilt — for another account, or none — its old
-    // pages are not continued.
+    // pages are not continued; nor are those of a list whose refresh failed:
+    // its stale line stays until a pull or «Обновить» succeeds (`DL-127`).
     if (current == null ||
         page == null ||
         current.loadingMore ||
         state.isLoading ||
+        state.hasError ||
         ref.read(customerAccountProvider) == null) {
       return;
     }
@@ -185,6 +187,23 @@ productListProvider = AsyncNotifierProvider.autoDispose
     .family<ProductListController, ProductListState, ProductListQuery>(
       ProductListController.new,
     );
+
+/// The last total a product list of one filter came with, whatever its order,
+/// so a count row does not blank while another order of the same products
+/// loads (`DL-127`). A plain holder, not observable state: it is written in a
+/// build and read in a later one. Another account starts afresh.
+final class ListTotalMemo {
+  int? total;
+}
+
+final ProviderFamily<ListTotalMemo, ProductListQuery> listTotalMemoProvider =
+    Provider.family<ListTotalMemo, ProductListQuery>((
+      Ref ref,
+      ProductListQuery filter,
+    ) {
+      ref.watch(customerAccountProvider);
+      return ListTotalMemo();
+    });
 
 /// How the Customer's product lists are ordered, kept for the app's run.
 class ProductSortController extends Notifier<ProductSort> {
