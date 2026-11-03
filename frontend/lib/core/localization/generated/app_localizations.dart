@@ -7394,6 +7394,12 @@ abstract class AppLocalizations {
   /// **'Yangilash'**
   String get staleRefresh;
 
+  /// No description provided for @staleRefreshing.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilanmoqda…'**
+  String get staleRefreshing;
+
   /// No description provided for @staleSpoken.
   ///
   /// In uz, this message translates to:

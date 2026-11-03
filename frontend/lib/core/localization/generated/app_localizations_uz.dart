@@ -4361,6 +4361,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get staleRefresh => 'Yangilash';
 
   @override
+  String get staleRefreshing => 'Yangilanmoqda…';
+
+  @override
   String staleSpoken(String reason, String time) {
     return '$reason. $time holatidagi ma\'lumotlar ko\'rsatilgan';
   }

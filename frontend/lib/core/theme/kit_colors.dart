@@ -27,6 +27,9 @@ abstract final class KitColors {
   /// Hairlines and field borders.
   static const Color line = Color(0xFFEEF0EF);
 
+  /// Filled chips and wells at rest (`DL-127`).
+  static const Color chip = Color(0xFFF1F3F1);
+
   /// Text field background.
   static const Color field = Color(0xFFF9F9F9);
 

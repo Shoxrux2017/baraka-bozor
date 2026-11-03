@@ -4405,6 +4405,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get staleRefresh => 'Обновить';
 
   @override
+  String get staleRefreshing => 'Обновляем…';
+
+  @override
   String staleSpoken(String reason, String time) {
     return '$reason. Показаны данные на $time';
   }

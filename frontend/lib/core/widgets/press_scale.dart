@@ -9,12 +9,17 @@ class PressScale extends StatefulWidget {
     required this.label,
     required this.onTap,
     required this.child,
+    this.selected,
     super.key,
   });
 
   final String label;
   final VoidCallback onTap;
   final Widget child;
+
+  /// Whether it is the chosen one of a group, for a screen reader (`DL-127`);
+  /// null when it is not part of one.
+  final bool? selected;
 
   @override
   State<PressScale> createState() => _PressScaleState();
@@ -35,6 +40,7 @@ class _PressScaleState extends State<PressScale> {
     return Semantics(
       button: true,
       label: widget.label,
+      selected: widget.selected,
       excludeSemantics: true,
       onTap: widget.onTap,
       child: GestureDetector(

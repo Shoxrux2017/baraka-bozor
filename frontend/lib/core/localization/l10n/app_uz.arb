@@ -2922,6 +2922,7 @@
     }
   },
   "staleRefresh": "Yangilash",
+  "staleRefreshing": "Yangilanmoqda…",
   "staleSpoken": "{reason}. {time} holatidagi ma'lumotlar ko'rsatilgan",
   "@staleSpoken": {
     "placeholders": {

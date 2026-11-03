@@ -24,7 +24,8 @@ class StaleDataLine extends StatelessWidget {
   final VoidCallback onRetry;
 
   /// A load is on its way: the button shows a small spinner in place of its
-  /// word and takes no tap, so a second tap starts no second request.
+  /// word, named «Обновляем…» for a screen reader (`DL-127`), and takes no tap, so
+  /// a second tap starts no second request.
   final bool busy;
 
   @override
@@ -72,11 +73,14 @@ class StaleDataLine extends StatelessWidget {
         textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
       ),
       child: busy
-          ? const SizedBox.square(
-              dimension: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: KitColors.primary,
+          ? Semantics(
+              label: l10n.staleRefreshing,
+              child: const SizedBox.square(
+                dimension: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: KitColors.primary,
+                ),
               ),
             )
           : Text(time == null ? l10n.retryButton : l10n.staleRefresh),

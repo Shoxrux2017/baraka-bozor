@@ -2584,6 +2584,7 @@
   "staleFailed": "Не удалось обновить",
   "staleShownAt": "данные на {time}",
   "staleRefresh": "Обновить",
+  "staleRefreshing": "Обновляем…",
   "staleSpoken": "{reason}. Показаны данные на {time}",
   "deadlineLeft": "Осталось {minutes} мин",
   "deadlineLeftSpoken": "осталось {minutes, plural, one{{minutes} минута} few{{minutes} минуты} many{{minutes} минут} other{{minutes} минуты}}",
