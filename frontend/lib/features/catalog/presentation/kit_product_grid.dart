@@ -253,6 +253,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
         Widget rowOf(Widget Function(int column) cell) => SizedBox(
           height: extent,
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               for (int c = 0; c < columns; c++) ...<Widget>[
                 if (c > 0) const SizedBox(width: _gap),

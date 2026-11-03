@@ -246,6 +246,36 @@ void main() {
     );
   });
 
+  testWidgets("every card of a row stands at the row's full height", (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(375, 667);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    catalog.productRows = <CatalogProduct>[
+      catalogProduct(id: 'short', nameRu: 'Хлеб', nameUz: 'Non'),
+      catalogProduct(
+        id: 'long',
+        nameRu: 'Очень длинное название товара для проверки',
+        nameUz: 'Tekshirish uchun juda uzun mahsulot nomi',
+      ),
+    ];
+    await open(tester, CatalogPaths.products);
+
+    final double extent = kitCardExtent(
+      TextScaler.noScaling,
+      size: KitCardSize.regular,
+      imageHeight: 150,
+    );
+    final List<Rect> cards = <Rect>[
+      for (int i = 0; i < 2; i++)
+        tester.getRect(find.byType(KitProductCard).at(i)),
+    ];
+    expect(cards[0].top, cards[1].top);
+    expect(cards[0].height, extent);
+    expect(cards[1].height, extent);
+  });
+
   group('the order menu', () {
     ProductSort? result;
     Rect? lastButton;

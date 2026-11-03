@@ -1455,9 +1455,7 @@ void main() {
         expect(card.right, lessThanOrEqualTo(812 - 47));
       }
       expect(
-        cards.where(
-          (Rect r) => (r.center.dy - cards.first.center.dy).abs() < 1,
-        ),
+        cards.where((Rect r) => r.top == cards.first.top),
         hasLength(4),
         reason: 'four cards in the first row',
       );
@@ -1656,12 +1654,7 @@ void main() {
 
       final List<Rect> cards = cardRects(tester);
       expect(cards.first.left, 16);
-      expect(
-        cards.where(
-          (Rect r) => (r.center.dy - cards.first.center.dy).abs() < 1,
-        ),
-        hasLength(2),
-      );
+      expect(cards.where((Rect r) => r.top == cards.first.top), hasLength(2));
       expect(cards.map((Rect r) => r.right).reduce(math.max), 320 - 16);
     });
 
