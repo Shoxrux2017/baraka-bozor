@@ -13,12 +13,26 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../support/fake_cart_repository.dart';
 import '../../support/nonlinear_text_scaler.dart';
 
+/// A Customer account a test can change, as a sign-out or another sign-in does.
+class _Account extends Notifier<String?> {
+  @override
+  String? build() => 'c';
+
+  void set(String? id) => state = id;
+}
+
+final NotifierProvider<_Account, String?> _account =
+    NotifierProvider<_Account, String?>(_Account.new);
+
 void main() {
   late FakeCartRepository cart;
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
-  String sum(int uzs) => '≈ ${MoneyFormat.uzs(uzs, AppLanguage.ru)}';
+  /// The sum as the bar draws it: the amount whole, an ordinary space before
+  /// the currency so that only the currency may drop to a second line.
+  String sum(int uzs) =>
+      '≈ ${MoneyFormat.grouped(uzs)} ${MoneyFormat.currency(AppLanguage.ru)}';
 
   Cart one(int total, {String id = tomatoLine}) =>
       cartOf(<Map<String, Object?>>[cartLineJson(id: id, total: total)]);
@@ -37,6 +51,7 @@ void main() {
     bool gated = false,
     Size size = const Size(375, 640),
     FakeViewPadding padding = FakeViewPadding.zero,
+    bool switchable = false,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -46,7 +61,12 @@ void main() {
       ProviderScope(
         retry: (int count, Object error) => null,
         overrides: [
-          customerAccountProvider.overrideWithValue('c'),
+          if (switchable)
+            customerAccountProvider.overrideWith(
+              (Ref ref) => ref.watch(_account),
+            )
+          else
+            customerAccountProvider.overrideWithValue('c'),
           cartRepositoryProvider.overrideWithValue(cart),
         ],
         child: MaterialApp(
@@ -171,6 +191,23 @@ void main() {
     });
   });
 
+  testWidgets('another account leaves no trace of the last cart', (
+    WidgetTester tester,
+  ) async {
+    cart = FakeCartRepository(cart: one(18000));
+    await pump(tester, switchable: true);
+    await tester.pump(const Duration(seconds: 1));
+    expect(byKey('cart-summary'), findsOneWidget);
+
+    ProviderScope.containerOf(tester.element(find.byType(Scaffold)))
+        .read(_account.notifier)
+        .set(null);
+    await tester.pump();
+
+    expect(byKey('cart-summary'), findsNothing);
+    expect(find.text(sum(18000)), findsNothing);
+  });
+
   group('the sum and the picture', () {
     testWidgets('the sum rolls to the new value', (WidgetTester tester) async {
       cart = FakeCartRepository(cart: one(18000));
@@ -250,6 +287,33 @@ void main() {
         findsOneWidget,
       );
       semantics.dispose();
+    });
+
+    testWidgets('a sum too wide beside the words gives way to the arrow', (
+      WidgetTester tester,
+    ) async {
+      cart = FakeCartRepository(cart: one(142100));
+      await pump(tester, gated: true, size: const Size(400, 640));
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('В корзину'), findsNothing);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      final Finder total = find.text(sum(142100));
+      expect(total, findsOneWidget);
+      final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(
+        total,
+      );
+      expect(paragraph.didExceedMaxLines, isFalse);
+      expect(paragraph.size.height, lessThan(15 * 1.7), reason: 'one line');
+    });
+
+    testWidgets('a sum that fits keeps the words', (WidgetTester tester) async {
+      cart = FakeCartRepository(cart: one(142100));
+      await pump(tester, gated: true, size: const Size(600, 640));
+
+      expect(find.textContaining('В корзину'), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      expect(find.text(sum(142100)), findsOneWidget);
     });
 
     testWidgets('reserved fits the bar at text x2', (

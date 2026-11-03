@@ -82,6 +82,9 @@ class _CartSummaryBarState extends ConsumerState<CartSummaryBar>
   void _follow(AsyncValue<Cart>? previous, AsyncValue<Cart> next) {
     final Cart? cart = next.value;
     if (cart == null) {
+      // Another account, or none: the last cart is not shown to it.
+      setState(() => _shown = null);
+      _slide.value = 0;
       return;
     }
     final bool reduced = MediaQuery.disableAnimationsOf(context);
@@ -118,13 +121,21 @@ class _CartSummaryBarState extends ConsumerState<CartSummaryBar>
       interfaceLanguage(context),
     );
     final AppLanguage language = interfaceLanguage(context);
-    // At large text the currency may drop to the second line; the amount
-    // stays whole.
+    // The currency may drop to a second line; the amount stays whole.
     final String total = l10n.catalogApproxPrice(
-      large
-          ? '${MoneyFormat.grouped(cart.estimatedSubtotalUzs)} '
-                '${MoneyFormat.currency(language)}'
-          : sum,
+      '${MoneyFormat.grouped(cart.estimatedSubtotalUzs)} '
+      '${MoneyFormat.currency(language)}',
+    );
+    final String open = '${l10n.cartSummaryOpen} →';
+    const TextStyle totalStyle = TextStyle(
+      fontSize: 15,
+      fontWeight: FontWeight.w700,
+      color: Colors.white,
+    );
+    const TextStyle openStyle = TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w700,
+      color: Colors.white,
     );
 
     final Widget bar = DecoratedBox(
@@ -175,98 +186,108 @@ class _CartSummaryBarState extends ConsumerState<CartSummaryBar>
                       horizontal: 12,
                       vertical: 8,
                     ),
-                    child: Row(
-                      children: <Widget>[
-                        SizedBox.square(
-                          dimension: 46,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Center(
-                                child: _Swap(
-                                  swapKey: last.id,
-                                  duration: 260,
-                                  reduced: reduced,
-                                  scaleFrom: 0.7,
-                                  child: ProductImage(
-                                    url: last.imageUrl,
-                                    size: 40,
+                    child: LayoutBuilder(
+                      builder: (BuildContext context, BoxConstraints box) {
+                        // The words take at most half of the room after the
+                        // picture; the arrow replaces them when the sum would not
+                        // fit in what they leave.
+                        final double rest = box.maxWidth - 46 - 10;
+                        final double wordsMax = rest / 2;
+                        final double words = math.min(
+                          textWidth(context, open, openStyle) + 8,
+                          wordsMax,
+                        );
+                        final bool arrow =
+                            large ||
+                            textWidth(context, total, totalStyle) >
+                                rest - 8 - words;
+                        return Row(
+                          children: <Widget>[
+                            SizedBox.square(
+                              dimension: 46,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Center(
+                                    child: _Swap(
+                                      swapKey: last.id,
+                                      duration: 260,
+                                      reduced: reduced,
+                                      scaleFrom: 0.7,
+                                      child: ProductImage(
+                                        url: last.imageUrl,
+                                        size: 40,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Text(
-                                l10n.cartSummaryCount(cart.itemCount),
-                                maxLines: large ? 2 : 1,
-                                overflow: large
-                                    ? TextOverflow.clip
-                                    : TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    l10n.cartSummaryCount(cart.itemCount),
+                                    maxLines: large ? 2 : 1,
+                                    overflow: large
+                                        ? TextOverflow.clip
+                                        : TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  _Swap(
+                                    swapKey: total,
+                                    duration: 240,
+                                    reduced: reduced,
+                                    riseFrom: 0.45,
+                                    child: Text(
+                                      total,
+                                      maxLines: arrow ? 2 : 1,
+                                      overflow: TextOverflow.clip,
+                                      style: totalStyle,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (arrow)
+                              const ExcludeSemantics(
+                                child: Icon(
+                                  Icons.chevron_right,
+                                  size: 30,
                                   color: Colors.white,
                                 ),
-                              ),
-                              _Swap(
-                                swapKey: total,
-                                duration: 240,
-                                reduced: reduced,
-                                riseFrom: 0.45,
-                                child: Text(
-                                  total,
-                                  maxLines: large ? 2 : 1,
-                                  overflow: TextOverflow.clip,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
+                              )
+                            else
+                              ConstrainedBox(
+                                constraints: BoxConstraints(maxWidth: wordsMax),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  child: Text(
+                                    open,
+                                    maxLines: 2,
+                                    textAlign: TextAlign.end,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: openStyle,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (large)
-                          const ExcludeSemantics(
-                            child: Icon(
-                              Icons.chevron_right,
-                              size: 30,
-                              color: Colors.white,
-                            ),
-                          )
-                        else
-                          Flexible(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              child: Text(
-                                '${l10n.cartSummaryOpen} →',
-                                maxLines: 2,
-                                textAlign: TextAlign.end,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),

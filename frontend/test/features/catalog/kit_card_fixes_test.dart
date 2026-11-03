@@ -357,7 +357,9 @@ void main() {
           cart = FakeCartRepository(
             cart: cartOf(<Map<String, Object?>>[pieceLine(lineA, idA)]),
           );
-          tester.view.physicalSize = const Size(320, 640);
+          // The Ahem test font is a full em per glyph: at x1.0 the sum needs
+          // 360 dp to stand on one line beside the arrow.
+          tester.view.physicalSize = Size(scale == 1 ? 360 : 320, 640);
           tester.view.devicePixelRatio = 1;
           tester.view.padding = FakeViewPadding(bottom: inset);
           addTearDown(tester.view.reset);
