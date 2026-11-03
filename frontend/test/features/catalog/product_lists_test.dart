@@ -1295,6 +1295,22 @@ void main() {
       expect(after, isNot(contains('Рекомендуем: 24 товара')));
     });
 
+    testWidgets('Все товары announces Все товары: 24 товара once', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(375, 812);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await open(tester, CatalogPaths.products);
+      final List<String> first = announced(tester).toList();
+      expect(
+        first.where((String m) => m == 'Все товары: 24 товара'),
+        hasLength(1),
+      );
+      await pull(tester);
+      expect(announced(tester), isNot(contains('Все товары: 24 товара')));
+    });
+
     testWidgets('a new order announces Сначала дешевле: 24 товара', (
       WidgetTester tester,
     ) async {

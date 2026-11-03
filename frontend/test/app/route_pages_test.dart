@@ -155,38 +155,43 @@ void main() {
     expect(sliding, _pageNames);
   });
 
-  testWidgets('Рекомендуем opens with a flight when it is given an opening', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(const SizedBox());
-    final BuildContext context = tester.element(find.byType(SizedBox));
-    final GoRouter router = buildRouter();
-    addTearDown(router.dispose);
-    final GoRoute route = _all(router)
-        .whereType<GoRoute>()
-        .firstWhere((GoRoute r) => r.name == 'catalog-recommended');
-    final Page<dynamic> flying = route.pageBuilder!(
-      context,
-      _stateFor(
-        router,
-        route.name,
-        route.path,
-        extra: const FlightOpening(items: <FlightItem>[], screen: Size.zero),
-      ),
-    );
-    expect(flying, isNot(isA<MaterialPage<dynamic>>()));
-    expect(flying, isNot(isA<NoTransitionPage<dynamic>>()));
-    expect(
-      (flying.createRoute(context) as PageRoute<dynamic>).transitionDuration,
-      const Duration(milliseconds: 420),
-    );
-    // Any other extra, or none, is the platform's page.
-    final Page<dynamic> plain = route.pageBuilder!(
-      context,
-      _stateFor(router, route.name, route.path, extra: 'x'),
-    );
-    expect(plain, isA<MaterialPage<dynamic>>());
-  });
+  for (final String name in <String>[
+    'catalog-recommended',
+    'catalog-all-products',
+  ]) {
+    testWidgets('$name opens with a flight when it is given an opening', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const SizedBox());
+      final BuildContext context = tester.element(find.byType(SizedBox));
+      final GoRouter router = buildRouter();
+      addTearDown(router.dispose);
+      final GoRoute route = _all(router)
+          .whereType<GoRoute>()
+          .firstWhere((GoRoute r) => r.name == name);
+      final Page<dynamic> flying = route.pageBuilder!(
+        context,
+        _stateFor(
+          router,
+          route.name,
+          route.path,
+          extra: const FlightOpening(items: <FlightItem>[], screen: Size.zero),
+        ),
+      );
+      expect(flying, isNot(isA<MaterialPage<dynamic>>()));
+      expect(flying, isNot(isA<NoTransitionPage<dynamic>>()));
+      expect(
+        (flying.createRoute(context) as PageRoute<dynamic>).transitionDuration,
+        const Duration(milliseconds: 420),
+      );
+      // Any other extra, or none, is the platform's page.
+      final Page<dynamic> plain = route.pageBuilder!(
+        context,
+        _stateFor(router, route.name, route.path, extra: 'x'),
+      );
+      expect(plain, isA<MaterialPage<dynamic>>());
+    });
+  }
 
   testWidgets('the panel shells stand in place', (WidgetTester tester) async {
     await tester.pumpWidget(const SizedBox());

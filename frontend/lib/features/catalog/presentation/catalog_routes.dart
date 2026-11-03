@@ -72,8 +72,13 @@ final FeatureRoutes catalogRoutes = FeatureRoutes(
     GoRoute(
       path: CatalogPaths.products,
       name: 'catalog-all-products',
-      pageBuilder: (BuildContext context, GoRouterState state) =>
-          appPage(state, const AllProductsScreen()),
+      pageBuilder: (BuildContext context, GoRouterState state) => flightPage(
+        state,
+        const AllProductsScreen(),
+        opening: state.extra is FlightOpening
+            ? state.extra! as FlightOpening
+            : null,
+      ),
     ),
     GoRoute(
       path: CatalogPaths.productPattern,

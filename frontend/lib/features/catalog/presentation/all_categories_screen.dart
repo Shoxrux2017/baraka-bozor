@@ -159,24 +159,43 @@ class _AllCategoriesScreenState extends ConsumerState<AllCategoriesScreen> {
         FadeInSliver(
           key: const ValueKey<String>('category-tiles'),
           animate: _sawSkeleton,
-          sliver: SliverPadding(
-            padding: gridPadding,
-            sliver: SliverGrid(
-              gridDelegate: delegate,
-              delegate: SliverChildBuilderDelegate(
-                (BuildContext context, int index) => _AppearTile(
-                  key: ValueKey<String>('appear-${rows[index].id}'),
-                  animate: known.isNotEmpty && !known.contains(rows[index].id),
-                  child: CategoryButton(
-                    key: ValueKey<String>('category-${rows[index].id}'),
-                    category: rows[index],
-                    columns: columns,
-                    size: tile,
+          sliver: SliverMainAxisGroup(
+            slivers: <Widget>[
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  16 + safe.left,
+                  16,
+                  16 + safe.right,
+                  0,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: AllProductsTile(
+                    key: const ValueKey<String>('all-products-tile'),
+                    categories: rows,
                   ),
                 ),
-                childCount: rows.length,
               ),
-            ),
+              SliverPadding(
+                padding: gridPadding.copyWith(top: 14),
+                sliver: SliverGrid(
+                  gridDelegate: delegate,
+                  delegate: SliverChildBuilderDelegate(
+                    (BuildContext context, int index) => _AppearTile(
+                      key: ValueKey<String>('appear-${rows[index].id}'),
+                      animate:
+                          known.isNotEmpty && !known.contains(rows[index].id),
+                      child: CategoryButton(
+                        key: ValueKey<String>('category-${rows[index].id}'),
+                        category: rows[index],
+                        columns: columns,
+                        size: tile,
+                      ),
+                    ),
+                    childCount: rows.length,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );

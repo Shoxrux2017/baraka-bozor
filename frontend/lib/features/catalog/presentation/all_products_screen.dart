@@ -25,7 +25,11 @@ class AllProductsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: kitAppBar(title: l10n.allProductsTitle, search: true),
+      appBar: kitAppBar(
+        title: l10n.allProductsTitle,
+        search: true,
+        titleFlight: true,
+      ),
       // The mode stays visible while two sessions exist (DL-75).
       // Side insets (a camera at the side, lying) are kept clear (DL-127).
       body: SafeArea(
@@ -58,6 +62,11 @@ class AllProductsScreen extends ConsumerWidget {
                           16,
                           16 + CartSummaryBar.reserved(context),
                         ),
+                        spokenOnQuery: (ProductListQuery q, int total) =>
+                            l10n.categoryShownSpoken(
+                              l10n.allProductsTitle,
+                              l10n.catalogProductCount(total),
+                            ),
                       ),
                     ),
                   ],
