@@ -55,6 +55,7 @@ final class ProductListState {
     required this.items,
     required this.total,
     required this.nextPage,
+    required this.at,
     this.loadingMore = false,
     this.moreFailure,
   });
@@ -64,6 +65,10 @@ final class ProductListState {
 
   /// The page to load next, or `null` at the end of the list.
   final int? nextPage;
+
+  /// When the first page came; `loadMore` and its failures keep it
+  /// (`DL-127`).
+  final DateTime at;
   final bool loadingMore;
   final ApiFailure? moreFailure;
 
@@ -97,6 +102,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
       items: first.items,
       total: first.total,
       nextPage: first.hasNext ? first.page + 1 : null,
+      at: ref.read(clockProvider)(),
     );
   }
 
@@ -120,6 +126,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         items: current.items,
         total: current.total,
         nextPage: current.nextPage,
+        at: current.at,
         loadingMore: true,
       ),
     );
@@ -142,12 +149,14 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         ],
         total: loaded.total,
         nextPage: loaded.hasNext ? loaded.page + 1 : null,
+        at: current.at,
       );
     } on ApiFailure catch (failure) {
       next = ProductListState(
         items: current.items,
         total: current.total,
         nextPage: current.nextPage,
+        at: current.at,
         moreFailure: failure,
       );
     } catch (error, stackTrace) {
@@ -156,6 +165,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         items: current.items,
         total: current.total,
         nextPage: current.nextPage,
+        at: current.at,
         moreFailure: const UnexpectedFailure(),
       );
     }

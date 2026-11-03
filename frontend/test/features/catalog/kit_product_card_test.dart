@@ -14,11 +14,12 @@ import 'package:baraka_bozor/features/cart/application/cart_quantity_queue.dart'
 import 'package:baraka_bozor/features/cart/domain/cart.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
+import 'package:baraka_bozor/features/catalog/presentation/kit_product_grid.dart';
 import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
 import 'package:baraka_bozor/features/catalog/presentation/product_photo.dart';
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,6 +28,7 @@ import 'package:go_router/go_router.dart';
 import '../../support/fake_cart_repository.dart';
 import '../../support/fake_catalog_repository.dart';
 import '../../support/fake_favorites_repository.dart';
+import '../../support/nonlinear_text_scaler.dart';
 
 /// A non-breaking space, as the quantity and its unit are joined.
 final String _nb = String.fromCharCode(0xA0);
@@ -1171,5 +1173,96 @@ void main() {
       );
       handle.dispose();
     });
+  });
+
+  testWidgets('at text x2 the name takes three lines and the price wraps '
+      'whole, and the extent fits them', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const TextScaler scaler = NonlinearTextScaler(2);
+    final CatalogProduct product = catalogProduct(
+      id: '0192f0a0-0000-7000-8000-0000000000a9',
+      nameRu: 'Очень длинное название товара для проверки',
+      customerUnitPriceUzs: 142100,
+    );
+    final double extent = kitCardExtent(
+      scaler,
+      size: KitCardSize.compact,
+      imageHeight: 84,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (int count, Object error) => null,
+        overrides: [
+          customerAccountProvider.overrideWithValue('c'),
+          cartRepositoryProvider.overrideWithValue(cart),
+          favoritesRepositoryProvider.overrideWithValue(favorites),
+        ],
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (BuildContext context, Widget? child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: scaler),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topLeft,
+              // The test font is as wide as it is high, so the unbreakable
+              // amount needs a card wider than the real 165.
+              child: SizedBox(
+                width: 290,
+                height: extent,
+                child: KitProductCard(
+                  product: product,
+                  size: KitCardSize.compact,
+                  imageHeight: 84,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    final RenderParagraph name = tester.renderObject<RenderParagraph>(
+      find.text(product.nameRu),
+    );
+    final RenderParagraph price = tester.renderObject<RenderParagraph>(
+      find.textContaining('≈'),
+    );
+    expect(name.maxLines, 3);
+    // A 40-character name fills all three lines (3 × 32 high) and ends there.
+    expect(name.didExceedMaxLines, isTrue);
+    expect(name.size.height, closeTo(3 * 32, 1));
+    expect(price.maxLines, 2);
+    expect(price.didExceedMaxLines, isFalse);
+    expect(price.overflow, isNot(TextOverflow.ellipsis));
+    final Rect card = tester.getRect(
+      byKey('product-card-0192f0a0-0000-7000-8000-0000000000a9'),
+    );
+    expect(card.height, extent);
+    final Rect priceBox = tester.getRect(find.textContaining('≈'));
+    final double rowTop =
+        tester.getCenter(byKey('add-0192f0a0-0000-7000-8000-0000000000a9')).dy -
+        22;
+    expect(rowTop - priceBox.bottom, closeTo(8, 2), reason: 'no band');
+  });
+
+  test('productColumns', () {
+    const TextScaler none = TextScaler.noScaling;
+    expect(productColumns(261, none, KitCardSize.compact), 2);
+    expect(productColumns(246, none, KitCardSize.compact), 2);
+    expect(productColumns(604, none, KitCardSize.compact), 4);
+    expect(productColumns(343, none, KitCardSize.regular), 2);
+    expect(productColumns(686, none, KitCardSize.regular), 4);
+    expect(
+      productColumns(343, const NonlinearTextScaler(2), KitCardSize.regular),
+      2,
+    );
   });
 }

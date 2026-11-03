@@ -12,6 +12,7 @@ import '../../../core/formatting/money_format.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/orders/quantity_rules.dart';
@@ -51,6 +52,12 @@ class KitCardType {
 
   static KitCardType of(KitCardSize size) =>
       size == KitCardSize.compact ? compact : regular;
+
+  /// Whether the text is large enough that the name takes up to three lines
+  /// and the price up to two (`DL-127`). It reads the scale at the name's own
+  /// size (`DL-126`).
+  static bool largeText(TextScaler scaler, KitCardSize size) =>
+      textScaleAt(scaler, of(size).nameSize) > 1.3;
 
   /// The drawn side of the add button and of the stepper's buttons: a compact
   /// card draws 32 inside its 44 tap square, a regular card draws all 44
@@ -312,6 +319,10 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
 
     final double imageHeight = widget.imageHeight ?? (_compact ? 84.0 : 112.0);
     final KitCardType type = KitCardType.of(widget.size);
+    final bool large = KitCardType.largeText(
+      MediaQuery.textScalerOf(context),
+      widget.size,
+    );
     final double nameSize = type.nameSize;
     final double nameHeight = type.nameHeight;
     final double priceSize = type.priceSize;
@@ -421,7 +432,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
                               ExcludeSemantics(
                                 child: Text(
                                   name,
-                                  maxLines: 2,
+                                  maxLines: large ? 3 : 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontSize: nameSize,
@@ -442,8 +453,10 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
                                       language,
                                     ),
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: large ? 2 : 1,
+                                  overflow: large
+                                      ? TextOverflow.clip
+                                      : TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontSize: priceSize,
                                     height: KitCardType.priceLineHeight,

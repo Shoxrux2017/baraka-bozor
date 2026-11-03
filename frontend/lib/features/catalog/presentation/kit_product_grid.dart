@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/widgets/failure_message.dart';
@@ -19,12 +22,14 @@ double kitCardExtent(
   required double imageHeight,
 }) {
   final KitCardType type = KitCardType.of(size);
+  final bool large = KitCardType.largeText(scaler, size);
   final double name =
-      2 *
+      (large ? 3 : 2) *
       (scaler.scale(type.nameSize) * (type.nameHeight / type.nameSize))
           .ceilToDouble();
   // A laid-out line is as high as its rounded-up fractional height.
   final double price =
+      (large ? 2 : 1) *
       (scaler.scale(type.priceSize) * KitCardType.priceLineHeight)
           .ceilToDouble();
   return 2 * KitCardType.padding +
@@ -35,6 +40,16 @@ double kitCardExtent(
       price +
       KitCardType.gapAfterPrice +
       KitCardType.bottomRowHeight;
+}
+
+/// How many cards stand side by side in a grid [width] wide inside its side
+/// padding: as many as fit at the card's base width grown by the text scale,
+/// two at least (`DL-127`).
+int productColumns(double width, TextScaler scaler, KitCardSize size) {
+  final double base = size == KitCardSize.compact ? 124 : 150;
+  final double card =
+      base * textScaleAt(scaler, KitCardType.of(size).nameSize) + 12;
+  return math.max(2, ((width + 12) / card).floor());
 }
 
 /// A product list as a grid of kit cards, loaded a page at a time: the next
