@@ -38,6 +38,9 @@ class _AllProductsScreenState extends ConsumerState<AllProductsScreen> {
 
   /// Counts the chip taps; a jump that is no longer the latest gives up.
   int _jump = 0;
+
+  /// Whether a finger touched the list since the last chip tap.
+  bool _touched = false;
   Timer? _unlock;
 
   /// The aisles are the categories that hold products.
@@ -55,7 +58,12 @@ class _AllProductsScreenState extends ConsumerState<AllProductsScreen> {
     );
     _scroll.addListener(() {
       if (_scroll.hasClients) {
-        _aisles.follow(_scroll.position.pixels);
+        final ScrollPosition position = _scroll.position;
+        _aisles.follow(
+          position.pixels,
+          maxExtent: position.maxScrollExtent,
+          viewport: position.viewportDimension,
+        );
       }
     });
     ref.listenManual(catalogCategoriesProvider, (_, next) {
@@ -78,12 +86,24 @@ class _AllProductsScreenState extends ConsumerState<AllProductsScreen> {
   }
 
   /// A chip tap: lights the aisle, loads the pages up to it, glides to its
-  /// heading and says where it is. A later tap takes over from this one.
+  /// heading and says where it is. A later tap takes over from this one. The
+  /// aisles are unlocked 700 ms after the way ends, however it ends.
   Future<void> _goTo(String id) async {
     final int jump = ++_jump;
+    _touched = false;
     _unlock?.cancel();
     _aisles.lock();
     _aisles.current = id;
+    try {
+      await _glideTo(id, jump);
+    } finally {
+      if (mounted && jump == _jump) {
+        _unlock = Timer(const Duration(milliseconds: 700), _aisles.unlock);
+      }
+    }
+  }
+
+  Future<void> _glideTo(String id, int jump) async {
     final ProductListQuery query = ProductListQuery(
       sort: ref.read(productSortProvider),
     );
@@ -120,13 +140,14 @@ class _AllProductsScreenState extends ConsumerState<AllProductsScreen> {
       );
     }
     // The list's length is an estimate until its last rows are laid out, so
-    // the end may lie further than it did: settle at the real goal.
+    // the end may lie further than it did: settle at the real goal, unless a
+    // finger took the list over.
     for (int tries = 0; tries < 3; tries++) {
-      if (!mounted || jump != _jump || !_scroll.hasClients) {
+      if (!mounted || jump != _jump || !_scroll.hasClients || _touched) {
         return;
       }
       await SchedulerBinding.instance.endOfFrame;
-      if (!mounted || jump != _jump || !_scroll.hasClients) {
+      if (!mounted || jump != _jump || !_scroll.hasClients || _touched) {
         return;
       }
       if ((position.pixels - goal()).abs() < 1) {
@@ -137,10 +158,13 @@ class _AllProductsScreenState extends ConsumerState<AllProductsScreen> {
     if (!mounted || jump != _jump) {
       return;
     }
-    if (start != null) {
-      final CatalogCategory category = _aisles.categories.firstWhere(
-        (CatalogCategory c) => c.id == id,
-      );
+    CatalogCategory? category;
+    for (final CatalogCategory c in _aisles.categories) {
+      if (c.id == id) {
+        category = c;
+      }
+    }
+    if (start != null && category != null) {
       final AppLocalizations l10n = AppLocalizations.of(context);
       announce(
         context,
@@ -150,7 +174,6 @@ class _AllProductsScreenState extends ConsumerState<AllProductsScreen> {
         ),
       );
     }
-    _unlock = Timer(const Duration(milliseconds: 700), _aisles.unlock);
   }
 
   @override
@@ -196,33 +219,37 @@ class _AllProductsScreenState extends ConsumerState<AllProductsScreen> {
                       ),
                     ),
                     Expanded(
-                      child: KitProductGrid(
-                        query: query,
-                        controller: _scroll,
-                        aisles: _aisles,
-                        header: <Widget>[
-                          SliverToBoxAdapter(
-                            child: ProductListCountRow(
-                              key: const ValueKey<String>('list-count-row'),
-                              query: query,
-                              sort: sort,
-                              onSort: ref
-                                  .read(productSortProvider.notifier)
-                                  .set,
+                      child: Listener(
+                        behavior: HitTestBehavior.translucent,
+                        onPointerDown: (_) => _touched = true,
+                        child: KitProductGrid(
+                          query: query,
+                          controller: _scroll,
+                          aisles: _aisles,
+                          header: <Widget>[
+                            SliverToBoxAdapter(
+                              child: ProductListCountRow(
+                                key: const ValueKey<String>('list-count-row'),
+                                query: query,
+                                sort: sort,
+                                onSort: ref
+                                    .read(productSortProvider.notifier)
+                                    .set,
+                              ),
                             ),
+                          ],
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            8,
+                            16,
+                            16 + CartSummaryBar.reserved(context),
                           ),
-                        ],
-                        padding: EdgeInsets.fromLTRB(
-                          16,
-                          8,
-                          16,
-                          16 + CartSummaryBar.reserved(context),
+                          spokenOnQuery: (ProductListQuery q, int total) =>
+                              l10n.categoryShownSpoken(
+                                l10n.allProductsTitle,
+                                l10n.catalogProductCount(total),
+                              ),
                         ),
-                        spokenOnQuery: (ProductListQuery q, int total) =>
-                            l10n.categoryShownSpoken(
-                              l10n.allProductsTitle,
-                              l10n.catalogProductCount(total),
-                            ),
                       ),
                     ),
                   ],

@@ -1314,6 +1314,27 @@ void main() {
       },
     );
 
+    testWidgets('the end of the list fades in once, not each time it is '
+        'scrolled back to', (WidgetTester tester) async {
+      await openRecommended(tester);
+      await toEnd(tester);
+      Finder fade() => find.descendant(
+        of: byKey('list-end-fade'),
+        matching: find.byType(FadeTransition),
+      );
+      expect(tester.widget<FadeTransition>(fade().first).opacity.value, 1);
+
+      positionOf(tester).jumpTo(0);
+      await tester.pumpAndSettle();
+      expect(byKey('list-end'), findsNothing, reason: 'built away');
+      positionOf(tester).jumpTo(positionOf(tester).maxScrollExtent);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(byKey('list-end'), findsOneWidget);
+      expect(tester.widget<FadeTransition>(fade().first).opacity.value, 1);
+    });
+
     testWidgets('opening announces Рекомендуем: 24 товара once', (
       WidgetTester tester,
     ) async {

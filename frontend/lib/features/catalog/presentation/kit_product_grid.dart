@@ -170,6 +170,10 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
   ProductListQuery? _drawnQuery;
   List<CatalogProduct> _drawnItems = const <CatalogProduct>[];
 
+  /// Whether the end of the list now drawn has faded in: it does so once per
+  /// list, however often its row is built again (`DL-128`).
+  bool _endShown = false;
+
   /// Whether the failure of the page now shown has been announced.
   bool _failureAnnounced = false;
 
@@ -538,6 +542,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
           if (drawn != query) {
             _paged.clear();
             _faded.clear();
+            _endShown = false;
             final String Function(ProductListQuery, int)? spoken =
                 widget.spokenOnQuery;
             final String count = l10n.catalogProductCount(state.total);
@@ -607,8 +612,13 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
                 ? null
                 : _EndFade(
                     key: const ValueKey<String>('list-end-fade'),
+                    shown: () => _endShown,
+                    onShown: () => _endShown = true,
                     child: widget.end!,
                   );
+            if (state.hasMore) {
+              _endShown = false;
+            }
             if (aisleMode) {
               // The end rows keep their own height, so they stand after the
               // rows of exact extents.
@@ -675,6 +685,14 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
             ),
           );
         } else {
+          if (listFailure != null &&
+              drawn != null &&
+              drawn.search != query.search) {
+            // A new text that failed dropped the old cards for good: they do
+            // not come back dimmed under the next text.
+            _drawnQuery = null;
+            _drawnItems = const <CatalogProduct>[];
+          }
           _sawSkeleton = true;
           final bool pulsing = failure == null || list.isLoading;
           slivers.add(
@@ -822,9 +840,18 @@ class _SkeletonCard extends StatelessWidget {
 /// The end block of a list: fades in over 250 ms `easeOut` when the list
 /// reaches its end; at once with reduced motion (`DL-128`).
 class _EndFade extends StatefulWidget {
-  const _EndFade({required this.child, super.key});
+  const _EndFade({
+    required this.child,
+    required this.shown,
+    required this.onShown,
+    super.key,
+  });
 
   final Widget child;
+
+  /// Whether this list's end has faded in already, and the note that it has.
+  final bool Function() shown;
+  final VoidCallback onShown;
 
   @override
   State<_EndFade> createState() => _EndFadeState();
@@ -845,11 +872,12 @@ class _EndFadeState extends State<_EndFade>
       return;
     }
     _started = true;
-    if (MediaQuery.disableAnimationsOf(context)) {
+    if (widget.shown() || MediaQuery.disableAnimationsOf(context)) {
       _controller.value = 1;
     } else {
       _controller.forward();
     }
+    widget.onShown();
   }
 
   @override

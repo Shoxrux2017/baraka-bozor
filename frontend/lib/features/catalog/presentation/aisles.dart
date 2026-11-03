@@ -74,15 +74,21 @@ class ProductAisles extends ChangeNotifier {
   }
 
   /// Lights the last aisle whose heading is at or above [pixels] (10 px of
-  /// slack); the first one before any is reached. Ignored while locked.
-  void follow(double pixels) {
+  /// slack); the first one before any is reached. At the bottom of the list
+  /// ([maxExtent] reached) the last aisle whose heading is on screen
+  /// ([viewport] high) is lit, for the last aisles may be shorter than the
+  /// screen and never reach the top. Ignored while locked.
+  void follow(double pixels, {double? maxExtent, double? viewport}) {
     if (_locked) {
       return;
     }
+    final bool atBottom =
+        maxExtent != null && viewport != null && pixels >= maxExtent - 1;
+    final double edge = atBottom ? pixels + viewport : pixels + 10;
     String? best = _categories.isEmpty ? null : _categories.first.id;
     for (final CatalogCategory c in _categories) {
       final double? start = _starts[c.id];
-      if (start != null && start <= pixels + 10) {
+      if (start != null && (atBottom ? start < edge : start <= edge)) {
         best = c.id;
       }
     }

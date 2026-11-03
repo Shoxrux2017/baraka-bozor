@@ -423,6 +423,13 @@ class _SearchProgressState extends ConsumerState<_SearchProgress>
       final ProductListState? known = list.isReloading ? null : list.value;
       if (known != null) {
         _cardsOf = known.items.isEmpty ? null : query;
+      } else if (list.hasError) {
+        // A new text that failed drops the old cards (the grid does the
+        // same), and «Повторить» reloads over skeletons: no line, and nothing
+        // left to come back under the next text.
+        if (_cardsOf?.search != query.search) {
+          _cardsOf = null;
+        }
       } else if (list.isLoading) {
         final ProductListQuery? drawn = _cardsOf;
         waiting =

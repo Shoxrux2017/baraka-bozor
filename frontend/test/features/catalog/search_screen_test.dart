@@ -951,6 +951,62 @@ void main() {
       expect(byKey('search-found'), findsOneWidget);
     });
 
+    testWidgets('«Повторить» of a failed new text reloads over skeletons with '
+        'no line', (WidgetTester tester) async {
+      catalog.productRows = thirty();
+      await openSearch(tester, device: const Locale('ru'));
+      await typeAndPause(tester, 'вид');
+      final Completer<void> first = Completer<void>();
+      catalog.gates['вид 1'] = first;
+      await tester.enterText(field, 'вид 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      catalog.nextFailure = const NetworkFailure();
+      first.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('stale-retry'), findsOneWidget);
+
+      final Completer<void> again = Completer<void>();
+      catalog.gates['вид 1'] = again;
+      await tester.tap(byKey('stale-retry'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(byKey('product-skeletons'), findsOneWidget);
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(byKey('search-progress'), findsNothing);
+
+      again.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Вид 1'), findsOneWidget);
+    });
+
+    testWidgets('the cards dropped by a failed new text do not come back '
+        'dimmed under the next one', (WidgetTester tester) async {
+      catalog.productRows = thirty();
+      await openSearch(tester, device: const Locale('ru'));
+      await typeAndPause(tester, 'вид');
+      catalog.nextFailure = const NetworkFailure();
+      await typeAndPause(tester, 'вид 1');
+      expect(byKey('stale-retry'), findsOneWidget);
+      expect(find.text('Вид 1'), findsNothing);
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['вид 2'] = slow;
+      await tester.enterText(field, 'вид 2');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(byKey('product-skeletons'), findsOneWidget);
+      expect(byKey('search-progress'), findsNothing);
+
+      slow.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Вид 2'), findsOneWidget);
+    });
+
     testWidgets('a refresh of the same query that fails keeps its cards '
         'under the stale line', (WidgetTester tester) async {
       catalog.productRows = thirty();

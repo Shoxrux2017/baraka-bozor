@@ -170,6 +170,32 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets(
+    'scrolled to the bottom the last aisle is lit even when it is shorter than '
+    'the screen',
+    (WidgetTester tester) async {
+      size(tester, 520, 1600);
+      stock(<(String, String, int)>[
+        ('c-1', 'Овощи', 20),
+        ('c-2', 'Фрукты', 3),
+      ]);
+      await open(tester);
+      expect(lit(tester, 'c-1'), isTrue);
+
+      final ScrollPosition scroll = position(tester);
+      scroll.jumpTo(scroll.maxScrollExtent);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getTopLeft(byKey('aisle-c-2')).dy,
+        lessThan(tester.getBottomLeft(byKey('product-grid')).dy),
+        reason: 'the heading of the last aisle is on screen',
+      );
+      expect(lit(tester, 'c-2'), isTrue);
+      expect(lit(tester, 'c-1'), isFalse);
+    },
+  );
+
   testWidgets('in the shop order the products stand under aisle headings', (
     WidgetTester tester,
   ) async {
@@ -375,6 +401,36 @@ void main() {
     expect(lit(tester, 'c-2'), isTrue);
 
     // After 700 ms scrolling lights the aisles again.
+    await tester.pump(const Duration(milliseconds: 800));
+    position(tester).jumpTo(0);
+    await tester.pumpAndSettle();
+    expect(lit(tester, 'c-1'), isTrue);
+  });
+
+  testWidgets('a finger that takes the list over is not pulled back to the '
+      'aisle, and the aisles light again afterwards', (
+    WidgetTester tester,
+  ) async {
+    size(tester, 375, 800);
+    stock(three);
+    await open(tester);
+
+    await tester.tap(byKey('aisle-chip-c-3'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    final TestGesture finger = await tester.startGesture(
+      tester.getCenter(byKey('product-grid')),
+    );
+    await finger.moveBy(const Offset(0, -20));
+    final double held = position(tester).pixels;
+    await tester.pump();
+    for (int i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(position(tester).pixels, held);
+    await finger.up();
+    await tester.pumpAndSettle();
+
     await tester.pump(const Duration(milliseconds: 800));
     position(tester).jumpTo(0);
     await tester.pumpAndSettle();
