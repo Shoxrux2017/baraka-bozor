@@ -478,6 +478,16 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String aisleHeadingSpoken(String name, String count) {
+    return '$name, $count';
+  }
+
+  @override
+  String aisleChipSpoken(String name, int index, int count) {
+    return '$name, $count tadan $index-bo\'lim';
+  }
+
+  @override
   String categoryShownSpoken(String name, String count) {
     return '$name: $count';
   }

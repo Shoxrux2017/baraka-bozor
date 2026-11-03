@@ -1,13 +1,16 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/accessibility/announce.dart';
 import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/layout/text_width.dart';
+import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/routing/flight_page.dart';
 import '../../../core/theme/kit_colors.dart';
@@ -17,6 +20,7 @@ import '../../../core/widgets/skeleton_bar.dart';
 import '../../../core/widgets/stale_data_line.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
+import 'aisles.dart';
 import 'kit_product_card.dart';
 import 'sort_menu.dart';
 
@@ -70,7 +74,8 @@ int productColumns(double width, TextScaler scaler, KitCardSize size) {
 /// of something else on the screen into the same line. [end] closes the list
 /// once it has no more; [spokenOnQuery] is announced when the first page of a
 /// query comes, and every grid announces a new order, a later page and a
-/// failed one (`DL-128`).
+/// failed one (`DL-128`). With [aisles], and the shop's own order, the cards
+/// stand under a heading for each aisle and report where the headings are.
 class KitProductGrid extends ConsumerStatefulWidget {
   const KitProductGrid({
     required this.query,
@@ -85,6 +90,7 @@ class KitProductGrid extends ConsumerStatefulWidget {
     this.end,
     this.spokenOnQuery,
     this.emptyAlignment = Alignment.center,
+    this.aisles,
     super.key,
   });
 
@@ -113,6 +119,9 @@ class KitProductGrid extends ConsumerStatefulWidget {
 
   /// Where the [empty] slot stands in the room under the header.
   final Alignment emptyAlignment;
+
+  /// The aisles of the shop's order; the list is flat without them.
+  final ProductAisles? aisles;
 
   @override
   ConsumerState<KitProductGrid> createState() => _KitProductGridState();
@@ -144,6 +153,14 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
 
   /// Whether the failure of the page now shown has been announced.
   bool _failureAnnounced = false;
+
+  /// The sliver of aisle rows, whose offset the headings' starts add to.
+  final GlobalKey _aisleSliver = GlobalKey();
+
+  /// The aisle rows last built, with their extents, for the report.
+  List<AisleRow> _aisleRows = const <AisleRow>[];
+  List<double> _aisleExtents = const <double>[];
+  bool _reportScheduled = false;
 
   /// Announces [message] once the frame is built.
   void _announceAfterFrame(String message) {
@@ -222,14 +239,43 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
     return false;
   }
 
+  /// Tells [ProductAisles] where each heading stands once the frame is laid
+  /// out: the sliver's own offset plus the rows before the heading.
+  void _reportAisles() {
+    if (_reportScheduled) {
+      return;
+    }
+    _reportScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _reportScheduled = false;
+      final Object? sliver = _aisleSliver.currentContext?.findRenderObject();
+      final ProductAisles? aisles = widget.aisles;
+      if (!mounted || aisles == null || sliver is! RenderSliver) {
+        return;
+      }
+      double at = sliver.constraints.precedingScrollExtent;
+      final Map<String, double> starts = <String, double>{};
+      for (int i = 0; i < _aisleRows.length; i++) {
+        final CatalogCategory? heading = _aisleRows[i].category;
+        if (heading != null) {
+          starts[heading.id] = at;
+        }
+        at += _aisleExtents[i];
+      }
+      aisles.report(starts);
+    });
+  }
+
   /// The length the list will have once every page is loaded: what is laid
-  /// out, plus the rows still to come, less the end row it stands on.
+  /// out, plus the rows still to come (for aisles, [aisleToCome]), less the
+  /// end row it stands on.
   double _fullExtent(
     ScrollMetrics metrics,
     ProductListState? state,
     int columns,
-    double extent,
-  ) {
+    double extent, {
+    double? aisleToCome,
+  }) {
     final double laid = metrics.maxScrollExtent + metrics.viewportDimension;
     if (state == null || state.items.isEmpty) {
       return laid;
@@ -242,7 +288,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
         : state.moreFailure == null
         ? extent + _gap
         : _failureRow;
-    return laid + math.max(0, toCome) * (extent + _gap) - end;
+    return laid + (aisleToCome ?? math.max(0, toCome) * (extent + _gap)) - end;
   }
 
   bool _onlySortDiffers(ProductListQuery a, ProductListQuery b) =>
@@ -324,26 +370,88 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
           );
         }
 
-        Widget cardsOf(List<CatalogProduct> items, {Widget? end}) =>
-            cardRows(items.length, (int index) {
-              final String id = items[index].id;
-              final Widget card = FlightTarget(
-                id: 'card-$id',
-                child: KitProductCard(
-                  key: ValueKey<String>(id),
-                  product: items[index],
-                  size: widget.size,
-                  imageHeight: widget.imageHeight,
+        Widget cardAt(List<CatalogProduct> items, int index) {
+          final String id = items[index].id;
+          final Widget card = FlightTarget(
+            id: 'card-$id',
+            child: KitProductCard(
+              key: ValueKey<String>(id),
+              product: items[index],
+              size: widget.size,
+              imageHeight: widget.imageHeight,
+            ),
+          );
+          return _paged.contains(id)
+              ? _PageFade(
+                  key: ValueKey<String>('card-fade-$id'),
+                  animate: _faded.add(id),
+                  child: card,
+                )
+              : card;
+        }
+
+        Widget cardsOf(List<CatalogProduct> items, {Widget? end}) => cardRows(
+          items.length,
+          (int index) => cardAt(items, index),
+          end: end,
+        );
+
+        final ProductAisles? aisles = widget.aisles;
+        final bool aisleMode =
+            aisles != null &&
+            query.sort == ProductSort.shop &&
+            aisles.categories.isNotEmpty;
+        final double innerWidth = constraints.maxWidth - padding.horizontal;
+        final AppLanguage language = interfaceLanguage(context);
+        double headingExtent(CatalogCategory c, {required bool first}) =>
+            aisleHeadingExtent(
+              c,
+              innerWidth,
+              scaler,
+              Directionality.of(context),
+              language: language,
+              first: first,
+            );
+
+        /// The loaded products as one list of exact row extents: a heading
+        /// before each aisle, the cards of an aisle [columns] to a row.
+        Widget aisleCardsOf(List<CatalogProduct> items) {
+          final List<AisleRow> rows = aisleRows(
+            items,
+            aisles!.categories,
+            columns,
+          );
+          final List<double> extents = <double>[
+            for (final AisleRow row in rows)
+              row.category != null
+                  ? headingExtent(row.category!, first: row.first)
+                  : extent + _gap,
+          ];
+          _aisleRows = rows;
+          _aisleExtents = extents;
+          _reportAisles();
+          return SliverVariedExtentList.builder(
+            key: _aisleSliver,
+            itemCount: rows.length,
+            itemExtentBuilder: (int index, SliverLayoutDimensions d) =>
+                extents[index],
+            itemBuilder: (BuildContext context, int index) {
+              final AisleRow row = rows[index];
+              final CatalogCategory? heading = row.category;
+              if (heading != null) {
+                return AisleHeading(category: heading, first: row.first);
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: _gap),
+                child: rowOf(
+                  (int c) => c < row.cards.length
+                      ? cardAt(items, row.cards[c])
+                      : const SizedBox.shrink(),
                 ),
               );
-              return _paged.contains(id)
-                  ? _PageFade(
-                      key: ValueKey<String>('card-fade-$id'),
-                      animate: _faded.add(id),
-                      child: card,
-                    )
-                  : card;
-            }, end: end);
+            },
+          );
+        }
 
         /// The end of a list with more to come: placeholders while the next
         /// page is on its way or about to be asked, the failure row after a
@@ -475,26 +583,48 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
           } else {
             final bool animate = _sawSkeleton;
             _sawSkeleton = false;
-            slivers.add(
-              FadeInSliver(
-                key: const ValueKey<String>('product-cards'),
-                animate: animate,
-                sliver: SliverPadding(
-                  padding: body,
-                  sliver: cardsOf(
-                    state.items,
-                    end: state.hasMore
-                        ? pageEnd(state)
-                        : widget.end == null
-                        ? null
-                        : _EndFade(
-                            key: const ValueKey<String>('list-end-fade'),
-                            child: widget.end!,
-                          ),
+            final Widget? end = state.hasMore
+                ? pageEnd(state)
+                : widget.end == null
+                ? null
+                : _EndFade(
+                    key: const ValueKey<String>('list-end-fade'),
+                    child: widget.end!,
+                  );
+            if (aisleMode) {
+              // The end rows keep their own height, so they stand after the
+              // rows of exact extents.
+              slivers.addAll(<Widget>[
+                FadeInSliver(
+                  key: const ValueKey<String>('product-cards'),
+                  animate: animate,
+                  sliver: SliverPadding(
+                    padding: body.copyWith(bottom: 0),
+                    sliver: aisleCardsOf(state.items),
                   ),
                 ),
-              ),
-            );
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    padding.left,
+                    0,
+                    padding.right,
+                    padding.bottom,
+                  ),
+                  sliver: SliverToBoxAdapter(child: end),
+                ),
+              ]);
+            } else {
+              slivers.add(
+                FadeInSliver(
+                  key: const ValueKey<String>('product-cards'),
+                  animate: animate,
+                  sliver: SliverPadding(
+                    padding: body,
+                    sliver: cardsOf(state.items, end: end),
+                  ),
+                ),
+              );
+            }
           }
         } else if (drawn != null &&
             _onlySortDiffers(drawn, query) &&
@@ -547,8 +677,22 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
             key: ValueKey<ProductListQuery>(query),
             child: ListScrollIndicator(
               bottomInset: padding.bottom,
-              fullExtent: (ScrollMetrics metrics) =>
-                  _fullExtent(metrics, state, columns, extent),
+              fullExtent: (ScrollMetrics metrics) => _fullExtent(
+                metrics,
+                state,
+                columns,
+                extent,
+                aisleToCome: aisleMode && state != null
+                    ? aisleExtentToCome(
+                        categories: aisles.categories,
+                        items: state.items,
+                        columns: columns,
+                        rowExtent: extent + _gap,
+                        headingExtent: (CatalogCategory c) =>
+                            headingExtent(c, first: false),
+                      )
+                    : null,
+              ),
               child: NotificationListener<ScrollMetricsNotification>(
                 onNotification: (ScrollMetricsNotification n) =>
                     n.depth == 0 && _onMetrics(n.metrics),

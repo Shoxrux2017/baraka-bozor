@@ -962,6 +962,18 @@ abstract class AppLocalizations {
   /// **'{name}, {count} tadan {index}'**
   String categoryRailSpoken(String name, int index, int count);
 
+  /// No description provided for @aisleHeadingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, {count}'**
+  String aisleHeadingSpoken(String name, String count);
+
+  /// No description provided for @aisleChipSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, {count} tadan {index}-bo\'lim'**
+  String aisleChipSpoken(String name, int index, int count);
+
   /// No description provided for @categoryShownSpoken.
   ///
   /// In uz, this message translates to:

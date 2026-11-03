@@ -169,4 +169,80 @@ void main() {
     expect(stateOf().moreFailure, isNotNull);
     expect(stateOf().at, DateTime.utc(2026, 11, 3, 7, 46));
   });
+
+  test('loadThrough loads pages until the count', () async {
+    await container.read(productListProvider(all).future);
+    final ProductListController list = container.read(
+      productListProvider(all).notifier,
+    );
+
+    await list.loadThrough(10);
+    expect(stateOf().items, hasLength(20), reason: 'already there');
+
+    await list.loadThrough(30);
+    expect(stateOf().items, hasLength(40));
+    expect(catalog.requests, <String>['|null|1', '|null|2']);
+
+    await list.loadThrough(100);
+    expect(stateOf().items, hasLength(45));
+    expect(stateOf().hasMore, isFalse);
+    expect(catalog.requests, hasLength(3), reason: 'nothing past the end');
+  });
+
+  test('loadThrough stops at a failure', () async {
+    await container.read(productListProvider(all).future);
+    final ProductListController list = container.read(
+      productListProvider(all).notifier,
+    );
+    catalog.nextFailure = const NetworkFailure();
+
+    await list.loadThrough(45);
+
+    expect(stateOf().items, hasLength(20));
+    expect(stateOf().moreFailure, isA<NetworkFailure>());
+    expect(catalog.requests, <String>['|null|1', '|null|2']);
+
+    await list.loadThrough(45);
+    expect(catalog.requests, hasLength(2), reason: 'no retry of its own');
+  });
+
+  test('loadThrough waits for a page already on its way', () async {
+    await container.read(productListProvider(all).future);
+    final ProductListController list = container.read(
+      productListProvider(all).notifier,
+    );
+    final Completer<void> gate = Completer<void>();
+    catalog.gates[''] = gate;
+
+    final Future<void> first = list.loadMore();
+    final Future<void> through = list.loadThrough(45);
+    catalog.gates.remove('');
+    gate.complete();
+    await first;
+    await through;
+
+    expect(stateOf().items, hasLength(45));
+    expect(catalog.requests, <String>['|null|1', '|null|2', '|null|3']);
+  });
+
+  test(
+    'loadThrough ends when the list is rebuilt for another account',
+    () async {
+      await container.read(productListProvider(all).future);
+      final ProductListController list = container.read(
+        productListProvider(all).notifier,
+      );
+      final Completer<void> gate = Completer<void>();
+      catalog.gates[''] = gate;
+
+      final Future<void> through = list.loadThrough(45);
+      container.read(_account.notifier).signIn('c-2');
+      catalog.gates.remove('');
+      await container.read(productListProvider(all).future);
+      gate.complete();
+      await through;
+
+      expect(stateOf().items, hasLength(20));
+    },
+  );
 }

@@ -199,6 +199,31 @@
       }
     }
   },
+  "aisleHeadingSpoken": "{name}, {count}",
+  "@aisleHeadingSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aisleChipSpoken": "{name}, {count} tadan {index}-bo'lim",
+  "@aisleChipSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "categoryShownSpoken": "{name}: {count}",
   "@categoryShownSpoken": {
     "placeholders": {

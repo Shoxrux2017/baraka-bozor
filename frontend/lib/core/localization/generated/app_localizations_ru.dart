@@ -485,6 +485,16 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String aisleHeadingSpoken(String name, String count) {
+    return '$name, $count';
+  }
+
+  @override
+  String aisleChipSpoken(String name, int index, int count) {
+    return '$name, раздел $index из $count';
+  }
+
+  @override
   String categoryShownSpoken(String name, String count) {
     return '$name: $count';
   }

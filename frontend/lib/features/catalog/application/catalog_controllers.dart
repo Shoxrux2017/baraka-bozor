@@ -89,6 +89,9 @@ class ProductListController extends AsyncNotifier<ProductListState> {
 
   int _generation = 0;
 
+  /// Completes when the page now being loaded is in; null while none is.
+  Completer<void>? _pending;
+
   @override
   Future<ProductListState> build() async {
     _generation++;
@@ -123,6 +126,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
     }
 
     final int generation = _generation;
+    final Completer<void> done = _pending = Completer<void>();
     state = AsyncData<ProductListState>(
       ProductListState(
         items: current.items,
@@ -174,6 +178,38 @@ class ProductListController extends AsyncNotifier<ProductListState> {
 
     if (ref.mounted && generation == _generation) {
       state = AsyncData<ProductListState>(next);
+    }
+    if (identical(_pending, done)) {
+      _pending = null;
+    }
+    done.complete();
+  }
+
+  /// Loads the next pages one after another until [count] products are in.
+  /// It stops when there is no more, when a page fails (its failure stays on
+  /// the state), or when the list was rebuilt meanwhile (`DL-128`).
+  Future<void> loadThrough(int count) async {
+    final int generation = _generation;
+    while (ref.mounted && generation == _generation) {
+      final ProductListState? current = state.value;
+      if (current == null ||
+          state.isLoading ||
+          state.hasError ||
+          current.items.length >= count ||
+          !current.hasMore ||
+          current.moreFailure != null) {
+        return;
+      }
+      final Completer<void>? running = _pending;
+      if (running != null) {
+        await running.future;
+        continue;
+      }
+      await loadMore();
+      if (identical(state.value, current)) {
+        // Nothing moved: loading is refused, so waiting longer is pointless.
+        return;
+      }
     }
   }
 }
