@@ -807,6 +807,41 @@ void main() {
       expect(find.text('Найдено: 11 товаров'), findsOneWidget);
     });
 
+    testWidgets('the new cards fade in from 0.45 after the dim', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = thirty();
+      await openSearch(tester);
+      await typeAndPause(tester, 'tur');
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['tur 1'] = slow;
+      await tester.enterText(field, 'tur 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(byKey('dimmed-cards'), findsOneWidget);
+
+      slow.complete();
+      await tester.pump();
+      await tester.pump();
+      double opacity() => tester
+          .widget<SliverFadeTransition>(
+            find.descendant(
+              of: byKey('product-cards'),
+              matching: find.byType(SliverFadeTransition),
+            ),
+          )
+          .opacity
+          .value;
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(opacity(), inInclusiveRange(0.45, 0.6));
+
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(opacity(), 1);
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('the first query shows skeletons', (WidgetTester tester) async {
       catalog.productRows = thirty();
       final Completer<void> slow = Completer<void>();

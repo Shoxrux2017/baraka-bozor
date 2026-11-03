@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 
 /// Fades its sliver in over 200 ms `easeOut` when [animate] is set (the data
-/// that replaces skeletons); with reduced motion, or without [animate], it is
-/// there at once.
+/// that replaces skeletons, or from [from] the dimmed cards it replaces); with
+/// reduced motion, or without [animate], it is there at once.
 class FadeInSliver extends StatefulWidget {
-  const FadeInSliver({required this.animate, required this.sliver, super.key});
+  const FadeInSliver({
+    required this.animate,
+    required this.sliver,
+    this.from = 0,
+    super.key,
+  });
 
   final bool animate;
+
+  /// The opacity the fade starts from.
+  final double from;
   final Widget sliver;
 
   @override
@@ -44,7 +52,10 @@ class _FadeInSliverState extends State<FadeInSliver>
   @override
   Widget build(BuildContext context) {
     return SliverFadeTransition(
-      opacity: CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+      opacity: Tween<double>(
+        begin: widget.from,
+        end: 1,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut)),
       sliver: widget.sliver,
     );
   }

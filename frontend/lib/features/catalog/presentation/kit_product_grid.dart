@@ -145,6 +145,10 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
   static const double _failureRow = 56 + _gap;
 
   bool _sawSkeleton = false;
+
+  /// Whether dimmed cards stood before the data now drawn: it fades in from
+  /// their opacity (`DL-128`).
+  bool _sawDimmed = false;
   bool _askScheduled = false;
   final ScrollController _own = ScrollController();
 
@@ -591,8 +595,10 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
               ),
             );
           } else {
-            final bool animate = _sawSkeleton;
+            final bool animate = _sawSkeleton || _sawDimmed;
+            final double fadeFrom = _sawSkeleton ? 0 : 0.45;
             _sawSkeleton = false;
+            _sawDimmed = false;
             final Widget? end = state.hasMore
                 ? pageEnd(state)
                 : widget.end == null
@@ -608,6 +614,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
                 FadeInSliver(
                   key: const ValueKey<String>('product-cards'),
                   animate: animate,
+                  from: fadeFrom,
                   sliver: SliverPadding(
                     padding: body.copyWith(bottom: 0),
                     sliver: aisleCardsOf(state.items),
@@ -628,6 +635,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
                 FadeInSliver(
                   key: const ValueKey<String>('product-cards'),
                   animate: animate,
+                  from: fadeFrom,
                   sliver: SliverPadding(
                     padding: body,
                     sliver: cardsOf(state.items, end: end),
@@ -643,6 +651,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
           // Another order, or another search of the same products: the old
           // cards stay, dimmed, until the new list replaces them. A new text
           // that fails drops them (`DL-128`).
+          _sawDimmed = true;
           slivers.add(
             SliverIgnorePointer(
               key: const ValueKey<String>('dimmed-cards'),

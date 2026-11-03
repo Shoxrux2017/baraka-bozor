@@ -1046,6 +1046,40 @@ void main() {
       );
     });
 
+    testWidgets('the cards of a new order fade in from 0.45 after the dim', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, CatalogPaths.products);
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(byKey('product-grid')),
+      );
+
+      catalog.gates[''] = Completer<void>();
+      container.read(productSortProvider.notifier).set(ProductSort.priceDesc);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(byKey('dimmed-cards'), findsOneWidget);
+
+      catalog.gates['']!.complete();
+      await tester.pump();
+      await tester.pump();
+      double opacity() => tester
+          .widget<SliverFadeTransition>(
+            find.descendant(
+              of: byKey('product-cards'),
+              matching: find.byType(SliverFadeTransition),
+            ),
+          )
+          .opacity
+          .value;
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(opacity(), inInclusiveRange(0.45, 0.6));
+
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(opacity(), 1);
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('the count stays while another order loads', (
       WidgetTester tester,
     ) async {
