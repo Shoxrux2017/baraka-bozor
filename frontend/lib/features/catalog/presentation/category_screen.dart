@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/accessibility/announce.dart';
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
@@ -19,6 +20,7 @@ import 'all_categories_screen.dart';
 import 'category_tile.dart';
 import 'kit_product_card.dart';
 import 'kit_product_grid.dart';
+import 'sort_menu.dart';
 
 /// One category (drawing 12): a rail of every category on the left, as the
 /// kit's subcategory rail, and the category's products on the right. Choosing
@@ -27,7 +29,10 @@ import 'kit_product_grid.dart';
 /// the location keeps the opened category, so back returns to where the
 /// Customer came from. Opened from a tile it takes that tile's [opening], so
 /// the tile's picture flies into the rail's well (`DL-125`) while the opened
-/// category is the selected one.
+/// category is the selected one. A section shown before is kept for the life of
+/// the screen: it comes at once and refreshes quietly. At large text the rail
+/// gives way to a row of chips, and lying the body keeps clear of a camera at
+/// the side (`DL-127`).
 class CategoryScreen extends ConsumerStatefulWidget {
   const CategoryScreen({required this.categoryId, this.opening, super.key});
 
@@ -45,6 +50,14 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
   /// The section a switch announces once its first page is known.
   String? _announceFor;
 
+  /// One subscription per list shown, held for the life of the screen so a
+  /// section shown before comes back at once (`DL-127`).
+  final Map<
+    ProductListQuery,
+    ProviderSubscription<AsyncValue<ProductListState>>
+  >
+  _kept = {};
+
   @override
   void didUpdateWidget(CategoryScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -55,8 +68,18 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
 
   @override
   void dispose() {
+    for (final ProviderSubscription<AsyncValue<ProductListState>> kept
+        in _kept.values) {
+      kept.close();
+    }
     _products.dispose();
     super.dispose();
+  }
+
+  /// Refreshed together with the list by a pull.
+  Future<Object?> _refreshCategories() async {
+    ref.invalidate(catalogCategoriesProvider);
+    return ref.read(catalogCategoriesProvider.future);
   }
 
   void _select(CatalogCategory category) {
@@ -75,6 +98,14 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
       return;
     }
     HapticFeedback.selectionClick();
+    final ProductListQuery next = ProductListQuery(
+      categoryId: category.id,
+      sort: ref.read(productSortProvider),
+    );
+    if (_kept.containsKey(next)) {
+      // Shown before: its cards stand while it refreshes.
+      ref.invalidate(productListProvider(next));
+    }
     setState(() {
       _selectedId = category.id;
       _announceFor = category.id;
@@ -94,12 +125,23 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
     final CatalogCategory? category = rows
         ?.where((CatalogCategory c) => c.id == _selectedId)
         .firstOrNull;
+    final ProductSort sort = ref.watch(productSortProvider);
+    final ProductListQuery query = ProductListQuery(
+      categoryId: _selectedId,
+      sort: sort,
+    );
+    _kept.putIfAbsent(
+      query,
+      () => ref.listenManual(productListProvider(query), (previous, next) {}),
+    );
+    final Loaded<List<CatalogCategory>>? loaded = async.value;
+    final Object? categoriesError = async.hasError ? async.error : null;
 
     // A switch is announced once, when the first page of the section still
     // selected is known; at once when it was loaded before.
     if (category != null && _announceFor == _selectedId) {
       final ProductListState? shown = ref
-          .watch(productListProvider(ProductListQuery(categoryId: _selectedId)))
+          .watch(productListProvider(query))
           .value;
       if (shown != null) {
         _announceFor = null;
@@ -124,72 +166,114 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
       ),
       // The mode stays visible while two sessions exist (DL-75), whatever
       // the body shows: loading, an error, not found or the products.
-      body: UnderActiveMode(
-        child: Builder(
-          builder: (BuildContext context) {
-            if (rows == null) {
-              final Object? error = async.error;
-              return async.hasError
-                  ? CategoriesFailure(
-                      failure: error is ApiFailure
-                          ? error
-                          : const UnexpectedFailure(),
-                      onRetry: () => ref.invalidate(catalogCategoriesProvider),
-                    )
-                  : const Center(child: CircularProgressIndicator());
-            }
-            if (category == null) {
-              return Center(child: Text(l10n.errorNotFound));
-            }
-            return Stack(
-              children: <Widget>[
-                Positioned.fill(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      _CategoryRail(
-                        categories: rows,
-                        selectedId: _selectedId,
-                        openedId: widget.categoryId,
-                        heroTag:
-                            widget.opening == null ||
-                                MediaQuery.disableAnimationsOf(context)
-                            ? null
-                            : widget.opening!.heroTag,
-                        onSelect: _select,
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: UnderActiveMode(
+          child: Builder(
+            builder: (BuildContext context) {
+              if (rows == null) {
+                final Object? error = async.error;
+                return async.hasError
+                    ? CategoriesFailure(
+                        failure: error is ApiFailure
+                            ? error
+                            : const UnexpectedFailure(),
+                        onRetry: () =>
+                            ref.invalidate(catalogCategoriesProvider),
+                      )
+                    : const Center(child: CircularProgressIndicator());
+              }
+              if (category == null) {
+                return Center(child: Text(l10n.errorNotFound));
+              }
+              final bool chips =
+                  textScaleAt(MediaQuery.textScalerOf(context), 11) > 1.3;
+              final Widget grid = _SectionFade(
+                section: _selectedId,
+                child: KitProductGrid(
+                  query: query,
+                  size: KitCardSize.compact,
+                  imageHeight: 84,
+                  controller: _products,
+                  header: <Widget>[
+                    SliverToBoxAdapter(
+                      child: ProductListCountRow(
+                        key: const ValueKey<String>('list-count-row'),
+                        total: ref
+                            .watch(productListProvider(query))
+                            .value
+                            ?.total,
+                        sort: sort,
+                        onSort: ref.read(productSortProvider.notifier).set,
                       ),
-                      Expanded(
-                        child: ColoredBox(
-                          color: KitColors.card,
-                          child: _SectionFade(
-                            section: _selectedId,
-                            child: KitProductGrid(
-                              query: ProductListQuery(categoryId: _selectedId),
-                              size: KitCardSize.compact,
-                              imageHeight: 84,
-                              controller: _products,
-                              padding: EdgeInsets.fromLTRB(
-                                10,
-                                12,
-                                10,
-                                12 + CartSummaryBar.reserved(context),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                  alsoRefresh: _refreshCategories,
+                  alsoFailed: categoriesError != null && loaded != null
+                      ? (
+                          failure: categoriesError is ApiFailure
+                              ? categoriesError
+                              : const UnexpectedFailure(),
+                          at: loaded.at,
+                        )
+                      : null,
+                  padding: EdgeInsets.fromLTRB(
+                    chips ? 16 : 10,
+                    chips ? 4 : 12,
+                    chips ? 16 : 10,
+                    12 + CartSummaryBar.reserved(context),
                   ),
                 ),
-                const Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: CartSummaryBar(),
-                ),
-              ],
-            );
-          },
+              );
+              return Stack(
+                children: <Widget>[
+                  Positioned.fill(
+                    child: chips
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              _CategoryChips(
+                                categories: rows,
+                                selectedId: _selectedId,
+                                onSelect: _select,
+                              ),
+                              Expanded(child: grid),
+                            ],
+                          )
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              _CategoryRail(
+                                categories: rows,
+                                selectedId: _selectedId,
+                                openedId: widget.categoryId,
+                                heroTag:
+                                    widget.opening == null ||
+                                        MediaQuery.disableAnimationsOf(context)
+                                    ? null
+                                    : widget.opening!.heroTag,
+                                onSelect: _select,
+                              ),
+                              Expanded(
+                                child: ColoredBox(
+                                  color: KitColors.card,
+                                  child: grid,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                  const Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: CartSummaryBar(),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -340,11 +424,14 @@ class _CategoryRailState extends State<_CategoryRail> {
     }
     final ScrollPosition position = _scroll.position;
     final double bottom = box.top + box.height;
-    final double shownBottom = position.pixels + position.viewportDimension;
+    // The cart bar covers the rail's foot: an item under it is not in view.
+    final double visible =
+        position.viewportDimension - CartSummaryBar.reserved(context);
+    final double shownBottom = position.pixels + visible;
     final double? target = box.top < position.pixels
         ? box.top
         : bottom > shownBottom
-        ? bottom - position.viewportDimension
+        ? bottom - visible
         : null;
     if (target == null) {
       return;
@@ -423,6 +510,133 @@ class _CategoryRailState extends State<_CategoryRail> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The categories as a row of chips under the header, instead of the rail,
+/// when the text is large (`DL-127`). The selected chip is centred on opening
+/// and scrolled the least that shows it on a switch.
+class _CategoryChips extends StatefulWidget {
+  const _CategoryChips({
+    required this.categories,
+    required this.selectedId,
+    required this.onSelect,
+  });
+
+  final List<CatalogCategory> categories;
+  final String selectedId;
+  final ValueChanged<CatalogCategory> onSelect;
+
+  @override
+  State<_CategoryChips> createState() => _CategoryChipsState();
+}
+
+class _CategoryChipsState extends State<_CategoryChips> {
+  final Map<String, GlobalKey> _itemKeys = <String, GlobalKey>{};
+
+  GlobalKey _keyOf(String id) => _itemKeys.putIfAbsent(id, GlobalKey.new);
+
+  void _show({required bool centred}) {
+    final BuildContext? target = _keyOf(widget.selectedId).currentContext;
+    if (!mounted || target == null || !target.mounted) {
+      return;
+    }
+    final bool still = centred || MediaQuery.disableAnimationsOf(context);
+    Scrollable.ensureVisible(
+      target,
+      alignment: 0.5,
+      alignmentPolicy: centred
+          ? ScrollPositionAlignmentPolicy.explicit
+          : ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      duration: still ? Duration.zero : const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _show(centred: true));
+  }
+
+  @override
+  void didUpdateWidget(_CategoryChips oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedId != widget.selectedId) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _show(centred: false),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLanguage language = interfaceLanguage(context);
+    final Duration fade = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 200);
+    final int count = widget.categories.length;
+    return SingleChildScrollView(
+      key: const ValueKey<String>('category-chips'),
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
+      child: Row(
+        children: <Widget>[
+          for (int i = 0; i < count; i++) ...<Widget>[
+            if (i > 0) const SizedBox(width: 8),
+            Builder(
+              builder: (BuildContext context) {
+                final CatalogCategory category = widget.categories[i];
+                final bool selected = category.id == widget.selectedId;
+                final String name = category.name(language);
+                return PressScale(
+                  key: ValueKey<String>('chip-${category.id}'),
+                  label: l10n.categoryRailSpoken(name, i + 1, count),
+                  selected: selected,
+                  onTap: () => widget.onSelect(category),
+                  child: AnimatedContainer(
+                    key: _keyOf(category.id),
+                    duration: fade,
+                    constraints: const BoxConstraints(minHeight: 44),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected ? KitColors.primaryWash : KitColors.chip,
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    foregroundDecoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: selected
+                            ? KitColors.primary
+                            : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: Text(
+                      name,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: selected
+                            ? KitColors.primaryDark
+                            : KitColors.ink2,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ],
       ),
     );
   }

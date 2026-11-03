@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' show Tristate;
 
 import 'package:baraka_bozor/app/providers.dart';
@@ -20,12 +21,14 @@ import 'package:baraka_bozor/core/widgets/skeleton_bar.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
+import 'package:baraka_bozor/features/cart/presentation/cart_summary_bar.dart';
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/category_tile.dart';
+import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
 import 'package:baraka_bozor/features/catalog/presentation/kit_product_grid.dart';
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:flutter/gestures.dart';
@@ -1394,6 +1397,410 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(CategoryScreen), findsNothing);
       expect(find.byType(AllCategoriesScreen), findsOneWidget);
+    });
+
+    FakeCartRepository oneLine() => FakeCartRepository(
+      cart: cartOf(<Map<String, Object?>>[cartLineJson()]),
+    );
+
+    void lying(WidgetTester tester) {
+      tester.view.physicalSize = const Size(812, 375);
+      tester.view.devicePixelRatio = 1;
+      tester.view.padding = const FakeViewPadding(left: 47, right: 47);
+      addTearDown(tester.view.reset);
+    }
+
+    void small(WidgetTester tester) {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
+
+    const NonlinearTextScaler x2 = NonlinearTextScaler(2);
+
+    Future<void> pullGrid(WidgetTester tester) async {
+      await tester.drag(find.byType(KitProductGrid), const Offset(0, 300));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+    }
+
+    /// Eight more products in the first category.
+    void eightMore() {
+      catalog.productRows = <CatalogProduct>[
+        ...catalog.productRows,
+        for (int i = 1; i <= 8; i++)
+          catalogProduct(id: 'm-$i', nameUz: 'Qoshimcha $i'),
+      ];
+    }
+
+    List<Rect> cardRects(WidgetTester tester) => <Rect>[
+      for (final Element e in find.byType(KitProductCard).evaluate())
+        tester.getRect(find.byWidget(e.widget)),
+    ];
+
+    testWidgets('lying with a notch nothing sits under the camera and four '
+        'columns stand', (WidgetTester tester) async {
+      lying(tester);
+      eightMore();
+      await open(tester, CatalogPaths.category('c-1'), cart: oneLine());
+
+      expect(
+        tester.getTopLeft(byKey('category-rail')).dx,
+        greaterThanOrEqualTo(47),
+      );
+      final List<Rect> cards = cardRects(tester);
+      expect(cards.length, greaterThanOrEqualTo(4));
+      for (final Rect card in cards) {
+        expect(card.right, lessThanOrEqualTo(812 - 47));
+      }
+      expect(
+        cards.where(
+          (Rect r) => (r.center.dy - cards.first.center.dy).abs() < 1,
+        ),
+        hasLength(4),
+        reason: 'four cards in the first row',
+      );
+      final Rect bar = tester.getRect(find.byType(CartSummaryBar));
+      expect(bar.left, greaterThanOrEqualTo(47));
+      expect(bar.right, lessThanOrEqualTo(812 - 47));
+    });
+
+    testWidgets('a section shown before comes at once; a new one shows '
+        'skeletons', (WidgetTester tester) async {
+      await open(tester, CatalogPaths.category('c-1'));
+
+      catalog.gates[''] = Completer<void>();
+      await tester.tap(byKey('rail-c-2'));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.byType(SkeletonBar), findsWidgets, reason: 'a new section');
+      expect(find.text('Olma'), findsNothing);
+      catalog.gates['']!.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Olma'), findsOneWidget);
+
+      catalog.gates[''] = Completer<void>();
+      catalog.requests.clear();
+      await tester.tap(byKey('rail-c-1'));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('Pomidor'), findsOneWidget, reason: 'a kept section');
+      expect(find.byType(SkeletonBar), findsNothing);
+      expect(catalog.requests, <String>['|c-1|1'], reason: 'refreshed quietly');
+      catalog.gates['']!.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Pomidor'), findsOneWidget);
+    });
+
+    testWidgets('offline a section shown before keeps its cards under Нет '
+        'связи · данные на 12:46', (WidgetTester tester) async {
+      await open(
+        tester,
+        CatalogPaths.category('c-1'),
+        locale: const Locale('ru'),
+        clock: () => DateTime.utc(2026, 11, 2, 7, 46),
+      );
+      await tester.tap(byKey('rail-c-2'));
+      await tester.pumpAndSettle();
+
+      catalog.nextFailure = const NetworkFailure();
+      await tester.tap(byKey('rail-c-1'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Помидор'), findsOneWidget);
+      expect(find.text('Нет связи · данные на 12:46'), findsOneWidget);
+    });
+
+    testWidgets('a pull refreshes the section and the categories', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, CatalogPaths.category('c-1'));
+      final int loads = catalog.categoryLoads;
+      catalog.requests.clear();
+
+      await pullGrid(tester);
+
+      expect(catalog.categoryLoads, loads + 1);
+      expect(catalog.requests, <String>['|c-1|1']);
+    });
+
+    testWidgets('the categories failing alone show their stale line', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        CatalogPaths.category('c-1'),
+        locale: const Locale('ru'),
+        clock: () => DateTime.utc(2026, 11, 2, 7, 46),
+      );
+      catalog.categoriesFailure = const NetworkFailure();
+
+      await pullGrid(tester);
+
+      expect(find.text('Нет связи · данные на 12:46'), findsOneWidget);
+      expect(byKey('rail-c-1'), findsOneWidget);
+      expect(find.text('Помидор'), findsOneWidget);
+    });
+
+    testWidgets('shows 1 товар · Как в магазине and the menu re-sorts the '
+        'section', (WidgetTester tester) async {
+      phone(tester);
+      catalog.productRows = <CatalogProduct>[
+        catalogProduct(),
+        catalogProduct(
+          id: 'p-5',
+          nameUz: 'Arzon',
+          nameRu: 'Дешёвый',
+          customerUnitPriceUzs: 5000,
+        ),
+      ];
+      await open(
+        tester,
+        CatalogPaths.category('c-1'),
+        locale: const Locale('ru'),
+      );
+
+      expect(find.text('2 товара'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('list-sort'),
+          matching: find.text('Как в магазине'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(find.text('Помидор')).dx,
+        lessThan(tester.getTopLeft(find.text('Дешёвый')).dx),
+      );
+
+      await tester.tap(byKey('list-sort'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('sort-price-asc'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getTopLeft(find.text('Дешёвый')).dx,
+        lessThan(tester.getTopLeft(find.text('Помидор')).dx),
+      );
+      expect(find.text('2 товара'), findsOneWidget);
+    });
+
+    testWidgets('an item hidden under the cart bar scrolls up into view on a '
+        'switch', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(375, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      catalog.categoryRows = manyCategories(12);
+      await open(tester, CatalogPaths.category('c-1'), cart: oneLine());
+      final double barTop = tester.getTopLeft(find.byType(CartSummaryBar)).dy;
+      final Rect before = tester.getRect(byKey('rail-c-4'));
+      expect(
+        before.bottom,
+        lessThanOrEqualTo(tester.getRect(byKey('category-rail')).bottom),
+      );
+      expect(before.bottom, greaterThan(barTop), reason: 'under the bar');
+
+      await tester.tap(byKey('rail-c-4'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      expect(railOffset(tester), greaterThan(0));
+      expect(
+        tester.getRect(byKey('rail-c-4')).bottom,
+        lessThanOrEqualTo(barTop),
+      );
+    });
+
+    testWidgets('at text x2 the rail becomes chips under the header and the '
+        'products take the full width in two columns', (
+      WidgetTester tester,
+    ) async {
+      small(tester);
+      eightMore();
+      await open(
+        tester,
+        CatalogPaths.category('c-1'),
+        locale: const Locale('ru'),
+        textScaler: x2,
+      );
+
+      expect(byKey('category-rail'), findsNothing);
+      expect(byKey('rail-marker'), findsNothing);
+      expect(byKey('category-chips'), findsOneWidget);
+      for (final String id in <String>['c-1', 'c-2', 'c-3']) {
+        expect(
+          tester.getSize(byKey('chip-$id')).height,
+          greaterThanOrEqualTo(44),
+        );
+      }
+      expect(
+        tester.getTopLeft(byKey('category-chips')).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(find.byType(AppBar)).dy),
+      );
+      expect(
+        tester.getTopLeft(byKey('chip-c-1')).dx,
+        16,
+        reason: 'first chip at the side padding',
+      );
+      Color? chipColor(String id) =>
+          (tester
+                      .widget<AnimatedContainer>(
+                        find.descendant(
+                          of: byKey('chip-$id'),
+                          matching: find.byType(AnimatedContainer),
+                        ),
+                      )
+                      .decoration!
+                  as BoxDecoration)
+              .color;
+      expect(chipColor('c-1'), KitColors.primaryWash);
+      expect(chipColor('c-2'), KitColors.chip);
+
+      final List<Rect> cards = cardRects(tester);
+      expect(cards.first.left, 16);
+      expect(
+        cards.where(
+          (Rect r) => (r.center.dy - cards.first.center.dy).abs() < 1,
+        ),
+        hasLength(2),
+      );
+      expect(cards.map((Rect r) => r.right).reduce(math.max), 320 - 16);
+    });
+
+    testWidgets('a chip reads like a rail item and switches the same way', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      mockPlatform();
+      small(tester);
+      await open(
+        tester,
+        CatalogPaths.category('c-1'),
+        locale: const Locale('ru'),
+        textScaler: x2,
+      );
+      tester.takeAnnouncements();
+
+      final SemanticsNode second = tester.getSemantics(byKey('chip-c-2'));
+      expect(second.label, 'Фрукты, 2 из 3');
+      expect(second.getSemanticsData().flagsCollection.isButton, isTrue);
+      expect(
+        tester
+            .getSemantics(byKey('chip-c-1'))
+            .getSemanticsData()
+            .flagsCollection
+            .isSelected,
+        Tristate.isTrue,
+      );
+
+      await tester.tap(byKey('chip-c-2'));
+      await tester.pumpAndSettle();
+
+      expect(clicks(), 1);
+      expect(find.text('Яблоко'), findsOneWidget);
+      expect(find.text('Помидор'), findsNothing);
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text('Фрукты')),
+        findsOneWidget,
+      );
+      expect(
+        tester.takeAnnouncements().map(
+          (CapturedAccessibilityAnnouncement a) => a.message,
+        ),
+        <String>['Фрукты: 1 товар'],
+      );
+      await tester.tap(byKey('chip-c-2'));
+      await tester.pumpAndSettle();
+      expect(clicks(), 1, reason: 'a tap on the selected one does not click');
+      handle.dispose();
+    });
+
+    testWidgets('a chip off the edge scrolls into view on a switch', (
+      WidgetTester tester,
+    ) async {
+      small(tester);
+      catalog.categoryRows = manyCategories(12);
+      await open(
+        tester,
+        CatalogPaths.category('c-1'),
+        locale: const Locale('ru'),
+        textScaler: x2,
+      );
+      expect(tester.getRect(byKey('chip-c-1')).left, 16);
+
+      // The first chip that sticks out past the right edge.
+      int cut = 1;
+      while (tester.getRect(byKey('chip-c-$cut')).right <= 320) {
+        cut++;
+      }
+      final Rect before = tester.getRect(byKey('chip-c-$cut'));
+      expect(before.left, lessThan(300));
+      await tester.tapAt(before.topLeft + const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      final Rect chip = tester.getRect(byKey('chip-c-$cut'));
+      expect(chip.left, greaterThanOrEqualTo(0));
+      expect(chip.right, lessThanOrEqualTo(320));
+      expect(
+        tester.getRect(byKey('chip-c-1')).left,
+        lessThan(16),
+        reason: 'the row moved',
+      );
+    });
+
+    for (final Locale device in const <Locale>[Locale('ru'), Locale('uz')]) {
+      testWidgets('at text x2 with two sessions and a cart nothing overflows '
+          '(${device.languageCode})', (WidgetTester tester) async {
+        small(tester);
+        await open(
+          tester,
+          CatalogPaths.category('c-3'),
+          locale: device,
+          twoSessions: true,
+          cart: oneLine(),
+          textScaler: x2,
+        );
+        catalog.categoriesFailure = const NetworkFailure();
+        await pullGrid(tester);
+
+        expect(byKey('stale-line'), findsOneWidget);
+        expect(byKey('category-chips'), findsOneWidget);
+        expect(find.byType(CartSummaryBar), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('the category screen meets the tap target guideline', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      phone(tester);
+      await open(tester, CatalogPaths.category('c-1'), cart: oneLine());
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      handle.dispose();
+    });
+
+    testWidgets('the category screen meets the tap target guideline as chips '
+        'at text x2', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      small(tester);
+      await open(
+        tester,
+        CatalogPaths.category('c-1'),
+        cart: oneLine(),
+        textScaler: x2,
+      );
+      expect(byKey('category-chips'), findsOneWidget);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      handle.dispose();
+    });
+
+    testWidgets('the category screen meets the tap target guideline lying', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      lying(tester);
+      await open(tester, CatalogPaths.category('c-1'), cart: oneLine());
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      handle.dispose();
     });
 
     testWidgets('an unknown category says it was not found', (
