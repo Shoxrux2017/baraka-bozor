@@ -744,6 +744,209 @@ void main() {
     });
   });
 
+  group('typing without flicker', () {
+    List<CatalogProduct> thirty() => <CatalogProduct>[
+      for (int i = 1; i <= 30; i++)
+        catalogProduct(id: 't-$i', nameUz: 'Tur $i', nameRu: 'Вид $i'),
+    ];
+
+    double dimmedOpacity(WidgetTester tester) => tester
+        .widget<SliverOpacity>(
+          find.descendant(
+            of: byKey('dimmed-cards'),
+            matching: find.byType(SliverOpacity),
+          ),
+        )
+        .opacity;
+
+    testWidgets("typing a second query keeps the first one's cards dimmed "
+        'under a 2 px line', (WidgetTester tester) async {
+      catalog.productRows = thirty();
+      await openSearch(tester);
+      await typeAndPause(tester, 'tur');
+      expect(find.text('Tur 1'), findsOneWidget);
+      expect(byKey('search-progress'), findsNothing);
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['tur 1'] = slow;
+      await tester.enterText(field, 'tur 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(byKey('product-skeletons'), findsNothing);
+      expect(find.text('Tur 1'), findsOneWidget);
+      expect(dimmedOpacity(tester), 0.45);
+      expect(tester.getSize(byKey('search-progress')).height, 2);
+
+      slow.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('search-progress'), findsNothing);
+      expect(byKey('dimmed-cards'), findsNothing);
+    });
+
+    testWidgets('the new cards come and the count rolls to the new number', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = thirty();
+      await openSearch(tester, device: const Locale('ru'));
+      await typeAndPause(tester, 'вид');
+      expect(find.text('Найдено: 30 товаров'), findsOneWidget);
+
+      await tester.enterText(field, 'вид 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60));
+
+      // 'Вид 1' and 'Вид 10' to 'Вид 19' are 11.
+      expect(find.text('Найдено: 30 товаров'), findsOneWidget);
+      expect(find.text('Найдено: 11 товаров'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.text('Найдено: 30 товаров'), findsNothing);
+      expect(find.text('Найдено: 11 товаров'), findsOneWidget);
+    });
+
+    testWidgets('the first query shows skeletons', (WidgetTester tester) async {
+      catalog.productRows = thirty();
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['tur'] = slow;
+      await openSearch(tester);
+      await tester.enterText(field, 'tur');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+
+      expect(byKey('product-skeletons'), findsOneWidget);
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(byKey('search-progress'), findsNothing);
+
+      slow.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Tur 1'), findsOneWidget);
+    });
+
+    testWidgets('a new query that fails drops the dimmed cards of another', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = thirty();
+      await openSearch(tester, device: const Locale('ru'));
+      await typeAndPause(tester, 'вид');
+      expect(byKey('search-found'), findsOneWidget);
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['вид 1'] = slow;
+      await tester.enterText(field, 'вид 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(byKey('dimmed-cards'), findsOneWidget);
+
+      catalog.nextFailure = const NetworkFailure();
+      slow.complete();
+      await tester.pumpAndSettle();
+
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(byKey('product-skeletons'), findsOneWidget);
+      expect(byKey('stale-retry'), findsOneWidget);
+      expect(byKey('search-found'), findsNothing);
+      expect(byKey('search-progress'), findsNothing);
+      expect(find.text('Вид 1'), findsNothing);
+
+      await tester.tap(byKey('stale-retry'));
+      await tester.pumpAndSettle();
+      expect(find.text('Вид 1'), findsOneWidget);
+      expect(byKey('search-found'), findsOneWidget);
+    });
+
+    testWidgets('a refresh of the same query that fails keeps its cards '
+        'under the stale line', (WidgetTester tester) async {
+      catalog.productRows = thirty();
+      await openSearch(tester);
+      await typeAndPause(tester, 'tur');
+
+      final ProviderContainer container = ProviderScope.containerOf(
+        screenContext(tester),
+      );
+      catalog.nextFailure = const NetworkFailure();
+      container.invalidate(
+        productListProvider(const ProductListQuery(search: 'tur')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(byKey('stale-line'), findsOneWidget);
+      expect(find.text('Tur 1'), findsOneWidget);
+      expect(byKey('product-skeletons'), findsNothing);
+      expect(byKey('search-progress'), findsNothing);
+    });
+
+    testWidgets('with reduced motion the line stands still at half opacity', (
+      WidgetTester tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      catalog.productRows = thirty();
+      await openSearch(tester);
+      await typeAndPause(tester, 'tur');
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['tur 1'] = slow;
+      await tester.enterText(field, 'tur 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+
+      final Rect first = tester.getRect(byKey('search-progress-bar'));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.getRect(byKey('search-progress-bar')), first);
+      expect(first.width, tester.getSize(byKey('search-progress')).width);
+      expect(
+        tester
+            .widget<Opacity>(
+              find.ancestor(
+                of: byKey('search-progress-bar'),
+                matching: find.byType(Opacity),
+              ),
+            )
+            .opacity,
+        0.5,
+      );
+
+      slow.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the running bar is 40 % wide and runs across the line', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = thirty();
+      await openSearch(tester);
+      await typeAndPause(tester, 'tur');
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['tur 1'] = slow;
+      await tester.enterText(field, 'tur 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+
+      final Rect line = tester.getRect(byKey('search-progress'));
+      expect(
+        tester.getSize(byKey('search-progress-bar')).width,
+        closeTo(line.width * 0.4, 0.01),
+      );
+      final double start = tester.getRect(byKey('search-progress-bar')).left;
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        tester.getRect(byKey('search-progress-bar')).left,
+        greaterThan(start),
+      );
+
+      slow.complete();
+      await tester.pumpAndSettle();
+    });
+  });
+
   group('the keyboard and the cart bar', () {
     void keyboardUp(WidgetTester tester) {
       tester.view.viewInsets = const FakeViewPadding(bottom: 300);

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/press_scale.dart';
+import '../../../core/widgets/swap_in.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 
@@ -310,7 +311,8 @@ class _SortItem extends StatelessWidget {
 /// is known. [countText] words the count instead of `catalogProductCount`
 /// (the number in it is drawn in ink); with [keepAcrossSearch] the last total
 /// stays while another search of the same filter loads and goes when it fails
-/// (`DL-128`).
+/// (`DL-128`). A count that changes from one known number to another rolls in
+/// (`SwapIn`, 240 ms; a 200 ms fade with reduced motion).
 class ProductListCountRow extends ConsumerWidget {
   const ProductListCountRow({
     required this.query,
@@ -372,7 +374,13 @@ class ProductListCountRow extends ConsumerWidget {
                   ? const SizedBox.shrink()
                   : Align(
                       alignment: AlignmentDirectional.centerStart,
-                      child: _Count(text: words(count)),
+                      child: SwapIn(
+                        swapKey: count,
+                        duration: 240,
+                        reduced: MediaQuery.disableAnimationsOf(context),
+                        riseFrom: 0.45,
+                        child: _Count(text: words(count)),
+                      ),
                     ),
             ),
             const SizedBox(width: 8),

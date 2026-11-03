@@ -92,6 +92,7 @@ class KitProductGrid extends ConsumerStatefulWidget {
     this.emptyAlignment = Alignment.center,
     this.aisles,
     this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
+    this.keepCardsOf,
     super.key,
   });
 
@@ -126,6 +127,11 @@ class KitProductGrid extends ConsumerStatefulWidget {
 
   /// Whether a drag over the list puts the keyboard away (`DL-128`).
   final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
+
+  /// Whether the cards of the query drawn stay, dimmed, while the next one
+  /// loads; by default only when the order alone differs (`DL-128`).
+  final bool Function(ProductListQuery drawn, ProductListQuery next)?
+  keepCardsOf;
 
   @override
   ConsumerState<KitProductGrid> createState() => _KitProductGridState();
@@ -631,10 +637,12 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
             }
           }
         } else if (drawn != null &&
-            _onlySortDiffers(drawn, query) &&
-            drawnItems.isNotEmpty) {
-          // Another order of the same products: the old cards stay, dimmed,
-          // until the new list replaces them.
+            (widget.keepCardsOf ?? _onlySortDiffers)(drawn, query) &&
+            drawnItems.isNotEmpty &&
+            !(listFailure != null && drawn.search != query.search)) {
+          // Another order, or another search of the same products: the old
+          // cards stay, dimmed, until the new list replaces them. A new text
+          // that fails drops them (`DL-128`).
           slivers.add(
             SliverIgnorePointer(
               key: const ValueKey<String>('dimmed-cards'),

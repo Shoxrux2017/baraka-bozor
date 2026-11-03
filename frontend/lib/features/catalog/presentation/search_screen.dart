@@ -179,57 +179,194 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             onPressed: _back,
           ),
           Expanded(
-            child: FlightTarget(
-              id: 'search-field',
-              child: TextField(
-                key: const ValueKey<String>('search-field'),
-                controller: _field,
-                focusNode: _focus,
-                autofocus: true,
-                textInputAction: TextInputAction.search,
-                inputFormatters: <TextInputFormatter>[
-                  LengthLimitingTextInputFormatter(
-                    ProductListQuery.searchMaxLength,
+            child: Stack(
+              children: <Widget>[
+                FlightTarget(
+                  id: 'search-field',
+                  child: TextField(
+                    key: const ValueKey<String>('search-field'),
+                    controller: _field,
+                    focusNode: _focus,
+                    autofocus: true,
+                    textInputAction: TextInputAction.search,
+                    inputFormatters: <TextInputFormatter>[
+                      LengthLimitingTextInputFormatter(
+                        ProductListQuery.searchMaxLength,
+                      ),
+                    ],
+                    style: const TextStyle(color: KitColors.ink, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: l10n.catalogSearchHint,
+                      hintStyle: const TextStyle(
+                        color: KitColors.muted,
+                        fontSize: 14,
+                      ),
+                      filled: true,
+                      fillColor: KitColors.field,
+                      constraints: const BoxConstraints(minHeight: 50),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        size: 22,
+                        color: KitColors.muted,
+                      ),
+                      suffixIcon: _field.text.isEmpty
+                          ? null
+                          : IconButton(
+                              key: const ValueKey<String>('search-clear'),
+                              icon: const Icon(
+                                Icons.close,
+                                size: 20,
+                                color: KitColors.muted,
+                              ),
+                              tooltip: l10n.catalogSearchClear,
+                              onPressed: _clear,
+                            ),
+                      border: plain,
+                      enabledBorder: plain,
+                      focusedBorder: _focus.hasFocus ? ring : plain,
+                    ),
+                    onChanged: _onTyped,
+                    onSubmitted: _submit,
                   ),
-                ],
-                style: const TextStyle(color: KitColors.ink, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: l10n.catalogSearchHint,
-                  hintStyle: const TextStyle(
-                    color: KitColors.muted,
-                    fontSize: 14,
-                  ),
-                  filled: true,
-                  fillColor: KitColors.field,
-                  constraints: const BoxConstraints(minHeight: 50),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    size: 22,
-                    color: KitColors.muted,
-                  ),
-                  suffixIcon: _field.text.isEmpty
-                      ? null
-                      : IconButton(
-                          key: const ValueKey<String>('search-clear'),
-                          icon: const Icon(
-                            Icons.close,
-                            size: 20,
-                            color: KitColors.muted,
-                          ),
-                          tooltip: l10n.catalogSearchClear,
-                          onPressed: _clear,
-                        ),
-                  border: plain,
-                  enabledBorder: plain,
-                  focusedBorder: _focus.hasFocus ? ring : plain,
                 ),
-                onChanged: _onTyped,
-                onSubmitted: _submit,
-              ),
+                Positioned.fill(
+                  child: _SearchProgress(
+                    query: _query.isEmpty
+                        ? null
+                        : ProductListQuery(
+                            search: _query,
+                            sort: ref.watch(productSortProvider),
+                          ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Whether a search keeps the cards of the one before it, dimmed, while it
+/// loads: when the category and the recommended filter are the same
+/// (`DL-128`).
+bool searchKeepsCards(ProductListQuery drawn, ProductListQuery next) =>
+    drawn.categoryId == next.categoryId &&
+    drawn.featuredOnly == next.featuredOnly;
+
+/// The 2 px line along the field's bottom edge while [query] loads with the
+/// cards of another query dimmed under it (`DL-128`): a bar 40 % wide runs
+/// across it, 1 s `easeInOut`, over and over; with reduced motion it stands
+/// still, full width, at half opacity.
+class _SearchProgress extends ConsumerStatefulWidget {
+  const _SearchProgress({required this.query});
+
+  final ProductListQuery? query;
+
+  @override
+  ConsumerState<_SearchProgress> createState() => _SearchProgressState();
+}
+
+class _SearchProgressState extends ConsumerState<_SearchProgress>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _run = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 1),
+  );
+
+  /// The last query that stood with cards, which the line is waiting to
+  /// replace.
+  ProductListQuery? _cardsOf;
+
+  @override
+  void dispose() {
+    _run.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ProductListQuery? query = widget.query;
+    bool waiting = false;
+    if (query == null) {
+      _cardsOf = null;
+    } else {
+      final AsyncValue<ProductListState> list = ref.watch(
+        productListProvider(query),
+      );
+      final ProductListState? known = list.isReloading ? null : list.value;
+      if (known != null) {
+        _cardsOf = known.items.isEmpty ? null : query;
+      } else if (list.isLoading) {
+        final ProductListQuery? drawn = _cardsOf;
+        waiting =
+            drawn != null && drawn != query && searchKeepsCards(drawn, query);
+      }
+    }
+    final bool reduced = MediaQuery.disableAnimationsOf(context);
+    if (!waiting || reduced) {
+      _run.stop();
+    } else if (!_run.isAnimating) {
+      _run.repeat();
+    }
+    if (!waiting) {
+      return const SizedBox.shrink();
+    }
+    return IgnorePointer(
+      child: ExcludeSemantics(
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(14),
+            ),
+            child: SizedBox(
+              key: const ValueKey<String>('search-progress'),
+              height: 2,
+              width: double.infinity,
+              child: ColoredBox(
+                color: KitColors.primaryWash,
+                child: Opacity(
+                  opacity: reduced ? 0.5 : 1,
+                  child: LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints box) {
+                      if (reduced) {
+                        return const ColoredBox(
+                          key: ValueKey<String>('search-progress-bar'),
+                          color: KitColors.primary,
+                        );
+                      }
+                      return AnimatedBuilder(
+                        animation: _run,
+                        builder: (BuildContext context, Widget? child) {
+                          final double t = Curves.easeInOut.transform(
+                            _run.value,
+                          );
+                          return Stack(
+                            children: <Widget>[
+                              Positioned(
+                                left: box.maxWidth * (-0.4 + 1.4 * t),
+                                width: box.maxWidth * 0.4,
+                                top: 0,
+                                bottom: 0,
+                                child: const ColoredBox(
+                                  key: ValueKey<String>('search-progress-bar'),
+                                  color: KitColors.primary,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -365,6 +502,7 @@ class _Results extends ConsumerWidget {
     return KitProductGrid(
       query: query,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      keepCardsOf: searchKeepsCards,
       header: <Widget>[
         if (counted)
           SliverToBoxAdapter(
