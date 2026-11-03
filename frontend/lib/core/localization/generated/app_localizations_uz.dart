@@ -4480,7 +4480,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String homeSeeAllCount(int count) {
-    return 'Barchasi $count';
+    return 'Barcha $count';
   }
 
   @override

@@ -328,6 +328,28 @@ void main() {
     expect(byKey('open-recommended'), findsNothing);
   });
 
+  testWidgets('in Uzbek the spoken name starts with the visible words', (
+    WidgetTester tester,
+  ) async {
+    featureMany(24);
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester, device: const Locale('uz'));
+    await scrollToRow(tester);
+
+    expect(
+      find.descendant(
+        of: byKey('open-recommended'),
+        matching: find.text('Barcha 24'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.getSemantics(byKey('open-recommended')).label,
+      startsWith('Barcha 24'),
+    );
+    handle.dispose();
+  });
+
   testWidgets('Все 24 meets the tap target guideline', (
     WidgetTester tester,
   ) async {

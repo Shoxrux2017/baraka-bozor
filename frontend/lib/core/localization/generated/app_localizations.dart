@@ -7565,7 +7565,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeSeeAllCount.
   ///
   /// In uz, this message translates to:
-  /// **'Barchasi {count}'**
+  /// **'Barcha {count}'**
   String homeSeeAllCount(int count);
 
   /// No description provided for @recommendedAllSpoken.

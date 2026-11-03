@@ -143,10 +143,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       return;
     }
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final bool barShows =
-        ref.read(currentCartProvider).value?.lines.isNotEmpty == true &&
-        MediaQuery.viewInsetsOf(context).bottom == 0;
-    final EdgeInsetsGeometry? margin = barShows
+    // The cart bar comes back when the keyboard goes, and a bar's margin is
+    // fixed when it is shown: with a cart it stands above the cart bar's place
+    // even while the keyboard hides the cart bar.
+    final bool barComes =
+        ref.read(currentCartProvider).value?.lines.isNotEmpty == true;
+    final EdgeInsetsGeometry? margin = barComes
         ? EdgeInsets.fromLTRB(16, 0, 16, CartSummaryBar.reserved(context))
         : null;
     final List<String> cleared = await recent.clear();

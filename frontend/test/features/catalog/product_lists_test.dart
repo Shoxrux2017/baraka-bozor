@@ -213,6 +213,11 @@ void main() {
         reason: 'the slot is top-aligned',
       );
       expect(
+        tester.widget<Padding>(byKey('recommended-empty')).padding,
+        const EdgeInsets.symmetric(horizontal: 16),
+        reason: 'the grid adds 24 a side: 40 in all, as drawn',
+      );
+      expect(
         tester.getSize(byKey('recommended-empty-categories')).height,
         greaterThanOrEqualTo(46),
       );

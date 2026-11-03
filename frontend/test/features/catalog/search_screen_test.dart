@@ -1479,6 +1479,33 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets('an undo bar shown with the keyboard up still clears the cart '
+        'bar once the keyboard goes', (WidgetTester tester) async {
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[cartLineJson(total: 18400)]),
+      );
+      remembered('c', <String>['olma']);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      await openSearch(tester, device: const Locale('ru'));
+      expect(byKey('cart-summary'), findsNothing, reason: 'keyboard is up');
+      await tester.tap(byKey('recent-clear'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      tester.view.resetViewInsets();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(byKey('cart-summary'), findsOneWidget);
+      expect(find.text('Вернуть'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('Вернуть')).bottom,
+        lessThanOrEqualTo(tester.getRect(byKey('cart-summary')).top),
+      );
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('Вернуть gives back the list as it was before Очистить', (
       WidgetTester tester,
     ) async {

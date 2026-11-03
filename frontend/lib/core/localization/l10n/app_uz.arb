@@ -3086,7 +3086,7 @@
   },
   "catalogSearchSpoken": "Mahsulotlarni qidirish",
   "homeCategoriesAll": "Barcha kategoriyalar",
-  "homeSeeAllCount": "Barchasi {count}",
+  "homeSeeAllCount": "Barcha {count}",
   "@homeSeeAllCount": {
     "placeholders": {
       "count": {

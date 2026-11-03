@@ -172,7 +172,8 @@ class _EmptySelection extends StatelessWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     return Padding(
       key: const ValueKey<String>('recommended-empty'),
-      padding: const EdgeInsets.symmetric(horizontal: 40),
+      // The grid's empty slot adds 24 a side: 24 + 16 = the drawing's 40.
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
