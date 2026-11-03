@@ -34,11 +34,7 @@ void main() {
     catalog = FakeCatalogRepository(
       products: <CatalogProduct>[
         for (int i = 1; i <= 45; i++)
-          catalogProduct(
-            id: 'p-$i',
-            nameUz: 'Mahsulot $i',
-            nameRu: 'Ð¢Ð¾Ð²Ð°Ñ€ $i',
-          ),
+          catalogProduct(id: 'p-$i', nameUz: 'Mahsulot $i', nameRu: 'Товар $i'),
       ],
     );
     container = ProviderContainer(
@@ -146,7 +142,7 @@ void main() {
     await container.read(productListProvider(all).future);
     // A new product ahead of the others shifts every later page by one.
     catalog.productRows = <CatalogProduct>[
-      catalogProduct(id: 'p-new', nameUz: 'Yangi', nameRu: 'ÐÐ¾Ð²Ñ‹Ð¹'),
+      catalogProduct(id: 'p-new', nameUz: 'Yangi', nameRu: 'Новый'),
       ...catalog.productRows,
     ];
 
