@@ -2102,6 +2102,18 @@ abstract class AppLocalizations {
   /// **'Keyingi mahsulotlar yuklanmadi'**
   String get catalogMoreFailed;
 
+  /// No description provided for @catalogMoreLoading.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana mahsulotlar yuklanmoqda'**
+  String get catalogMoreLoading;
+
+  /// No description provided for @catalogMoreLoaded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana {count} yuklandi'**
+  String catalogMoreLoaded(String count);
+
   /// No description provided for @homeNavHome.
   ///
   /// In uz, this message translates to:
@@ -6038,11 +6050,23 @@ abstract class AppLocalizations {
   /// **'Tavsiya etamiz'**
   String get recommendedTitle;
 
-  /// No description provided for @recommendedEmpty.
+  /// No description provided for @recommendedEnd.
   ///
   /// In uz, this message translates to:
-  /// **'Hozircha tavsiya etilgan mahsulot yo\'q'**
-  String get recommendedEmpty;
+  /// **'Bu butun to\'plam: {count}'**
+  String recommendedEnd(String count);
+
+  /// No description provided for @recommendedEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'plam hozircha bo\'sh'**
+  String get recommendedEmptyTitle;
+
+  /// No description provided for @recommendedEmptyText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Do\'kondagi barcha mahsulotlar — bo\'limlarda.'**
+  String get recommendedEmptyText;
 
   /// No description provided for @cartSummaryCount.
   ///
@@ -7477,12 +7501,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Barcha kategoriyalar'**
   String get homeCategoriesAll;
-
-  /// No description provided for @recommendedAll.
-  ///
-  /// In uz, this message translates to:
-  /// **'Barcha tavsiyalar'**
-  String get recommendedAll;
 
   /// No description provided for @homeSeeAllCount.
   ///

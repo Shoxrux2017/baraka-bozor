@@ -1123,6 +1123,14 @@ class AppLocalizationsUz extends AppLocalizations {
   String get catalogMoreFailed => 'Keyingi mahsulotlar yuklanmadi';
 
   @override
+  String get catalogMoreLoading => 'Yana mahsulotlar yuklanmoqda';
+
+  @override
+  String catalogMoreLoaded(String count) {
+    return 'Yana $count yuklandi';
+  }
+
+  @override
   String get homeNavHome => 'Bosh sahifa';
 
   @override
@@ -3482,7 +3490,16 @@ class AppLocalizationsUz extends AppLocalizations {
   String get recommendedTitle => 'Tavsiya etamiz';
 
   @override
-  String get recommendedEmpty => 'Hozircha tavsiya etilgan mahsulot yo\'q';
+  String recommendedEnd(String count) {
+    return 'Bu butun to\'plam: $count';
+  }
+
+  @override
+  String get recommendedEmptyTitle => 'To\'plam hozircha bo\'sh';
+
+  @override
+  String get recommendedEmptyText =>
+      'Do\'kondagi barcha mahsulotlar — bo\'limlarda.';
 
   @override
   String cartSummaryCount(int count) {
@@ -4418,9 +4435,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get homeCategoriesAll => 'Barcha kategoriyalar';
-
-  @override
-  String get recommendedAll => 'Barcha tavsiyalar';
 
   @override
   String homeSeeAllCount(int count) {

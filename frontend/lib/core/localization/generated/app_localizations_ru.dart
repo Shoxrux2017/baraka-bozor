@@ -1139,6 +1139,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get catalogMoreFailed => 'Следующие товары не загрузились';
 
   @override
+  String get catalogMoreLoading => 'Загружаем ещё товары';
+
+  @override
+  String catalogMoreLoaded(String count) {
+    return 'Загружено ещё $count';
+  }
+
+  @override
   String get homeNavHome => 'Главная';
 
   @override
@@ -3518,7 +3526,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get recommendedTitle => 'Рекомендуем';
 
   @override
-  String get recommendedEmpty => 'Пока нет рекомендованных товаров';
+  String recommendedEnd(String count) {
+    return 'Это вся подборка: $count';
+  }
+
+  @override
+  String get recommendedEmptyTitle => 'Подборка пока пуста';
+
+  @override
+  String get recommendedEmptyText => 'Все товары магазина — в категориях.';
 
   @override
   String cartSummaryCount(int count) {
@@ -4470,9 +4486,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get homeCategoriesAll => 'Все категории';
-
-  @override
-  String get recommendedAll => 'Все рекомендуемые';
 
   @override
   String homeSeeAllCount(int count) {

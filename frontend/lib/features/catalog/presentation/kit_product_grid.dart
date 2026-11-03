@@ -18,6 +18,7 @@ import '../../../core/widgets/stale_data_line.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 import 'kit_product_card.dart';
+import 'sort_menu.dart';
 
 /// The height of one kit card: the picture, and the texts and the control
 /// under it, which grow with the text scale. Each text is scaled by its own
@@ -66,7 +67,10 @@ int productColumns(double width, TextScaler scaler, KitCardSize size) {
 /// the cards under a line that says when they are from. The columns follow the
 /// width inside [padding] (`productColumns`). [empty] is shown when nothing
 /// matches; [alsoRefresh] runs beside a pull and [alsoFailed] puts a failure
-/// of something else on the screen into the same line.
+/// of something else on the screen into the same line. [end] closes the list
+/// once it has no more; [spokenOnQuery] is announced when the first page of a
+/// query comes, and every grid announces a new order, a later page and a
+/// failed one (`DL-128`).
 class KitProductGrid extends ConsumerStatefulWidget {
   const KitProductGrid({
     required this.query,
@@ -78,6 +82,9 @@ class KitProductGrid extends ConsumerStatefulWidget {
     this.alsoRefresh,
     this.alsoFailed,
     this.controller,
+    this.end,
+    this.spokenOnQuery,
+    this.emptyAlignment = Alignment.center,
     super.key,
   });
 
@@ -96,6 +103,16 @@ class KitProductGrid extends ConsumerStatefulWidget {
   /// A failure of what [alsoRefresh] loads, with when its data is from.
   final ({ApiFailure failure, DateTime at})? alsoFailed;
   final ScrollController? controller;
+
+  /// Drawn after the last row once the list has no more; not while empty.
+  final Widget? end;
+
+  /// What is announced when the first page of a query comes, unless only its
+  /// order changed from the query drawn before.
+  final String Function(ProductListQuery query, int total)? spokenOnQuery;
+
+  /// Where the [empty] slot stands in the room under the header.
+  final Alignment emptyAlignment;
 
   @override
   ConsumerState<KitProductGrid> createState() => _KitProductGridState();
@@ -124,6 +141,18 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
   /// same products comes.
   ProductListQuery? _drawnQuery;
   List<CatalogProduct> _drawnItems = const <CatalogProduct>[];
+
+  /// Whether the failure of the page now shown has been announced.
+  bool _failureAnnounced = false;
+
+  /// Announces [message] once the frame is built.
+  void _announceAfterFrame(String message) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        announce(context, message);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -330,11 +359,16 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
           return Padding(
             key: const ValueKey<String>('product-placeholders'),
             padding: const EdgeInsets.only(bottom: _gap),
-            child: rowOf(
-              (int c) => _SkeletonCard(
-                size: widget.size,
-                imageHeight: widget.imageHeight,
-                pulsing: !list.hasError,
+            child: Semantics(
+              container: true,
+              label: l10n.catalogMoreLoading,
+              excludeSemantics: true,
+              child: rowOf(
+                (int c) => _SkeletonCard(
+                  size: widget.size,
+                  imageHeight: widget.imageHeight,
+                  pulsing: !list.hasError,
+                ),
               ),
             ),
           );
@@ -377,12 +411,40 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
           if (drawn != query) {
             _paged.clear();
             _faded.clear();
+            final String Function(ProductListQuery, int)? spoken =
+                widget.spokenOnQuery;
+            final String count = l10n.catalogProductCount(state.total);
+            if (drawn != null && _onlySortDiffers(drawn, query)) {
+              _announceAfterFrame(
+                l10n.categoryShownSpoken(sortLabel(l10n, query.sort), count),
+              );
+            } else if (spoken != null) {
+              _announceAfterFrame(spoken(query, state.total));
+            }
           } else if (state.items.length > drawnItems.length &&
               drawnItems.isNotEmpty) {
             _paged.addAll(
               state.items
                   .skip(drawnItems.length)
                   .map((CatalogProduct p) => p.id),
+            );
+            _announceAfterFrame(
+              l10n.catalogMoreLoaded(
+                l10n.catalogProductCount(
+                  state.items.length - drawnItems.length,
+                ),
+              ),
+            );
+          }
+          final ApiFailure? moreFailure = state.moreFailure;
+          if (moreFailure == null) {
+            _failureAnnounced = false;
+          } else if (!_failureAnnounced) {
+            _failureAnnounced = true;
+            _announceAfterFrame(
+              moreFailure is NetworkFailure
+                  ? l10n.catalogMoreOffline
+                  : l10n.catalogMoreFailed,
             );
           }
           _drawnQuery = query;
@@ -391,7 +453,8 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
             slivers.add(
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: Center(
+                child: Align(
+                  alignment: widget.emptyAlignment,
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
                       24,
@@ -420,7 +483,14 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
                   padding: body,
                   sliver: cardsOf(
                     state.items,
-                    end: state.hasMore ? pageEnd(state) : null,
+                    end: state.hasMore
+                        ? pageEnd(state)
+                        : widget.end == null
+                        ? null
+                        : _EndFade(
+                            key: const ValueKey<String>('list-end-fade'),
+                            child: widget.end!,
+                          ),
                   ),
                 ),
               ),
@@ -577,6 +647,54 @@ class _SkeletonCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The end block of a list: fades in over 250 ms `easeOut` when the list
+/// reaches its end; at once with reduced motion (`DL-128`).
+class _EndFade extends StatefulWidget {
+  const _EndFade({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  State<_EndFade> createState() => _EndFadeState();
+}
+
+class _EndFadeState extends State<_EndFade>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 250),
+  );
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) {
+      return;
+    }
+    _started = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.value = 1;
+    } else {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+      child: widget.child,
     );
   }
 }

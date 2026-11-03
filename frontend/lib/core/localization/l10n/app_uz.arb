@@ -520,6 +520,15 @@
   "catalogLoadMore": "Yana yuklash",
   "catalogMoreOffline": "Aloqa yo'q — keyingi mahsulotlar yuklanmadi",
   "catalogMoreFailed": "Keyingi mahsulotlar yuklanmadi",
+  "catalogMoreLoading": "Yana mahsulotlar yuklanmoqda",
+  "catalogMoreLoaded": "Yana {count} yuklandi",
+  "@catalogMoreLoaded": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "homeNavHome": "Bosh sahifa",
   "homeNavOrders": "Buyurtmalar",
   "profileTitle": "Profil",
@@ -2247,7 +2256,16 @@
   },
   "allProductsTitle": "Barcha mahsulotlar",
   "recommendedTitle": "Tavsiya etamiz",
-  "recommendedEmpty": "Hozircha tavsiya etilgan mahsulot yo'q",
+  "recommendedEnd": "Bu butun to'plam: {count}",
+  "@recommendedEnd": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "recommendedEmptyTitle": "To'plam hozircha bo'sh",
+  "recommendedEmptyText": "Do'kondagi barcha mahsulotlar — bo'limlarda.",
   "cartSummaryCount": "{count, plural, other{{count} ta mahsulot}}",
   "@cartSummaryCount": {
     "placeholders": {
@@ -3007,7 +3025,6 @@
   },
   "catalogSearchSpoken": "Mahsulotlarni qidirish",
   "homeCategoriesAll": "Barcha kategoriyalar",
-  "recommendedAll": "Barcha tavsiyalar",
   "homeSeeAllCount": "Barchasi {count}",
   "@homeSeeAllCount": {
     "placeholders": {
