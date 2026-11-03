@@ -26,59 +26,66 @@ class AllProductsScreen extends ConsumerWidget {
       backgroundColor: Colors.white,
       appBar: kitAppBar(title: l10n.allProductsTitle, search: true),
       // The mode stays visible while two sessions exist (DL-75).
-      body: UnderActiveMode(
-        child: Stack(
-          children: <Widget>[
-            Positioned.fill(
-              child: Column(
-                children: <Widget>[
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                      child: ActionChip(
-                        key: const ValueKey<String>('sort-chip'),
-                        avatar: const Icon(
-                          Icons.swap_vert,
-                          size: 18,
-                          color: KitColors.ink,
+      // Side insets (a camera at the side, lying) are kept clear (DL-127).
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: UnderActiveMode(
+          child: Stack(
+            children: <Widget>[
+              Positioned.fill(
+                child: Column(
+                  children: <Widget>[
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                        child: ActionChip(
+                          key: const ValueKey<String>('sort-chip'),
+                          avatar: const Icon(
+                            Icons.swap_vert,
+                            size: 18,
+                            color: KitColors.ink,
+                          ),
+                          label: Text(sortLabel(l10n, sort)),
+                          backgroundColor: KitColors.field,
+                          side: const BorderSide(color: KitColors.line),
+                          onPressed: () async {
+                            final ProductSort? chosen = await showSortSheet(
+                              context,
+                              sort,
+                            );
+                            if (chosen != null) {
+                              ref
+                                  .read(productSortProvider.notifier)
+                                  .set(chosen);
+                            }
+                          },
                         ),
-                        label: Text(sortLabel(l10n, sort)),
-                        backgroundColor: KitColors.field,
-                        side: const BorderSide(color: KitColors.line),
-                        onPressed: () async {
-                          final ProductSort? chosen = await showSortSheet(
-                            context,
-                            sort,
-                          );
-                          if (chosen != null) {
-                            ref.read(productSortProvider.notifier).set(chosen);
-                          }
-                        },
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: KitProductGrid(
-                      query: ProductListQuery(sort: sort),
-                      padding: EdgeInsets.fromLTRB(
-                        16,
-                        8,
-                        16,
-                        16 + CartSummaryBar.reserved(context),
+                    Expanded(
+                      child: KitProductGrid(
+                        query: ProductListQuery(sort: sort),
+                        padding: EdgeInsets.fromLTRB(
+                          16,
+                          8,
+                          16,
+                          16 + CartSummaryBar.reserved(context),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: CartSummaryBar(),
-            ),
-          ],
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: CartSummaryBar(),
+              ),
+            ],
+          ),
         ),
       ),
     );

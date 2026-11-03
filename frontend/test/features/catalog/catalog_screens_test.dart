@@ -212,13 +212,19 @@ void main() {
     catalog.nextFailure = const NetworkFailure();
     await tester.tap(find.text('Sabzavotlar'));
     await tester.pumpAndSettle();
-    expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+    expect(byKey('stale-line'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
 
     catalog.gates[''] = Completer<void>();
-    await tester.tap(byKey('retry-load'));
+    await tester.tap(byKey('stale-retry'));
     await tester.pump();
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.text(l10n(tester).errorNetwork), findsNothing);
+    expect(
+      find.descendant(
+        of: byKey('stale-retry'),
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
 
     catalog.gates['']!.complete();
     await tester.pumpAndSettle();

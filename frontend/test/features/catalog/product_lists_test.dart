@@ -5,7 +5,9 @@ import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
+import 'package:baraka_bozor/core/platform/clock.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
+import 'package:baraka_bozor/core/widgets/skeleton_bar.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/cart/presentation/cart_paths.dart';
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
@@ -63,6 +65,9 @@ void main() {
     WidgetTester tester,
     String path, {
     Locale locale = const Locale('ru'),
+    DateTime Function()? clock,
+    double sideInset = 0,
+    bool settle = true,
   }) async {
     router = GoRouter(
       routes: <RouteBase>[
@@ -101,6 +106,7 @@ void main() {
         overrides: [
           customerAccountProvider.overrideWithValue('c'),
           catalogRepositoryProvider.overrideWithValue(catalog),
+          if (clock != null) clockProvider.overrideWithValue(clock),
           cartRepositoryProvider.overrideWithValue(cart),
           favoritesRepositoryProvider.overrideWithValue(
             FakeFavoritesRepository(),
@@ -111,13 +117,39 @@ void main() {
           locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          builder: (BuildContext context, Widget? child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              padding: EdgeInsets.symmetric(horizontal: sideInset),
+              viewPadding: EdgeInsets.symmetric(horizontal: sideInset),
+            ),
+            child: child!,
+          ),
         ),
       ),
     );
     await tester.pumpAndSettle();
     unawaited(router.push(path));
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+  }
+
+  Future<void> pull(WidgetTester tester) async {
+    await tester.drag(byKey('product-grid'), const Offset(0, 300));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
   }
+
+  Iterable<String> announced(WidgetTester tester) => tester
+      .takeAnnouncements()
+      .map((CapturedAccessibilityAnnouncement a) => a.message);
+
+  void allFeatured() =>
+      catalog.featuredIds = <String>{tomato.id, apple.id, bread.id};
 
   List<String> shownNames(WidgetTester tester) => <String>[
     for (final Text t in tester.widgetList<Text>(find.byType(Text)))
@@ -274,15 +306,17 @@ void main() {
     expect(find.text('2 товара'), findsOneWidget);
   });
 
-  testWidgets('a failed first page offers a retry', (
+  testWidgets('a failed first page offers a retry in the stale line', (
     WidgetTester tester,
   ) async {
     catalog.nextFailure = const UnexpectedFailure();
     await open(tester, CatalogPaths.products);
-    expect(byKey('retry-load'), findsOneWidget);
-    await tester.tap(byKey('retry-load'));
+    expect(byKey('stale-line'), findsOneWidget);
+    expect(byKey('stale-retry'), findsOneWidget);
+    await tester.tap(byKey('stale-retry'));
     await tester.pumpAndSettle();
     expect(find.text('Помидор'), findsOneWidget);
+    expect(byKey('stale-line'), findsNothing);
   });
 
   testWidgets('a failed next page keeps the loaded ones and offers a retry', (
@@ -305,6 +339,275 @@ void main() {
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -9000));
     await tester.pumpAndSettle();
     expect(find.text('Товар 59'), findsOneWidget);
+  });
+
+  for (final String path in <String>[
+    CatalogPaths.recommended,
+    CatalogPaths.products,
+  ]) {
+    group('the grid on $path', () {
+      setUp(allFeatured);
+
+      testWidgets(
+        'the first load shows pulsing skeletons, then the cards fade in',
+        (WidgetTester tester) async {
+          catalog.gates[''] = Completer<void>();
+          await open(tester, path, settle: false);
+
+          expect(byKey('product-skeletons'), findsOneWidget);
+          final List<SkeletonBar> bars = tester
+              .widgetList<SkeletonBar>(find.byType(SkeletonBar))
+              .toList();
+          expect(bars, hasLength(24));
+          expect(bars.every((SkeletonBar b) => b.pulsing), isTrue);
+          expect(find.text('Помидор'), findsNothing);
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+
+          catalog.gates['']!.complete();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          expect(find.text('Помидор'), findsOneWidget);
+          final double mid = tester
+              .widget<SliverFadeTransition>(find.byType(SliverFadeTransition))
+              .opacity
+              .value;
+          expect(mid, inExclusiveRange(0, 1));
+
+          await tester.pumpAndSettle();
+          expect(find.byType(SkeletonBar), findsNothing);
+          expect(
+            tester
+                .widget<SliverFadeTransition>(find.byType(SliverFadeTransition))
+                .opacity
+                .value,
+            1,
+          );
+        },
+      );
+
+      testWidgets(
+        'a first load that fails shows Нет связи · Повторить over still '
+        'skeletons',
+        (WidgetTester tester) async {
+          catalog.nextFailure = const NetworkFailure();
+          await open(tester, path);
+
+          expect(find.text('Нет связи'), findsOneWidget);
+          expect(find.text('Повторить'), findsOneWidget);
+          final List<SkeletonBar> bars = tester
+              .widgetList<SkeletonBar>(find.byType(SkeletonBar))
+              .toList();
+          expect(bars, hasLength(24));
+          expect(bars.any((SkeletonBar b) => b.pulsing), isFalse);
+
+          await tester.tap(byKey('stale-retry'));
+          await tester.pumpAndSettle();
+          expect(byKey('stale-line'), findsNothing);
+          expect(find.text('Помидор'), findsOneWidget);
+          expect(find.byType(SkeletonBar), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'a pull refreshes; offline it keeps the cards under the stale line '
+        'with their time',
+        (WidgetTester tester) async {
+          // 12:46 in Tashkent.
+          DateTime at = DateTime.utc(2026, 11, 2, 7, 46);
+          await open(tester, path, clock: () => at);
+          expect(byKey('stale-line'), findsNothing);
+          catalog.requests.clear();
+          announced(tester).toList();
+
+          // Half an hour on: the line still names the first load's time.
+          at = at.add(const Duration(minutes: 30));
+          catalog.nextFailure = const NetworkFailure();
+          await pull(tester);
+
+          expect(catalog.requests, hasLength(1));
+          expect(find.text('Помидор'), findsOneWidget);
+          expect(find.text('Нет связи · данные на 12:46'), findsOneWidget);
+          expect(
+            tester.getBottomLeft(byKey('stale-line')).dy,
+            lessThanOrEqualTo(
+              tester.getTopLeft(byKey('product-card-${tomato.id}')).dy,
+            ),
+          );
+          expect(
+            announced(tester),
+            contains('Нет связи. Показаны данные на 12:46'),
+          );
+        },
+      );
+
+      testWidgets(
+        'a pull back online clears the line and announces Обновлено',
+        (WidgetTester tester) async {
+          DateTime at = DateTime.utc(2026, 11, 2, 7, 46);
+          await open(tester, path, clock: () => at);
+          at = at.add(const Duration(minutes: 30));
+          catalog.nextFailure = const NetworkFailure();
+          await pull(tester);
+          expect(byKey('stale-line'), findsOneWidget);
+          announced(tester).toList();
+
+          await pull(tester);
+          expect(byKey('stale-line'), findsNothing);
+          expect(find.text('Помидор'), findsOneWidget);
+          expect(announced(tester), contains('Обновлено'));
+        },
+      );
+    });
+  }
+
+  group('the grid in other shapes', () {
+    setUp(() {
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 0; i < 8; i++)
+          catalogProduct(
+            id: 'g-$i',
+            nameRu: 'Товар $i',
+            nameUz: 'Mahsulot $i',
+            customerUnitPriceUzs: 1000 + i,
+          ),
+      ];
+    });
+
+    int firstRow(WidgetTester tester) {
+      final double top = tester.getTopLeft(byKey('product-card-g-0')).dy;
+      int count = 0;
+      for (int i = 0; i < 8; i++) {
+        final Finder card = byKey('product-card-g-$i');
+        if (card.evaluate().isNotEmpty && tester.getTopLeft(card).dy == top) {
+          count++;
+        }
+      }
+      return count;
+    }
+
+    testWidgets(
+      'columns follow the width: 2 at 375, 4 lying at 812 with the side insets',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(375, 812);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await open(tester, CatalogPaths.products);
+        expect(firstRow(tester), 2);
+
+        tester.view.physicalSize = const Size(812, 375);
+        await open(tester, CatalogPaths.products, sideInset: 47);
+        expect(firstRow(tester), 4);
+        expect(
+          tester.getTopLeft(byKey('product-card-g-0')).dx,
+          greaterThanOrEqualTo(47 + 16),
+        );
+        expect(
+          tester.getTopRight(byKey('product-card-g-3')).dx,
+          lessThanOrEqualTo(812 - 47 - 16),
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('a new order dims the old cards until the new ones come', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, CatalogPaths.products);
+      expect(find.text('Товар 0'), findsOneWidget);
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(byKey('product-grid')),
+      );
+
+      catalog.gates[''] = Completer<void>();
+      container.read(productSortProvider.notifier).set(ProductSort.priceDesc);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Товар 0'), findsOneWidget);
+      expect(find.byType(SkeletonBar), findsNothing);
+      expect(
+        tester
+            .widget<SliverOpacity>(
+              find.descendant(
+                of: byKey('dimmed-cards'),
+                matching: find.byType(SliverOpacity),
+              ),
+            )
+            .opacity,
+        closeTo(0.45, 0.001),
+      );
+      expect(
+        tester.widget<SliverIgnorePointer>(byKey('dimmed-cards')).ignoring,
+        isTrue,
+      );
+
+      catalog.gates['']!.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(
+        tester.getTopLeft(byKey('product-card-g-7')).dy,
+        lessThan(tester.getTopLeft(byKey('product-card-g-0')).dy),
+        reason: 'the new order puts the dearest first',
+      );
+    });
+
+    testWidgets('a new order while the next page loads drops that page', (
+      WidgetTester tester,
+    ) async {
+      catalog.pageSize = 30;
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 0; i < 60; i++)
+          catalogProduct(
+            id: 'q-$i',
+            nameRu: 'Товар $i',
+            nameUz: 'Mahsulot $i',
+            customerUnitPriceUzs: 1000 + i,
+          ),
+      ];
+      await open(tester, CatalogPaths.products);
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(byKey('product-grid')),
+      );
+
+      catalog.gates[''] = Completer<void>();
+      await tester.drag(byKey('product-grid'), const Offset(0, -9000));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(
+        catalog.requests.where((String r) => r.endsWith('|2')),
+        hasLength(1),
+      );
+
+      container.read(productSortProvider.notifier).set(ProductSort.priceDesc);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(byKey('dimmed-cards'), findsOneWidget);
+
+      catalog.gates['']!.complete();
+      await tester.pumpAndSettle();
+
+      final ProductListState fresh = container
+          .read(
+            productListProvider(
+              const ProductListQuery(sort: ProductSort.priceDesc),
+            ),
+          )
+          .requireValue;
+      expect(fresh.items, hasLength(30));
+      expect(fresh.items.first.id, 'q-59');
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(find.text('Товар 59'), findsOneWidget);
+      expect(find.text('Товар 0'), findsNothing);
+      expect(
+        tester.getTopLeft(byKey('product-card-q-59')).dy,
+        lessThan(300),
+        reason: 'the new list stands from the top',
+      );
+      expect(
+        catalog.requests.where((String r) => r.endsWith('|2')),
+        hasLength(1),
+      );
+    });
   });
 
   for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {

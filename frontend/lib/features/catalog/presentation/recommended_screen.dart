@@ -20,28 +20,36 @@ class RecommendedScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       appBar: kitAppBar(title: l10n.recommendedTitle, search: true),
       // The mode stays visible while two sessions exist (DL-75).
-      body: UnderActiveMode(
-        child: Stack(
-          children: <Widget>[
-            Positioned.fill(
-              child: KitProductGrid(
-                query: const ProductListQuery(featuredOnly: true),
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  8,
-                  16,
-                  16 + CartSummaryBar.reserved(context),
+      // Side insets (a camera at the side, lying) are kept clear (DL-127).
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: UnderActiveMode(
+          child: Stack(
+            children: <Widget>[
+              Positioned.fill(
+                child: KitProductGrid(
+                  query: const ProductListQuery(featuredOnly: true),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    16 + CartSummaryBar.reserved(context),
+                  ),
+                  empty: Text(
+                    l10n.recommendedEmpty,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                empty: Text(l10n.recommendedEmpty, textAlign: TextAlign.center),
               ),
-            ),
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: CartSummaryBar(),
-            ),
-          ],
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: CartSummaryBar(),
+              ),
+            ],
+          ),
         ),
       ),
     );
