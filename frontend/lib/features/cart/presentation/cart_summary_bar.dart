@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/formatting/money_format.dart';
+import '../../../core/layout/text_width.dart';
+import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/theme/kit_colors.dart';
@@ -14,10 +16,13 @@ import '../domain/cart.dart';
 import 'cart_paths.dart';
 
 /// The green bar at the foot of a product list without the tab bar while the
-/// cart holds a line (`DL-80` (3)): the last line's picture, how many lines,
-/// the approximate total, and the way to the cart. Place it at the bottom of
-/// a stack; it takes no room when the cart is empty.
-class CartSummaryBar extends ConsumerWidget {
+/// cart holds a line (`DL-80` (3), `DL-127`): the last line's picture, how many
+/// lines, the approximate total, and the way to the cart. Place it at the
+/// bottom of a stack; it takes no room when the cart is empty. The first line
+/// slides it up, an emptied cart slides it down (a fade with reduced motion);
+/// a new total rolls in and a new last line's picture comes in. At large text
+/// an arrow replaces the words and the count and the total may take two lines.
+class CartSummaryBar extends ConsumerStatefulWidget {
   const CartSummaryBar({super.key});
 
   /// The room the bar and its fade take at the foot of a list: the bar's
@@ -25,26 +30,104 @@ class CartSummaryBar extends ConsumerWidget {
   /// inset of the screen.
   static double reserved(BuildContext context) {
     final TextScaler scaler = MediaQuery.textScalerOf(context);
-    final double count = scaler.scale(12) * 1.5;
-    final double total = scaler.scale(15) * 1.5;
-    final double open = scaler.scale(14) * 1.5 * 2;
+    final double lines = _isLarge(scaler) ? 2 : 1;
+    final double count = scaler.scale(12) * 1.5 * lines;
+    final double total = scaler.scale(15) * 1.5 * lines;
+    final double open = _isLarge(scaler) ? 30 : scaler.scale(14) * 1.5 * 2;
     final double content = math.max(46, math.max(count + total, open));
     final double bar = math.max(64, content + 16);
     return 24 + bar + 12 + MediaQuery.paddingOf(context).bottom;
   }
 
+  /// Whether the text is large enough that the arrow replaces the words.
+  static bool _isLarge(TextScaler scaler) => textScaleAt(scaler, 14) > 1.3;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final Cart? cart = ref.watch(currentCartProvider).value;
-    if (cart == null || cart.lines.isEmpty) {
+  ConsumerState<CartSummaryBar> createState() => _CartSummaryBarState();
+}
+
+class _CartSummaryBarState extends ConsumerState<CartSummaryBar>
+    with SingleTickerProviderStateMixin {
+  static const Cubic _up = Cubic(0.2, 0.8, 0.2, 1);
+  static const Cubic _down = Cubic(0.4, 0, 1, 1);
+
+  late final AnimationController _slide = AnimationController(vsync: this)
+    ..addStatusListener(_settled);
+  late final Animation<double> _position = CurvedAnimation(
+    parent: _slide,
+    curve: _up,
+    reverseCurve: const FlippedCurve(_down),
+  );
+
+  /// The last cart that held lines: what the bar shows while it leaves.
+  Cart? _shown;
+
+  @override
+  void initState() {
+    super.initState();
+    final Cart? cart = ref.read(currentCartProvider).value;
+    if (cart != null && cart.lines.isNotEmpty) {
+      _shown = cart;
+      _slide.value = 1;
+    }
+    ref.listenManual(currentCartProvider, _follow);
+  }
+
+  @override
+  void dispose() {
+    _slide.dispose();
+    super.dispose();
+  }
+
+  void _follow(AsyncValue<Cart>? previous, AsyncValue<Cart> next) {
+    final Cart? cart = next.value;
+    if (cart == null) {
+      return;
+    }
+    final bool reduced = MediaQuery.disableAnimationsOf(context);
+    _slide.duration = Duration(milliseconds: reduced ? 200 : 360);
+    _slide.reverseDuration = Duration(milliseconds: reduced ? 200 : 240);
+    if (cart.lines.isNotEmpty) {
+      setState(() => _shown = cart);
+      _slide.forward();
+    } else {
+      _slide.reverse();
+    }
+  }
+
+  void _settled(AnimationStatus status) {
+    if (status == AnimationStatus.dismissed && _shown != null) {
+      setState(() => _shown = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Cart? cart = _shown;
+    if (cart == null) {
       return const SizedBox.shrink();
     }
 
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final MediaQueryData media = MediaQuery.of(context);
+    final bool reduced = media.disableAnimations;
+    final bool large = CartSummaryBar._isLarge(media.textScaler);
     final CartLine last = cart.lines.last;
-    final double inset = MediaQuery.paddingOf(context).bottom;
+    final String sum = MoneyFormat.uzs(
+      cart.estimatedSubtotalUzs,
+      interfaceLanguage(context),
+    );
+    final AppLanguage language = interfaceLanguage(context);
+    // At large text the currency may drop to the second line; the amount
+    // stays whole.
+    final String total = l10n.catalogApproxPrice(
+      large
+          ? '${MoneyFormat.grouped(cart.estimatedSubtotalUzs)} '
+                '${MoneyFormat.currency(language)}'
+          : sum,
+    );
 
-    return DecoratedBox(
+    final Widget bar = DecoratedBox(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -53,7 +136,12 @@ class CartSummaryBar extends ConsumerWidget {
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 24, 20, 12 + inset),
+        padding: EdgeInsets.fromLTRB(
+          20 + media.padding.left,
+          24,
+          20 + media.padding.right,
+          12 + media.padding.bottom,
+        ),
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
@@ -69,10 +157,7 @@ class CartSummaryBar extends ConsumerWidget {
             button: true,
             label: l10n.cartSummarySpoken(
               l10n.cartSummaryCount(cart.itemCount),
-              MoneyFormat.uzs(
-                cart.estimatedSubtotalUzs,
-                interfaceLanguage(context),
-              ),
+              sum,
             ),
             excludeSemantics: true,
             onTap: () => context.push(CartPaths.cart),
@@ -92,63 +177,95 @@ class CartSummaryBar extends ConsumerWidget {
                     ),
                     child: Row(
                       children: <Widget>[
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(3),
-                            child: ProductImage(url: last.imageUrl, size: 40),
+                        SizedBox.square(
+                          dimension: 46,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Center(
+                                child: _Swap(
+                                  swapKey: last.id,
+                                  duration: 260,
+                                  reduced: reduced,
+                                  scaleFrom: 0.7,
+                                  child: ProductImage(
+                                    url: last.imageUrl,
+                                    size: 40,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
                               Text(
                                 l10n.cartSummaryCount(cart.itemCount),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                maxLines: large ? 2 : 1,
+                                overflow: large
+                                    ? TextOverflow.clip
+                                    : TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.white,
                                 ),
                               ),
-                              Text(
-                                l10n.catalogApproxPrice(
-                                  MoneyFormat.uzs(
-                                    cart.estimatedSubtotalUzs,
-                                    interfaceLanguage(context),
+                              _Swap(
+                                swapKey: total,
+                                duration: 240,
+                                reduced: reduced,
+                                riseFrom: 0.45,
+                                child: Text(
+                                  total,
+                                  maxLines: large ? 2 : 1,
+                                  overflow: TextOverflow.clip,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
                                   ),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
                                 ),
                               ),
                             ],
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            '${l10n.cartSummaryOpen} →',
-                            maxLines: 2,
-                            textAlign: TextAlign.end,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
+                        if (large)
+                          const ExcludeSemantics(
+                            child: Icon(
+                              Icons.chevron_right,
+                              size: 30,
                               color: Colors.white,
                             ),
+                          )
+                        else
+                          Flexible(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
+                              child: Text(
+                                '${l10n.cartSummaryOpen} →',
+                                maxLines: 2,
+                                textAlign: TextAlign.end,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -158,6 +275,74 @@ class CartSummaryBar extends ConsumerWidget {
           ),
         ),
       ),
+    );
+
+    if (reduced) {
+      return FadeTransition(opacity: _position, child: bar);
+    }
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(0, 1),
+        end: Offset.zero,
+      ).animate(_position),
+      child: bar,
+    );
+  }
+}
+
+/// Shows [child] and, when [swapKey] changes, brings the new child in with
+/// `Curves.easeOut` while the old one goes: from [scaleFrom], or from [riseFrom]
+/// of its height below, always with a fade. With reduced motion only a 200 ms
+/// fade remains (`DL-127`).
+class _Swap extends StatelessWidget {
+  const _Swap({
+    required this.swapKey,
+    required this.duration,
+    required this.reduced,
+    required this.child,
+    this.scaleFrom,
+    this.riseFrom,
+  });
+
+  final Object swapKey;
+  final int duration;
+  final bool reduced;
+  final double? scaleFrom;
+  final double? riseFrom;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: Duration(milliseconds: reduced ? 200 : duration),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeOut,
+      layoutBuilder: (Widget? current, List<Widget> previous) => Stack(
+        alignment: AlignmentDirectional.centerStart,
+        children: <Widget>[...previous, ?current],
+      ),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        Widget moved = child;
+        final double? scale = scaleFrom;
+        final double? rise = riseFrom;
+        if (!reduced && scale != null) {
+          moved = ScaleTransition(
+            scale: Tween<double>(begin: scale, end: 1).animate(animation),
+            child: moved,
+          );
+        }
+        if (!reduced && rise != null) {
+          moved = SlideTransition(
+            position: Tween<Offset>(
+              begin: Offset(0, rise),
+              end: Offset.zero,
+            ).animate(animation),
+            child: moved,
+          );
+        }
+        return FadeTransition(opacity: animation, child: moved);
+      },
+      child: KeyedSubtree(key: ValueKey<Object>(swapKey), child: child),
     );
   }
 }
