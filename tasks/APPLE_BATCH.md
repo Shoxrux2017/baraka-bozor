@@ -23,7 +23,7 @@ Rules for every stage:
 | 4 | Checkout | 10 | — | Merged (PR #125) |
 | 5 | Product | 9 | — | Merged (PR #126) |
 | 6 | Home and categories | 14 | working hours | Merged (PR #128) |
-| 7 | Category screen and product lists | 10 | — | Planned |
+| 7 | Category screen and product lists | 10 | — | Merged (PR #130) |
 | 8 | «Рекомендуем» and «Все товары» | 7 | list order | Planned |
 | 9 | Search | 8 | — | Planned |
 | 10 | Favourites | 7 | favourites order | Planned |
@@ -351,6 +351,7 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - The app has no page transitions and no iOS back-swipe: go_router 18.0.1 recognises a Material app by `package:material_ui`'s `MaterialApp`, a different class from `package:flutter/material.dart`'s in Flutter 3.47.5, so every route gets go_router's `NoTransitionPage` (since the scaffold, `32bdcbb`). Stage 5 gives only the product route its own `MaterialPage`, so its photo can fly (`DL-122` (1)). The fix — one page builder for every route, then the tests that assume an instant push — is a task of its own; the Owner places it in the batch. Fixed: one page builder for every route; pages opened over another slide in, with the iOS back-swipe, and flat pages stand in place (`DL-124`).
 
 - The app reads the cart's `working_hours` as a required key (`DL-125` (7)), so a build of stage 6 or later refuses the cart answer of an older server. Deploy the backend before any such build reaches a phone (W4-5).
+- The app now also reads each category's `product_count` as a required key (`DL-128` (1)), like `working_hours` (`DL-125` (7)): deploy the backend first.
 
 ## Review findings not acted on
 
