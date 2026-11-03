@@ -448,10 +448,15 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
                               ExcludeSemantics(
                                 child: Text(
                                   l10n.catalogApproxPrice(
-                                    MoneyFormat.uzs(
-                                      product.customerUnitPriceUzs,
-                                      language,
-                                    ),
+                                    large
+                                        // The currency may drop to the second
+                                        // line; the amount stays whole.
+                                        ? '${MoneyFormat.grouped(product.customerUnitPriceUzs)} '
+                                              '${MoneyFormat.currency(language)}'
+                                        : MoneyFormat.uzs(
+                                            product.customerUnitPriceUzs,
+                                            language,
+                                          ),
                                   ),
                                   maxLines: large ? 2 : 1,
                                   overflow: large

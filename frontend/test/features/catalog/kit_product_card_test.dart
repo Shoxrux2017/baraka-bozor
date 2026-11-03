@@ -1253,6 +1253,73 @@ void main() {
     expect(rowTop - priceBox.bottom, closeTo(8, 2), reason: 'no band');
   });
 
+  testWidgets('at text x2 the currency may drop to the second line', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const TextScaler scaler = NonlinearTextScaler(2);
+    final CatalogProduct product = catalogProduct(
+      id: '0192f0a0-0000-7000-8000-0000000000a8',
+      nameRu: 'Помидор',
+      customerUnitPriceUzs: 142100,
+    );
+    final double extent = kitCardExtent(
+      scaler,
+      size: KitCardSize.compact,
+      imageHeight: 84,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        retry: (int count, Object error) => null,
+        overrides: [
+          customerAccountProvider.overrideWithValue('c'),
+          cartRepositoryProvider.overrideWithValue(cart),
+          favoritesRepositoryProvider.overrideWithValue(favorites),
+        ],
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (BuildContext context, Widget? child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: scaler),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: 240,
+                height: extent,
+                child: KitProductCard(
+                  product: product,
+                  size: KitCardSize.compact,
+                  imageHeight: 84,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final RenderParagraph price = tester.renderObject<RenderParagraph>(
+      find.textContaining('≈'),
+    );
+    expect(price.didExceedMaxLines, isFalse);
+    final String text = price.text.toPlainText();
+    final List<TextBox> boxes = price.getBoxesForSelection(
+      TextSelection(baseOffset: 0, extentOffset: text.length),
+    );
+    // Two lines; the second holds «сум» alone (3 glyphs as wide as high).
+    expect(boxes, hasLength(2));
+    expect(boxes.last.right - boxes.last.left, closeTo(3 * 13 * 1.87, 2));
+    // Thousands stay joined; only the space before the currency breaks.
+    expect(text, contains('142\u00A0100 сум'));
+  });
+
   test('productColumns', () {
     const TextScaler none = TextScaler.noScaling;
     expect(productColumns(261, none, KitCardSize.compact), 2);
