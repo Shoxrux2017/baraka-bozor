@@ -90,6 +90,36 @@ void main() {
     expect(stored('a'), <String>['sut']);
   });
 
+  test('forget drops one query', () async {
+    await read('a');
+    await notifier('a').remember('olma');
+    await notifier('a').remember('banan');
+    await notifier('a').remember('pomidor');
+    await notifier('a').forget('BANAN');
+    expect(stored('a'), <String>['pomidor', 'olma']);
+    expect(container.read(recentSearchesProvider('a')).value, <String>[
+      'pomidor',
+      'olma',
+    ]);
+  });
+
+  test('clear returns what it cleared and restore puts it back', () async {
+    await read('a');
+    await notifier('a').remember('olma');
+    await notifier('a').remember('banan');
+    final List<String> cleared = await notifier('a').clear();
+    expect(cleared, <String>['banan', 'olma']);
+    expect(stored('a'), isEmpty);
+
+    await notifier('a').restore(cleared);
+    expect(stored('a'), <String>['banan', 'olma']);
+    expect(container.read(recentSearchesProvider('a')).value, cleared);
+  });
+
+  test('fold is public: lower case, ё as е, one apostrophe', () {
+    expect(RecentSearches.fold("Ёжик Qoʻy"), "ежик qo'y");
+  });
+
   test('clear empties the list', () async {
     await read('a');
     await notifier('a').remember('sut');

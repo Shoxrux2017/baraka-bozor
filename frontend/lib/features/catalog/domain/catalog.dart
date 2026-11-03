@@ -12,6 +12,7 @@ final class CatalogCategory {
     required this.descriptionRu,
     required this.sortOrder,
     required this.imageUrl,
+    required this.productCount,
   });
 
   final String id;
@@ -21,6 +22,9 @@ final class CatalogCategory {
   final String? descriptionRu;
   final int sortOrder;
   final String? imageUrl;
+
+  /// How many products the category holds for the Customer (`DL-128`).
+  final int productCount;
 
   String name(AppLanguage language) =>
       language == AppLanguage.ru ? nameRu : nameUz;

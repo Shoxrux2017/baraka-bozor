@@ -13,6 +13,7 @@ import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
 import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,7 @@ import '../../support/fake_auth_repository.dart';
 import '../../support/fake_cart_repository.dart';
 import '../../support/fake_catalog_repository.dart';
 import '../../support/in_memory_stores.dart';
+import '../../support/nonlinear_text_scaler.dart';
 
 /// The search screen (`DL-83`, drawings 15 to 17) through the real router,
 /// against a catalog in memory.
@@ -38,6 +40,9 @@ void main() {
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
   final Finder field = byKey('search-field');
+
+  bool focused(WidgetTester tester) =>
+      tester.widget<TextField>(field).focusNode!.hasFocus;
 
   AppLocalizations l10n(WidgetTester tester) =>
       AppLocalizations.of(tester.element(find.byType(Scaffold).first));
@@ -89,6 +94,7 @@ void main() {
   Future<void> openHome(
     WidgetTester tester, {
     Locale device = const Locale('uz'),
+    TextScaler? textScaler,
   }) async {
     await tester.pumpWidget(
       appUnderTest(
@@ -98,6 +104,7 @@ void main() {
         catalog: catalog,
         cart: cart,
         preferences: preferences,
+        textScaler: textScaler,
       ),
     );
     await tester.pumpAndSettle();
@@ -107,8 +114,9 @@ void main() {
   Future<void> openSearch(
     WidgetTester tester, {
     Locale device = const Locale('uz'),
+    TextScaler? textScaler,
   }) async {
-    await openHome(tester, device: device);
+    await openHome(tester, device: device, textScaler: textScaler);
     await tester.tap(byKey('catalog-search'));
     await tester.pumpAndSettle();
     catalog.requests.clear();
@@ -295,7 +303,7 @@ void main() {
       await typeAndPause(tester, 'tur');
       expect(find.text('Topildi: 4 ta mahsulot'), findsOneWidget);
       expect(byKey('search-found'), findsOneWidget);
-      expect(byKey('search-sort'), findsOneWidget);
+      expect(byKey('list-sort'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await openSearch(tester, device: const Locale('ru'));
@@ -326,7 +334,7 @@ void main() {
         reason: 'the shop order before a sort is chosen',
       );
 
-      await tester.tap(byKey('search-sort'));
+      await tester.tap(byKey('list-sort'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l10n(tester).sortPriceAsc));
       await tester.pumpAndSettle();
@@ -350,7 +358,7 @@ void main() {
     ) async {
       await openSearch(tester);
       await typeAndPause(tester, 'o');
-      await tester.tap(byKey('search-sort'));
+      await tester.tap(byKey('list-sort'));
       await tester.pumpAndSettle();
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
@@ -361,6 +369,59 @@ void main() {
         reason: 'the order is unchanged',
       );
     });
+
+    testWidgets(
+      'the count of «Все товары» is not shown above the skeletons of a first '
+      'search',
+      (WidgetTester tester) async {
+        await openHome(tester);
+        final GoRouter router = GoRouter.of(screenContext(tester));
+        unawaited(router.push(CatalogPaths.products));
+        await tester.pumpAndSettle();
+        expect(find.text('3 ta mahsulot'), findsOneWidget);
+        router.pop();
+        await tester.pumpAndSettle();
+
+        final Completer<void> slow = Completer<void>();
+        catalog.gates['pom'] = slow;
+        await tester.tap(byKey('catalog-search'));
+        await tester.pumpAndSettle();
+        await tester.enterText(field, 'pom');
+        await tester.pump(SearchScreen.searchPause);
+        await tester.pump();
+
+        expect(byKey('product-skeletons'), findsOneWidget);
+        expect(find.textContaining('ta mahsulot'), findsNothing);
+
+        slow.complete();
+        await tester.pumpAndSettle();
+        expect(find.text('Topildi: 1 ta mahsulot'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the count of a search is not shown above the skeletons of «Все товары»',
+      (WidgetTester tester) async {
+        await openSearch(tester);
+        await typeAndPause(tester, 'pom');
+        expect(find.text('Topildi: 1 ta mahsulot'), findsOneWidget);
+        final GoRouter router = GoRouter.of(screenContext(tester));
+        router.pop();
+        await tester.pumpAndSettle();
+
+        final Completer<void> slow = Completer<void>();
+        catalog.gates[''] = slow;
+        unawaited(router.push(CatalogPaths.products));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.textContaining('ta mahsulot'), findsNothing);
+
+        slow.complete();
+        await tester.pumpAndSettle();
+        expect(find.text('3 ta mahsulot'), findsOneWidget);
+      },
+    );
 
     testWidgets('a failed page shows the retry, and nothing is counted', (
       WidgetTester tester,
@@ -600,7 +661,7 @@ void main() {
 
       await typeAndPause(tester, 'o');
       expect(tester.takeException(), isNull);
-      for (final String key in <String>['search-back', 'search-sort']) {
+      for (final String key in <String>['search-back', 'list-sort']) {
         final Rect rect = tester.getRect(byKey(key));
         expect(rect.left, greaterThanOrEqualTo(0), reason: key);
         expect(rect.right, lessThanOrEqualTo(320), reason: key);
@@ -654,17 +715,77 @@ void main() {
     });
   });
 
-  group('the sort button', () {
-    testWidgets('the sort button opens the menu', (WidgetTester tester) async {
+  group('the order button', () {
+    testWidgets('the field stays full width with a query; Найдено: 4 товара · '
+        'Как в магазине sits above the cards', (WidgetTester tester) async {
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 1; i <= 4; i++)
+          catalogProduct(id: 't-$i', nameUz: 'Tur $i', nameRu: 'Вид $i'),
+      ];
+      await openSearch(tester, device: const Locale('ru'));
+      final Rect empty = tester.getRect(field);
+      await typeAndPause(tester, 'вид');
+
+      expect(byKey('search-sort'), findsNothing);
+      expect(tester.getRect(field), empty, reason: 'the field does not move');
+      expect(tester.getRect(field).right, 800 - 16);
+      expect(byKey('search-found'), findsOneWidget);
+      expect(find.text('Найдено: 4 товара'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('list-sort'),
+          matching: find.text('Как в магазине'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.getRect(byKey('search-found')).bottom,
+        lessThanOrEqualTo(tester.getRect(find.text('Вид 1')).top),
+        reason: 'the row is above the cards',
+      );
+      expect(
+        tester.getRect(byKey('list-sort')).top,
+        tester.getRect(byKey('search-found')).top,
+        reason: 'the order button is in the row',
+      );
+    });
+
+    testWidgets('the order button opens the menu', (WidgetTester tester) async {
       await openSearch(tester);
       await typeAndPause(tester, 'pom');
 
-      final Rect button = tester.getRect(byKey('search-sort'));
-      await tester.tap(byKey('search-sort'));
+      final Rect button = tester.getRect(byKey('list-sort'));
+      await tester.tap(byKey('list-sort'));
       await tester.pumpAndSettle();
 
       expect(byKey('sort-menu'), findsOneWidget);
       expect(tester.getRect(byKey('sort-menu')).top, button.bottom + 2);
+    });
+
+    testWidgets('the count stays while another search loads and goes when '
+        'it fails', (WidgetTester tester) async {
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 1; i <= 4; i++)
+          catalogProduct(id: 't-$i', nameUz: 'Tur $i', nameRu: 'Вид $i'),
+      ];
+      await openSearch(tester, device: const Locale('ru'));
+      await typeAndPause(tester, 'вид');
+      expect(find.text('Найдено: 4 товара'), findsOneWidget);
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['вид2'] = slow;
+      await tester.enterText(field, 'вид2');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      expect(byKey('search-found'), findsOneWidget);
+      expect(find.text('Найдено: 4 товара'), findsOneWidget);
+
+      slow.complete();
+      await tester.pumpAndSettle();
+      catalog.nextFailure = const NetworkFailure();
+      await typeAndPause(tester, 'вид3');
+      expect(byKey('stale-retry'), findsOneWidget);
+      expect(find.text('Найдено: 4 товара'), findsNothing);
     });
 
     testWidgets('exposes a tap action to TalkBack', (
@@ -674,15 +795,901 @@ void main() {
       await openSearch(tester);
       await typeAndPause(tester, 'pom');
 
+      final SemanticsNode node = tester.getSemantics(byKey('list-sort'));
+      expect(node.label, contains(l10n(tester).sortShop));
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      handle.dispose();
+    });
+  });
+
+  group('typing without flicker', () {
+    List<CatalogProduct> thirty() => <CatalogProduct>[
+      for (int i = 1; i <= 30; i++)
+        catalogProduct(id: 't-$i', nameUz: 'Tur $i', nameRu: 'Вид $i'),
+    ];
+
+    double dimmedOpacity(WidgetTester tester) => tester
+        .widget<SliverOpacity>(
+          find.descendant(
+            of: byKey('dimmed-cards'),
+            matching: find.byType(SliverOpacity),
+          ),
+        )
+        .opacity;
+
+    testWidgets("typing a second query keeps the first one's cards dimmed "
+        'under a 2 px line', (WidgetTester tester) async {
+      catalog.productRows = thirty();
+      await openSearch(tester);
+      await typeAndPause(tester, 'tur');
+      expect(find.text('Tur 1'), findsOneWidget);
+      expect(byKey('search-progress'), findsNothing);
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['tur 1'] = slow;
+      await tester.enterText(field, 'tur 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(byKey('product-skeletons'), findsNothing);
+      expect(find.text('Tur 1'), findsOneWidget);
+      expect(dimmedOpacity(tester), 0.45);
+      expect(tester.getSize(byKey('search-progress')).height, 2);
+
+      slow.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('search-progress'), findsNothing);
+      expect(byKey('dimmed-cards'), findsNothing);
+    });
+
+    testWidgets('the new cards come and the count rolls to the new number', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = thirty();
+      await openSearch(tester, device: const Locale('ru'));
+      await typeAndPause(tester, 'вид');
+      expect(find.text('Найдено: 30 товаров'), findsOneWidget);
+
+      await tester.enterText(field, 'вид 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60));
+
+      // 'Вид 1' and 'Вид 10' to 'Вид 19' are 11.
+      expect(find.text('Найдено: 30 товаров'), findsOneWidget);
+      expect(find.text('Найдено: 11 товаров'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.text('Найдено: 30 товаров'), findsNothing);
+      expect(find.text('Найдено: 11 товаров'), findsOneWidget);
+    });
+
+    testWidgets('the new cards fade in from 0.45 after the dim', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = thirty();
+      await openSearch(tester);
+      await typeAndPause(tester, 'tur');
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['tur 1'] = slow;
+      await tester.enterText(field, 'tur 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(byKey('dimmed-cards'), findsOneWidget);
+
+      slow.complete();
+      await tester.pump();
+      await tester.pump();
+      double opacity() => tester
+          .widget<SliverFadeTransition>(
+            find.descendant(
+              of: byKey('product-cards'),
+              matching: find.byType(SliverFadeTransition),
+            ),
+          )
+          .opacity
+          .value;
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(opacity(), inInclusiveRange(0.45, 0.6));
+
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(opacity(), 1);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the first query shows skeletons', (WidgetTester tester) async {
+      catalog.productRows = thirty();
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['tur'] = slow;
+      await openSearch(tester);
+      await tester.enterText(field, 'tur');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+
+      expect(byKey('product-skeletons'), findsOneWidget);
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(byKey('search-progress'), findsNothing);
+
+      slow.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Tur 1'), findsOneWidget);
+    });
+
+    testWidgets('a new query that fails drops the dimmed cards of another', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = thirty();
+      await openSearch(tester, device: const Locale('ru'));
+      await typeAndPause(tester, 'вид');
+      expect(byKey('search-found'), findsOneWidget);
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['вид 1'] = slow;
+      await tester.enterText(field, 'вид 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(byKey('dimmed-cards'), findsOneWidget);
+
+      catalog.nextFailure = const NetworkFailure();
+      slow.complete();
+      await tester.pumpAndSettle();
+
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(byKey('product-skeletons'), findsOneWidget);
+      expect(byKey('stale-retry'), findsOneWidget);
+      expect(byKey('search-found'), findsNothing);
+      expect(byKey('search-progress'), findsNothing);
+      expect(find.text('Вид 1'), findsNothing);
+
+      await tester.tap(byKey('stale-retry'));
+      await tester.pumpAndSettle();
+      expect(find.text('Вид 1'), findsOneWidget);
+      expect(byKey('search-found'), findsOneWidget);
+    });
+
+    testWidgets('«Повторить» of a failed new text reloads over skeletons with '
+        'no line', (WidgetTester tester) async {
+      catalog.productRows = thirty();
+      await openSearch(tester, device: const Locale('ru'));
+      await typeAndPause(tester, 'вид');
+      final Completer<void> first = Completer<void>();
+      catalog.gates['вид 1'] = first;
+      await tester.enterText(field, 'вид 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      catalog.nextFailure = const NetworkFailure();
+      first.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('stale-retry'), findsOneWidget);
+
+      final Completer<void> again = Completer<void>();
+      catalog.gates['вид 1'] = again;
+      await tester.tap(byKey('stale-retry'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(byKey('product-skeletons'), findsOneWidget);
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(byKey('search-progress'), findsNothing);
+
+      again.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Вид 1'), findsOneWidget);
+    });
+
+    testWidgets('the cards dropped by a failed new text do not come back '
+        'dimmed under the next one', (WidgetTester tester) async {
+      catalog.productRows = thirty();
+      await openSearch(tester, device: const Locale('ru'));
+      await typeAndPause(tester, 'вид');
+      catalog.nextFailure = const NetworkFailure();
+      await typeAndPause(tester, 'вид 1');
+      expect(byKey('stale-retry'), findsOneWidget);
+      expect(find.text('Вид 1'), findsNothing);
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['вид 2'] = slow;
+      await tester.enterText(field, 'вид 2');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(byKey('product-skeletons'), findsOneWidget);
+      expect(byKey('search-progress'), findsNothing);
+
+      slow.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Вид 2'), findsOneWidget);
+    });
+
+    testWidgets('a refresh of the same query that fails keeps its cards '
+        'under the stale line', (WidgetTester tester) async {
+      catalog.productRows = thirty();
+      await openSearch(tester);
+      await typeAndPause(tester, 'tur');
+
+      final ProviderContainer container = ProviderScope.containerOf(
+        screenContext(tester),
+      );
+      catalog.nextFailure = const NetworkFailure();
+      container.invalidate(
+        productListProvider(const ProductListQuery(search: 'tur')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(byKey('stale-line'), findsOneWidget);
+      expect(find.text('Tur 1'), findsOneWidget);
+      expect(byKey('product-skeletons'), findsNothing);
+      expect(byKey('search-progress'), findsNothing);
+    });
+
+    testWidgets('with reduced motion the line stands still at half opacity', (
+      WidgetTester tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      catalog.productRows = thirty();
+      await openSearch(tester);
+      await typeAndPause(tester, 'tur');
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['tur 1'] = slow;
+      await tester.enterText(field, 'tur 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+
+      final Rect first = tester.getRect(byKey('search-progress-bar'));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.getRect(byKey('search-progress-bar')), first);
+      expect(first.width, tester.getSize(byKey('search-progress')).width);
       expect(
-        tester.getSemantics(byKey('search-sort')),
-        matchesSemantics(
-          label: l10n(tester).sortTitle,
-          isButton: true,
-          hasTapAction: true,
-          hasEnabledState: false,
+        tester
+            .widget<Opacity>(
+              find.ancestor(
+                of: byKey('search-progress-bar'),
+                matching: find.byType(Opacity),
+              ),
+            )
+            .opacity,
+        0.5,
+      );
+
+      slow.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the running bar is 40 % wide and runs across the line', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = thirty();
+      await openSearch(tester);
+      await typeAndPause(tester, 'tur');
+
+      final Completer<void> slow = Completer<void>();
+      catalog.gates['tur 1'] = slow;
+      await tester.enterText(field, 'tur 1');
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pump();
+
+      final Rect line = tester.getRect(byKey('search-progress'));
+      expect(
+        tester.getSize(byKey('search-progress-bar')).width,
+        closeTo(line.width * 0.4, 0.01),
+      );
+      final double start = tester.getRect(byKey('search-progress-bar')).left;
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        tester.getRect(byKey('search-progress-bar')).left,
+        greaterThan(start),
+      );
+
+      slow.complete();
+      await tester.pumpAndSettle();
+    });
+  });
+
+  group('the keyboard and the cart bar', () {
+    void keyboardUp(WidgetTester tester) {
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+    }
+
+    testWidgets('scrolling the results hides the keyboard', (
+      WidgetTester tester,
+    ) async {
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 1; i <= 30; i++)
+          catalogProduct(id: 't-$i', nameUz: 'Tur $i', nameRu: 'Вид $i'),
+      ];
+      await openSearch(tester);
+      await typeAndPause(tester, 'tur');
+      await tester.showKeyboard(field);
+      expect(focused(tester), isTrue);
+
+      await tester.drag(byKey('product-grid'), const Offset(0, -200));
+      await tester.pumpAndSettle();
+
+      expect(focused(tester), isFalse);
+      expect(tester.testTextInput.isVisible, isFalse);
+    });
+
+    testWidgets('scrolling the landing hides the keyboard', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(375, 420);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      remembered('c', <String>['olma', 'pomidor', 'banan']);
+      await openSearch(tester);
+      expect(focused(tester), isTrue);
+
+      await tester.drag(find.byType(ListView).first, const Offset(0, -150));
+      await tester.pumpAndSettle();
+
+      expect(focused(tester), isFalse);
+    });
+
+    testWidgets('no cart bar while the keyboard is up; it comes back when '
+        'it goes down', (WidgetTester tester) async {
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[cartLineJson(total: 18400)]),
+      );
+      await openSearch(tester);
+      await typeAndPause(tester, 'pom');
+      expect(byKey('cart-summary'), findsOneWidget);
+
+      keyboardUp(tester);
+      await tester.pumpAndSettle();
+      expect(byKey('cart-summary'), findsNothing);
+      expect(find.text('Pomidor'), findsOneWidget);
+
+      tester.view.resetViewInsets();
+      await tester.pumpAndSettle();
+      expect(byKey('cart-summary'), findsOneWidget);
+    });
+
+    testWidgets('the landing shows the cart bar', (WidgetTester tester) async {
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[cartLineJson(total: 18400)]),
+      );
+      await openSearch(tester);
+      expect(byKey('recent-clear'), findsNothing);
+      expect(byKey('cart-summary'), findsOneWidget);
+
+      keyboardUp(tester);
+      await tester.pumpAndSettle();
+      expect(byKey('cart-summary'), findsNothing);
+    });
+  });
+
+  group('the field flies', () {
+    testWidgets('the home field flies up and stretches into the search '
+        'field', (WidgetTester tester) async {
+      await openHome(tester, device: const Locale('ru'));
+      final Rect home = tester.getRect(byKey('catalog-search'));
+
+      await tester.tap(byKey('catalog-search'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 190));
+
+      final Rect target = tester.getRect(field);
+      final Rect copy = tester.getRect(
+        find.byKey(const ValueKey<String>('flight-search-field')),
+      );
+      expect(copy.width, inExclusiveRange(target.width, home.width));
+      expect(copy.left, inExclusiveRange(home.left, target.left));
+      expect(
+        tester
+            .widget<Opacity>(
+              find
+                  .ancestor(
+                    of: byKey('catalog-search'),
+                    matching: find.byType(Opacity),
+                  )
+                  .first,
+            )
+            .opacity,
+        0,
+        reason: 'the home field is hidden while its copy flies',
+      );
+      expect(focused(tester), isTrue);
+
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('flight-search-field')),
+        findsNothing,
+      );
+      expect(field.hitTestable(), findsOneWidget);
+
+      await tester.tap(byKey('search-back'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CatalogHomeScreen), findsOneWidget);
+      expect(
+        tester
+            .widget<Opacity>(
+              find
+                  .ancestor(
+                    of: byKey('catalog-search'),
+                    matching: find.byType(Opacity),
+                  )
+                  .first,
+            )
+            .opacity,
+        1,
+        reason: 'nothing stays hidden',
+      );
+    });
+
+    testWidgets('with reduced motion search fades in', (
+      WidgetTester tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await openHome(tester, device: const Locale('ru'));
+      await tester.tap(byKey('catalog-search'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(SearchScreen), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('flight-search-field')),
+        findsNothing,
+      );
+      final double opacity = tester
+          .widget<FadeTransition>(byKey('flight-page-fade'))
+          .opacity
+          .value;
+      expect(opacity, inExclusiveRange(0, 1));
+      await tester.pumpAndSettle();
+    });
+  });
+
+  group('sections, recent queries, nothing found and the reader', () {
+    void shelves() {
+      catalog.categoryRows = <CatalogCategory>[
+        catalogCategory(nameUz: 'Sabzavotlar', nameRu: 'Овощи'),
+        catalogCategory(
+          id: 'c-2',
+          nameUz: 'Meva va rezavorlar',
+          nameRu: 'Фрукты и ягоды',
+        ),
+        catalogCategory(
+          id: 'c-3',
+          nameUz: 'Quruq mevalar',
+          nameRu: 'Сухофрукты',
+        ),
+        catalogCategory(
+          id: 'c-4',
+          nameUz: 'Meva sharbatlari',
+          nameRu: 'Фруктовые соки',
+        ),
+      ];
+    }
+
+    List<String> boldPartsOf(WidgetTester tester, String key, String name) {
+      final RichText rich = tester.widget<RichText>(
+        find.descendant(
+          of: byKey(key),
+          matching: find.byWidgetPredicate(
+            (Widget w) => w is RichText && w.text.toPlainText() == name,
+          ),
         ),
       );
+      final List<String> bold = <String>[];
+      rich.text.visitChildren((InlineSpan span) {
+        if (span is TextSpan &&
+            span.style?.fontWeight == FontWeight.w700 &&
+            span.text != null) {
+          bold.add(span.text!);
+        }
+        return true;
+      });
+      return bold;
+    }
+
+    testWidgets('from the first letter the matching sections show on top', (
+      WidgetTester tester,
+    ) async {
+      shelves();
+      await openSearch(tester, device: const Locale('ru'));
+      expect(byKey('search-sections'), findsNothing);
+
+      await tester.enterText(field, 'фрукт');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(asked('фрукт|'), 0, reason: 'shown before the pause ends');
+      expect(byKey('search-section-c-2'), findsOneWidget);
+      expect(byKey('search-section-c-3'), findsOneWidget);
+      expect(
+        byKey('search-section-c-4'),
+        findsNothing,
+        reason: 'at most two, in category order',
+      );
+      expect(byKey('search-section-c-1'), findsNothing);
+      expect(
+        boldPartsOf(tester, 'search-section-c-2', 'Фрукты и ягоды'),
+        <String>['Фрукт'],
+      );
+      expect(boldPartsOf(tester, 'search-section-c-3', 'Сухофрукты'), <String>[
+        'фрукт',
+      ]);
+      expect(
+        find.descendant(
+          of: byKey('search-section-c-2'),
+          matching: find.text('раздел'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pumpAndSettle();
+      expect(byKey('search-nothing'), findsOneWidget);
+      expect(byKey('search-section-c-2'), findsOneWidget);
+      expect(
+        tester.getRect(byKey('search-sections')).bottom,
+        lessThanOrEqualTo(tester.getRect(byKey('search-nothing')).top),
+        reason: 'the sections are above the nothing-found block',
+      );
+    });
+
+    testWidgets('a name in the other language matches too', (
+      WidgetTester tester,
+    ) async {
+      shelves();
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.enterText(field, 'quruq');
+      await tester.pump();
+
+      expect(byKey('search-section-c-3'), findsOneWidget);
+      expect(byKey('search-section-c-1'), findsNothing);
+    });
+
+    testWidgets('a section fades in over 180 ms, at once with reduced motion', (
+      WidgetTester tester,
+    ) async {
+      shelves();
+      double opacity() => tester
+          .widget<FadeTransition>(
+            find
+                .descendant(
+                  of: byKey('search-sections'),
+                  matching: find.byType(FadeTransition),
+                )
+                .first,
+          )
+          .opacity
+          .value;
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.enterText(field, 'фрукт');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 90));
+      expect(opacity(), inExclusiveRange(0, 1));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(opacity(), 1);
+
+      await tester.pumpWidget(const SizedBox());
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.enterText(field, 'фрукт');
+      await tester.pump();
+      expect(opacity(), 1);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a section opens its category and remembers the query', (
+      WidgetTester tester,
+    ) async {
+      shelves();
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.enterText(field, 'фрукт');
+      await tester.pump();
+
+      await tester.tap(byKey('search-section-c-2'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CategoryScreen), findsOneWidget);
+      expect(stored('c'), <String>['фрукт']);
+    });
+
+    testWidgets('× takes away one query', (WidgetTester tester) async {
+      remembered('c', <String>['olma', 'banan', 'pomidor']);
+      await openSearch(tester);
+
+      await tester.tap(byKey('recent-remove-1'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('banan'), findsNothing);
+      expect(find.text('olma'), findsOneWidget);
+      expect(find.text('pomidor'), findsOneWidget);
+      expect(stored('c'), <String>['olma', 'pomidor']);
+      expect(find.byType(SnackBar), findsNothing, reason: 'no undo for ×');
+    });
+
+    testWidgets('Очистить clears them and Вернуть gives them back within '
+        '5 s', (WidgetTester tester) async {
+      remembered('c', <String>['olma', 'banan']);
+      await openSearch(tester, device: const Locale('ru'));
+
+      await tester.tap(byKey('recent-clear'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Недавние запросы удалены'), findsOneWidget);
+      expect(find.text('olma'), findsNothing);
+      expect(stored('c'), isEmpty);
+
+      await tester.pump(const Duration(milliseconds: 4000));
+      expect(find.text('Вернуть'), findsOneWidget, reason: 'still at 4.5 s');
+
+      await tester.tap(find.text('Вернуть'));
+      await tester.pumpAndSettle();
+      expect(find.text('olma'), findsOneWidget);
+      expect(find.text('banan'), findsOneWidget);
+      expect(stored('c'), <String>['olma', 'banan']);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('the undo bar leaves after 5 s and the list stays cleared', (
+      WidgetTester tester,
+    ) async {
+      remembered('c', <String>['olma']);
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.tap(byKey('recent-clear'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 5100));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SnackBar), findsNothing);
+      expect(stored('c'), isEmpty);
+    });
+
+    testWidgets('the undo bar sits above the cart bar when it shows', (
+      WidgetTester tester,
+    ) async {
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[cartLineJson(total: 18400)]),
+      );
+      remembered('c', <String>['olma']);
+      await openSearch(tester, device: const Locale('ru'));
+      expect(byKey('cart-summary'), findsOneWidget);
+      await tester.tap(byKey('recent-clear'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        tester.getRect(find.text('Вернуть')).bottom,
+        lessThanOrEqualTo(tester.getRect(byKey('cart-summary')).top),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('an undo bar shown with the keyboard up still clears the cart '
+        'bar once the keyboard goes', (WidgetTester tester) async {
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[cartLineJson(total: 18400)]),
+      );
+      remembered('c', <String>['olma']);
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      await openSearch(tester, device: const Locale('ru'));
+      expect(byKey('cart-summary'), findsNothing, reason: 'keyboard is up');
+      await tester.tap(byKey('recent-clear'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      tester.view.resetViewInsets();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(byKey('cart-summary'), findsOneWidget);
+      expect(find.text('Вернуть'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('Вернуть')).bottom,
+        lessThanOrEqualTo(tester.getRect(byKey('cart-summary')).top),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('Вернуть gives back the list as it was before Очистить', (
+      WidgetTester tester,
+    ) async {
+      remembered('c', <String>['olma', 'banan', 'pomidor']);
+      await openSearch(tester, device: const Locale('ru'));
+
+      await tester.tap(byKey('recent-remove-1'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('recent-clear'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.text('Вернуть'));
+      await tester.pumpAndSettle();
+
+      expect(stored('c'), <String>['olma', 'pomidor']);
+      expect(find.text('banan'), findsNothing);
+      expect(find.text('olma'), findsOneWidget);
+    });
+
+    testWidgets('leaving during the undo keeps the list cleared', (
+      WidgetTester tester,
+    ) async {
+      remembered('c', <String>['olma', 'banan']);
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.tap(byKey('recent-clear'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Вернуть'), findsOneWidget);
+
+      await tester.tap(byKey('search-back'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CatalogHomeScreen), findsOneWidget);
+      expect(find.text('Вернуть'), findsNothing, reason: 'the bar left too');
+      expect(stored('c'), isEmpty);
+    });
+
+    testWidgets('nothing found is compact with the Рекомендуем row under it', (
+      WidgetTester tester,
+    ) async {
+      await openSearch(tester, device: const Locale('ru'));
+      await typeAndPause(tester, 'shokolad');
+
+      final Rect nothing = tester.getRect(byKey('search-nothing'));
+      final Rect fieldRect = tester.getRect(field);
+      expect(
+        nothing.top - fieldRect.bottom,
+        lessThan(60),
+        reason: 'at the top, not centred in the screen',
+      );
+      expect(tester.getSize(byKey('search-nothing-icon')), const Size(64, 64));
+      expect(find.text('Ничего не нашли'), findsOneWidget);
+      expect(find.textContaining('«shokolad»'), findsOneWidget);
+      expect(find.text('Рекомендуем'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('Рекомендуем')).top,
+        greaterThanOrEqualTo(
+          tester.getRect(byKey('search-all-categories')).bottom,
+        ),
+      );
+      expect(
+        tester.getSize(byKey('search-all-categories')).height,
+        greaterThanOrEqualTo(48),
+      );
+    });
+
+    testWidgets('a finished search announces Найдено: 4 товара or '
+        'Ничего не нашли по запросу «x»', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 1; i <= 4; i++)
+          catalogProduct(id: 't-$i', nameUz: 'Tur $i', nameRu: 'Вид $i'),
+      ];
+      await openSearch(tester, device: const Locale('ru'));
+      tester.takeAnnouncements();
+
+      await typeAndPause(tester, 'вид');
+      expect(
+        tester.takeAnnouncements().map(
+          (CapturedAccessibilityAnnouncement a) => a.message,
+        ),
+        contains('Найдено: 4 товара'),
+      );
+
+      await typeAndPause(tester, 'xyz');
+      expect(
+        tester.takeAnnouncements().map(
+          (CapturedAccessibilityAnnouncement a) => a.message,
+        ),
+        contains('Ничего не нашли по запросу «xyz»'),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('the reader hears Стереть запрос, Очистить недавние запросы '
+        'and …, недавний запрос', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      shelves();
+      remembered('c', <String>['olma']);
+      await openSearch(tester, device: const Locale('ru'));
+
+      expect(
+        find.bySemanticsLabel('Очистить недавние запросы'),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel('olma, недавний запрос'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Убрать «olma» из недавних'),
+        findsOneWidget,
+      );
+
+      await tester.enterText(field, 'фрукт');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.bySemanticsLabel('Стереть запрос'), findsOneWidget);
+      expect(find.bySemanticsLabel('Фрукты и ягоды, раздел'), findsOneWidget);
+      handle.dispose();
+    });
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets('at text x2 on 320 wide the landing, sections and nothing '
+          'found do not overflow (${device.languageCode})', (
+        WidgetTester tester,
+      ) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        WidgetController.hitTestWarningShouldBeFatal = true;
+        addTearDown(() => WidgetController.hitTestWarningShouldBeFatal = false);
+        shelves();
+        remembered('c', <String>[
+          'olma',
+          'a recent query that is long enough to need more than one line ' * 2,
+        ]);
+        await openSearch(
+          tester,
+          device: device,
+          textScaler: const NonlinearTextScaler(2),
+        );
+        expect(tester.takeException(), isNull);
+
+        await tester.enterText(field, 'meva');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(tester.takeException(), isNull);
+        expect(byKey('search-section-c-2'), findsOneWidget);
+        expect(
+          tester.getRect(byKey('search-section-c-2')).right,
+          lessThanOrEqualTo(320),
+        );
+
+        await typeAndPause(tester, 'shokolad');
+        expect(tester.takeException(), isNull);
+        await tester.ensureVisible(byKey('search-all-categories'));
+        await tester.pumpAndSettle();
+        expect(
+          tester.getRect(byKey('search-all-categories')).right,
+          lessThanOrEqualTo(320),
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('search meets the tap target guideline', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      shelves();
+      remembered('c', <String>['olma', 'banan']);
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.enterText(field, 'meva');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(byKey('recent-0'), findsOneWidget);
+      expect(byKey('search-section-c-2'), findsOneWidget);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+      await typeAndPause(tester, 'о');
+      expect(find.text('Помидор'), findsOneWidget);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+      await typeAndPause(tester, 'shokolad');
+      expect(byKey('search-nothing'), findsOneWidget);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
       handle.dispose();
     });
   });

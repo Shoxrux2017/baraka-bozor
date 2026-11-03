@@ -16,15 +16,18 @@ import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dar
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
 import 'package:baraka_bozor/features/catalog/presentation/recommended_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/section_title.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../support/app_harness.dart';
 import '../../support/fake_address_map.dart';
@@ -221,17 +224,254 @@ void main() {
     );
   });
 
+  /// Makes [count] products recommended; the row shows ten of them.
+  void featureMany(int count) {
+    catalog.productRows = <CatalogProduct>[
+      for (int i = 1; i <= count; i++)
+        catalogProduct(
+          id: 'p-$i',
+          nameUz: 'Tovar $i',
+          nameRu: 'Товар $i',
+          customerUnitPriceUzs: 1000 * i,
+        ),
+    ];
+    catalog.featuredIds = <String>{for (int i = 1; i <= count; i++) 'p-$i'};
+  }
+
+  Future<void> scrollToRow(WidgetTester tester) async {
+    await tester.drag(byKey('home-scroll'), const Offset(0, -2000));
+    await tester.pumpAndSettle();
+  }
+
+  Finder gridCard(String id) => find.descendant(
+    of: find.byType(RecommendedScreen),
+    matching: find.byKey(ValueKey<String>(id)),
+    skipOffstage: false,
+  );
+
+  Finder homeCard(String id) => find.descendant(
+    of: byKey('recommended-row'),
+    matching: find.byKey(ValueKey<String>(id)),
+  );
+
+  /// The opacity the home's «Рекомендуем» title is drawn with.
+  double homeTitleOpacity(WidgetTester tester) {
+    final Finder title = find.byWidgetPredicate(
+      (Widget w) => w is SectionTitle && w.title == 'Рекомендуем',
+      skipOffstage: false,
+    );
+    return tester
+        .widget<Opacity>(
+          find
+              .descendant(
+                of: title,
+                matching: find.byType(Opacity, skipOffstage: false),
+                skipOffstage: false,
+              )
+              .first,
+        )
+        .opacity;
+  }
+
+  double gridCardOpacity(WidgetTester tester, String id) => tester
+      .widget<Opacity>(
+        find.ancestor(of: gridCard(id), matching: find.byType(Opacity)).first,
+      )
+      .opacity;
+
   testWidgets('the home\'s recommended row keeps its title and "all"', (
     WidgetTester tester,
   ) async {
+    featureMany(24);
     await open(tester);
-    await tester.drag(byKey('home-scroll'), const Offset(0, -2000));
-    await tester.pumpAndSettle();
+    await scrollToRow(tester);
 
     expect(find.text(l10n(tester).recommendedTitle), findsOneWidget);
     expect(byKey('recommended-row'), findsOneWidget);
     expect(byKey('open-recommended'), findsOneWidget);
     expect(find.text(l10n(tester).homeSeeAll), findsWidgets);
+  });
+
+  testWidgets('Все shows the total and only when the row cannot hold all', (
+    WidgetTester tester,
+  ) async {
+    featureMany(24);
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester, device: const Locale('ru'));
+    await scrollToRow(tester);
+
+    expect(
+      find.descendant(
+        of: byKey('open-recommended'),
+        matching: find.text('Все 24'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: byKey('open-recommended'),
+        matching: find.byIcon(Icons.chevron_right),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.getSemantics(byKey('open-recommended')).label,
+      'Все 24 рекомендуемых товара',
+    );
+    handle.dispose();
+
+    featureMany(10);
+    await tester.pumpWidget(const SizedBox());
+    await open(tester, device: const Locale('ru'));
+    await scrollToRow(tester);
+    expect(byKey('recommended-row'), findsOneWidget);
+    expect(byKey('open-recommended'), findsNothing);
+  });
+
+  testWidgets('in Uzbek the spoken name starts with the visible words', (
+    WidgetTester tester,
+  ) async {
+    featureMany(24);
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester, device: const Locale('uz'));
+    await scrollToRow(tester);
+
+    expect(
+      find.descendant(
+        of: byKey('open-recommended'),
+        matching: find.text('Barcha 24'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.getSemantics(byKey('open-recommended')).label,
+      startsWith('Barcha 24'),
+    );
+    handle.dispose();
+  });
+
+  testWidgets('Все 24 meets the tap target guideline', (
+    WidgetTester tester,
+  ) async {
+    featureMany(24);
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester, device: const Locale('ru'));
+    await scrollToRow(tester);
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
+
+  testWidgets('the visible row cards fly to their grid places and the title '
+      'into the header', (WidgetTester tester) async {
+    featureMany(24);
+    await open(tester, device: const Locale('ru'));
+    await scrollToRow(tester);
+    final Rect rowCard = tester.getRect(homeCard('p-2'));
+    expect(homeTitleOpacity(tester), 1);
+
+    await tester.tap(byKey('open-recommended'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final Rect place = tester.getRect(gridCard('p-2'));
+    final Offset copy = tester.getTopLeft(
+      find.byKey(const ValueKey<String>('flight-card-p-2')),
+    );
+    expect(copy.dx, inExclusiveRange(rowCard.left, place.left));
+    expect(copy.dy, inExclusiveRange(place.top, rowCard.top));
+    expect(
+      find.byKey(const ValueKey<String>('flight-card-p-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('flight-card-p-20')),
+      findsNothing,
+      reason: 'only the row\'s cards fly',
+    );
+    expect(find.byKey(const ValueKey<String>('flight-title')), findsOneWidget);
+    expect(gridCardOpacity(tester, 'p-2'), 0);
+    expect(homeTitleOpacity(tester), 0);
+
+    await tester.pump(const Duration(milliseconds: 221));
+    expect(gridCardOpacity(tester, 'p-2'), 1);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey<String>('flight-card-p-2')), findsNothing);
+    expect(homeTitleOpacity(tester), 1);
+  });
+
+  testWidgets('back flies them home', (WidgetTester tester) async {
+    featureMany(24);
+    await open(tester, device: const Locale('ru'));
+    await scrollToRow(tester);
+    await tester.tap(byKey('open-recommended'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey<String>('flight-card-p-2')), findsNothing);
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(
+      find.byKey(const ValueKey<String>('flight-card-p-2')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey<String>('flight-title')), findsOneWidget);
+    expect(homeTitleOpacity(tester), 0);
+
+    await tester.pumpAndSettle();
+    expect(find.byType(RecommendedScreen), findsNothing);
+    expect(homeTitleOpacity(tester), 1);
+  });
+
+  testWidgets('with reduced motion Рекомендуем fades in', (
+    WidgetTester tester,
+  ) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    featureMany(24);
+    await open(tester, device: const Locale('ru'));
+    await scrollToRow(tester);
+    await tester.tap(byKey('open-recommended'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byType(RecommendedScreen), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('flight-card-p-1')), findsNothing);
+    expect(find.byKey(const ValueKey<String>('flight-title')), findsNothing);
+    final double opacity = tester
+        .widget<FadeTransition>(byKey('flight-page-fade'))
+        .opacity
+        .value;
+    expect(opacity, inExclusiveRange(0, 1));
+    expect(homeTitleOpacity(tester), 1);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('opened from the search icon it slides in as before', (
+    WidgetTester tester,
+  ) async {
+    featureMany(24);
+    await open(tester, device: const Locale('ru'));
+    await tester.tap(byKey('catalog-search'));
+    await tester.pumpAndSettle();
+    // The search screen has no flight to Рекомендуем without the row's tap:
+    // a plain push of the route carries no opening.
+    // The search page itself is a flight page now, so its fade stays in the
+    // tree; the pushed route adds none.
+    final Finder fades = find.byKey(
+      const ValueKey<String>('flight-page-fade'),
+      skipOffstage: false,
+    );
+    final int before = tester.widgetList(fades).length;
+    final BuildContext context = tester.element(find.byType(Scaffold).last);
+    unawaited(GoRouter.of(context).push<void>(CatalogPaths.recommended));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(tester.widgetList(fades).length, before);
+    expect(find.byKey(const ValueKey<String>('flight-card-p-1')), findsNothing);
+    await tester.pumpAndSettle();
+    expect(find.byType(RecommendedScreen), findsOneWidget);
   });
 
   testWidgets(
@@ -263,7 +503,11 @@ void main() {
         lessThan(top(tester, find.text(words.recommendedTitle))),
       );
       expect(byKey('open-categories'), findsOneWidget);
-      expect(byKey('open-recommended'), findsOneWidget);
+      expect(
+        byKey('open-recommended'),
+        findsNothing,
+        reason: 'two products: the row holds them all',
+      );
       expect(byKey('recommended-row'), findsOneWidget);
       expect(find.text('Pomidor'), findsOneWidget);
       expect(find.text('Olma'), findsOneWidget);
@@ -301,6 +545,7 @@ void main() {
   testWidgets('"all" of the recommended opens the recommended products', (
     WidgetTester tester,
   ) async {
+    featureMany(24);
     await open(tester);
     await tester.ensureVisible(byKey('open-recommended'));
     await tester.pumpAndSettle();
@@ -1148,6 +1393,7 @@ void main() {
     testWidgets('«Все» says what it opens and the titles are headings', (
       WidgetTester tester,
     ) async {
+      featureMany(24);
       final SemanticsHandle handle = tester.ensureSemantics();
       await open(tester, device: const Locale('ru'));
 
@@ -1157,7 +1403,7 @@ void main() {
       );
       expect(
         tester.getSemantics(byKey('open-recommended')).label,
-        'Все рекомендуемые',
+        'Все 24 рекомендуемых товара',
       );
       for (final String title in <String>['Категории', 'Рекомендуем']) {
         expect(

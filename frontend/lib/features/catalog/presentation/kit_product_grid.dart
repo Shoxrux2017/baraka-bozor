@@ -1,14 +1,18 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/accessibility/announce.dart';
 import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/layout/text_width.dart';
+import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/routing/flight_page.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/fade_in_sliver.dart';
 import '../../../core/widgets/list_scroll_indicator.dart';
@@ -16,7 +20,9 @@ import '../../../core/widgets/skeleton_bar.dart';
 import '../../../core/widgets/stale_data_line.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
+import 'aisles.dart';
 import 'kit_product_card.dart';
+import 'sort_menu.dart';
 
 /// The height of one kit card: the picture, and the texts and the control
 /// under it, which grow with the text scale. Each text is scaled by its own
@@ -65,7 +71,11 @@ int productColumns(double width, TextScaler scaler, KitCardSize size) {
 /// the cards under a line that says when they are from. The columns follow the
 /// width inside [padding] (`productColumns`). [empty] is shown when nothing
 /// matches; [alsoRefresh] runs beside a pull and [alsoFailed] puts a failure
-/// of something else on the screen into the same line.
+/// of something else on the screen into the same line. [end] closes the list
+/// once it has no more; [spokenOnQuery] is announced when the first page of a
+/// query comes, and every grid announces a new order, a later page and a
+/// failed one (`DL-128`). With [aisles], and the shop's own order, the cards
+/// stand under a heading for each aisle and report where the headings are.
 class KitProductGrid extends ConsumerStatefulWidget {
   const KitProductGrid({
     required this.query,
@@ -77,6 +87,13 @@ class KitProductGrid extends ConsumerStatefulWidget {
     this.alsoRefresh,
     this.alsoFailed,
     this.controller,
+    this.end,
+    this.spokenOnQuery,
+    this.emptyAlignment = Alignment.center,
+    this.emptyInset = true,
+    this.aisles,
+    this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
+    this.keepCardsOf,
     super.key,
   });
 
@@ -96,6 +113,31 @@ class KitProductGrid extends ConsumerStatefulWidget {
   final ({ApiFailure failure, DateTime at})? alsoFailed;
   final ScrollController? controller;
 
+  /// Drawn after the last row once the list has no more; not while empty.
+  final Widget? end;
+
+  /// What is announced when the first page of a query comes, unless only its
+  /// order changed from the query drawn before.
+  final String Function(ProductListQuery query, int total)? spokenOnQuery;
+
+  /// Where the [empty] slot stands in the room under the header.
+  final Alignment emptyAlignment;
+
+  /// Whether the [empty] slot keeps the 24 px margin around it; the slot that
+  /// draws a full-width row of its own (`DL-128`) turns it off.
+  final bool emptyInset;
+
+  /// The aisles of the shop's order; the list is flat without them.
+  final ProductAisles? aisles;
+
+  /// Whether a drag over the list puts the keyboard away (`DL-128`).
+  final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
+
+  /// Whether the cards of the query drawn stay, dimmed, while the next one
+  /// loads; by default only when the order alone differs (`DL-128`).
+  final bool Function(ProductListQuery drawn, ProductListQuery next)?
+  keepCardsOf;
+
   @override
   ConsumerState<KitProductGrid> createState() => _KitProductGridState();
 }
@@ -108,6 +150,10 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
   static const double _failureRow = 56 + _gap;
 
   bool _sawSkeleton = false;
+
+  /// Whether dimmed cards stood before the data now drawn: it fades in from
+  /// their opacity (`DL-128`).
+  bool _sawDimmed = false;
   bool _askScheduled = false;
   final ScrollController _own = ScrollController();
 
@@ -123,6 +169,30 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
   /// same products comes.
   ProductListQuery? _drawnQuery;
   List<CatalogProduct> _drawnItems = const <CatalogProduct>[];
+
+  /// Whether the end of the list now drawn has faded in: it does so once per
+  /// list, however often its row is built again (`DL-128`).
+  bool _endShown = false;
+
+  /// Whether the failure of the page now shown has been announced.
+  bool _failureAnnounced = false;
+
+  /// The sliver of aisle rows, whose offset the headings' starts add to.
+  final GlobalKey _aisleSliver = GlobalKey();
+
+  /// The aisle rows last built, with their extents, for the report.
+  List<AisleRow> _aisleRows = const <AisleRow>[];
+  List<double> _aisleExtents = const <double>[];
+  bool _reportScheduled = false;
+
+  /// Announces [message] once the frame is built.
+  void _announceAfterFrame(String message) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        announce(context, message);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -192,14 +262,43 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
     return false;
   }
 
+  /// Tells [ProductAisles] where each heading stands once the frame is laid
+  /// out: the sliver's own offset plus the rows before the heading.
+  void _reportAisles() {
+    if (_reportScheduled) {
+      return;
+    }
+    _reportScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _reportScheduled = false;
+      final Object? sliver = _aisleSliver.currentContext?.findRenderObject();
+      final ProductAisles? aisles = widget.aisles;
+      if (!mounted || aisles == null || sliver is! RenderSliver) {
+        return;
+      }
+      double at = sliver.constraints.precedingScrollExtent;
+      final Map<String, double> starts = <String, double>{};
+      for (int i = 0; i < _aisleRows.length; i++) {
+        final CatalogCategory? heading = _aisleRows[i].category;
+        if (heading != null) {
+          starts[heading.id] = at;
+        }
+        at += _aisleExtents[i];
+      }
+      aisles.report(starts);
+    });
+  }
+
   /// The length the list will have once every page is loaded: what is laid
-  /// out, plus the rows still to come, less the end row it stands on.
+  /// out, plus the rows still to come (for aisles, [aisleToCome]), less the
+  /// end row it stands on.
   double _fullExtent(
     ScrollMetrics metrics,
     ProductListState? state,
     int columns,
-    double extent,
-  ) {
+    double extent, {
+    double? aisleToCome,
+  }) {
     final double laid = metrics.maxScrollExtent + metrics.viewportDimension;
     if (state == null || state.items.isEmpty) {
       return laid;
@@ -212,7 +311,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
         : state.moreFailure == null
         ? extent + _gap
         : _failureRow;
-    return laid + math.max(0, toCome) * (extent + _gap) - end;
+    return laid + (aisleToCome ?? math.max(0, toCome) * (extent + _gap)) - end;
   }
 
   bool _onlySortDiffers(ProductListQuery a, ProductListQuery b) =>
@@ -294,23 +393,88 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
           );
         }
 
-        Widget cardsOf(List<CatalogProduct> items, {Widget? end}) =>
-            cardRows(items.length, (int index) {
-              final String id = items[index].id;
-              final Widget card = KitProductCard(
-                key: ValueKey<String>(id),
-                product: items[index],
-                size: widget.size,
-                imageHeight: widget.imageHeight,
+        Widget cardAt(List<CatalogProduct> items, int index) {
+          final String id = items[index].id;
+          final Widget card = FlightTarget(
+            id: 'card-$id',
+            child: KitProductCard(
+              key: ValueKey<String>(id),
+              product: items[index],
+              size: widget.size,
+              imageHeight: widget.imageHeight,
+            ),
+          );
+          return _paged.contains(id)
+              ? _PageFade(
+                  key: ValueKey<String>('card-fade-$id'),
+                  animate: _faded.add(id),
+                  child: card,
+                )
+              : card;
+        }
+
+        Widget cardsOf(List<CatalogProduct> items, {Widget? end}) => cardRows(
+          items.length,
+          (int index) => cardAt(items, index),
+          end: end,
+        );
+
+        final ProductAisles? aisles = widget.aisles;
+        final bool aisleMode =
+            aisles != null &&
+            query.sort == ProductSort.shop &&
+            aisles.categories.isNotEmpty;
+        final double innerWidth = constraints.maxWidth - padding.horizontal;
+        final AppLanguage language = interfaceLanguage(context);
+        double headingExtent(CatalogCategory c, {required bool first}) =>
+            aisleHeadingExtent(
+              c,
+              innerWidth,
+              scaler,
+              Directionality.of(context),
+              language: language,
+              first: first,
+            );
+
+        /// The loaded products as one list of exact row extents: a heading
+        /// before each aisle, the cards of an aisle [columns] to a row.
+        Widget aisleCardsOf(List<CatalogProduct> items) {
+          final List<AisleRow> rows = aisleRows(
+            items,
+            aisles!.categories,
+            columns,
+          );
+          final List<double> extents = <double>[
+            for (final AisleRow row in rows)
+              row.category != null
+                  ? headingExtent(row.category!, first: row.first)
+                  : extent + _gap,
+          ];
+          _aisleRows = rows;
+          _aisleExtents = extents;
+          _reportAisles();
+          return SliverVariedExtentList.builder(
+            key: _aisleSliver,
+            itemCount: rows.length,
+            itemExtentBuilder: (int index, SliverLayoutDimensions d) =>
+                extents[index],
+            itemBuilder: (BuildContext context, int index) {
+              final AisleRow row = rows[index];
+              final CatalogCategory? heading = row.category;
+              if (heading != null) {
+                return AisleHeading(category: heading, first: row.first);
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: _gap),
+                child: rowOf(
+                  (int c) => c < row.cards.length
+                      ? cardAt(items, row.cards[c])
+                      : const SizedBox.shrink(),
+                ),
               );
-              return _paged.contains(id)
-                  ? _PageFade(
-                      key: ValueKey<String>('card-fade-$id'),
-                      animate: _faded.add(id),
-                      child: card,
-                    )
-                  : card;
-            }, end: end);
+            },
+          );
+        }
 
         /// The end of a list with more to come: placeholders while the next
         /// page is on its way or about to be asked, the failure row after a
@@ -326,11 +490,16 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
           return Padding(
             key: const ValueKey<String>('product-placeholders'),
             padding: const EdgeInsets.only(bottom: _gap),
-            child: rowOf(
-              (int c) => _SkeletonCard(
-                size: widget.size,
-                imageHeight: widget.imageHeight,
-                pulsing: !list.hasError,
+            child: Semantics(
+              container: true,
+              label: l10n.catalogMoreLoading,
+              excludeSemantics: true,
+              child: rowOf(
+                (int c) => _SkeletonCard(
+                  size: widget.size,
+                  imageHeight: widget.imageHeight,
+                  pulsing: !list.hasError,
+                ),
               ),
             ),
           );
@@ -373,12 +542,41 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
           if (drawn != query) {
             _paged.clear();
             _faded.clear();
+            _endShown = false;
+            final String Function(ProductListQuery, int)? spoken =
+                widget.spokenOnQuery;
+            final String count = l10n.catalogProductCount(state.total);
+            if (drawn != null && _onlySortDiffers(drawn, query)) {
+              _announceAfterFrame(
+                l10n.categoryShownSpoken(sortLabel(l10n, query.sort), count),
+              );
+            } else if (spoken != null) {
+              _announceAfterFrame(spoken(query, state.total));
+            }
           } else if (state.items.length > drawnItems.length &&
               drawnItems.isNotEmpty) {
             _paged.addAll(
               state.items
                   .skip(drawnItems.length)
                   .map((CatalogProduct p) => p.id),
+            );
+            _announceAfterFrame(
+              l10n.catalogMoreLoaded(
+                l10n.catalogProductCount(
+                  state.items.length - drawnItems.length,
+                ),
+              ),
+            );
+          }
+          final ApiFailure? moreFailure = state.moreFailure;
+          if (moreFailure == null) {
+            _failureAnnounced = false;
+          } else if (!_failureAnnounced) {
+            _failureAnnounced = true;
+            _announceAfterFrame(
+              moreFailure is NetworkFailure
+                  ? l10n.catalogMoreOffline
+                  : l10n.catalogMoreFailed,
             );
           }
           _drawnQuery = query;
@@ -387,14 +585,12 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
             slivers.add(
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: Center(
+                child: Align(
+                  alignment: widget.emptyAlignment,
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      24,
-                      24,
-                      24,
-                      24 + padding.bottom,
-                    ),
+                    padding: widget.emptyInset
+                        ? EdgeInsets.fromLTRB(24, 24, 24, 24 + padding.bottom)
+                        : EdgeInsets.only(bottom: padding.bottom),
                     child:
                         widget.empty ??
                         Text(
@@ -406,27 +602,68 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
               ),
             );
           } else {
-            final bool animate = _sawSkeleton;
+            final bool animate = _sawSkeleton || _sawDimmed;
+            final double fadeFrom = _sawSkeleton ? 0 : 0.45;
             _sawSkeleton = false;
-            slivers.add(
-              FadeInSliver(
-                key: const ValueKey<String>('product-cards'),
-                animate: animate,
-                sliver: SliverPadding(
-                  padding: body,
-                  sliver: cardsOf(
-                    state.items,
-                    end: state.hasMore ? pageEnd(state) : null,
+            _sawDimmed = false;
+            final Widget? end = state.hasMore
+                ? pageEnd(state)
+                : widget.end == null
+                ? null
+                : _EndFade(
+                    key: const ValueKey<String>('list-end-fade'),
+                    shown: () => _endShown,
+                    onShown: () => _endShown = true,
+                    child: widget.end!,
+                  );
+            if (state.hasMore) {
+              _endShown = false;
+            }
+            if (aisleMode) {
+              // The end rows keep their own height, so they stand after the
+              // rows of exact extents.
+              slivers.addAll(<Widget>[
+                FadeInSliver(
+                  key: const ValueKey<String>('product-cards'),
+                  animate: animate,
+                  from: fadeFrom,
+                  sliver: SliverPadding(
+                    padding: body.copyWith(bottom: 0),
+                    sliver: aisleCardsOf(state.items),
                   ),
                 ),
-              ),
-            );
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    padding.left,
+                    0,
+                    padding.right,
+                    padding.bottom,
+                  ),
+                  sliver: SliverToBoxAdapter(child: end),
+                ),
+              ]);
+            } else {
+              slivers.add(
+                FadeInSliver(
+                  key: const ValueKey<String>('product-cards'),
+                  animate: animate,
+                  from: fadeFrom,
+                  sliver: SliverPadding(
+                    padding: body,
+                    sliver: cardsOf(state.items, end: end),
+                  ),
+                ),
+              );
+            }
           }
         } else if (drawn != null &&
-            _onlySortDiffers(drawn, query) &&
-            drawnItems.isNotEmpty) {
-          // Another order of the same products: the old cards stay, dimmed,
-          // until the new list replaces them.
+            (widget.keepCardsOf ?? _onlySortDiffers)(drawn, query) &&
+            drawnItems.isNotEmpty &&
+            !(listFailure != null && drawn.search != query.search)) {
+          // Another order, or another search of the same products: the old
+          // cards stay, dimmed, until the new list replaces them. A new text
+          // that fails drops them (`DL-128`).
+          _sawDimmed = true;
           slivers.add(
             SliverIgnorePointer(
               key: const ValueKey<String>('dimmed-cards'),
@@ -448,6 +685,14 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
             ),
           );
         } else {
+          if (listFailure != null &&
+              drawn != null &&
+              drawn.search != query.search) {
+            // A new text that failed dropped the old cards for good: they do
+            // not come back dimmed under the next text.
+            _drawnQuery = null;
+            _drawnItems = const <CatalogProduct>[];
+          }
           _sawSkeleton = true;
           final bool pulsing = failure == null || list.isLoading;
           slivers.add(
@@ -473,8 +718,22 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
             key: ValueKey<ProductListQuery>(query),
             child: ListScrollIndicator(
               bottomInset: padding.bottom,
-              fullExtent: (ScrollMetrics metrics) =>
-                  _fullExtent(metrics, state, columns, extent),
+              fullExtent: (ScrollMetrics metrics) => _fullExtent(
+                metrics,
+                state,
+                columns,
+                extent,
+                aisleToCome: aisleMode && state != null
+                    ? aisleExtentToCome(
+                        categories: aisles.categories,
+                        items: state.items,
+                        columns: columns,
+                        rowExtent: extent + _gap,
+                        headingExtent: (CatalogCategory c) =>
+                            headingExtent(c, first: false),
+                      )
+                    : null,
+              ),
               child: NotificationListener<ScrollMetricsNotification>(
                 onNotification: (ScrollMetricsNotification n) =>
                     n.depth == 0 && _onMetrics(n.metrics),
@@ -485,6 +744,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
                     key: const ValueKey<String>('product-grid'),
                     controller: widget.controller ?? _own,
                     physics: const AlwaysScrollableScrollPhysics(),
+                    keyboardDismissBehavior: widget.keyboardDismissBehavior,
                     slivers: slivers,
                   ),
                 ),
@@ -573,6 +833,64 @@ class _SkeletonCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The end block of a list: fades in over 250 ms `easeOut` when the list
+/// reaches its end; at once with reduced motion (`DL-128`).
+class _EndFade extends StatefulWidget {
+  const _EndFade({
+    required this.child,
+    required this.shown,
+    required this.onShown,
+    super.key,
+  });
+
+  final Widget child;
+
+  /// Whether this list's end has faded in already, and the note that it has.
+  final bool Function() shown;
+  final VoidCallback onShown;
+
+  @override
+  State<_EndFade> createState() => _EndFadeState();
+}
+
+class _EndFadeState extends State<_EndFade>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 250),
+  );
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) {
+      return;
+    }
+    _started = true;
+    if (widget.shown() || MediaQuery.disableAnimationsOf(context)) {
+      _controller.value = 1;
+    } else {
+      _controller.forward();
+    }
+    widget.onShown();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+      child: widget.child,
     );
   }
 }

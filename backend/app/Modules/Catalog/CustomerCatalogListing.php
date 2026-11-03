@@ -40,7 +40,10 @@ final class CustomerCatalogListing
                     ->whereColumn('products.category_id', $query->qualifyColumn('id'))
                     ->where('products.is_active', true)
                     ->whereNull('products.archived_at');
-            });
+            })
+            ->withCount(['products as product_count' => static function (Builder $product): void {
+                $product->where('products.is_active', true)->whereNull('products.archived_at');
+            }]);
     }
 
     /**
@@ -70,6 +73,20 @@ final class CustomerCatalogListing
             ProductSort::PriceDesc => $query->orderByDesc($query->qualifyColumn('market_price_uzs')),
             ProductSort::Default => null,
         };
+
+        // The whole list, with no filter, goes aisle by aisle: the category's
+        // place in the shop first (`DL-128`). Subqueries, not a join.
+        if ($categoryId === null && ($search === null || trim($search) === '') && ! $featuredOnly) {
+            foreach (['sort_order', 'name_uz'] as $column) {
+                $query->orderBy(
+                    Category::query()
+                        ->select($column)
+                        ->whereColumn('categories.id', $query->qualifyColumn('category_id'))
+                        ->toBase()
+                );
+            }
+            $query->orderBy($query->qualifyColumn('category_id'));
+        }
 
         return CatalogSearch::ordered($query);
     }

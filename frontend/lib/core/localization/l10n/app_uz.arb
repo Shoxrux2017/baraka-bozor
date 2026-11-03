@@ -199,6 +199,31 @@
       }
     }
   },
+  "aisleHeadingSpoken": "{name}, {count}",
+  "@aisleHeadingSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aisleChipSpoken": "{name}, {count} tadan {index}-bo'lim",
+  "@aisleChipSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "categoryShownSpoken": "{name}: {count}",
   "@categoryShownSpoken": {
     "placeholders": {
@@ -520,6 +545,15 @@
   "catalogLoadMore": "Yana yuklash",
   "catalogMoreOffline": "Aloqa yo'q — keyingi mahsulotlar yuklanmadi",
   "catalogMoreFailed": "Keyingi mahsulotlar yuklanmadi",
+  "catalogMoreLoading": "Yana mahsulotlar yuklanmoqda",
+  "catalogMoreLoaded": "Yana {count} yuklandi",
+  "@catalogMoreLoaded": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "homeNavHome": "Bosh sahifa",
   "homeNavOrders": "Buyurtmalar",
   "profileTitle": "Profil",
@@ -2247,7 +2281,16 @@
   },
   "allProductsTitle": "Barcha mahsulotlar",
   "recommendedTitle": "Tavsiya etamiz",
-  "recommendedEmpty": "Hozircha tavsiya etilgan mahsulot yo'q",
+  "recommendedEnd": "Bu butun to'plam: {count}",
+  "@recommendedEnd": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "recommendedEmptyTitle": "To'plam hozircha bo'sh",
+  "recommendedEmptyText": "Do'kondagi barcha mahsulotlar — bo'limlarda.",
   "cartSummaryCount": "{count, plural, other{{count} ta mahsulot}}",
   "@cartSummaryCount": {
     "placeholders": {
@@ -2281,6 +2324,42 @@
     }
   },
   "searchAllCategories": "Barcha kategoriyalar",
+  "searchClearQuery": "So'rovni o'chirish",
+  "searchRecentClearSpoken": "Oxirgi so'rovlarni tozalash",
+  "searchRecentSpoken": "{query}, oxirgi so'rov",
+  "@searchRecentSpoken": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchRecentRemove": "«{query}» so'rovini olib tashlash",
+  "@searchRecentRemove": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchRecentCleared": "Oxirgi so'rovlar o'chirildi",
+  "searchSectionCaption": "bo'lim",
+  "searchSectionSpoken": "{name}, bo'lim",
+  "@searchSectionSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "searchNothingSpoken": "«{query}» bo'yicha hech narsa topilmadi",
+  "@searchNothingSpoken": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "openSearch": "Qidirish",
   "productTitle": "Mahsulot haqida",
   "productReadMore": "Batafsil",
@@ -3007,7 +3086,22 @@
   },
   "catalogSearchSpoken": "Mahsulotlarni qidirish",
   "homeCategoriesAll": "Barcha kategoriyalar",
-  "recommendedAll": "Barcha tavsiyalar",
+  "homeSeeAllCount": "Barcha {count}",
+  "@homeSeeAllCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recommendedAllSpoken": "Barcha {count} ta tavsiya etilgan mahsulot",
+  "@recommendedAllSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cardSpoken": "{name}, taxminan {price}, 1 {unit, select, kg{kilogramm} gram{gramm} piece{dona} liter{litr} package{qadoq} box{quti} bundle{bog'} meter{metr} other{birlik}} uchun",
   "@cardSpoken": {
     "placeholders": {

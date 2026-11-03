@@ -32,7 +32,7 @@ class RecentSearches extends AsyncNotifier<List<String>> {
 
   /// A query as the catalog search reads it: lower case, `ё` as `е` and every
   /// apostrophe form as one (`DL-20`).
-  static String _fold(String query) =>
+  static String fold(String query) =>
       query.toLowerCase().replaceAll('ё', 'е').replaceAll(_apostrophes, "'");
 
   @override
@@ -71,15 +71,40 @@ class RecentSearches extends AsyncNotifier<List<String>> {
     }
     // Taken after the wait, so a remember started meanwhile is kept.
     final List<String> current = state.value ?? const <String>[];
-    final String folded = _fold(text);
+    final String folded = fold(text);
     final List<String> next = <String>[
       text,
-      ...current.where((String entry) => _fold(entry) != folded),
+      ...current.where((String entry) => fold(entry) != folded),
     ].take(limit).toList(growable: false);
     await _save(next);
   }
 
-  Future<void> clear() => _save(const <String>[]);
+  /// Drops the query that reads as [query] and keeps the rest.
+  Future<void> forget(String query) async {
+    await future;
+    if (!ref.mounted) {
+      return;
+    }
+    final String folded = fold(ProductListQuery.searchOf(query));
+    final List<String> current = state.value ?? const <String>[];
+    await _save(
+      current
+          .where((String entry) => fold(entry) != folded)
+          .toList(growable: false),
+    );
+  }
+
+  /// Empties the list and returns what it held, so the caller can offer
+  /// [restore] (`DL-128`).
+  Future<List<String>> clear() async {
+    await future;
+    final List<String> held = state.value ?? const <String>[];
+    await _save(const <String>[]);
+    return held;
+  }
+
+  /// Puts back a list [clear] returned.
+  Future<void> restore(List<String> list) => _save(list);
 
   Future<void> _save(List<String> list) async {
     state = AsyncData<List<String>>(List<String>.unmodifiable(list));

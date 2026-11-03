@@ -9,6 +9,7 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/platform/clock.dart';
 import 'package:baraka_bozor/core/routing/app_page.dart';
+import 'package:baraka_bozor/core/routing/flight_page.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/core/session/session_controller.dart';
 import 'package:baraka_bozor/core/session/session_state.dart';
@@ -25,6 +26,7 @@ import 'package:baraka_bozor/features/cart/presentation/cart_summary_bar.dart';
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/all_products_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/category_tile.dart';
@@ -111,6 +113,17 @@ void main() {
           path: CatalogPaths.categories,
           pageBuilder: (BuildContext context, GoRouterState state) =>
               appPage(state, const AllCategoriesScreen()),
+        ),
+        GoRoute(
+          path: CatalogPaths.products,
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              flightPage(
+                state,
+                const AllProductsScreen(),
+                opening: state.extra is FlightOpening
+                    ? state.extra! as FlightOpening
+                    : null,
+              ),
         ),
         GoRoute(
           path: CatalogPaths.categoryPattern,
@@ -602,6 +615,191 @@ void main() {
         semantics.dispose();
       });
     }
+
+    group('the Все товары tile', () {
+      void counts() {
+        catalog.categoryRows = <CatalogCategory>[
+          catalogCategory(productCount: 20),
+          catalogCategory(id: 'c-2', nameRu: 'Фрукты', productCount: 12),
+          catalogCategory(id: 'c-3', nameRu: 'Молоко', productCount: 10),
+        ];
+      }
+
+      double titleOpacity(WidgetTester tester) => tester
+          .widget<Opacity>(
+            find.descendant(
+              of: find.byKey(
+                const ValueKey<String>('all-products-tile'),
+                skipOffstage: false,
+              ),
+              matching: find.byType(Opacity, skipOffstage: false),
+              skipOffstage: false,
+            ),
+          )
+          .opacity;
+
+      testWidgets(
+        'Категории starts with the Все товары tile and the sum of the counts',
+        (WidgetTester tester) async {
+          final SemanticsHandle semantics = tester.ensureSemantics();
+          counts();
+          await open(
+            tester,
+            CatalogPaths.categories,
+            locale: const Locale('ru'),
+          );
+
+          expect(
+            tester.getTopLeft(byKey('all-products-tile')).dy,
+            lessThan(tester.getTopLeft(byKey('category-c-1')).dy),
+          );
+          expect(
+            find.descendant(
+              of: byKey('all-products-tile'),
+              matching: find.text('42 товара'),
+            ),
+            findsOneWidget,
+          );
+          final SemanticsNode node = tester.getSemantics(
+            find.bySemanticsLabel('Все товары: 42 товара'),
+          );
+          expect(node.label, 'Все товары: 42 товара');
+          expect(node.flagsCollection.isButton, isTrue);
+          semantics.dispose();
+        },
+      );
+
+      testWidgets('the tile presses to 0.96', (WidgetTester tester) async {
+        counts();
+        await open(tester, CatalogPaths.categories, locale: const Locale('ru'));
+        final Finder scale = find.descendant(
+          of: byKey('all-products-tile'),
+          matching: find.byType(ScaleTransition),
+        );
+
+        final TestGesture gesture = await tester.startGesture(
+          tester.getCenter(byKey('all-products-tile')),
+        );
+        await tester.pump(kPressTimeout);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+        expect(
+          tester.widget<ScaleTransition>(scale).scale.value,
+          closeTo(0.96, 0.001),
+        );
+        await gesture.up();
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets('its title flies into the header of Все товары', (
+        WidgetTester tester,
+      ) async {
+        counts();
+        await open(tester, CatalogPaths.categories, locale: const Locale('ru'));
+        expect(titleOpacity(tester), 1);
+
+        await tester.tap(byKey('all-products-tile'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+
+        expect(
+          find.byKey(const ValueKey<String>('flight-title')),
+          findsOneWidget,
+        );
+        expect(titleOpacity(tester), 0);
+
+        await tester.pumpAndSettle();
+        expect(find.byType(AllProductsScreen), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey<String>('flight-title')),
+          findsNothing,
+        );
+        expect(titleOpacity(tester), 1);
+      });
+
+      testWidgets('with reduced motion Все товары fades in', (
+        WidgetTester tester,
+      ) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue =
+            const FakeAccessibilityFeatures(disableAnimations: true);
+        addTearDown(
+          tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+        );
+        counts();
+        await open(tester, CatalogPaths.categories, locale: const Locale('ru'));
+        await tester.tap(byKey('all-products-tile'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byType(AllProductsScreen), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey<String>('flight-title')),
+          findsNothing,
+        );
+        final double opacity = tester
+            .widget<FadeTransition>(byKey('flight-page-fade'))
+            .opacity
+            .value;
+        expect(opacity, inExclusiveRange(0, 1));
+        expect(titleOpacity(tester), 1);
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets('at text x2 on 320 wide the tile fits without pictures', (
+        WidgetTester tester,
+      ) async {
+        size(tester, 320, 640);
+        counts();
+        await open(
+          tester,
+          CatalogPaths.categories,
+          locale: const Locale('ru'),
+          textScaler: const NonlinearTextScaler(2),
+        );
+
+        expect(
+          find.descendant(
+            of: byKey('all-products-tile'),
+            matching: find.byType(ProductImage),
+          ),
+          findsNothing,
+        );
+        expect(tester.getSize(byKey('all-products-tile')).width, 288);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('with pictures it shows one per category, up to three', (
+        WidgetTester tester,
+      ) async {
+        catalog.categoryRows = <CatalogCategory>[
+          for (int i = 1; i <= 4; i++)
+            catalogCategory(
+              id: 'c-$i',
+              imageUrl: 'https://example.test/$i.png',
+            ),
+        ];
+        await open(tester, CatalogPaths.categories, locale: const Locale('ru'));
+
+        expect(
+          find.descendant(
+            of: byKey('all-products-tile'),
+            matching: find.byType(ProductImage),
+          ),
+          findsNWidgets(3),
+        );
+      });
+
+      testWidgets('Категории with the tile meets the tap target guideline', (
+        WidgetTester tester,
+      ) async {
+        final SemanticsHandle semantics = tester.ensureSemantics();
+        counts();
+        await open(tester, CatalogPaths.categories, locale: const Locale('ru'));
+
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        semantics.dispose();
+      });
+    });
 
     testWidgets('pressing a tile shrinks it to 0.96 and opens the category', (
       WidgetTester tester,

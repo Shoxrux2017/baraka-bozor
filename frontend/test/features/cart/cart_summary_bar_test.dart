@@ -52,6 +52,7 @@ void main() {
     Size size = const Size(375, 640),
     FakeViewPadding padding = FakeViewPadding.zero,
     bool switchable = false,
+    ValueNotifier<bool>? hidden,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -86,7 +87,13 @@ void main() {
                 const SizedBox.expand(),
                 Align(
                   alignment: Alignment.bottomCenter,
-                  child: gated
+                  child: hidden != null
+                      ? ValueListenableBuilder<bool>(
+                          valueListenable: hidden,
+                          builder: (BuildContext context, bool away, _) =>
+                              CartSummaryBar(hidden: away),
+                        )
+                      : gated
                       ? Consumer(
                           builder: (BuildContext context, WidgetRef ref, _) =>
                               ref.watch(currentCartProvider).hasValue
@@ -188,6 +195,71 @@ void main() {
       expect(tester.getRect(byKey('cart-summary')), first);
       await tester.pump(const Duration(milliseconds: 100));
       expect(opacity(), 1);
+    });
+  });
+
+  group('hidden', () {
+    testWidgets('the bar\'s hidden slides it away and back', (
+      WidgetTester tester,
+    ) async {
+      final ValueNotifier<bool> hidden = ValueNotifier<bool>(false);
+      addTearDown(hidden.dispose);
+      cart = FakeCartRepository(cart: one(18000));
+      await pump(tester, gated: true, hidden: hidden);
+      await tester.pump(const Duration(seconds: 1));
+      final double rest = tester.getTopLeft(byKey('cart-summary')).dy;
+
+      hidden.value = true;
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 120));
+      expect(byKey('cart-summary'), findsOneWidget);
+      expect(tester.getTopLeft(byKey('cart-summary')).dy, greaterThan(rest));
+
+      await tester.pump(const Duration(milliseconds: 121));
+      expect(byKey('cart-summary'), findsNothing);
+
+      hidden.value = false;
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(byKey('cart-summary'), findsOneWidget);
+      expect(tester.getTopLeft(byKey('cart-summary')).dy, greaterThan(rest));
+
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.getTopLeft(byKey('cart-summary')).dy, rest);
+    });
+
+    testWidgets('with reduced motion hidden fades it away and back', (
+      WidgetTester tester,
+    ) async {
+      final ValueNotifier<bool> hidden = ValueNotifier<bool>(false);
+      addTearDown(hidden.dispose);
+      cart = FakeCartRepository(cart: one(18000));
+      await pump(tester, gated: true, hidden: hidden, reduced: true);
+      await tester.pump(const Duration(seconds: 1));
+      final Rect rest = tester.getRect(byKey('cart-summary'));
+
+      hidden.value = true;
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(tester.getRect(byKey('cart-summary')), rest);
+      await tester.pump(const Duration(milliseconds: 101));
+      expect(byKey('cart-summary'), findsNothing);
+
+      hidden.value = false;
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 201));
+      expect(tester.getRect(byKey('cart-summary')), rest);
+    });
+
+    testWidgets('an empty cart stays without a bar when it is shown again', (
+      WidgetTester tester,
+    ) async {
+      final ValueNotifier<bool> hidden = ValueNotifier<bool>(true);
+      addTearDown(hidden.dispose);
+      await pump(tester, hidden: hidden);
+      hidden.value = false;
+      await tester.pump(const Duration(seconds: 1));
+      expect(byKey('cart-summary'), findsNothing);
     });
   });
 

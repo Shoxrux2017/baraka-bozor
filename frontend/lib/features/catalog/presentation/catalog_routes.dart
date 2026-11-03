@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/routing/app_page.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/feature_routes.dart';
+import '../../../core/routing/flight_page.dart';
 import 'catalog_paths.dart';
 import 'category_tile.dart';
 import 'all_products_screen.dart';
@@ -54,20 +55,37 @@ final FeatureRoutes catalogRoutes = FeatureRoutes(
     GoRoute(
       path: CatalogPaths.recommended,
       name: 'catalog-recommended',
-      pageBuilder: (BuildContext context, GoRouterState state) =>
-          appPage(state, const RecommendedScreen()),
+      pageBuilder: (BuildContext context, GoRouterState state) => flightPage(
+        state,
+        const RecommendedScreen(),
+        opening: state.extra is FlightOpening
+            ? state.extra! as FlightOpening
+            : null,
+      ),
     ),
     GoRoute(
       path: CatalogPaths.search,
       name: 'catalog-search',
-      pageBuilder: (BuildContext context, GoRouterState state) =>
-          appPage(state, const SearchScreen()),
+      pageBuilder: (BuildContext context, GoRouterState state) => flightPage(
+        state,
+        const SearchScreen(),
+        opening: state.extra is FlightOpening
+            ? state.extra! as FlightOpening
+            : null,
+        flight: const Duration(milliseconds: 380),
+        flightBack: const Duration(milliseconds: 360),
+      ),
     ),
     GoRoute(
       path: CatalogPaths.products,
       name: 'catalog-all-products',
-      pageBuilder: (BuildContext context, GoRouterState state) =>
-          appPage(state, const AllProductsScreen()),
+      pageBuilder: (BuildContext context, GoRouterState state) => flightPage(
+        state,
+        const AllProductsScreen(),
+        opening: state.extra is FlightOpening
+            ? state.extra! as FlightOpening
+            : null,
+      ),
     ),
     GoRoute(
       path: CatalogPaths.productPattern,

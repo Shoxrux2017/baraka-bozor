@@ -199,6 +199,31 @@
       }
     }
   },
+  "aisleHeadingSpoken": "{name}, {count}",
+  "@aisleHeadingSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aisleChipSpoken": "{name}, раздел {index} из {count}",
+  "@aisleChipSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "categoryShownSpoken": "{name}: {count}",
   "@categoryShownSpoken": {
     "placeholders": {
@@ -454,6 +479,15 @@
   "catalogLoadMore": "Загрузить ещё",
   "catalogMoreOffline": "Нет связи — следующие товары не загрузились",
   "catalogMoreFailed": "Следующие товары не загрузились",
+  "catalogMoreLoading": "Загружаем ещё товары",
+  "catalogMoreLoaded": "Загружено ещё {count}",
+  "@catalogMoreLoaded": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "homeNavHome": "Главная",
   "homeNavOrders": "Заказы",
   "profileTitle": "Профиль",
@@ -2095,7 +2129,16 @@
   "sortSpoken": "Порядок: {sort}",
   "allProductsTitle": "Все товары",
   "recommendedTitle": "Рекомендуем",
-  "recommendedEmpty": "Пока нет рекомендованных товаров",
+  "recommendedEnd": "Это вся подборка: {count}",
+  "@recommendedEnd": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "recommendedEmptyTitle": "Подборка пока пуста",
+  "recommendedEmptyText": "Все товары магазина — в категориях.",
   "cartSummaryCount": "{count, plural, one{{count} товар} few{{count} товара} many{{count} товаров} other{{count} товара}}",
   "cartSummaryOpen": "В корзину",
   "favoritesTitle": "Избранное",
@@ -2108,6 +2151,42 @@
   "searchNothingTitle": "Ничего не нашли",
   "searchNothingText": "По запросу «{query}» товаров нет. Проверьте написание — мы ищем и по-русски, и по-узбекски.",
   "searchAllCategories": "Все категории",
+  "searchClearQuery": "Стереть запрос",
+  "searchRecentClearSpoken": "Очистить недавние запросы",
+  "searchRecentSpoken": "{query}, недавний запрос",
+  "@searchRecentSpoken": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchRecentRemove": "Убрать «{query}» из недавних",
+  "@searchRecentRemove": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchRecentCleared": "Недавние запросы удалены",
+  "searchSectionCaption": "раздел",
+  "searchSectionSpoken": "{name}, раздел",
+  "@searchSectionSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "searchNothingSpoken": "Ничего не нашли по запросу «{query}»",
+  "@searchNothingSpoken": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "openSearch": "Поиск",
   "productTitle": "О товаре",
   "productReadMore": "Читать далее",
@@ -2621,7 +2700,22 @@
   "deliveryAddressSpoken": "Адрес доставки: {address}. Изменить",
   "catalogSearchSpoken": "Поиск товаров",
   "homeCategoriesAll": "Все категории",
-  "recommendedAll": "Все рекомендуемые",
+  "homeSeeAllCount": "Все {count}",
+  "@homeSeeAllCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recommendedAllSpoken": "{count, plural, one{Все {count} рекомендуемый товар} few{Все {count} рекомендуемых товара} other{Все {count} рекомендуемых товаров}}",
+  "@recommendedAllSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cardSpoken": "{name}, примерно {price} за {unit, select, kg{килограмм} gram{грамм} piece{штуку} liter{литр} package{упаковку} box{коробку} bundle{пучок} meter{метр} other{единицу}}",
   "cardInCartSpoken": "{card}. В корзине {quantity}",
   "cardAddSpoken": "Добавить в корзину: {name}",

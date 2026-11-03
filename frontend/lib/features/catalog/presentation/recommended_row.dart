@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/layout/text_width.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/routing/flight_page.dart';
+import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/skeleton_bar.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
@@ -57,6 +59,74 @@ class RecommendedRow extends ConsumerStatefulWidget {
 class _RecommendedRowState extends ConsumerState<RecommendedRow> {
   bool _sawSkeleton = false;
 
+  /// True while the row's title flies to «Рекомендуем» (`DL-128`). One notifier
+  /// for the State's whole life, never disposed: the flight page writes it
+  /// from its own dispose, which may come after this row's.
+  final ValueNotifier<bool> _holding = ValueNotifier<bool>(false);
+  final GlobalKey _titleKey = GlobalKey();
+  final GlobalKey _rowBox = GlobalKey();
+  final Map<String, GlobalKey> _cardBoxes = <String, GlobalKey>{};
+
+  Rect? _globalRect(GlobalKey key) {
+    final RenderObject? box = key.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) {
+      return null;
+    }
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
+  /// Opens «Рекомендуем» with the row's visible cards and its title flying to
+  /// their places (`DL-128`); with reduced motion nothing flies.
+  void _openAll(List<CatalogProduct> products) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final Size screen = MediaQuery.sizeOf(context);
+    final List<FlightItem> items = <FlightItem>[];
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      final Rect? row = _globalRect(_rowBox);
+      final Rect? title = _globalRect(_titleKey);
+      if (row != null) {
+        for (final CatalogProduct product in products) {
+          final Rect? from = _globalRect(
+            _cardBoxes.putIfAbsent(product.id, GlobalKey.new),
+          );
+          if (from == null ||
+              from.right <= row.left ||
+              from.left >= row.right) {
+            continue;
+          }
+          items.add(
+            FlightItem(
+              id: 'card-${product.id}',
+              from: from,
+              builder: (BuildContext context) =>
+                  KitProductCard(product: product, imageHeight: 150),
+            ),
+          );
+        }
+      }
+      if (title != null) {
+        items.add(
+          FlightItem(
+            id: 'title',
+            from: title,
+            builder: (BuildContext context) => Text(
+              l10n.recommendedTitle,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: KitColors.ink,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    context.push<void>(
+      CatalogPaths.recommended,
+      extra: FlightOpening(items: items, screen: screen, holding: _holding),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -85,7 +155,16 @@ class _RecommendedRowState extends ConsumerState<RecommendedRow> {
       _sawSkeleton = true;
     }
 
+    final int? total = async.value?.total;
+    final int? seeAllCount =
+        widget.showAll &&
+            !skeletons &&
+            total != null &&
+            total > RecommendedRow.shown
+        ? total
+        : null;
     final Widget row = SizedBox(
+      key: _rowBox,
       height: extent,
       child: skeletons
           ? _list(
@@ -100,6 +179,7 @@ class _RecommendedRowState extends ConsumerState<RecommendedRow> {
               key: ValueKey<String>(widget.rowKey),
               count: math.min(items.length, RecommendedRow.shown),
               card: (int index) => SizedBox(
+                key: _cardBoxes.putIfAbsent(items[index].id, GlobalKey.new),
                 width: width,
                 child: KitProductCard(
                   key: ValueKey<String>(items[index].id),
@@ -116,9 +196,14 @@ class _RecommendedRowState extends ConsumerState<RecommendedRow> {
         SectionTitle(
           title: widget.title ?? l10n.recommendedTitle,
           seeAllKey: 'open-recommended',
-          seeAllLabel: l10n.recommendedAll,
-          onSeeAll: widget.showAll && !skeletons
-              ? () => context.push<void>(CatalogPaths.recommended)
+          seeAllLabel: seeAllCount == null
+              ? null
+              : l10n.recommendedAllSpoken(seeAllCount),
+          count: seeAllCount,
+          titleKey: _titleKey,
+          holding: _holding,
+          onSeeAll: seeAllCount != null
+              ? () => _openAll(items.take(RecommendedRow.shown).toList())
               : null,
         ),
         if (!skeletons && _sawSkeleton)

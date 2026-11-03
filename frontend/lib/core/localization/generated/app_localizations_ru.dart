@@ -485,6 +485,16 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String aisleHeadingSpoken(String name, String count) {
+    return '$name, $count';
+  }
+
+  @override
+  String aisleChipSpoken(String name, int index, int count) {
+    return '$name, раздел $index из $count';
+  }
+
+  @override
   String categoryShownSpoken(String name, String count) {
     return '$name: $count';
   }
@@ -1137,6 +1147,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get catalogMoreFailed => 'Следующие товары не загрузились';
+
+  @override
+  String get catalogMoreLoading => 'Загружаем ещё товары';
+
+  @override
+  String catalogMoreLoaded(String count) {
+    return 'Загружено ещё $count';
+  }
 
   @override
   String get homeNavHome => 'Главная';
@@ -3518,7 +3536,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get recommendedTitle => 'Рекомендуем';
 
   @override
-  String get recommendedEmpty => 'Пока нет рекомендованных товаров';
+  String recommendedEnd(String count) {
+    return 'Это вся подборка: $count';
+  }
+
+  @override
+  String get recommendedEmptyTitle => 'Подборка пока пуста';
+
+  @override
+  String get recommendedEmptyText => 'Все товары магазина — в категориях.';
 
   @override
   String cartSummaryCount(int count) {
@@ -3577,6 +3603,38 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get searchAllCategories => 'Все категории';
+
+  @override
+  String get searchClearQuery => 'Стереть запрос';
+
+  @override
+  String get searchRecentClearSpoken => 'Очистить недавние запросы';
+
+  @override
+  String searchRecentSpoken(String query) {
+    return '$query, недавний запрос';
+  }
+
+  @override
+  String searchRecentRemove(String query) {
+    return 'Убрать «$query» из недавних';
+  }
+
+  @override
+  String get searchRecentCleared => 'Недавние запросы удалены';
+
+  @override
+  String get searchSectionCaption => 'раздел';
+
+  @override
+  String searchSectionSpoken(String name) {
+    return '$name, раздел';
+  }
+
+  @override
+  String searchNothingSpoken(String query) {
+    return 'Ничего не нашли по запросу «$query»';
+  }
 
   @override
   String get openSearch => 'Поиск';
@@ -4472,7 +4530,21 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeCategoriesAll => 'Все категории';
 
   @override
-  String get recommendedAll => 'Все рекомендуемые';
+  String homeSeeAllCount(int count) {
+    return 'Все $count';
+  }
+
+  @override
+  String recommendedAllSpoken(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Все $count рекомендуемых товаров',
+      few: 'Все $count рекомендуемых товара',
+      one: 'Все $count рекомендуемый товар',
+    );
+    return '$_temp0';
+  }
 
   @override
   String cardSpoken(String name, String price, String unit) {

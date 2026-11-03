@@ -103,6 +103,11 @@ void main() {
               const AllProductsScreen(),
         ),
         GoRoute(
+          path: CatalogPaths.categories,
+          builder: (BuildContext context, GoRouterState state) =>
+              const Scaffold(body: Text('categories page')),
+        ),
+        GoRoute(
           path: CartPaths.cart,
           builder: (BuildContext context, GoRouterState state) {
             cartOpened = state.uri.path;
@@ -191,17 +196,36 @@ void main() {
     expect(find.text('Яблоко'), findsNothing);
   });
 
-  testWidgets('an empty recommended list says so', (WidgetTester tester) async {
-    await open(tester, CatalogPaths.recommended);
-    expect(
-      find.text(
-        AppLocalizations.of(tester.element(find.text('Рекомендуем')))
-            .recommendedEmpty,
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('Хлеб'), findsNothing);
-  });
+  testWidgets(
+    'an empty selection shows the picture, Подборка пока пуста and Все '
+    'категории',
+    (WidgetTester tester) async {
+      await open(tester, CatalogPaths.recommended);
+      expect(byKey('recommended-empty'), findsOneWidget);
+      expect(find.byIcon(Icons.shopping_basket_outlined), findsOneWidget);
+      expect(find.text('Подборка пока пуста'), findsOneWidget);
+      expect(find.text('Все товары магазина — в категориях.'), findsOneWidget);
+      expect(find.text('Хлеб'), findsNothing);
+      expect(byKey('list-end'), findsNothing);
+      expect(
+        tester.getTopLeft(byKey('recommended-empty')).dy,
+        lessThan(300),
+        reason: 'the slot is top-aligned',
+      );
+      expect(
+        tester.widget<Padding>(byKey('recommended-empty')).padding,
+        const EdgeInsets.symmetric(horizontal: 16),
+        reason: 'the grid adds 24 a side: 40 in all, as drawn',
+      );
+      expect(
+        tester.getSize(byKey('recommended-empty-categories')).height,
+        greaterThanOrEqualTo(46),
+      );
+      await tester.tap(byKey('recommended-empty-categories'));
+      await tester.pumpAndSettle();
+      expect(router.state.uri.path, CatalogPaths.categories);
+    },
+  );
 
   testWidgets('Рекомендуем shows 3 товара · Как в магазине and the menu '
       're-sorts it', (WidgetTester tester) async {
@@ -1027,6 +1051,40 @@ void main() {
       );
     });
 
+    testWidgets('the cards of a new order fade in from 0.45 after the dim', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, CatalogPaths.products);
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(byKey('product-grid')),
+      );
+
+      catalog.gates[''] = Completer<void>();
+      container.read(productSortProvider.notifier).set(ProductSort.priceDesc);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(byKey('dimmed-cards'), findsOneWidget);
+
+      catalog.gates['']!.complete();
+      await tester.pump();
+      await tester.pump();
+      double opacity() => tester
+          .widget<SliverFadeTransition>(
+            find.descendant(
+              of: byKey('product-cards'),
+              matching: find.byType(SliverFadeTransition),
+            ),
+          )
+          .opacity
+          .value;
+      expect(byKey('dimmed-cards'), findsNothing);
+      expect(opacity(), inInclusiveRange(0.45, 0.6));
+
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(opacity(), 1);
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('the count stays while another order loads', (
       WidgetTester tester,
     ) async {
@@ -1202,4 +1260,202 @@ void main() {
       );
     }
   }
+
+  group('the list end and what is announced', () {
+    setUp(() {
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 0; i < 24; i++)
+          catalogProduct(
+            id: 'q-$i',
+            nameRu: 'Товар $i',
+            nameUz: 'Mahsulot $i',
+            customerUnitPriceUzs: 1000 + i,
+          ),
+      ];
+      catalog.featuredIds = <String>{for (int i = 0; i < 24; i++) 'q-$i'};
+      catalog.pageSize = 20;
+    });
+
+    ScrollPosition positionOf(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: byKey('product-grid'),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position;
+
+    Future<void> openRecommended(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(375, 812);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await open(tester, CatalogPaths.recommended);
+    }
+
+    Future<void> toEnd(WidgetTester tester) async {
+      positionOf(tester).jumpTo(positionOf(tester).maxScrollExtent);
+      await tester.pumpAndSettle();
+      positionOf(tester).jumpTo(positionOf(tester).maxScrollExtent);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'the list ends with Это вся подборка: 24 товара and Все товары',
+      (WidgetTester tester) async {
+        await openRecommended(tester);
+        expect(byKey('list-end'), findsNothing, reason: 'more is to come');
+        await toEnd(tester);
+
+        expect(byKey('list-end'), findsOneWidget);
+        expect(find.text('Это вся подборка: 24 товара'), findsOneWidget);
+        expect(byKey('product-placeholders'), findsNothing);
+        expect(
+          tester.getSize(byKey('list-end-all')).height,
+          greaterThanOrEqualTo(44),
+        );
+        await tester.tap(byKey('list-end-all'));
+        await tester.pumpAndSettle();
+        expect(router.state.uri.path, CatalogPaths.products);
+      },
+    );
+
+    testWidgets('the end of the list fades in once, not each time it is '
+        'scrolled back to', (WidgetTester tester) async {
+      await openRecommended(tester);
+      await toEnd(tester);
+      Finder fade() => find.descendant(
+        of: byKey('list-end-fade'),
+        matching: find.byType(FadeTransition),
+      );
+      expect(tester.widget<FadeTransition>(fade().first).opacity.value, 1);
+
+      positionOf(tester).jumpTo(0);
+      await tester.pumpAndSettle();
+      expect(byKey('list-end'), findsNothing, reason: 'built away');
+      positionOf(tester).jumpTo(positionOf(tester).maxScrollExtent);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(byKey('list-end'), findsOneWidget);
+      expect(tester.widget<FadeTransition>(fade().first).opacity.value, 1);
+    });
+
+    testWidgets('opening announces Рекомендуем: 24 товара once', (
+      WidgetTester tester,
+    ) async {
+      await openRecommended(tester);
+      final List<String> first = announced(tester).toList();
+      expect(
+        first.where((String m) => m == 'Рекомендуем: 24 товара'),
+        hasLength(1),
+      );
+      await pull(tester);
+      final List<String> after = announced(tester).toList();
+      expect(after, contains('Обновлено'));
+      expect(after, isNot(contains('Рекомендуем: 24 товара')));
+    });
+
+    testWidgets('Все товары announces Все товары: 24 товара once', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(375, 812);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await open(tester, CatalogPaths.products);
+      final List<String> first = announced(tester).toList();
+      expect(
+        first.where((String m) => m == 'Все товары: 24 товара'),
+        hasLength(1),
+      );
+      await pull(tester);
+      expect(announced(tester), isNot(contains('Все товары: 24 товара')));
+    });
+
+    testWidgets('a new order announces Сначала дешевле: 24 товара', (
+      WidgetTester tester,
+    ) async {
+      await openRecommended(tester);
+      announced(tester).toList();
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(byKey('product-grid')),
+      );
+      container.read(productSortProvider.notifier).set(ProductSort.priceAsc);
+      await tester.pumpAndSettle();
+      expect(announced(tester).toList(), <String>[
+        'Сначала дешевле: 24 товара',
+      ]);
+    });
+
+    testWidgets('a later page announces Загружено ещё 4 товара', (
+      WidgetTester tester,
+    ) async {
+      await openRecommended(tester);
+      announced(tester).toList();
+      positionOf(tester).jumpTo(positionOf(tester).maxScrollExtent);
+      await tester.pumpAndSettle();
+      expect(announced(tester), contains('Загружено ещё 4 товара'));
+    });
+
+    testWidgets('a later page that fails announces its row', (
+      WidgetTester tester,
+    ) async {
+      await openRecommended(tester);
+      announced(tester).toList();
+      catalog.nextFailure = const NetworkFailure();
+      positionOf(tester).jumpTo(positionOf(tester).maxScrollExtent);
+      await tester.pumpAndSettle();
+      expect(
+        announced(tester).where(
+          (String m) => m == 'Нет связи — следующие товары не загрузились',
+        ),
+        hasLength(1),
+      );
+    });
+
+    testWidgets('the placeholders read Загружаем ещё товары', (
+      WidgetTester tester,
+    ) async {
+      await openRecommended(tester);
+      catalog.gates[''] = Completer<void>();
+      positionOf(tester).jumpTo(positionOf(tester).maxScrollExtent);
+      await tester.pump();
+      expect(byKey('product-placeholders'), findsOneWidget);
+      final SemanticsHandle handle = tester.ensureSemantics();
+      expect(find.bySemanticsLabel('Загружаем ещё товары'), findsOneWidget);
+      handle.dispose();
+      catalog.gates['']!.complete();
+      await tester.pumpAndSettle();
+    });
+
+    for (final bool empty in <bool>[false, true]) {
+      testWidgets(
+        'Рекомендуем with its ${empty ? 'empty state' : 'end'} meets the tap '
+        'target guideline and fits large text',
+        (WidgetTester tester) async {
+          tester.view.physicalSize = const Size(320, 640);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          if (empty) {
+            catalog.featuredIds = <String>{};
+          } else {
+            catalog.productRows = catalog.productRows.take(4).toList();
+          }
+          await open(
+            tester,
+            CatalogPaths.recommended,
+            textScaler: const NonlinearTextScaler(2),
+          );
+          if (empty) {
+            expect(byKey('recommended-empty'), findsOneWidget);
+          } else {
+            positionOf(tester).jumpTo(positionOf(tester).maxScrollExtent);
+            await tester.pumpAndSettle();
+            expect(byKey('list-end'), findsOneWidget);
+          }
+          expect(tester.takeException(), isNull);
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        },
+      );
+    }
+  });
 }

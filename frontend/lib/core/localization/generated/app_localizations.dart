@@ -962,6 +962,18 @@ abstract class AppLocalizations {
   /// **'{name}, {count} tadan {index}'**
   String categoryRailSpoken(String name, int index, int count);
 
+  /// No description provided for @aisleHeadingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, {count}'**
+  String aisleHeadingSpoken(String name, String count);
+
+  /// No description provided for @aisleChipSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, {count} tadan {index}-bo\'lim'**
+  String aisleChipSpoken(String name, int index, int count);
+
   /// No description provided for @categoryShownSpoken.
   ///
   /// In uz, this message translates to:
@@ -2101,6 +2113,18 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Keyingi mahsulotlar yuklanmadi'**
   String get catalogMoreFailed;
+
+  /// No description provided for @catalogMoreLoading.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana mahsulotlar yuklanmoqda'**
+  String get catalogMoreLoading;
+
+  /// No description provided for @catalogMoreLoaded.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana {count} yuklandi'**
+  String catalogMoreLoaded(String count);
 
   /// No description provided for @homeNavHome.
   ///
@@ -6038,11 +6062,23 @@ abstract class AppLocalizations {
   /// **'Tavsiya etamiz'**
   String get recommendedTitle;
 
-  /// No description provided for @recommendedEmpty.
+  /// No description provided for @recommendedEnd.
   ///
   /// In uz, this message translates to:
-  /// **'Hozircha tavsiya etilgan mahsulot yo\'q'**
-  String get recommendedEmpty;
+  /// **'Bu butun to\'plam: {count}'**
+  String recommendedEnd(String count);
+
+  /// No description provided for @recommendedEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'To\'plam hozircha bo\'sh'**
+  String get recommendedEmptyTitle;
+
+  /// No description provided for @recommendedEmptyText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Do\'kondagi barcha mahsulotlar — bo\'limlarda.'**
+  String get recommendedEmptyText;
 
   /// No description provided for @cartSummaryCount.
   ///
@@ -6115,6 +6151,54 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Barcha kategoriyalar'**
   String get searchAllCategories;
+
+  /// No description provided for @searchClearQuery.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'rovni o\'chirish'**
+  String get searchClearQuery;
+
+  /// No description provided for @searchRecentClearSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi so\'rovlarni tozalash'**
+  String get searchRecentClearSpoken;
+
+  /// No description provided for @searchRecentSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{query}, oxirgi so\'rov'**
+  String searchRecentSpoken(String query);
+
+  /// No description provided for @searchRecentRemove.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{query}» so\'rovini olib tashlash'**
+  String searchRecentRemove(String query);
+
+  /// No description provided for @searchRecentCleared.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi so\'rovlar o\'chirildi'**
+  String get searchRecentCleared;
+
+  /// No description provided for @searchSectionCaption.
+  ///
+  /// In uz, this message translates to:
+  /// **'bo\'lim'**
+  String get searchSectionCaption;
+
+  /// No description provided for @searchSectionSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, bo\'lim'**
+  String searchSectionSpoken(String name);
+
+  /// No description provided for @searchNothingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{query}» bo\'yicha hech narsa topilmadi'**
+  String searchNothingSpoken(String query);
 
   /// No description provided for @openSearch.
   ///
@@ -7478,11 +7562,17 @@ abstract class AppLocalizations {
   /// **'Barcha kategoriyalar'**
   String get homeCategoriesAll;
 
-  /// No description provided for @recommendedAll.
+  /// No description provided for @homeSeeAllCount.
   ///
   /// In uz, this message translates to:
-  /// **'Barcha tavsiyalar'**
-  String get recommendedAll;
+  /// **'Barcha {count}'**
+  String homeSeeAllCount(int count);
+
+  /// No description provided for @recommendedAllSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha {count} ta tavsiya etilgan mahsulot'**
+  String recommendedAllSpoken(int count);
 
   /// No description provided for @cardSpoken.
   ///

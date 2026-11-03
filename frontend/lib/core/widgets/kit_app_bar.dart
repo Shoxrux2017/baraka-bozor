@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../localization/generated/app_localizations.dart';
 import '../routing/app_paths.dart';
+import '../routing/flight_page.dart';
 
 import '../theme/kit_colors.dart';
 
@@ -11,12 +12,15 @@ import '../theme/kit_colors.dart';
 /// [search] it carries the search icon of a list's header, which opens the
 /// search screen (`DL-83`); the [actions] follow it (`DL-118`). A [leading]
 /// widget replaces the back arrow. With [fadeTitle] a title whose text changes
-/// fades in from 0.25 over 180 ms, at once with reduced motion (`DL-127`).
+/// fades in from 0.25 over 180 ms, at once with reduced motion (`DL-127`). With
+/// [titleFlight] the title is the place a flight page's piece lands on
+/// (`DL-128`).
 AppBar kitAppBar({
   required String title,
   bool automaticallyImplyLeading = true,
   bool search = false,
   bool fadeTitle = false,
+  bool titleFlight = false,
   List<Widget>? actions,
   Widget? leading,
 }) {
@@ -28,6 +32,7 @@ AppBar kitAppBar({
       color: KitColors.ink,
     ),
   );
+  final Widget heading = fadeTitle ? _FadingTitle(text) : text;
   return AppBar(
     automaticallyImplyLeading: automaticallyImplyLeading,
     leading: leading,
@@ -36,7 +41,7 @@ AppBar kitAppBar({
     scrolledUnderElevation: 0,
     centerTitle: true,
     actions: <Widget>[if (search) const _SearchAction(), ...?actions],
-    title: fadeTitle ? _FadingTitle(text) : text,
+    title: titleFlight ? FlightTarget(id: 'title', child: heading) : heading,
   );
 }
 

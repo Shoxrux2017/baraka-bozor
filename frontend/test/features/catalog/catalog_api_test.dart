@@ -41,6 +41,7 @@ Map<String, Object?> categoryJson() => <String, Object?>{
   'description_ru': null,
   'sort_order': 0,
   'image_url': 'https://api.test/storage/categories/c.webp',
+  'product_count': 12,
 };
 
 Map<String, Object?> page(List<Object?> items, {int page = 1, int last = 1}) =>
@@ -88,6 +89,19 @@ void main() {
     expect(
       () => CatalogApi.parseCategory(
         Map<String, Object?>.of(categoryJson())..remove('image_url'),
+      ),
+      throwsFormatException,
+    );
+  });
+
+  test('a category carries its product count', () {
+    expect(CatalogApi.parseCategory(categoryJson()).productCount, 12);
+  });
+
+  test('a category without product_count is malformed', () {
+    expect(
+      () => CatalogApi.parseCategory(
+        Map<String, Object?>.of(categoryJson())..remove('product_count'),
       ),
       throwsFormatException,
     );

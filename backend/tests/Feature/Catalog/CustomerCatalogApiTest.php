@@ -40,7 +40,7 @@ final class CustomerCatalogApiTest extends TestCase
         $response->assertJsonPath('data.*.name_uz', ['Sabzavotlar', 'Mevalar'])
             ->assertJsonPath('meta.pagination.total', 2);
         $this->assertSame(
-            ['id', 'name_uz', 'name_ru', 'description_uz', 'description_ru', 'sort_order', 'image_url'],
+            ['id', 'name_uz', 'name_ru', 'description_uz', 'description_ru', 'sort_order', 'image_url', 'product_count'],
             array_keys($response->json('data.0'))
         );
     }
@@ -304,12 +304,65 @@ final class CustomerCatalogApiTest extends TestCase
         $this->withToken($token)->getJson('/api/v1/catalog/products/'.$product->id)->assertJsonPath('data.is_favorite', true);
     }
 
+    public function test_categories_carry_the_count_of_their_visible_products(): void
+    {
+        $category = Category::factory()->create();
+        Product::factory()->count(2)->for($category)->create();
+        Product::factory()->for($category)->create(['is_active' => false]);
+        Product::factory()->archived()->for($category)->create();
+
+        $this->asCustomer()->getJson('/api/v1/catalog/categories')
+            ->assertOk()
+            ->assertJsonPath('data.0.product_count', 2);
+    }
+
+    public function test_the_whole_list_in_the_shop_order_goes_aisle_by_aisle(): void
+    {
+        $second = Category::factory()->create(['name_uz' => 'Ikkinchi', 'sort_order' => 2]);
+        $first = Category::factory()->create(['name_uz' => 'Birinchi', 'sort_order' => 1]);
+        Product::factory()->create(['category_id' => $second->id, 'name_uz' => 'S1', 'sort_order' => 1]);
+        Product::factory()->create(['category_id' => $first->id, 'name_uz' => 'F3', 'sort_order' => 3]);
+        Product::factory()->create(['category_id' => $second->id, 'name_uz' => 'S2', 'sort_order' => 2]);
+        Product::factory()->create(['category_id' => $first->id, 'name_uz' => 'F2', 'sort_order' => 2]);
+
+        $this->asCustomer()->getJson('/api/v1/catalog/products')
+            ->assertJsonPath('data.*.name_uz', ['F2', 'F3', 'S1', 'S2']);
+    }
+
+    public function test_a_price_order_breaks_ties_aisle_by_aisle(): void
+    {
+        $second = Category::factory()->create(['sort_order' => 2]);
+        $first = Category::factory()->create(['sort_order' => 1]);
+        Product::factory()->create(['category_id' => $second->id, 'name_uz' => 'A', 'market_price_uzs' => 5000, 'sort_order' => 1]);
+        Product::factory()->create(['category_id' => $first->id, 'name_uz' => 'B', 'market_price_uzs' => 5000, 'sort_order' => 9]);
+        Product::factory()->create(['category_id' => $first->id, 'name_uz' => 'C', 'market_price_uzs' => 3000, 'sort_order' => 9]);
+
+        $this->asCustomer()->getJson('/api/v1/catalog/products?sort=price_asc')
+            ->assertJsonPath('data.*.name_uz', ['C', 'B', 'A']);
+    }
+
+    public function test_search_featured_and_category_lists_keep_their_order(): void
+    {
+        $second = Category::factory()->create(['sort_order' => 2]);
+        $first = Category::factory()->create(['sort_order' => 1]);
+        Product::factory()->featured()->create(['category_id' => $second->id, 'name_uz' => 'Pa', 'sort_order' => 1]);
+        Product::factory()->featured()->create(['category_id' => $first->id, 'name_uz' => 'Pb', 'sort_order' => 2]);
+
+        $this->asCustomer()->getJson('/api/v1/catalog/products?featured=1')
+            ->assertJsonPath('data.*.name_uz', ['Pa', 'Pb']);
+        $this->asCustomer()->getJson('/api/v1/catalog/products?search=p')
+            ->assertJsonPath('data.*.name_uz', ['Pa', 'Pb']);
+        $this->asCustomer()->getJson('/api/v1/catalog/products?category_id='.$first->id)
+            ->assertJsonPath('data.*.name_uz', ['Pb']);
+    }
+
     private function pricedProducts(): void
     {
-        Product::factory()->create(['name_uz' => 'D9', 'market_price_uzs' => 9000, 'sort_order' => 2]);
-        Product::factory()->create(['name_uz' => 'B5', 'market_price_uzs' => 5000, 'sort_order' => 1]);
-        Product::factory()->create(['name_uz' => 'C7', 'market_price_uzs' => 7000, 'sort_order' => 3]);
-        Product::factory()->create(['name_uz' => 'A5', 'market_price_uzs' => 5000, 'sort_order' => 1]);
+        $aisle = Category::factory()->create()->id;
+        Product::factory()->create(['category_id' => $aisle, 'name_uz' => 'D9', 'market_price_uzs' => 9000, 'sort_order' => 2]);
+        Product::factory()->create(['category_id' => $aisle, 'name_uz' => 'B5', 'market_price_uzs' => 5000, 'sort_order' => 1]);
+        Product::factory()->create(['category_id' => $aisle, 'name_uz' => 'C7', 'market_price_uzs' => 7000, 'sort_order' => 3]);
+        Product::factory()->create(['category_id' => $aisle, 'name_uz' => 'A5', 'market_price_uzs' => 5000, 'sort_order' => 1]);
     }
 
     private function asCustomer(): self

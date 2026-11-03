@@ -1,4 +1,5 @@
 import 'package:baraka_bozor/app/router.dart';
+import 'package:baraka_bozor/core/routing/flight_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -78,7 +79,12 @@ List<RouteBase> _all(GoRouter router) {
   return all;
 }
 
-GoRouterState _stateFor(GoRouter router, String? name, String path) {
+GoRouterState _stateFor(
+  GoRouter router,
+  String? name,
+  String path, {
+  Object? extra,
+}) {
   final String location = path.replaceAllMapped(
     RegExp(r':(\w+)\??'),
     (_) => '1',
@@ -96,6 +102,7 @@ GoRouterState _stateFor(GoRouter router, String? name, String path) {
     fullPath: path,
     pathParameters: params,
     pageKey: ValueKey<String>(location),
+    extra: extra,
   );
 }
 
@@ -147,6 +154,45 @@ void main() {
     expect(standing, _entryNames);
     expect(sliding, _pageNames);
   });
+
+  for (final (String name, int ms) in <(String, int)>[
+    ('catalog-recommended', 420),
+    ('catalog-all-products', 420),
+    ('catalog-search', 400),
+  ]) {
+    testWidgets('$name opens with a flight when it is given an opening', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(const SizedBox());
+      final BuildContext context = tester.element(find.byType(SizedBox));
+      final GoRouter router = buildRouter();
+      addTearDown(router.dispose);
+      final GoRoute route = _all(router)
+          .whereType<GoRoute>()
+          .firstWhere((GoRoute r) => r.name == name);
+      final Page<dynamic> flying = route.pageBuilder!(
+        context,
+        _stateFor(
+          router,
+          route.name,
+          route.path,
+          extra: const FlightOpening(items: <FlightItem>[], screen: Size.zero),
+        ),
+      );
+      expect(flying, isNot(isA<MaterialPage<dynamic>>()));
+      expect(flying, isNot(isA<NoTransitionPage<dynamic>>()));
+      expect(
+        (flying.createRoute(context) as PageRoute<dynamic>).transitionDuration,
+        Duration(milliseconds: ms),
+      );
+      // Any other extra, or none, is the platform's page.
+      final Page<dynamic> plain = route.pageBuilder!(
+        context,
+        _stateFor(router, route.name, route.path, extra: 'x'),
+      );
+      expect(plain, isA<MaterialPage<dynamic>>());
+    });
+  }
 
   testWidgets('the panel shells stand in place', (WidgetTester tester) async {
     await tester.pumpWidget(const SizedBox());

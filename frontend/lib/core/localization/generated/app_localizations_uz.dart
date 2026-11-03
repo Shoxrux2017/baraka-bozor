@@ -478,6 +478,16 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String aisleHeadingSpoken(String name, String count) {
+    return '$name, $count';
+  }
+
+  @override
+  String aisleChipSpoken(String name, int index, int count) {
+    return '$name, $count tadan $index-bo\'lim';
+  }
+
+  @override
   String categoryShownSpoken(String name, String count) {
     return '$name: $count';
   }
@@ -1121,6 +1131,14 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get catalogMoreFailed => 'Keyingi mahsulotlar yuklanmadi';
+
+  @override
+  String get catalogMoreLoading => 'Yana mahsulotlar yuklanmoqda';
+
+  @override
+  String catalogMoreLoaded(String count) {
+    return 'Yana $count yuklandi';
+  }
 
   @override
   String get homeNavHome => 'Bosh sahifa';
@@ -3482,7 +3500,16 @@ class AppLocalizationsUz extends AppLocalizations {
   String get recommendedTitle => 'Tavsiya etamiz';
 
   @override
-  String get recommendedEmpty => 'Hozircha tavsiya etilgan mahsulot yo\'q';
+  String recommendedEnd(String count) {
+    return 'Bu butun to\'plam: $count';
+  }
+
+  @override
+  String get recommendedEmptyTitle => 'To\'plam hozircha bo\'sh';
+
+  @override
+  String get recommendedEmptyText =>
+      'Do\'kondagi barcha mahsulotlar — bo\'limlarda.';
 
   @override
   String cartSummaryCount(int count) {
@@ -3536,6 +3563,38 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get searchAllCategories => 'Barcha kategoriyalar';
+
+  @override
+  String get searchClearQuery => 'So\'rovni o\'chirish';
+
+  @override
+  String get searchRecentClearSpoken => 'Oxirgi so\'rovlarni tozalash';
+
+  @override
+  String searchRecentSpoken(String query) {
+    return '$query, oxirgi so\'rov';
+  }
+
+  @override
+  String searchRecentRemove(String query) {
+    return '«$query» so\'rovini olib tashlash';
+  }
+
+  @override
+  String get searchRecentCleared => 'Oxirgi so\'rovlar o\'chirildi';
+
+  @override
+  String get searchSectionCaption => 'bo\'lim';
+
+  @override
+  String searchSectionSpoken(String name) {
+    return '$name, bo\'lim';
+  }
+
+  @override
+  String searchNothingSpoken(String query) {
+    return '«$query» bo\'yicha hech narsa topilmadi';
+  }
 
   @override
   String get openSearch => 'Qidirish';
@@ -4420,7 +4479,14 @@ class AppLocalizationsUz extends AppLocalizations {
   String get homeCategoriesAll => 'Barcha kategoriyalar';
 
   @override
-  String get recommendedAll => 'Barcha tavsiyalar';
+  String homeSeeAllCount(int count) {
+    return 'Barcha $count';
+  }
+
+  @override
+  String recommendedAllSpoken(int count) {
+    return 'Barcha $count ta tavsiya etilgan mahsulot';
+  }
 
   @override
   String cardSpoken(String name, String price, String unit) {

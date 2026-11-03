@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/layout/text_width.dart';
+import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
+import '../../../core/routing/flight_page.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/press_scale.dart';
 import '../../../core/widgets/product_image.dart';
@@ -264,6 +266,172 @@ class CategoryPictureWell extends StatelessWidget {
             ),
         child: Center(child: letterOrPicture),
       ),
+    );
+  }
+}
+
+/// The wide first tile of «Категории»: «Все товары» over the count of every
+/// product, with the pictures of the first three categories overlapping at its
+/// left (`DL-128`). It presses to 0.96 and opens «Все товары» with its title
+/// flying into the header; with reduced motion nothing flies. Callers key it
+/// `all-products-tile`.
+class AllProductsTile extends StatefulWidget {
+  const AllProductsTile({required this.categories, super.key});
+
+  final List<CatalogCategory> categories;
+
+  @override
+  State<AllProductsTile> createState() => _AllProductsTileState();
+}
+
+class _AllProductsTileState extends State<AllProductsTile> {
+  /// True while the title flies to the header. One notifier for the State's
+  /// whole life, never disposed: the flight page writes it from its own
+  /// dispose, which may come after this tile's.
+  final ValueNotifier<bool> _holding = ValueNotifier<bool>(false);
+  final GlobalKey _titleKey = GlobalKey();
+
+  int get _total => widget.categories.fold<int>(
+    0,
+    (int sum, CatalogCategory c) => sum + c.productCount,
+  );
+
+  void _open(String title) {
+    final Size screen = MediaQuery.sizeOf(context);
+    final List<FlightItem> items = <FlightItem>[];
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      final RenderObject? box = _titleKey.currentContext?.findRenderObject();
+      if (box is RenderBox && box.attached && box.hasSize) {
+        items.add(
+          FlightItem(
+            id: 'title',
+            from: box.localToGlobal(Offset.zero) & box.size,
+            builder: (BuildContext context) => Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: KitColors.ink,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    context.push<void>(
+      CatalogPaths.products,
+      extra: FlightOpening(items: items, screen: screen, holding: _holding),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String count = l10n.catalogProductCount(_total);
+    final String title = l10n.allProductsTitle;
+    final bool large = textScaleAt(MediaQuery.textScalerOf(context), 16) > 1.3;
+    final List<CatalogCategory> shown = widget.categories.take(3).toList();
+    return PressScale(
+      label: l10n.categoryShownSpoken(title, count),
+      onTap: () => _open(title),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 72),
+        padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
+        decoration: BoxDecoration(
+          color: KitColors.primaryWash,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: <Widget>[
+            if (!large && shown.isNotEmpty) ...<Widget>[
+              SizedBox(
+                width: 92,
+                height: 40,
+                child: Stack(
+                  children: <Widget>[
+                    for (int i = 0; i < shown.length; i++)
+                      Positioned(
+                        left: 26.0 * i,
+                        child: _TilePicture(category: shown[i]),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _holding,
+                    builder: (BuildContext context, bool held, Widget? child) =>
+                        Opacity(opacity: held ? 0 : 1, child: child),
+                    child: Text(
+                      title,
+                      key: _titleKey,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        height: 1.25,
+                        fontWeight: FontWeight.w700,
+                        color: KitColors.ink,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    count,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: KitColors.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              size: 24,
+              color: KitColors.primaryDark,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A category's picture in a white 40 circle ringed in the tile's colour.
+class _TilePicture extends StatelessWidget {
+  const _TilePicture({required this.category});
+
+  final CatalogCategory category;
+
+  @override
+  Widget build(BuildContext context) {
+    final String? imageUrl = category.imageUrl;
+    final String name = category.name(interfaceLanguage(context));
+    return Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(color: KitColors.primaryWash, width: 2),
+      ),
+      child: imageUrl == null
+          ? ExcludeSemantics(
+              child: Text(
+                name.isEmpty ? '' : name.characters.first.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: KitColors.primaryDark,
+                ),
+              ),
+            )
+          : ProductImage(url: imageUrl, size: 26),
     );
   }
 }

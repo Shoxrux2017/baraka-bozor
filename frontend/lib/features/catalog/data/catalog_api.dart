@@ -86,6 +86,7 @@ class CatalogApi {
       descriptionRu: json.nullableString('description_ru'),
       sortOrder: json.integer('sort_order'),
       imageUrl: json.nullableString('image_url'),
+      productCount: json.integer('product_count'),
     );
   }
 

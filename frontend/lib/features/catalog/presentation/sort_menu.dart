@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/press_scale.dart';
+import '../../../core/widgets/swap_in.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 
@@ -307,18 +308,32 @@ class _SortItem extends StatelessWidget {
 /// there are, and the current order as a button that opens [showSortMenu].
 /// It counts the products of [query]'s list; while another order of the same
 /// products loads it keeps the last total, and nothing is counted before any
-/// is known.
+/// is known. [countText] words the count instead of `catalogProductCount`
+/// (the number in it is drawn in ink); with [keepAcrossSearch] the last total
+/// stays while another search of the same filter loads and goes when it fails
+/// (`DL-128`). A count that changes from one known number to another rolls in
+/// (`SwapIn`, 240 ms; a 200 ms fade with reduced motion).
 class ProductListCountRow extends ConsumerWidget {
   const ProductListCountRow({
     required this.query,
     required this.sort,
     required this.onSort,
+    this.countText,
+    this.keepAcrossSearch = false,
+    this.memo,
     super.key,
   });
 
   final ProductListQuery query;
   final ProductSort sort;
   final ValueChanged<ProductSort> onSort;
+  final String Function(int count)? countText;
+  final bool keepAcrossSearch;
+
+  /// Where the last total is kept, when the caller owns it: a search keeps
+  /// its count between its own queries only, never one it shares with a list
+  /// of the same filter.
+  final ListTotalMemo? memo;
 
   Future<void> _open(BuildContext anchor) async {
     final ProductSort? chosen = await showSortMenu(anchor, sort);
@@ -330,21 +345,30 @@ class ProductListCountRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final ListTotalMemo memo = ref.read(
-      listTotalMemoProvider(
-        ProductListQuery(
-          categoryId: query.categoryId,
-          search: query.search,
-          featuredOnly: query.featuredOnly,
-        ),
-      ),
+    final ListTotalMemo memo =
+        this.memo ??
+        ref.read(
+          listTotalMemoProvider(
+            ProductListQuery(
+              categoryId: query.categoryId,
+              search: keepAcrossSearch ? '' : query.search,
+              featuredOnly: query.featuredOnly,
+            ),
+          ),
+        );
+    final AsyncValue<ProductListState> list = ref.watch(
+      productListProvider(query),
     );
-    final int? known = ref.watch(productListProvider(query)).value?.total;
+    final int? known = list.value?.total;
     if (known != null) {
       memo.total = known;
+    } else if (keepAcrossSearch && list.hasError) {
+      memo.total = null;
     }
     final int? count = known ?? memo.total;
     final String label = sortLabel(l10n, sort);
+    final String Function(int count) words =
+        countText ?? l10n.catalogProductCount;
 
     return Padding(
       padding: const EdgeInsetsDirectional.only(start: 16, end: 6),
@@ -358,7 +382,13 @@ class ProductListCountRow extends ConsumerWidget {
                   ? const SizedBox.shrink()
                   : Align(
                       alignment: AlignmentDirectional.centerStart,
-                      child: _Count(text: l10n.catalogProductCount(count)),
+                      child: SwapIn(
+                        swapKey: count,
+                        duration: 240,
+                        reduced: MediaQuery.disableAnimationsOf(context),
+                        riseFrom: 0.45,
+                        child: _Count(text: words(count)),
+                      ),
                     ),
             ),
             const SizedBox(width: 8),
@@ -409,7 +439,8 @@ class ProductListCountRow extends ConsumerWidget {
   }
 }
 
-/// "24 товара" with the number in ink and the rest muted.
+/// "24 товара" or "Найдено: 4 товара" with the number in ink and the rest
+/// muted.
 class _Count extends StatelessWidget {
   const _Count({required this.text});
 
@@ -417,18 +448,21 @@ class _Count extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String number = RegExp(r'^\d+').stringMatch(text) ?? '';
+    final Match? found = RegExp(r'\d+').firstMatch(text);
+    final int from = found?.start ?? 0;
+    final int to = found?.end ?? 0;
     return Text.rich(
       TextSpan(
         children: <InlineSpan>[
+          TextSpan(text: text.substring(0, from)),
           TextSpan(
-            text: number,
+            text: text.substring(from, to),
             style: const TextStyle(
               fontWeight: FontWeight.w600,
               color: KitColors.ink,
             ),
           ),
-          TextSpan(text: text.substring(number.length)),
+          TextSpan(text: text.substring(to)),
         ],
       ),
       style: const TextStyle(fontSize: 13, height: 1.3, color: KitColors.muted),
