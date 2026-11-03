@@ -72,6 +72,7 @@ Widget categoryWellFlight(
                   t,
                 )!,
             color: Color.lerp(tile.fill, rail.fill, t),
+            easeColor: false,
           );
         },
       );
@@ -196,8 +197,9 @@ class _CategoryButtonState extends State<CategoryButton> {
 }
 
 /// The square well of a category's picture, or — without one — the first
-/// letter of its name in green. Without a [color] the well is the card colour
-/// under a picture and the green wash under a letter.
+/// letter of its name in green, which a screen reader does not read. Without
+/// a [color] the well is the card colour under a picture and the green wash
+/// under a letter; a change of colour eases over 200 ms (`DL-127`).
 class CategoryPictureWell extends StatelessWidget {
   const CategoryPictureWell({
     required this.category,
@@ -206,6 +208,7 @@ class CategoryPictureWell extends StatelessWidget {
     required this.pictureSize,
     this.color,
     this.fadeIn = false,
+    this.easeColor = true,
     super.key,
   });
 
@@ -218,6 +221,10 @@ class CategoryPictureWell extends StatelessWidget {
   /// A picture not loaded at once fades in (`DL-125`).
   final bool fadeIn;
 
+  /// Whether a change of [color] eases; a Hero's shuttle sets its colour every
+  /// frame itself.
+  final bool easeColor;
+
   /// The colour the well is filled with.
   Color get fill =>
       color ??
@@ -227,27 +234,35 @@ class CategoryPictureWell extends StatelessWidget {
   Widget build(BuildContext context) {
     final String name = category.name(interfaceLanguage(context));
     final String? imageUrl = category.imageUrl;
+    final Widget letterOrPicture = imageUrl == null
+        ? ExcludeSemantics(
+            child: Text(
+              name.isEmpty ? '' : name.characters.first.toUpperCase(),
+              style: TextStyle(
+                fontSize: size * 0.4,
+                fontWeight: FontWeight.w700,
+                color: KitColors.primaryDark,
+              ),
+            ),
+          )
+        : ProductImage(url: imageUrl, size: pictureSize, fadeIn: fadeIn);
     return SizedBox.square(
       dimension: size,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color:
-              color ??
-              (imageUrl == null ? KitColors.primaryWash : KitColors.card),
-          borderRadius: BorderRadius.circular(radius),
-        ),
-        child: Center(
-          child: imageUrl == null
-              ? Text(
-                  name.isEmpty ? '' : name.characters.first.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: size * 0.4,
-                    fontWeight: FontWeight.w700,
-                    color: KitColors.primaryDark,
-                  ),
-                )
-              : ProductImage(url: imageUrl, size: pictureSize, fadeIn: fadeIn),
-        ),
+      child: TweenAnimationBuilder<Color?>(
+        tween: ColorTween(end: fill),
+        duration: !easeColor || MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        builder: (BuildContext context, Color? colour, Widget? child) =>
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: colour,
+                borderRadius: BorderRadius.circular(radius),
+              ),
+              child: child,
+            ),
+        child: Center(child: letterOrPicture),
       ),
     );
   }

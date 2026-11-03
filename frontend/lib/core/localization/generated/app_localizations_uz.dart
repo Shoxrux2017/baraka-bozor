@@ -473,6 +473,16 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String categoryRailSpoken(String name, int index, int count) {
+    return '$name, $count tadan $index';
+  }
+
+  @override
+  String categoryShownSpoken(String name, String count) {
+    return '$name: $count';
+  }
+
+  @override
   String catalogCategoryCount(int count) {
     return '$count ta kategoriya';
   }

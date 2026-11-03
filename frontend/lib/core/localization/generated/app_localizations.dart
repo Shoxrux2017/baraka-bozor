@@ -956,6 +956,18 @@ abstract class AppLocalizations {
   /// **'{count} ta mahsulot'**
   String catalogProductCount(int count);
 
+  /// No description provided for @categoryRailSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, {count} tadan {index}'**
+  String categoryRailSpoken(String name, int index, int count);
+
+  /// No description provided for @categoryShownSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: {count}'**
+  String categoryShownSpoken(String name, String count);
+
   /// No description provided for @catalogCategoryCount.
   ///
   /// In uz, this message translates to:

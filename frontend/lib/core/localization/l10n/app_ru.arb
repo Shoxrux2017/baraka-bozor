@@ -185,6 +185,31 @@
       }
     }
   },
+  "categoryRailSpoken": "{name}, {index} из {count}",
+  "@categoryRailSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "categoryShownSpoken": "{name}: {count}",
+  "@categoryShownSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "catalogCategoryCount": "{count, plural, one{{count} категория} few{{count} категории} many{{count} категорий} other{{count} категории}}",
   "@catalogCategoryCount": {
     "placeholders": {

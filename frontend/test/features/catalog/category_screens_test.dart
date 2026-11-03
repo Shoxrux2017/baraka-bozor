@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:baraka_bozor/app/providers.dart';
 import 'package:baraka_bozor/core/formatting/money_format.dart';
@@ -30,6 +31,7 @@ import 'package:baraka_bozor/features/favorites/application/favorites_controller
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -856,8 +858,8 @@ void main() {
       expect(find.text('Olma'), findsNothing);
     });
 
-    testWidgets('a rail item shows the picture or the letter, and the '
-        'selected one a green line', (WidgetTester tester) async {
+    testWidgets('a rail item shows the picture or the letter, and one marker '
+        'stands at the selected one', (WidgetTester tester) async {
       await open(tester, CatalogPaths.category('c-1'));
 
       expect(
@@ -889,14 +891,24 @@ void main() {
         ),
         findsNothing,
       );
-      Finder line(String id) => find.descendant(
-        of: byKey('rail-$id'),
-        matching: find.byWidgetPredicate(
-          (Widget w) => w is ColoredBox && w.color == KitColors.primary,
-        ),
-      );
-      expect(line('c-1'), findsOneWidget);
-      expect(line('c-2'), findsNothing);
+      expect(byKey('rail-marker'), findsOneWidget);
+      final Rect marker = tester.getRect(byKey('rail-marker'));
+      final Rect item = tester.getRect(byKey('rail-c-1'));
+      expect(marker.width, 3);
+      expect(marker.top, item.top);
+      expect(marker.height, item.height);
+      expect(marker.right, item.right);
+      final BoxDecoration decoration =
+          tester
+                  .widget<DecoratedBox>(
+                    find.descendant(
+                      of: byKey('rail-marker'),
+                      matching: find.byType(DecoratedBox),
+                    ),
+                  )
+                  .decoration
+              as BoxDecoration;
+      expect(decoration.color, KitColors.primary);
     });
 
     testWidgets('the rail starts at the top, level with the products', (
@@ -913,13 +925,18 @@ void main() {
       );
     });
 
-    testWidgets('choosing another rail item shows its products and title, '
-        'and back leaves the screen', (WidgetTester tester) async {
+    testWidgets('choosing another rail item shows its products and title in '
+        'place, and back leaves the screen', (WidgetTester tester) async {
       await open(tester, CatalogPaths.category('c-1'));
+      final Element screen = tester.element(find.byType(CategoryScreen));
 
       await tester.tap(byKey('rail-c-2'));
       await tester.pumpAndSettle();
 
+      expect(
+        identical(tester.element(find.byType(CategoryScreen)), screen),
+        isTrue,
+      );
       expect(find.text('Olma'), findsOneWidget);
       expect(find.text('Pomidor'), findsNothing);
       expect(
@@ -934,6 +951,449 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(CategoryScreen), findsNothing);
       expect(find.text('start'), findsOneWidget);
+    });
+
+    // DL-127: the screen switches sections in place.
+    List<CatalogCategory> manyCategories(int n) => <CatalogCategory>[
+      for (int i = 1; i <= n; i++)
+        catalogCategory(id: 'c-$i', nameUz: 'Bolim $i', nameRu: 'Раздел $i'),
+    ];
+
+    late List<MethodCall> platformCalls;
+
+    void mockPlatform() {
+      platformCalls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (
+            MethodCall call,
+          ) async {
+            platformCalls.add(call);
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+    }
+
+    int clicks() => platformCalls
+        .where(
+          (MethodCall c) =>
+              c.method == 'HapticFeedback.vibrate' &&
+              c.arguments == 'HapticFeedbackType.selectionClick',
+        )
+        .length;
+
+    double railOffset(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: byKey('category-rail'),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position
+        .pixels;
+
+    double gridOffset(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: byKey('product-grid'),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position
+        .pixels;
+
+    void phone(WidgetTester tester) {
+      tester.view.physicalSize = const Size(375, 667);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+    }
+
+    void reduceMotion(WidgetTester tester) {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+    }
+
+    /// Thirty products in the first category, so its list scrolls.
+    void longFirstCategory() {
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 1; i <= 30; i++)
+          catalogProduct(id: 'x-$i', nameUz: 'Mahsulot $i'),
+        catalogProduct(
+          id: 'p-2',
+          categoryId: 'c-2',
+          nameUz: 'Olma',
+          nameRu: 'Яблоко',
+        ),
+      ];
+    }
+
+    testWidgets('a rail tap keeps the page: no new route, header and rail '
+        'stay', (WidgetTester tester) async {
+      phone(tester);
+      catalog.categoryRows = manyCategories(12);
+      await open(tester, CatalogPaths.category('c-8'));
+      final Element screen = tester.element(find.byType(CategoryScreen));
+      final int matches =
+          router.routerDelegate.currentConfiguration.matches.length;
+      final double offset = railOffset(tester);
+      expect(offset, greaterThan(0));
+
+      await tester.tap(byKey('rail-c-9'));
+      await tester.pumpAndSettle();
+
+      final RouteMatchList after = router.routerDelegate.currentConfiguration;
+      expect(
+        identical(tester.element(find.byType(CategoryScreen)), screen),
+        isTrue,
+      );
+      expect(after.matches.length, matches);
+      expect(after.last.matchedLocation, CatalogPaths.category('c-8'));
+      expect(railOffset(tester), offset);
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Bolim 9'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a press shrinks the rail item to 0.96, no ink', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, CatalogPaths.category('c-1'));
+
+      final TestGesture finger = await tester.startGesture(
+        tester.getCenter(byKey('rail-c-2')),
+      );
+      await tester.pump(const Duration(milliseconds: 130));
+
+      expect(
+        tester
+            .widget<AnimatedScale>(
+              find.descendant(
+                of: byKey('rail-c-2'),
+                matching: find.byType(AnimatedScale),
+              ),
+            )
+            .scale,
+        0.96,
+      );
+      expect(
+        find.descendant(
+          of: byKey('rail-c-2'),
+          matching: find.byType(InkResponse),
+        ),
+        findsNothing,
+      );
+      await finger.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the marker glides 320 ms to the new item; with reduced '
+        'motion it jumps', (WidgetTester tester) async {
+      await open(tester, CatalogPaths.category('c-1'));
+      final Rect first = tester.getRect(byKey('rail-marker'));
+
+      await tester.tap(byKey('rail-c-2'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      final Rect target = tester.getRect(byKey('rail-c-2'));
+      final Rect mid = tester.getRect(byKey('rail-marker'));
+      expect(mid.top, greaterThan(first.top));
+      expect(mid.top, lessThan(target.top));
+      final AnimatedPositionedDirectional glide = tester
+          .widget<AnimatedPositionedDirectional>(byKey('rail-marker'));
+      expect(glide.duration, const Duration(milliseconds: 320));
+      expect(glide.curve, const Cubic(0.2, 0.8, 0.2, 1));
+
+      await tester.pump(const Duration(milliseconds: 230));
+      expect(tester.getRect(byKey('rail-marker')).top, target.top);
+      expect(tester.getRect(byKey('rail-marker')).height, target.height);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('with reduced motion the marker jumps', (
+      WidgetTester tester,
+    ) async {
+      reduceMotion(tester);
+      await open(tester, CatalogPaths.category('c-1'));
+
+      await tester.tap(byKey('rail-c-2'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        tester.getRect(byKey('rail-marker')).top,
+        tester.getRect(byKey('rail-c-2')).top,
+      );
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the selected well changes colour in 200 ms', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, CatalogPaths.category('c-1'));
+      Color wellOf(String id) =>
+          (tester
+                      .widget<DecoratedBox>(
+                        find
+                            .descendant(
+                              of: find.descendant(
+                                of: byKey('rail-$id'),
+                                matching: find.byType(CategoryPictureWell),
+                              ),
+                              matching: find.byType(DecoratedBox),
+                            )
+                            .first,
+                      )
+                      .decoration
+                  as BoxDecoration)
+              .color!;
+      expect(wellOf('c-2'), KitColors.card);
+
+      await tester.tap(byKey('rail-c-2'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(wellOf('c-2'), isNot(KitColors.card));
+      expect(wellOf('c-2'), isNot(KitColors.primaryWash));
+
+      await tester.pumpAndSettle();
+      expect(wellOf('c-2'), KitColors.primaryWash);
+      expect(wellOf('c-1'), KitColors.card);
+    });
+
+    testWidgets('a switch clicks the selection haptic once', (
+      WidgetTester tester,
+    ) async {
+      mockPlatform();
+      await open(tester, CatalogPaths.category('c-1'));
+      expect(clicks(), 0);
+
+      await tester.tap(byKey('rail-c-2'));
+      await tester.pumpAndSettle();
+      expect(clicks(), 1);
+
+      await tester.tap(byKey('rail-c-2'));
+      await tester.pumpAndSettle();
+      expect(clicks(), 1);
+
+      await tester.tap(byKey('rail-c-1'));
+      await tester.pumpAndSettle();
+      expect(clicks(), 2);
+    });
+
+    testWidgets('only the products fade in, from the top', (
+      WidgetTester tester,
+    ) async {
+      longFirstCategory();
+      await open(tester, CatalogPaths.category('c-1'));
+      await tester.drag(byKey('product-grid'), const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(gridOffset(tester), greaterThan(0));
+
+      await tester.tap(byKey('rail-c-2'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 90));
+
+      final double products = tester
+          .widget<FadeTransition>(byKey('section-fade'))
+          .opacity
+          .value;
+      expect(products, greaterThan(0));
+      expect(products, lessThan(1));
+      final double title = tester
+          .widget<FadeTransition>(byKey('title-fade'))
+          .opacity
+          .value;
+      expect(title, greaterThan(0.25));
+      expect(title, lessThan(1));
+      expect(
+        find.ancestor(of: byKey('rail-c-1'), matching: byKey('section-fade')),
+        findsNothing,
+      );
+      expect(gridOffset(tester), 0);
+
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<FadeTransition>(byKey('section-fade')).opacity.value,
+        1,
+      );
+      expect(find.text('Olma'), findsOneWidget);
+    });
+
+    testWidgets('a tap on the selected item scrolls the products to the top', (
+      WidgetTester tester,
+    ) async {
+      mockPlatform();
+      longFirstCategory();
+      await open(tester, CatalogPaths.category('c-1'));
+      await tester.drag(byKey('product-grid'), const Offset(0, -400));
+      await tester.pumpAndSettle();
+      final double scrolled = gridOffset(tester);
+      expect(scrolled, greaterThan(0));
+
+      await tester.tap(byKey('rail-c-1'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(gridOffset(tester), lessThan(scrolled));
+      expect(gridOffset(tester), greaterThan(0));
+      await tester.pumpAndSettle();
+
+      expect(gridOffset(tester), 0);
+      expect(clicks(), 0);
+      expect(find.text('Mahsulot 1'), findsOneWidget);
+    });
+
+    testWidgets('the rail scrolls only when the item is not wholly in view', (
+      WidgetTester tester,
+    ) async {
+      phone(tester);
+      catalog.categoryRows = manyCategories(12);
+      await open(tester, CatalogPaths.category('c-1'));
+      expect(railOffset(tester), 0);
+
+      await tester.tap(byKey('rail-c-2'));
+      await tester.pumpAndSettle();
+      expect(railOffset(tester), 0);
+
+      // c-5 shows only its top part above the foot of the screen.
+      final Offset top = tester.getTopLeft(byKey('rail-c-5'));
+      expect(top.dy + 126, greaterThan(667));
+      await tester.tapAt(top + const Offset(20, 10));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(railOffset(tester), greaterThan(0));
+      await tester.pumpAndSettle();
+
+      final Rect item = tester.getRect(byKey('rail-c-5'));
+      final Rect rail = tester.getRect(byKey('category-rail'));
+      expect(item.top, greaterThanOrEqualTo(rail.top));
+      expect(item.bottom, lessThanOrEqualTo(rail.bottom));
+    });
+
+    testWidgets('rail items read name, selected or button, and N из M; a '
+        'letter is not read', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await open(
+        tester,
+        CatalogPaths.category('c-1'),
+        locale: const Locale('ru'),
+      );
+
+      final SemanticsNode second = tester.getSemantics(byKey('rail-c-2'));
+      expect(second.label, 'Фрукты, 2 из 3');
+      expect(second.getSemanticsData().flagsCollection.isButton, isTrue);
+      expect(
+        second.getSemanticsData().flagsCollection.isSelected,
+        Tristate.isFalse,
+      );
+      final SemanticsNode first = tester.getSemantics(byKey('rail-c-1'));
+      expect(first.label, 'Овощи, 1 из 3');
+      expect(
+        first.getSemanticsData().flagsCollection.isSelected,
+        Tristate.isTrue,
+      );
+      expect(find.bySemanticsLabel('Ф'), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('a switch announces Фрукты: 1 товар', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        CatalogPaths.category('c-1'),
+        locale: const Locale('ru'),
+      );
+      tester.takeAnnouncements();
+
+      await tester.tap(byKey('rail-c-2'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.takeAnnouncements().map(
+          (CapturedAccessibilityAnnouncement a) => a.message,
+        ),
+        <String>['Фрукты: 1 товар'],
+      );
+    });
+
+    testWidgets('three quick switches end on the last section and announce '
+        'only it', (WidgetTester tester) async {
+      mockPlatform();
+      catalog.categoryRows = <CatalogCategory>[
+        ...catalog.categoryRows,
+        catalogCategory(id: 'c-4', nameUz: 'Banan', nameRu: 'Бананы'),
+      ];
+      catalog.productRows = <CatalogProduct>[
+        ...catalog.productRows,
+        catalogProduct(
+          id: 'p-4',
+          categoryId: 'c-4',
+          nameUz: 'Banan',
+          nameRu: 'Банан',
+        ),
+      ];
+      await open(
+        tester,
+        CatalogPaths.category('c-1'),
+        locale: const Locale('ru'),
+      );
+      tester.takeAnnouncements();
+      catalog.gates[''] = Completer<void>();
+
+      for (final String id in <String>['c-2', 'c-3', 'c-4']) {
+        await tester.tap(byKey('rail-$id'));
+        await tester.pump(const Duration(milliseconds: 30));
+      }
+      catalog.gates['']!.complete();
+      await tester.pumpAndSettle();
+
+      expect(clicks(), 3);
+      expect(find.text('Банан'), findsOneWidget);
+      expect(find.text('Яблоко'), findsNothing);
+      expect(find.text('Помидор'), findsNothing);
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text('Бананы')),
+        findsOneWidget,
+      );
+      expect(
+        tester.getRect(byKey('rail-marker')).top,
+        tester.getRect(byKey('rail-c-4')).top,
+      );
+      expect(
+        tester.takeAnnouncements().map(
+          (CapturedAccessibilityAnnouncement a) => a.message,
+        ),
+        <String>['Бананы: 1 товар'],
+      );
+    });
+
+    testWidgets('back after switches returns to where the Customer came '
+        'from', (WidgetTester tester) async {
+      await open(tester, CatalogPaths.categories);
+      await tester.tap(byKey('category-c-1'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(byKey('rail-c-2'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('rail-c-3'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('rail-c-1'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(find.byType(CategoryScreen), findsNothing);
+      expect(find.byType(AllCategoriesScreen), findsOneWidget);
     });
 
     testWidgets('an unknown category says it was not found', (

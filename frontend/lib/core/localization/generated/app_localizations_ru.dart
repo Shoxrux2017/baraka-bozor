@@ -480,6 +480,16 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String categoryRailSpoken(String name, int index, int count) {
+    return '$name, $index из $count';
+  }
+
+  @override
+  String categoryShownSpoken(String name, String count) {
+    return '$name: $count';
+  }
+
+  @override
   String catalogCategoryCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
