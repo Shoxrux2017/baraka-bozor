@@ -3605,6 +3605,38 @@ class AppLocalizationsRu extends AppLocalizations {
   String get searchAllCategories => 'Все категории';
 
   @override
+  String get searchClearQuery => 'Стереть запрос';
+
+  @override
+  String get searchRecentClearSpoken => 'Очистить недавние запросы';
+
+  @override
+  String searchRecentSpoken(String query) {
+    return '$query, недавний запрос';
+  }
+
+  @override
+  String searchRecentRemove(String query) {
+    return 'Убрать «$query» из недавних';
+  }
+
+  @override
+  String get searchRecentCleared => 'Недавние запросы удалены';
+
+  @override
+  String get searchSectionCaption => 'раздел';
+
+  @override
+  String searchSectionSpoken(String name) {
+    return '$name, раздел';
+  }
+
+  @override
+  String searchNothingSpoken(String query) {
+    return 'Ничего не нашли по запросу «$query»';
+  }
+
+  @override
   String get openSearch => 'Поиск';
 
   @override

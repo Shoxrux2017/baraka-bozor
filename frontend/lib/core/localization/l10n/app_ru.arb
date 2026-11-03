@@ -2151,6 +2151,42 @@
   "searchNothingTitle": "Ничего не нашли",
   "searchNothingText": "По запросу «{query}» товаров нет. Проверьте написание — мы ищем и по-русски, и по-узбекски.",
   "searchAllCategories": "Все категории",
+  "searchClearQuery": "Стереть запрос",
+  "searchRecentClearSpoken": "Очистить недавние запросы",
+  "searchRecentSpoken": "{query}, недавний запрос",
+  "@searchRecentSpoken": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchRecentRemove": "Убрать «{query}» из недавних",
+  "@searchRecentRemove": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchRecentCleared": "Недавние запросы удалены",
+  "searchSectionCaption": "раздел",
+  "searchSectionSpoken": "{name}, раздел",
+  "@searchSectionSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "searchNothingSpoken": "Ничего не нашли по запросу «{query}»",
+  "@searchNothingSpoken": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "openSearch": "Поиск",
   "productTitle": "О товаре",
   "productReadMore": "Читать далее",

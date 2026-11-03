@@ -10,31 +10,35 @@ const Duration undoBarDuration = Duration(seconds: 4);
 /// and closes the bar. It hides the current snack bar first. It leaves after
 /// [undoBarDuration]; with a screen reader on it stays until its action, a
 /// swipe or the next bar, so the person can reach the action (`DL-119`).
-void showUndoBar(
+/// [duration] and [margin] default to the usual bar; the search screen gives a
+/// longer one that sits above its cart bar (`DL-128`).
+ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showUndoBar(
   ScaffoldMessengerState messenger, {
   required String text,
   required String actionLabel,
   required VoidCallback onUndo,
+  Duration duration = undoBarDuration,
+  EdgeInsetsGeometry? margin,
 }) {
-  messenger
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: KitColors.undoBar,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        duration: undoBarDuration,
-        persist: MediaQuery.accessibleNavigationOf(messenger.context),
-        content: _UndoContent(
-          text: text,
-          actionLabel: actionLabel,
-          onPressed: () {
-            onUndo();
-            messenger.hideCurrentSnackBar();
-          },
-        ),
+  messenger.hideCurrentSnackBar();
+  return messenger.showSnackBar(
+    SnackBar(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: KitColors.undoBar,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      duration: duration,
+      margin: margin,
+      persist: MediaQuery.accessibleNavigationOf(messenger.context),
+      content: _UndoContent(
+        text: text,
+        actionLabel: actionLabel,
+        onPressed: () {
+          onUndo();
+          messenger.hideCurrentSnackBar();
+        },
       ),
-    );
+    ),
+  );
 }
 
 const TextStyle _textStyle = TextStyle(color: Colors.white, fontSize: 14);

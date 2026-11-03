@@ -6152,6 +6152,54 @@ abstract class AppLocalizations {
   /// **'Barcha kategoriyalar'**
   String get searchAllCategories;
 
+  /// No description provided for @searchClearQuery.
+  ///
+  /// In uz, this message translates to:
+  /// **'So\'rovni o\'chirish'**
+  String get searchClearQuery;
+
+  /// No description provided for @searchRecentClearSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi so\'rovlarni tozalash'**
+  String get searchRecentClearSpoken;
+
+  /// No description provided for @searchRecentSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{query}, oxirgi so\'rov'**
+  String searchRecentSpoken(String query);
+
+  /// No description provided for @searchRecentRemove.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{query}» so\'rovini olib tashlash'**
+  String searchRecentRemove(String query);
+
+  /// No description provided for @searchRecentCleared.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi so\'rovlar o\'chirildi'**
+  String get searchRecentCleared;
+
+  /// No description provided for @searchSectionCaption.
+  ///
+  /// In uz, this message translates to:
+  /// **'bo\'lim'**
+  String get searchSectionCaption;
+
+  /// No description provided for @searchSectionSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, bo\'lim'**
+  String searchSectionSpoken(String name);
+
+  /// No description provided for @searchNothingSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'«{query}» bo\'yicha hech narsa topilmadi'**
+  String searchNothingSpoken(String query);
+
   /// No description provided for @openSearch.
   ///
   /// In uz, this message translates to:

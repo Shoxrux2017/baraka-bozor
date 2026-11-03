@@ -13,6 +13,7 @@ import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/all_categories_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
+import 'package:baraka_bozor/features/catalog/presentation/category_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/search_screen.dart';
 import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,7 @@ import '../../support/fake_auth_repository.dart';
 import '../../support/fake_cart_repository.dart';
 import '../../support/fake_catalog_repository.dart';
 import '../../support/in_memory_stores.dart';
+import '../../support/nonlinear_text_scaler.dart';
 
 /// The search screen (`DL-83`, drawings 15 to 17) through the real router,
 /// against a catalog in memory.
@@ -92,6 +94,7 @@ void main() {
   Future<void> openHome(
     WidgetTester tester, {
     Locale device = const Locale('uz'),
+    TextScaler? textScaler,
   }) async {
     await tester.pumpWidget(
       appUnderTest(
@@ -101,6 +104,7 @@ void main() {
         catalog: catalog,
         cart: cart,
         preferences: preferences,
+        textScaler: textScaler,
       ),
     );
     await tester.pumpAndSettle();
@@ -110,8 +114,9 @@ void main() {
   Future<void> openSearch(
     WidgetTester tester, {
     Locale device = const Locale('uz'),
+    TextScaler? textScaler,
   }) async {
-    await openHome(tester, device: device);
+    await openHome(tester, device: device, textScaler: textScaler);
     await tester.tap(byKey('catalog-search'));
     await tester.pumpAndSettle();
     catalog.requests.clear();
@@ -1138,6 +1143,418 @@ void main() {
           .value;
       expect(opacity, inExclusiveRange(0, 1));
       await tester.pumpAndSettle();
+    });
+  });
+
+  group('sections, recent queries, nothing found and the reader', () {
+    void shelves() {
+      catalog.categoryRows = <CatalogCategory>[
+        catalogCategory(nameUz: 'Sabzavotlar', nameRu: 'Овощи'),
+        catalogCategory(
+          id: 'c-2',
+          nameUz: 'Meva va rezavorlar',
+          nameRu: 'Фрукты и ягоды',
+        ),
+        catalogCategory(
+          id: 'c-3',
+          nameUz: 'Quruq mevalar',
+          nameRu: 'Сухофрукты',
+        ),
+        catalogCategory(
+          id: 'c-4',
+          nameUz: 'Meva sharbatlari',
+          nameRu: 'Фруктовые соки',
+        ),
+      ];
+    }
+
+    List<String> boldPartsOf(WidgetTester tester, String key, String name) {
+      final RichText rich = tester.widget<RichText>(
+        find.descendant(
+          of: byKey(key),
+          matching: find.byWidgetPredicate(
+            (Widget w) => w is RichText && w.text.toPlainText() == name,
+          ),
+        ),
+      );
+      final List<String> bold = <String>[];
+      rich.text.visitChildren((InlineSpan span) {
+        if (span is TextSpan &&
+            span.style?.fontWeight == FontWeight.w700 &&
+            span.text != null) {
+          bold.add(span.text!);
+        }
+        return true;
+      });
+      return bold;
+    }
+
+    testWidgets('from the first letter the matching sections show on top', (
+      WidgetTester tester,
+    ) async {
+      shelves();
+      await openSearch(tester, device: const Locale('ru'));
+      expect(byKey('search-sections'), findsNothing);
+
+      await tester.enterText(field, 'фрукт');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(asked('фрукт|'), 0, reason: 'shown before the pause ends');
+      expect(byKey('search-section-c-2'), findsOneWidget);
+      expect(byKey('search-section-c-3'), findsOneWidget);
+      expect(
+        byKey('search-section-c-4'),
+        findsNothing,
+        reason: 'at most two, in category order',
+      );
+      expect(byKey('search-section-c-1'), findsNothing);
+      expect(
+        boldPartsOf(tester, 'search-section-c-2', 'Фрукты и ягоды'),
+        <String>['Фрукт'],
+      );
+      expect(boldPartsOf(tester, 'search-section-c-3', 'Сухофрукты'), <String>[
+        'фрукт',
+      ]);
+      expect(
+        find.descendant(
+          of: byKey('search-section-c-2'),
+          matching: find.text('раздел'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.pump(SearchScreen.searchPause);
+      await tester.pumpAndSettle();
+      expect(byKey('search-nothing'), findsOneWidget);
+      expect(byKey('search-section-c-2'), findsOneWidget);
+      expect(
+        tester.getRect(byKey('search-sections')).bottom,
+        lessThanOrEqualTo(tester.getRect(byKey('search-nothing')).top),
+        reason: 'the sections are above the nothing-found block',
+      );
+    });
+
+    testWidgets('a name in the other language matches too', (
+      WidgetTester tester,
+    ) async {
+      shelves();
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.enterText(field, 'quruq');
+      await tester.pump();
+
+      expect(byKey('search-section-c-3'), findsOneWidget);
+      expect(byKey('search-section-c-1'), findsNothing);
+    });
+
+    testWidgets('a section fades in over 180 ms, at once with reduced motion', (
+      WidgetTester tester,
+    ) async {
+      shelves();
+      double opacity() => tester
+          .widget<FadeTransition>(
+            find
+                .descendant(
+                  of: byKey('search-sections'),
+                  matching: find.byType(FadeTransition),
+                )
+                .first,
+          )
+          .opacity
+          .value;
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.enterText(field, 'фрукт');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 90));
+      expect(opacity(), inExclusiveRange(0, 1));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(opacity(), 1);
+
+      await tester.pumpWidget(const SizedBox());
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.enterText(field, 'фрукт');
+      await tester.pump();
+      expect(opacity(), 1);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a section opens its category and remembers the query', (
+      WidgetTester tester,
+    ) async {
+      shelves();
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.enterText(field, 'фрукт');
+      await tester.pump();
+
+      await tester.tap(byKey('search-section-c-2'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CategoryScreen), findsOneWidget);
+      expect(stored('c'), <String>['фрукт']);
+    });
+
+    testWidgets('× takes away one query', (WidgetTester tester) async {
+      remembered('c', <String>['olma', 'banan', 'pomidor']);
+      await openSearch(tester);
+
+      await tester.tap(byKey('recent-remove-1'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('banan'), findsNothing);
+      expect(find.text('olma'), findsOneWidget);
+      expect(find.text('pomidor'), findsOneWidget);
+      expect(stored('c'), <String>['olma', 'pomidor']);
+      expect(find.byType(SnackBar), findsNothing, reason: 'no undo for ×');
+    });
+
+    testWidgets('Очистить clears them and Вернуть gives them back within '
+        '5 s', (WidgetTester tester) async {
+      remembered('c', <String>['olma', 'banan']);
+      await openSearch(tester, device: const Locale('ru'));
+
+      await tester.tap(byKey('recent-clear'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Недавние запросы удалены'), findsOneWidget);
+      expect(find.text('olma'), findsNothing);
+      expect(stored('c'), isEmpty);
+
+      await tester.pump(const Duration(milliseconds: 4000));
+      expect(find.text('Вернуть'), findsOneWidget, reason: 'still at 4.5 s');
+
+      await tester.tap(find.text('Вернуть'));
+      await tester.pumpAndSettle();
+      expect(find.text('olma'), findsOneWidget);
+      expect(find.text('banan'), findsOneWidget);
+      expect(stored('c'), <String>['olma', 'banan']);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('the undo bar leaves after 5 s and the list stays cleared', (
+      WidgetTester tester,
+    ) async {
+      remembered('c', <String>['olma']);
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.tap(byKey('recent-clear'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 5100));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SnackBar), findsNothing);
+      expect(stored('c'), isEmpty);
+    });
+
+    testWidgets('the undo bar sits above the cart bar when it shows', (
+      WidgetTester tester,
+    ) async {
+      cart = FakeCartRepository(
+        cart: cartOf(<Map<String, Object?>>[cartLineJson(total: 18400)]),
+      );
+      remembered('c', <String>['olma']);
+      await openSearch(tester, device: const Locale('ru'));
+      expect(byKey('cart-summary'), findsOneWidget);
+      await tester.tap(byKey('recent-clear'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        tester.getRect(find.text('Вернуть')).bottom,
+        lessThanOrEqualTo(tester.getRect(byKey('cart-summary')).top),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('Вернуть gives back the list as it was before Очистить', (
+      WidgetTester tester,
+    ) async {
+      remembered('c', <String>['olma', 'banan', 'pomidor']);
+      await openSearch(tester, device: const Locale('ru'));
+
+      await tester.tap(byKey('recent-remove-1'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('recent-clear'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.text('Вернуть'));
+      await tester.pumpAndSettle();
+
+      expect(stored('c'), <String>['olma', 'pomidor']);
+      expect(find.text('banan'), findsNothing);
+      expect(find.text('olma'), findsOneWidget);
+    });
+
+    testWidgets('leaving during the undo keeps the list cleared', (
+      WidgetTester tester,
+    ) async {
+      remembered('c', <String>['olma', 'banan']);
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.tap(byKey('recent-clear'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Вернуть'), findsOneWidget);
+
+      await tester.tap(byKey('search-back'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CatalogHomeScreen), findsOneWidget);
+      expect(find.text('Вернуть'), findsNothing, reason: 'the bar left too');
+      expect(stored('c'), isEmpty);
+    });
+
+    testWidgets('nothing found is compact with the Рекомендуем row under it', (
+      WidgetTester tester,
+    ) async {
+      await openSearch(tester, device: const Locale('ru'));
+      await typeAndPause(tester, 'shokolad');
+
+      final Rect nothing = tester.getRect(byKey('search-nothing'));
+      final Rect fieldRect = tester.getRect(field);
+      expect(
+        nothing.top - fieldRect.bottom,
+        lessThan(60),
+        reason: 'at the top, not centred in the screen',
+      );
+      expect(tester.getSize(byKey('search-nothing-icon')), const Size(64, 64));
+      expect(find.text('Ничего не нашли'), findsOneWidget);
+      expect(find.textContaining('«shokolad»'), findsOneWidget);
+      expect(find.text('Рекомендуем'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('Рекомендуем')).top,
+        greaterThanOrEqualTo(
+          tester.getRect(byKey('search-all-categories')).bottom,
+        ),
+      );
+      expect(
+        tester.getSize(byKey('search-all-categories')).height,
+        greaterThanOrEqualTo(48),
+      );
+    });
+
+    testWidgets('a finished search announces Найдено: 4 товара or '
+        'Ничего не нашли по запросу «x»', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      catalog.productRows = <CatalogProduct>[
+        for (int i = 1; i <= 4; i++)
+          catalogProduct(id: 't-$i', nameUz: 'Tur $i', nameRu: 'Вид $i'),
+      ];
+      await openSearch(tester, device: const Locale('ru'));
+      tester.takeAnnouncements();
+
+      await typeAndPause(tester, 'вид');
+      expect(
+        tester.takeAnnouncements().map(
+          (CapturedAccessibilityAnnouncement a) => a.message,
+        ),
+        contains('Найдено: 4 товара'),
+      );
+
+      await typeAndPause(tester, 'xyz');
+      expect(
+        tester.takeAnnouncements().map(
+          (CapturedAccessibilityAnnouncement a) => a.message,
+        ),
+        contains('Ничего не нашли по запросу «xyz»'),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('the reader hears Стереть запрос, Очистить недавние запросы '
+        'and …, недавний запрос', (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      shelves();
+      remembered('c', <String>['olma']);
+      await openSearch(tester, device: const Locale('ru'));
+
+      expect(
+        find.bySemanticsLabel('Очистить недавние запросы'),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel('olma, недавний запрос'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Убрать «olma» из недавних'),
+        findsOneWidget,
+      );
+
+      await tester.enterText(field, 'фрукт');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.bySemanticsLabel('Стереть запрос'), findsOneWidget);
+      expect(find.bySemanticsLabel('Фрукты и ягоды, раздел'), findsOneWidget);
+      handle.dispose();
+    });
+
+    for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
+      testWidgets('at text x2 on 320 wide the landing, sections and nothing '
+          'found do not overflow (${device.languageCode})', (
+        WidgetTester tester,
+      ) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        WidgetController.hitTestWarningShouldBeFatal = true;
+        addTearDown(() => WidgetController.hitTestWarningShouldBeFatal = false);
+        shelves();
+        remembered('c', <String>[
+          'olma',
+          'a recent query that is long enough to need more than one line ' * 2,
+        ]);
+        await openSearch(
+          tester,
+          device: device,
+          textScaler: const NonlinearTextScaler(2),
+        );
+        expect(tester.takeException(), isNull);
+
+        await tester.enterText(field, 'meva');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(tester.takeException(), isNull);
+        expect(byKey('search-section-c-2'), findsOneWidget);
+        expect(
+          tester.getRect(byKey('search-section-c-2')).right,
+          lessThanOrEqualTo(320),
+        );
+
+        await typeAndPause(tester, 'shokolad');
+        expect(tester.takeException(), isNull);
+        await tester.ensureVisible(byKey('search-all-categories'));
+        await tester.pumpAndSettle();
+        expect(
+          tester.getRect(byKey('search-all-categories')).right,
+          lessThanOrEqualTo(320),
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('search meets the tap target guideline', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      shelves();
+      remembered('c', <String>['olma', 'banan']);
+      await openSearch(tester, device: const Locale('ru'));
+      await tester.enterText(field, 'meva');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(byKey('recent-0'), findsOneWidget);
+      expect(byKey('search-section-c-2'), findsOneWidget);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+      await typeAndPause(tester, 'о');
+      expect(find.text('Помидор'), findsOneWidget);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+
+      await typeAndPause(tester, 'shokolad');
+      expect(byKey('search-nothing'), findsOneWidget);
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      handle.dispose();
     });
   });
 }

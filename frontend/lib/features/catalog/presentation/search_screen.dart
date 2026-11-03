@@ -8,9 +8,13 @@ import 'package:go_router/go_router.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/routing/flight_page.dart';
+import '../../../core/localization/interface_language.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
+import '../../../core/widgets/product_image.dart';
+import '../../../core/widgets/undo_bar.dart';
+import '../../cart/application/cart_controllers.dart';
 import '../../cart/presentation/cart_summary_bar.dart';
 import '../application/catalog_controllers.dart';
 import '../application/recent_searches.dart';
@@ -46,6 +50,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   late final String? _account;
   late final RecentSearches? _recent;
 
+  /// The messenger the undo bar of the cleared list shows in, and that bar
+  /// while it stands.
+  late ScaffoldMessengerState _messenger;
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _undo;
+
   @override
   void initState() {
     super.initState();
@@ -58,8 +67,26 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _messenger = ScaffoldMessenger.of(context);
+  }
+
+  @override
   void dispose() {
     _pause?.cancel();
+    // The undo bar belongs to this screen: it leaves with it, and the list
+    // stays cleared (`DL-128`).
+    final ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? undo =
+        _undo;
+    if (undo != null) {
+      final ScaffoldMessengerState messenger = _messenger;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (messenger.mounted) {
+          undo.close();
+        }
+      });
+    }
     final String typed = ProductListQuery.searchOf(_field.text);
     if (typed.isNotEmpty) {
       unawaited(_recent?.remember(typed));
@@ -96,6 +123,74 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     _submit(recent);
   }
 
+  /// Remembers the typed text and opens a category from the sections.
+  void _openSection(CatalogCategory category) {
+    final String typed = ProductListQuery.searchOf(_field.text);
+    if (typed.isNotEmpty) {
+      unawaited(_recent?.remember(typed));
+    }
+    context.push<void>(CatalogPaths.category(category.id));
+  }
+
+  /// Clears the recent queries and offers them back for 5 s (`DL-128`).
+  Future<void> _clearRecent() async {
+    final RecentSearches? recent = _recent;
+    if (recent == null) {
+      return;
+    }
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool barShows =
+        ref.read(currentCartProvider).value?.lines.isNotEmpty == true &&
+        MediaQuery.viewInsetsOf(context).bottom == 0;
+    final EdgeInsetsGeometry? margin = barShows
+        ? EdgeInsets.fromLTRB(16, 0, 16, CartSummaryBar.reserved(context))
+        : null;
+    final List<String> cleared = await recent.clear();
+    if (!mounted || cleared.isEmpty) {
+      return;
+    }
+    final ScaffoldFeatureController<SnackBar, SnackBarClosedReason> bar =
+        showUndoBar(
+          _messenger,
+          text: l10n.searchRecentCleared,
+          actionLabel: l10n.undoAction,
+          duration: const Duration(seconds: 5),
+          margin: margin,
+          onUndo: () {
+            if (mounted) {
+              unawaited(recent.restore(cleared));
+            }
+          },
+        );
+    _undo = bar;
+    unawaited(
+      bar.closed.then((SnackBarClosedReason _) {
+        if (identical(_undo, bar)) {
+          _undo = null;
+        }
+      }),
+    );
+  }
+
+  /// The at most two categories whose name, in either language, holds the
+  /// typed text, in category order.
+  List<CatalogCategory> _sectionsFor(List<CatalogCategory> all) {
+    final String needle = RecentSearches.fold(
+      ProductListQuery.searchOf(_field.text),
+    );
+    if (needle.isEmpty) {
+      return const <CatalogCategory>[];
+    }
+    return all
+        .where(
+          (CatalogCategory c) =>
+              RecentSearches.fold(c.nameRu).contains(needle) ||
+              RecentSearches.fold(c.nameUz).contains(needle),
+        )
+        .take(2)
+        .toList(growable: false);
+  }
+
   void _clear() {
     _pause?.cancel();
     _field.clear();
@@ -116,6 +211,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ProductSort sort = ref.watch(productSortProvider);
     final bool keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final List<CatalogCategory> matching = _sectionsFor(
+      ref.watch(catalogCategoriesProvider).value?.data ??
+          const <CatalogCategory>[],
+    );
+    final Widget sections = matching.isEmpty
+        ? const SizedBox.shrink()
+        : _Sections(
+            key: const ValueKey<String>('search-sections'),
+            categories: matching,
+            typed: ProductListQuery.searchOf(_field.text),
+            onOpen: _openSection,
+          );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -130,12 +237,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   children: <Widget>[
                     Positioned.fill(
                       child: _query.isEmpty
-                          ? _EmptyField(account: _account, onPick: _pick)
+                          ? _EmptyField(
+                              account: _account,
+                              onPick: _pick,
+                              onClear: _clearRecent,
+                              sections: sections,
+                            )
                           : _Results(
                               query: ProductListQuery(
                                 search: _query,
                                 sort: sort,
                               ),
+                              sections: sections,
                             ),
                     ),
                     // The bar and the keyboard take turns (`DL-128`).
@@ -212,15 +325,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                       suffixIcon: _field.text.isEmpty
                           ? null
-                          : IconButton(
-                              key: const ValueKey<String>('search-clear'),
-                              icon: const Icon(
-                                Icons.close,
-                                size: 20,
-                                color: KitColors.muted,
+                          : Semantics(
+                              label: l10n.searchClearQuery,
+                              button: true,
+                              excludeSemantics: true,
+                              onTap: _clear,
+                              child: IconButton(
+                                key: const ValueKey<String>('search-clear'),
+                                icon: const Icon(
+                                  Icons.close,
+                                  size: 20,
+                                  color: KitColors.muted,
+                                ),
+                                tooltip: l10n.searchClearQuery,
+                                onPressed: _clear,
                               ),
-                              tooltip: l10n.catalogSearchClear,
-                              onPressed: _clear,
                             ),
                       border: plain,
                       enabledBorder: plain,
@@ -372,12 +491,20 @@ class _SearchProgressState extends ConsumerState<_SearchProgress>
   }
 }
 
-/// The empty field (drawing 15): the recent queries, then "Рекомендуем".
+/// The empty field (drawing 15): the matching sections, the recent queries,
+/// then "Рекомендуем".
 class _EmptyField extends ConsumerWidget {
-  const _EmptyField({required this.account, required this.onPick});
+  const _EmptyField({
+    required this.account,
+    required this.onPick,
+    required this.onClear,
+    required this.sections,
+  });
 
   final String? account;
   final ValueChanged<String> onPick;
+  final VoidCallback onClear;
+  final Widget sections;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -391,18 +518,22 @@ class _EmptyField extends ConsumerWidget {
       padding: EdgeInsets.only(bottom: 16 + CartSummaryBar.reserved(context)),
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       children: <Widget>[
+        sections,
         if (owner != null && recent.isNotEmpty) ...<Widget>[
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
             child: Row(
               children: <Widget>[
                 Expanded(
-                  child: Text(
-                    l10n.searchRecentTitle,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: KitColors.ink,
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      l10n.searchRecentTitle,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: KitColors.ink,
+                      ),
                     ),
                   ),
                 ),
@@ -410,14 +541,23 @@ class _EmptyField extends ConsumerWidget {
                   key: const ValueKey<String>('recent-clear'),
                   style: TextButton.styleFrom(
                     foregroundColor: KitColors.primaryDark,
+                    minimumSize: const Size(0, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     textStyle: const TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  onPressed: () =>
-                      ref.read(recentSearchesProvider(owner).notifier).clear(),
-                  child: Text(l10n.searchRecentClear),
+                  onPressed: onClear,
+                  child: Semantics(
+                    label: l10n.searchRecentClearSpoken,
+                    excludeSemantics: true,
+                    child: Text(l10n.searchRecentClear),
+                  ),
                 ),
               ],
             ),
@@ -431,8 +571,12 @@ class _EmptyField extends ConsumerWidget {
                 for (int i = 0; i < recent.length; i++)
                   _RecentChip(
                     key: ValueKey<String>('recent-$i'),
+                    removeKey: ValueKey<String>('recent-remove-$i'),
                     text: recent[i],
                     onTap: () => onPick(recent[i]),
+                    onRemove: () => ref
+                        .read(recentSearchesProvider(owner).notifier)
+                        .forget(recent[i]),
                   ),
               ],
             ),
@@ -444,36 +588,259 @@ class _EmptyField extends ConsumerWidget {
   }
 }
 
+/// A recent query: the text part searches it again, the × forgets it
+/// (`DL-128`).
 class _RecentChip extends StatelessWidget {
-  const _RecentChip({required this.text, required this.onTap, super.key});
+  const _RecentChip({
+    required this.text,
+    required this.onTap,
+    required this.onRemove,
+    required this.removeKey,
+    super.key,
+  });
 
   final String text;
   final VoidCallback onTap;
+  final VoidCallback onRemove;
+  final Key removeKey;
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Material(
       color: KitColors.field,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const Icon(Icons.history, size: 16, color: KitColors.muted),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  text,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, color: KitColors.ink2),
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Flexible(
+            child: Semantics(
+              label: l10n.searchRecentSpoken(text),
+              button: true,
+              excludeSemantics: true,
+              onTap: onTap,
+              child: InkWell(
+                onTap: onTap,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 44),
+                  child: Padding(
+                    padding: const EdgeInsetsDirectional.only(start: 12),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        const Icon(
+                          Icons.history,
+                          size: 16,
+                          color: KitColors.muted,
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            text,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: KitColors.ink2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ],
+            ),
+          ),
+          Semantics(
+            label: l10n.searchRecentRemove(text),
+            button: true,
+            excludeSemantics: true,
+            onTap: onRemove,
+            child: SizedBox.square(
+              dimension: 44,
+              child: IconButton(
+                key: removeKey,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(
+                  width: 44,
+                  height: 44,
+                ),
+                icon: const Icon(Icons.close, size: 18, color: KitColors.muted),
+                onPressed: onRemove,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The categories the typed text matches, on top of the screen from the first
+/// letter (`DL-128`); they fade in over 180 ms, at once with reduced motion.
+class _Sections extends StatefulWidget {
+  const _Sections({
+    required this.categories,
+    required this.typed,
+    required this.onOpen,
+    super.key,
+  });
+
+  final List<CatalogCategory> categories;
+  final String typed;
+  final ValueChanged<CatalogCategory> onOpen;
+
+  @override
+  State<_Sections> createState() => _SectionsState();
+}
+
+class _SectionsState extends State<_Sections>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fade = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 180),
+  );
+  late final Animation<double> _opacity = CurvedAnimation(
+    parent: _fade,
+    curve: Curves.easeOut,
+  );
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) {
+      return;
+    }
+    _started = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _fade.value = 1;
+    } else {
+      _fade.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _fade.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          for (final CatalogCategory category in widget.categories)
+            _SectionRow(
+              key: ValueKey<String>('search-section-${category.id}'),
+              category: category,
+              typed: widget.typed,
+              onTap: () => widget.onOpen(category),
+            ),
+          const Divider(height: 1, thickness: 1, color: KitColors.line),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionRow extends StatelessWidget {
+  const _SectionRow({
+    required this.category,
+    required this.typed,
+    required this.onTap,
+    super.key,
+  });
+
+  final CatalogCategory category;
+  final String typed;
+  final VoidCallback onTap;
+
+  /// The name with the part that matched the typed text in bold.
+  TextSpan _name(String name) {
+    const TextStyle plain = TextStyle(
+      fontSize: 15,
+      height: 1.3,
+      color: KitColors.ink2,
+    );
+    final String needle = RecentSearches.fold(typed);
+    final String folded = RecentSearches.fold(name);
+    final int at = folded.length == name.length && needle.isNotEmpty
+        ? folded.indexOf(needle)
+        : -1;
+    if (at < 0) {
+      return TextSpan(text: name, style: plain);
+    }
+    return TextSpan(
+      style: plain,
+      children: <InlineSpan>[
+        if (at > 0) TextSpan(text: name.substring(0, at)),
+        TextSpan(
+          text: name.substring(at, at + needle.length),
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+            color: KitColors.ink,
+          ),
+        ),
+        if (at + needle.length < name.length)
+          TextSpan(text: name.substring(at + needle.length)),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String name = category.name(interfaceLanguage(context));
+    return Semantics(
+      label: l10n.searchSectionSpoken(name),
+      button: true,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: KitColors.primaryWash,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: ProductImage(url: category.imageUrl, size: 28),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text.rich(_name(name)),
+                      Text(
+                        l10n.searchSectionCaption,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.3,
+                          color: KitColors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: KitColors.muted),
+              ],
+            ),
           ),
         ),
       ),
@@ -484,9 +851,10 @@ class _RecentChip extends StatelessWidget {
 /// A standing query (drawing 16): the count of what was found with the order
 /// button, then the products in the current sort, or the nothing-found state.
 class _Results extends ConsumerWidget {
-  const _Results({required this.query});
+  const _Results({required this.query, required this.sections});
 
   final ProductListQuery query;
+  final Widget sections;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -504,6 +872,7 @@ class _Results extends ConsumerWidget {
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       keepCardsOf: searchKeepsCards,
       header: <Widget>[
+        SliverToBoxAdapter(child: sections),
         if (counted)
           SliverToBoxAdapter(
             child: ProductListCountRow(
@@ -522,12 +891,18 @@ class _Results extends ConsumerWidget {
         16,
         16 + CartSummaryBar.reserved(context),
       ),
+      emptyAlignment: Alignment.topCenter,
+      emptyInset: false,
       empty: _NothingFound(query: query.search),
+      spokenOnQuery: (ProductListQuery q, int total) => total == 0
+          ? l10n.searchNothingSpoken(q.search)
+          : l10n.searchFound(total),
     );
   }
 }
 
-/// Drawing 16a: nothing matches, with the way to every category.
+/// Drawing 16a: nothing matches, with the way to every category, and the
+/// recommended products under it (`DL-128`).
 class _NothingFound extends StatelessWidget {
   const _NothingFound({required this.query});
 
@@ -536,56 +911,71 @@ class _NothingFound extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    return SingleChildScrollView(
+    return Column(
       key: const ValueKey<String>('search-nothing'),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Container(
-            width: 96,
-            height: 96,
-            decoration: const BoxDecoration(
-              color: KitColors.primaryWash,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.search_off,
-              size: 44,
-              color: KitColors.primaryDark,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.searchNothingTitle,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: KitColors.ink,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.searchNothingText(query),
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13, color: KitColors.muted),
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton(
-            key: const ValueKey<String>('search-all-categories'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: KitColors.primaryDark,
-              side: const BorderSide(color: KitColors.primary),
-              minimumSize: const Size(0, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(32, 12, 32, 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Container(
+                key: const ValueKey<String>('search-nothing-icon'),
+                width: 64,
+                height: 64,
+                decoration: const BoxDecoration(
+                  color: KitColors.primaryWash,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.search_off,
+                  size: 30,
+                  color: KitColors.primaryDark,
+                ),
               ),
-            ),
-            onPressed: () => context.push<void>(CatalogPaths.categories),
-            child: Text(l10n.searchAllCategories),
+              const SizedBox(height: 10),
+              Text(
+                l10n.searchNothingTitle,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                  height: 1.3,
+                  fontWeight: FontWeight.w700,
+                  color: KitColors.ink,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.searchNothingText(query),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: KitColors.muted,
+                ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton(
+                key: const ValueKey<String>('search-all-categories'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: KitColors.primaryDark,
+                  side: const BorderSide(color: KitColors.primary),
+                  minimumSize: const Size(0, 48),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                onPressed: () => context.push<void>(CatalogPaths.categories),
+                child: Text(l10n.searchAllCategories),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        const RecommendedRow(),
+      ],
     );
   }
 }

@@ -2324,6 +2324,42 @@
     }
   },
   "searchAllCategories": "Barcha kategoriyalar",
+  "searchClearQuery": "So'rovni o'chirish",
+  "searchRecentClearSpoken": "Oxirgi so'rovlarni tozalash",
+  "searchRecentSpoken": "{query}, oxirgi so'rov",
+  "@searchRecentSpoken": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchRecentRemove": "«{query}» so'rovini olib tashlash",
+  "@searchRecentRemove": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchRecentCleared": "Oxirgi so'rovlar o'chirildi",
+  "searchSectionCaption": "bo'lim",
+  "searchSectionSpoken": "{name}, bo'lim",
+  "@searchSectionSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "searchNothingSpoken": "«{query}» bo'yicha hech narsa topilmadi",
+  "@searchNothingSpoken": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "openSearch": "Qidirish",
   "productTitle": "Mahsulot haqida",
   "productReadMore": "Batafsil",

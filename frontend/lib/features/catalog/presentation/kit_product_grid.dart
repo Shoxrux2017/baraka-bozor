@@ -90,6 +90,7 @@ class KitProductGrid extends ConsumerStatefulWidget {
     this.end,
     this.spokenOnQuery,
     this.emptyAlignment = Alignment.center,
+    this.emptyInset = true,
     this.aisles,
     this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
     this.keepCardsOf,
@@ -121,6 +122,10 @@ class KitProductGrid extends ConsumerStatefulWidget {
 
   /// Where the [empty] slot stands in the room under the header.
   final Alignment emptyAlignment;
+
+  /// Whether the [empty] slot keeps the 24 px margin around it; the slot that
+  /// draws a full-width row of its own (`DL-128`) turns it off.
+  final bool emptyInset;
 
   /// The aisles of the shop's order; the list is flat without them.
   final ProductAisles? aisles;
@@ -578,12 +583,9 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
                 child: Align(
                   alignment: widget.emptyAlignment,
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      24,
-                      24,
-                      24,
-                      24 + padding.bottom,
-                    ),
+                    padding: widget.emptyInset
+                        ? EdgeInsets.fromLTRB(24, 24, 24, 24 + padding.bottom)
+                        : EdgeInsets.only(bottom: padding.bottom),
                     child:
                         widget.empty ??
                         Text(
