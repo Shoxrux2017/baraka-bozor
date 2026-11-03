@@ -14,6 +14,7 @@ Future<void> _open(
   DateTime? shownAt,
   VoidCallback? onRetry,
   double textScale = 1,
+  bool busy = false,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -29,13 +30,14 @@ Future<void> _open(
               failure: failure,
               shownAt: shownAt,
               onRetry: onRetry ?? () {},
+              busy: busy,
             ),
           ),
         ),
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  await tester.pump(const Duration(milliseconds: 300));
 }
 
 void main() {
@@ -80,6 +82,19 @@ void main() {
     await _open(tester, failure: const UnexpectedFailure(), shownAt: _shownAt);
 
     expect(find.text('Не удалось обновить · данные на 12:46'), findsOneWidget);
+  });
+
+  testWidgets('a busy button reads Обновляем…', (WidgetTester tester) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    await _open(
+      tester,
+      failure: const NetworkFailure(),
+      shownAt: _shownAt,
+      busy: true,
+    );
+
+    expect(find.bySemanticsLabel('Обновляем…'), findsOneWidget);
+    semantics.dispose();
   });
 
   for (final double scale in <double>[1, 2]) {

@@ -480,6 +480,16 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String categoryRailSpoken(String name, int index, int count) {
+    return '$name, $index из $count';
+  }
+
+  @override
+  String categoryShownSpoken(String name, String count) {
+    return '$name: $count';
+  }
+
+  @override
   String catalogCategoryCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1120,6 +1130,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get catalogLoadMore => 'Загрузить ещё';
+
+  @override
+  String get catalogMoreOffline =>
+      'Нет связи — следующие товары не загрузились';
+
+  @override
+  String get catalogMoreFailed => 'Следующие товары не загрузились';
 
   @override
   String get homeNavHome => 'Главная';
@@ -3490,6 +3507,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get sortPriceDesc => 'Сначала дороже';
 
   @override
+  String sortSpoken(String sort) {
+    return 'Порядок: $sort';
+  }
+
+  @override
   String get allProductsTitle => 'Все товары';
 
   @override
@@ -4403,6 +4425,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get staleRefresh => 'Обновить';
+
+  @override
+  String get staleRefreshing => 'Обновляем…';
 
   @override
   String staleSpoken(String reason, String time) {

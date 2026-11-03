@@ -473,6 +473,16 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String categoryRailSpoken(String name, int index, int count) {
+    return '$name, $count tadan $index';
+  }
+
+  @override
+  String categoryShownSpoken(String name, String count) {
+    return '$name: $count';
+  }
+
+  @override
   String catalogCategoryCount(int count) {
     return '$count ta kategoriya';
   }
@@ -1104,6 +1114,13 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get catalogLoadMore => 'Yana yuklash';
+
+  @override
+  String get catalogMoreOffline =>
+      'Aloqa yo\'q — keyingi mahsulotlar yuklanmadi';
+
+  @override
+  String get catalogMoreFailed => 'Keyingi mahsulotlar yuklanmadi';
 
   @override
   String get homeNavHome => 'Bosh sahifa';
@@ -3454,6 +3471,11 @@ class AppLocalizationsUz extends AppLocalizations {
   String get sortPriceDesc => 'Avval qimmatlari';
 
   @override
+  String sortSpoken(String sort) {
+    return 'Tartib: $sort';
+  }
+
+  @override
   String get allProductsTitle => 'Barcha mahsulotlar';
 
   @override
@@ -4359,6 +4381,9 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get staleRefresh => 'Yangilash';
+
+  @override
+  String get staleRefreshing => 'Yangilanmoqda…';
 
   @override
   String staleSpoken(String reason, String time) {

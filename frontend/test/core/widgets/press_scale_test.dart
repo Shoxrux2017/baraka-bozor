@@ -6,6 +6,7 @@ Future<void> _open(
   WidgetTester tester, {
   required VoidCallback onTap,
   bool reduced = false,
+  bool? selected,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -15,6 +16,7 @@ Future<void> _open(
           body: Center(
             child: PressScale(
               label: 'Фрукты',
+              selected: selected,
               onTap: onTap,
               child: const SizedBox(width: 100, height: 100),
             ),
@@ -102,6 +104,23 @@ void main() {
     expect(
       tester.getSemantics(find.byType(PressScale)),
       matchesSemantics(label: 'Фрукты', isButton: true, hasTapAction: true),
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('selected is on its node', (WidgetTester tester) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    await _open(tester, onTap: () {}, selected: true);
+
+    expect(
+      tester.getSemantics(find.byType(PressScale)),
+      matchesSemantics(
+        label: 'Фрукты',
+        isButton: true,
+        hasTapAction: true,
+        hasSelectedState: true,
+        isSelected: true,
+      ),
     );
     semantics.dispose();
   });

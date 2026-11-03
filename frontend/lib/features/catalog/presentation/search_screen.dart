@@ -17,7 +17,7 @@ import '../domain/catalog.dart';
 import 'catalog_paths.dart';
 import 'kit_product_grid.dart';
 import 'recommended_row.dart';
-import 'sort_sheet.dart';
+import 'sort_menu.dart';
 
 /// The search on its own screen (`DL-83`, drawings 15 to 17): the field with
 /// the sort button, the Customer's recent queries and the recommended
@@ -110,12 +110,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
   }
 
-  Future<void> _openSort() async {
-    final ProductSort? chosen = await showSortSheet(
-      context,
+  /// Opens the order menu under the button it was tapped on (`DL-127`).
+  Future<void> _openSort(BuildContext anchor) async {
+    final ProductSort? chosen = await showSortMenu(
+      anchor,
       ref.read(productSortProvider),
     );
-    if (chosen != null) {
+    if (chosen != null && mounted) {
       ref.read(productSortProvider.notifier).set(chosen);
     }
   }
@@ -235,21 +236,23 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
           if (_query.isNotEmpty) ...<Widget>[
             const SizedBox(width: 10),
-            Semantics(
-              button: true,
-              label: l10n.sortTitle,
-              excludeSemantics: true,
-              onTap: _openSort,
-              child: Material(
-                color: KitColors.primary,
-                borderRadius: BorderRadius.circular(14),
-                child: InkWell(
-                  key: const ValueKey<String>('search-sort'),
+            Builder(
+              builder: (BuildContext anchor) => Semantics(
+                button: true,
+                label: l10n.sortTitle,
+                excludeSemantics: true,
+                onTap: () => _openSort(anchor),
+                child: Material(
+                  color: KitColors.primary,
                   borderRadius: BorderRadius.circular(14),
-                  onTap: _openSort,
-                  child: const SizedBox.square(
-                    dimension: 50,
-                    child: Icon(Icons.tune, color: Colors.white),
+                  child: InkWell(
+                    key: const ValueKey<String>('search-sort'),
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () => _openSort(anchor),
+                    child: const SizedBox.square(
+                      dimension: 50,
+                      child: Icon(Icons.tune, color: Colors.white),
+                    ),
                   ),
                 ),
               ),

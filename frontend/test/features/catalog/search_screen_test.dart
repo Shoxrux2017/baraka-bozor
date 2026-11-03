@@ -160,7 +160,7 @@ void main() {
         await tester.enterText(field, 'pom');
         await tester.pump(SearchScreen.searchPause);
         await tester.pump();
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(byKey('product-skeletons'), findsOneWidget);
         await typeAndPause(tester, 'olm');
         expect(find.text('Olma'), findsOneWidget);
 
@@ -369,10 +369,10 @@ void main() {
       catalog.nextFailure = const NetworkFailure();
       await typeAndPause(tester, 'pom');
 
-      expect(byKey('retry-load'), findsOneWidget);
+      expect(byKey('stale-retry'), findsOneWidget);
       expect(byKey('search-found'), findsNothing);
 
-      await tester.tap(byKey('retry-load'));
+      await tester.tap(byKey('stale-retry'));
       await tester.pumpAndSettle();
       expect(find.text('Pomidor'), findsOneWidget);
       expect(byKey('search-found'), findsOneWidget);
@@ -618,9 +618,9 @@ void main() {
 
       catalog.nextFailure = const NetworkFailure();
       await typeAndPause(tester, 'pom');
-      expect(byKey('retry-load'), findsOneWidget);
+      expect(byKey('stale-retry'), findsOneWidget);
       expect(
-        tester.getRect(byKey('retry-load')).bottom,
+        tester.getRect(byKey('stale-retry')).bottom,
         lessThanOrEqualTo(640),
       );
       expect(tester.takeException(), isNull);
@@ -655,6 +655,18 @@ void main() {
   });
 
   group('the sort button', () {
+    testWidgets('the sort button opens the menu', (WidgetTester tester) async {
+      await openSearch(tester);
+      await typeAndPause(tester, 'pom');
+
+      final Rect button = tester.getRect(byKey('search-sort'));
+      await tester.tap(byKey('search-sort'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('sort-menu'), findsOneWidget);
+      expect(tester.getRect(byKey('sort-menu')).top, button.bottom + 2);
+    });
+
     testWidgets('exposes a tap action to TalkBack', (
       WidgetTester tester,
     ) async {

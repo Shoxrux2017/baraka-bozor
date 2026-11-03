@@ -185,6 +185,31 @@
       }
     }
   },
+  "categoryRailSpoken": "{name}, {index} из {count}",
+  "@categoryRailSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "categoryShownSpoken": "{name}: {count}",
+  "@categoryShownSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "catalogCategoryCount": "{count, plural, one{{count} категория} few{{count} категории} many{{count} категорий} other{{count} категории}}",
   "@catalogCategoryCount": {
     "placeholders": {
@@ -427,6 +452,8 @@
   },
   "catalogEstimateExplain": "Итоговая цена рассчитывается от цены, которую сборщик фактически заплатит на рынке. Если она превысит ориентировочную больше допустимого, мы спросим вашего согласия до покупки.",
   "catalogLoadMore": "Загрузить ещё",
+  "catalogMoreOffline": "Нет связи — следующие товары не загрузились",
+  "catalogMoreFailed": "Следующие товары не загрузились",
   "homeNavHome": "Главная",
   "homeNavOrders": "Заказы",
   "profileTitle": "Профиль",
@@ -2065,6 +2092,7 @@
   "sortShop": "Как в магазине",
   "sortPriceAsc": "Сначала дешевле",
   "sortPriceDesc": "Сначала дороже",
+  "sortSpoken": "Порядок: {sort}",
   "allProductsTitle": "Все товары",
   "recommendedTitle": "Рекомендуем",
   "recommendedEmpty": "Пока нет рекомендованных товаров",
@@ -2584,6 +2612,7 @@
   "staleFailed": "Не удалось обновить",
   "staleShownAt": "данные на {time}",
   "staleRefresh": "Обновить",
+  "staleRefreshing": "Обновляем…",
   "staleSpoken": "{reason}. Показаны данные на {time}",
   "deadlineLeft": "Осталось {minutes} мин",
   "deadlineLeftSpoken": "осталось {minutes, plural, one{{minutes} минута} few{{minutes} минуты} many{{minutes} минут} other{{minutes} минуты}}",

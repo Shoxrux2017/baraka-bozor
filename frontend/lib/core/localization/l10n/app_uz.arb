@@ -185,6 +185,31 @@
       }
     }
   },
+  "categoryRailSpoken": "{name}, {count} tadan {index}",
+  "@categoryRailSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "categoryShownSpoken": "{name}: {count}",
+  "@categoryShownSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "catalogCategoryCount": "{count} ta kategoriya",
   "@catalogCategoryCount": {
     "placeholders": {
@@ -493,6 +518,8 @@
   },
   "catalogEstimateExplain": "Yakuniy narx yig'uvchi bozorda haqiqatda to'lagan narxdan hisoblanadi. U taxminiy narxdan belgilangan chegaradan ko'proq oshsa, xarid qilishdan oldin sizdan rozilik so'raymiz.",
   "catalogLoadMore": "Yana yuklash",
+  "catalogMoreOffline": "Aloqa yo'q — keyingi mahsulotlar yuklanmadi",
+  "catalogMoreFailed": "Keyingi mahsulotlar yuklanmadi",
   "homeNavHome": "Bosh sahifa",
   "homeNavOrders": "Buyurtmalar",
   "profileTitle": "Profil",
@@ -2210,6 +2237,14 @@
   "sortShop": "Do'kondagidek",
   "sortPriceAsc": "Avval arzonlari",
   "sortPriceDesc": "Avval qimmatlari",
+  "sortSpoken": "Tartib: {sort}",
+  "@sortSpoken": {
+    "placeholders": {
+      "sort": {
+        "type": "String"
+      }
+    }
+  },
   "allProductsTitle": "Barcha mahsulotlar",
   "recommendedTitle": "Tavsiya etamiz",
   "recommendedEmpty": "Hozircha tavsiya etilgan mahsulot yo'q",
@@ -2922,6 +2957,7 @@
     }
   },
   "staleRefresh": "Yangilash",
+  "staleRefreshing": "Yangilanmoqda…",
   "staleSpoken": "{reason}. {time} holatidagi ma'lumotlar ko'rsatilgan",
   "@staleSpoken": {
     "placeholders": {

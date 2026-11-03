@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart'
-    show AsyncNotifierProviderFamily, FutureProviderFamily;
+    show AsyncNotifierProviderFamily, FutureProviderFamily, ProviderFamily;
 
 import '../../../app/providers.dart';
 import '../../../core/errors/report_unexpected_error.dart';
@@ -55,6 +55,7 @@ final class ProductListState {
     required this.items,
     required this.total,
     required this.nextPage,
+    required this.at,
     this.loadingMore = false,
     this.moreFailure,
   });
@@ -64,6 +65,10 @@ final class ProductListState {
 
   /// The page to load next, or `null` at the end of the list.
   final int? nextPage;
+
+  /// When the first page came; `loadMore` and its failures keep it
+  /// (`DL-127`).
+  final DateTime at;
   final bool loadingMore;
   final ApiFailure? moreFailure;
 
@@ -97,6 +102,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
       items: first.items,
       total: first.total,
       nextPage: first.hasNext ? first.page + 1 : null,
+      at: ref.read(clockProvider)(),
     );
   }
 
@@ -105,11 +111,13 @@ class ProductListController extends AsyncNotifier<ProductListState> {
     final ProductListState? current = state.value;
     final int? page = current?.nextPage;
     // While the list is rebuilt — for another account, or none — its old
-    // pages are not continued.
+    // pages are not continued; nor are those of a list whose refresh failed:
+    // its stale line stays until a pull or «Обновить» succeeds (`DL-127`).
     if (current == null ||
         page == null ||
         current.loadingMore ||
         state.isLoading ||
+        state.hasError ||
         ref.read(customerAccountProvider) == null) {
       return;
     }
@@ -120,6 +128,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         items: current.items,
         total: current.total,
         nextPage: current.nextPage,
+        at: current.at,
         loadingMore: true,
       ),
     );
@@ -142,12 +151,14 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         ],
         total: loaded.total,
         nextPage: loaded.hasNext ? loaded.page + 1 : null,
+        at: current.at,
       );
     } on ApiFailure catch (failure) {
       next = ProductListState(
         items: current.items,
         total: current.total,
         nextPage: current.nextPage,
+        at: current.at,
         moreFailure: failure,
       );
     } catch (error, stackTrace) {
@@ -156,6 +167,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         items: current.items,
         total: current.total,
         nextPage: current.nextPage,
+        at: current.at,
         moreFailure: const UnexpectedFailure(),
       );
     }
@@ -175,6 +187,23 @@ productListProvider = AsyncNotifierProvider.autoDispose
     .family<ProductListController, ProductListState, ProductListQuery>(
       ProductListController.new,
     );
+
+/// The last total a product list of one filter came with, whatever its order,
+/// so a count row does not blank while another order of the same products
+/// loads (`DL-127`). A plain holder, not observable state: it is written in a
+/// build and read in a later one. Another account starts afresh.
+final class ListTotalMemo {
+  int? total;
+}
+
+final ProviderFamily<ListTotalMemo, ProductListQuery> listTotalMemoProvider =
+    Provider.family<ListTotalMemo, ProductListQuery>((
+      Ref ref,
+      ProductListQuery filter,
+    ) {
+      ref.watch(customerAccountProvider);
+      return ListTotalMemo();
+    });
 
 /// How the Customer's product lists are ordered, kept for the app's run.
 class ProductSortController extends Notifier<ProductSort> {

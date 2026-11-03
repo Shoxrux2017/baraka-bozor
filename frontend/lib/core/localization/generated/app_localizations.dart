@@ -956,6 +956,18 @@ abstract class AppLocalizations {
   /// **'{count} ta mahsulot'**
   String catalogProductCount(int count);
 
+  /// No description provided for @categoryRailSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, {count} tadan {index}'**
+  String categoryRailSpoken(String name, int index, int count);
+
+  /// No description provided for @categoryShownSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}: {count}'**
+  String categoryShownSpoken(String name, String count);
+
   /// No description provided for @catalogCategoryCount.
   ///
   /// In uz, this message translates to:
@@ -2077,6 +2089,18 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Yana yuklash'**
   String get catalogLoadMore;
+
+  /// No description provided for @catalogMoreOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Aloqa yo\'q — keyingi mahsulotlar yuklanmadi'**
+  String get catalogMoreOffline;
+
+  /// No description provided for @catalogMoreFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Keyingi mahsulotlar yuklanmadi'**
+  String get catalogMoreFailed;
 
   /// No description provided for @homeNavHome.
   ///
@@ -5996,6 +6020,12 @@ abstract class AppLocalizations {
   /// **'Avval qimmatlari'**
   String get sortPriceDesc;
 
+  /// No description provided for @sortSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Tartib: {sort}'**
+  String sortSpoken(String sort);
+
   /// No description provided for @allProductsTitle.
   ///
   /// In uz, this message translates to:
@@ -7393,6 +7423,12 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Yangilash'**
   String get staleRefresh;
+
+  /// No description provided for @staleRefreshing.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yangilanmoqda…'**
+  String get staleRefreshing;
 
   /// No description provided for @staleSpoken.
   ///

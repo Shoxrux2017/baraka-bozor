@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:baraka_bozor/core/network/api_failure.dart';
+import 'package:baraka_bozor/core/platform/clock.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
@@ -24,9 +25,12 @@ final NotifierProvider<_Account, String?> _account =
 void main() {
   late FakeCatalogRepository catalog;
   late ProviderContainer container;
+  // 12:46 in Tashkent (UTC+5).
+  DateTime now = DateTime.utc(2026, 11, 3, 7, 46);
   const ProductListQuery all = ProductListQuery();
 
   setUp(() {
+    now = DateTime.utc(2026, 11, 3, 7, 46);
     catalog = FakeCatalogRepository(
       products: <CatalogProduct>[
         for (int i = 1; i <= 45; i++)
@@ -36,6 +40,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         catalogRepositoryProvider.overrideWithValue(catalog),
+        clockProvider.overrideWithValue(() => now),
         customerAccountProvider.overrideWith((Ref ref) => ref.watch(_account)),
       ],
     );
@@ -148,5 +153,20 @@ void main() {
     ];
     expect(ids.toSet(), hasLength(ids.length));
     expect(ids, hasLength(39));
+  });
+
+  test('the list keeps the time its first page came', () async {
+    await container.read(productListProvider(all).future);
+    expect(stateOf().at, DateTime.utc(2026, 11, 3, 7, 46));
+
+    now = DateTime.utc(2026, 11, 3, 7, 50);
+    await container.read(productListProvider(all).notifier).loadMore();
+    expect(stateOf().items, hasLength(40));
+    expect(stateOf().at, DateTime.utc(2026, 11, 3, 7, 46));
+
+    catalog.nextFailure = const NetworkFailure();
+    await container.read(productListProvider(all).notifier).loadMore();
+    expect(stateOf().moreFailure, isNotNull);
+    expect(stateOf().at, DateTime.utc(2026, 11, 3, 7, 46));
   });
 }
