@@ -136,6 +136,28 @@ final class CustomerOrdersListApiTest extends TestCase
         $this->assertSame([], $byId[$quiet->id]['pending_approval_expires_at']);
     }
 
+    public function test_the_question_count_and_the_expiries_come_from_one_read(): void
+    {
+        $this->freezeTime();
+        $order = Order::factory()->shopping()->create();
+        $this->question($order, now()->addMinutes(9));
+        $this->question($order, now()->addMinutes(4));
+        $this->as($order->customer)->getJson('/api/v1/customer/orders')->assertOk();
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $row = $this->as($order->customer)->getJson('/api/v1/customer/orders')->assertOk()->json('data.0');
+        $reads = array_filter(
+            array_column(DB::getQueryLog(), 'query'),
+            static fn (string $sql): bool => str_contains($sql, 'customer_approvals'),
+        );
+        DB::disableQueryLog();
+
+        $this->assertCount(1, $reads, 'a question asked or expired between two reads would split the count from the expiries');
+        $this->assertCount(2, $row['pending_approval_expires_at']);
+        $this->assertSame(count($row['pending_approval_expires_at']), $row['pending_approval_count']);
+    }
+
     public function test_the_preview_names_the_first_lines_and_counts_them(): void
     {
         $order = Order::factory()->create();

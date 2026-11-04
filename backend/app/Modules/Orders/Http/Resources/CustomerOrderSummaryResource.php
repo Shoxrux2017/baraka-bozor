@@ -23,7 +23,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * Expects the sums of `OrderLineSums::add`, `picture_storage_key` of
  * `CustomerOrders::withPictureKey`, `preview_line_count` of
- * `CustomerOrders::withPreviewLineCount`, `openApprovals` and `previewItems`
+ * `CustomerOrders::withPreviewLineCount`, `openApprovals` (the question count
+ * and the expiries come from the one read of it) and `previewItems`
  * with their products' pictures (`DL-131`) and `currentCourierAssignment.courier`
  * and `rating` loaded; the Courier's phone shows only while the order is on the way
  * (`DL-91` (2)).
@@ -53,7 +54,7 @@ final class CustomerOrderSummaryResource extends JsonResource
             'status' => $order->status->value,
             'payment_method' => $order->payment_method->value,
             'item_count' => (int) $order->getAttribute('item_count'),
-            'pending_approval_count' => (int) $order->getAttribute('pending_approval_count'),
+            'pending_approval_count' => $order->openApprovals->count(),
             'pending_approval_expires_at' => $order->openApprovals
                 ->map(static fn (CustomerApproval $approval): string => $approval->expires_at->toIso8601ZuluString())
                 ->values()

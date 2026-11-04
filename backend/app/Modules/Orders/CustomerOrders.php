@@ -10,7 +10,6 @@ use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
-use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 
@@ -31,21 +30,18 @@ final class CustomerOrders
     /**
      * Adds `pending_approval_count`: the questions still waiting for the
      * Customer, those past their expiry left out as a read leaves them
-     * (`DL-54` (8)), counted in SQL so a page does not load them. `$at` is the
-     * instant of the request, the one `Order::openApprovals` is asked with.
+     * (`DL-54` (8)), counted in SQL so a page does not load them.
      *
      * @param  Builder<Order>  $orders
      * @return Builder<Order>
      */
-    public static function withPendingApprovalCount(Builder $orders, ?CarbonInterface $at = null): Builder
+    public static function withPendingApprovalCount(Builder $orders): Builder
     {
-        $at ??= now();
-
         return $orders->addSelect(['pending_approval_count' => static fn (QueryBuilder $approvals) => $approvals->from('customer_approvals')
             ->selectRaw('count(*)')
             ->whereColumn('customer_approvals.order_id', 'orders.id')
             ->where('customer_approvals.status', ApprovalStatus::Pending->value)
-            ->where('customer_approvals.expires_at', '>', $at)]);
+            ->where('customer_approvals.expires_at', '>', now())]);
     }
 
     /**

@@ -232,7 +232,8 @@ class Order extends Model
     /**
      * The questions still waiting for the Customer, the soonest to expire
      * first (`DL-131` (1)). The caller adds the instant that tells an open one
-     * from an expired one, as `CustomerOrders::withPendingApprovalCount` does.
+     * from an expired one; the Customer's list counts and dates its questions
+     * from this one read.
      *
      * @return HasMany<CustomerApproval, $this>
      */

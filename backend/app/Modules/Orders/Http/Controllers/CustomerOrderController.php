@@ -40,9 +40,9 @@ final class CustomerOrderController extends Controller
     public function index(ListCustomerOrdersRequest $request): JsonResponse
     {
         $at = now();
-        $orders = CustomerOrders::withPreviewLineCount(CustomerOrders::withPictureKey(CustomerOrders::withPendingApprovalCount(OrderLineSums::add(
+        $orders = CustomerOrders::withPreviewLineCount(CustomerOrders::withPictureKey(OrderLineSums::add(
             CustomerOrders::inState(CustomerOrders::own($this->customer($request)), $request->state())
-        ), $at)))
+        )))
             ->with([
                 'currentCourierAssignment.courier',
                 'rating',
