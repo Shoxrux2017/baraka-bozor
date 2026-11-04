@@ -86,6 +86,26 @@ final class ProductListState {
   bool get hasMore => nextPage != null;
 }
 
+/// Products taken out of a list in place, with what is needed to put them
+/// back or to settle the removal (`DL-129`). Opaque to callers.
+final class ListWithdrawal {
+  const ListWithdrawal._({
+    required this.generation,
+    required this.removed,
+    required this.total,
+    required this.unavailable,
+    required this.nextPage,
+  });
+
+  final int generation;
+  final List<({int index, CatalogProduct product})> removed;
+  final int total;
+  final int unavailable;
+  final int? nextPage;
+}
+
+const Object _keep = Object();
+
 /// One product list per query — a category, a search, or both, or the
 /// Customer's favourites (`DL-129`) — loaded a
 /// page at a time as the Customer scrolls (infinite pagination).
@@ -104,9 +124,13 @@ class ProductListController extends AsyncNotifier<ProductListState> {
   /// Completes when the page now being loaded is in; null while none is.
   Completer<void>? _pending;
 
+  /// True while [quietRefresh] reloads the pages.
+  bool _refreshing = false;
+
   @override
   Future<ProductListState> build() async {
     _generation++;
+    _refreshing = false;
     if (ref.watch(customerAccountProvider) == null) {
       return Completer<ProductListState>().future;
     }
@@ -150,6 +174,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
     // its stale line stays until a pull or «Обновить» succeeds (`DL-127`).
     if (current == null ||
         page == null ||
+        _refreshing ||
         current.loadingMore ||
         state.isLoading ||
         state.hasError ||
@@ -223,6 +248,207 @@ class ProductListController extends AsyncNotifier<ProductListState> {
       _pending = null;
     }
     done.complete();
+  }
+
+  ProductListState _copy(
+    ProductListState s, {
+    List<CatalogProduct>? items,
+    int? total,
+    int? unavailable,
+    Object? nextPage = _keep,
+  }) {
+    return ProductListState(
+      items: items ?? s.items,
+      total: total ?? s.total,
+      nextPage: identical(nextPage, _keep) ? s.nextPage : nextPage as int?,
+      at: s.at,
+      unavailable: unavailable ?? s.unavailable,
+      perPage: s.perPage,
+      loadingMore: s.loadingMore,
+      moreFailure: s.moreFailure,
+    );
+  }
+
+  ListWithdrawal? _take(
+    ProductListState current,
+    bool Function(CatalogProduct) takes, {
+    required bool endsList,
+  }) {
+    final List<({int index, CatalogProduct product})> removed =
+        <({int index, CatalogProduct product})>[
+          for (int i = 0; i < current.items.length; i++)
+            if (takes(current.items[i])) (index: i, product: current.items[i]),
+        ];
+    if (removed.isEmpty) {
+      return null;
+    }
+    final int notSold = removed.where((r) => !r.product.isAvailable).length;
+    final Set<int> gone = <int>{for (final r in removed) r.index};
+    state = AsyncData<ProductListState>(
+      _copy(
+        current,
+        items: <CatalogProduct>[
+          for (int i = 0; i < current.items.length; i++)
+            if (!gone.contains(i)) current.items[i],
+        ],
+        total: endsList
+            ? current.total - current.unavailable
+            : current.total - removed.length,
+        unavailable: endsList ? 0 : current.unavailable - notSold,
+        nextPage: endsList ? null : _keep,
+      ),
+    );
+    return ListWithdrawal._(
+      generation: _generation,
+      removed: removed,
+      total: current.total,
+      unavailable: current.unavailable,
+      nextPage: current.nextPage,
+    );
+  }
+
+  /// Takes the loaded products with these ids out of the list at once;
+  /// `null` when none of them is loaded (`DL-129`).
+  ListWithdrawal? withdraw(Set<String> ids) {
+    final ProductListState? current = state.value;
+    if (current == null) {
+      return null;
+    }
+    return _take(
+      current,
+      (CatalogProduct p) => ids.contains(p.id),
+      endsList: false,
+    );
+  }
+
+  /// Takes every not-sold product out. The server puts them last, so with
+  /// them gone nothing is left to load (`DL-129`).
+  ListWithdrawal? withdrawNotSold() {
+    final ProductListState? current = state.value;
+    if (current == null || current.unavailable == 0) {
+      return null;
+    }
+    return _take(current, (CatalogProduct p) => !p.isAvailable, endsList: true);
+  }
+
+  /// Puts a withdrawal back at its places, with the counts and the next page
+  /// as they were; nothing on a list rebuilt since (`DL-129`).
+  void restore(ListWithdrawal w) {
+    final ProductListState? current = state.value;
+    if (current == null || w.generation != _generation) {
+      return;
+    }
+    final List<CatalogProduct> items = <CatalogProduct>[...current.items];
+    for (final r in w.removed) {
+      items.insert(r.index.clamp(0, items.length), r.product);
+    }
+    state = AsyncData<ProductListState>(
+      _copy(
+        current,
+        items: items,
+        total: w.total,
+        unavailable: w.unavailable,
+        nextPage: w.nextPage,
+      ),
+    );
+  }
+
+  /// The server removed the withdrawn products. While more remain, the next
+  /// page starts where the server's offsets now are; the dedupe of
+  /// [loadMore] drops what repeats (`DL-129`).
+  void settle(ListWithdrawal w) {
+    final ProductListState? current = state.value;
+    if (current == null || w.generation != _generation || !current.hasMore) {
+      return;
+    }
+    state = AsyncData<ProductListState>(
+      _copy(current, nextPage: current.items.length ~/ current.perPage + 1),
+    );
+  }
+
+  /// Puts a product at the top of the list and counts it (`DL-129`).
+  void put(CatalogProduct product) {
+    final ProductListState? current = state.value;
+    if (current == null ||
+        current.items.any((CatalogProduct p) => p.id == product.id)) {
+      return;
+    }
+    state = AsyncData<ProductListState>(
+      _copy(
+        current,
+        items: <CatalogProduct>[product, ...current.items],
+        total: current.total + 1,
+      ),
+    );
+  }
+
+  /// Reloads pages 1 to as many as are loaded, one after another, then
+  /// replaces the list at once: never a loading state. A failure leaves the
+  /// list under an error, so the screen keeps its cards under the stale line.
+  /// A page that [loadMore] brings meanwhile is dropped (`DL-129`).
+  Future<void> quietRefresh() async {
+    while (_pending != null) {
+      await _pending!.future;
+    }
+    final ProductListState? current = state.value;
+    if (!ref.mounted ||
+        current == null ||
+        state.isLoading ||
+        ref.read(customerAccountProvider) == null) {
+      return;
+    }
+    // While it runs, no further page is started: it would land before the
+    // replaced list and repeat it.
+    final int generation = _generation;
+    _refreshing = true;
+    final int pages = (current.items.length / current.perPage).ceil().clamp(
+      1,
+      1 << 20,
+    );
+    try {
+      final List<CatalogProduct> items = <CatalogProduct>[];
+      final Set<String> shown = <String>{};
+      late ({Paged<CatalogProduct> products, int unavailable}) last;
+      for (int page = 1; page <= pages; page++) {
+        last = await _ask(page);
+        if (!ref.mounted || generation != _generation) {
+          return;
+        }
+        for (final CatalogProduct p in last.products.items) {
+          if (shown.add(p.id)) {
+            items.add(p);
+          }
+        }
+        if (!last.products.hasNext) {
+          break;
+        }
+      }
+      state = AsyncData<ProductListState>(
+        ProductListState(
+          items: items,
+          total: last.products.total,
+          nextPage: last.products.hasNext ? last.products.page + 1 : null,
+          at: ref.read(clockProvider)(),
+          unavailable: last.unavailable,
+          perPage: last.products.perPage,
+        ),
+      );
+    } on ApiFailure catch (failure, stackTrace) {
+      _failQuietly(generation, failure, stackTrace);
+    } catch (error, stackTrace) {
+      reportUnexpectedError(error, stackTrace, 'while refreshing products');
+      _failQuietly(generation, const UnexpectedFailure(), stackTrace);
+    } finally {
+      if (generation == _generation) {
+        _refreshing = false;
+      }
+    }
+  }
+
+  void _failQuietly(int generation, ApiFailure failure, StackTrace stack) {
+    if (ref.mounted && generation == _generation) {
+      state = AsyncError<ProductListState>(failure, stack);
+    }
   }
 
   /// Loads the next pages one after another until [count] products are in.

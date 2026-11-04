@@ -328,4 +328,184 @@ void main() {
       expect(stateOf().items, hasLength(20));
     },
   );
+
+  group('in-place operations on a favourites list (DL-129)', () {
+    const ProductListQuery mine = ProductListQuery.favorites();
+
+    ProductListController listOf() =>
+        container.read(productListProvider(mine).notifier);
+    ProductListState favState() =>
+        container.read(productListProvider(mine)).requireValue;
+
+    setUp(() {
+      container.listen(productListProvider(mine), (_, _) {});
+    });
+
+    test('withdraw takes loaded products out with their places and lowers the counts', () async {
+      await container.read(productListProvider(mine).future);
+
+      final ListWithdrawal? w = listOf().withdraw(<String>{'f-2', 'f-23'});
+
+      expect(w, isNotNull);
+      expect(favState().items, hasLength(19), reason: 'f-23 was not loaded');
+      expect(
+        favState().items.map((CatalogProduct p) => p.id),
+        isNot(contains('f-2')),
+      );
+      expect(favState().total, 24);
+      expect(favState().unavailable, 3);
+      expect(listOf().withdraw(<String>{'f-23', 'nope'}), isNull);
+    });
+
+    test('restore puts them back at their places with the counts and the next page', () async {
+      await container.read(productListProvider(mine).future);
+      final List<String> before = <String>[
+        for (final CatalogProduct p in favState().items) p.id,
+      ];
+
+      final ListWithdrawal w = listOf().withdraw(<String>{'f-2', 'f-5'})!;
+      listOf().restore(w);
+
+      expect(<String>[
+        for (final CatalogProduct p in favState().items) p.id,
+      ], before);
+      expect(favState().total, 25);
+      expect(favState().nextPage, 2);
+    });
+
+    test('restore after the list was rebuilt changes nothing', () async {
+      await container.read(productListProvider(mine).future);
+      final ListWithdrawal w = listOf().withdraw(<String>{'f-2'})!;
+
+      container.read(_account.notifier).signIn('c-2');
+      await container.read(productListProvider(mine).future);
+      listOf().restore(w);
+
+      expect(favState().items, hasLength(20));
+      expect(favState().total, 25);
+    });
+
+    test('withdrawNotSold takes every not-sold product, loaded or not, and ends the list', () async {
+      favorites.rows = <CatalogProduct>[
+        for (int i = 1; i <= 45; i++)
+          catalogProduct(id: 'f-$i', isFavorite: true, isAvailable: i <= 20),
+      ];
+      await container.read(productListProvider(mine).future);
+      await listOf().loadMore();
+      expect(favState().items, hasLength(40));
+
+      final ListWithdrawal? w = listOf().withdrawNotSold();
+
+      expect(w, isNotNull);
+      expect(favState().items, hasLength(20));
+      expect(favState().total, 20);
+      expect(favState().unavailable, 0);
+      expect(favState().hasMore, isFalse);
+
+      listOf().restore(w!);
+      expect(favState().items, hasLength(40));
+      expect(favState().total, 45);
+      expect(favState().unavailable, 25);
+      expect(favState().nextPage, 3);
+    });
+
+    test('after a settled removal the next page neither skips nor repeats a product', () async {
+      favorites.rows = <CatalogProduct>[
+        for (int i = 1; i <= 30; i++)
+          catalogProduct(id: 'f-$i', isFavorite: true),
+      ];
+      await container.read(productListProvider(mine).future);
+
+      final ListWithdrawal w = listOf().withdraw(<String>{'f-3'})!;
+      await favorites.remove('f-3');
+      listOf().settle(w);
+      await listOf().loadMore();
+      await listOf().loadMore();
+
+      final List<String> ids = <String>[
+        for (final CatalogProduct p in favState().items) p.id,
+      ];
+      expect(ids, hasLength(29));
+      expect(ids.toSet(), hasLength(29));
+      expect(ids.toSet(), <String>{
+        for (final CatalogProduct p in favorites.rows) p.id,
+      });
+      expect(favState().hasMore, isFalse);
+    });
+
+    test('put adds a product at the top and counts it', () async {
+      await container.read(productListProvider(mine).future);
+
+      listOf().put(catalogProduct(id: 'f-new', isFavorite: true));
+
+      expect(favState().items.first.id, 'f-new');
+      expect(favState().items, hasLength(21));
+      expect(favState().total, 26);
+    });
+
+    test(
+      'quietRefresh reloads as many pages as were loaded with no loading state',
+      () async {
+        await container.read(productListProvider(mine).future);
+        await listOf().loadMore();
+        favorites.rows = favorites.rows.sublist(1);
+        favorites.requests.clear();
+        final List<AsyncValue<ProductListState>> seen =
+            <AsyncValue<ProductListState>>[];
+        container.listen(
+          productListProvider(mine),
+          (_, AsyncValue<ProductListState> next) => seen.add(next),
+        );
+
+        await listOf().quietRefresh();
+
+        expect(favorites.requests, <String>['default|1', 'default|2']);
+        expect(favState().items, hasLength(24));
+        expect(favState().total, 24);
+        expect(
+          seen.any((AsyncValue<ProductListState> v) => v.isLoading),
+          isFalse,
+        );
+        expect(
+          seen.any((AsyncValue<ProductListState> v) => v.hasError),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'a quietRefresh that fails keeps the list under its failure',
+      () async {
+        await container.read(productListProvider(mine).future);
+        favorites.listFailure = const NetworkFailure();
+
+        await listOf().quietRefresh();
+
+        final AsyncValue<ProductListState> now0 = container.read(
+          productListProvider(mine),
+        );
+        expect(now0.hasError, isTrue);
+        expect(now0.isLoading, isFalse);
+        expect(now0.error, isA<NetworkFailure>());
+        expect(now0.value!.items, hasLength(20));
+      },
+    );
+
+    test('a page loaded during a quietRefresh is dropped', () async {
+      await container.read(productListProvider(mine).future);
+      final Completer<void> gate = Completer<void>();
+      favorites.listHold = gate;
+
+      final Future<void> refresh = listOf().quietRefresh();
+      final Future<void> more = listOf().loadMore();
+      favorites.listHold = null;
+      gate.complete();
+      await refresh;
+      await more;
+
+      expect(favState().items, hasLength(20));
+      expect(favState().loadingMore, isFalse);
+      expect(favState().nextPage, 2);
+    });
+  });
 }
