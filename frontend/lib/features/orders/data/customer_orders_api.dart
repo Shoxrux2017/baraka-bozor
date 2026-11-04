@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:dio/dio.dart';
 
 import '../../../core/catalog/catalog_values.dart';
@@ -335,12 +337,62 @@ class CustomerOrdersApi {
       imageUrl: json.nullableString('image_url'),
       ratingStars: _nullableStars(json, 'rating_stars'),
       canRate: json.boolean('can_rate'),
+      questionDeadlines: _deadlines(json),
+      preview: _preview(json.member('preview')),
     );
     if ((summary.totalUzs == null) != (summary.totalKind == TotalKind.none)) {
       throw const FormatException('a total is null exactly when none is due');
     }
+    if (summary.questionDeadlines.length != summary.pendingApprovalCount) {
+      throw const FormatException('a deadline for each open question');
+    }
     return summary;
   }
+
+  /// The waiting questions' expiries, earliest first (`DL-131`).
+  static List<DateTime> _deadlines(JsonFields json) {
+    final Object? raw = json.member('pending_approval_expires_at');
+    if (raw is! List<dynamic>) {
+      throw const FormatException('pending_approval_expires_at is not a list');
+    }
+    final List<DateTime> deadlines = <DateTime>[
+      for (final Object? value in raw)
+        JsonFields.of(<String, Object?>{
+          'pending_approval_expires_at': value,
+        }, 'deadline').instant('pending_approval_expires_at'),
+    ];
+    for (int i = 1; i < deadlines.length; i++) {
+      if (deadlines[i].isBefore(deadlines[i - 1])) {
+        throw const FormatException('the deadlines are not earliest first');
+      }
+    }
+    return deadlines;
+  }
+
+  static OrderPreview _preview(Object? raw) {
+    final JsonFields json = JsonFields.of(raw, 'preview');
+    final int count = _amount(json, 'line_count');
+    final Object? rawLines = json.member('lines');
+    if (rawLines is! List<dynamic>) {
+      throw const FormatException('lines is not a list');
+    }
+    if (rawLines.length > 4 || rawLines.length != math.min(count, 4)) {
+      throw const FormatException('the preview shows min(line_count, 4) lines');
+    }
+    return OrderPreview(
+      lineCount: count,
+      lines: <OrderPreviewLine>[
+        for (final Object? row in rawLines)
+          _previewLine(JsonFields.of(row, 'preview line')),
+      ],
+    );
+  }
+
+  static OrderPreviewLine _previewLine(JsonFields json) => OrderPreviewLine(
+    nameUz: json.string('name_uz'),
+    nameRu: json.string('name_ru'),
+    imageUrl: json.nullableString('image_url'),
+  );
 
   /// The whole order.
   static CustomerOrder parseOrder(Object? raw) {

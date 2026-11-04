@@ -14,6 +14,29 @@ enum OrdersTab {
   final String code;
 }
 
+/// One line of an order's preview: the product's names and its picture
+/// (`DL-131`).
+final class OrderPreviewLine {
+  const OrderPreviewLine({
+    required this.nameUz,
+    required this.nameRu,
+    required this.imageUrl,
+  });
+
+  final String nameUz;
+  final String nameRu;
+  final String? imageUrl;
+}
+
+/// The first lines of an order, at most four, and how many it has in all
+/// (`DL-131`).
+final class OrderPreview {
+  const OrderPreview({required this.lineCount, required this.lines});
+
+  final int lineCount;
+  final List<OrderPreviewLine> lines;
+}
+
 /// One of the Customer's orders as their list shows it (`docs/09` section
 /// 20).
 final class OrderSummary {
@@ -33,6 +56,8 @@ final class OrderSummary {
     required this.imageUrl,
     required this.ratingStars,
     required this.canRate,
+    required this.questionDeadlines,
+    required this.preview,
   });
 
   final String id;
@@ -40,6 +65,13 @@ final class OrderSummary {
   final OrderStatus status;
   final PaymentMethod paymentMethod;
   final int itemCount;
+
+  /// The expiries of the waiting questions, earliest first, as many as
+  /// [pendingApprovalCount] (`DL-131`).
+  final List<DateTime> questionDeadlines;
+
+  /// The order's first lines for the card (`DL-131`).
+  final OrderPreview preview;
 
   /// The questions waiting for the Customer's answer, those past their
   /// expiry left out (`DL-54` (8)).
