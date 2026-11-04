@@ -11,6 +11,7 @@ use App\Models\Enums\OrderItemStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Modules\Catalog\ProductImages;
+use App\Modules\Orders\Actions\DecideApproval;
 use App\Modules\Orders\ApprovalExpiry;
 use App\Modules\Orders\CourierContact;
 use App\Modules\Orders\OrderPermissions;
@@ -31,14 +32,25 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * (`DL-64` (4)), and the Customer's rating of it with whether it can still be
  * rated (`DL-91` (4)). Refunds arrive with Wave 5; until then the list is empty.
  *
- * Expects `items.product.image`, `currentShopperAssignment`,
- * `currentCourierAssignment.courier`, `approvals`, `livePayment` and
- * `latestCancellationRequest` and `rating` loaded.
+ * Expects `self::RELATIONS` loaded.
  *
  * @property-read Order $resource
  */
 final class CustomerOrderResource extends JsonResource
 {
+    /**
+     * What an order is loaded with for this resource.
+     */
+    public const RELATIONS = [
+        'items.product.image',
+        'currentShopperAssignment',
+        'currentCourierAssignment.courier',
+        'approvals.replacementProduct.image',
+        'livePayment',
+        'latestCancellationRequest',
+        'rating',
+    ];
+
     public function __construct(Order $order)
     {
         parent::__construct($order);
@@ -177,10 +189,34 @@ final class CustomerOrderResource extends JsonResource
                     'name_uz' => $question->replacement_name_uz_snapshot,
                     'name_ru' => $question->replacement_name_ru_snapshot,
                     'customer_unit_price_uzs' => $question->proposed_customer_unit_price_uzs,
+                    'image_url' => ProductImages::url($question->replacementProduct?->image),
                 ],
                 'request_note' => $question->request_note,
                 'expires_at' => $question->expires_at->toIso8601ZuluString(),
+                // What each answer does to the line, so the Customer decides
+                // knowing it (`DL-130` (3)).
+                ...self::effectsOf($question, $item),
             ],
+        ];
+    }
+
+    /**
+     * The line's estimate after a yes and the signed change of each answer.
+     * The yes is applied to a copy that is never saved.
+     *
+     * @return array{estimate_if_approved_uzs: int, change_if_approved_uzs: int, change_if_rejected_uzs: int}
+     */
+    private static function effectsOf(CustomerApproval $question, OrderItem $item): array
+    {
+        $now = OrderTotals::lineEstimate($item);
+        $approved = clone $item;
+        $approved->forceFill(['status' => OrderItemStatus::Pending, ...DecideApproval::applied($question)]);
+        $estimate = OrderTotals::lineEstimate($approved);
+
+        return [
+            'estimate_if_approved_uzs' => $estimate,
+            'change_if_approved_uzs' => $estimate - $now,
+            'change_if_rejected_uzs' => -$now,
         ];
     }
 

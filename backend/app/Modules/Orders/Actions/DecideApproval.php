@@ -164,11 +164,12 @@ final class DecideApproval
     }
 
     /**
-     * What an approved proposal writes onto its line (`DL-3` S-7, `DL-54` (5)).
+     * What an approved proposal writes onto its line (`DL-3` S-7, `DL-54` (5));
+     * public so the order can say what a yes would do before it is given (`DL-130`).
      *
      * @return array<string, mixed>
      */
-    private static function applied(CustomerApproval $approval): array
+    public static function applied(CustomerApproval $approval): array
     {
         return match ($approval->type) {
             ApprovalType::PriceOverTolerance => $approval->replacement_product_id === null
