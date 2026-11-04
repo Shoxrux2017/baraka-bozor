@@ -23,6 +23,7 @@ import 'package:go_router/go_router.dart';
 import '../../support/fake_cart_repository.dart';
 import '../../support/fake_catalog_repository.dart';
 import '../../support/fake_favorites_repository.dart';
+import '../../support/nonlinear_text_scaler.dart';
 
 /// The signed-in Customer, switchable by the test.
 class _Account extends Notifier<String?> {
@@ -73,6 +74,7 @@ void main() {
     double textScale = 1,
     FakeCartRepository? cart,
     bool settle = true,
+    TextScaler? scaler,
   }) async {
     if (size != null) {
       tester.view.physicalSize = size;
@@ -123,6 +125,12 @@ void main() {
         ],
         child: MaterialApp.router(
           routerConfig: router,
+          builder: scaler == null
+              ? null
+              : (BuildContext context, Widget? child) => MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: scaler),
+                  child: child!,
+                ),
           locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -1107,6 +1115,27 @@ void main() {
       );
       expect(tester.takeException(), isNull);
       expect(byKey('favorites-empty'), findsOneWidget);
+    });
+
+    testWidgets('the empty state with the row fits 320x640 at text x2 in '
+        '${locale.languageCode}', (WidgetTester tester) async {
+      favorites.rows = <CatalogProduct>[];
+      recommend();
+      await open(
+        tester,
+        locale: locale,
+        size: const Size(320, 640),
+        scaler: const NonlinearTextScaler(2),
+      );
+      expect(tester.takeException(), isNull);
+      expect(byKey('favorites-empty'), findsOneWidget);
+      await tester.ensureVisible(byKey('favorites-categories'));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      final Rect button = tester.getRect(byKey('favorites-categories'));
+      expect(button.bottom, lessThanOrEqualTo(640));
+      expect(button.left, greaterThanOrEqualTo(0));
+      expect(button.right, lessThanOrEqualTo(320));
     });
   }
 }

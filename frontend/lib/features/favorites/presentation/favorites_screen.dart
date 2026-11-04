@@ -399,9 +399,14 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     final bool empty =
         ref.watch(productListProvider(query)).value?.items.isEmpty ?? false;
     // Featured products loaded and none: the empty state has no row to show.
-    final ProductListState? featured = ref
-        .watch(productListProvider(const ProductListQuery(featuredOnly: true)))
-        .value;
+    // The featured list is watched only while the empty state can be drawn.
+    final ProductListState? featured = empty
+        ? ref
+              .watch(
+                productListProvider(const ProductListQuery(featuredOnly: true)),
+              )
+              .value
+        : null;
     final bool recommend = featured == null || featured.items.isNotEmpty;
 
     return CustomerTabScope(
