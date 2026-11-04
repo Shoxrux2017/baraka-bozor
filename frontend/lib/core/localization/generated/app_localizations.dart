@@ -7598,6 +7598,48 @@ abstract class AppLocalizations {
   /// **'Javob vaqti tugadi: {name} buyurtmadan olib tashlanadi'**
   String questionExpiredSpoken(String name);
 
+  /// No description provided for @questionArrivedPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchidan yangi savol: «{name}» narxi'**
+  String questionArrivedPrice(String name);
+
+  /// No description provided for @questionArrivedSubstitution.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchidan yangi savol: «{name}» o\'rniga boshqa mahsulot'**
+  String questionArrivedSubstitution(String name);
+
+  /// No description provided for @questionArrivedQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchidan yangi savol: «{name}» miqdori'**
+  String questionArrivedQuantity(String name);
+
+  /// No description provided for @lineBoughtSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi sotib oldi: {name}, {amount}'**
+  String lineBoughtSpoken(String name, String amount);
+
+  /// No description provided for @linesBoughtSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi {count} ta mahsulot sotib oldi'**
+  String linesBoughtSpoken(int count);
+
+  /// No description provided for @questionPill.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi so\'ramoqda'**
+  String get questionPill;
+
+  /// No description provided for @questionPillSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi savolini ko\'rsatish'**
+  String get questionPillSpoken;
+
   /// No description provided for @refreshDone.
   ///
   /// In uz, this message translates to:

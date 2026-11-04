@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/accessibility/announce.dart';
+import '../../../core/formatting/money_format.dart';
 import '../../../core/formatting/server_text.dart';
 import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/app_language.dart';
@@ -34,6 +36,7 @@ import 'order_cards.dart';
 import 'order_questions.dart';
 import 'order_rating_card.dart';
 import 'order_sections.dart';
+import 'question_pill.dart';
 
 /// The Customer's orders, newest first, in two tabs: the ones in hand and the
 /// ones that ended (`docs/09` section 20, `DL-92` item 3). An order with a
@@ -487,7 +490,28 @@ class _Order extends ConsumerStatefulWidget {
   ConsumerState<_Order> createState() => _OrderState();
 }
 
+/// Where a question that arrived while the order was open stands: measured
+/// while folded, then unfolded where it is seen, or shown still above the
+/// reading (`DL-130`).
+enum _ArrivalPhase { measuring, unfolding, still }
+
+class _Arrival {
+  _Arrival(this.questionId);
+
+  final String questionId;
+  final GlobalKey cardKey = GlobalKey();
+  _ArrivalPhase phase = _ArrivalPhase.measuring;
+}
+
 class _OrderState extends ConsumerState<_Order> {
+  final ScrollController _scroll = ScrollController();
+
+  /// The questions that arrived while the order was open, by question id.
+  final Map<String, _Arrival> _arrivals = <String, _Arrival>{};
+
+  /// The arrived questions above the reading, whose pill shows.
+  final Set<String> _pillFor = <String>{};
+
   /// How many times each line, by id, was washed by an answer to its
   /// question (`DL-130`).
   final Map<String, int> _flash = <String, int>{};
@@ -517,8 +541,176 @@ class _OrderState extends ConsumerState<_Order> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_watchPill);
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// The pill goes once the card's top is in view.
+  void _watchPill() {
+    if (_pillFor.isEmpty) {
+      return;
+    }
+    final Set<String> hidden = <String>{
+      for (final String id in _pillFor)
+        if (_topAbove(_arrivals[id]) ?? false) id,
+    };
+    if (hidden.length != _pillFor.length) {
+      setState(() => _pillFor.retainAll(hidden));
+    }
+  }
+
+  /// Whether the card's top is above the view's top, `null` when the card is
+  /// not drawn.
+  bool? _topAbove(_Arrival? arrival) {
+    final RenderObject? box = arrival?.cardKey.currentContext
+        ?.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) {
+      return null;
+    }
+    final RenderAbstractViewport? viewport = RenderAbstractViewport.maybeOf(
+      box,
+    );
+    if (viewport == null || !_scroll.hasClients) {
+      return null;
+    }
+    return viewport.getOffsetToReveal(box, 0).offset < _scroll.position.pixels;
+  }
+
+  void _toTop() {
+    setState(_pillFor.clear);
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _scroll.jumpTo(0);
+    } else {
+      _scroll.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  /// A load that brought a question not on the screen before, or a line
+  /// bought since: the question unfolds where it is seen, or arrives above the
+  /// reading without moving it; the lines flash and it is all said.
+  void _news(List<CustomerOrderLine> asked, List<CustomerOrderLine> bought) {
+    if (!mounted) {
+      return;
+    }
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLanguage language = interfaceLanguage(context);
+    double correction = 0;
+    final Set<String> above = <String>{};
+    for (final CustomerOrderLine line in asked) {
+      final _Arrival? arrival = _arrivals[line.question!.id];
+      if (arrival != null && (_topAbove(arrival) ?? false)) {
+        above.add(arrival.questionId);
+        correction +=
+            (arrival.cardKey.currentContext!.findRenderObject()! as RenderBox)
+                .size
+                .height;
+      }
+    }
+    setState(() {
+      for (final CustomerOrderLine line in asked) {
+        final _Arrival? arrival = _arrivals[line.question!.id];
+        if (arrival != null) {
+          arrival.phase = above.contains(arrival.questionId)
+              ? _ArrivalPhase.still
+              : _ArrivalPhase.unfolding;
+        }
+        _flash[line.id] = (_flash[line.id] ?? 0) + 1;
+      }
+      _pillFor.addAll(above);
+      for (final CustomerOrderLine line in bought) {
+        _flash[line.id] = (_flash[line.id] ?? 0) + 1;
+      }
+    });
+    if (correction > 0) {
+      final ScrollPosition position = _scroll.position;
+      position.correctBy(correction);
+      // The fling is the position's own activity, which only it tells.
+      // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+      final ScrollActivity? activity = position.activity;
+      if (position is ScrollPositionWithSingleContext &&
+          activity is BallisticScrollActivity) {
+        // A fling's simulation holds absolute positions: it starts again
+        // from the corrected one, at the speed it had.
+        position.goBallistic(activity.velocity);
+      }
+    }
+    for (final CustomerOrderLine line in asked) {
+      final String name = line.name(language);
+      announce(context, switch (line.question!.type) {
+        ApprovalType.priceOverTolerance => l10n.questionArrivedPrice(name),
+        ApprovalType.substitution => l10n.questionArrivedSubstitution(name),
+        ApprovalType.reducedQuantity => l10n.questionArrivedQuantity(name),
+      });
+    }
+    if (bought.length == 1) {
+      announce(
+        context,
+        l10n.lineBoughtSpoken(
+          bought.first.name(language),
+          MoneyFormat.uzs(bought.first.lineTotalUzs, language),
+        ),
+      );
+    } else if (bought.length > 1) {
+      announce(context, l10n.linesBoughtSpoken(bought.length));
+    }
+  }
+
+  void _watchNews(CustomerOrder before) {
+    final CustomerOrder order = widget.order;
+    final DateTime now = ref.read(clockProvider)();
+    final Set<String> known = <String>{
+      for (final CustomerOrderLine line in before.lines)
+        if (line.question != null) line.question!.id,
+    };
+    final Map<String, OrderItemStatus> statuses = <String, OrderItemStatus>{
+      for (final CustomerOrderLine line in before.lines) line.id: line.status,
+    };
+    final List<CustomerOrderLine> asked = <CustomerOrderLine>[
+      for (final CustomerOrderLine line in <CustomerOrderLine>[
+        ...keptLines(order),
+        ...droppedLines(order),
+      ])
+        if (line.question != null &&
+            !known.contains(line.question!.id) &&
+            line.question!.expiresAt.isAfter(now))
+          line,
+    ];
+    final List<CustomerOrderLine> bought = <CustomerOrderLine>[
+      for (final CustomerOrderLine line in order.lines)
+        if (line.status == OrderItemStatus.purchased &&
+            statuses[line.id] != null &&
+            statuses[line.id] != OrderItemStatus.purchased)
+          line,
+    ];
+    _pillFor.retainAll(<String>{
+      for (final CustomerOrderLine line in order.lines)
+        if (line.question != null) line.question!.id,
+    });
+    if (asked.isEmpty && bought.isEmpty) {
+      return;
+    }
+    for (final CustomerOrderLine line in asked) {
+      _arrivals[line.question!.id] = _Arrival(line.question!.id);
+    }
+    // After the build that lays the folded cards and the rows out.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _news(asked, bought));
+  }
+
+  @override
   void didUpdateWidget(_Order oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _watchNews(oldWidget.order);
     final Set<String> before = <String>{
       for (final CustomerOrderLine line in droppedLines(oldWidget.order))
         line.id,
@@ -554,8 +746,11 @@ class _OrderState extends ConsumerState<_Order> {
     final Widget info = OrderInfoSection(order: order, now: now);
     final bool onTheWay = order.status == OrderStatus.onTheWay;
 
-    return ListView(
+    final Widget list = ListView(
       key: const ValueKey<String>('order'),
+      controller: _scroll,
+      // Every row is built, so a card arriving above the view is measured.
+      scrollCacheExtent: const ScrollCacheExtent.pixels(100000),
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: <Widget>[
@@ -592,6 +787,9 @@ class _OrderState extends ConsumerState<_Order> {
                 orderId: order.id,
                 line: line,
                 language: language,
+                arrival: line.question == null
+                    ? null
+                    : _arrivals[line.question!.id],
                 onSettled: _settled,
               ),
           ],
@@ -657,6 +855,22 @@ class _OrderState extends ConsumerState<_Order> {
         if (!onTheWay) ...<Widget>[const SizedBox(height: 20), info],
       ],
     );
+    return Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        list,
+        if (_pillFor.isNotEmpty)
+          Positioned(
+            top: 10,
+            left: 20,
+            right: 20,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: QuestionPill(onTap: _toTop),
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -679,6 +893,7 @@ class _QuestionBlock extends ConsumerStatefulWidget {
     required this.orderId,
     required this.line,
     required this.language,
+    required this.arrival,
     required this.onSettled,
     super.key,
   });
@@ -686,6 +901,10 @@ class _QuestionBlock extends ConsumerStatefulWidget {
   final String orderId;
   final CustomerOrderLine line;
   final AppLanguage language;
+
+  /// How the line's question came in, when it arrived while the order was
+  /// open.
+  final _Arrival? arrival;
 
   /// Called once per settled answer, with the question it answered when the
   /// line still carried it.
@@ -712,6 +931,10 @@ class _QuestionBlockState extends ConsumerState<_QuestionBlock> {
 
   /// The card folding away after its answer, as the line stood then.
   ({CustomerOrderLine line, CustomerQuestion question})? _folding;
+
+  /// The arrival of the question drawn, kept while its card folds after an
+  /// answer, so the card keeps its fold.
+  _Arrival? _arrival;
 
   @override
   void dispose() {
@@ -844,6 +1067,10 @@ class _QuestionBlockState extends ConsumerState<_QuestionBlock> {
     if (card == null && !expired && refusal == null) {
       return const SizedBox.shrink();
     }
+    _arrival = widget.arrival ?? _arrival;
+    final _Arrival? arrival = _arrival?.questionId == card?.id
+        ? _arrival
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -854,9 +1081,18 @@ class _QuestionBlockState extends ConsumerState<_QuestionBlock> {
           IgnorePointer(
             ignoring: folding != null,
             child: Fold(
-              shown: folding == null,
+              // Shown still above the reading, under a key of its own.
+              key: arrival == null
+                  ? null
+                  : ValueKey<String>(
+                      'arrival-${arrival.questionId}-'
+                      '${arrival.phase == _ArrivalPhase.still}',
+                    ),
+              shown:
+                  folding == null && arrival?.phase != _ArrivalPhase.measuring,
               onFolded: () => setState(() => _folding = null),
               child: Padding(
+                key: arrival?.cardKey,
                 padding: const EdgeInsets.only(top: 16),
                 child: OrderQuestionCard(
                   orderId: orderId,

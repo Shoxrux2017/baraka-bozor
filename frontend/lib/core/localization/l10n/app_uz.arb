@@ -3157,6 +3157,51 @@
       }
     }
   },
+  "questionArrivedPrice": "Yig'uvchidan yangi savol: «{name}» narxi",
+  "@questionArrivedPrice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "questionArrivedSubstitution": "Yig'uvchidan yangi savol: «{name}» o'rniga boshqa mahsulot",
+  "@questionArrivedSubstitution": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "questionArrivedQuantity": "Yig'uvchidan yangi savol: «{name}» miqdori",
+  "@questionArrivedQuantity": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "lineBoughtSpoken": "Yig'uvchi sotib oldi: {name}, {amount}",
+  "@lineBoughtSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "linesBoughtSpoken": "Yig'uvchi {count} ta mahsulot sotib oldi",
+  "@linesBoughtSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "questionPill": "Yig'uvchi so'ramoqda",
+  "questionPillSpoken": "Yig'uvchi savolini ko'rsatish",
   "refreshDone": "Yangilandi",
   "cartSummarySpoken": "Savat: {count}, taxminan {sum}. Savatga",
   "@cartSummarySpoken": {

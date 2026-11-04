@@ -4512,6 +4512,37 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String questionArrivedPrice(String name) {
+    return 'Yig\'uvchidan yangi savol: «$name» narxi';
+  }
+
+  @override
+  String questionArrivedSubstitution(String name) {
+    return 'Yig\'uvchidan yangi savol: «$name» o\'rniga boshqa mahsulot';
+  }
+
+  @override
+  String questionArrivedQuantity(String name) {
+    return 'Yig\'uvchidan yangi savol: «$name» miqdori';
+  }
+
+  @override
+  String lineBoughtSpoken(String name, String amount) {
+    return 'Yig\'uvchi sotib oldi: $name, $amount';
+  }
+
+  @override
+  String linesBoughtSpoken(int count) {
+    return 'Yig\'uvchi $count ta mahsulot sotib oldi';
+  }
+
+  @override
+  String get questionPill => 'Yig\'uvchi so\'ramoqda';
+
+  @override
+  String get questionPillSpoken => 'Yig\'uvchi savolini ko\'rsatish';
+
+  @override
   String get refreshDone => 'Yangilandi';
 
   @override

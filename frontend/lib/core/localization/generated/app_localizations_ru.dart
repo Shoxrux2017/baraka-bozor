@@ -4563,6 +4563,37 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String questionArrivedPrice(String name) {
+    return 'Новый вопрос от сборщика: цена на «$name»';
+  }
+
+  @override
+  String questionArrivedSubstitution(String name) {
+    return 'Новый вопрос от сборщика: замена для «$name»';
+  }
+
+  @override
+  String questionArrivedQuantity(String name) {
+    return 'Новый вопрос от сборщика: количество «$name»';
+  }
+
+  @override
+  String lineBoughtSpoken(String name, String amount) {
+    return 'Сборщик купил: $name, $amount';
+  }
+
+  @override
+  String linesBoughtSpoken(int count) {
+    return 'Сборщик купил товаров: $count';
+  }
+
+  @override
+  String get questionPill => 'Сборщик спрашивает';
+
+  @override
+  String get questionPillSpoken => 'Показать вопрос сборщика';
+
+  @override
   String get refreshDone => 'Обновлено';
 
   @override
