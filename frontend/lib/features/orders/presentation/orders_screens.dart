@@ -14,7 +14,6 @@ import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
-import '../../../core/network/paged.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/platform/clock.dart';
 import '../../../core/routing/app_paths.dart';
@@ -55,9 +54,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final AsyncValue<Paged<OrderSummary>> page = ref.watch(
-      customerOrdersProvider(_tab),
-    );
+    final AsyncValue<OrdersFeed> page = ref.watch(customerOrdersProvider(_tab));
     final bool refreshing =
         _tab == OrdersTab.current &&
         page.hasValue &&
@@ -93,26 +90,20 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   child: page.when(
                     skipLoadingOnReload: false,
                     skipLoadingOnRefresh: !page.hasError,
-                    data: (Paged<OrderSummary> page) => page.items.isEmpty
+                    data: (OrdersFeed feed) => feed.rows.isEmpty
                         ? _Empty(tab: _tab)
                         : ListView(
                             key: const ValueKey<String>('orders-list'),
                             primary: true,
                             padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
                             children: <Widget>[
-                              for (final OrderSummary order in page.items)
+                              for (final OrderSummary order in feed.rows)
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: _tab == OrdersTab.current
                                       ? CurrentOrderCard(order: order)
                                       : PastOrderCard(order: order),
                                 ),
-                              PaginationBar(
-                                page: page,
-                                onPage: ref
-                                    .read(ordersPageProvider(_tab).notifier)
-                                    .goToPage,
-                              ),
                             ],
                           ),
                     error: (Object error, StackTrace _) => Padding(
@@ -288,7 +279,7 @@ class _Empty extends StatelessWidget {
   }
 }
 
-/// One of the Customer's orders (`docs/09` section 20, drawings 29 to 29з):
+/// One of the Customer's orders (`docs/09` section 20, drawings 29 to 29Ð·):
 /// where it stands, the questions waiting for their answer, the lines with
 /// what was bought or replaced, the amounts and their kind, the payment, the
 /// address and the wish, the Courier once it is on the way; and, while the
