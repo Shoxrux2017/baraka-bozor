@@ -4,7 +4,6 @@ import '../../../app/providers.dart';
 import '../../../core/errors/report_unexpected_error.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/session/customer_account.dart';
-import '../../catalog/application/catalog_controllers.dart';
 import '../../catalog/domain/catalog.dart';
 import '../data/favorites_api.dart';
 import '../domain/favorites_repository.dart';
@@ -53,17 +52,6 @@ class FavoriteOverrides extends Notifier<Map<String, bool>> {
         state = restored;
       }
       return error is ApiFailure ? error : const UnexpectedFailure();
-    }
-
-    if (_sameAccount(account)) {
-      // Until the lists settle their own changes, a heart changed anywhere
-      // loads every favourites list in use again (`DL-129`).
-      for (final ProductSort sort in ProductSort.values) {
-        final ProductListQuery list = ProductListQuery.favorites(sort: sort);
-        if (ref.exists(productListProvider(list))) {
-          ref.invalidate(productListProvider(list));
-        }
-      }
     }
     return null;
   }

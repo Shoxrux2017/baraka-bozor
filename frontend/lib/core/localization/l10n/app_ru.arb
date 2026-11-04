@@ -2737,5 +2737,7 @@
   "favoriteRemoved": "Убрали из избранного: {name}",
   "favoriteRestoredSpoken": "Снова в избранном: {name}",
   "favoriteRemoveOffline": "Не удалось убрать: нет связи",
-  "favoriteRemoveFailed": "Не удалось убрать. Попробуйте ещё раз"
+  "favoriteRemoveFailed": "Не удалось убрать. Попробуйте ещё раз",
+  "favoritesEntrySpoken": "Избранное: {count}",
+  "favoritesEntryNotSoldSpoken": "Избранное: {count}, {notSold} нет в продаже"
 }

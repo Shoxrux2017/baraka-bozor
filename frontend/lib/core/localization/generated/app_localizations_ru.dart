@@ -4654,4 +4654,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get favoriteRemoveFailed => 'Не удалось убрать. Попробуйте ещё раз';
+
+  @override
+  String favoritesEntrySpoken(String count) {
+    return 'Избранное: $count';
+  }
+
+  @override
+  String favoritesEntryNotSoldSpoken(String count, int notSold) {
+    return 'Избранное: $count, $notSold нет в продаже';
+  }
 }

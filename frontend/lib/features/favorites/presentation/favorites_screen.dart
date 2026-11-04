@@ -49,6 +49,61 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     favoriteRemovalsProvider.notifier,
   );
 
+  /// The screen's route is the top one and its tickers are on, as
+  /// `PeriodicRefresh` reads it.
+  bool _shown = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final bool shown = _isShown;
+    if (shown && !_shown) {
+      // Not during the build that showed the screen.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _isShown) {
+          unawaited(_enter());
+        }
+      });
+    }
+    _shown = shown;
+  }
+
+  bool get _isShown =>
+      (ModalRoute.of(context)?.isCurrent ?? true) &&
+      TickerMode.valuesOf(context).enabled;
+
+  /// The screen is shown with a list loaded: it is brought up to date without
+  /// a skeleton or a spinner, unless a removal waits for its bar, and the
+  /// list is read out once. A list still loading is read out when its first
+  /// page comes (`DL-129`).
+  Future<void> _enter() async {
+    final ProductListQuery query = _query();
+    if (ref.read(productListProvider(query)).value == null) {
+      return;
+    }
+    if (!_removals.holding) {
+      await ref.read(productListProvider(query).notifier).quietRefresh();
+    }
+    if (mounted) {
+      _announceList(query);
+    }
+  }
+
+  void _announceList(ProductListQuery query) {
+    final ProductListState? list = ref.read(productListProvider(query)).value;
+    if (list == null) {
+      return;
+    }
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String count = l10n.catalogProductCount(list.total);
+    announce(
+      context,
+      list.unavailable > 0
+          ? l10n.favoritesEntryNotSoldSpoken(count, list.unavailable)
+          : l10n.favoritesEntrySpoken(count),
+    );
+  }
+
   @override
   void dispose() {
     // A card that never got to leave has its heart back as the server has it.
@@ -246,6 +301,16 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     // A removal waiting for its bar is dropped when the account changes; the
     // provider is listened to while the screen stands so that it is, at once.
     ref.listen(favoriteRemovalsProvider, (_, _) {});
+    // The first page of a list comes while the screen is shown: it is read
+    // out (a list that comes while the tab is hidden waits for the tab).
+    ref.listen(productListProvider(query), (
+      AsyncValue<ProductListState>? before,
+      AsyncValue<ProductListState> after,
+    ) {
+      if (before?.value == null && after.value != null && _isShown) {
+        _announceList(query);
+      }
+    });
     // The count row is not drawn while the list is empty.
     final bool empty =
         ref.watch(productListProvider(query)).value?.items.isEmpty ?? false;

@@ -4597,4 +4597,14 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get favoriteRemoveFailed =>
       'Olib tashlab bo\'lmadi. Qaytadan urinib ko\'ring';
+
+  @override
+  String favoritesEntrySpoken(String count) {
+    return 'Sevimlilar: $count';
+  }
+
+  @override
+  String favoritesEntryNotSoldSpoken(String count, int notSold) {
+    return 'Sevimlilar: $count, $notSold tasi sotuvda yo\'q';
+  }
 }

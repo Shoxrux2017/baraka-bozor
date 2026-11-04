@@ -7705,6 +7705,18 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Olib tashlab bo\'lmadi. Qaytadan urinib ko\'ring'**
   String get favoriteRemoveFailed;
+
+  /// No description provided for @favoritesEntrySpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilar: {count}'**
+  String favoritesEntrySpoken(String count);
+
+  /// No description provided for @favoritesEntryNotSoldSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilar: {count}, {notSold} tasi sotuvda yo\'q'**
+  String favoritesEntryNotSoldSpoken(String count, int notSold);
 }
 
 class _AppLocalizationsDelegate

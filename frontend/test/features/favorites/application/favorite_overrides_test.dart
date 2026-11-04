@@ -143,27 +143,28 @@ void main() {
     expect(favoriteOf(<String, bool>{'p-2': true}, plain), isTrue);
   });
 
-  test('a toggle loads the favourites lists in use again', () async {
+  test('a toggle leaves the favourites lists as they are', () async {
     favorites.rows = <CatalogProduct>[
       catalogProduct(id: 'p-1', isFavorite: true),
       catalogProduct(id: 'p-2', isFavorite: true, isAvailable: false),
     ];
     const ProductListQuery list = ProductListQuery.favorites();
     container.listen(productListProvider(list), (_, _) {});
-    final ProductListState first = await container.read(
-      productListProvider(list).future,
-    );
-    expect(first.items.map((CatalogProduct p) => p.id), <String>['p-1', 'p-2']);
+    await container.read(productListProvider(list).future);
     final int loads = favorites.listLoads;
 
     await notifier().change('p-1', current: true);
-    final ProductListState next = await container.read(
-      productListProvider(list).future,
-    );
+    await Future<void>.delayed(Duration.zero);
 
-    expect(favorites.listLoads, greaterThan(loads));
-    expect(next.items.map((CatalogProduct p) => p.id), <String>['p-2']);
-    expect(next.unavailable, 1);
+    expect(favorites.listLoads, loads, reason: 'the screen refreshes them');
+    expect(
+      container
+          .read(productListProvider(list))
+          .requireValue
+          .items
+          .map((CatalogProduct p) => p.id),
+      <String>['p-1', 'p-2'],
+    );
   });
 
   test(

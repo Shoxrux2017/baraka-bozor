@@ -542,6 +542,98 @@ void main() {
     });
   });
 
+  group('when the screen is shown again', () {
+    setUp(() {
+      favorites.rows = <CatalogProduct>[
+        favorite('p-1', 'Помидоры'),
+        favorite('p-3', 'Яблоки'),
+      ];
+    });
+
+    /// Covers the favourites with a page and shows them again.
+    Future<void> coverAndReturn(WidgetTester tester) async {
+      unawaited(router.push<void>('/'));
+      await tester.pumpAndSettle();
+      router.pop();
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('a page closed over them refreshes them quietly', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, locale: const Locale('ru'));
+      favorites.rows = <CatalogProduct>[
+        favorite('p-9', 'Груши'),
+        ...favorites.rows,
+      ];
+
+      await coverAndReturn(tester);
+
+      expect(favorites.requests, <String>['default|1', 'default|1']);
+      expect(byKey('product-skeletons'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      await tester.pumpAndSettle();
+      expect(byKey('product-card-p-9'), findsOneWidget);
+    });
+
+    testWidgets('no quiet refresh while a removal waits for its bar', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, locale: const Locale('ru'));
+      await heartOff(tester, 'p-1');
+
+      await coverAndReturn(tester);
+      await tester.pumpAndSettle();
+
+      expect(favorites.requests, <String>['default|1']);
+      expect(find.text('Вернуть'), findsOneWidget);
+      expect(byKey('product-card-p-1'), findsNothing);
+      await letBarEnd(tester);
+    });
+
+    testWidgets('a screen reader hears «Избранное: 24 товара, 2 нет в '
+        'продаже» once', (WidgetTester tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(accessibleNavigation: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      final SemanticsHandle handle = tester.ensureSemantics();
+      favorites.rows = <CatalogProduct>[
+        for (int i = 0; i < 22; i++) favorite('s-$i', 'Товар $i'),
+        favorite('n-1', 'Груши', available: false),
+        favorite('n-2', 'Дыни', available: false),
+      ];
+      favorites.pageSize = 30;
+
+      await open(tester, locale: const Locale('ru'));
+
+      expect(
+        announced(tester).where((String m) => m.startsWith('Избранное')),
+        <String>['Избранное: 24 товара, 2 нет в продаже'],
+      );
+      await tester.pump(const Duration(seconds: 1));
+      expect(announced(tester), isEmpty, reason: 'once per showing');
+      handle.dispose();
+    });
+
+    testWidgets('with every product sold the announcement has no not-sold '
+        'part', (WidgetTester tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(accessibleNavigation: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      final SemanticsHandle handle = tester.ensureSemantics();
+
+      await open(tester, locale: const Locale('ru'));
+
+      expect(announced(tester), contains('Избранное: 2 товара'));
+      handle.dispose();
+    });
+  });
+
   testWidgets('with no favourites it shows the empty state and its button', (
     WidgetTester tester,
   ) async {

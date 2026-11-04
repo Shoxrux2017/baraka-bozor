@@ -3253,5 +3253,24 @@
     }
   },
   "favoriteRemoveOffline": "Olib tashlab bo'lmadi: aloqa yo'q",
-  "favoriteRemoveFailed": "Olib tashlab bo'lmadi. Qaytadan urinib ko'ring"
+  "favoriteRemoveFailed": "Olib tashlab bo'lmadi. Qaytadan urinib ko'ring",
+  "favoritesEntrySpoken": "Sevimlilar: {count}",
+  "@favoritesEntrySpoken": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "favoritesEntryNotSoldSpoken": "Sevimlilar: {count}, {notSold} tasi sotuvda yo'q",
+  "@favoritesEntryNotSoldSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "notSold": {
+        "type": "int"
+      }
+    }
+  }
 }
