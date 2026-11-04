@@ -44,7 +44,7 @@ void main() {
   CatalogProduct favorite(int i) => catalogProduct(
     id: 'f-$i',
     nameUz: 'Mahsulot $i',
-    nameRu: 'Ð¢Ð¾Ð²Ð°Ñ€ $i',
+    nameRu: 'Товар $i',
     isFavorite: true,
   );
 

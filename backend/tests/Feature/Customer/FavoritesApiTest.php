@@ -269,6 +269,11 @@ final class FavoritesApiTest extends TestCase
                 'created_at' => now()->startOfSecond()->addSeconds($i),
             ]);
         }
+        // Another Customer's not-sold favourite is no part of this one's count.
+        CustomerFavorite::factory()->create([
+            'customer_id' => User::factory()->customer()->create()->id,
+            'product_id' => Product::factory()->for($category)->create(['is_active' => false])->id,
+        ]);
 
         foreach ([1, 3] as $page) {
             $this->as($this->customer)->getJson(self::URL.'?per_page=10&page='.$page)->assertOk()

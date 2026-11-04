@@ -12,7 +12,7 @@ class FakeFavoritesRepository implements FavoritesRepository {
   FakeFavoritesRepository({List<CatalogProduct>? favorites})
     : rows = favorites ?? <CatalogProduct>[];
 
-  /// The favourites in the order they were added; a product with
+  /// The favourites, newest first; a product with
   /// `isAvailable` false is one that is no longer sold.
   List<CatalogProduct> rows;
   int pageSize = 20;
@@ -112,8 +112,8 @@ class FakeFavoritesRepository implements FavoritesRepository {
     await _change('add:$productId');
     if (!rows.any((CatalogProduct p) => p.id == productId)) {
       rows = <CatalogProduct>[
-        ...rows,
         catalogProduct(id: productId, isFavorite: true),
+        ...rows,
       ];
     }
   }

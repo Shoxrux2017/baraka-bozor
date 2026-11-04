@@ -214,7 +214,7 @@ Markets, cities, sellers, warehouses, inventory, promotions, bonuses, subscripti
 
 ## 32. `customer_favorites` (migrated)
 
-`id, customer_id → users (restrict), product_id → products (restrict), created_at`. Unique `(customer_id, product_id)`; index `(customer_id, created_at desc, id desc)` serves the list, newest first. At most 500 rows per Customer, held by the application under a lock on the Customer's row (`DL-79` (5)).
+`id, customer_id → users (restrict), product_id → products (restrict), created_at`. Unique `(customer_id, product_id)`; index `(customer_id, created_at desc, id desc)` serves the Customer's list and its newest-first order (`DL-129` (1)); the sold-before-not-sold grouping and the price orders use subqueries on `product_id`. At most 500 rows per Customer, held by the application under a lock on the Customer's row (`DL-79` (5)).
 
 ## 33. `order_ratings`
 
