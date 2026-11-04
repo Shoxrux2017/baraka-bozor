@@ -185,6 +185,31 @@ final class CustomerOrdersListApiTest extends TestCase
         }
     }
 
+    public function test_every_order_of_a_page_gets_its_own_preview_lines(): void
+    {
+        $customer = User::factory()->customer()->create();
+        $first = [];
+        $counts = [];
+        foreach (range(1, 20) as $n) {
+            $order = Order::factory()->shopping()->create(['customer_id' => $customer->id]);
+            $counts[$order->id] = ($n % 7) + 1;
+            foreach (range(1, $counts[$order->id]) as $m) {
+                $line = $this->line($order, null, now()->subMinutes(100 - $m));
+                $first[$order->id] ??= $line;
+            }
+        }
+
+        $rows = $this->as($customer)->getJson('/api/v1/customer/orders')->assertOk()->json('data');
+
+        $this->assertCount(20, $rows);
+        foreach ($rows as $row) {
+            $preview = $row['preview'];
+            $this->assertSame($counts[$row['id']], $preview['line_count']);
+            $this->assertCount(min($preview['line_count'], 4), $preview['lines']);
+            $this->assertSame($first[$row['id']]->product_name_ru_snapshot, $preview['lines'][0]['name_ru']);
+        }
+    }
+
     public function test_a_cancelled_order_previews_its_lines_but_the_customers_own_removals(): void
     {
         $order = Order::factory()->cancelled()->create();
