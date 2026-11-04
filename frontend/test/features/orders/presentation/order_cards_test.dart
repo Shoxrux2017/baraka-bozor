@@ -693,6 +693,22 @@ void main() {
       expect(lit(tester), <bool>[false, false, false, false, false]);
     });
 
+    testWidgets('a tap 4 px inside the first star lights it and rates 1', (
+      WidgetTester tester,
+    ) async {
+      await past(tester);
+
+      final Rect first = tester.getRect(byKey('order-rate-$orderOne-1'));
+      await tester.tapAt(Offset(first.left + 4, first.center.dy));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(lit(tester), <bool>[true, false, false, false, false]);
+      await tester.pumpAndSettle();
+      expect(
+        fullLocation(tester),
+        AppPaths.customerOrderRate(orderOne, stars: 1),
+      );
+    });
+
     testWidgets('with reduced motion the rating screen opens at once', (
       WidgetTester tester,
     ) async {
@@ -711,6 +727,44 @@ void main() {
         AppPaths.customerOrderRate(orderOne, stars: 4),
       );
     });
+  });
+
+  testWidgets(
+    'where the stars and Повторить do not fit, it goes under them at the end',
+    (WidgetTester tester) async {
+      await loadMontserrat();
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(status: 'completed', canRate: true),
+      ];
+      await open(tester, size: const Size(320, 900));
+      await tapAndSettle(tester, byKey('orders-tab-past'));
+
+      final Rect card = tester.getRect(byKey('order-$orderOne'));
+      final Rect first = tester.getRect(byKey('order-rate-$orderOne-1'));
+      final Rect repeat = tester.getRect(byKey('order-repeat-$orderOne'));
+      expect(first.left, card.left + 14);
+      expect(repeat.right, card.right - 14);
+      expect(repeat.top, greaterThanOrEqualTo(first.bottom));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('where they fit, the stars and Повторить share a line', (
+    WidgetTester tester,
+  ) async {
+    await loadMontserrat();
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(status: 'completed', canRate: true),
+    ];
+    await open(tester, size: const Size(600, 900));
+    await tapAndSettle(tester, byKey('orders-tab-past'));
+
+    final Rect card = tester.getRect(byKey('order-$orderOne'));
+    final Rect first = tester.getRect(byKey('order-rate-$orderOne-1'));
+    final Rect repeat = tester.getRect(byKey('order-repeat-$orderOne'));
+    expect(first.left, card.left + 14);
+    expect(repeat.right, card.right - 14);
+    expect(repeat.center.dy, first.center.dy);
   });
 
   testWidgets('a rated order says Ваша оценка with its stars', (

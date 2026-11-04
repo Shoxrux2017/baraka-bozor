@@ -257,18 +257,12 @@ class PastOrderCard extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: <Widget>[
-                    if (rateable)
-                      OrderRateStars(order: order)
-                    else
-                      _RatedStars(order: order, stars: rated!),
-                    repeat,
-                  ],
+                _RatingRow(
+                  starsWidth: rateable ? 220 : 130,
+                  stars: rateable
+                      ? OrderRateStars(order: order)
+                      : _RatedStars(order: order, stars: rated!),
+                  repeat: repeat,
                 ),
               ],
             )
@@ -276,6 +270,53 @@ class PastOrderCard extends ConsumerWidget {
             Align(alignment: AlignmentDirectional.centerEnd, child: repeat),
         ],
       ),
+    );
+  }
+}
+
+/// The stars at the start of the row and «Повторить» at its end; when the
+/// two do not fit on a line, «Повторить» goes under the stars, still at the
+/// end (the page's `space-between` with `margin-left: auto`). The fit is
+/// measured from the button's label at the user's text size.
+class _RatingRow extends StatelessWidget {
+  const _RatingRow({
+    required this.starsWidth,
+    required this.stars,
+    required this.repeat,
+  });
+
+  final double starsWidth;
+  final Widget stars;
+  final Widget repeat;
+
+  @override
+  Widget build(BuildContext context) {
+    final double repeatWidth =
+        // Padding 14 + 14, the icon 18 and the gap 6, then the label.
+        52 +
+        textWidth(
+          context,
+          AppLocalizations.of(context).reorderRepeat,
+          const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        );
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints box) {
+        if (starsWidth + 8 + repeatWidth <= box.maxWidth) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[stars, repeat],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Align(alignment: AlignmentDirectional.centerStart, child: stars),
+            const SizedBox(height: 8),
+            Align(alignment: AlignmentDirectional.centerEnd, child: repeat),
+          ],
+        );
+      },
     );
   }
 }
@@ -756,51 +797,45 @@ class _OrderRateStarsState extends State<OrderRateStars>
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
 
-    // The stars stand 8 px left of the card's text edge, as the page has
-    // them: the row is laid out 8 px narrower than it is.
     return Semantics(
       container: true,
       label: l10n.orderRateCaption,
-      child: Align(
-        alignment: Alignment.centerRight,
-        widthFactor: 212 / 220,
-        child: AnimatedBuilder(
-          animation: _pop,
-          builder: (BuildContext context, Widget? _) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              for (int star = 1; star <= 5; star++)
-                Semantics(
-                  container: true,
-                  button: true,
-                  label: l10n.orderRateStarsSpoken(
-                    widget.order.orderNumber,
-                    star,
-                  ),
+      child: AnimatedBuilder(
+        animation: _pop,
+        builder: (BuildContext context, Widget? _) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            for (int star = 1; star <= 5; star++)
+              Semantics(
+                container: true,
+                button: true,
+                label: l10n.orderRateStarsSpoken(
+                  widget.order.orderNumber,
+                  star,
+                ),
+                onTap: () => _rate(star),
+                excludeSemantics: true,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
                   onTap: () => _rate(star),
-                  excludeSemantics: true,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(10),
-                    onTap: () => _rate(star),
-                    child: SizedBox.square(
-                      key: ValueKey<String>(
-                        'order-rate-${widget.order.id}-$star',
-                      ),
-                      dimension: 44,
-                      child: Center(
-                        child: Transform.scale(
-                          scale: _scale(
-                            (_pop.value * _totalMs - _stepMs * (star - 1)) /
-                                _popMs,
-                          ),
-                          child: KitStar(filled: star <= _chosen, size: 28),
+                  child: SizedBox.square(
+                    key: ValueKey<String>(
+                      'order-rate-${widget.order.id}-$star',
+                    ),
+                    dimension: 44,
+                    child: Center(
+                      child: Transform.scale(
+                        scale: _scale(
+                          (_pop.value * _totalMs - _stepMs * (star - 1)) /
+                              _popMs,
                         ),
+                        child: KitStar(filled: star <= _chosen, size: 28),
                       ),
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
@@ -822,20 +857,16 @@ class _RatedStars extends StatelessWidget {
       container: true,
       label: AppLocalizations.of(context).orderRatedSpoken(stars),
       excludeSemantics: true,
-      child: Align(
-        alignment: Alignment.centerRight,
-        widthFactor: 127 / 130,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            for (int i = 1; i <= 5; i++)
-              SizedBox(
-                width: 26,
-                height: 30,
-                child: Center(child: KitStar(filled: i <= stars, size: 22)),
-              ),
-          ],
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (int i = 1; i <= 5; i++)
+            SizedBox(
+              width: 26,
+              height: 30,
+              child: Center(child: KitStar(filled: i <= stars, size: 22)),
+            ),
+        ],
       ),
     );
   }
