@@ -101,23 +101,109 @@ void main() {
   test('«Вернуть» brings the card back and sends nothing, ever', () async {
     final FavoriteRemoval removal = await takeOff('p-1');
 
-    removals().undo(removal);
+    expect(removals().undo(removal), isTrue);
     expect(await removals().commit(removal), isNull);
 
     expect(favorites.changes, isEmpty);
     expect(ids(), <String>['p-1', 'p-2', 'p-3']);
-    expect(container.read(favoriteOverridesProvider), isEmpty);
+    expect(container.read(favoriteOverridesProvider), <String, bool>{
+      'p-1': true,
+    });
   });
 
-  test('a failed removal brings the card back and forgets its heart', () async {
+  test('«Вернуть» of a removal already sent restores nothing', () async {
+    final FavoriteRemoval removal = await takeOff('p-1');
+    await removals().commit(removal);
+
+    expect(removals().undo(removal), isFalse);
+    expect(removals().undo(removal), isFalse);
+    expect(ids(), <String>['p-2', 'p-3']);
+  });
+
+  test('a failed removal brings the card back with its heart red', () async {
     final FavoriteRemoval removal = await takeOff('p-1');
     favorites.nextFailure = const NetworkFailure();
 
     expect(await removals().commit(removal), isA<NetworkFailure>());
 
     expect(ids(), <String>['p-1', 'p-2', 'p-3']);
-    expect(container.read(favoriteOverridesProvider), isEmpty);
+    expect(container.read(favoriteOverridesProvider), <String, bool>{
+      'p-1': true,
+    });
   });
+
+  test('flush waits for a removal already on its way', () async {
+    final FavoriteRemoval removal = await takeOff('p-1');
+    final Completer<void> hold = Completer<void>();
+    favorites.hold = hold;
+    final Future<ApiFailure?> sent = removals().commit(removal);
+    await Future<void>.delayed(Duration.zero);
+    expect(removals().holding, isFalse, reason: 'no longer held, still sent');
+
+    bool done = false;
+    final Future<void> flushed = removals().flush().then((_) => done = true);
+    await Future<void>.delayed(Duration.zero);
+    expect(done, isFalse);
+    hold.complete();
+    await flushed;
+
+    expect(await sent, isNull);
+    expect(ids(), <String>['p-2', 'p-3']);
+  });
+
+  test(
+    'a heart set on a held id undoes its removal and keeps the card',
+    () async {
+      int closed = 0;
+      await takeOff('p-1', closeBar: () => closed++);
+
+      final Future<ApiFailure?> answer = container
+          .read(favoriteOverridesProvider.notifier)
+          .change('p-1', current: false);
+      expect(ids(), <String>['p-1', 'p-2', 'p-3']);
+      expect(closed, 1);
+      expect(removals().holding, isFalse);
+      expect(await answer, isNull);
+      await removals().flush();
+
+      expect(favorites.changes, <String>['add:p-1']);
+      expect(container.read(favoriteOverridesProvider)['p-1'], isTrue);
+    },
+  );
+
+  test(
+    'a heart set on an id the list holds again restores nothing twice',
+    () async {
+      final FavoriteRemoval removal = await takeOff('p-1');
+      list().put(catalogProduct(id: 'p-1', isFavorite: true));
+      final int total = container
+          .read(productListProvider(query))
+          .requireValue
+          .total;
+
+      removals().undo(removal);
+
+      expect(ids().where((String id) => id == 'p-1'), hasLength(1));
+      expect(
+        container.read(productListProvider(query)).requireValue.total,
+        total,
+      );
+    },
+  );
+
+  test(
+    'a heart set on another id, or on «Убрать все», leaves the removal',
+    () async {
+      final FavoriteRemoval removal = await takeOff('p-1');
+
+      await container
+          .read(favoriteOverridesProvider.notifier)
+          .change('p-2', current: false);
+
+      expect(removals().state, same(removal));
+      expect(ids(), <String>['p-2', 'p-3']);
+    },
+  );
 
   test('a second removal sends the first at once', () async {
     final FavoriteRemoval first = await takeOff('p-1');

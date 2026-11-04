@@ -72,6 +72,22 @@ final class CatalogProduct {
 
   String? description(AppLanguage language) =>
       language == AppLanguage.ru ? descriptionRu : descriptionUz;
+
+  /// This product with its heart set to [favorite]; nothing else changes.
+  CatalogProduct withFavorite(bool favorite) => CatalogProduct(
+    id: id,
+    categoryId: categoryId,
+    nameUz: nameUz,
+    nameRu: nameRu,
+    descriptionUz: descriptionUz,
+    descriptionRu: descriptionRu,
+    unitCode: unitCode,
+    priceMode: priceMode,
+    customerUnitPriceUzs: customerUnitPriceUzs,
+    imageUrl: imageUrl,
+    isFavorite: favorite,
+    isAvailable: isAvailable,
+  );
 }
 
 /// The order of a product list: the shop's own, or by price

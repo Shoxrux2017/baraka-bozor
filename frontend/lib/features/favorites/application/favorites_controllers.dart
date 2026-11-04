@@ -7,6 +7,7 @@ import '../../../core/session/customer_account.dart';
 import '../../catalog/domain/catalog.dart';
 import '../data/favorites_api.dart';
 import '../domain/favorites_repository.dart';
+import 'favorite_removals.dart';
 
 final Provider<FavoritesRepository> favoritesRepositoryProvider =
     Provider<FavoritesRepository>(
@@ -33,6 +34,10 @@ class FavoriteOverrides extends Notifier<Map<String, bool>> {
     final String? account = ref.read(customerAccountProvider);
     final bool wanted = !current;
     final bool? previous = state[productId];
+    if (wanted) {
+      // A removal of this very product waiting for its bar is called off.
+      ref.read(favoriteRemovalsProvider.notifier).heartedAgain(productId);
+    }
     state = <String, bool>{...state, productId: wanted};
 
     final FavoritesRepository favorites = ref.read(favoritesRepositoryProvider);
@@ -59,6 +64,9 @@ class FavoriteOverrides extends Notifier<Map<String, bool>> {
   /// Shows [productId] as [favorite] without asking the server: the heart of
   /// a card that is leaving the favourites list (`DL-129`).
   void mark(String productId, {required bool favorite}) {
+    if (!ref.mounted) {
+      return;
+    }
     state = <String, bool>{...state, productId: favorite};
   }
 

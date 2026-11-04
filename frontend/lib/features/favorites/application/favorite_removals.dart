@@ -46,6 +46,9 @@ class FavoriteRemovals extends Notifier<FavoriteRemoval?> {
   int _builds = 0;
   VoidCallback? _closeBar;
 
+  /// The sends not yet answered; [flush] waits for all of them (`DL-129`).
+  final Set<Future<ApiFailure?>> _sending = <Future<ApiFailure?>>{};
+
   @override
   FavoriteRemoval? build() {
     ref.watch(customerAccountProvider);
@@ -76,35 +79,70 @@ class FavoriteRemovals extends Notifier<FavoriteRemoval?> {
   }
 
   /// «Вернуть»: the cards come back at their places and nothing is sent.
-  void undo(FavoriteRemoval removal) {
+  /// The answer is whether they did: a removal already sent or dropped has
+  /// nothing to bring back.
+  bool undo(FavoriteRemoval removal) {
     if (removal._commit != null || removal._undone) {
-      return;
+      return false;
     }
     removal._undone = true;
     _release(removal);
     if (!_isCurrent(removal)) {
-      return;
+      return false;
     }
     _list(removal)?.restore(removal.withdrawal);
-    ref.read(favoriteOverridesProvider.notifier).forget(removal.productIds);
+    _giveBack(removal);
+    return true;
   }
 
   /// Sends [removal], once however often it is asked: [flush], the bar's own
   /// end and the next removal all lead to the same send. The answer is why it
   /// failed, `null` when it was sent, undone or not for this account.
   Future<ApiFailure?> commit(FavoriteRemoval removal) =>
-      removal._commit ??= _send(removal);
+      removal._commit ??= _track(_send(removal));
 
-  /// Closes the bar of the removal held and awaits its sending.
+  Future<ApiFailure?> _track(Future<ApiFailure?> sending) {
+    _sending.add(sending);
+    return sending..whenComplete(() => _sending.remove(sending));
+  }
+
+  /// Closes the bar of the removal held and awaits its sending, and that of
+  /// every removal still on its way: a list asked for after it sees them all.
   Future<void> flush() async {
     final FavoriteRemoval? held = state;
-    if (held == null) {
+    if (held != null) {
+      final VoidCallback? close = _closeBar;
+      commit(held);
+      close?.call();
+    }
+    await Future.wait(<Future<ApiFailure?>>[..._sending]);
+  }
+
+  /// A heart set on a product a held removal is taking off undoes that
+  /// removal at once: the card stays, the bar goes, nothing is deleted. The
+  /// removal of every not-sold favourite is left, as those have no heart to
+  /// set (`DL-129`).
+  void heartedAgain(String productId) {
+    final FavoriteRemoval? held = state;
+    if (held == null ||
+        held.everyNotSold ||
+        !held.productIds.contains(productId)) {
       return;
     }
     final VoidCallback? close = _closeBar;
-    final Future<ApiFailure?> sent = commit(held);
+    undo(held);
     close?.call();
-    await sent;
+  }
+
+  /// The hearts of a removal that did not happen show red again: the server
+  /// still has them (`DL-129`).
+  void _giveBack(FavoriteRemoval removal) {
+    final FavoriteOverrides overrides = ref.read(
+      favoriteOverridesProvider.notifier,
+    );
+    for (final String id in removal.productIds) {
+      overrides.mark(id, favorite: true);
+    }
   }
 
   bool _isCurrent(FavoriteRemoval removal) =>
@@ -150,7 +188,7 @@ class FavoriteRemovals extends Notifier<FavoriteRemoval?> {
     }
     if (failure != null) {
       _list(removal)?.restore(removal.withdrawal);
-      ref.read(favoriteOverridesProvider.notifier).forget(removal.productIds);
+      _giveBack(removal);
       return failure;
     }
     _list(removal)?.settle(removal.withdrawal);

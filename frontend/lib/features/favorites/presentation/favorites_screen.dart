@@ -66,6 +66,22 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   /// A favourites list has been drawn on this screen for this account.
   bool _drawn = false;
 
+  /// A quiet refresh was skipped because a removal waited for its bar; it runs
+  /// when that removal is settled or undone (`DL-129`).
+  bool _refreshOwed = false;
+
+  /// Sends a held removal when the app goes out of sight: the bar's timer may
+  /// never get to run (`DL-129`).
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(
+      onHide: () => unawaited(_removals.flush()),
+    );
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -81,9 +97,9 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     _shown = shown;
   }
 
-  bool get _isShown =>
-      (ModalRoute.of(context)?.isCurrent ?? true) &&
-      TickerMode.valuesOf(context).enabled;
+  /// The tab is on top: a page pushed over it turns its tickers off, while a
+  /// menu opened over it does not hide it.
+  bool get _isShown => TickerMode.valuesOf(context).enabled;
 
   /// The screen is shown with a list loaded: it is brought up to date without
   /// a skeleton or a spinner, unless a removal waits for its bar, and the
@@ -94,11 +110,26 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     if (ref.read(productListProvider(query)).value == null) {
       return;
     }
-    if (!_removals.holding) {
+    if (_removals.holding) {
+      _refreshOwed = true;
+    } else {
       await ref.read(productListProvider(query).notifier).quietRefresh();
     }
-    if (mounted) {
+    if (mounted && _isShown) {
       _announceList(query);
+    }
+  }
+
+  /// A removal is over: the refresh it held back runs now if the screen is
+  /// still shown, without reading the list out again.
+  void _refreshIfOwed() {
+    if (!_refreshOwed || !mounted || !_isShown || _removals.holding) {
+      return;
+    }
+    _refreshOwed = false;
+    final ProductListQuery query = _query();
+    if (ref.read(productListProvider(query)).value != null) {
+      unawaited(ref.read(productListProvider(query).notifier).quietRefresh());
     }
   }
 
@@ -119,13 +150,19 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
 
   @override
   void dispose() {
-    // A card that never got to leave has its heart back as the server has it.
-    // A provider is not changed while the tree is torn down, so it follows.
+    _lifecycle.dispose();
+    // A card that never got to leave has its heart back, red as the server
+    // has it. A provider is not changed while the tree is torn down, so it
+    // follows.
     for (final MapEntry<Timer, List<String>> pending in _timers.entries) {
       pending.key.cancel();
       final FavoriteOverrides overrides = _overrides;
       final List<String> ids = pending.value;
-      scheduleMicrotask(() => overrides.forget(ids));
+      scheduleMicrotask(() {
+        for (final String id in ids) {
+          overrides.mark(id, favorite: true);
+        }
+      });
     }
     _timers.clear();
     super.dispose();
@@ -171,6 +208,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     final ProductListQuery query = _query();
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final String? account = ref.read(customerAccountProvider);
     for (final String id in ids) {
       _overrides.mark(id, favorite: false);
     }
@@ -185,6 +223,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         _leave(
           ids,
           query: query,
+          account: account,
           everyNotSold: everyNotSold,
           name: name,
           l10n: l10n,
@@ -198,22 +237,43 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   Future<void> _leave(
     List<String> ids, {
     required ProductListQuery query,
+    required String? account,
     required bool everyNotSold,
     required String Function(ProductListState state) name,
     required AppLocalizations l10n,
     required ScaffoldMessengerState messenger,
   }) async {
-    final ProductListState? before = ref.exists(productListProvider(query))
-        ? ref.read(productListProvider(query)).value
+    // A list being asked for again answers first: the card stays melted, then
+    // leaves the list that lands (`DL-129`).
+    final list = productListProvider(query);
+    if (ref.exists(list) && ref.read(list).isLoading) {
+      try {
+        await ref.read(list.future);
+      } on Object {
+        // The list failed; the cards it had stay and are taken from them.
+      }
+    }
+    if (!mounted) {
+      // The screen went while the list was loading: the hearts are given back.
+      for (final String id in ids) {
+        _overrides.mark(id, favorite: true);
+      }
+      return;
+    }
+    if (ref.read(customerAccountProvider) != account) {
+      // Another account has hearts and a list of its own.
+      setState(() => _leaving = _leaving.difference(ids.toSet()));
+      return;
+    }
+    final ProductListState? before = ref.exists(list)
+        ? ref.read(list).value
         : null;
     ListWithdrawal? withdrawal;
     if (before != null) {
-      final ProductListController list = ref.read(
-        productListProvider(query).notifier,
-      );
+      final ProductListController controller = ref.read(list.notifier);
       withdrawal = everyNotSold
-          ? list.withdrawNotSold()
-          : list.withdraw(ids.toSet());
+          ? controller.withdrawNotSold()
+          : controller.withdraw(ids.toSet());
     }
     if (mounted) {
       setState(() => _leaving = _leaving.difference(ids.toSet()));
@@ -239,14 +299,17 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     );
     ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? bar;
     _removals.hold(removal, closeBar: () => bar?.close());
+    // Nothing waits in the queue before the bar: it is the current one, so
+    // closing it closes it.
+    messenger.clearSnackBars();
     bar = showUndoBar(
       messenger,
       text: text,
       actionLabel: l10n.undoAction,
       duration: _barDuration,
       onUndo: () {
-        _removals.undo(removal);
-        if (mounted) {
+        // A removal already sent has nothing to bring back and says nothing.
+        if (_removals.undo(removal) && mounted) {
           announce(context, restored);
         }
       },
@@ -259,6 +322,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     if (failure != null) {
       _showFailure(failure, l10n: l10n, messenger: messenger);
     }
+    _refreshIfOwed();
   }
 
   /// Nothing of the removal is on the list to take back, so the server is
@@ -269,7 +333,9 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     required AppLocalizations l10n,
     required ScaffoldMessengerState messenger,
   }) async {
-    _overrides.forget(ids);
+    for (final String id in ids) {
+      _overrides.mark(id, favorite: true);
+    }
     if (everyNotSold) {
       return;
     }
@@ -307,7 +373,9 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   ) {
     final ProductListQuery query = _query();
     final String id = product.id;
-    ref.read(productListProvider(query).notifier).put(product);
+    ref
+        .read(productListProvider(query).notifier)
+        .put(product.withFavorite(true));
     final GlobalKey key = GlobalKey();
     if (!MediaQuery.disableAnimationsOf(context)) {
       setState(() => _landing = <String, GlobalKey>{..._landing, id: key});
