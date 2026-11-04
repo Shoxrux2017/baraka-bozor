@@ -169,6 +169,65 @@ void main() {
     expect(at(tester, 'p-3').dy, closeTo(second.dy, 0.5));
   });
 
+  testWidgets('a rebuild during a glide does not cut it', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    final Offset third = at(tester, 'p-3');
+    final Offset second = at(tester, 'p-2');
+    list().withdraw(<String>{'p-1'});
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    leaving.value = <String>{'p-2'};
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+    final Offset now = at(tester, 'p-3');
+    expect(now.dy, lessThan(third.dy));
+    expect(now.dy, greaterThan(second.dy));
+  });
+
+  testWidgets('a second change mid-glide turns from where the card is', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    list().withdraw(<String>{'p-1'});
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    final Offset before = at(tester, 'p-3');
+    list().withdraw(<String>{'p-2'});
+    await tester.pump();
+    final Offset after = at(tester, 'p-3');
+    expect((after - before).distance, lessThan(1));
+  });
+
+  testWidgets('a card scrolled into view after a change does not glide', (
+    WidgetTester tester,
+  ) async {
+    favorites.rows = <CatalogProduct>[
+      for (int i = 1; i <= 20; i++) item('p-$i'),
+    ];
+    await open(tester);
+    list().withdraw(<String>{'p-1'});
+    await tester.pumpAndSettle();
+    Set<String> built() => <String>{
+      for (int i = 1; i <= 20; i++)
+        if (byKey('card-motion-p-$i').evaluate().isNotEmpty) 'p-$i',
+    };
+    final Set<String> seen = built();
+    await tester.drag(byKey('product-grid'), const Offset(0, -1500));
+    await tester.pump();
+    final Set<String> fresh = built().difference(seen);
+    expect(fresh, isNotEmpty);
+    final Map<String, Offset> first = <String, Offset>{
+      for (final String id in fresh) id: at(tester, id),
+    };
+    await tester.pump(const Duration(milliseconds: 100));
+    for (final String id in fresh) {
+      expect(at(tester, id), first[id], reason: id);
+      expect(opacityOf(tester, id), 1, reason: id);
+    }
+  });
+
   testWidgets('a restored card arrives at its old place', (
     WidgetTester tester,
   ) async {

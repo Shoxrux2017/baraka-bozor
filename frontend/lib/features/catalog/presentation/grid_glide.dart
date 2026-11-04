@@ -58,24 +58,62 @@ Map<String, Offset> glideOffsets({
 /// The curve of every move of the grid: a glide, and an arrival (`DL-129`).
 const Cubic gridMotionCurve = Cubic(0.2, 0.8, 0.2, 1);
 
+/// Where the cards in motion stand now, so a change that moves a card to a
+/// new row, and so to a new widget, goes on from where it is drawn (`DL-129`).
+class GridMotionRegistry {
+  final Map<
+    String,
+    ({Object owner, Offset Function() remaining, double Function() arrived})
+  >
+  _live =
+      <
+        String,
+        ({Object owner, Offset Function() remaining, double Function() arrived})
+      >{};
+
+  void _attach(
+    String id,
+    Object owner,
+    Offset Function() remaining,
+    double Function() arrived,
+  ) => _live[id] = (owner: owner, remaining: remaining, arrived: arrived);
+
+  void _detach(String id, Object owner) {
+    if (_live[id]?.owner == owner) {
+      _live.remove(id);
+    }
+  }
+
+  /// How far the card with this id is still from its place.
+  Offset remaining(String id) => _live[id]?.remaining() ?? Offset.zero;
+
+  /// How far its arrival has come: 1 when done or not arriving.
+  double arrived(String id) => _live[id]?.arrived() ?? 1;
+}
+
 /// One card of the grid in motion (`DL-129`). A card that [leaving] melts in
 /// 190 ms (`easeIn`) to nothing and takes no taps. A card with [glideFrom]
-/// starts that far from where it stands and glides there in 280 ms. A card
-/// that [arrives] grows from 0.9 and fades in over 260 ms. With reduced motion
-/// nothing glides, an arrival fades in over 200 ms and a card fades out over
-/// 150 ms.
+/// starts that far from where it stands and glides there in 280 ms, from the
+/// offset it had when the glide began, whatever later builds pass. A card with
+/// [arriveFrom] grows from 0.9 and fades in over 260 ms, from that progress.
+/// With reduced motion nothing glides, an arrival fades in over 200 ms and a
+/// card fades out over 150 ms.
 class GridCardMotion extends StatefulWidget {
   const GridCardMotion({
+    required this.id,
+    required this.registry,
     required this.child,
     this.glideFrom,
-    this.arrives = false,
+    this.arriveFrom,
     this.leaving = false,
     super.key,
   });
 
+  final String id;
+  final GridMotionRegistry registry;
   final Widget child;
   final Offset? glideFrom;
-  final bool arrives;
+  final double? arriveFrom;
   final bool leaving;
 
   @override
@@ -97,6 +135,30 @@ class _GridCardMotionState extends State<GridCardMotion>
   bool _started = false;
   bool _reduced = false;
 
+  /// The offset the running glide started from.
+  Offset _from = Offset.zero;
+
+  Offset get _remaining =>
+      _from * (1 - gridMotionCurve.transform(_glide.value));
+
+  @override
+  void initState() {
+    super.initState();
+    widget.registry._attach(
+      widget.id,
+      this,
+      () => _remaining,
+      () => _arrive.value,
+    );
+  }
+
+  void _startGlide(Offset from) {
+    _from = from;
+    _glide
+      ..value = 0
+      ..forward();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -107,15 +169,14 @@ class _GridCardMotionState extends State<GridCardMotion>
     _reduced = MediaQuery.disableAnimationsOf(context);
     _arrive.duration = Duration(milliseconds: _reduced ? 200 : 260);
     _melt.duration = Duration(milliseconds: _reduced ? 150 : 190);
-    if (widget.arrives) {
+    final double? arriveFrom = widget.arriveFrom;
+    if (arriveFrom != null && arriveFrom < 1) {
       _arrive
-        ..value = 0
+        ..value = arriveFrom
         ..forward();
     }
     if (widget.glideFrom != null && !_reduced) {
-      _glide
-        ..value = 0
-        ..forward();
+      _startGlide(widget.glideFrom!);
     }
     if (widget.leaving) {
       _melt.forward();
@@ -130,14 +191,13 @@ class _GridCardMotionState extends State<GridCardMotion>
     }
     final Offset? from = widget.glideFrom;
     if (from != null && from != old.glideFrom && !_reduced) {
-      _glide
-        ..value = 0
-        ..forward();
+      _startGlide(from);
     }
   }
 
   @override
   void dispose() {
+    widget.registry._detach(widget.id, this);
     _glide.dispose();
     _arrive.dispose();
     _melt.dispose();
@@ -154,16 +214,13 @@ class _GridCardMotionState extends State<GridCardMotion>
             ? Curves.easeOut.transform(_arrive.value)
             : gridMotionCurve.transform(_arrive.value);
         final double melt = Curves.easeIn.transform(_melt.value);
-        final Offset away =
-            (widget.glideFrom ?? Offset.zero) *
-            (1 - gridMotionCurve.transform(_glide.value));
         final double scale =
             (_reduced ? 1.0 : 0.9 + 0.1 * arrive) *
             (_reduced ? 1.0 : 1 - 0.12 * melt);
         return IgnorePointer(
           ignoring: widget.leaving,
           child: Transform.translate(
-            offset: away,
+            offset: _remaining,
             child: Transform.scale(
               scale: scale,
               child: Opacity(opacity: arrive * (1 - melt), child: child),

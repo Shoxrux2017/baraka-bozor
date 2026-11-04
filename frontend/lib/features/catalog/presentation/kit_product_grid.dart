@@ -210,7 +210,8 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
   /// Set at each build for the cards built from it: where a moved card was
   /// and the cards that arrive (`DL-129`).
   Map<String, Offset> _glides = const <String, Offset>{};
-  Set<String> _arrivals = const <String>{};
+  Map<String, double> _arrivals = const <String, double>{};
+  final GridMotionRegistry _motion = GridMotionRegistry();
 
   /// Whether the end of the list now drawn has faded in: it does so once per
   /// list, however often its row is built again (`DL-128`).
@@ -523,8 +524,10 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
           );
           return GridCardMotion(
             key: ValueKey<String>('card-motion-$id'),
+            id: id,
+            registry: _motion,
             glideFrom: _glides[id],
-            arrives: _arrivals.contains(id),
+            arriveFrom: _arrivals[id],
             leaving: widget.leaving.contains(id),
             child: _paged.contains(id)
                 ? _PageFade(
@@ -663,8 +666,6 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
             (constraints.maxWidth - padding.horizontal - (columns - 1) * _gap) /
                 columns +
             _gap;
-        _glides = const <String, Offset>{};
-        _arrivals = const <String>{};
         final ProductListQuery? drawn = _drawnQuery;
         final List<CatalogProduct> drawnItems = _drawnItems;
         if (state != null) {
@@ -718,7 +719,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
               tailStart: _tailStart(state.items),
               tailTop: _headingHeight,
             );
-            _glides = was == null
+            final Map<String, Offset> glides = was == null
                 ? const <String, Offset>{}
                 : glideOffsets(
                     before: <String>[for (final p in drawnItems) p.id],
@@ -732,13 +733,28 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
                     ),
                     placeAfter: placeAfter,
                   );
-            final Set<String> was_ = <String>{
+            final Set<String> drawnIds = <String>{
               for (final CatalogProduct p in drawnItems) p.id,
             };
-            _arrivals = <String>{
-              for (final CatalogProduct p in state.items)
-                if (!was_.contains(p.id)) p.id,
+            // A card still on its way goes on from where it is drawn, whether
+            // it glides or arrives.
+            _glides = <String, Offset>{
+              for (final MapEntry<String, Offset> e in glides.entries)
+                e.key: e.value + _motion.remaining(e.key),
             };
+            _arrivals = <String, double>{
+              for (final CatalogProduct p in state.items)
+                if (!drawnIds.contains(p.id))
+                  p.id: 0
+                else if (glides.containsKey(p.id) && _motion.arrived(p.id) < 1)
+                  p.id: _motion.arrived(p.id),
+            };
+            // Only the cards built in this frame move; one built later, as it
+            // scrolls into view, stands where it is.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _glides = const <String, Offset>{};
+              _arrivals = const <String, double>{};
+            });
           }
           final ApiFailure? moreFailure = state.moreFailure;
           if (moreFailure == null) {
