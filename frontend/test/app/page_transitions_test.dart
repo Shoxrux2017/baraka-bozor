@@ -7,7 +7,7 @@ import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/product_screen.dart';
 import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
-import 'package:baraka_bozor/features/orders/presentation/orders_screens.dart';
+import 'package:baraka_bozor/features/orders/presentation/orders_list_screen.dart';
 import 'package:baraka_bozor/features/profile/domain/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

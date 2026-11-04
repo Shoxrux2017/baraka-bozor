@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Orders;
 
 use App\Models\Enums\ApprovalStatus;
+use App\Models\Enums\ItemRemovedReason;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Order;
@@ -41,6 +42,28 @@ final class CustomerOrders
             ->whereColumn('customer_approvals.order_id', 'orders.id')
             ->where('customer_approvals.status', ApprovalStatus::Pending->value)
             ->where('customer_approvals.expires_at', '>', now())]);
+    }
+
+    /**
+     * Adds `preview_line_count`: the lines not removed, or, when every line is
+     * removed, those the Customer did not remove themselves, which is what
+     * `Order::previewItems` lists (`DL-131` (2)).
+     *
+     * @param  Builder<Order>  $orders
+     * @return Builder<Order>
+     */
+    public static function withPreviewLineCount(Builder $orders): Builder
+    {
+        $removed = OrderItemStatus::Removed->value;
+        $own = ItemRemovedReason::CustomerRemoved->value;
+
+        return $orders->addSelect(['preview_line_count' => static fn (QueryBuilder $lines) => $lines->from('order_items')
+            ->selectRaw(
+                'case when count(*) filter (where status <> ?) > 0 then count(*) filter (where status <> ?)'
+                .' else count(*) filter (where removed_reason_code is distinct from ?) end',
+                [$removed, $removed, $own],
+            )
+            ->whereColumn('order_items.order_id', 'orders.id')]);
     }
 
     /**

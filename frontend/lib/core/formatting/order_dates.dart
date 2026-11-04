@@ -57,3 +57,13 @@ String panelWhen(DateTime instant, DateTime now) {
   }
   return '${_two(day.day)}.${_two(day.month)} $time';
 }
+
+/// The Tashkent month of [instant] as a heading of the past orders:
+/// "Октябрь", with the year when it is not [now]'s (`DL-131`).
+String monthHeading(AppLocalizations l10n, DateTime instant, DateTime now) {
+  final DateTime day = _tashkent(instant);
+  final String month = l10n.monthName('m${day.month}');
+  return day.year == _tashkent(now).year
+      ? month
+      : l10n.monthYear(month, '${day.year}');
+}

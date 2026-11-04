@@ -27,7 +27,7 @@ Rules for every stage:
 | 8 | «Рекомендуем» and «Все товары» | 7 | list order | Merged (PR #131) |
 | 9 | Search | 8 | — | Merged (PR #131) |
 | 10 | Favourites | 7 | favourites order | Merged (PR #132) |
-| 11 | Order | 9 | approval amounts and picture | Planned |
+| 11 | Order | 9 | approval amounts and picture | Merged (PR #133) |
 | 12 | My orders | 10 | list summary fields | Planned |
 | 13 | Order editing | 12 | edit preview, minimum | Planned |
 | 14 | Cancellation | 12 | cancel reason | Planned |
@@ -353,6 +353,7 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - The app reads the cart's `working_hours` as a required key (`DL-125` (7)), so a build of stage 6 or later refuses the cart answer of an older server. Deploy the backend before any such build reaches a phone (W4-5).
 - The app now also reads each category's `product_count` as a required key (`DL-128` (1)), like `working_hours` (`DL-125` (7)): deploy the backend first.
 - The app reads the order screen's new keys as required (`estimate_if_approved_uzs`, `change_if_approved_uzs`, `change_if_rejected_uzs`, `replacement.image_url`, and each line's `agreed`), like `working_hours` (`DL-130`): deploy the backend before any build of stage 11 reaches a phone.
+- The app reads the list summary's new keys as required (`pending_approval_expires_at`, `preview`), like `working_hours` (`DL-125` (7)) and the order screen's keys (`DL-130`): deploy the backend before any build of stage 12 reaches a phone (`DL-131`).
 
 ## Review findings not acted on
 
@@ -398,3 +399,9 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stage 11 final review, P3-12: a correction mid-fling restarts the fling with the old maximum extent, so near the list's end Android's clamping springs back and the fling stops early. Ruling: needs an arrival mid-fling at the end of the list; the reading still holds.
 - Stage 11, minor: the line flash's 6 px reach past the row is clipped sideways by `Fold`'s `ClipRect`; the wash is as wide as the row. Ruling: cosmetic.
 - Stage 11, minor: restarting a fling after `correctBy` reads the protected `ScrollPosition.activity` (two lints suppressed), and an arrival during the pill's own scroll to the top turns that scroll into a fling. Ruling: contained and tested; recheck the suppression on a Flutter upgrade.
+- Stage 12, minor: «Текущие» loads no page after the first 20 orders in hand; the count says the total. Ruling: unrealistic for the pilot; `loadMore` on the current pane when it matters.
+- Stage 12, minor: the read-only rated stars start at the text edge (the drawing shifts them 3 px left), like the tappable ones (`DL-131` (11)). Ruling: cosmetic.
+- Stage 12, minor: the covered-cancel test keeps the feed loading under the cover with a `container.listen`; without it the paused feed reloads on return, a path the drop also keeps quiet. Ruling: both paths covered.
+- Stage 12, minor: the past count's bump is counted in `build` from rises of the total, guarded by the last total. Ruling: deterministic; kept.
+- Stage 12 re-review, out of scope: a drop while the feed reloads or failed keeps the id as given, and the reload's filter compares ids case-sensitively. Ruling: the server sends lower-case UUIDs and the order page drops the id it was opened with; harmless today.
+- Stage 12 re-review, minor: the reset of the past count on another account has no test, and a first build before the new account's «Прошлые» starts loading may compare the carried count once. Ruling: at most one false bump right after an account switch; cosmetic.

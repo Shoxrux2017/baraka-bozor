@@ -2716,6 +2716,43 @@
   "progressShopping": "Xarid",
   "progressDelivering": "Yo'lda",
   "progressDelivered": "Yetkazildi",
+  "progressListShopping": "Yig'ish",
+  "progressListDelivering": "Yo'lda",
+  "orderCardStageSpoken": "{status}, {stage}-bosqich, 4 tadan",
+  "@orderCardStageSpoken": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "stage": {
+        "type": "int"
+      }
+    }
+  },
+  "orderCardEstimateSpoken": "Taxminan {amount}",
+  "@orderCardEstimateSpoken": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "questionAnswerSpoken": "Buyurtma № {number} bo'yicha savolga javob berish",
+  "@questionAnswerSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "callCourierSpoken": "Buyurtma № {number} kuryeriga qo'ng'iroq qilish",
+  "@callCourierSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "orderStageOf": "{stage}-bosqich, 4 tadan: {label}",
   "@orderStageOf": {
     "placeholders": {
@@ -3406,6 +3443,111 @@
         "type": "String"
       },
       "notSold": {
+        "type": "int"
+      }
+    }
+  },
+  "orderPreviewTwo": "{first}, {second}",
+  "@orderPreviewTwo": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPreviewMore": "{first}, {second} va yana {count} ta",
+  "@orderPreviewMore": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderRateCaption": "Buyurtmani baholang",
+  "orderRatedCaption": "Sizning bahoyingiz",
+  "orderRatedSpoken": "Sizning bahoyingiz: 5 dan {stars}",
+  "@orderRatedSpoken": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "orderRateStarsSpoken": "Buyurtma № {number} ni 5 dan {stars} ga baholash",
+  "@orderRateStarsSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "reorderRepeatSpoken": "Buyurtma № {number} ni takrorlash",
+  "@reorderRepeatSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "ordersCurrentEmptyTitle": "Hozir jarayondagi buyurtma yo'q",
+  "ordersLastOrderText": "Oxirgi buyurtma — {day}. Uni takrorlash yoki yangi savat yig'ish mumkin.",
+  "ordersAllPast": "Barcha o'tgan buyurtmalar · {count}",
+  "ordersAllPastSpoken": "Barcha o'tgan buyurtmalar, {count}",
+  "ordersCount": "{count, plural, other{{count} ta buyurtma}}",
+  "ordersLoading": "Buyurtmalar yuklanmoqda",
+  "monthName": "{month, select, m1{Yanvar} m2{Fevral} m3{Mart} m4{Aprel} m5{May} m6{Iyun} m7{Iyul} m8{Avgust} m9{Sentabr} m10{Oktabr} m11{Noyabr} m12{Dekabr} other{}}",
+  "monthYear": "{month} {year}",
+  "orderAnnounced": "Buyurtma № {number}: {what}",
+  "@orderAnnounced": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "orderOnTheWayAnnounced": "Buyurtma № {number} yo'lda. Kuryer yo'lga chiqdi",
+  "@orderOnTheWayAnnounced": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "orderDeliveredAnnounced": "Buyurtma № {number} yetkazildi. U o'tgan buyurtmalarda — u yerda baholash mumkin",
+  "@orderDeliveredAnnounced": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "orderCancelledAnnounced": "Buyurtma № {number} bekor qilindi. U o'tgan buyurtmalarda",
+  "@orderCancelledAnnounced": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "orderQuestionsExpiredAnnounced": "Buyurtma № {number} bo'yicha savolga javob vaqti tugadi",
+  "@orderQuestionsExpiredAnnounced": {
+    "placeholders": {
+      "number": {
         "type": "int"
       }
     }

@@ -211,22 +211,46 @@ Map<String, Object?> orderSummaryJson({
   int? totalUzs,
   String totalKind = 'estimate',
   String createdAt = '2026-09-28T07:00:00Z',
-}) => <String, Object?>{
-  'id': id,
-  'order_number': number,
-  'status': status,
-  'payment_method': 'cash',
-  'item_count': itemCount,
-  'pending_approval_count': waiting,
-  'total_uzs': status == 'cancelled' ? null : (totalUzs ?? 55600),
-  'total_kind': status == 'cancelled' ? 'none' : totalKind,
-  'address': <String, Object?>{'street': street, 'house': house},
-  'courier_phone': courierPhone,
-  'image_url': imageUrl,
-  'rating_stars': ratingStars,
-  'can_rate': canRate,
-  'created_at': createdAt,
-};
+  List<String>? deadlines,
+  int? previewCount,
+  List<Map<String, Object?>>? previewLines,
+}) {
+  final int count = previewCount ?? itemCount;
+  final List<Map<String, Object?>> shown =
+      previewLines ??
+      <Map<String, Object?>>[
+        for (final (String, String) names in const <(String, String)>[
+          ('Pomidor', 'Помидоры'),
+          ('Sut', 'Молоко домашнее'),
+          ('Non', 'Лепёшка'),
+          ('Tuxum', 'Яйца домашние'),
+        ].take(count < 4 ? count : 4))
+          <String, Object?>{
+            'name_uz': names.$1,
+            'name_ru': names.$2,
+            'image_url': null,
+          },
+      ];
+  return <String, Object?>{
+    'id': id,
+    'order_number': number,
+    'status': status,
+    'payment_method': 'cash',
+    'item_count': itemCount,
+    'pending_approval_count': waiting,
+    'total_uzs': status == 'cancelled' ? null : (totalUzs ?? 55600),
+    'total_kind': status == 'cancelled' ? 'none' : totalKind,
+    'address': <String, Object?>{'street': street, 'house': house},
+    'courier_phone': courierPhone,
+    'image_url': imageUrl,
+    'rating_stars': ratingStars,
+    'can_rate': canRate,
+    'created_at': createdAt,
+    'pending_approval_expires_at':
+        deadlines ?? List<String>.filled(waiting, '2026-09-28T07:10:00Z'),
+    'preview': <String, Object?>{'line_count': count, 'lines': shown},
+  };
+}
 
 /// The Customer's orders in memory. A change answers with [answer] when set
 /// (a test decides what the server says), or fails once with [failure]; an
@@ -234,6 +258,13 @@ Map<String, Object?> orderSummaryJson({
 class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   FakeCustomerOrdersRepository({List<Map<String, Object?>>? orders})
     : rows = orders ?? <Map<String, Object?>>[customerOrderJson()];
+
+  /// The list's page size: the list is cut into pages of it, with a true
+  /// `total` and `lastPage`.
+  int perPage = 20;
+
+  /// A tab's next list load fails with its failure, once (`DL-131`).
+  final Map<OrdersTab, ApiFailure> listFailures = <OrdersTab, ApiFailure>{};
 
   List<Map<String, Object?>> rows;
   Map<String, Object?>? answer;
@@ -246,6 +277,9 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
 
   /// Holds the list's loads only, until the test completes it.
   Completer<void>? holdList;
+
+  /// Holds the past tab's loads only, until the test completes it.
+  Completer<void>? holdPast;
 
   final List<String> loads = <String>[];
   final List<(String, List<OrderEditLine>, String?)> edits =
@@ -305,6 +339,13 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   Future<Paged<OrderSummary>> orders(OrdersTab tab, int page) async {
     loads.add('orders:${tab.code}:$page');
     await holdList?.future;
+    if (tab == OrdersTab.past) {
+      await holdPast?.future;
+    }
+    final ApiFailure? listFailure = listFailures.remove(tab);
+    if (listFailure != null) {
+      throw listFailure;
+    }
     final List<Map<String, Object?>> all =
         summaries ??
         <Map<String, Object?>>[
@@ -320,12 +361,15 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
         if (_isPast(json['status']! as String) == (tab == OrdersTab.past))
           CustomerOrdersApi.parseSummary(json),
     ];
+    final int pages = items.isEmpty
+        ? 1
+        : (items.length + perPage - 1) ~/ perPage;
     return Paged<OrderSummary>(
-      items: items,
+      items: <OrderSummary>[...items.skip((page - 1) * perPage).take(perPage)],
       page: page,
-      perPage: 20,
+      perPage: perPage,
       total: items.length,
-      lastPage: 1,
+      lastPage: pages,
     );
   }
 

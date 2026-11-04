@@ -549,6 +549,86 @@ void main() {
         throwsFormatException,
       );
     });
+
+    test('a summary reads its question deadlines and preview', () {
+      final OrderSummary summary = CustomerOrdersApi.parseSummary(
+        orderSummaryJson(
+          waiting: 2,
+          deadlines: <String>['2026-09-28T07:10:00Z', '2026-09-28T07:20:00Z'],
+          itemCount: 10,
+        ),
+      );
+      expect(summary.questionDeadlines, <DateTime>[
+        DateTime.utc(2026, 9, 28, 7, 10),
+        DateTime.utc(2026, 9, 28, 7, 20),
+      ]);
+      expect(summary.preview.lineCount, 10);
+      expect(summary.preview.lines, hasLength(4));
+      expect(summary.preview.lines.first.nameUz, 'Pomidor');
+      expect(summary.preview.lines.first.nameRu, 'Помидоры');
+      expect(summary.preview.lines.first.imageUrl, isNull);
+      final OrderSummary pictured = CustomerOrdersApi.parseSummary(
+        orderSummaryJson(
+          previewCount: 1,
+          previewLines: <Map<String, Object?>>[
+            <String, Object?>{
+              'name_uz': 'Sut',
+              'name_ru': 'Молоко',
+              'image_url': 'https://cdn.example/milk.webp',
+            },
+          ],
+        ),
+      );
+      expect(pictured.preview.lines.single.imageUrl, contains('milk'));
+    });
+
+    test('a summary off the deadlines or preview contract is refused', () {
+      Map<String, Object?> preview(int count, int shown) => <String, Object?>{
+        'line_count': count,
+        'lines': <Object?>[
+          for (int i = 0; i < shown; i++)
+            <String, Object?>{
+              'name_uz': 'Non',
+              'name_ru': 'Лепёшка',
+              'image_url': null,
+            },
+        ],
+      };
+      final Map<String, Object?> noRussian = preview(1, 1);
+      (((noRussian['lines']! as List<Object?>).single)! as Map<String, Object?>)
+          .remove('name_ru');
+      for (final Map<String, Object?> broken in <Map<String, Object?>>[
+        <String, Object?>{
+          ...orderSummaryJson(waiting: 2),
+          'pending_approval_expires_at': <Object?>['2026-09-28T07:10:00Z'],
+        },
+        <String, Object?>{
+          ...orderSummaryJson(waiting: 2),
+          'pending_approval_expires_at': <Object?>[
+            '2026-09-28T07:20:00Z',
+            '2026-09-28T07:10:00Z',
+          ],
+        },
+        <String, Object?>{
+          ...orderSummaryJson(itemCount: 6),
+          'preview': preview(6, 5),
+        },
+        <String, Object?>{
+          ...orderSummaryJson(itemCount: 6),
+          'preview': preview(6, 3),
+        },
+        <String, Object?>{...orderSummaryJson()}..remove('preview'),
+        <String, Object?>{...orderSummaryJson()}
+          ..remove('pending_approval_expires_at'),
+        <String, Object?>{...orderSummaryJson(), 'preview': noRussian},
+      ]) {
+        expect(
+          () => CustomerOrdersApi.parseSummary(broken),
+          throwsFormatException,
+          reason: '$broken',
+        );
+      }
+    });
   });
 
   group('requests', () {

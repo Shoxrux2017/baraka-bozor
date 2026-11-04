@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Enums\ApprovalStatus;
 use App\Models\Enums\AssignmentEndReason;
 use App\Models\Enums\CancellationReason;
+use App\Models\Enums\ItemRemovedReason;
+use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Enums\PaymentMethod;
 use App\Models\Enums\PaymentStatus;
@@ -224,6 +227,39 @@ class Order extends Model
     public function approvals(): HasMany
     {
         return $this->hasMany(CustomerApproval::class);
+    }
+
+    /**
+     * The questions still waiting for the Customer, the soonest to expire
+     * first (`DL-131` (1)). The caller adds the instant that tells an open one
+     * from an expired one; the Customer's list counts and dates its questions
+     * from this one read.
+     *
+     * @return HasMany<CustomerApproval, $this>
+     */
+    public function openApprovals(): HasMany
+    {
+        return $this->approvals()
+            ->where('status', ApprovalStatus::Pending->value)
+            ->orderBy('expires_at')
+            ->orderBy('id');
+    }
+
+    /**
+     * The lines the list previews (`DL-131` (2)): all but the Customer's own
+     * removals, the lines not removed first, then by creation. The caller
+     * limits them per order and keeps the first `preview_line_count`.
+     *
+     * @return HasMany<OrderItem, $this>
+     */
+    public function previewItems(): HasMany
+    {
+        return $this->items()
+            ->where(static fn (Builder $lines) => $lines->whereNull('removed_reason_code')
+                ->orWhere('removed_reason_code', '<>', ItemRemovedReason::CustomerRemoved->value))
+            ->orderByRaw('order_items.status = ?', [OrderItemStatus::Removed->value])
+            ->orderBy('order_items.created_at')
+            ->orderBy('order_items.id');
     }
 
     /**

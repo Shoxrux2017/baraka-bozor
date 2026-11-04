@@ -62,19 +62,22 @@ Future<void> showReorderSheet(
       _ReorderSheet(result: result, orderNumber: orderNumber),
 );
 
-/// The small filled "Повторить" of an order's card, or the page's outlined
-/// "Повторить заказ" when [wide].
+/// The 44 px "Повторить" of an order's card (`DL-131`): filled, or [outlined]
+/// on the last-order card; or the page's outlined "Повторить заказ" when
+/// [wide].
 class RepeatOrderButton extends ConsumerWidget {
   const RepeatOrderButton({
     required this.orderId,
     required this.orderNumber,
     required this.wide,
+    this.outlined = false,
     super.key,
   });
 
   final String orderId;
   final int orderNumber;
   final bool wide;
+  final bool outlined;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -134,36 +137,85 @@ class RepeatOrderButton extends ConsumerWidget {
               ),
       );
     }
-    return FilledButton(
-      key: ValueKey<String>('order-repeat-$orderId'),
-      style: FilledButton.styleFrom(
-        backgroundColor: KitColors.primary,
-        foregroundColor: Colors.white,
-        minimumSize: const Size(0, 36),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-      onPressed: onPressed,
-      child: busy
-          ? spinner
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                const Icon(Icons.refresh, size: 16),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    l10n.reorderRepeat,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+    const TextStyle label = TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+    );
+    final Color foreground = outlined ? KitColors.ink : Colors.white;
+    final Widget content = busy
+        ? SizedBox.square(
+            dimension: 16,
+            child: CircularProgressIndicator(strokeWidth: 2, color: foreground),
+          )
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                Icons.refresh,
+                size: 18,
+                color: outlined ? KitColors.primary : null,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  l10n.reorderRepeat,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: label,
                 ),
-              ],
+              ),
+            ],
+          );
+    final ButtonStyle style = outlined
+        ? OutlinedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: KitColors.ink,
+            disabledBackgroundColor: Colors.white,
+            disabledForegroundColor: KitColors.ink,
+            minimumSize: const Size(0, 44),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            side: const BorderSide(color: KitColors.outline),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
             ),
+          )
+        : FilledButton.styleFrom(
+            backgroundColor: KitColors.primary,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: KitColors.primary,
+            disabledForegroundColor: Colors.white,
+            minimumSize: const Size(0, 44),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          );
+    final ValueKey<String> key = ValueKey<String>('order-repeat-$orderId');
+
+    return Semantics(
+      container: true,
+      button: true,
+      label: busy ? l10n.reorderSending : l10n.reorderRepeatSpoken(orderNumber),
+      onTap: onPressed,
+      excludeSemantics: true,
+      child: Opacity(
+        opacity: busy ? 0.7 : 1,
+        child: outlined
+            ? OutlinedButton(
+                key: key,
+                style: style,
+                onPressed: onPressed,
+                child: content,
+              )
+            : FilledButton(
+                key: key,
+                style: style,
+                onPressed: onPressed,
+                child: content,
+              ),
+      ),
     );
   }
 }

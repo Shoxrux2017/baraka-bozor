@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart' show protected;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart'
     show
@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/misc.dart'
         NotifierProviderFamily;
 
 import '../../../app/providers.dart';
+import '../../../core/errors/report_unexpected_error.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/platform/clock.dart';
 import '../../../core/network/idempotency_key.dart';
@@ -16,7 +17,6 @@ import '../../../core/network/paged.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/state/account_mutation.dart';
-import '../../../core/state/list_page_controller.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../cart/application/cart_controllers.dart';
 import '../data/customer_orders_api.dart';
@@ -29,58 +29,245 @@ final Provider<CustomerOrdersRepository> customerOrdersRepositoryProvider =
       ),
     );
 
-/// The page of one tab of the Customer's orders shown while the list is
-/// open; the list opens on the newest orders again, and another account
-/// starts over.
-class OrdersPageController extends Notifier<int> {
-  OrdersPageController(this.tab);
+const Object _keep = Object();
 
-  final OrdersTab tab;
+/// One tab of the Customer's orders as the endless list shows it: every page
+/// loaded so far, newest first (`DL-131`).
+final class OrdersFeed {
+  const OrdersFeed({
+    required this.rows,
+    required this.total,
+    required this.nextPage,
+    required this.pages,
+    required this.at,
+    this.loadingMore = false,
+    this.moreFailure,
+    this.dropped = const <String>{},
+  });
 
-  @override
-  int build() {
-    ref.watch(customerAccountProvider);
-    return 1;
-  }
+  /// The orders, newest first, none twice.
+  final List<OrderSummary> rows;
 
-  void goToPage(int page) => state = page;
+  /// The server's count, less the rows dropped since the last load.
+  final int total;
+
+  /// The page [CustomerOrdersFeed.loadMore] asks for next; null at the end.
+  final int? nextPage;
+
+  /// How many pages are loaded.
+  final int pages;
+
+  /// When the last whole load came.
+  final DateTime at;
+
+  final bool loadingMore;
+
+  /// Why the page after the last one did not come; the rows stay.
+  final ApiFailure? moreFailure;
+
+  /// The ids [CustomerOrdersFeed.drop] took off since the last load.
+  final Set<String> dropped;
+
+  bool get hasMore => nextPage != null;
+
+  OrdersFeed copyWith({
+    List<OrderSummary>? rows,
+    int? total,
+    Object? nextPage = _keep,
+    int? pages,
+    bool? loadingMore,
+    Object? moreFailure = _keep,
+    Set<String>? dropped,
+  }) => OrdersFeed(
+    rows: rows ?? this.rows,
+    total: total ?? this.total,
+    nextPage: identical(nextPage, _keep) ? this.nextPage : nextPage as int?,
+    pages: pages ?? this.pages,
+    at: at,
+    loadingMore: loadingMore ?? this.loadingMore,
+    moreFailure: identical(moreFailure, _keep)
+        ? this.moreFailure
+        : moreFailure as ApiFailure?,
+    dropped: dropped ?? this.dropped,
+  );
 }
 
-final NotifierProviderFamily<OrdersPageController, int, OrdersTab>
-ordersPageProvider = NotifierProvider.autoDispose
-    .family<OrdersPageController, int, OrdersTab>(OrdersPageController.new);
-
-/// One tab of the Customer's orders, newest first, one page at a time.
-class CustomerOrdersListController extends ListPageController<OrderSummary> {
-  CustomerOrdersListController(this.tab);
+/// One tab of the Customer's orders, a page at a time as the Customer
+/// scrolls. A reload — after an invalidation too — asks again for every page
+/// the feed had, so a deep list comes back as it was; another account starts
+/// at page 1. A page that lands after the feed was rebuilt is dropped by the
+/// generation it was asked for (`DL-131`).
+class CustomerOrdersFeed extends AsyncNotifier<OrdersFeed> {
+  CustomerOrdersFeed(this.tab);
 
   final OrdersTab tab;
 
+  int _generation = 0;
+  int _pages = 1;
+  String? _account;
+
+  /// The ids dropped, kept across whole loads of one account, and how many
+  /// rows were dropped since the last whole load (the server's total, when
+  /// it comes with the next page, still counts them).
+  Set<String> _dropped = <String>{};
+  int _droppedSinceLoad = 0;
+
   @override
-  Future<Paged<OrderSummary>> build() {
-    if (ref.watch(customerAccountProvider) == null) {
-      return Completer<Paged<OrderSummary>>().future;
+  Future<OrdersFeed> build() async {
+    final int generation = ++_generation;
+    final String? account = ref.watch(customerAccountProvider);
+    if (account == null) {
+      _account = null;
+      _pages = 1;
+      _dropped = <String>{};
+      return Completer<OrdersFeed>().future;
     }
-    return ref
-        .watch(customerOrdersRepositoryProvider)
-        .orders(tab, ref.watch(ordersPageProvider(tab)));
+    final int wanted = account == _account ? math.max(1, _pages) : 1;
+    if (account != _account) {
+      _dropped = <String>{};
+    }
+    _account = account;
+    final CustomerOrdersRepository repository = ref.watch(
+      customerOrdersRepositoryProvider,
+    );
+
+    final List<OrderSummary> rows = <OrderSummary>[];
+    final Set<String> seen = <String>{};
+    int total = 0;
+    int? next = 1;
+    int loaded = 0;
+    while (next != null && loaded < wanted) {
+      final Paged<OrderSummary> page = await repository.orders(tab, next);
+      if (generation != _generation) {
+        break;
+      }
+      for (final OrderSummary row in page.items) {
+        if (seen.add(row.id)) {
+          rows.add(row);
+        }
+      }
+      total = page.total;
+      loaded++;
+      next = page.hasNext ? page.page + 1 : null;
+    }
+    // A build that was superseded changes nothing the next one reads.
+    if (generation == _generation) {
+      _pages = loaded;
+      _dropped = <String>{
+        for (final String id in _dropped)
+          if (!seen.contains(id)) id,
+      };
+      _droppedSinceLoad = 0;
+    }
+    return OrdersFeed(
+      dropped: _dropped,
+      rows: rows,
+      total: total,
+      nextPage: next,
+      pages: loaded,
+      at: ref.read(clockProvider)(),
+    );
   }
 
-  @override
-  @protected
-  String idOf(OrderSummary row) => row.id;
+  /// Loads the next page, once at a time; nothing at the end, while a reload
+  /// runs, or after one failed (the screen's retry reloads).
+  Future<void> loadMore() async {
+    final OrdersFeed? current = state.value;
+    final int? page = current?.nextPage;
+    if (current == null ||
+        page == null ||
+        current.loadingMore ||
+        state.isLoading ||
+        state.hasError ||
+        ref.read(customerAccountProvider) == null) {
+      return;
+    }
+
+    final int generation = _generation;
+    state = AsyncData<OrdersFeed>(
+      current.copyWith(loadingMore: true, moreFailure: null),
+    );
+
+    OrdersFeed next;
+    try {
+      final Paged<OrderSummary> loaded = await ref
+          .read(customerOrdersRepositoryProvider)
+          .orders(tab, page);
+      final Set<String> shown = <String>{
+        for (final OrderSummary row in current.rows) row.id,
+        ...current.dropped,
+      };
+      next = current.copyWith(
+        rows: <OrderSummary>[
+          ...current.rows,
+          for (final OrderSummary row in loaded.items)
+            if (shown.add(row.id)) row,
+        ],
+        total: loaded.total - _droppedSinceLoad,
+        nextPage: loaded.hasNext ? loaded.page + 1 : null,
+        pages: current.pages + 1,
+        loadingMore: false,
+        moreFailure: null,
+      );
+    } on ApiFailure catch (failure) {
+      next = current.copyWith(loadingMore: false, moreFailure: failure);
+    } catch (error, stackTrace) {
+      reportUnexpectedError(error, stackTrace, 'while loading more orders');
+      next = current.copyWith(
+        loadingMore: false,
+        moreFailure: const UnexpectedFailure(),
+      );
+    }
+
+    if (ref.mounted && generation == _generation) {
+      _pages = next.pages;
+      state = AsyncData<OrdersFeed>(next);
+    }
+  }
+
+  /// Takes the order [id] off the feed, whatever the case of the id, before
+  /// the feed's own reload answers (`DL-113`). The id is always remembered, so
+  /// the load that follows names it dropped even when this came during a
+  /// reload or after a failure; the rows and the total change only when the
+  /// feed holds an answer that is not being replaced, and the total goes down
+  /// by the rows removed.
+  void drop(String id) {
+    final String wanted = id.toLowerCase();
+    final OrdersFeed? current = state.value;
+    final List<OrderSummary> rows = current?.rows ?? const <OrderSummary>[];
+    final List<OrderSummary> named = <OrderSummary>[
+      for (final OrderSummary row in rows)
+        if (row.id.toLowerCase() == wanted) row,
+    ];
+    final bool settled = current != null && !state.hasError && !state.isLoading;
+    if (settled && named.isEmpty) {
+      return;
+    }
+    _dropped = <String>{
+      ..._dropped,
+      if (named.isEmpty) id else for (final OrderSummary row in named) row.id,
+    };
+    if (!settled) {
+      return;
+    }
+    _droppedSinceLoad += named.length;
+    state = AsyncData<OrdersFeed>(
+      current.copyWith(
+        rows: <OrderSummary>[
+          for (final OrderSummary row in rows)
+            if (row.id.toLowerCase() != wanted) row,
+        ],
+        total: math.max(0, current.total - named.length),
+        dropped: _dropped,
+      ),
+    );
+  }
 }
 
-/// One tab of the Customer's orders, newest first, one page at a time.
-final AsyncNotifierProviderFamily<
-  CustomerOrdersListController,
-  Paged<OrderSummary>,
-  OrdersTab
->
+/// One tab of the Customer's orders as an endless list.
+final AsyncNotifierProviderFamily<CustomerOrdersFeed, OrdersFeed, OrdersTab>
 customerOrdersProvider = AsyncNotifierProvider.autoDispose
-    .family<CustomerOrdersListController, Paged<OrderSummary>, OrdersTab>(
-      CustomerOrdersListController.new,
-    );
+    .family<CustomerOrdersFeed, OrdersFeed, OrdersTab>(CustomerOrdersFeed.new);
 
 /// Every question a Shopper waits on, the one expiring first at the head
 /// (`DL-125`).
@@ -204,10 +391,15 @@ class OrderCancelController extends OrderMutation {
     final CustomerOrder? order = await perform(
       () => orders.cancel(orderId, sent, key),
       reload: (CustomerOrder? cancelled) {
-        reload(cancelled);
-        if (cancelled?.status == OrderStatus.cancelled) {
-          dropRow(ref, customerOrdersProvider(OrdersTab.current), orderId);
+        // The drop comes first: a feed that is reloading, or failed, still
+        // remembers the order as dropped for the load that follows.
+        if (cancelled?.status == OrderStatus.cancelled &&
+            ref.exists(customerOrdersProvider(OrdersTab.current))) {
+          ref
+              .read(customerOrdersProvider(OrdersTab.current).notifier)
+              .drop(orderId);
         }
+        reload(cancelled);
       },
     );
     if (!_uncertain(ref.mounted ? state.failure : null)) {

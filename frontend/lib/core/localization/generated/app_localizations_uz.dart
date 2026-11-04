@@ -4038,6 +4038,32 @@ class AppLocalizationsUz extends AppLocalizations {
   String get progressDelivered => 'Yetkazildi';
 
   @override
+  String get progressListShopping => 'Yig\'ish';
+
+  @override
+  String get progressListDelivering => 'Yo\'lda';
+
+  @override
+  String orderCardStageSpoken(String status, int stage) {
+    return '$status, $stage-bosqich, 4 tadan';
+  }
+
+  @override
+  String orderCardEstimateSpoken(String amount) {
+    return 'Taxminan $amount';
+  }
+
+  @override
+  String questionAnswerSpoken(int number) {
+    return 'Buyurtma № $number bo\'yicha savolga javob berish';
+  }
+
+  @override
+  String callCourierSpoken(int number) {
+    return 'Buyurtma № $number kuryeriga qo\'ng\'iroq qilish';
+  }
+
+  @override
   String orderStageOf(int stage, String label) {
     return '$stage-bosqich, 4 tadan: $label';
   }
@@ -4686,5 +4712,117 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String favoritesEntryNotSoldSpoken(String count, int notSold) {
     return 'Sevimlilar: $count, $notSold tasi sotuvda yo\'q';
+  }
+
+  @override
+  String orderPreviewTwo(String first, String second) {
+    return '$first, $second';
+  }
+
+  @override
+  String orderPreviewMore(String first, String second, int count) {
+    return '$first, $second va yana $count ta';
+  }
+
+  @override
+  String get orderRateCaption => 'Buyurtmani baholang';
+
+  @override
+  String get orderRatedCaption => 'Sizning bahoyingiz';
+
+  @override
+  String orderRatedSpoken(int stars) {
+    return 'Sizning bahoyingiz: 5 dan $stars';
+  }
+
+  @override
+  String orderRateStarsSpoken(int number, int stars) {
+    return 'Buyurtma № $number ni 5 dan $stars ga baholash';
+  }
+
+  @override
+  String reorderRepeatSpoken(int number) {
+    return 'Buyurtma № $number ni takrorlash';
+  }
+
+  @override
+  String get ordersCurrentEmptyTitle => 'Hozir jarayondagi buyurtma yo\'q';
+
+  @override
+  String ordersLastOrderText(Object day) {
+    return 'Oxirgi buyurtma — $day. Uni takrorlash yoki yangi savat yig\'ish mumkin.';
+  }
+
+  @override
+  String ordersAllPast(Object count) {
+    return 'Barcha o\'tgan buyurtmalar · $count';
+  }
+
+  @override
+  String ordersAllPastSpoken(Object count) {
+    return 'Barcha o\'tgan buyurtmalar, $count';
+  }
+
+  @override
+  String ordersCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ta buyurtma',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ordersLoading => 'Buyurtmalar yuklanmoqda';
+
+  @override
+  String monthName(String month) {
+    String _temp0 = intl.Intl.selectLogic(month, {
+      'm1': 'Yanvar',
+      'm2': 'Fevral',
+      'm3': 'Mart',
+      'm4': 'Aprel',
+      'm5': 'May',
+      'm6': 'Iyun',
+      'm7': 'Iyul',
+      'm8': 'Avgust',
+      'm9': 'Sentabr',
+      'm10': 'Oktabr',
+      'm11': 'Noyabr',
+      'm12': 'Dekabr',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String monthYear(Object month, Object year) {
+    return '$month $year';
+  }
+
+  @override
+  String orderAnnounced(int number, String what) {
+    return 'Buyurtma № $number: $what';
+  }
+
+  @override
+  String orderOnTheWayAnnounced(int number) {
+    return 'Buyurtma № $number yo\'lda. Kuryer yo\'lga chiqdi';
+  }
+
+  @override
+  String orderDeliveredAnnounced(int number) {
+    return 'Buyurtma № $number yetkazildi. U o\'tgan buyurtmalarda — u yerda baholash mumkin';
+  }
+
+  @override
+  String orderCancelledAnnounced(int number) {
+    return 'Buyurtma № $number bekor qilindi. U o\'tgan buyurtmalarda';
+  }
+
+  @override
+  String orderQuestionsExpiredAnnounced(int number) {
+    return 'Buyurtma № $number bo\'yicha savolga javob vaqti tugadi';
   }
 }

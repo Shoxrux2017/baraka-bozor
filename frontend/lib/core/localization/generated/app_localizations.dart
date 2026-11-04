@@ -6836,6 +6836,42 @@ abstract class AppLocalizations {
   /// **'Yetkazildi'**
   String get progressDelivered;
 
+  /// No description provided for @progressListShopping.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish'**
+  String get progressListShopping;
+
+  /// No description provided for @progressListDelivering.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'lda'**
+  String get progressListDelivering;
+
+  /// No description provided for @orderCardStageSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{status}, {stage}-bosqich, 4 tadan'**
+  String orderCardStageSpoken(String status, int stage);
+
+  /// No description provided for @orderCardEstimateSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Taxminan {amount}'**
+  String orderCardEstimateSpoken(String amount);
+
+  /// No description provided for @questionAnswerSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} bo\'yicha savolga javob berish'**
+  String questionAnswerSpoken(int number);
+
+  /// No description provided for @callCourierSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} kuryeriga qo\'ng\'iroq qilish'**
+  String callCourierSpoken(int number);
+
   /// No description provided for @orderStageOf.
   ///
   /// In uz, this message translates to:
@@ -7819,6 +7855,126 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Sevimlilar: {count}, {notSold} tasi sotuvda yo\'q'**
   String favoritesEntryNotSoldSpoken(String count, int notSold);
+
+  /// No description provided for @orderPreviewTwo.
+  ///
+  /// In uz, this message translates to:
+  /// **'{first}, {second}'**
+  String orderPreviewTwo(String first, String second);
+
+  /// No description provided for @orderPreviewMore.
+  ///
+  /// In uz, this message translates to:
+  /// **'{first}, {second} va yana {count} ta'**
+  String orderPreviewMore(String first, String second, int count);
+
+  /// No description provided for @orderRateCaption.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani baholang'**
+  String get orderRateCaption;
+
+  /// No description provided for @orderRatedCaption.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sizning bahoyingiz'**
+  String get orderRatedCaption;
+
+  /// No description provided for @orderRatedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sizning bahoyingiz: 5 dan {stars}'**
+  String orderRatedSpoken(int stars);
+
+  /// No description provided for @orderRateStarsSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} ni 5 dan {stars} ga baholash'**
+  String orderRateStarsSpoken(int number, int stars);
+
+  /// No description provided for @reorderRepeatSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} ni takrorlash'**
+  String reorderRepeatSpoken(int number);
+
+  /// No description provided for @ordersCurrentEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir jarayondagi buyurtma yo\'q'**
+  String get ordersCurrentEmptyTitle;
+
+  /// No description provided for @ordersLastOrderText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi buyurtma — {day}. Uni takrorlash yoki yangi savat yig\'ish mumkin.'**
+  String ordersLastOrderText(Object day);
+
+  /// No description provided for @ordersAllPast.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha o\'tgan buyurtmalar · {count}'**
+  String ordersAllPast(Object count);
+
+  /// No description provided for @ordersAllPastSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha o\'tgan buyurtmalar, {count}'**
+  String ordersAllPastSpoken(Object count);
+
+  /// No description provided for @ordersCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count, plural, other{{count} ta buyurtma}}'**
+  String ordersCount(num count);
+
+  /// No description provided for @ordersLoading.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar yuklanmoqda'**
+  String get ordersLoading;
+
+  /// No description provided for @monthName.
+  ///
+  /// In uz, this message translates to:
+  /// **'{month, select, m1{Yanvar} m2{Fevral} m3{Mart} m4{Aprel} m5{May} m6{Iyun} m7{Iyul} m8{Avgust} m9{Sentabr} m10{Oktabr} m11{Noyabr} m12{Dekabr} other{}}'**
+  String monthName(String month);
+
+  /// No description provided for @monthYear.
+  ///
+  /// In uz, this message translates to:
+  /// **'{month} {year}'**
+  String monthYear(Object month, Object year);
+
+  /// No description provided for @orderAnnounced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number}: {what}'**
+  String orderAnnounced(int number, String what);
+
+  /// No description provided for @orderOnTheWayAnnounced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} yo\'lda. Kuryer yo\'lga chiqdi'**
+  String orderOnTheWayAnnounced(int number);
+
+  /// No description provided for @orderDeliveredAnnounced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} yetkazildi. U o\'tgan buyurtmalarda — u yerda baholash mumkin'**
+  String orderDeliveredAnnounced(int number);
+
+  /// No description provided for @orderCancelledAnnounced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} bekor qilindi. U o\'tgan buyurtmalarda'**
+  String orderCancelledAnnounced(int number);
+
+  /// No description provided for @orderQuestionsExpiredAnnounced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} bo\'yicha savolga javob vaqti tugadi'**
+  String orderQuestionsExpiredAnnounced(int number);
 }
 
 class _AppLocalizationsDelegate

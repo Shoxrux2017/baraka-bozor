@@ -7,6 +7,7 @@ import '../../../core/routing/feature_routes.dart';
 import '../../catalog/domain/catalog.dart';
 import 'order_edit_screen.dart';
 import 'order_product_picker.dart';
+import 'orders_list_screen.dart';
 import 'orders_screens.dart';
 import 'rate_order_screen.dart';
 

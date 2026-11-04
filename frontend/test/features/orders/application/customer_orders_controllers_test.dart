@@ -26,6 +26,16 @@ ProviderContainer _container(FakeCustomerOrdersRepository orders) {
   return container;
 }
 
+class _Account extends Notifier<String?> {
+  @override
+  String? build() => 'c-1';
+
+  void signIn(String? id) => state = id;
+}
+
+final NotifierProvider<_Account, String?> _account =
+    NotifierProvider<_Account, String?>(_Account.new);
+
 void main() {
   test(
     'a cancel keeps its key while the answer is unknown, and only then',
@@ -180,44 +190,294 @@ void main() {
     },
   );
 
-  test('the list opens on the newest orders again', () async {
-    final ProviderContainer container = _container(
-      FakeCustomerOrdersRepository(),
-    );
-    addTearDown(container.dispose);
-    final ProviderSubscription<Object?> list = container.listen(
-      customerOrdersProvider(OrdersTab.current),
-      (_, _) {},
-    );
-    container.read(ordersPageProvider(OrdersTab.current).notifier).goToPage(2);
-    expect(container.read(ordersPageProvider(OrdersTab.current)), 2);
+  group('the endless feed', () {
+    late DateTime now;
+    late FakeCustomerOrdersRepository orders;
+    late ProviderContainer container;
 
-    list.close();
-    await container.pump();
-    expect(container.read(ordersPageProvider(OrdersTab.current)), 1);
+    String idOf(int n) =>
+        '0192f0a0-0000-7000-8000-${n.toRadixString(16).padLeft(12, '0')}';
+
+    List<Map<String, Object?>> past(int count, {int from = 1}) =>
+        <Map<String, Object?>>[
+          for (int i = from; i < from + count; i++)
+            orderSummaryJson(id: idOf(i), number: i, status: 'completed'),
+        ];
+
+    setUp(() {
+      now = DateTime.utc(2026, 11, 5, 7);
+      orders = FakeCustomerOrdersRepository()..summaries = past(45);
+      container = ProviderContainer(
+        retry: (int count, Object error) => null,
+        overrides: [
+          customerAccountProvider.overrideWith(
+            (Ref ref) => ref.watch(_account),
+          ),
+          customerOrdersRepositoryProvider.overrideWithValue(orders),
+          clockProvider.overrideWithValue(() => now),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(customerOrdersProvider(OrdersTab.past), (_, _) {});
+    });
+
+    final AsyncNotifierProvider<CustomerOrdersFeed, OrdersFeed> pastFeed =
+        customerOrdersProvider(OrdersTab.past);
+
+    List<String> ids() => container
+        .read(pastFeed)
+        .requireValue
+        .rows
+        .map((OrderSummary row) => row.id)
+        .toList();
+
+    test('a reload asks again for every page it had and shows no order '
+        'twice', () async {
+      await container.read(pastFeed.future);
+      await container.read(pastFeed.notifier).loadMore();
+      expect(ids(), hasLength(40));
+
+      orders
+        ..loads.clear()
+        ..summaries = <Map<String, Object?>>[
+          orderSummaryJson(id: idOf(99), number: 99, status: 'completed'),
+          ...past(45),
+        ];
+      container.invalidate(pastFeed);
+      await container.read(pastFeed.future);
+
+      expect(orders.loads, <String>['orders:past:1', 'orders:past:2']);
+      expect(ids(), hasLength(40));
+      expect(ids().first, idOf(99));
+      expect(ids().toSet(), hasLength(40));
+      expect(container.read(pastFeed).requireValue.pages, 2);
+      expect(container.read(pastFeed).requireValue.total, 46);
+    });
+
+    test('a failed reload keeps the rows and their time', () async {
+      await container.read(pastFeed.future);
+      final DateTime first = container.read(pastFeed).requireValue.at;
+      now = now.add(const Duration(minutes: 3));
+      orders.listFailures[OrdersTab.past] = const NetworkFailure();
+
+      container.invalidate(pastFeed);
+      await expectLater(
+        container.read(pastFeed.future),
+        throwsA(isA<NetworkFailure>()),
+      );
+
+      final AsyncValue<OrdersFeed> value = container.read(pastFeed);
+      expect(value.hasError, isTrue);
+      expect(value.requireValue.rows, hasLength(20));
+      expect(value.requireValue.at, first);
+    });
+
+    test('load more fails in place and loads on the next call', () async {
+      await container.read(pastFeed.future);
+      orders.listFailures[OrdersTab.past] = const NetworkFailure();
+
+      await container.read(pastFeed.notifier).loadMore();
+      OrdersFeed feed = container.read(pastFeed).requireValue;
+      expect(feed.rows, hasLength(20));
+      expect(feed.moreFailure, isA<NetworkFailure>());
+      expect(feed.loadingMore, isFalse);
+      expect(feed.nextPage, 2);
+
+      await container.read(pastFeed.notifier).loadMore();
+      feed = container.read(pastFeed).requireValue;
+      expect(feed.rows, hasLength(40));
+      expect(feed.moreFailure, isNull);
+      expect(feed.nextPage, 3);
+    });
+
+    test('a page that lands after the account changed is dropped', () async {
+      await container.read(pastFeed.future);
+      final Completer<void> hold = Completer<void>();
+      orders.holdList = hold;
+      final Future<void> more = container.read(pastFeed.notifier).loadMore();
+      expect(container.read(pastFeed).requireValue.loadingMore, isTrue);
+
+      container.read(_account.notifier).signIn('c-2');
+      await container.pump();
+      orders.holdList = null;
+      hold.complete();
+      await more;
+      await container.read(pastFeed.future);
+
+      final OrdersFeed feed = container.read(pastFeed).requireValue;
+      expect(feed.rows, hasLength(20));
+      expect(feed.pages, 1);
+      expect(feed.loadingMore, isFalse);
+    });
+
+    test('another account starts at page 1', () async {
+      await container.read(pastFeed.future);
+      await container.read(pastFeed.notifier).loadMore();
+      orders.loads.clear();
+
+      container.read(_account.notifier).signIn('c-2');
+      await container.read(pastFeed.future);
+
+      expect(orders.loads, <String>['orders:past:1']);
+      expect(ids(), hasLength(20));
+    });
+
+    test(
+      'drop takes the row off and names it dropped until the next load',
+      () async {
+        await container.read(pastFeed.future);
+        final String id = idOf(3);
+
+        container.read(pastFeed.notifier).drop(id.toUpperCase());
+        OrdersFeed feed = container.read(pastFeed).requireValue;
+        expect(feed.rows, hasLength(19));
+        expect(ids(), isNot(contains(id)));
+        expect(feed.total, 44);
+        expect(feed.dropped, <String>{id});
+
+        container.read(pastFeed.notifier).drop(idOf(500));
+        expect(container.read(pastFeed).requireValue.total, 44);
+
+        container.invalidate(pastFeed);
+        await container.read(pastFeed.future);
+        feed = container.read(pastFeed).requireValue;
+        expect(feed.dropped, isEmpty);
+        expect(feed.total, 45);
+      },
+    );
+
+    test('a dropped order stays named after the reloads that follow', () async {
+      await container.read(pastFeed.future);
+      final String id = idOf(3);
+      container.read(pastFeed.notifier).drop(id);
+
+      orders.summaries = <Map<String, Object?>>[
+        for (final Map<String, Object?> row in past(45))
+          if (row['id'] != id) row,
+      ];
+      container.invalidate(pastFeed);
+      await container.read(pastFeed.future);
+      container.invalidate(pastFeed);
+      await container.read(pastFeed.future);
+
+      final OrdersFeed feed = container.read(pastFeed).requireValue;
+      expect(feed.dropped, <String>{id});
+      expect(feed.total, 44, reason: 'the count of the server, without it');
+      await container.read(pastFeed.notifier).loadMore();
+      expect(
+        container.read(pastFeed).requireValue.total,
+        44,
+        reason: 'the next page does not subtract it twice',
+      );
+    });
+
+    test('drop does nothing during a reload', () async {
+      await container.read(pastFeed.future);
+      final Completer<void> hold = Completer<void>();
+      orders.holdList = hold;
+      container.invalidate(pastFeed);
+      await container.pump();
+
+      container.read(pastFeed.notifier).drop(idOf(3));
+      orders.holdList = null;
+      hold.complete();
+      await container.read(pastFeed.future);
+
+      expect(ids(), contains(idOf(3)));
+    });
+
+    test(
+      'a drop while the feed reloads still leaves the order quiet',
+      () async {
+        await container.read(pastFeed.future);
+        final String id = idOf(3);
+        final Completer<void> hold = Completer<void>();
+        orders.holdList = hold;
+        container.invalidate(pastFeed);
+        await container.pump();
+
+        container.read(pastFeed.notifier).drop(id);
+        orders
+          ..holdList = null
+          ..summaries = <Map<String, Object?>>[
+            for (final Map<String, Object?> row in past(45))
+              if (row['id'] != id) row,
+          ];
+        hold.complete();
+        await container.read(pastFeed.future);
+
+        final OrdersFeed feed = container.read(pastFeed).requireValue;
+        expect(ids(), isNot(contains(id)));
+        expect(feed.dropped, <String>{id});
+      },
+    );
+
+    test('a drop after a failed reload still leaves the order quiet', () async {
+      await container.read(pastFeed.future);
+      final String id = idOf(3);
+      orders.listFailures[OrdersTab.past] = const NetworkFailure();
+      container.invalidate(pastFeed);
+      await expectLater(
+        container.read(pastFeed.future),
+        throwsA(isA<NetworkFailure>()),
+      );
+
+      container.read(pastFeed.notifier).drop(id);
+      orders.summaries = <Map<String, Object?>>[
+        for (final Map<String, Object?> row in past(45))
+          if (row['id'] != id) row,
+      ];
+      container.invalidate(pastFeed);
+      await container.read(pastFeed.future);
+
+      expect(container.read(pastFeed).requireValue.dropped, <String>{id});
+    });
+
+    test('a superseded reload that answers late changes nothing', () async {
+      await container.read(pastFeed.future);
+      await container.read(pastFeed.notifier).loadMore();
+      final Completer<void> hold = Completer<void>();
+      orders.holdList = hold;
+      container.invalidate(pastFeed);
+      await container.pump();
+
+      orders.holdList = null;
+      container.invalidate(pastFeed);
+      await container.read(pastFeed.future);
+      expect(container.read(pastFeed).requireValue.pages, 2);
+
+      hold.complete();
+      await Future<void>.delayed(Duration.zero);
+      orders.loads.clear();
+      container.invalidate(pastFeed);
+      await container.read(pastFeed.future);
+
+      expect(orders.loads, <String>['orders:past:1', 'orders:past:2']);
+      expect(container.read(pastFeed).requireValue.pages, 2);
+    });
   });
 
-  test('the tabs page on their own', () async {
+  test('a sure cancellation drops the order from Текущие', () async {
     final FakeCustomerOrdersRepository orders = FakeCustomerOrdersRepository();
     final ProviderContainer container = _container(orders);
     addTearDown(container.dispose);
-    for (final OrdersTab tab in OrdersTab.values) {
-      container.listen(customerOrdersProvider(tab), (_, _) {});
-    }
-    await container.read(customerOrdersProvider(OrdersTab.past).future);
-    container.read(ordersPageProvider(OrdersTab.past).notifier).goToPage(2);
-    await container.read(customerOrdersProvider(OrdersTab.past).future);
-
-    expect(container.read(ordersPageProvider(OrdersTab.past)), 2);
-    expect(container.read(ordersPageProvider(OrdersTab.current)), 1);
+    final AsyncNotifierProvider<CustomerOrdersFeed, OrdersFeed> current =
+        customerOrdersProvider(OrdersTab.current);
+    container.listen(current, (_, _) {});
+    await container.read(current.future);
     expect(
-      orders.loads.where((String load) => load.startsWith('orders:')),
-      unorderedEquals(<String>[
-        'orders:past:1',
-        'orders:current:1',
-        'orders:past:2',
-      ]),
+      container.read(current).requireValue.rows.map((OrderSummary o) => o.id),
+      contains(orderOne),
     );
+
+    orders
+      ..holdList = Completer<void>()
+      ..answer = customerOrderJson(status: 'cancelled', changeable: false);
+    await container.read(orderCancelProvider(orderOne).notifier).cancel(null);
+
+    final OrdersFeed feed = container.read(current).requireValue;
+    expect(feed.rows.map((OrderSummary o) => o.id), isNot(contains(orderOne)));
+    expect(feed.dropped, <String>{orderOne});
   });
 
   Map<String, Object?> pending(String id, String expiresAt) =>

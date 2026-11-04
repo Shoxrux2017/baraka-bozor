@@ -27,6 +27,10 @@ abstract final class KitColors {
   /// Hairlines and field borders.
   static const Color line = Color(0xFFEEF0EF);
 
+  /// The outline of a white outlined button («Повторить», «Остаться»,
+  /// `DL-131`).
+  static const Color outline = Color(0xFFC9CDCA);
+
   /// Filled chips and wells at rest (`DL-127`).
   static const Color chip = Color(0xFFF1F3F1);
 

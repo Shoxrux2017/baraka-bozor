@@ -4086,6 +4086,32 @@ class AppLocalizationsRu extends AppLocalizations {
   String get progressDelivered => 'Доставлен';
 
   @override
+  String get progressListShopping => 'Сборка';
+
+  @override
+  String get progressListDelivering => 'В пути';
+
+  @override
+  String orderCardStageSpoken(String status, int stage) {
+    return '$status, этап $stage из 4';
+  }
+
+  @override
+  String orderCardEstimateSpoken(String amount) {
+    return 'Примерно $amount';
+  }
+
+  @override
+  String questionAnswerSpoken(int number) {
+    return 'Ответить на вопрос по заказу № $number';
+  }
+
+  @override
+  String callCourierSpoken(int number) {
+    return 'Позвонить курьеру заказа № $number';
+  }
+
+  @override
   String orderStageOf(int stage, String label) {
     return 'Этап $stage из 4: $label';
   }
@@ -4743,5 +4769,120 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String favoritesEntryNotSoldSpoken(String count, int notSold) {
     return 'Избранное: $count, $notSold нет в продаже';
+  }
+
+  @override
+  String orderPreviewTwo(String first, String second) {
+    return '$first, $second';
+  }
+
+  @override
+  String orderPreviewMore(String first, String second, int count) {
+    return '$first, $second и ещё $count';
+  }
+
+  @override
+  String get orderRateCaption => 'Оцените заказ';
+
+  @override
+  String get orderRatedCaption => 'Ваша оценка';
+
+  @override
+  String orderRatedSpoken(int stars) {
+    return 'Ваша оценка: $stars из 5';
+  }
+
+  @override
+  String orderRateStarsSpoken(int number, int stars) {
+    return 'Оценить заказ № $number на $stars из 5';
+  }
+
+  @override
+  String reorderRepeatSpoken(int number) {
+    return 'Повторить заказ № $number';
+  }
+
+  @override
+  String get ordersCurrentEmptyTitle => 'Сейчас заказов в работе нет';
+
+  @override
+  String ordersLastOrderText(Object day) {
+    return 'Последний заказ — $day. Его можно повторить или собрать новую корзину.';
+  }
+
+  @override
+  String ordersAllPast(Object count) {
+    return 'Все прошлые заказы · $count';
+  }
+
+  @override
+  String ordersAllPastSpoken(Object count) {
+    return 'Все прошлые заказы, $count';
+  }
+
+  @override
+  String ordersCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count заказа',
+      many: '$count заказов',
+      few: '$count заказа',
+      one: '$count заказ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ordersLoading => 'Загружаем заказы';
+
+  @override
+  String monthName(String month) {
+    String _temp0 = intl.Intl.selectLogic(month, {
+      'm1': 'Январь',
+      'm2': 'Февраль',
+      'm3': 'Март',
+      'm4': 'Апрель',
+      'm5': 'Май',
+      'm6': 'Июнь',
+      'm7': 'Июль',
+      'm8': 'Август',
+      'm9': 'Сентябрь',
+      'm10': 'Октябрь',
+      'm11': 'Ноябрь',
+      'm12': 'Декабрь',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String monthYear(Object month, Object year) {
+    return '$month $year';
+  }
+
+  @override
+  String orderAnnounced(int number, String what) {
+    return 'Заказ № $number: $what';
+  }
+
+  @override
+  String orderOnTheWayAnnounced(int number) {
+    return 'Заказ № $number в пути. Курьер выехал';
+  }
+
+  @override
+  String orderDeliveredAnnounced(int number) {
+    return 'Заказ № $number доставлен. Он в прошлых заказах — там его можно оценить';
+  }
+
+  @override
+  String orderCancelledAnnounced(int number) {
+    return 'Заказ № $number отменён. Он в прошлых заказах';
+  }
+
+  @override
+  String orderQuestionsExpiredAnnounced(int number) {
+    return 'Время ответа на вопрос по заказу № $number вышло';
   }
 }
