@@ -1,15 +1,12 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../core/errors/report_unexpected_error.dart';
 import '../../../core/network/api_failure.dart';
-import '../../../core/network/paged.dart';
 import '../../../core/session/customer_account.dart';
+import '../../catalog/application/catalog_controllers.dart';
 import '../../catalog/domain/catalog.dart';
 import '../data/favorites_api.dart';
-import '../domain/favorites.dart';
 import '../domain/favorites_repository.dart';
 
 final Provider<FavoritesRepository> favoritesRepositoryProvider =
@@ -58,8 +55,15 @@ class FavoriteOverrides extends Notifier<Map<String, bool>> {
       return error is ApiFailure ? error : const UnexpectedFailure();
     }
 
-    if (_sameAccount(account) && ref.exists(favoritesListProvider)) {
-      ref.invalidate(favoritesListProvider);
+    if (_sameAccount(account)) {
+      // Until the lists settle their own changes, a heart changed anywhere
+      // loads every favourites list in use again (`DL-129`).
+      for (final ProductSort sort in ProductSort.values) {
+        final ProductListQuery list = ProductListQuery.favorites(sort: sort);
+        if (ref.exists(productListProvider(list))) {
+          ref.invalidate(productListProvider(list));
+        }
+      }
     }
     return null;
   }
@@ -83,114 +87,20 @@ bool favoriteOf(Map<String, bool> overrides, CatalogProduct product) =>
 bool isFavorite(WidgetRef ref, CatalogProduct product) =>
     favoriteOf(ref.watch(favoriteOverridesProvider), product);
 
-/// The favourites as far as they have been loaded.
-final class FavoritesListState {
-  const FavoritesListState({
-    required this.items,
-    required this.total,
-    required this.nextPage,
-    this.loadingMore = false,
-    this.moreFailure,
-  });
-
-  final List<FavoriteProduct> items;
-  final int total;
-
-  /// The page to load next, or `null` at the end of the list.
-  final int? nextPage;
-  final bool loadingMore;
-  final ApiFailure? moreFailure;
-
-  bool get hasMore => nextPage != null;
-}
-
-/// The Customer's favourites, a page at a time. A page that arrives after the
-/// list was rebuilt — another account, a refresh — is dropped by the
-/// generation it was asked for (`docs/07-architecture.md` section 28).
-class FavoritesListController extends AsyncNotifier<FavoritesListState> {
-  int _generation = 0;
-
+/// How the Customer's favourites are ordered, kept for the app's run
+/// (`DL-129`). It has its own memory: the favourites' order does not move the
+/// order of the shop's lists. Another account starts afresh.
+class FavoritesSortController extends Notifier<ProductSort> {
   @override
-  Future<FavoritesListState> build() async {
-    _generation++;
-    if (ref.watch(customerAccountProvider) == null) {
-      return Completer<FavoritesListState>().future;
-    }
-    final Paged<FavoriteProduct> first = await ref
-        .read(favoritesRepositoryProvider)
-        .list(page: 1);
-    return FavoritesListState(
-      items: first.items,
-      total: first.total,
-      nextPage: first.hasNext ? first.page + 1 : null,
-    );
+  ProductSort build() {
+    ref.watch(customerAccountProvider);
+    return ProductSort.shop;
   }
 
-  /// Loads the next page, once at a time; nothing at the end of the list.
-  Future<void> loadMore() async {
-    final FavoritesListState? current = state.value;
-    final int? page = current?.nextPage;
-    if (current == null ||
-        page == null ||
-        current.loadingMore ||
-        state.isLoading ||
-        ref.read(customerAccountProvider) == null) {
-      return;
-    }
-
-    final int generation = _generation;
-    state = AsyncData<FavoritesListState>(
-      FavoritesListState(
-        items: current.items,
-        total: current.total,
-        nextPage: current.nextPage,
-        loadingMore: true,
-      ),
-    );
-
-    FavoritesListState next;
-    try {
-      final Paged<FavoriteProduct> loaded = await ref
-          .read(favoritesRepositoryProvider)
-          .list(page: page);
-      final Set<String> shown = <String>{
-        for (final FavoriteProduct f in current.items) f.product.id,
-      };
-      next = FavoritesListState(
-        items: <FavoriteProduct>[
-          ...current.items,
-          for (final FavoriteProduct f in loaded.items)
-            if (!shown.contains(f.product.id)) f,
-        ],
-        total: loaded.total,
-        nextPage: loaded.hasNext ? loaded.page + 1 : null,
-      );
-    } on ApiFailure catch (failure) {
-      next = FavoritesListState(
-        items: current.items,
-        total: current.total,
-        nextPage: current.nextPage,
-        moreFailure: failure,
-      );
-    } catch (error, stackTrace) {
-      reportUnexpectedError(error, stackTrace, 'while loading more favourites');
-      next = FavoritesListState(
-        items: current.items,
-        total: current.total,
-        nextPage: current.nextPage,
-        moreFailure: const UnexpectedFailure(),
-      );
-    }
-
-    if (ref.mounted && generation == _generation) {
-      state = AsyncData<FavoritesListState>(next);
-    }
-  }
+  void set(ProductSort sort) => state = sort;
 }
 
-final AsyncNotifierProvider<FavoritesListController, FavoritesListState>
-favoritesListProvider =
-    AsyncNotifierProvider.autoDispose<
-      FavoritesListController,
-      FavoritesListState
-    >(FavoritesListController.new);
+final NotifierProvider<FavoritesSortController, ProductSort>
+favoritesSortProvider = NotifierProvider<FavoritesSortController, ProductSort>(
+  FavoritesSortController.new,
+);

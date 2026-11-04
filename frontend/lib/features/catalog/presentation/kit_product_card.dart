@@ -312,7 +312,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
     // The card reads as one stop: the product, its price and what is in the
     // cart, or that it is no longer sold (`DL-125`).
     final String cardLabel = !widget.available
-        ? '$spoken. ${l10n.catalogUnavailable}'
+        ? l10n.cardNotSoldSpoken(name)
         : shown == null
         ? spoken
         : l10n.cardInCartSpoken(spoken, _quantityText(l10n, shown));
@@ -349,14 +349,17 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
         child: Semantics(
           key: ValueKey<String>('card-semantics-$id'),
           container: true,
-          button: true,
+          // A product no longer sold has no page to open (`DL-129`).
+          button: widget.available,
           label: cardLabel,
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: () => context.push(
-              CatalogPaths.product(id),
-              extra: ProductOpening(product: product, heroTag: _heroTag),
-            ),
+            onTap: !widget.available
+                ? null
+                : () => context.push(
+                    CatalogPaths.product(id),
+                    extra: ProductOpening(product: product, heroTag: _heroTag),
+                  ),
             child: Stack(
               fit: StackFit.passthrough,
               children: <Widget>[

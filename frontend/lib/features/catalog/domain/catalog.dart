@@ -45,6 +45,7 @@ final class CatalogProduct {
     required this.customerUnitPriceUzs,
     required this.imageUrl,
     required this.isFavorite,
+    this.isAvailable = true,
   });
 
   final String id;
@@ -60,6 +61,11 @@ final class CatalogProduct {
 
   /// Whether the signed-in Customer has the product among their favourites.
   final bool isFavorite;
+
+  /// Whether the product can be ordered now. A favourite that stopped being
+  /// sold stays in the favourites, marked `false` (`DL-129`); every other list
+  /// holds sold products only.
+  final bool isAvailable;
 
   String name(AppLanguage language) =>
       language == AppLanguage.ru ? nameRu : nameUz;
@@ -88,8 +94,17 @@ final class ProductListQuery {
     this.categoryId,
     this.search = '',
     this.featuredOnly = false,
+    this.favorites = false,
     this.sort = ProductSort.shop,
   });
+
+  /// The Customer's favourites, in [sort] (`DL-129`): the sold ones first,
+  /// then those no longer sold.
+  const ProductListQuery.favorites({this.sort = ProductSort.shop})
+    : categoryId = null,
+      search = '',
+      featuredOnly = false,
+      favorites = true;
 
   /// The longest search the server takes, in code points
   /// (`CatalogSearch::MAX_TERM_LENGTH`).
@@ -103,6 +118,9 @@ final class ProductListQuery {
   final String? categoryId;
   final String search;
   final bool featuredOnly;
+
+  /// Whether this is the Customer's favourites list (`DL-129`).
+  final bool favorites;
   final ProductSort sort;
 
   @override
@@ -111,8 +129,10 @@ final class ProductListQuery {
       other.categoryId == categoryId &&
       other.search == search &&
       other.featuredOnly == featuredOnly &&
+      other.favorites == favorites &&
       other.sort == sort;
 
   @override
-  int get hashCode => Object.hash(categoryId, search, featuredOnly, sort);
+  int get hashCode =>
+      Object.hash(categoryId, search, featuredOnly, favorites, sort);
 }

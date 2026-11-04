@@ -6,7 +6,6 @@ import 'package:baraka_bozor/features/cart/presentation/cart_screen.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
 import 'package:baraka_bozor/features/catalog/presentation/product_screen.dart';
-import 'package:baraka_bozor/features/favorites/domain/favorites.dart';
 import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
 import 'package:baraka_bozor/features/orders/presentation/orders_screens.dart';
 import 'package:baraka_bozor/features/profile/domain/profile.dart';
@@ -35,14 +34,11 @@ void main() {
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
-  FavoriteProduct favorite(int i) => FavoriteProduct(
-    product: catalogProduct(
-      id: 'f-$i',
-      nameUz: 'Mahsulot $i',
-      nameRu: 'Товар $i',
-      isFavorite: true,
-    ),
-    isAvailable: true,
+  CatalogProduct favorite(int i) => catalogProduct(
+    id: 'f-$i',
+    nameUz: 'Mahsulot $i',
+    nameRu: 'Товар $i',
+    isFavorite: true,
   );
 
   setUp(() {
@@ -52,8 +48,8 @@ void main() {
       products: <CatalogProduct>[catalogProduct()],
     )..featuredIds = <String>{'p-1'};
     favorites = FakeFavoritesRepository(
-      favorites: <FavoriteProduct>[for (int i = 0; i < 30; i++) favorite(i)],
-    );
+      favorites: <CatalogProduct>[for (int i = 0; i < 30; i++) favorite(i)],
+    )..pageSize = 30;
     orders = FakeCustomerOrdersRepository();
     profile = FakeProfileRepository()
       ..current = const CustomerProfile(

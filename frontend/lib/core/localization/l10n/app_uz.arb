@@ -2271,6 +2271,7 @@
   "sortShop": "Do'kondagidek",
   "sortPriceAsc": "Avval arzonlari",
   "sortPriceDesc": "Avval qimmatlari",
+  "sortNewest": "Avval yangilari",
   "sortSpoken": "Tartib: {sort}",
   "@sortSpoken": {
     "placeholders": {
@@ -3137,6 +3138,14 @@
   },
   "cardStepperSpoken": "{name} savatda",
   "@cardStepperSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cardNotSoldSpoken": "{name}, sotuvda yo'q",
+  "@cardNotSoldSpoken": {
     "placeholders": {
       "name": {
         "type": "String"

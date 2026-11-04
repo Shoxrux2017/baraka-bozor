@@ -3489,6 +3489,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get sortPriceDesc => 'Avval qimmatlari';
 
   @override
+  String get sortNewest => 'Avval yangilari';
+
+  @override
   String sortSpoken(String sort) {
     return 'Tartib: $sort';
   }
@@ -4517,6 +4520,11 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String cardStepperSpoken(String name) {
     return '$name savatda';
+  }
+
+  @override
+  String cardNotSoldSpoken(String name) {
+    return '$name, sotuvda yo\'q';
   }
 
   @override

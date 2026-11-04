@@ -825,6 +825,33 @@ void main() {
     expect(byKey('add-0192f0a0-0000-7000-8000-0000000000a1'), findsNothing);
   });
 
+  testWidgets('a not-sold card is no link and reads «Черешня, нет в продаже»', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    final CatalogProduct cherry = catalogProduct(
+      id: '0192f0a0-0000-7000-8000-0000000000c1',
+      nameRu: 'Черешня',
+      nameUz: 'Gilos',
+      isAvailable: false,
+    );
+    await show(tester, cherry, available: false);
+    final String id = cherry.id;
+
+    final SemanticsNode card = tester.getSemantics(byKey('card-semantics-$id'));
+    expect(card.label, 'Черешня, нет в продаже');
+    expect(card.getSemanticsData().flagsCollection.isButton, isFalse);
+
+    await tester.tap(byKey('product-card-$id'));
+    await tester.pumpAndSettle();
+    expect(opened, isNull, reason: 'a card no longer sold opens nothing');
+    expect(byKey('heart-$id'), findsOneWidget);
+    await tester.tap(byKey('heart-$id'));
+    await tester.pumpAndSettle();
+    expect(favorites.changes, <String>['add:$id']);
+    handle.dispose();
+  });
+
   testWidgets('the not sold label of a compact card keeps 8 off the edge', (
     WidgetTester tester,
   ) async {
@@ -1075,7 +1102,7 @@ void main() {
 
       expect(
         tester.getSemantics(byKey('card-semantics-${priced.id}')).label,
-        '$spoken. Нет в продаже',
+        'Помидор, нет в продаже',
       );
       handle.dispose();
     });

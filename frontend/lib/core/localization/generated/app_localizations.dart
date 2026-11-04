@@ -6044,6 +6044,12 @@ abstract class AppLocalizations {
   /// **'Avval qimmatlari'**
   String get sortPriceDesc;
 
+  /// No description provided for @sortNewest.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval yangilari'**
+  String get sortNewest;
+
   /// No description provided for @sortSpoken.
   ///
   /// In uz, this message translates to:
@@ -7597,6 +7603,12 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'{name} savatda'**
   String cardStepperSpoken(String name);
+
+  /// No description provided for @cardNotSoldSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, sotuvda yo\'q'**
+  String cardNotSoldSpoken(String name);
 
   /// No description provided for @favoriteAddSpoken.
   ///

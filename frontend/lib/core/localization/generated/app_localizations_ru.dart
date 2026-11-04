@@ -3525,6 +3525,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get sortPriceDesc => 'Сначала дороже';
 
   @override
+  String get sortNewest => 'Сначала новые';
+
+  @override
   String sortSpoken(String sort) {
     return 'Порядок: $sort';
   }
@@ -4575,6 +4578,11 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String cardStepperSpoken(String name) {
     return '$name в корзине';
+  }
+
+  @override
+  String cardNotSoldSpoken(String name) {
+    return '$name, нет в продаже';
   }
 
   @override

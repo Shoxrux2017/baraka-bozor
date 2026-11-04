@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
@@ -5,9 +7,10 @@ import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
+import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
+import 'package:baraka_bozor/features/catalog/presentation/kit_product_grid.dart';
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
-import 'package:baraka_bozor/features/favorites/domain/favorites.dart';
 import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,20 +27,23 @@ void main() {
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
-  FavoriteProduct favorite(String id, String name, {bool available = true}) =>
-      FavoriteProduct(
-        product: catalogProduct(
-          id: id,
-          nameUz: name,
-          nameRu: name,
-          isFavorite: true,
-        ),
-        isAvailable: available,
-      );
+  CatalogProduct favorite(
+    String id,
+    String name, {
+    bool available = true,
+    int price = 18400,
+  }) => catalogProduct(
+    id: id,
+    nameUz: name,
+    nameRu: name,
+    isFavorite: true,
+    isAvailable: available,
+    customerUnitPriceUzs: price,
+  );
 
   setUp(() {
     favorites = FakeFavoritesRepository(
-      favorites: <FavoriteProduct>[
+      favorites: <CatalogProduct>[
         favorite('p-1', 'Pomidor'),
         favorite('p-2', 'Olma', available: false),
       ],
@@ -50,6 +56,7 @@ void main() {
     Size? size,
     double textScale = 1,
     FakeCartRepository? cart,
+    bool settle = true,
   }) async {
     if (size != null) {
       tester.view.physicalSize = size;
@@ -98,11 +105,12 @@ void main() {
     );
     await tester.pumpAndSettle();
     router.go(AppPaths.customerFavorites);
-    await tester.pumpAndSettle();
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+    }
   }
-
-  AppLocalizations l10n(WidgetTester tester) =>
-      AppLocalizations.of(tester.element(find.byType(FavoritesScreen)));
 
   testWidgets('the header has the search and the cart with its count', (
     WidgetTester tester,
@@ -141,16 +149,6 @@ void main() {
       closeTo(tester.getCenter(bar).dx, 1),
       reason: 'the title stays centred',
     );
-  });
-
-  testWidgets('every target meets iOSTapTargetGuideline', (
-    WidgetTester tester,
-  ) async {
-    final SemanticsHandle handle = tester.ensureSemantics();
-    await open(tester);
-
-    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-    handle.dispose();
   });
 
   testWidgets('lists the favourites with filled hearts, and the tab bar', (
@@ -229,7 +227,7 @@ void main() {
   testWidgets('with no favourites it shows the empty state and its button', (
     WidgetTester tester,
   ) async {
-    favorites.rows = <FavoriteProduct>[];
+    favorites.rows = <CatalogProduct>[];
     await open(tester);
 
     expect(find.text('Hozircha bo\'sh'), findsOneWidget);
@@ -248,32 +246,186 @@ void main() {
     expect(find.text('home'), findsOneWidget);
   });
 
-  testWidgets('a failed load shows the reason and a retry', (
-    WidgetTester tester,
-  ) async {
-    favorites.listFailure = const NetworkFailure();
-    await open(tester);
+  testWidgets(
+    'favourites show the count and the order: «24 товара · Сначала новые»',
+    (WidgetTester tester) async {
+      favorites.rows = <CatalogProduct>[
+        for (int i = 0; i < 24; i++) favorite('p-$i', 'Товар $i'),
+      ];
+      await open(tester, locale: const Locale('ru'));
 
-    expect(byKey('retry-load'), findsOneWidget);
-    expect(find.text(l10n(tester).errorNetwork), findsOneWidget);
+      expect(byKey('list-count-row'), findsOneWidget);
+      expect(find.text('24 товара', findRichText: true), findsOneWidget);
+      expect(
+        find.descendant(
+          of: byKey('list-sort'),
+          matching: find.text('Сначала новые'),
+        ),
+        findsOneWidget,
+      );
+      expect(favorites.requests, <String>['default|1']);
+    },
+  );
 
-    favorites.listFailure = null;
-    await tester.tap(byKey('retry-load'));
-    await tester.pumpAndSettle();
-    expect(byKey('product-card-p-1'), findsOneWidget);
+  testWidgets(
+    'the order menu offers new, cheaper and dearer and asks the server again',
+    (WidgetTester tester) async {
+      favorites.rows = <CatalogProduct>[
+        favorite('p-1', 'Pomidor', price: 3000),
+        favorite('p-2', 'Olma', price: 1000),
+        favorite('p-3', 'Anor', price: 2000),
+      ];
+      await open(tester, locale: const Locale('ru'));
+
+      await tester.tap(byKey('list-sort'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: byKey('sort-menu'),
+          matching: find.text('Сначала новые'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: byKey('sort-menu'),
+          matching: find.text('Как в магазине'),
+        ),
+        findsNothing,
+      );
+      expect(byKey('sort-price-asc'), findsOneWidget);
+      expect(byKey('sort-price-desc'), findsOneWidget);
+
+      await tester.tap(byKey('sort-price-asc'));
+      await tester.pumpAndSettle();
+
+      expect(favorites.requests, <String>['default|1', 'price_asc|1']);
+      expect(
+        tester.getTopLeft(byKey('product-card-p-2')).dx,
+        lessThan(tester.getTopLeft(byKey('product-card-p-3')).dx),
+        reason: 'the cheapest comes first',
+      );
+      expect(
+        find.descendant(
+          of: byKey('list-sort'),
+          matching: find.text('Сначала дешевле'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  group('on a long list', () {
+    setUp(() {
+      favorites.rows = <CatalogProduct>[
+        for (int i = 0; i < 60; i++) favorite('p-$i', 'Товар $i'),
+      ];
+    });
+
+    ScrollPosition positionOf(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: byKey('favorites-grid'),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position;
+
+    double rowOf() =>
+        kitCardExtent(
+          TextScaler.noScaling,
+          size: KitCardSize.regular,
+          imageHeight: 150,
+        ) +
+        12;
+
+    testWidgets('favourites load with skeletons and page two rows ahead', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(375, 812);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final Completer<void> hold = Completer<void>();
+      favorites.listHold = hold;
+      await open(tester, settle: false);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(byKey('product-skeletons'), findsOneWidget);
+      expect(byKey('product-card-p-0'), findsNothing);
+
+      favorites.listHold = null;
+      hold.complete();
+      await tester.pumpAndSettle();
+      expect(byKey('product-skeletons'), findsNothing);
+      expect(byKey('product-card-p-0'), findsOneWidget);
+      expect(favorites.requests, <String>['default|1']);
+
+      final ScrollPosition position = positionOf(tester);
+      position.jumpTo(position.maxScrollExtent - 3 * rowOf() - 5);
+      await tester.pump();
+      expect(favorites.requests, <String>['default|1']);
+
+      position.jumpTo(position.maxScrollExtent - 3 * rowOf() + 15);
+      await tester.pump();
+      expect(favorites.requests, contains('default|2'));
+    });
   });
 
-  testWidgets('loads the next page when the end comes into view', (
+  testWidgets(
+    'a failed first page stands as still skeletons under the stale line',
+    (WidgetTester tester) async {
+      favorites.listFailure = const NetworkFailure();
+      await open(tester);
+
+      expect(byKey('stale-line'), findsOneWidget);
+      expect(byKey('product-skeletons'), findsOneWidget);
+      expect(byKey('retry-load'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      favorites.listFailure = null;
+      await tester.tap(byKey('stale-retry'));
+      await tester.pumpAndSettle();
+      expect(byKey('stale-line'), findsNothing);
+      expect(byKey('product-card-p-1'), findsOneWidget);
+    },
+  );
+
+  testWidgets('empty favourites draw no count row', (
     WidgetTester tester,
   ) async {
-    favorites.pageSize = 2;
-    favorites.rows = <FavoriteProduct>[
-      favorite('p-1', 'Pomidor'),
-      favorite('p-2', 'Olma'),
-      favorite('p-3', 'Anor'),
+    favorites.rows = <CatalogProduct>[];
+    await open(tester);
+
+    expect(byKey('favorites-empty'), findsOneWidget);
+    expect(byKey('list-count-row'), findsNothing);
+    expect(byKey('list-sort'), findsNothing);
+  });
+
+  testWidgets('favourites pass the tap-target guideline', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await open(tester);
+
+    expect(byKey('list-count-row'), findsOneWidget);
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    handle.dispose();
+  });
+
+  testWidgets('the not-sold favourites stand after the sold ones', (
+    WidgetTester tester,
+  ) async {
+    favorites.rows = <CatalogProduct>[
+      favorite('p-1', 'Olma', available: false),
+      favorite('p-2', 'Pomidor'),
     ];
     await open(tester);
-    expect(byKey('product-card-p-3'), findsOneWidget);
+
+    expect(
+      tester.getTopLeft(byKey('product-card-p-2')).dx,
+      lessThan(tester.getTopLeft(byKey('product-card-p-1')).dx),
+    );
+    expect(byKey('unavailable-p-1'), findsOneWidget);
   });
 
   for (final Locale locale in const <Locale>[Locale('uz'), Locale('ru')]) {
@@ -292,7 +444,7 @@ void main() {
 
     testWidgets('the empty state fits 320x640 at text x2 in '
         '${locale.languageCode}', (WidgetTester tester) async {
-      favorites.rows = <FavoriteProduct>[];
+      favorites.rows = <CatalogProduct>[];
       await open(
         tester,
         locale: locale,

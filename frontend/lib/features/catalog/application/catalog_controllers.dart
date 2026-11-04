@@ -15,6 +15,8 @@ import '../data/catalog_api.dart';
 import '../data/catalog_repository_impl.dart';
 import '../domain/catalog.dart';
 import '../domain/catalog_repository.dart';
+import '../../favorites/application/favorites_controllers.dart';
+import '../../favorites/domain/favorites_repository.dart';
 
 final Provider<CatalogRepository> catalogRepositoryProvider =
     Provider<CatalogRepository>(
@@ -56,12 +58,21 @@ final class ProductListState {
     required this.total,
     required this.nextPage,
     required this.at,
+    this.unavailable = 0,
+    this.perPage = 20,
     this.loadingMore = false,
     this.moreFailure,
   });
 
   final List<CatalogProduct> items;
   final int total;
+
+  /// How many favourites of the whole list are no longer sold; 0 for every
+  /// other list (`DL-129`).
+  final int unavailable;
+
+  /// How many products a page holds, as the server answered.
+  final int perPage;
 
   /// The page to load next, or `null` at the end of the list.
   final int? nextPage;
@@ -75,7 +86,8 @@ final class ProductListState {
   bool get hasMore => nextPage != null;
 }
 
-/// One product list per query — a category, a search, or both — loaded a
+/// One product list per query — a category, a search, or both, or the
+/// Customer's favourites (`DL-129`) — loaded a
 /// page at a time as the Customer scrolls (infinite pagination).
 ///
 /// Each query has a list of its own, so the results of a search the
@@ -98,14 +110,34 @@ class ProductListController extends AsyncNotifier<ProductListState> {
     if (ref.watch(customerAccountProvider) == null) {
       return Completer<ProductListState>().future;
     }
-    final Paged<CatalogProduct> first = await ref
-        .read(catalogRepositoryProvider)
-        .products(query, page: 1);
+    final ({Paged<CatalogProduct> products, int unavailable}) first =
+        await _ask(1);
     return ProductListState(
-      items: first.items,
-      total: first.total,
-      nextPage: first.hasNext ? first.page + 1 : null,
+      items: first.products.items,
+      total: first.products.total,
+      nextPage: first.products.hasNext ? first.products.page + 1 : null,
       at: ref.read(clockProvider)(),
+      unavailable: first.unavailable,
+      perPage: first.products.perPage,
+    );
+  }
+
+  /// One page from the favourites for a favourites query, else from the
+  /// catalog (`DL-129`).
+  Future<({Paged<CatalogProduct> products, int unavailable})> _ask(
+    int page,
+  ) async {
+    if (query.favorites) {
+      final FavoritesPage answer = await ref
+          .read(favoritesRepositoryProvider)
+          .list(sort: query.sort, page: page);
+      return (products: answer.products, unavailable: answer.unavailable);
+    }
+    return (
+      products: await ref
+          .read(catalogRepositoryProvider)
+          .products(query, page: page),
+      unavailable: 0,
     );
   }
 
@@ -133,15 +165,17 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         total: current.total,
         nextPage: current.nextPage,
         at: current.at,
+        unavailable: current.unavailable,
+        perPage: current.perPage,
         loadingMore: true,
       ),
     );
 
     ProductListState next;
     try {
-      final Paged<CatalogProduct> loaded = await ref
-          .read(catalogRepositoryProvider)
-          .products(query, page: page);
+      final ({Paged<CatalogProduct> products, int unavailable}) answer =
+          await _ask(page);
+      final Paged<CatalogProduct> loaded = answer.products;
       // Offset pages can repeat a product when the catalog changes between
       // them; a product already shown is not shown twice.
       final Set<String> shown = <String>{
@@ -156,6 +190,8 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         total: loaded.total,
         nextPage: loaded.hasNext ? loaded.page + 1 : null,
         at: current.at,
+        unavailable: answer.unavailable,
+        perPage: loaded.perPage,
       );
     } on ApiFailure catch (failure) {
       next = ProductListState(
@@ -163,6 +199,8 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         total: current.total,
         nextPage: current.nextPage,
         at: current.at,
+        unavailable: current.unavailable,
+        perPage: current.perPage,
         moreFailure: failure,
       );
     } catch (error, stackTrace) {
@@ -172,6 +210,8 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         total: current.total,
         nextPage: current.nextPage,
         at: current.at,
+        unavailable: current.unavailable,
+        perPage: current.perPage,
         moreFailure: const UnexpectedFailure(),
       );
     }

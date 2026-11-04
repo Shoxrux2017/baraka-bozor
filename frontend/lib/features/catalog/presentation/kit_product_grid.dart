@@ -318,6 +318,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
       a.categoryId == b.categoryId &&
       a.search == b.search &&
       a.featuredOnly == b.featuredOnly &&
+      a.favorites == b.favorites &&
       a.sort != b.sort;
 
   @override
@@ -402,6 +403,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
               product: items[index],
               size: widget.size,
               imageHeight: widget.imageHeight,
+              available: items[index].isAvailable,
             ),
           );
           return _paged.contains(id)
@@ -548,7 +550,10 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
             final String count = l10n.catalogProductCount(state.total);
             if (drawn != null && _onlySortDiffers(drawn, query)) {
               _announceAfterFrame(
-                l10n.categoryShownSpoken(sortLabel(l10n, query.sort), count),
+                l10n.categoryShownSpoken(
+                  sortLabel(l10n, query.sort, newestFirst: query.favorites),
+                  count,
+                ),
               );
             } else if (spoken != null) {
               _announceAfterFrame(spoken(query, state.total));

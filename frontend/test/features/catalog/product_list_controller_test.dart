@@ -5,10 +5,12 @@ import 'package:baraka_bozor/core/platform/clock.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
+import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/fake_catalog_repository.dart';
+import '../../support/fake_favorites_repository.dart';
 
 class _Account extends Notifier<String?> {
   @override
@@ -24,6 +26,7 @@ final NotifierProvider<_Account, String?> _account =
 /// section 28).
 void main() {
   late FakeCatalogRepository catalog;
+  late FakeFavoritesRepository favorites;
   late ProviderContainer container;
   // 12:46 in Tashkent (UTC+5).
   DateTime now = DateTime.utc(2026, 11, 3, 7, 46);
@@ -37,9 +40,21 @@ void main() {
           catalogProduct(id: 'p-$i', nameUz: 'Mahsulot $i', nameRu: 'Товар $i'),
       ],
     );
+    favorites = FakeFavoritesRepository(
+      favorites: <CatalogProduct>[
+        for (int i = 1; i <= 25; i++)
+          catalogProduct(
+            id: 'f-$i',
+            isFavorite: true,
+            isAvailable: i <= 22,
+            customerUnitPriceUzs: 1000 * i,
+          ),
+      ],
+    );
     container = ProviderContainer(
       overrides: [
         catalogRepositoryProvider.overrideWithValue(catalog),
+        favoritesRepositoryProvider.overrideWithValue(favorites),
         clockProvider.overrideWithValue(() => now),
         customerAccountProvider.overrideWith((Ref ref) => ref.watch(_account)),
       ],
@@ -125,6 +140,74 @@ void main() {
         reason: 'the new account sees its own first page',
       );
       expect(stateOf().loadingMore, isFalse);
+    },
+  );
+
+  test(
+    'a favourites query asks the favourites repository with its order',
+    () async {
+      const ProductListQuery cheapest = ProductListQuery.favorites(
+        sort: ProductSort.priceAsc,
+      );
+      container.listen(productListProvider(cheapest), (_, _) {});
+      final ProductListState first = await container.read(
+        productListProvider(cheapest).future,
+      );
+
+      expect(favorites.requests, <String>['price_asc|1']);
+      expect(catalog.requests, <String>[
+        '|null|1',
+      ], reason: 'the catalog is asked only by the list the setUp holds');
+      expect(first.items, hasLength(20));
+      expect(first.total, 25);
+      expect(first.unavailable, 3);
+      expect(first.perPage, 20);
+      expect(first.hasMore, isTrue);
+
+      await container.read(productListProvider(cheapest).notifier).loadMore();
+      final ProductListState both = container
+          .read(productListProvider(cheapest))
+          .requireValue;
+      expect(favorites.requests, <String>['price_asc|1', 'price_asc|2']);
+      expect(both.items, hasLength(25));
+      expect(both.items.last.isAvailable, isFalse);
+      expect(both.unavailable, 3);
+      expect(both.hasMore, isFalse);
+      expect(
+        const ProductListQuery.favorites(),
+        isNot(const ProductListQuery()),
+        reason: 'a favourites list is not the all-products list',
+      );
+    },
+  );
+
+  test(
+    'a favourites page that comes for a previous account is dropped',
+    () async {
+      const ProductListQuery mine = ProductListQuery.favorites();
+      container.listen(productListProvider(mine), (_, _) {});
+      await container.read(productListProvider(mine).future);
+      final Completer<void> gate = Completer<void>();
+      favorites.listHold = gate;
+
+      final Future<void> pending = container
+          .read(productListProvider(mine).notifier)
+          .loadMore();
+      container.read(_account.notifier).signIn('c-2');
+      favorites.listHold = null;
+      await container.read(productListProvider(mine).future);
+      gate.complete();
+      await pending;
+
+      final ProductListState state = container
+          .read(productListProvider(mine))
+          .requireValue;
+      expect(
+        state.items,
+        hasLength(20),
+        reason: 'the first page of the new account',
+      );
+      expect(state.loadingMore, isFalse);
     },
   );
 
