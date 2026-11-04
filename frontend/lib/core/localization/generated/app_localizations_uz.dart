@@ -4567,4 +4567,17 @@ class AppLocalizationsUz extends AppLocalizations {
   String homeClosedBody(String time) {
     return 'Buyurtmani hozir qabul qilamiz, soat $time dan yig\'ib, yetkazib beramiz';
   }
+
+  @override
+  String favoritesNotSoldSpoken(String count) {
+    return 'Sotuvda yo\'q, $count';
+  }
+
+  @override
+  String get favoritesRemoveAll => 'Hammasini olib tashlash';
+
+  @override
+  String favoritesRemoveAllSpoken(String count) {
+    return 'Sotuvdan olinganlarni olib tashlash: $count';
+  }
 }

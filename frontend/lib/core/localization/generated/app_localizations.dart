@@ -7663,6 +7663,24 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtmani hozir qabul qilamiz, soat {time} dan yig\'ib, yetkazib beramiz'**
   String homeClosedBody(String time);
+
+  /// No description provided for @favoritesNotSoldSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotuvda yo\'q, {count}'**
+  String favoritesNotSoldSpoken(String count);
+
+  /// No description provided for @favoritesRemoveAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hammasini olib tashlash'**
+  String get favoritesRemoveAll;
+
+  /// No description provided for @favoritesRemoveAllSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotuvdan olinganlarni olib tashlash: {count}'**
+  String favoritesRemoveAllSpoken(String count);
 }
 
 class _AppLocalizationsDelegate

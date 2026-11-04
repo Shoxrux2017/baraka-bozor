@@ -4625,4 +4625,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String homeClosedBody(String time) {
     return 'Заказ примем сейчас, соберём и привезём с $time';
   }
+
+  @override
+  String favoritesNotSoldSpoken(String count) {
+    return 'Нет в продаже, $count';
+  }
+
+  @override
+  String get favoritesRemoveAll => 'Убрать все';
+
+  @override
+  String favoritesRemoveAllSpoken(String count) {
+    return 'Убрать все снятые с продажи: $count';
+  }
 }

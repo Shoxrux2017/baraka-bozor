@@ -14,6 +14,7 @@ import '../../catalog/domain/catalog.dart';
 import '../../catalog/presentation/kit_product_grid.dart';
 import '../../catalog/presentation/sort_menu.dart';
 import '../application/favorites_controllers.dart';
+import 'not_sold_heading.dart';
 
 /// "Избранное": the products the Customer hearted, an ordinary product list
 /// on the kit grid with a count-and-order row (`DL-129`). A favourite that
@@ -47,6 +48,8 @@ class FavoritesScreen extends ConsumerWidget {
             // A tap on the current tab takes the list back to the top.
             controller: PrimaryScrollController.maybeOf(context),
             empty: const _Empty(),
+            // «Убрать все» is wired where the removal is (`DL-129`).
+            notSoldHeading: (int count) => NotSoldHeading(count: count),
             header: empty
                 ? const <Widget>[]
                 : <Widget>[

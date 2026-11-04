@@ -2730,5 +2730,8 @@
   "questionExpired": "Время на ответ вышло",
   "homeNavOrdersWaiting": "Заказы, ждут ответа: {count}",
   "homeClosedTitle": "Сейчас закрыто.",
-  "homeClosedBody": "Заказ примем сейчас, соберём и привезём с {time}"
+  "homeClosedBody": "Заказ примем сейчас, соберём и привезём с {time}",
+  "favoritesNotSoldSpoken": "Нет в продаже, {count}",
+  "favoritesRemoveAll": "Убрать все",
+  "favoritesRemoveAllSpoken": "Убрать все снятые с продажи: {count}"
 }

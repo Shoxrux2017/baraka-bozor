@@ -92,6 +92,7 @@ class KitProductCard extends ConsumerStatefulWidget {
     this.size = KitCardSize.regular,
     this.imageHeight,
     this.available = true,
+    this.onHeartOff,
     super.key,
   });
 
@@ -104,6 +105,9 @@ class KitProductCard extends ConsumerStatefulWidget {
   /// Whether the product can be bought now: a favourite that stopped being
   /// sold shows "not sold" instead of the add button.
   final bool available;
+
+  /// Called for a tap on a red heart instead of changing the favourite.
+  final ValueChanged<CatalogProduct>? onHeartOff;
 
   @override
   ConsumerState<KitProductCard> createState() => _KitProductCardState();
@@ -206,6 +210,11 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
       ref.read(favoriteOverridesProvider),
       product,
     );
+    final ValueChanged<CatalogProduct>? off = widget.onHeartOff;
+    if (current && off != null) {
+      off(product);
+      return;
+    }
     setState(() => _heartBusy = true);
     final ApiFailure? failure = await ref
         .read(favoriteOverridesProvider.notifier)

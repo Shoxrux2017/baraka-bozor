@@ -3218,5 +3218,22 @@
         "type": "String"
       }
     }
+  },
+  "favoritesNotSoldSpoken": "Sotuvda yo'q, {count}",
+  "@favoritesNotSoldSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "favoritesRemoveAll": "Hammasini olib tashlash",
+  "favoritesRemoveAllSpoken": "Sotuvdan olinganlarni olib tashlash: {count}",
+  "@favoritesRemoveAllSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
   }
 }

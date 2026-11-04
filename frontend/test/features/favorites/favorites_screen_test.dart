@@ -198,7 +198,15 @@ void main() {
     expect(byKey('unavailable-p-2'), findsOneWidget);
     expect(byKey('add-p-2'), findsNothing);
     expect(byKey('add-p-1'), findsOneWidget);
-    expect(find.text('Sotuvda yo\'q'), findsOneWidget);
+    expect(tester.widget<Text>(byKey('unavailable-p-2')).data, 'Sotuvda yo\'q');
+    expect(
+      find.descendant(
+        of: byKey('not-sold-heading'),
+        matching: find.text('Sotuvda yo\'q'),
+      ),
+      findsOneWidget,
+      reason: 'the heading over the not-sold group (DL-129)',
+    );
   });
 
   testWidgets('un-hearting removes the card once the server confirms', (
@@ -421,9 +429,14 @@ void main() {
     ];
     await open(tester);
 
+    // The not-sold cards stand under their heading, on a row of their own.
     expect(
-      tester.getTopLeft(byKey('product-card-p-2')).dx,
-      lessThan(tester.getTopLeft(byKey('product-card-p-1')).dx),
+      tester.getBottomLeft(byKey('product-card-p-2')).dy,
+      lessThan(tester.getTopLeft(byKey('not-sold-heading')).dy),
+    );
+    expect(
+      tester.getBottomLeft(byKey('not-sold-heading')).dy,
+      lessThanOrEqualTo(tester.getTopLeft(byKey('product-card-p-1')).dy),
     );
     expect(byKey('unavailable-p-1'), findsOneWidget);
   });
