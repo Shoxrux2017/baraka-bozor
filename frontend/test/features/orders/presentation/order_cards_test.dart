@@ -8,6 +8,7 @@ import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/kit/kit_star.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_cards.dart';
+import 'package:baraka_bozor/features/orders/presentation/order_stage_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,7 @@ import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/fake_shopper_orders_repository.dart';
 import '../../../support/in_memory_stores.dart';
+import '../../../support/nonlinear_text_scaler.dart';
 import '../../../support/paragraphs.dart';
 
 const String _orderTwo = '0192f0a0-0000-7000-8000-00000000c002';
@@ -55,6 +57,7 @@ void main() {
     WidgetTester tester, {
     Size size = const Size(800, 2400),
     double textScale = 1,
+    TextScaler? scaler,
     Locale device = const Locale('ru'),
   }) async {
     tester.view.physicalSize = size;
@@ -70,6 +73,7 @@ void main() {
         cart: FakeCartRepository(),
         phoneCalls: phone,
         device: device,
+        textScaler: scaler,
         clock: () => DateTime.utc(2026, 9, 28, 8),
       ),
     );
@@ -86,13 +90,6 @@ void main() {
   }
 
   AppLocalizations ru() => lookupAppLocalizations(const Locale('ru'));
-
-  Color? segment(WidgetTester tester, int index) {
-    final DecoratedBox box = tester.widget<DecoratedBox>(
-      byKey('progress-segment-$index'),
-    );
-    return (box.decoration as BoxDecoration).color;
-  }
 
   test('the progress fills by stage for all nine statuses', () {
     expect(
@@ -114,24 +111,47 @@ void main() {
     );
   });
 
-  testWidgets(
-    'the progress bar paints the first segments in the brand colour',
-    (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: OrderProgressBar(stage: 3))),
-      );
+  testWidgets('the stage segments change colour softly', (
+    WidgetTester tester,
+  ) async {
+    Color? segment(int i) =>
+        (tester
+                    .widget<DecoratedBox>(
+                      find.byKey(ValueKey<String>('order-stage-$i')),
+                    )
+                    .decoration
+                as BoxDecoration)
+            .color;
+    Future<void> show(int stage, {bool still = false}) => tester.pumpWidget(
+      MediaQuery(
+        data: MediaQueryData(disableAnimations: still),
+        child: MaterialApp(
+          home: Scaffold(
+            body: OrderStageBar(
+              stage: stage,
+              labels: const <String>['a', 'b', 'c', 'd'],
+            ),
+          ),
+        ),
+      ),
+    );
+    final Color ahead = KitColors.primary.withValues(alpha: 0.22);
 
-      expect(
-        <Color?>[for (int i = 0; i < 4; i++) segment(tester, i)],
-        <Color>[
-          KitColors.primary,
-          KitColors.primary,
-          KitColors.primary,
-          KitColors.line,
-        ],
-      );
-    },
-  );
+    await show(1);
+    expect(segment(1), ahead);
+    await show(2);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    final Color? mid = segment(1);
+    expect(mid, isNot(ahead));
+    expect(mid, isNot(KitColors.primary));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(segment(1), KitColors.primary);
+
+    await show(3, still: true);
+    await tester.pump();
+    expect(segment(2), KitColors.primary, reason: 'at once, reduced motion');
+  });
 
   testWidgets('the chip colours follow the status', (
     WidgetTester tester,
@@ -169,38 +189,278 @@ void main() {
     expect((wash(), ink()), (KitColors.primaryWash, KitColors.primaryDark));
   });
 
+  testWidgets('the card heads with the status and says the number small', (
+    WidgetTester tester,
+  ) async {
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(
+        number: 1044,
+        status: 'shopping',
+        itemCount: 8,
+        street: 'Чиланзар, 9-й квартал',
+        house: '14',
+        totalUzs: 96000,
+        createdAt: '2026-09-28T07:40:00Z',
+      ),
+    ];
+    await open(tester);
+
+    final Finder headline = byKey('order-status-$orderOne');
+    expect(tester.widget<Text>(headline).data, 'Собирается');
+    final TextStyle style = tester.widget<Text>(headline).style!;
+    expect((style.fontSize, style.fontWeight), (16, FontWeight.w700));
+    final Finder number = find.text('Заказ № 1044 · 8 товаров');
+    expect(number, findsOneWidget);
+    expect(
+      tester.getTopLeft(number).dy,
+      greaterThan(tester.getBottomLeft(headline).dy),
+    );
+    expect(tester.widget<Text>(number).style!.fontSize, 12);
+    expect(find.text('Чиланзар, 9-й квартал, 14'), findsOneWidget);
+    expect(find.text('Сегодня, 12:40'), findsOneWidget);
+    expect(
+      find.text(ru().cartLineEstimate(MoneyFormat.uzs(96000, AppLanguage.ru))),
+      findsOneWidget,
+    );
+    expect(byKey('order-waiting-$orderOne'), findsNothing);
+    await tapAndSettle(tester, byKey('order-$orderOne'));
+    expect(location(tester), AppPaths.customerOrder(orderOne));
+  });
+
   testWidgets(
-    'the current card shows number, address, count, status, date and total',
+    'the stages read Принят Сборка В пути Доставлен, a check on those passed, the current bold',
+    (WidgetTester tester) async {
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(status: 'on_the_way'),
+      ];
+      await open(tester);
+
+      expect(
+        <String?>[
+          for (int i = 0; i < 4; i++)
+            tester.widget<Text>(byKey('order-stage-label-$i')).data,
+        ],
+        <String>['Принят', 'Сборка', 'В пути', 'Доставлен'],
+      );
+      expect(
+        find.descendant(
+          of: byKey('order-$orderOne'),
+          matching: find.byIcon(Icons.check),
+        ),
+        findsNWidgets(2),
+      );
+      expect(
+        <FontWeight?>[
+          for (int i = 0; i < 4; i++)
+            tester
+                .widget<Text>(byKey('order-stage-label-$i'))
+                .style!
+                .fontWeight,
+        ],
+        <FontWeight>[
+          FontWeight.w500,
+          FontWeight.w500,
+          FontWeight.w700,
+          FontWeight.w500,
+        ],
+      );
+      expect(byKey('order-progress-$orderOne'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'at large text the stages stand as a list and the sum takes its own line',
+    (WidgetTester tester) async {
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(status: 'shopping', totalUzs: 27600),
+      ];
+      await open(
+        tester,
+        size: const Size(360, 2400),
+        scaler: const NonlinearTextScaler(2),
+      );
+
+      expect(byKey('order-stages-list'), findsOneWidget);
+      expect(byKey('order-stage-0'), findsNothing);
+      expect(
+        tester.widget<Text>(byKey('order-stage-label-1')).data,
+        'Сборка',
+        reason: 'the list keeps its own words',
+      );
+      final Finder date = find.textContaining('Сегодня');
+      final Finder sum = find.text(
+        ru().cartLineEstimate(MoneyFormat.uzs(27600, AppLanguage.ru)),
+      );
+      expect(
+        tester.getTopLeft(sum).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(date).dy),
+      );
+      expect(tester.widget<Text>(sum).style!.fontSize, 15);
+      expect(
+        find.descendant(
+          of: byKey('order-$orderOne'),
+          matching: find.byType(FittedBox),
+        ),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'the question strip sits under the status with the minutes left, red at three',
     (WidgetTester tester) async {
       orders.summaries = <Map<String, Object?>>[
         orderSummaryJson(
-          number: 1044,
           status: 'shopping',
-          itemCount: 4,
-          street: 'Чиланзар, 9-й квартал',
-          house: '14',
-          totalUzs: 96000,
-          createdAt: '2026-09-28T07:40:00Z',
+          waiting: 1,
+          deadlines: <String>['2026-09-28T08:09:00Z'],
+        ),
+        orderSummaryJson(
+          id: _orderTwo,
+          status: 'shopping',
+          waiting: 1,
+          deadlines: <String>['2026-09-28T08:03:00Z'],
         ),
       ];
       await open(tester);
 
-      expect(find.text('Заказ № 1044'), findsOneWidget);
-      expect(find.text('Чиланзар, 9-й квартал, 14'), findsOneWidget);
-      expect(find.text('4 товара'), findsOneWidget);
-      expect(find.text('Собирается'), findsOneWidget);
-      expect(find.text('Сегодня, 12:40'), findsOneWidget);
+      final Finder strip = byKey('order-waiting-$orderOne');
       expect(
-        find.text(
-          ru().cartLineEstimate(MoneyFormat.uzs(96000, AppLanguage.ru)),
+        tester.getTopLeft(strip).dy,
+        greaterThanOrEqualTo(
+          tester.getBottomLeft(byKey('order-status-$orderOne')).dy,
         ),
-        findsOneWidget,
       );
-      expect(byKey('order-waiting-$orderOne'), findsNothing);
-      await tapAndSettle(tester, byKey('order-$orderOne'));
-      expect(location(tester), AppPaths.customerOrder(orderOne));
+      expect(
+        tester.getBottomLeft(strip).dy,
+        lessThanOrEqualTo(
+          tester
+              .getTopLeft(
+                find.descendant(
+                  of: byKey('order-$orderOne'),
+                  matching: byKey('order-stage-0'),
+                ),
+              )
+              .dy,
+        ),
+      );
+      final Finder calm = find.descendant(
+        of: strip,
+        matching: find.text('Осталось 9 мин'),
+      );
+      expect(calm, findsOneWidget);
+      expect(tester.widget<Text>(calm).style!.color, KitColors.warningDark);
+      final Finder hot = find.descendant(
+        of: byKey('order-waiting-$_orderTwo'),
+        matching: find.text('Осталось 3 мин'),
+      );
+      expect(tester.widget<Text>(hot).style!.color, KitColors.danger);
+      final Rect button = tester.getRect(byKey('order-answer-$orderOne'));
+      expect(button.height, greaterThanOrEqualTo(44));
     },
   );
+
+  testWidgets("at large text the strip's Ответить takes the whole width", (
+    WidgetTester tester,
+  ) async {
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(
+        status: 'shopping',
+        waiting: 1,
+        deadlines: <String>['2026-09-28T08:09:00Z'],
+      ),
+    ];
+    await open(
+      tester,
+      size: const Size(360, 2400),
+      scaler: const NonlinearTextScaler(2),
+    );
+
+    final Rect strip = tester.getRect(byKey('order-waiting-$orderOne'));
+    final Rect button = tester.getRect(byKey('order-answer-$orderOne'));
+    final Finder text = find.text('Сборщик спрашивает про 1 товар');
+    expect(button.left, greaterThanOrEqualTo(strip.left));
+    expect(button.width, greaterThan(strip.width - 30));
+    expect(button.top, greaterThanOrEqualTo(tester.getBottomLeft(text).dy));
+    expect(button.height, greaterThanOrEqualTo(44));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the card reads status first with its stage and Примерно', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(
+        number: 1044,
+        status: 'shopping',
+        itemCount: 8,
+        waiting: 1,
+        totalUzs: 86000,
+        createdAt: '2026-09-28T07:40:00Z',
+        deadlines: <String>['2026-09-28T08:08:30Z'],
+      ),
+    ];
+    await open(tester);
+
+    final String amount = MoneyFormat.uzs(86000, AppLanguage.ru);
+    expect(
+      tester.getSemantics(byKey('order-$orderOne')).label,
+      'Заказ № 1044. Собирается, этап 2 из 4. '
+      'Сборщик спрашивает про 1 товар, осталось 9 минут. '
+      'Примерно $amount. Сегодня в 12:40, 8 товаров',
+    );
+    handle.dispose();
+  });
+
+  testWidgets('Ответить and Позвонить курьеру name their order', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(
+        number: 1044,
+        status: 'on_the_way',
+        waiting: 1,
+        courierPhone: '+998901112233',
+      ),
+    ];
+    await open(tester);
+
+    expect(
+      tester.getSemantics(byKey('order-answer-$orderOne')).label,
+      'Ответить на вопрос по заказу № 1044',
+    );
+    expect(
+      tester.getSemantics(byKey('order-call-courier-$orderOne')).label,
+      'Позвонить курьеру заказа № 1044',
+    );
+    handle.dispose();
+  });
+
+  for (final (String name, TextScaler? scaler) in <(String, TextScaler?)>[
+    ('100 %', null),
+    ('200 %', NonlinearTextScaler(2)),
+  ]) {
+    testWidgets('the current card meets the tap target guideline at $name', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(
+          status: 'on_the_way',
+          waiting: 1,
+          courierPhone: '+998901112233',
+          deadlines: <String>['2026-09-28T08:09:00Z'],
+        ),
+      ];
+      await open(tester, size: const Size(360, 2400), scaler: scaler);
+
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      handle.dispose();
+    });
+  }
 
   testWidgets('a card with no lines left shows no item count', (
     WidgetTester tester,
@@ -452,7 +712,7 @@ void main() {
 
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {
     testWidgets(
-      'every status chip reads whole on one line at 375 (${device.languageCode})',
+      'every status reads whole on one line at 375, as a headline or as a chip (${device.languageCode})',
       (WidgetTester tester) async {
         await loadMontserrat();
         orders.summaries = <Map<String, Object?>>[
@@ -477,6 +737,20 @@ void main() {
             expect(cutParagraphs(tester, chip), isEmpty);
             expect(linesOf(text.single), 1, reason: status.name);
             seen.add(OrderLabels.customerStatus(words, status));
+          }
+          final Finder headlines = find.byWidgetPredicate(
+            (Widget widget) =>
+                widget.key is ValueKey<String> &&
+                (widget.key! as ValueKey<String>).value.startsWith(
+                  'order-status-',
+                ),
+          );
+          for (int i = 0; i < headlines.evaluate().length; i++) {
+            final Finder headline = headlines.at(i);
+            final List<RenderParagraph> text = paragraphsIn(tester, headline);
+            expect(cutParagraphs(tester, headline), isEmpty);
+            expect(linesOf(text.single), 1);
+            seen.add(tester.widget<Text>(headline).data!);
           }
         }
 

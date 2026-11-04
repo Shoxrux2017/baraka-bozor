@@ -25,6 +25,7 @@ import '../../cart/presentation/cart_summary.dart';
 import '../domain/customer_orders.dart';
 import 'line_flash.dart';
 import 'order_cards.dart';
+import 'order_stage_bar.dart';
 import 'reorder_sheet.dart';
 
 const List<BoxShadow> _cardShadow = <BoxShadow>[
@@ -178,7 +179,29 @@ class OrderStatusCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (!cancelled) _StageBar(order: order, heading: title),
+            if (!cancelled)
+              Padding(
+                padding: EdgeInsets.only(
+                  top: stageBarStacks(MediaQuery.textScalerOf(context))
+                      ? 14
+                      : 16,
+                ),
+                child: OrderStageBar(
+                  stage: orderStage(order.status),
+                  labels: orderPageStageLabels(l10n),
+                  times: <DateTime?>[
+                    order.createdAt,
+                    order.shoppingStartedAt,
+                    order.onTheWayAt,
+                    order.completedAt,
+                  ],
+                  currentLabel: title,
+                  semanticsLabel: l10n.orderStageOf(
+                    orderStage(order.status),
+                    title,
+                  ),
+                ),
+              ),
             if (order.canEdit) ...<Widget>[
               const SizedBox(height: 12),
               Text(
@@ -260,193 +283,6 @@ class OrderStatusCard extends StatelessWidget {
       return l10n.requestReason(OrderLabels.cancellationReason(l10n, reason));
     }
     return null;
-  }
-}
-
-/// Accepted, shopping, on the way, delivered (`DL-130`): four 4 px segments
-/// on a visible track, the stages reached in the brand colour, a check before
-/// each stage already passed, the current one bold, and the time a stage was
-/// reached when the server knows it. At large text the bar stands up as a
-/// list. Either way it reads as one node, «Этап 2 из 4: …», worded with the
-/// status card's [heading].
-class _StageBar extends StatelessWidget {
-  const _StageBar({required this.order, required this.heading});
-
-  final CustomerOrder order;
-  final String heading;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final TextScaler scaler = MediaQuery.textScalerOf(context);
-    final bool vertical = textScaleAt(scaler, 12) > 1.3;
-    final int stage = orderStage(order.status);
-    final List<String> labels = <String>[
-      l10n.progressAccepted,
-      l10n.progressShopping,
-      l10n.progressDelivering,
-      l10n.progressDelivered,
-    ];
-    final List<DateTime?> times = <DateTime?>[
-      order.createdAt,
-      order.shoppingStartedAt,
-      order.onTheWayAt,
-      order.completedAt,
-    ];
-    // A stage is past once the order has moved on from it; every one is,
-    // once delivered.
-    bool past(int i) => stage == 4 || i < stage - 1;
-
-    return Semantics(
-      container: true,
-      excludeSemantics: true,
-      label: l10n.orderStageOf(stage, heading),
-      child: Padding(
-        padding: EdgeInsets.only(top: vertical ? 14 : 16),
-        child: vertical
-            ? _stageList(scaler, stage, labels, times, past)
-            : _stageSegments(stage, labels, times, past),
-      ),
-    );
-  }
-
-  Widget _stageSegments(
-    int stage,
-    List<String> labels,
-    List<DateTime?> times,
-    bool Function(int) past,
-  ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        for (int i = 0; i < 4; i++) ...<Widget>[
-          if (i > 0) const SizedBox(width: 6),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                SizedBox(
-                  height: 4,
-                  width: double.infinity,
-                  child: DecoratedBox(
-                    key: ValueKey<String>('order-stage-$i'),
-                    decoration: BoxDecoration(
-                      color: i < stage
-                          ? KitColors.primary
-                          : KitColors.primary.withValues(alpha: 0.22),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    if (past(i)) ...<Widget>[
-                      const Padding(
-                        padding: EdgeInsets.only(top: 1),
-                        child: Icon(
-                          Icons.check,
-                          size: 13,
-                          color: KitColors.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                    ],
-                    Flexible(
-                      child: Text(
-                        labels[i],
-                        key: ValueKey<String>('order-stage-label-$i'),
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.3,
-                          fontWeight: i == stage - 1
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: i < stage ? KitColors.ink : KitColors.muted,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (i < stage && times[i] != null)
-                  Text(
-                    TashkentTime.time(times[i]!),
-                    key: ValueKey<String>('order-stage-time-$i'),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      height: 1.3,
-                      fontWeight: FontWeight.w400,
-                      color: KitColors.muted,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _stageList(
-    TextScaler scaler,
-    int stage,
-    List<String> labels,
-    List<DateTime?> times,
-    bool Function(int) past,
-  ) {
-    return Column(
-      key: const ValueKey<String>('order-stages-list'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        for (int i = 0; i < 4; i++) ...<Widget>[
-          if (i > 0) const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Icon(
-                past(i)
-                    ? Icons.check_circle
-                    : i == stage - 1
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
-                key: ValueKey<String>('order-stage-icon-$i'),
-                size: scaler.scale(18),
-                color: i < stage ? KitColors.primary : KitColors.muted,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  i == stage - 1 ? heading : labels[i],
-                  key: ValueKey<String>('order-stage-label-$i'),
-                  style: TextStyle(
-                    fontSize: 13,
-                    height: 1.3,
-                    fontWeight: i == stage - 1
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                    color: i < stage ? KitColors.ink : KitColors.muted,
-                  ),
-                ),
-              ),
-              if (i < stage && times[i] != null) ...<Widget>[
-                const SizedBox(width: 8),
-                Text(
-                  TashkentTime.time(times[i]!),
-                  key: ValueKey<String>('order-stage-time-$i'),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    height: 1.3,
-                    fontWeight: FontWeight.w400,
-                    color: KitColors.muted,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ],
-      ],
-    );
   }
 }
 

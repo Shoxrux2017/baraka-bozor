@@ -197,8 +197,15 @@ void main() {
     await open(tester);
     await tapAndSettle(tester, byKey('open-orders'));
 
-    expect(find.text(l10n(tester).customerStatusNew), findsOneWidget);
-    expect(find.text(l10n(tester).customerOrderTitle(1001)), findsOneWidget);
+    // The status heads the card; «Принят» is also the first stage's word.
+    expect(
+      tester.widget<Text>(byKey('order-status-$orderOne')).data,
+      l10n(tester).customerStatusNew,
+    );
+    expect(
+      find.textContaining(l10n(tester).customerOrderTitle(1001)),
+      findsOneWidget,
+    );
     await tapAndSettle(tester, byKey('order-$orderOne'));
 
     expect(byKey('order-status'), findsOneWidget);

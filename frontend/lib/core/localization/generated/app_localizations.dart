@@ -6836,6 +6836,42 @@ abstract class AppLocalizations {
   /// **'Yetkazildi'**
   String get progressDelivered;
 
+  /// No description provided for @progressListShopping.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'ish'**
+  String get progressListShopping;
+
+  /// No description provided for @progressListDelivering.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yo\'lda'**
+  String get progressListDelivering;
+
+  /// No description provided for @orderCardStageSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{status}, {stage}-bosqich, 4 tadan'**
+  String orderCardStageSpoken(String status, int stage);
+
+  /// No description provided for @orderCardEstimateSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Taxminan {amount}'**
+  String orderCardEstimateSpoken(String amount);
+
+  /// No description provided for @questionAnswerSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} bo\'yicha savolga javob berish'**
+  String questionAnswerSpoken(int number);
+
+  /// No description provided for @callCourierSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} kuryeriga qo\'ng\'iroq qilish'**
+  String callCourierSpoken(int number);
+
   /// No description provided for @orderStageOf.
   ///
   /// In uz, this message translates to:

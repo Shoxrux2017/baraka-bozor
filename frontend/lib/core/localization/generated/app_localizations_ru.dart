@@ -4086,6 +4086,32 @@ class AppLocalizationsRu extends AppLocalizations {
   String get progressDelivered => 'Доставлен';
 
   @override
+  String get progressListShopping => 'Сборка';
+
+  @override
+  String get progressListDelivering => 'В пути';
+
+  @override
+  String orderCardStageSpoken(String status, int stage) {
+    return '$status, этап $stage из 4';
+  }
+
+  @override
+  String orderCardEstimateSpoken(String amount) {
+    return 'Примерно $amount';
+  }
+
+  @override
+  String questionAnswerSpoken(int number) {
+    return 'Ответить на вопрос по заказу № $number';
+  }
+
+  @override
+  String callCourierSpoken(int number) {
+    return 'Позвонить курьеру заказа № $number';
+  }
+
+  @override
   String orderStageOf(int stage, String label) {
     return 'Этап $stage из 4: $label';
   }

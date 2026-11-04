@@ -2716,6 +2716,43 @@
   "progressShopping": "Xarid",
   "progressDelivering": "Yo'lda",
   "progressDelivered": "Yetkazildi",
+  "progressListShopping": "Yig'ish",
+  "progressListDelivering": "Yo'lda",
+  "orderCardStageSpoken": "{status}, {stage}-bosqich, 4 tadan",
+  "@orderCardStageSpoken": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      },
+      "stage": {
+        "type": "int"
+      }
+    }
+  },
+  "orderCardEstimateSpoken": "Taxminan {amount}",
+  "@orderCardEstimateSpoken": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "questionAnswerSpoken": "Buyurtma № {number} bo'yicha savolga javob berish",
+  "@questionAnswerSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "callCourierSpoken": "Buyurtma № {number} kuryeriga qo'ng'iroq qilish",
+  "@callCourierSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "orderStageOf": "{stage}-bosqich, 4 tadan: {label}",
   "@orderStageOf": {
     "placeholders": {

@@ -4038,6 +4038,32 @@ class AppLocalizationsUz extends AppLocalizations {
   String get progressDelivered => 'Yetkazildi';
 
   @override
+  String get progressListShopping => 'Yig\'ish';
+
+  @override
+  String get progressListDelivering => 'Yo\'lda';
+
+  @override
+  String orderCardStageSpoken(String status, int stage) {
+    return '$status, $stage-bosqich, 4 tadan';
+  }
+
+  @override
+  String orderCardEstimateSpoken(String amount) {
+    return 'Taxminan $amount';
+  }
+
+  @override
+  String questionAnswerSpoken(int number) {
+    return 'Buyurtma № $number bo\'yicha savolga javob berish';
+  }
+
+  @override
+  String callCourierSpoken(int number) {
+    return 'Buyurtma № $number kuryeriga qo\'ng\'iroq qilish';
+  }
+
+  @override
   String orderStageOf(int stage, String label) {
     return '$stage-bosqich, 4 tadan: $label';
   }

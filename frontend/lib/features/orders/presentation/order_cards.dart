@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/formatting/order_dates.dart';
 import '../../../core/formatting/phone_format.dart';
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
@@ -14,9 +15,12 @@ import '../../../core/platform/clock.dart';
 import '../../../core/platform/phone_calls.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/deadline_chip.dart';
 import '../../../core/widgets/kit/kit_star.dart';
 import '../../../core/widgets/product_image.dart';
 import '../domain/customer_orders.dart';
+import 'order_card_words.dart';
+import 'order_stage_bar.dart';
 import 'reorder_sheet.dart';
 
 /// How far an order has come, for the card's progress bar: 1 accepted, 2
@@ -74,86 +78,109 @@ class OrderStatusChip extends StatelessWidget {
   }
 }
 
-/// Four segments, the first [stage] of them in the brand colour.
-class OrderProgressBar extends StatelessWidget {
-  const OrderProgressBar({required this.stage, super.key});
-
-  final int stage;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        for (int i = 0; i < 4; i++) ...<Widget>[
-          if (i > 0) const SizedBox(width: 6),
-          Expanded(
-            child: SizedBox(
-              height: 4,
-              child: DecoratedBox(
-                key: ValueKey<String>('progress-segment-$i'),
-                decoration: BoxDecoration(
-                  color: i < stage ? KitColors.primary : KitColors.line,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// An order still in hand (drawing 27): where it stands, the question
-/// waiting for the Customer, and the Courier's phone once it is on the way.
+/// An order still in hand (`DL-131`): its status over the four labelled
+/// stages, the question waiting for the Customer with the minutes left, and
+/// the Courier's phone once it is on the way. [questions] and [deadline] are
+/// what the strip shows: the summary's count and its earliest expiry still
+/// ahead unless the list, which watches the clock, says otherwise.
 class CurrentOrderCard extends ConsumerWidget {
-  const CurrentOrderCard({required this.order, super.key});
+  const CurrentOrderCard({
+    required this.order,
+    this.questions,
+    this.deadline,
+    super.key,
+  });
 
   final OrderSummary order;
+  final int? questions;
+  final DateTime? deadline;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLanguage language = interfaceLanguage(context);
+    final DateTime now = ref.watch(clockProvider)();
     final String? phone = order.courierPhone;
+    final int asked = questions ?? order.pendingApprovalCount;
+    final DateTime? until =
+        deadline ??
+        (questions == null
+            ? order.questionDeadlines
+                  .where((DateTime when) => when.isAfter(now))
+                  .firstOrNull
+            : null);
+    final int? minutes = until == null ? null : minutesLeft(until, now);
     void open() => context.push(AppPaths.customerOrder(order.id));
 
-    return _CardShell(
-      cardKey: ValueKey<String>('order-${order.id}'),
+    return Semantics(
+      container: true,
+      button: true,
       onTap: open,
-      children: <Widget>[
-        _Top(order: order),
-        const SizedBox(height: 12),
-        OrderProgressBar(
-          key: ValueKey<String>('order-progress-${order.id}'),
-          stage: orderStage(order.status),
-        ),
-        if (order.pendingApprovalCount > 0) ...<Widget>[
+      label: currentOrderSpoken(
+        l10n,
+        language,
+        order,
+        now,
+        minutesLeft: minutes == 0 ? null : minutes,
+        questions: asked,
+      ),
+      child: _CardShell(
+        cardKey: ValueKey<String>('order-${order.id}'),
+        onTap: open,
+        children: <Widget>[
+          ExcludeSemantics(child: _CurrentTop(order: order)),
+          if (asked > 0) ...<Widget>[
+            const SizedBox(height: 12),
+            _QuestionStrip(
+              order: order,
+              questions: asked,
+              deadline: until,
+              onOpen: open,
+            ),
+          ],
           const SizedBox(height: 12),
-          _QuestionStrip(order: order, onOpen: open),
-        ],
-        const SizedBox(height: 12),
-        _Bottom(order: order),
-        if (phone != null) ...<Widget>[
+          OrderStageBar(
+            stage: orderStage(order.status),
+            labels: orderListStageLabels(l10n),
+          ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
-            key: ValueKey<String>('order-call-courier-${order.id}'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(44),
-              foregroundColor: KitColors.ink,
-              side: const BorderSide(color: KitColors.line),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          ExcludeSemantics(child: _Bottom(order: order)),
+          if (phone != null) ...<Widget>[
+            const SizedBox(height: 12),
+            Semantics(
+              container: true,
+              button: true,
+              label: l10n.callCourierSpoken(order.orderNumber),
+              onTap: () => _call(context, ref, phone),
+              excludeSemantics: true,
+              child: OutlinedButton.icon(
+                key: ValueKey<String>('order-call-courier-${order.id}'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                  foregroundColor: KitColors.ink,
+                  side: const BorderSide(color: KitColors.line),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.call,
+                  size: 18,
+                  color: KitColors.primary,
+                ),
+                label: Text(
+                  l10n.callCourier,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onPressed: () => _call(context, ref, phone),
               ),
             ),
-            icon: const Icon(Icons.call, size: 18, color: KitColors.primary),
-            label: Text(
-              l10n.callCourier,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            onPressed: () => _call(context, ref, phone),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -293,6 +320,72 @@ class _CardShell extends StatelessWidget {
   }
 }
 
+/// The current card's head (`DL-131`): the picture, the status as the
+/// headline, the order's number with its count and the address under it in
+/// small type.
+class _CurrentTop extends StatelessWidget {
+  const _CurrentTop({required this.order});
+
+  final OrderSummary order;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool wraps = textScaleAt(MediaQuery.textScalerOf(context), 12) > 1.3;
+    const TextStyle small = TextStyle(fontSize: 12, color: KitColors.muted);
+    final String number = l10n.customerOrderTitle(order.orderNumber);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: KitColors.card,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: SizedBox.square(
+            dimension: 56,
+            child: Center(child: ProductImage(url: order.imageUrl, size: 48)),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                OrderLabels.customerStatus(l10n, order.status),
+                key: ValueKey<String>('order-status-${order.id}'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.3,
+                  fontWeight: FontWeight.w700,
+                  color: KitColors.ink,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                order.itemCount > 0
+                    ? '$number · ${l10n.orderItemCount(order.itemCount)}'
+                    : number,
+                maxLines: wraps ? null : 1,
+                overflow: TextOverflow.ellipsis,
+                style: small,
+              ),
+              Text(
+                '${order.street}, ${order.house}',
+                maxLines: wraps ? null : 1,
+                overflow: TextOverflow.ellipsis,
+                style: small,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// The picture, the number, the address and the count, the status at the
 /// right.
 class _Top extends StatelessWidget {
@@ -382,31 +475,39 @@ class _Bottom extends ConsumerWidget {
         ? l10n.cartLineEstimate(MoneyFormat.uzs(total, language))
         : MoneyFormat.uzs(total, language);
 
+    final Text date = Text(
+      orderWhen(l10n, order.createdAt, now),
+      style: const TextStyle(fontSize: 12, color: KitColors.muted),
+    );
+    const TextStyle sumStyle = TextStyle(
+      fontSize: 15,
+      fontWeight: FontWeight.w700,
+      color: KitColors.ink,
+    );
+
+    // Under large text the sum takes its own line and keeps its size.
+    if (textScaleAt(MediaQuery.textScalerOf(context), 12) > 1.3) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          date,
+          const SizedBox(height: 2),
+          Text(amount, style: sumStyle),
+        ],
+      );
+    }
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Flexible(
-          child: Text(
-            orderWhen(l10n, order.createdAt, now),
-            style: const TextStyle(fontSize: 12, color: KitColors.muted),
-          ),
-        ),
+        Flexible(child: date),
         const SizedBox(width: 8),
         Flexible(
           child: Align(
             alignment: AlignmentDirectional.centerEnd,
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              child: Text(
-                amount,
-                maxLines: 1,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: KitColors.ink,
-                ),
-              ),
+              child: Text(amount, maxLines: 1, style: sumStyle),
             ),
           ),
         ),
@@ -415,66 +516,113 @@ class _Bottom extends ConsumerWidget {
   }
 }
 
+/// The question waiting for the Customer on a current card: how many lines
+/// the Shopper asks about, the minutes left, and «Ответить». Under large
+/// text the button takes the strip's whole width under the words.
 class _QuestionStrip extends StatelessWidget {
-  const _QuestionStrip({required this.order, required this.onOpen});
+  const _QuestionStrip({
+    required this.order,
+    required this.questions,
+    required this.deadline,
+    required this.onOpen,
+  });
 
   final OrderSummary order;
+  final int questions;
+  final DateTime? deadline;
   final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-
-    return Material(
-      key: ValueKey<String>('order-waiting-${order.id}'),
-      color: KitColors.warningWash,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onOpen,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Row(
-            children: <Widget>[
-              const Icon(Icons.help, size: 20, color: KitColors.warning),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.orderCardQuestion(order.pendingApprovalCount),
+    final bool stacked =
+        textScaleAt(MediaQuery.textScalerOf(context), 13) > 1.3;
+    final DateTime? until = deadline;
+    final Widget words = ExcludeSemantics(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Icon(Icons.help, size: 20, color: KitColors.warning),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  l10n.orderCardQuestion(questions),
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
+                    height: 1.35,
                     fontWeight: FontWeight.w600,
                     color: KitColors.ink,
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 110),
-                child: FilledButton(
-                  key: ValueKey<String>('order-answer-${order.id}'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: KitColors.primary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(0, 32),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                if (until != null) ...<Widget>[
+                  const SizedBox(height: 5),
+                  DeadlineChip(deadline: until),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    final Widget answer = Semantics(
+      container: true,
+      button: true,
+      label: l10n.questionAnswerSpoken(order.orderNumber),
+      onTap: onOpen,
+      excludeSemantics: true,
+      child: FilledButton(
+        key: ValueKey<String>('order-answer-${order.id}'),
+        style: FilledButton.styleFrom(
+          backgroundColor: KitColors.primary,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(0, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        onPressed: onOpen,
+        child: Text(
+          l10n.questionAnswer,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+
+    return DecoratedBox(
+      key: ValueKey<String>('order-waiting-${order.id}'),
+      decoration: BoxDecoration(
+        color: KitColors.warningWash,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: KitColors.warning, width: 1.5),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onOpen,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+            child: stacked
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      words,
+                      const SizedBox(height: 8),
+                      answer,
+                    ],
+                  )
+                : Row(
+                    children: <Widget>[
+                      Expanded(child: words),
+                      const SizedBox(width: 8),
+                      answer,
+                    ],
                   ),
-                  onPressed: onOpen,
-                  child: Text(
-                    l10n.questionAnswer,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
       ),
