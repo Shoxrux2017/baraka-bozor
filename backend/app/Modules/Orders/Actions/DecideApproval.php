@@ -165,7 +165,7 @@ final class DecideApproval
 
     /**
      * What an approved proposal writes onto its line (`DL-3` S-7, `DL-54` (5));
-     * public so the order can say what a yes would do before it is given (`DL-130`).
+     * public so `ApprovalTerms` can say what a yes would do before it is given (`DL-130`).
      *
      * @return array<string, mixed>
      */

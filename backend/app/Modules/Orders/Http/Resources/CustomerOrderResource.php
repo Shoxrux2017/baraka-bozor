@@ -11,8 +11,8 @@ use App\Models\Enums\OrderItemStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Modules\Catalog\ProductImages;
-use App\Modules\Orders\Actions\DecideApproval;
 use App\Modules\Orders\ApprovalExpiry;
+use App\Modules\Orders\ApprovalTerms;
 use App\Modules\Orders\CourierContact;
 use App\Modules\Orders\OrderPermissions;
 use App\Modules\Orders\OrderRatings;
@@ -175,9 +175,9 @@ final class CustomerOrderResource extends JsonResource
                 'name_uz' => $item->fulfilled_product_name_uz_snapshot,
                 'name_ru' => $item->fulfilled_product_name_ru_snapshot,
             ],
-            // What the Customer's yes put in force on a line still to buy
-            // (`DL-130` (2)).
-            'agreed' => self::agreedOf($item),
+            // What the Customer's yes put in force on a line still to buy,
+            // also while a new question on it is open (`DL-130` (2)).
+            'agreed' => ApprovalTerms::agreedOf($item),
             'pending_approval' => $question === null ? null : [
                 'id' => $question->id,
                 'type' => $question->type->value,
@@ -195,52 +195,9 @@ final class CustomerOrderResource extends JsonResource
                 'expires_at' => $question->expires_at->toIso8601ZuluString(),
                 // What each answer does to the line, so the Customer decides
                 // knowing it (`DL-130` (3)).
-                ...self::effectsOf($question, $item),
+                ...ApprovalTerms::effectsOf($question, $item),
             ],
         ];
-    }
-
-    /**
-     * The line's estimate after a yes and the signed change of each answer.
-     * The yes is applied to a copy that is never saved.
-     *
-     * @return array{estimate_if_approved_uzs: int, change_if_approved_uzs: int, change_if_rejected_uzs: int}
-     */
-    private static function effectsOf(CustomerApproval $question, OrderItem $item): array
-    {
-        $now = OrderTotals::lineEstimate($item);
-        $approved = clone $item;
-        $approved->forceFill(['status' => OrderItemStatus::Pending, ...DecideApproval::applied($question)]);
-        $estimate = OrderTotals::lineEstimate($approved);
-
-        return [
-            'estimate_if_approved_uzs' => $estimate,
-            'change_if_approved_uzs' => $estimate - $now,
-            'change_if_rejected_uzs' => -$now,
-        ];
-    }
-
-    /**
-     * The price and the quantity the Customer agreed to on a `pending` line,
-     * each `null` when no yes set it; `null` when neither is set or the line
-     * is not `pending`.
-     *
-     * @return array{customer_unit_price_uzs: int|null, quantity: string|null}|null
-     */
-    private static function agreedOf(OrderItem $item): ?array
-    {
-        if ($item->status !== OrderItemStatus::Pending) {
-            return null;
-        }
-
-        $price = OrderTotals::agreedUnitPrice($item);
-        $quantity = $item->approved_quantity_cap === null
-            ? null
-            : QuantityPolicy::format($item->unit_code_snapshot, $item->approved_quantity_cap);
-
-        return $price === null && $quantity === null
-            ? null
-            : ['customer_unit_price_uzs' => $price, 'quantity' => $quantity];
     }
 
     /**

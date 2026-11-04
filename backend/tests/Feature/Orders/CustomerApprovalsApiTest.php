@@ -493,7 +493,7 @@ final class CustomerApprovalsApiTest extends TestCase
         $this->assertNull($item['agreed']);
     }
 
-    public function test_agreed_is_shown_only_on_a_pending_line(): void
+    public function test_agreed_is_shown_on_an_open_line_and_not_on_a_bought_one(): void
     {
         $bought = OrderItem::factory()->for($this->order)->purchased()->create([
             'approved_quantity_cap' => '1.500',
@@ -506,7 +506,10 @@ final class CustomerApprovalsApiTest extends TestCase
         $items = collect($this->as($this->customer)->getJson("/api/v1/customer/orders/{$this->order->id}")->assertOk()->json('data.items'));
 
         $this->assertNull($items->firstWhere('id', $bought->id)['agreed']);
-        $this->assertNull($items->firstWhere('id', $awaiting->id)['agreed']);
+        $this->assertSame(
+            ['customer_unit_price_uzs' => null, 'quantity' => '1.500'],
+            $items->firstWhere('id', $awaiting->id)['agreed'],
+        );
     }
 
     /**
