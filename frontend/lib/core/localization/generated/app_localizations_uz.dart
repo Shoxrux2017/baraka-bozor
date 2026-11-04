@@ -4038,6 +4038,11 @@ class AppLocalizationsUz extends AppLocalizations {
   String get progressDelivered => 'Yetkazildi';
 
   @override
+  String orderStageOf(int stage, String label) {
+    return '$stage-bosqich, 4 tadan: $label';
+  }
+
+  @override
   String get orderCanStillChange =>
       'Yig\'uvchi boshlamaguncha buyurtmani o\'zgartirish yoki bekor qilish mumkin.';
 

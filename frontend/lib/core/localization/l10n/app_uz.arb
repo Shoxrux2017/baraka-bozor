@@ -2716,6 +2716,17 @@
   "progressShopping": "Xarid",
   "progressDelivering": "Yo'lda",
   "progressDelivered": "Yetkazildi",
+  "orderStageOf": "{stage}-bosqich, 4 tadan: {label}",
+  "@orderStageOf": {
+    "placeholders": {
+      "stage": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "orderCanStillChange": "Yig'uvchi boshlamaguncha buyurtmani o'zgartirish yoki bekor qilish mumkin.",
   "orderLineBoughtKit": "Sotib olindi: {quantity} × {price}",
   "@orderLineBoughtKit": {

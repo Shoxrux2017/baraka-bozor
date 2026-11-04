@@ -202,7 +202,13 @@ void main() {
       ).where((TextSpan span) => span.text == loss && bold(span.style)),
       hasLength(1),
     );
-    expect(find.byIcon(Icons.check), findsOneWidget);
+    // The question's own yes line; the stages above carry their 13 px checks.
+    expect(
+      find.byWidgetPredicate(
+        (Widget w) => w is Icon && w.icon == Icons.check && w.size == 17,
+      ),
+      findsOneWidget,
+    );
     expect(find.byIcon(Icons.close), findsOneWidget);
     // Nothing is said under the buttons any more.
     expect(
@@ -433,6 +439,13 @@ void main() {
           device: device,
         );
 
+        // At 200 % the stages stand as a list, so the first card is below the
+        // fold of a 640 px phone.
+        await tester.scrollUntilVisible(
+          byKey('question-$approvalOne'),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
         expect(byKey('question-$approvalOne'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tester.scrollUntilVisible(

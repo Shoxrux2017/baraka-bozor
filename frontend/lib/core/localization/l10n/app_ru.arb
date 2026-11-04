@@ -2426,6 +2426,7 @@
   "progressShopping": "Покупаем",
   "progressDelivering": "Везём",
   "progressDelivered": "Доставлен",
+  "orderStageOf": "Этап {stage} из 4: {label}",
   "orderCanStillChange": "Пока сборщик не начал, заказ можно изменить или отменить.",
   "orderLineBoughtKit": "Куплено {quantity} × {price}",
   "lineTagBought": "Куплено",

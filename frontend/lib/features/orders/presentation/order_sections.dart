@@ -7,6 +7,7 @@ import '../../../core/formatting/money_format.dart';
 import '../../../core/formatting/order_dates.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/formatting/tashkent_time.dart';
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
@@ -161,10 +162,7 @@ class OrderStatusCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (!cancelled) ...<Widget>[
-              const SizedBox(height: 16),
-              _StageBar(order: order),
-            ],
+            if (!cancelled) _StageBar(order: order, heading: title),
             if (order.canEdit) ...<Widget>[
               const SizedBox(height: 12),
               Text(
@@ -249,16 +247,23 @@ class OrderStatusCard extends StatelessWidget {
   }
 }
 
-/// Accepted, shopping, on the way, delivered: the stages reached in the
-/// brand colour, each with the time it was reached when the server knows it.
+/// Accepted, shopping, on the way, delivered (`DL-130`): four 4 px segments
+/// on a visible track, the stages reached in the brand colour, a check before
+/// each stage already passed, the current one bold, and the time a stage was
+/// reached when the server knows it. At large text the bar stands up as a
+/// list. Either way it reads as one node, «Этап 2 из 4: …», worded with the
+/// status card's [heading].
 class _StageBar extends StatelessWidget {
-  const _StageBar({required this.order});
+  const _StageBar({required this.order, required this.heading});
 
   final CustomerOrder order;
+  final String heading;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final TextScaler scaler = MediaQuery.textScalerOf(context);
+    final bool vertical = textScaleAt(scaler, 12) > 1.3;
     final int stage = orderStage(order.status);
     final List<String> labels = <String>[
       l10n.progressAccepted,
@@ -272,7 +277,29 @@ class _StageBar extends StatelessWidget {
       order.onTheWayAt,
       order.completedAt,
     ];
+    // A stage is past once the order has moved on from it; every one is,
+    // once delivered.
+    bool past(int i) => stage == 4 || i < stage - 1;
 
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: l10n.orderStageOf(stage, heading),
+      child: Padding(
+        padding: EdgeInsets.only(top: vertical ? 14 : 16),
+        child: vertical
+            ? _stageList(scaler, stage, labels, times, past)
+            : _stageSegments(stage, labels, times, past),
+      ),
+    );
+  }
+
+  Widget _stageSegments(
+    int stage,
+    List<String> labels,
+    List<DateTime?> times,
+    bool Function(int) past,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -288,41 +315,118 @@ class _StageBar extends StatelessWidget {
                   child: DecoratedBox(
                     key: ValueKey<String>('order-stage-$i'),
                     decoration: BoxDecoration(
-                      color: i < stage ? KitColors.primary : KitColors.line,
+                      color: i < stage
+                          ? KitColors.primary
+                          : KitColors.primary.withValues(alpha: 0.22),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
                 const SizedBox(height: 6),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text(
-                    labels[i],
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: i < stage ? KitColors.ink : KitColors.muted,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    if (past(i)) ...<Widget>[
+                      const Padding(
+                        padding: EdgeInsets.only(top: 1),
+                        child: Icon(
+                          Icons.check,
+                          size: 13,
+                          color: KitColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                    ],
+                    Flexible(
+                      child: Text(
+                        labels[i],
+                        key: ValueKey<String>('order-stage-label-$i'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.3,
+                          fontWeight: i == stage - 1
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: i < stage ? KitColors.ink : KitColors.muted,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
                 if (i < stage && times[i] != null)
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      TashkentTime.time(times[i]!),
-                      key: ValueKey<String>('order-stage-time-$i'),
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: KitColors.muted,
-                      ),
+                  Text(
+                    TashkentTime.time(times[i]!),
+                    key: ValueKey<String>('order-stage-time-$i'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.3,
+                      fontWeight: FontWeight.w400,
+                      color: KitColors.muted,
                     ),
                   ),
               ],
             ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _stageList(
+    TextScaler scaler,
+    int stage,
+    List<String> labels,
+    List<DateTime?> times,
+    bool Function(int) past,
+  ) {
+    return Column(
+      key: const ValueKey<String>('order-stages-list'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (int i = 0; i < 4; i++) ...<Widget>[
+          if (i > 0) const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(
+                past(i)
+                    ? Icons.check_circle
+                    : i == stage - 1
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                key: ValueKey<String>('order-stage-icon-$i'),
+                size: scaler.scale(18),
+                color: i < stage ? KitColors.primary : KitColors.muted,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  i == stage - 1 ? heading : labels[i],
+                  key: ValueKey<String>('order-stage-label-$i'),
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.3,
+                    fontWeight: i == stage - 1
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                    color: i < stage ? KitColors.ink : KitColors.muted,
+                  ),
+                ),
+              ),
+              if (i < stage && times[i] != null) ...<Widget>[
+                const SizedBox(width: 8),
+                Text(
+                  TashkentTime.time(times[i]!),
+                  key: ValueKey<String>('order-stage-time-$i'),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.3,
+                    fontWeight: FontWeight.w400,
+                    color: KitColors.muted,
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ],

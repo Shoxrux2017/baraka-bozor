@@ -6836,6 +6836,12 @@ abstract class AppLocalizations {
   /// **'Yetkazildi'**
   String get progressDelivered;
 
+  /// No description provided for @orderStageOf.
+  ///
+  /// In uz, this message translates to:
+  /// **'{stage}-bosqich, 4 tadan: {label}'**
+  String orderStageOf(int stage, String label);
+
   /// No description provided for @orderCanStillChange.
   ///
   /// In uz, this message translates to:

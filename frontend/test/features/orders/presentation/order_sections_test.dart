@@ -6,6 +6,7 @@ import 'package:baraka_bozor/core/localization/order_labels.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_sections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +18,7 @@ import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/fake_shopper_orders_repository.dart';
 import '../../../support/in_memory_stores.dart';
+import '../../../support/nonlinear_text_scaler.dart';
 import '../../../support/paragraphs.dart';
 
 const String _phone = '+998901112233';
@@ -58,6 +60,7 @@ void main() {
     Size size = const Size(800, 2400),
     double textScale = 1,
     Locale device = const Locale('ru'),
+    TextScaler? scaler,
   }) async {
     // A fresh app each time, so a test may show several orders.
     await tester.pumpWidget(const SizedBox());
@@ -75,6 +78,7 @@ void main() {
         cart: FakeCartRepository(),
         phoneCalls: phone,
         device: device,
+        textScaler: scaler,
         clock: () => now ?? DateTime.utc(2026, 9, 28, 9),
       ),
     );
@@ -248,6 +252,141 @@ void main() {
           findsOneWidget,
         );
       }
+    });
+
+    testWidgets(
+      'past stages carry a check, the current is bold, the track shows what is ahead',
+      (WidgetTester tester) async {
+        await show(
+          tester,
+          customerOrderJson(status: 'shopping', changeable: false),
+        );
+
+        final Finder checks = find.descendant(
+          of: byKey('order-status'),
+          matching: find.byWidgetPredicate(
+            (Widget w) => w is Icon && w.icon == Icons.check && w.size == 13,
+          ),
+        );
+        expect(checks, findsOneWidget);
+        expect(tester.widget<Icon>(checks).color, KitColors.primary);
+        // The check leads the first stage, 2 px before its word.
+        expect(
+          tester.getTopLeft(byKey('order-stage-label-0')).dx -
+              tester.getTopRight(checks).dx,
+          2,
+        );
+
+        TextStyle label(int i) =>
+            tester.widget<Text>(byKey('order-stage-label-$i')).style!;
+        expect(textOf(tester, 'order-stage-label-1'), 'Покупаем');
+        expect(label(1).fontWeight, FontWeight.w700);
+        expect(label(0).fontWeight, FontWeight.w500);
+        for (int i = 0; i < 4; i++) {
+          expect(label(i).fontSize, 12);
+          expect(label(i).height, 1.3);
+        }
+        expect(label(0).color, KitColors.ink);
+        expect(label(2).color, KitColors.muted);
+
+        Color? segment(int i) =>
+            ((tester.widget<DecoratedBox>(byKey('order-stage-$i'))).decoration
+                    as BoxDecoration)
+                .color;
+        expect(segment(0), KitColors.primary);
+        expect(segment(1), KitColors.primary);
+        expect(segment(2), KitColors.primary.withValues(alpha: 0.22));
+        expect(
+          find.descendant(
+            of: byKey('order-status'),
+            matching: find.byType(FittedBox),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('a delivered order checks every stage', (
+      WidgetTester tester,
+    ) async {
+      await show(
+        tester,
+        customerOrderJson(
+          status: 'completed',
+          changeable: false,
+          timestamps: <String, Object?>{'completed_at': '2026-09-28T08:30:00Z'},
+        ),
+      );
+
+      expect(
+        find.byWidgetPredicate(
+          (Widget w) => w is Icon && w.icon == Icons.check && w.size == 13,
+        ),
+        findsNWidgets(4),
+      );
+    });
+
+    testWidgets('the stages say «Этап 2 из 4» and the heading', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await show(
+        tester,
+        customerOrderJson(status: 'shopping', changeable: false),
+      );
+
+      expect(
+        find.bySemanticsLabel(ru().orderStageOf(2, 'Покупаем на базаре')),
+        findsOneWidget,
+      );
+      expect(
+        ru().orderStageOf(2, 'Покупаем на базаре'),
+        'Этап 2 из 4: Покупаем на базаре',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('at large text the stages stand as a list', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await show(
+        tester,
+        customerOrderJson(
+          status: 'shopping',
+          changeable: false,
+          timestamps: <String, Object?>{
+            'created_at': '2026-09-28T07:10:00Z',
+            'shopping_started_at': '2026-09-28T07:25:00Z',
+          },
+        ),
+        size: const Size(360, 2400),
+        scaler: const NonlinearTextScaler(2),
+      );
+
+      expect(byKey('order-stages-list'), findsOneWidget);
+      expect(byKey('order-stage-0'), findsNothing, reason: 'no segments');
+      IconData icon(int i) =>
+          tester.widget<Icon>(byKey('order-stage-icon-$i')).icon!;
+      expect(icon(0), Icons.check_circle);
+      expect(icon(1), Icons.radio_button_checked);
+      expect(icon(2), Icons.radio_button_unchecked);
+      expect(icon(3), Icons.radio_button_unchecked);
+      expect(textOf(tester, 'order-stage-label-1'), 'Покупаем на базаре');
+      expect(
+        tester.widget<Text>(byKey('order-stage-label-1')).style!.fontWeight,
+        FontWeight.w700,
+      );
+      expect(textOf(tester, 'order-stage-time-1'), '12:25');
+      expect(
+        tester.getTopRight(byKey('order-stage-time-1')).dx,
+        greaterThan(tester.getTopRight(byKey('order-stage-label-1')).dx),
+      );
+      expect(
+        find.bySemanticsLabel(ru().orderStageOf(2, 'Покупаем на базаре')),
+        findsOneWidget,
+      );
+      handle.dispose();
     });
 
     testWidgets('an order that may still change says so', (

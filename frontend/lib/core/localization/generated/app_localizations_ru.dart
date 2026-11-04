@@ -4086,6 +4086,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get progressDelivered => 'Доставлен';
 
   @override
+  String orderStageOf(int stage, String label) {
+    return 'Этап $stage из 4: $label';
+  }
+
+  @override
   String get orderCanStillChange =>
       'Пока сборщик не начал, заказ можно изменить или отменить.';
 
