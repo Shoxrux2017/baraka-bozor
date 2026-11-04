@@ -404,7 +404,7 @@ final class CustomerApprovalsApiTest extends TestCase
         $this->assertNull($approval->item->fresh()->approved_quantity_cap);
     }
 
-    #[DataProvider('kindsOfYes')]
+    #[DataProvider('kindsOfQuestion')]
     public function test_the_money_effect_is_what_the_answer_then_shows(?string $state): void
     {
         $approval = $this->yesOn($state);
@@ -444,6 +444,18 @@ final class CustomerApprovalsApiTest extends TestCase
     }
 
     /**
+     * @return array<string, array{0: string|null}>
+     */
+    public static function kindsOfQuestion(): array
+    {
+        return [
+            'a price question' => [null],
+            'a reduced quantity' => ['reducedQuantity'],
+            'a substitution' => ['substitution'],
+        ];
+    }
+
+    /**
      * @param  array{customer_unit_price_uzs: int|null, quantity: string|null}  $agreed
      */
     #[DataProvider('kindsOfYes')]
@@ -463,7 +475,7 @@ final class CustomerApprovalsApiTest extends TestCase
         }
     }
 
-    #[DataProvider('kindsOfYes')]
+    #[DataProvider('kindsOfQuestion')]
     public function test_the_list_and_the_order_agree_on_the_estimate_in_force(?string $state): void
     {
         $this->decide($this->yesOn($state), 'approve')->assertOk();
