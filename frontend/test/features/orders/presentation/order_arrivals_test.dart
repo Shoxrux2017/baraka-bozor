@@ -216,6 +216,41 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a question for a line above the reading keeps the reading in place',
+    (WidgetTester tester) async {
+      await readDown(tester);
+      final Offset before = lineAt(tester, breadId(11));
+
+      await reload(tester, <Object?>[
+        <String, Object?>{...asking('substitution'), 'id': breadId(0)},
+        ...baseLines().skip(1),
+      ]);
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(lineAt(tester, breadId(11)).dy, closeTo(before.dy, 1));
+      await tester.pumpAndSettle();
+
+      expect(lineAt(tester, breadId(11)).dy, closeTo(before.dy, 1));
+      expect(pill(), findsOneWidget);
+    },
+  );
+
+  testWidgets('a line bought above the reading keeps the reading in place', (
+    WidgetTester tester,
+  ) async {
+    await readDown(tester);
+    final Offset before = lineAt(tester, breadId(11));
+
+    await reload(tester, <Object?>[
+      ...breads(2, status: 'purchased'),
+      ...baseLines().skip(2),
+    ]);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
+
+    expect(lineAt(tester, breadId(11)).dy, closeTo(before.dy, 1));
+  });
+
   testWidgets('during a fling the reading stays in place', (
     WidgetTester tester,
   ) async {
@@ -271,6 +306,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(pill(), findsOneWidget);
 
+    // The card, not built until now, is laid out and the list keeps what is
+    // read in place; one more pull reaches the top.
+    await tester.drag(byKey('order'), const Offset(0, 1500));
+    await tester.pumpAndSettle();
     await tester.drag(byKey('order'), const Offset(0, 1500));
     await tester.pumpAndSettle();
     expect(pill(), findsNothing);
@@ -353,15 +392,14 @@ void main() {
 
       expect(lineAt(tester, breadId(11)), before);
       expect(pill(), findsOneWidget);
-      // Above the view, so not on the stage.
-      expect(
-        find.byKey(
-          const ValueKey<String>('question-$approvalOne'),
-          skipOffstage: false,
-        ),
-        findsOneWidget,
-      );
       expect(flashAlpha(tester, breadId(13)), 0);
+      // Scrolled up to it, the card stands there whole, shown at once.
+      await tester.drag(byKey('order'), const Offset(0, 2000));
+      await tester.pump();
+      expect(
+        tester.getSize(byKey('question-$approvalOne')).height,
+        greaterThan(100),
+      );
       expect(announced(tester), <String>[arrived]);
     },
   );

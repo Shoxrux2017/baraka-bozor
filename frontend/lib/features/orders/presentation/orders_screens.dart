@@ -503,7 +503,14 @@ class _Arrival {
   _ArrivalPhase phase = _ArrivalPhase.measuring;
 }
 
+/// A line row the reading is held to, and where its top stood in the list.
+typedef _Anchor = ({String id, bool dropped, double top});
+
 class _OrderState extends ConsumerState<_Order> {
+  /// The line rows' keys, by line id, to place the reading.
+  final Map<String, GlobalKey> _keptKeys = <String, GlobalKey>{};
+  final Map<String, GlobalKey> _droppedKeys = <String, GlobalKey>{};
+
   final ScrollController _scroll = ScrollController();
 
   /// The questions that arrived while the order was open, by question id.
@@ -553,7 +560,7 @@ class _OrderState extends ConsumerState<_Order> {
   }
 
   /// The pill goes once the card's top is in view.
-  void _watchPill() {
+  void _watchPill({bool again = false}) {
     if (_pillFor.isEmpty) {
       return;
     }
@@ -564,13 +571,36 @@ class _OrderState extends ConsumerState<_Order> {
     if (hidden.length != _pillFor.length) {
       setState(() => _pillFor.retainAll(hidden));
     }
+    // A card not built yet may come into being with this scroll: look again
+    // once the frame has laid it out.
+    if (!again &&
+        !_pillRechecked &&
+        hidden.any(
+          (String id) => _arrivals[id]?.cardKey.currentContext == null,
+        )) {
+      _pillRechecked = true;
+      WidgetsBinding.instance
+        ..addPostFrameCallback((_) {
+          _pillRechecked = false;
+          if (mounted) {
+            _watchPill(again: true);
+          }
+        })
+        ..ensureVisualUpdate();
+    }
   }
 
-  /// Whether the card's top is above the view's top, `null` when the card is
-  /// not drawn.
+  bool _pillRechecked = false;
+
+  /// Whether the card's top is above the view's top. A card that is not
+  /// built stands above the lines' view by construction, so it counts as
+  /// above; `null` when it is built but cannot be placed.
   bool? _topAbove(_Arrival? arrival) {
-    final RenderObject? box = arrival?.cardKey.currentContext
-        ?.findRenderObject();
+    final BuildContext? context = arrival?.cardKey.currentContext;
+    if (context == null) {
+      return true;
+    }
+    final RenderObject? box = context.findRenderObject();
     if (box is! RenderBox || !box.attached || !box.hasSize) {
       return null;
     }
@@ -599,7 +629,11 @@ class _OrderState extends ConsumerState<_Order> {
   /// A load that brought a question not on the screen before, or a line
   /// bought since: the question unfolds where it is seen, or arrives above the
   /// reading without moving it; the lines flash and it is all said.
-  void _news(List<CustomerOrderLine> asked, List<CustomerOrderLine> bought) {
+  void _news(
+    List<CustomerOrderLine> asked,
+    List<CustomerOrderLine> bought,
+    _Anchor? anchor,
+  ) {
     if (!mounted) {
       return;
     }
@@ -611,12 +645,17 @@ class _OrderState extends ConsumerState<_Order> {
       final _Arrival? arrival = _arrivals[line.question!.id];
       if (arrival != null && (_topAbove(arrival) ?? false)) {
         above.add(arrival.questionId);
-        correction +=
-            (arrival.cardKey.currentContext!.findRenderObject()! as RenderBox)
-                .size
-                .height;
+        // A card not built has no height to hold: it is laid out where the
+        // list keeps its place.
+        final RenderObject? box = arrival.cardKey.currentContext
+            ?.findRenderObject();
+        if (box is RenderBox && box.hasSize) {
+          correction += box.size.height;
+        }
       }
     }
+    // What changed above the reading in this load, the cards aside.
+    correction += _anchorShift(anchor);
     setState(() {
       for (final CustomerOrderLine line in asked) {
         final _Arrival? arrival = _arrivals[line.question!.id];
@@ -632,7 +671,7 @@ class _OrderState extends ConsumerState<_Order> {
         _flash[line.id] = (_flash[line.id] ?? 0) + 1;
       }
     });
-    if (correction > 0) {
+    if (correction.abs() > 0.01 && _scroll.hasClients) {
       final ScrollPosition position = _scroll.position;
       position.correctBy(correction);
       // The fling is the position's own activity, which only it tells.
@@ -666,8 +705,53 @@ class _OrderState extends ConsumerState<_Order> {
     }
   }
 
+  /// The first line row whose top is at or under the view's top, and where
+  /// that top stands in the list; the reading is held to it when the order
+  /// changes (`DL-130`).
+  _Anchor? _anchorOf(CustomerOrder order) {
+    if (!_scroll.hasClients || _scroll.position.pixels <= 0) {
+      return null;
+    }
+    for (final (bool dropped, List<CustomerOrderLine> lines)
+        in <(bool, List<CustomerOrderLine>)>[
+          (false, keptLines(order)),
+          (true, droppedLines(order)),
+        ]) {
+      for (final CustomerOrderLine line in lines) {
+        final double? top = _rowTop(_rowKey(line.id, dropped: dropped));
+        if (top != null && top >= _scroll.position.pixels) {
+          return (id: line.id, dropped: dropped, top: top);
+        }
+      }
+    }
+    return null;
+  }
+
+  double? _rowTop(GlobalKey key) {
+    final RenderObject? box = key.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) {
+      return null;
+    }
+    return RenderAbstractViewport.maybeOf(box)
+        ?.getOffsetToReveal(box, 0)
+        .offset;
+  }
+
+  GlobalKey _rowKey(String lineId, {required bool dropped}) =>
+      (dropped ? _droppedKeys : _keptKeys).putIfAbsent(lineId, GlobalKey.new);
+
+  /// How far the anchor row has moved in the list since it was recorded.
+  double _anchorShift(_Anchor? anchor) {
+    if (anchor == null) {
+      return 0;
+    }
+    final double? top = _rowTop(_rowKey(anchor.id, dropped: anchor.dropped));
+    return top == null ? 0 : top - anchor.top;
+  }
+
   void _watchNews(CustomerOrder before) {
     final CustomerOrder order = widget.order;
+    final _Anchor? anchor = identical(before, order) ? null : _anchorOf(before);
     final DateTime now = ref.read(clockProvider)();
     final Set<String> known = <String>{
       for (final CustomerOrderLine line in before.lines)
@@ -697,14 +781,16 @@ class _OrderState extends ConsumerState<_Order> {
       for (final CustomerOrderLine line in order.lines)
         if (line.question != null) line.question!.id,
     });
-    if (asked.isEmpty && bought.isEmpty) {
+    if (asked.isEmpty && bought.isEmpty && anchor == null) {
       return;
     }
     for (final CustomerOrderLine line in asked) {
       _arrivals[line.question!.id] = _Arrival(line.question!.id);
     }
     // After the build that lays the folded cards and the rows out.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _news(asked, bought));
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _news(asked, bought, anchor),
+    );
   }
 
   @override
@@ -749,8 +835,6 @@ class _OrderState extends ConsumerState<_Order> {
     final Widget list = ListView(
       key: const ValueKey<String>('order'),
       controller: _scroll,
-      // Every row is built, so a card arriving above the view is measured.
-      scrollCacheExtent: const ScrollCacheExtent.pixels(100000),
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: <Widget>[
@@ -811,11 +895,14 @@ class _OrderState extends ConsumerState<_Order> {
           items: kept,
           keyOf: (CustomerOrderLine line) => line.id,
           itemBuilder: (BuildContext context, CustomerOrderLine line) =>
-              OrderLineRow(
-                line: line,
-                orderStatus: order.status,
-                flash: _flash[line.id] ?? 0,
-                answeredYes: _yes[line.id],
+              KeyedSubtree(
+                key: _rowKey(line.id, dropped: false),
+                child: OrderLineRow(
+                  line: line,
+                  orderStatus: order.status,
+                  flash: _flash[line.id] ?? 0,
+                  answeredYes: _yes[line.id],
+                ),
               ),
         ),
         if (dropped.isNotEmpty)
@@ -840,10 +927,13 @@ class _OrderState extends ConsumerState<_Order> {
                 items: dropped,
                 keyOf: (CustomerOrderLine line) => line.id,
                 itemBuilder: (BuildContext context, CustomerOrderLine line) =>
-                    OrderLineRow(
-                      line: line,
-                      orderStatus: order.status,
-                      flash: _flash[line.id] ?? 0,
+                    KeyedSubtree(
+                      key: _rowKey(line.id, dropped: true),
+                      child: OrderLineRow(
+                        line: line,
+                        orderStatus: order.status,
+                        flash: _flash[line.id] ?? 0,
+                      ),
                     ),
               ),
             ],
