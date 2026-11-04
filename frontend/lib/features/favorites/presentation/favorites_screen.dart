@@ -12,13 +12,17 @@ import '../../../core/routing/app_paths.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
+import '../../../core/widgets/fly_over.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/customer_tab_bar.dart';
 import '../../../core/widgets/undo_bar.dart';
 import '../../cart/presentation/cart_widgets.dart';
 import '../../catalog/application/catalog_controllers.dart';
 import '../../catalog/domain/catalog.dart';
+import '../../catalog/presentation/catalog_paths.dart';
+import '../../catalog/presentation/kit_product_card.dart';
 import '../../catalog/presentation/kit_product_grid.dart';
+import '../../catalog/presentation/recommended_row.dart';
 import '../../catalog/presentation/sort_menu.dart';
 import '../application/favorite_removals.dart';
 import '../application/favorites_controllers.dart';
@@ -49,6 +53,11 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   late final FavoriteRemovals _removals = ref.read(
     favoriteRemovalsProvider.notifier,
   );
+
+  /// The cards put into the list by a heart in the empty state's row, with the
+  /// key of their photo: it is hidden until a copy of it has flown in
+  /// (`DL-129`).
+  Map<String, GlobalKey> _landing = const <String, GlobalKey>{};
 
   /// The screen's route is the top one and its tickers are on, as
   /// `PeriodicRefresh` reads it.
@@ -288,6 +297,69 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     );
   }
 
+  /// A heart set in the empty state's row: the card is in the list at once and
+  /// its photo flies there; a heart the server refuses takes it out again. With
+  /// reduced motion the card only fades in (`DL-129`).
+  void _heartedInRow(
+    CatalogProduct product,
+    Rect photo,
+    Future<ApiFailure?> answer,
+  ) {
+    final ProductListQuery query = _query();
+    final String id = product.id;
+    ref.read(productListProvider(query).notifier).put(product);
+    final GlobalKey key = GlobalKey();
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      setState(() => _landing = <String, GlobalKey>{..._landing, id: key});
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _landing[id] != key) {
+          return;
+        }
+        unawaited(
+          flyOver(
+            context,
+            from: photo,
+            to: () => _globalRect(key),
+            child: SizedBox.expand(
+              key: const ValueKey<String>('fly-over'),
+              child: KitProductCard.photoGhost(product),
+            ),
+          ).then((_) => _landed(id, key)),
+        );
+      });
+    }
+    unawaited(
+      answer.then((ApiFailure? failure) {
+        if (failure == null || !mounted) {
+          return;
+        }
+        _landed(id, key);
+        // The server never had it: nothing is held back for it.
+        final ProductListController list = ref.read(
+          productListProvider(query).notifier,
+        );
+        final ListWithdrawal? withdrawal = list.withdraw(<String>{id});
+        if (withdrawal != null) {
+          list.settle(withdrawal);
+        }
+      }),
+    );
+  }
+
+  Rect? _globalRect(GlobalKey key) {
+    final RenderObject? box = key.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) {
+      return null;
+    }
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
+  void _landed(String id, GlobalKey key) {
+    if (mounted && _landing[id] == key) {
+      setState(() => _landing = <String, GlobalKey>{..._landing}..remove(id));
+    }
+  }
+
   /// A new order asks the server for the list again, so a removal waiting for
   /// its bar is sent first.
   Future<void> _setSort(ProductSort sort) async {
@@ -326,6 +398,11 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     // The count row is not drawn while the list is empty.
     final bool empty =
         ref.watch(productListProvider(query)).value?.items.isEmpty ?? false;
+    // Featured products loaded and none: the empty state has no row to show.
+    final ProductListState? featured = ref
+        .watch(productListProvider(const ProductListQuery(featuredOnly: true)))
+        .value;
+    final bool recommend = featured == null || featured.items.isNotEmpty;
 
     return CustomerTabScope(
       child: Scaffold(
@@ -343,7 +420,10 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
             query: query,
             // A tap on the current tab takes the list back to the top.
             controller: PrimaryScrollController.maybeOf(context),
-            empty: const _Empty(),
+            empty: _Empty(recommend: recommend, onHearted: _heartedInRow),
+            emptyAlignment: recommend ? Alignment.topCenter : Alignment.center,
+            emptyInset: !recommend,
+            landing: _landing,
             leaving: _leaving,
             onHeartOff: _heartOff,
             beforeRefresh: _removals.flush,
@@ -371,52 +451,123 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   }
 }
 
-/// Nothing hearted yet: what a heart does, and the way to the shop.
+/// Nothing hearted yet: what a heart does and, under «Рекомендуем», hearts to
+/// try; or, without products to recommend, the way to the shop (`DL-129`).
 class _Empty extends StatelessWidget {
-  const _Empty();
+  const _Empty({required this.recommend, required this.onHearted});
+
+  final bool recommend;
+  final void Function(CatalogProduct, Rect, Future<ApiFailure?>) onHearted;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final Widget circle = DecoratedBox(
+      key: const ValueKey<String>('favorites-heart-circle'),
+      decoration: const BoxDecoration(
+        color: KitColors.primaryWash,
+        shape: BoxShape.circle,
+      ),
+      child: SizedBox.square(
+        dimension: recommend ? 112 : 160,
+        child: Icon(
+          Icons.favorite,
+          size: recommend ? 60 : 96,
+          color: KitColors.primary,
+        ),
+      ),
+    );
+    final Widget title = Text(
+      l10n.favoritesEmptyTitle,
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: KitColors.ink,
+      ),
+    );
+    final Widget text = Text(
+      l10n.favoritesEmptyText,
+      textAlign: TextAlign.center,
+      style: const TextStyle(fontSize: 14, height: 1.4, color: KitColors.muted),
+    );
+
+    if (recommend) {
+      const EdgeInsets inset = EdgeInsets.symmetric(horizontal: 24);
+      return Column(
+        key: const ValueKey<String>('favorites-empty'),
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          const SizedBox(height: 32),
+          Center(child: circle),
+          const SizedBox(height: 20),
+          Padding(padding: inset, child: title),
+          const SizedBox(height: 8),
+          Padding(padding: inset, child: text),
+          const SizedBox(height: 28),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Semantics(
+              header: true,
+              child: Text(
+                l10n.recommendedTitle,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: KitColors.ink,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          RecommendedRow(
+            placeholders: true,
+            titled: false,
+            onHearted: onHearted,
+          ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton(
+              key: const ValueKey<String>('favorites-categories'),
+              style: TextButton.styleFrom(
+                foregroundColor: KitColors.primaryDark,
+                minimumSize: const Size(44, 44),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              onPressed: () => context.push<void>(CatalogPaths.categories),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Flexible(child: Text(l10n.searchAllCategories)),
+                  const SizedBox(width: 4),
+                  const ExcludeSemantics(
+                    child: Icon(Icons.arrow_forward, size: 16),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      );
+    }
 
     return Column(
       key: const ValueKey<String>('favorites-empty'),
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            color: KitColors.primaryWash,
-            shape: BoxShape.circle,
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(32),
-            child: Icon(
-              Icons.shopping_basket_outlined,
-              size: 96,
-              color: KitColors.primary,
-            ),
-          ),
-        ),
+        circle,
         const SizedBox(height: 24),
-        Text(
-          l10n.favoritesEmptyTitle,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: KitColors.ink,
-          ),
-        ),
+        title,
         const SizedBox(height: 8),
-        Text(
-          l10n.favoritesEmptyText,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 14,
-            height: 1.4,
-            color: KitColors.muted,
-          ),
-        ),
+        text,
         const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,

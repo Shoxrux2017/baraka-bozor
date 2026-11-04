@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/layout/text_width.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/network/api_failure.dart';
 import '../../../core/routing/flight_page.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/skeleton_bar.dart';
@@ -31,6 +32,8 @@ class RecommendedRow extends ConsumerStatefulWidget {
     this.showAll = true,
     this.rowKey = 'recommended-row',
     this.placeholders = false,
+    this.titled = true,
+    this.onHearted,
     super.key,
   });
 
@@ -39,6 +42,18 @@ class RecommendedRow extends ConsumerStatefulWidget {
   final bool showAll;
   final String rowKey;
   final bool placeholders;
+
+  /// Whether the section's title (and its «Все») stands over the row; a screen
+  /// that draws its own heading turns it off (`DL-129`).
+  final bool titled;
+
+  /// Handed to the cards: called as a heart is set (`DL-129`).
+  final void Function(
+    CatalogProduct product,
+    Rect photo,
+    Future<ApiFailure?> answer,
+  )?
+  onHearted;
 
   static const int shown = 10;
   static const int skeletonCards = 3;
@@ -185,6 +200,7 @@ class _RecommendedRowState extends ConsumerState<RecommendedRow> {
                   key: ValueKey<String>(items[index].id),
                   product: items[index],
                   imageHeight: RecommendedRow.imageHeight,
+                  onHearted: widget.onHearted,
                 ),
               ),
             ),
@@ -193,19 +209,20 @@ class _RecommendedRowState extends ConsumerState<RecommendedRow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        SectionTitle(
-          title: widget.title ?? l10n.recommendedTitle,
-          seeAllKey: 'open-recommended',
-          seeAllLabel: seeAllCount == null
-              ? null
-              : l10n.recommendedAllSpoken(seeAllCount),
-          count: seeAllCount,
-          titleKey: _titleKey,
-          holding: _holding,
-          onSeeAll: seeAllCount != null
-              ? () => _openAll(items.take(RecommendedRow.shown).toList())
-              : null,
-        ),
+        if (widget.titled)
+          SectionTitle(
+            title: widget.title ?? l10n.recommendedTitle,
+            seeAllKey: 'open-recommended',
+            seeAllLabel: seeAllCount == null
+                ? null
+                : l10n.recommendedAllSpoken(seeAllCount),
+            count: seeAllCount,
+            titleKey: _titleKey,
+            holding: _holding,
+            onSeeAll: seeAllCount != null
+                ? () => _openAll(items.take(RecommendedRow.shown).toList())
+                : null,
+          ),
         if (!skeletons && _sawSkeleton)
           TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0, end: 1),

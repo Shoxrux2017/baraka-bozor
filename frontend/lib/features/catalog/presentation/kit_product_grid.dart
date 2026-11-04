@@ -98,6 +98,7 @@ class KitProductGrid extends ConsumerStatefulWidget {
     this.leaving = const <String>{},
     this.notSoldHeading,
     this.onHeartOff,
+    this.landing = const <String, GlobalKey>{},
     this.beforeRefresh,
     super.key,
   });
@@ -154,6 +155,10 @@ class KitProductGrid extends ConsumerStatefulWidget {
   /// Called for a tap on a red heart of a card, instead of the card changing
   /// the favourite (`DL-129`).
   final ValueChanged<CatalogProduct>? onHeartOff;
+
+  /// The cards whose photo is hidden while a copy of it flies in, with the key
+  /// each marks its photo with (`DL-129`).
+  final Map<String, GlobalKey> landing;
 
   /// Awaited before a pull or «Повторить» asks the list again (`DL-129`).
   final Future<void> Function()? beforeRefresh;
@@ -520,6 +525,8 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
               imageHeight: widget.imageHeight,
               available: items[index].isAvailable,
               onHeartOff: widget.onHeartOff,
+              photoKey: widget.landing[id],
+              photoHidden: widget.landing.containsKey(id),
             ),
           );
           return GridCardMotion(
