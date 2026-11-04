@@ -7613,13 +7613,13 @@ abstract class AppLocalizations {
   /// No description provided for @favoriteAddSpoken.
   ///
   /// In uz, this message translates to:
-  /// **'Sevimlilarga qo\'shish: {name}'**
+  /// **'{name}: sevimlilarga qo\'shish'**
   String favoriteAddSpoken(String name);
 
   /// No description provided for @favoriteRemoveSpoken.
   ///
   /// In uz, this message translates to:
-  /// **'Sevimlilardan olib tashlash: {name}'**
+  /// **'{name}: sevimlilardan olib tashlash'**
   String favoriteRemoveSpoken(String name);
 
   /// No description provided for @questionBannerUntil.

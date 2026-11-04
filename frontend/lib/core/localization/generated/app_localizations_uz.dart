@@ -4529,12 +4529,12 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String favoriteAddSpoken(String name) {
-    return 'Sevimlilarga qo\'shish: $name';
+    return '$name: sevimlilarga qo\'shish';
   }
 
   @override
   String favoriteRemoveSpoken(String name) {
-    return 'Sevimlilardan olib tashlash: $name';
+    return '$name: sevimlilardan olib tashlash';
   }
 
   @override

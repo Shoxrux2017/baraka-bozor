@@ -114,7 +114,7 @@ class KitProductCard extends ConsumerStatefulWidget {
 }
 
 class _KitProductCardState extends ConsumerState<KitProductCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // One heart change at a time per card: a second tap while one is on its
   // way is ignored, so a double tap never sends two requests.
   bool _heartBusy = false;
@@ -129,6 +129,10 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
   /// (`DL-119`).
   late final AnimationController _reveal;
   late final Animation<double> _revealCurve;
+
+  /// The pop of a heart just set: 340 ms, 1 → 1.34 → 0.94 → 1 (`DL-129`).
+  late final AnimationController _pop;
+  late final Animation<double> _popScale;
 
   /// Whether the stepper, not the "+" row, is in the tree; it stays until the
   /// shrink ends.
@@ -155,6 +159,34 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
       curve: const Cubic(0.2, 0.8, 0.2, 1),
       reverseCurve: const Cubic(0.4, 0, 0.2, 1),
     );
+    _pop = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 340),
+    );
+    const Cubic curve = Cubic(0.2, 0.8, 0.2, 1);
+    _popScale = TweenSequence<double>(<TweenSequenceItem<double>>[
+      TweenSequenceItem<double>(
+        tween: Tween<double>(
+          begin: 1,
+          end: 1.34,
+        ).chain(CurveTween(curve: curve)),
+        weight: 35,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(
+          begin: 1.34,
+          end: 0.94,
+        ).chain(CurveTween(curve: curve)),
+        weight: 35,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(
+          begin: 0.94,
+          end: 1,
+        ).chain(CurveTween(curve: curve)),
+        weight: 30,
+      ),
+    ]).animate(_pop);
     final CartLine? line = _lineOfCart();
     if (line != null) {
       _stepperShown = true;
@@ -165,6 +197,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
   @override
   void dispose() {
     _reveal.dispose();
+    _pop.dispose();
     super.dispose();
   }
 
@@ -214,6 +247,15 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
     if (current && off != null) {
       off(product);
       return;
+    }
+    if (!current) {
+      // A heart set answers at once: a light tap, the pop (not with reduced
+      // motion) and one more for the tab to bump on (`DL-129`).
+      unawaited(HapticFeedback.lightImpact());
+      if (!MediaQuery.disableAnimationsOf(context)) {
+        unawaited(_pop.forward(from: 0));
+      }
+      ref.read(favoriteAddedProvider.notifier).bump();
     }
     setState(() => _heartBusy = true);
     final ApiFailure? failure = await ref
@@ -512,8 +554,12 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
                         ),
                         iconSize: 18,
                         color: favorite ? KitColors.danger : KitColors.ink,
-                        icon: Icon(
-                          favorite ? Icons.favorite : Icons.favorite_border,
+                        icon: ScaleTransition(
+                          key: ValueKey<String>('heart-pop-$id'),
+                          scale: _popScale,
+                          child: Icon(
+                            favorite ? Icons.favorite : Icons.favorite_border,
+                          ),
                         ),
                         onPressed: _toggleHeart,
                       ),

@@ -3152,7 +3152,7 @@
       }
     }
   },
-  "favoriteAddSpoken": "Sevimlilarga qo'shish: {name}",
+  "favoriteAddSpoken": "{name}: sevimlilarga qo'shish",
   "@favoriteAddSpoken": {
     "placeholders": {
       "name": {
@@ -3160,7 +3160,7 @@
       }
     }
   },
-  "favoriteRemoveSpoken": "Sevimlilardan olib tashlash: {name}",
+  "favoriteRemoveSpoken": "{name}: sevimlilardan olib tashlash",
   "@favoriteRemoveSpoken": {
     "placeholders": {
       "name": {

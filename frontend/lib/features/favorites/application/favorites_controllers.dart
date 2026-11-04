@@ -85,6 +85,22 @@ favoriteOverridesProvider =
       FavoriteOverrides.new,
     );
 
+/// How many hearts the Customer has set in this run, per account: the
+/// «Избранное» tab bumps on each new count (`DL-129`). A heart taken off is
+/// not counted.
+class FavoriteAdded extends Notifier<int> {
+  @override
+  int build() {
+    ref.watch(customerAccountProvider);
+    return 0;
+  }
+
+  void bump() => state = state + 1;
+}
+
+final NotifierProvider<FavoriteAdded, int> favoriteAddedProvider =
+    NotifierProvider<FavoriteAdded, int>(FavoriteAdded.new);
+
 /// Whether [product] is a favourite: the heart the Customer just set, else
 /// what the server said.
 bool favoriteOf(Map<String, bool> overrides, CatalogProduct product) =>

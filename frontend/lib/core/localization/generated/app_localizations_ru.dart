@@ -4587,12 +4587,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String favoriteAddSpoken(String name) {
-    return 'Добавить в избранное: $name';
+    return '$name: добавить в избранное';
   }
 
   @override
   String favoriteRemoveSpoken(String name) {
-    return 'Убрать из избранного: $name';
+    return '$name: убрать из избранного';
   }
 
   @override
