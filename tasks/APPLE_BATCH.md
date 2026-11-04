@@ -24,7 +24,7 @@ Rules for every stage:
 | 5 | Product | 9 | — | Merged (PR #126) |
 | 6 | Home and categories | 14 | working hours | Merged (PR #128) |
 | 7 | Category screen and product lists | 10 | — | Merged (PR #130) |
-| 8 | «Рекомендуем» and «Все товары» | 7 | list order | Planned |
+| 8 | «Рекомендуем» and «Все товары» | 7 | list order | Merged (PR #131) |
 | 9 | Search | 8 | — | Merged (PR #131) |
 | 10 | Favourites | 7 | favourites order | Planned |
 | 11 | Order | 9 | approval amounts and picture | Planned |

@@ -1950,7 +1950,7 @@ Stage 10 of `tasks/APPLE_BATCH.md` codes the favourites test page (`fav-*`). The
 4. **The client list is a `ProductListQuery`**, like the other product lists, so paging, the failed page and the end rows are the ones already built.
 5. **The grid's motion rule.** A card leaving melts and then leaves the list; a card whose place changed glides; a card not drawn before arrives; with reduced motion nothing glides (the exact times are in the stage plan).
 6. **The removal is sent when its undo bar closes**, and first when the list is asked for again, so the server never answers a list that still holds a row the Customer removed.
-7. **A quiet refresh when the tab shows**: the list is asked again without a skeleton, so a product that stopped being sold shows as such.
+7. **A quiet refresh when the tab shows**: the list is asked again without a skeleton, so hearts set elsewhere fade in at the top and a product that stopped being sold shows as such; it waits while a removal is held.
 8. **The haptic stays with reduced motion**: it is not motion.
 9. **The empty state's row is the home's `RecommendedRow`**: its cards with «+», wider than the test page's, so the cart stepper works as everywhere else.
 10. **Reproduction.** The emulator had too little free memory (3.7 GB commit free), so the first red tests of Task 5 and Task 6 on main's code stand as the reproduction of `fav-1` and `fav-3`.
