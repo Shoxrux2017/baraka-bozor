@@ -1953,4 +1953,4 @@ Stage 10 of `tasks/APPLE_BATCH.md` codes the favourites test page (`fav-*`). The
 7. **A quiet refresh when the tab shows**: the list is asked again without a skeleton, so hearts set elsewhere fade in at the top and a product that stopped being sold shows as such; it waits while a removal is held.
 8. **The haptic stays with reduced motion**: it is not motion.
 9. **The empty state's row is the home's `RecommendedRow`**: its cards with «+», wider than the test page's, so the cart stepper works as everywhere else.
-10. **Reproduction.** The emulator had too little free memory (3.7 GB commit free), so the first red tests of Task 5 and Task 6 on main's code stand as the reproduction of `fav-1` and `fav-3`.
+10. **Reproduction.** The emulator had too little free memory (3.7 GB commit free). The first tests of Task 5 and Task 6 were run red on the branch before their code, where favourites still reloaded from page 1 after a heart change exactly as on main; they stand as the reproduction of `fav-1` and `fav-3`.

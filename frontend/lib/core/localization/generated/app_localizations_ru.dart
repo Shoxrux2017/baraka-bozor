@@ -4638,4 +4638,20 @@ class AppLocalizationsRu extends AppLocalizations {
   String favoritesRemoveAllSpoken(String count) {
     return 'Убрать все снятые с продажи: $count';
   }
+
+  @override
+  String favoriteRemoved(String name) {
+    return 'Убрали из избранного: $name';
+  }
+
+  @override
+  String favoriteRestoredSpoken(String name) {
+    return 'Снова в избранном: $name';
+  }
+
+  @override
+  String get favoriteRemoveOffline => 'Не удалось убрать: нет связи';
+
+  @override
+  String get favoriteRemoveFailed => 'Не удалось убрать. Попробуйте ещё раз';
 }

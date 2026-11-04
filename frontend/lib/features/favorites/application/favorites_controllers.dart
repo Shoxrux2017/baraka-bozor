@@ -68,6 +68,25 @@ class FavoriteOverrides extends Notifier<Map<String, bool>> {
     return null;
   }
 
+  /// Shows [productId] as [favorite] without asking the server: the heart of
+  /// a card that is leaving the favourites list (`DL-129`).
+  void mark(String productId, {required bool favorite}) {
+    state = <String, bool>{...state, productId: favorite};
+  }
+
+  /// Lets go of what was marked for [productIds]: their hearts show what the
+  /// server said again.
+  void forget(Iterable<String> productIds) {
+    if (!ref.mounted) {
+      return;
+    }
+    final Map<String, bool> kept = <String, bool>{...state}
+      ..removeWhere((String id, bool _) => productIds.contains(id));
+    if (kept.length != state.length) {
+      state = kept;
+    }
+  }
+
   bool _sameAccount(String? account) =>
       ref.mounted && ref.read(customerAccountProvider) == account;
 }

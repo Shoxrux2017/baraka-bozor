@@ -3235,5 +3235,23 @@
         "type": "String"
       }
     }
-  }
+  },
+  "favoriteRemoved": "Sevimlilardan olib tashlandi: {name}",
+  "@favoriteRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "favoriteRestoredSpoken": "Yana sevimlilarda: {name}",
+  "@favoriteRestoredSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "favoriteRemoveOffline": "Olib tashlab bo'lmadi: aloqa yo'q",
+  "favoriteRemoveFailed": "Olib tashlab bo'lmadi. Qaytadan urinib ko'ring"
 }

@@ -21,6 +21,17 @@ import '../../support/fake_cart_repository.dart';
 import '../../support/fake_catalog_repository.dart';
 import '../../support/fake_favorites_repository.dart';
 
+/// The signed-in Customer, switchable by the test.
+class _Account extends Notifier<String?> {
+  @override
+  String? build() => 'c';
+
+  void signIn(String? id) => state = id;
+}
+
+final NotifierProvider<_Account, String?> _account =
+    NotifierProvider<_Account, String?>(_Account.new);
+
 void main() {
   late FakeFavoritesRepository favorites;
   late GoRouter router;
@@ -74,13 +85,13 @@ void main() {
         ),
         GoRoute(
           path: AppPaths.customer,
-          builder: (BuildContext context, GoRouterState state) =>
-              const Scaffold(body: Text('home')),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              const NoTransitionPage<void>(child: Scaffold(body: Text('home'))),
         ),
         GoRoute(
           path: AppPaths.customerFavorites,
-          builder: (BuildContext context, GoRouterState state) =>
-              const FavoritesScreen(),
+          pageBuilder: (BuildContext context, GoRouterState state) =>
+              const NoTransitionPage<void>(child: FavoritesScreen()),
         ),
       ],
     );
@@ -89,7 +100,9 @@ void main() {
       ProviderScope(
         retry: (int count, Object error) => null,
         overrides: [
-          customerAccountProvider.overrideWithValue('c'),
+          customerAccountProvider.overrideWith(
+            (Ref ref) => ref.watch(_account),
+          ),
           cartRepositoryProvider.overrideWithValue(
             cart ?? FakeCartRepository(),
           ),
@@ -209,27 +222,324 @@ void main() {
     );
   });
 
-  testWidgets('un-hearting removes the card once the server confirms', (
-    WidgetTester tester,
-  ) async {
-    await open(tester);
+  testWidgets(
+    'taking a heart off keeps the other cards and asks the server for no list',
+    (WidgetTester tester) async {
+      favorites.rows = <CatalogProduct>[
+        favorite('p-1', 'Pomidor'),
+        favorite('p-3', 'Anor'),
+        favorite('p-2', 'Olma', available: false),
+      ];
+      await open(tester);
 
-    await tester.tap(byKey('heart-p-1'));
+      await tester.tap(byKey('heart-p-1'));
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pumpAndSettle();
+
+      expect(favorites.changes, <String>['remove:p-1']);
+      expect(favorites.requests, <String>['default|1']);
+      expect(byKey('product-card-p-3'), findsOneWidget);
+      expect(byKey('product-card-p-2'), findsOneWidget);
+    },
+  );
+
+  /// Takes the heart of [id] off and waits until the card has left and the
+  /// bar stands.
+  Future<void> heartOff(WidgetTester tester, String id) async {
+    await tester.tap(byKey('heart-$id'));
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
+  /// Lets the bar end by itself and the sending finish.
+  Future<void> letBarEnd(WidgetTester tester) async {
+    await tester.pump(const Duration(seconds: 6));
     await tester.pumpAndSettle();
+  }
 
-    expect(favorites.changes, <String>['remove:p-1']);
-    expect(byKey('product-card-p-1'), findsNothing);
-    expect(byKey('product-card-p-2'), findsOneWidget);
-  });
+  Color heartColor(WidgetTester tester, String id) =>
+      tester.widget<IconButton>(byKey('heart-$id')).color!;
 
-  testWidgets('a refused un-heart keeps the card', (WidgetTester tester) async {
-    await open(tester);
-    favorites.nextFailure = const NetworkFailure();
+  List<String> announced(WidgetTester tester) => tester
+      .takeAnnouncements()
+      .map((CapturedAccessibilityAnnouncement a) => a.message)
+      .toList();
 
-    await tester.tap(byKey('heart-p-1'));
-    await tester.pumpAndSettle();
+  group('a heart taken off', () {
+    setUp(() {
+      favorites.rows = <CatalogProduct>[
+        favorite('p-1', 'Помидоры'),
+        favorite('p-3', 'Яблоки'),
+        favorite('p-4', 'Груши'),
+      ];
+    });
 
-    expect(byKey('product-card-p-1'), findsOneWidget);
+    testWidgets(
+      'the card melts and the bar says «Убрали из избранного: Помидоры · '
+      'Вернуть» for 5 s, then the removal is sent',
+      (WidgetTester tester) async {
+        await open(tester, locale: const Locale('ru'));
+
+        await tester.tap(byKey('heart-p-1'));
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(
+          byKey('product-card-p-1'),
+          findsOneWidget,
+          reason: 'the card melts first',
+        );
+        expect(find.text('Вернуть'), findsNothing);
+        await tester.pump(const Duration(milliseconds: 150));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(byKey('product-card-p-1'), findsNothing);
+        expect(find.text('Убрали из избранного: Помидоры'), findsOneWidget);
+        expect(find.text('Вернуть'), findsOneWidget);
+        await tester.pump(const Duration(seconds: 4));
+        expect(find.text('Вернуть'), findsOneWidget);
+        expect(favorites.changes, isEmpty, reason: 'not sent while the bar is');
+
+        await tester.pump(const Duration(milliseconds: 1500));
+        await tester.pumpAndSettle();
+        expect(find.text('Вернуть'), findsNothing);
+        expect(favorites.changes, <String>['remove:p-1']);
+        expect(byKey('product-card-p-1'), findsNothing);
+      },
+    );
+
+    testWidgets('«Вернуть» puts the card back at its place and sends nothing', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, locale: const Locale('ru'));
+
+      await heartOff(tester, 'p-1');
+      await tester.tap(find.text('Вернуть'));
+      await tester.pumpAndSettle();
+      await letBarEnd(tester);
+
+      expect(byKey('product-card-p-1'), findsOneWidget);
+      expect(
+        tester.getTopLeft(byKey('product-card-p-1')).dx,
+        lessThan(tester.getTopLeft(byKey('product-card-p-3')).dx),
+        reason: 'back at the first place',
+      );
+      expect(heartColor(tester, 'p-1'), KitColors.danger);
+      expect(favorites.changes, isEmpty);
+      expect(favorites.requests, <String>['default|1']);
+    });
+
+    testWidgets('offline the card comes back to its place and says why', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, locale: const Locale('ru'));
+      favorites.nextFailure = const NetworkFailure();
+
+      await heartOff(tester, 'p-1');
+      await letBarEnd(tester);
+
+      expect(favorites.changes, <String>['remove:p-1']);
+      expect(byKey('product-card-p-1'), findsOneWidget);
+      expect(
+        tester.getTopLeft(byKey('product-card-p-1')).dx,
+        lessThan(tester.getTopLeft(byKey('product-card-p-3')).dx),
+      );
+      expect(heartColor(tester, 'p-1'), KitColors.danger);
+      expect(find.text('Не удалось убрать: нет связи'), findsOneWidget);
+      expect(favorites.requests, <String>['default|1']);
+    });
+
+    testWidgets('another failure says it did not work', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, locale: const Locale('ru'));
+      favorites.nextFailure = const UnexpectedFailure();
+
+      await heartOff(tester, 'p-1');
+      await letBarEnd(tester);
+
+      expect(byKey('product-card-p-1'), findsOneWidget);
+      expect(
+        find.text('Не удалось убрать. Попробуйте ещё раз'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'a second heart taken off sends the first at once; «Вернуть» brings '
+      'back only the second',
+      (WidgetTester tester) async {
+        await open(tester, locale: const Locale('ru'));
+
+        await heartOff(tester, 'p-1');
+        expect(favorites.changes, isEmpty);
+        await heartOff(tester, 'p-3');
+        expect(favorites.changes, <String>['remove:p-1']);
+        await tester.pumpAndSettle();
+        expect(find.text('Убрали из избранного: Яблоки'), findsOneWidget);
+
+        await tester.tap(find.text('Вернуть'));
+        await tester.pumpAndSettle();
+        await letBarEnd(tester);
+
+        expect(byKey('product-card-p-3'), findsOneWidget);
+        expect(byKey('product-card-p-1'), findsNothing);
+        expect(favorites.changes, <String>['remove:p-1']);
+      },
+    );
+
+    testWidgets('a new order during the bar sends the removal first', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, locale: const Locale('ru'));
+
+      await heartOff(tester, 'p-1');
+      await tester.tap(byKey('list-sort'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('sort-price-asc'));
+      await tester.pumpAndSettle();
+
+      expect(favorites.calls, <String>[
+        'list:default|1',
+        'remove:p-1',
+        'list:price_asc|1',
+      ]);
+      expect(find.text('Вернуть'), findsNothing);
+      expect(byKey('product-card-p-1'), findsNothing);
+    });
+
+    testWidgets('a pull during the bar sends the removal first', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, locale: const Locale('ru'));
+
+      await heartOff(tester, 'p-1');
+      await tester.fling(byKey('product-grid'), const Offset(0, 400), 1000);
+      await tester.pumpAndSettle();
+
+      expect(favorites.calls, <String>[
+        'list:default|1',
+        'remove:p-1',
+        'list:default|1',
+      ]);
+      expect(find.text('Вернуть'), findsNothing);
+      expect(byKey('product-card-p-1'), findsNothing);
+    });
+
+    testWidgets('another Customer during the bar: nothing is sent', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, locale: const Locale('ru'));
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(FavoritesScreen)),
+      );
+
+      await heartOff(tester, 'p-1');
+      container.read(_account.notifier).signIn('c2');
+      await tester.pump();
+      await letBarEnd(tester);
+
+      expect(favorites.changes, isEmpty);
+      expect(find.text('Вернуть'), findsNothing);
+      expect(byKey('product-card-p-1'), findsOneWidget);
+      expect(heartColor(tester, 'p-1'), KitColors.danger);
+    });
+
+    testWidgets('a screen reader hears the removal and «Вернуть»', (
+      WidgetTester tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(accessibleNavigation: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await open(tester, locale: const Locale('ru'));
+      announced(tester);
+
+      await heartOff(tester, 'p-1');
+      expect(announced(tester), contains('Убрали из избранного: Помидоры'));
+      await tester.pump(const Duration(seconds: 10));
+      expect(find.text('Вернуть'), findsOneWidget, reason: 'it persists');
+      expect(favorites.changes, isEmpty);
+
+      await tester.tap(find.text('Вернуть'));
+      await tester.pumpAndSettle();
+      expect(announced(tester), contains('Снова в избранном: Помидоры'));
+      expect(favorites.changes, isEmpty);
+      handle.dispose();
+    });
+
+    testWidgets('with reduced motion the card leaves after 160 ms', (
+      WidgetTester tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await open(tester, locale: const Locale('ru'));
+
+      await tester.tap(byKey('heart-p-1'));
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(find.text('Вернуть'), findsNothing);
+      await tester.pump(const Duration(milliseconds: 20));
+      expect(find.text('Вернуть'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 300));
+      await letBarEnd(tester);
+    });
+
+    testWidgets('leaving the screen before the card has left forgets the '
+        'heart', (WidgetTester tester) async {
+      await open(tester, locale: const Locale('ru'));
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(FavoritesScreen)),
+      );
+
+      await tester.tap(byKey('heart-p-1'));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(container.read(favoriteOverridesProvider)['p-1'], isFalse);
+      router.go(AppPaths.customer);
+      await tester.pumpAndSettle();
+
+      expect(container.read(favoriteOverridesProvider), isEmpty);
+      expect(favorites.changes, isEmpty);
+    });
+
+    testWidgets('«Убрать все» takes every not-sold card and sends one '
+        'removal', (WidgetTester tester) async {
+      favorites.rows = <CatalogProduct>[
+        favorite('s-1', 'Помидоры'),
+        favorite('s-2', 'Яблоки'),
+        for (int i = 0; i < 25; i++)
+          favorite('n-$i', 'Товар $i', available: false),
+      ];
+      await open(
+        tester,
+        locale: const Locale('ru'),
+        size: const Size(390, 1600),
+      );
+      expect(byKey('not-sold-remove-all'), findsOneWidget);
+
+      await tester.tap(byKey('not-sold-remove-all'));
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.text('Убрали из избранного: 25 товаров'),
+        findsOneWidget,
+        reason: 'the whole count, loaded or not',
+      );
+      expect(byKey('not-sold-heading'), findsNothing);
+      expect(byKey('product-placeholders'), findsNothing);
+      expect(byKey('product-card-s-1'), findsOneWidget);
+      await letBarEnd(tester);
+
+      expect(favorites.removeNotSoldCalls, 1);
+      expect(favorites.changes, <String>['remove-not-sold']);
+      expect(favorites.requests, <String>['default|1']);
+      expect(byKey('not-sold-heading'), findsNothing);
+    });
   });
 
   testWidgets('with no favourites it shows the empty state and its button', (

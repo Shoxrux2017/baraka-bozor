@@ -7681,6 +7681,30 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Sotuvdan olinganlarni olib tashlash: {count}'**
   String favoritesRemoveAllSpoken(String count);
+
+  /// No description provided for @favoriteRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilardan olib tashlandi: {name}'**
+  String favoriteRemoved(String name);
+
+  /// No description provided for @favoriteRestoredSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana sevimlilarda: {name}'**
+  String favoriteRestoredSpoken(String name);
+
+  /// No description provided for @favoriteRemoveOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib tashlab bo\'lmadi: aloqa yo\'q'**
+  String get favoriteRemoveOffline;
+
+  /// No description provided for @favoriteRemoveFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib tashlab bo\'lmadi. Qaytadan urinib ko\'ring'**
+  String get favoriteRemoveFailed;
 }
 
 class _AppLocalizationsDelegate

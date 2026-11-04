@@ -2733,5 +2733,9 @@
   "homeClosedBody": "Заказ примем сейчас, соберём и привезём с {time}",
   "favoritesNotSoldSpoken": "Нет в продаже, {count}",
   "favoritesRemoveAll": "Убрать все",
-  "favoritesRemoveAllSpoken": "Убрать все снятые с продажи: {count}"
+  "favoritesRemoveAllSpoken": "Убрать все снятые с продажи: {count}",
+  "favoriteRemoved": "Убрали из избранного: {name}",
+  "favoriteRestoredSpoken": "Снова в избранном: {name}",
+  "favoriteRemoveOffline": "Не удалось убрать: нет связи",
+  "favoriteRemoveFailed": "Не удалось убрать. Попробуйте ещё раз"
 }

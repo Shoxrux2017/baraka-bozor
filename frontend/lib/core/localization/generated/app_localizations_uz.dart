@@ -4580,4 +4580,21 @@ class AppLocalizationsUz extends AppLocalizations {
   String favoritesRemoveAllSpoken(String count) {
     return 'Sotuvdan olinganlarni olib tashlash: $count';
   }
+
+  @override
+  String favoriteRemoved(String name) {
+    return 'Sevimlilardan olib tashlandi: $name';
+  }
+
+  @override
+  String favoriteRestoredSpoken(String name) {
+    return 'Yana sevimlilarda: $name';
+  }
+
+  @override
+  String get favoriteRemoveOffline => 'Olib tashlab bo\'lmadi: aloqa yo\'q';
+
+  @override
+  String get favoriteRemoveFailed =>
+      'Olib tashlab bo\'lmadi. Qaytadan urinib ko\'ring';
 }

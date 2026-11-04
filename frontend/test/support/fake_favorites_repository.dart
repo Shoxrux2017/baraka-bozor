@@ -26,6 +26,10 @@ class FakeFavoritesRepository implements FavoritesRepository {
   /// Every list request, as `sort|page` with the sort's wire value.
   final List<String> requests = <String>[];
 
+  /// Every request in the order it was made: `list:<sort>|<page>`, then
+  /// `add:<id>`, `remove:<id>` or `remove-not-sold`.
+  final List<String> calls = <String>[];
+
   /// How many times the not-sold favourites were removed in one call.
   int removeNotSoldCalls = 0;
 
@@ -37,6 +41,7 @@ class FakeFavoritesRepository implements FavoritesRepository {
 
   Future<void> _change(String entry) async {
     changes.add(entry);
+    calls.add(entry);
     final ApiFailure? failure = nextFailure;
     nextFailure = null;
     await hold?.future;
@@ -58,6 +63,7 @@ class FakeFavoritesRepository implements FavoritesRepository {
   }) async {
     listLoads++;
     requests.add('${sort.wire}|$page');
+    calls.add('list:${sort.wire}|$page');
     await listHold?.future;
     final ApiFailure? failure = listFailure;
     if (failure != null) {
