@@ -2834,5 +2834,12 @@
   "favoriteRemoveOffline": "Не удалось убрать: нет связи",
   "favoriteRemoveFailed": "Не удалось убрать. Попробуйте ещё раз",
   "favoritesEntrySpoken": "Избранное: {count}",
-  "favoritesEntryNotSoldSpoken": "Избранное: {count}, {notSold} нет в продаже"
+  "favoritesEntryNotSoldSpoken": "Избранное: {count}, {notSold} нет в продаже",
+  "orderPreviewTwo": "{first}, {second}",
+  "orderPreviewMore": "{first}, {second} и ещё {count}",
+  "orderRateCaption": "Оцените заказ",
+  "orderRatedCaption": "Ваша оценка",
+  "orderRatedSpoken": "Ваша оценка: {stars} из 5",
+  "orderRateStarsSpoken": "Оценить заказ № {number} на {stars} из 5",
+  "reorderRepeatSpoken": "Повторить заказ № {number}"
 }

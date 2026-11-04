@@ -6,6 +6,7 @@ import '../../../core/localization/order_labels.dart';
 import '../../../core/orders/order_values.dart';
 import '../domain/customer_orders.dart';
 import 'order_cards.dart';
+import 'order_preview.dart';
 
 /// What a screen reader says for a current order's card (`DL-131`): the
 /// order, its status with the stage, the question waiting and the minutes
@@ -21,12 +22,7 @@ String currentOrderSpoken(
   int? questions,
 }) {
   final int asked = questions ?? order.pendingApprovalCount;
-  final int? total = order.totalUzs;
-  final String amount = total == null
-      ? l10n.totalNothingDue
-      : order.totalKind == TotalKind.estimate
-      ? l10n.orderCardEstimateSpoken(MoneyFormat.uzs(total, language))
-      : MoneyFormat.uzs(total, language);
+  final String amount = _spokenAmount(l10n, language, order);
   final String placed = orderAt(l10n, order.createdAt, now);
 
   return <String>[
@@ -45,4 +41,37 @@ String currentOrderSpoken(
         ? '$placed, ${l10n.orderItemCount(order.itemCount)}'
         : placed,
   ].join('. ');
+}
+
+/// What a screen reader says for a past order's card and for the last-order
+/// card (`DL-131`): the order with its status, the names of its lines, when
+/// it was placed and the sum.
+String pastOrderSpoken(
+  AppLocalizations l10n,
+  AppLanguage language,
+  OrderSummary order,
+  DateTime now,
+) {
+  final String names = previewNames(l10n, language, order.preview);
+
+  return <String>[
+    '${l10n.customerOrderTitle(order.orderNumber)}, '
+        '${OrderLabels.customerStatus(l10n, order.status).toLowerCase()}',
+    if (names.isNotEmpty) names,
+    orderWhen(l10n, order.createdAt, now),
+    _spokenAmount(l10n, language, order),
+  ].join('. ');
+}
+
+String _spokenAmount(
+  AppLocalizations l10n,
+  AppLanguage language,
+  OrderSummary order,
+) {
+  final int? total = order.totalUzs;
+  return total == null
+      ? l10n.totalNothingDue
+      : order.totalKind == TotalKind.estimate
+      ? l10n.orderCardEstimateSpoken(MoneyFormat.uzs(total, language))
+      : MoneyFormat.uzs(total, language);
 }

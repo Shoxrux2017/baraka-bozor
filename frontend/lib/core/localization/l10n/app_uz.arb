@@ -3446,5 +3446,59 @@
         "type": "int"
       }
     }
+  },
+  "orderPreviewTwo": "{first}, {second}",
+  "@orderPreviewTwo": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "orderPreviewMore": "{first}, {second} va yana {count} ta",
+  "@orderPreviewMore": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderRateCaption": "Buyurtmani baholang",
+  "orderRatedCaption": "Sizning bahoyingiz",
+  "orderRatedSpoken": "Sizning bahoyingiz: 5 dan {stars}",
+  "@orderRatedSpoken": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "orderRateStarsSpoken": "Buyurtma № {number} ni 5 dan {stars} ga baholash",
+  "@orderRateStarsSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "stars": {
+        "type": "int"
+      }
+    }
+  },
+  "reorderRepeatSpoken": "Buyurtma № {number} ni takrorlash",
+  "@reorderRepeatSpoken": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
   }
 }

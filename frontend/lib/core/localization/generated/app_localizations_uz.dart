@@ -4713,4 +4713,35 @@ class AppLocalizationsUz extends AppLocalizations {
   String favoritesEntryNotSoldSpoken(String count, int notSold) {
     return 'Sevimlilar: $count, $notSold tasi sotuvda yo\'q';
   }
+
+  @override
+  String orderPreviewTwo(String first, String second) {
+    return '$first, $second';
+  }
+
+  @override
+  String orderPreviewMore(String first, String second, int count) {
+    return '$first, $second va yana $count ta';
+  }
+
+  @override
+  String get orderRateCaption => 'Buyurtmani baholang';
+
+  @override
+  String get orderRatedCaption => 'Sizning bahoyingiz';
+
+  @override
+  String orderRatedSpoken(int stars) {
+    return 'Sizning bahoyingiz: 5 dan $stars';
+  }
+
+  @override
+  String orderRateStarsSpoken(int number, int stars) {
+    return 'Buyurtma № $number ni 5 dan $stars ga baholash';
+  }
+
+  @override
+  String reorderRepeatSpoken(int number) {
+    return 'Buyurtma № $number ni takrorlash';
+  }
 }

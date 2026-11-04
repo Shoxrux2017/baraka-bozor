@@ -7855,6 +7855,48 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Sevimlilar: {count}, {notSold} tasi sotuvda yo\'q'**
   String favoritesEntryNotSoldSpoken(String count, int notSold);
+
+  /// No description provided for @orderPreviewTwo.
+  ///
+  /// In uz, this message translates to:
+  /// **'{first}, {second}'**
+  String orderPreviewTwo(String first, String second);
+
+  /// No description provided for @orderPreviewMore.
+  ///
+  /// In uz, this message translates to:
+  /// **'{first}, {second} va yana {count} ta'**
+  String orderPreviewMore(String first, String second, int count);
+
+  /// No description provided for @orderRateCaption.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmani baholang'**
+  String get orderRateCaption;
+
+  /// No description provided for @orderRatedCaption.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sizning bahoyingiz'**
+  String get orderRatedCaption;
+
+  /// No description provided for @orderRatedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sizning bahoyingiz: 5 dan {stars}'**
+  String orderRatedSpoken(int stars);
+
+  /// No description provided for @orderRateStarsSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} ni 5 dan {stars} ga baholash'**
+  String orderRateStarsSpoken(int number, int stars);
+
+  /// No description provided for @reorderRepeatSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} ni takrorlash'**
+  String reorderRepeatSpoken(int number);
 }
 
 class _AppLocalizationsDelegate

@@ -4770,4 +4770,35 @@ class AppLocalizationsRu extends AppLocalizations {
   String favoritesEntryNotSoldSpoken(String count, int notSold) {
     return 'Избранное: $count, $notSold нет в продаже';
   }
+
+  @override
+  String orderPreviewTwo(String first, String second) {
+    return '$first, $second';
+  }
+
+  @override
+  String orderPreviewMore(String first, String second, int count) {
+    return '$first, $second и ещё $count';
+  }
+
+  @override
+  String get orderRateCaption => 'Оцените заказ';
+
+  @override
+  String get orderRatedCaption => 'Ваша оценка';
+
+  @override
+  String orderRatedSpoken(int stars) {
+    return 'Ваша оценка: $stars из 5';
+  }
+
+  @override
+  String orderRateStarsSpoken(int number, int stars) {
+    return 'Оценить заказ № $number на $stars из 5';
+  }
+
+  @override
+  String reorderRepeatSpoken(int number) {
+    return 'Повторить заказ № $number';
+  }
 }

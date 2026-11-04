@@ -3,14 +3,19 @@ import 'package:baraka_bozor/core/localization/app_language.dart';
 import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/localization/order_labels.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
+import 'package:baraka_bozor/core/platform/clock.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/kit/kit_star.dart';
+import 'package:baraka_bozor/features/orders/data/customer_orders_api.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_cards.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_stage_bar.dart';
+import 'package:baraka_bozor/features/orders/presentation/rate_order_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -471,7 +476,7 @@ void main() {
     await open(tester);
     await tapAndSettle(tester, byKey('orders-tab-past'));
 
-    expect(find.text('Заказ № 1001'), findsOneWidget);
+    expect(find.textContaining('Заказ № 1001 · '), findsOneWidget);
     expect(find.textContaining('товар'), findsNothing);
   });
 
@@ -537,7 +542,6 @@ void main() {
 
     for (int stars = 1; stars <= 5; stars++) {
       expect(byKey('order-rate-$orderOne-$stars'), findsOneWidget);
-      expect(find.text('$stars★'), findsOneWidget);
       expect(byKey('order-rate-$_orderTwo-$stars'), findsNothing);
     }
     final Finder stars = find.descendant(
@@ -562,16 +566,439 @@ void main() {
     );
     expect(byKey('order-repeat-$orderOne'), findsOneWidget);
     expect(byKey('order-progress-$orderOne'), findsNothing);
+  });
 
-    orders.rows = <Map<String, Object?>>[
-      customerOrderJson(status: 'completed', canRate: true),
+  testWidgets('a rateable order says Оцените заказ with five outline stars', (
+    WidgetTester tester,
+  ) async {
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(status: 'completed', canRate: true),
     ];
-    await tapAndSettle(tester, byKey('order-rate-$orderOne-3'));
+    await open(tester);
+    await tapAndSettle(tester, byKey('orders-tab-past'));
+
+    expect(find.text('Оцените заказ'), findsOneWidget);
+    final Finder stars = find.descendant(
+      of: byKey('order-$orderOne'),
+      matching: find.byType(KitStar),
+    );
+    expect(stars, findsNWidgets(5));
+    for (final Element star in stars.evaluate()) {
+      expect((star.widget as KitStar).filled, isFalse);
+      expect((star.widget as KitStar).size, 28);
+    }
+    for (int k = 1; k <= 5; k++) {
+      final Rect button = tester.getRect(byKey('order-rate-$orderOne-$k'));
+      expect(button.size, const Size(44, 44), reason: '$k');
+    }
+  });
+
+  group('rating from the card', () {
+    late List<MethodCall> platformCalls;
+
+    setUp(() {
+      platformCalls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (
+            MethodCall call,
+          ) async {
+            platformCalls.add(call);
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(status: 'completed', canRate: true),
+      ];
+      orders.rows = <Map<String, Object?>>[
+        customerOrderJson(status: 'completed', canRate: true),
+      ];
+    });
+
+    /// The rating screen's address, query included; `null` while it is not
+    /// open.
+    String? fullLocation(WidgetTester tester) {
+      final Finder screen = find.byType(RateOrderScreen);
+      return screen.evaluate().isEmpty
+          ? null
+          : GoRouterState.of(tester.element(screen)).uri.toString();
+    }
+
+    List<bool> lit(WidgetTester tester) => <bool>[
+      for (int k = 1; k <= 5; k++)
+        tester
+            .widget<KitStar>(
+              find.descendant(
+                of: byKey('order-rate-$orderOne-$k'),
+                matching: find.byType(KitStar),
+              ),
+            )
+            .filled,
+    ];
+
+    Future<void> past(WidgetTester tester) async {
+      await open(tester);
+      await tapAndSettle(tester, byKey('orders-tab-past'));
+      await tester.ensureVisible(byKey('order-rate-$orderOne-3'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'a tap lights the stars up to it, buzzes, then opens the rating screen with them',
+      (WidgetTester tester) async {
+        await past(tester);
+
+        await tester.tap(byKey('order-rate-$orderOne-3'));
+        await tester.pump(const Duration(milliseconds: 429));
+        expect(lit(tester), <bool>[true, true, true, false, false]);
+        expect(location(tester), AppPaths.customerOrders);
+        expect(
+          platformCalls
+              .where(
+                (MethodCall c) =>
+                    c.method == 'HapticFeedback.vibrate' &&
+                    c.arguments == 'HapticFeedbackType.lightImpact',
+              )
+              .length,
+          1,
+        );
+
+        await tester.pump(const Duration(milliseconds: 1));
+        await tester.pumpAndSettle();
+        expect(
+          fullLocation(tester),
+          AppPaths.customerOrderRate(orderOne, stars: 3),
+        );
+      },
+    );
+
+    testWidgets('a second tap meanwhile is ignored and back unlights them', (
+      WidgetTester tester,
+    ) async {
+      await past(tester);
+
+      await tester.tap(byKey('order-rate-$orderOne-3'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(byKey('order-rate-$orderOne-5'));
+      await tester.pumpAndSettle();
+      expect(
+        fullLocation(tester),
+        AppPaths.customerOrderRate(orderOne, stars: 3),
+      );
+
+      GoRouter.of(anywhere(tester)).pop();
+      await tester.pumpAndSettle();
+      expect(lit(tester), <bool>[false, false, false, false, false]);
+    });
+
+    testWidgets('with reduced motion the rating screen opens at once', (
+      WidgetTester tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await past(tester);
+
+      await tester.tap(byKey('order-rate-$orderOne-4'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(
+        fullLocation(tester),
+        AppPaths.customerOrderRate(orderOne, stars: 4),
+      );
+    });
+  });
+
+  testWidgets('a rated order says Ваша оценка with its stars', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(id: _orderTwo, status: 'completed', ratingStars: 4),
+    ];
+    await open(tester);
+    await tapAndSettle(tester, byKey('orders-tab-past'));
+
+    expect(find.text('Ваша оценка'), findsOneWidget);
+    expect(find.text('Оцените заказ'), findsNothing);
+    final Finder stars = find.descendant(
+      of: byKey('order-stars-$_orderTwo'),
+      matching: find.byType(KitStar),
+    );
+    expect(stars, findsNWidgets(5));
+    for (final Element star in stars.evaluate()) {
+      expect((star.widget as KitStar).size, 22);
+    }
     expect(
-      location(tester),
-      AppPaths.customerOrderRatePattern.replaceAll(':order', orderOne),
+      tester.getSemantics(byKey('order-stars-$_orderTwo')).label,
+      'Ваша оценка: 4 из 5',
+    );
+    handle.dispose();
+  });
+
+  testWidgets('Повторить is 44 high and names its order', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(status: 'completed', number: 1042),
+    ];
+    await open(tester);
+    await tapAndSettle(tester, byKey('orders-tab-past'));
+
+    expect(tester.getSize(byKey('order-repeat-$orderOne')).height, 44);
+    expect(find.bySemanticsLabel('Повторить заказ № 1042'), findsOneWidget);
+    handle.dispose();
+  });
+
+  testWidgets('ten lines show three pictures and +7', (
+    WidgetTester tester,
+  ) async {
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(status: 'completed', itemCount: 10),
+    ];
+    await open(tester);
+    await tapAndSettle(tester, byKey('orders-tab-past'));
+
+    expect(
+      find.descendant(
+        of: byKey('order-$orderOne'),
+        matching: byKey('order-picture'),
+      ),
+      findsNWidgets(3),
+    );
+    expect(
+      find.descendant(of: byKey('order-$orderOne'), matching: find.text('+7')),
+      findsOneWidget,
     );
   });
+
+  testWidgets('four lines show four pictures, one shows one', (
+    WidgetTester tester,
+  ) async {
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(status: 'completed', itemCount: 4),
+      orderSummaryJson(id: _orderTwo, status: 'completed', itemCount: 1),
+    ];
+    await open(tester);
+    await tapAndSettle(tester, byKey('orders-tab-past'));
+
+    Finder tiles(String id) => find.descendant(
+      of: byKey('order-$id'),
+      matching: byKey('order-picture'),
+    );
+    expect(tiles(orderOne), findsNWidgets(4));
+    expect(tiles(_orderTwo), findsOneWidget);
+    expect(
+      find.descendant(
+        of: byKey('order-$orderOne'),
+        matching: byKey('order-picture-more'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('the names read Помидоры, Молоко домашнее и ещё 8', (
+    WidgetTester tester,
+  ) async {
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(status: 'completed', itemCount: 10),
+      orderSummaryJson(id: _orderTwo, status: 'completed', itemCount: 2),
+      orderSummaryJson(
+        id: '0192f0a0-0000-7000-8000-00000000c003',
+        status: 'completed',
+        itemCount: 1,
+      ),
+    ];
+    await open(tester);
+    await tapAndSettle(tester, byKey('orders-tab-past'));
+
+    expect(find.text('Помидоры, Молоко домашнее и ещё 8'), findsOneWidget);
+    expect(find.text('Помидоры, Молоко домашнее'), findsOneWidget);
+    expect(find.text('Помидоры'), findsOneWidget);
+  });
+
+  testWidgets("the names are the interface language's", (
+    WidgetTester tester,
+  ) async {
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(status: 'completed', itemCount: 10),
+    ];
+    await open(tester, device: const Locale('uz'));
+    await tapAndSettle(tester, byKey('orders-tab-past'));
+
+    expect(find.text("Pomidor, Sut va yana 8 ta"), findsOneWidget);
+  });
+
+  testWidgets(
+    'the past card reads Заказ № 1042, доставлен. Помидоры, Молоко домашнее и ещё 8. Вчера, 19:45. 86 000 сум',
+    (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(
+          status: 'completed',
+          number: 1042,
+          itemCount: 10,
+          totalUzs: 86000,
+          totalKind: 'final',
+          createdAt: '2026-09-27T14:45:00Z',
+        ),
+      ];
+      await open(tester);
+      await tapAndSettle(tester, byKey('orders-tab-past'));
+
+      expect(
+        tester.getSemantics(byKey('order-$orderOne')).label,
+        contains(
+          'Заказ № 1042, доставлен. Помидоры, Молоко домашнее и ещё 8. '
+          'Вчера, 19:45. ${MoneyFormat.uzs(86000, AppLanguage.ru)}',
+        ),
+      );
+      handle.dispose();
+    },
+  );
+
+  testWidgets('a cancelled order says К оплате нет', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(status: 'cancelled', number: 1042),
+    ];
+    await open(tester);
+    await tapAndSettle(tester, byKey('orders-tab-past'));
+
+    expect(find.text('К оплате нет'), findsOneWidget);
+    final String label = tester.getSemantics(byKey('order-$orderOne')).label;
+    expect(label, contains('Заказ № 1042, отменён.'));
+    expect(label, endsWith('К оплате нет'));
+    handle.dispose();
+  });
+
+  group('the last-order card', () {
+    Future<void> show(WidgetTester tester, {TextScaler? scaler}) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final GoRouter router = GoRouter(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/',
+            builder: (BuildContext context, GoRouterState state) => Scaffold(
+              body: LastOrderCard(
+                order: CustomerOrdersApi.parseSummary(
+                  orderSummaryJson(
+                    status: 'completed',
+                    number: 1042,
+                    itemCount: 10,
+                    totalUzs: 86000,
+                    totalKind: 'final',
+                    createdAt: '2026-09-27T14:45:00Z',
+                  ),
+                ),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: AppPaths.customerOrderPattern,
+            builder: (BuildContext context, GoRouterState state) =>
+                const Scaffold(body: Text('the order')),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clockProvider.overrideWithValue(() => DateTime.utc(2026, 9, 28, 8)),
+          ],
+          child: MaterialApp.router(
+            routerConfig: router,
+            locale: const Locale('ru'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (BuildContext context, Widget? child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: scaler ?? TextScaler.noScaling),
+              child: child!,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('the last-order card has an outlined Повторить', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await show(tester);
+
+      expect(byKey('order-last-$orderOne'), findsOneWidget);
+      expect(find.text('Помидоры, Молоко домашнее и ещё 8'), findsOneWidget);
+      expect(
+        find.text('Вчера, 19:45 · ${MoneyFormat.uzs(86000, AppLanguage.ru)}'),
+        findsOneWidget,
+      );
+      expect(find.text('+7'), findsOneWidget);
+      final Finder repeat = byKey('order-repeat-$orderOne');
+      expect(tester.widget(repeat), isA<OutlinedButton>());
+      expect(tester.getSize(repeat).height, 44);
+      expect(
+        tester.getSemantics(byKey('order-last-$orderOne')).label,
+        contains('Заказ № 1042, доставлен.'),
+      );
+      await tester.tap(byKey('order-last-$orderOne'));
+      await tester.pumpAndSettle();
+      expect(find.text('the order'), findsOneWidget);
+      handle.dispose();
+    });
+
+    for (final (String, TextScaler) scale in <(String, TextScaler)>[
+      ('100 %', TextScaler.noScaling),
+      ('200 %', const NonlinearTextScaler(2)),
+    ]) {
+      testWidgets('meets the tap guideline at ${scale.$1}', (
+        WidgetTester tester,
+      ) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await show(tester, scaler: scale.$2);
+
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        expect(tester.takeException(), isNull);
+        handle.dispose();
+      });
+    }
+  });
+
+  for (final (String, TextScaler) scale in <(String, TextScaler)>[
+    ('100 %', TextScaler.noScaling),
+    ('200 %', const NonlinearTextScaler(2)),
+  ]) {
+    testWidgets(
+      'the past cards (rateable, rated, cancelled) meet the tap guideline at ${scale.$1}',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(status: 'completed', canRate: true, itemCount: 10),
+          orderSummaryJson(id: _orderTwo, status: 'completed', ratingStars: 4),
+          orderSummaryJson(
+            id: '0192f0a0-0000-7000-8000-00000000c003',
+            status: 'cancelled',
+          ),
+        ];
+        await open(tester, size: const Size(360, 2400), scaler: scale.$2);
+        await tapAndSettle(tester, byKey('orders-tab-past'));
+
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        expect(tester.takeException(), isNull);
+        handle.dispose();
+      },
+    );
+  }
 
   testWidgets('the tabs ask for their state', (WidgetTester tester) async {
     orders.summaries = <Map<String, Object?>>[
@@ -820,13 +1247,13 @@ void main() {
     final SemanticsNode stars = tester.getSemantics(
       byKey('order-stars-$_orderTwo'),
     );
-    expect(stars.label, contains(ru().ratedStarsLabel(4)));
-    expect(stars.label, isNot(contains(ru().rateStarsLabel(4))));
+    expect(stars.label, ru().orderRatedSpoken(4));
+    expect(stars.label, isNot(contains(ru().orderRateStarsSpoken(1001, 4))));
     handle.dispose();
   });
 
   testWidgets(
-    'on a narrow phone the rate boxes keep their size and the button goes under',
+    'on a narrow phone the stars keep their 44 and Повторить goes under them',
     (WidgetTester tester) async {
       await loadMontserrat();
       orders.summaries = <Map<String, Object?>>[
@@ -838,8 +1265,8 @@ void main() {
       double bottom = 0;
       for (int stars = 1; stars <= 5; stars++) {
         final Rect box = tester.getRect(byKey('order-rate-$orderOne-$stars'));
-        expect(box.width, greaterThanOrEqualTo(34), reason: '$stars wide');
-        expect(box.height, greaterThanOrEqualTo(30), reason: '$stars high');
+        expect(box.width, greaterThanOrEqualTo(44), reason: '$stars wide');
+        expect(box.height, greaterThanOrEqualTo(44), reason: '$stars high');
         bottom = box.bottom;
       }
       final Rect repeat = tester.getRect(byKey('order-repeat-$orderOne'));

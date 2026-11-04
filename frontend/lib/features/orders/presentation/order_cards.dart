@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -20,6 +23,7 @@ import '../../../core/widgets/kit/kit_star.dart';
 import '../../../core/widgets/product_image.dart';
 import '../domain/customer_orders.dart';
 import 'order_card_words.dart';
+import 'order_preview.dart';
 import 'order_stage_bar.dart';
 import 'reorder_sheet.dart';
 
@@ -196,80 +200,195 @@ class CurrentOrderCard extends ConsumerWidget {
   }
 }
 
-/// An order that ended (drawings 27a and 28): its rating, or the way to give
-/// one while the server allows it, and the way to order it again.
-class PastOrderCard extends StatelessWidget {
+/// An order that ended (`DL-131`): its pictures beside its status, what it
+/// holds, the way to rate it while the server allows it or the rating it
+/// has, and the way to order it again.
+class PastOrderCard extends ConsumerWidget {
   const PastOrderCard({required this.order, super.key});
 
   final OrderSummary order;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLanguage language = interfaceLanguage(context);
+    final DateTime now = ref.watch(clockProvider)();
     final int? rated = order.ratingStars;
-    final Widget? left = order.canRate
-        ? _RateBoxes(order: order)
-        : rated != null
-        ? _RatedStars(order: order, stars: rated)
-        : null;
-
-    return _CardShell(
-      cardKey: ValueKey<String>('order-${order.id}'),
-      onTap: () => context.push(AppPaths.customerOrder(order.id)),
-      children: <Widget>[
-        _Top(order: order),
-        const SizedBox(height: 12),
-        _Bottom(order: order),
-        const SizedBox(height: 12),
-        _RateRow(left: left, order: order),
-      ],
-    );
-  }
-}
-
-/// The rating on the left and "Повторить" at the right end; under large text
-/// the two take a line each.
-class _RateRow extends StatelessWidget {
-  const _RateRow({required this.left, required this.order});
-
-  final Widget? left;
-  final OrderSummary order;
-
-  @override
-  Widget build(BuildContext context) {
+    final bool rateable = order.canRate;
     final Widget repeat = RepeatOrderButton(
       orderId: order.id,
       orderNumber: order.orderNumber,
       wide: false,
     );
-    final Widget? left = this.left;
-    final bool stacked = MediaQuery.textScalerOf(context).scale(14) > 18;
+    void open() => context.push(AppPaths.customerOrder(order.id));
 
-    if (stacked) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Semantics(
+      container: true,
+      button: true,
+      onTap: open,
+      label: pastOrderSpoken(l10n, language, order, now),
+      child: _CardShell(
+        cardKey: ValueKey<String>('order-${order.id}'),
+        onTap: open,
         children: <Widget>[
-          if (left != null) ...<Widget>[
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: FittedBox(fit: BoxFit.scaleDown, child: left),
+          ExcludeSemantics(
+            child: _PreviewHead(
+              order: order,
+              line:
+                  '${l10n.customerOrderTitle(order.orderNumber)} · '
+                  '${order.street}, ${order.house}',
+              chip: OrderStatusChip(status: order.status),
             ),
-            const SizedBox(height: 8),
-          ],
-          Align(alignment: AlignmentDirectional.centerEnd, child: repeat),
+          ),
+          const SizedBox(height: 12),
+          ExcludeSemantics(child: _Bottom(order: order)),
+          const SizedBox(height: 12),
+          if (rateable || rated != null)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                ExcludeSemantics(
+                  child: Text(
+                    rateable ? l10n.orderRateCaption : l10n.orderRatedCaption,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: KitColors.muted,
+                    ),
+                  ),
+                ),
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    if (rateable)
+                      OrderRateStars(order: order)
+                    else
+                      _RatedStars(order: order, stars: rated!),
+                    repeat,
+                  ],
+                ),
+              ],
+            )
+          else
+            Align(alignment: AlignmentDirectional.centerEnd, child: repeat),
         ],
-      );
-    }
-    if (left == null) {
-      return Align(alignment: AlignmentDirectional.centerEnd, child: repeat);
-    }
-    // The boxes keep their 34x30; when they and the button do not share a
-    // line, the button goes under them.
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 8,
-      runSpacing: 8,
-      children: <Widget>[left, repeat],
+      ),
+    );
+  }
+}
+
+/// The last order, shown in the empty «Текущие» (`DL-131`): its pictures,
+/// its names, when it was placed and what it cost, and the outlined way to
+/// order it again. A tap opens the order.
+class LastOrderCard extends ConsumerWidget {
+  const LastOrderCard({required this.order, super.key});
+
+  final OrderSummary order;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final AppLanguage language = interfaceLanguage(context);
+    final DateTime now = ref.watch(clockProvider)();
+    void open() => context.push(AppPaths.customerOrder(order.id));
+
+    return Semantics(
+      container: true,
+      button: true,
+      onTap: open,
+      label: pastOrderSpoken(l10n, language, order, now),
+      child: _CardShell(
+        cardKey: ValueKey<String>('order-last-${order.id}'),
+        onTap: open,
+        children: <Widget>[
+          ExcludeSemantics(
+            child: _PreviewHead(
+              order: order,
+              line:
+                  '${orderWhen(l10n, order.createdAt, now)} · '
+                  '${_amountText(l10n, language, order)}',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: RepeatOrderButton(
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+              wide: false,
+              outlined: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The head of a past or last-order card: the pictures (with the status
+/// [chip] beside them, at most half the row), the names, then one small
+/// [line].
+class _PreviewHead extends StatelessWidget {
+  const _PreviewHead({required this.order, required this.line, this.chip});
+
+  final OrderSummary order;
+  final String line;
+  final Widget? chip;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool wraps = textScaleAt(MediaQuery.textScalerOf(context), 12) > 1.3;
+    final String names = previewNames(
+      l10n,
+      interfaceLanguage(context),
+      order.preview,
+    );
+    final Widget? chip = this.chip;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints box) => Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(child: OrderPictures(preview: order.preview)),
+              if (chip != null) ...<Widget>[
+                const SizedBox(width: 8),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: box.maxWidth / 2),
+                  child: chip,
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (names.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 10),
+          Text(
+            names,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+              color: KitColors.ink,
+            ),
+          ),
+        ],
+        const SizedBox(height: 6),
+        Text(
+          line,
+          maxLines: wraps ? null : 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 12, color: KitColors.muted),
+        ),
+      ],
     );
   }
 }
@@ -386,75 +505,19 @@ class _CurrentTop extends StatelessWidget {
   }
 }
 
-/// The picture, the number, the address and the count, the status at the
-/// right.
-class _Top extends StatelessWidget {
-  const _Top({required this.order});
-
-  final OrderSummary order;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    const TextStyle small = TextStyle(fontSize: 12, color: KitColors.muted);
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints box) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: KitColors.card,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: SizedBox.square(
-              dimension: 56,
-              child: Center(child: ProductImage(url: order.imageUrl, size: 48)),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  l10n.customerOrderTitle(order.orderNumber),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: KitColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${order.street}, ${order.house}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: small,
-                ),
-                if (order.itemCount > 0)
-                  Text(
-                    l10n.orderItemCount(order.itemCount),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: small,
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          // The status keeps its words whole: it takes the room it needs up to
-          // half the row, and wraps inside that when the text is large.
-          ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: box.maxWidth / 2),
-            child: OrderStatusChip(status: order.status),
-          ),
-        ],
-      ),
-    );
-  }
+/// What the server says the order costs, with «≈» for an estimate, or that
+/// nothing is due.
+String _amountText(
+  AppLocalizations l10n,
+  AppLanguage language,
+  OrderSummary order,
+) {
+  final int? total = order.totalUzs;
+  return total == null
+      ? l10n.totalNothingDue
+      : order.totalKind == TotalKind.estimate
+      ? l10n.cartLineEstimate(MoneyFormat.uzs(total, language))
+      : MoneyFormat.uzs(total, language);
 }
 
 /// When the order was placed and what the server says it costs.
@@ -468,12 +531,7 @@ class _Bottom extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
     final DateTime now = ref.watch(clockProvider)();
-    final int? total = order.totalUzs;
-    final String amount = total == null
-        ? l10n.totalNothingDue
-        : order.totalKind == TotalKind.estimate
-        ? l10n.cartLineEstimate(MoneyFormat.uzs(total, language))
-        : MoneyFormat.uzs(total, language);
+    final String amount = _amountText(l10n, language, order);
 
     final Text date = Text(
       orderWhen(l10n, order.createdAt, now),
@@ -630,61 +688,127 @@ class _QuestionStrip extends StatelessWidget {
   }
 }
 
-/// Five boxes "N★": the Customer's way to rate a finished order. Each opens
-/// the rating screen with those stars chosen.
-class _RateBoxes extends StatelessWidget {
-  const _RateBoxes({required this.order});
+/// The five stars of a finished order's card (`DL-131`): the Customer's way
+/// to rate it. A tap lights the stars up to it with a pop, buzzes, and opens
+/// the rating screen with them chosen; back from it they are unlit again.
+class OrderRateStars extends StatefulWidget {
+  const OrderRateStars({required this.order, super.key});
 
   final OrderSummary order;
+
+  @override
+  State<OrderRateStars> createState() => _OrderRateStarsState();
+}
+
+class _OrderRateStarsState extends State<OrderRateStars>
+    with SingleTickerProviderStateMixin {
+  static const int _popMs = 340;
+  static const int _stepMs = 45;
+  static const Cubic _ease = Cubic(0.2, 0.8, 0.2, 1);
+
+  late final AnimationController _pop = AnimationController(vsync: this);
+  int _chosen = 0;
+  int _totalMs = _popMs;
+
+  @override
+  void dispose() {
+    _pop.dispose();
+    super.dispose();
+  }
+
+  /// The star's scale [t] of the way through its pop: 1 → 1.32 at 35 %,
+  /// 0.94 at 70 %, 1 at the end.
+  double _scale(double t) {
+    if (t <= 0 || t >= 1) {
+      return 1;
+    }
+    final (double from, double to, double a, double b) = t < 0.35
+        ? (1, 1.32, 0, 0.35)
+        : t < 0.7
+        ? (1.32, 0.94, 0.35, 0.7)
+        : (0.94, 1, 0.7, 1);
+    return from + (to - from) * _ease.transform((t - a) / (b - a));
+  }
+
+  Future<void> _rate(int stars) async {
+    if (_chosen != 0) {
+      return;
+    }
+    setState(() => _chosen = stars);
+    unawaited(HapticFeedback.lightImpact());
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      _totalMs = _stepMs * (stars - 1) + _popMs;
+      _pop.duration = Duration(milliseconds: _totalMs);
+      await _pop.forward(from: 0);
+      if (!mounted) {
+        return;
+      }
+    }
+    await context.push(
+      AppPaths.customerOrderRate(widget.order.id, stars: stars),
+    );
+    if (mounted) {
+      setState(() => _chosen = 0);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        for (int stars = 1; stars <= 5; stars++) ...<Widget>[
-          if (stars > 1) const SizedBox(width: 4),
-          Semantics(
-            button: true,
-            label: l10n.rateStarsLabel(stars),
-            excludeSemantics: true,
-            child: Material(
-              key: ValueKey<String>('order-rate-${order.id}-$stars'),
-              color: KitColors.field,
-              borderRadius: BorderRadius.circular(8),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => context.push(
-                  AppPaths.customerOrderRate(order.id, stars: stars),
-                ),
-                child: SizedBox(
-                  width: 34,
-                  height: 30,
-                  child: Center(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        '$stars★',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: KitColors.ink,
+    // The stars stand 8 px left of the card's text edge, as the page has
+    // them: the row is laid out 8 px narrower than it is.
+    return Semantics(
+      container: true,
+      label: l10n.orderRateCaption,
+      child: Align(
+        alignment: Alignment.centerRight,
+        widthFactor: 212 / 220,
+        child: AnimatedBuilder(
+          animation: _pop,
+          builder: (BuildContext context, Widget? _) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              for (int star = 1; star <= 5; star++)
+                Semantics(
+                  container: true,
+                  button: true,
+                  label: l10n.orderRateStarsSpoken(
+                    widget.order.orderNumber,
+                    star,
+                  ),
+                  onTap: () => _rate(star),
+                  excludeSemantics: true,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => _rate(star),
+                    child: SizedBox.square(
+                      key: ValueKey<String>(
+                        'order-rate-${widget.order.id}-$star',
+                      ),
+                      dimension: 44,
+                      child: Center(
+                        child: Transform.scale(
+                          scale: _scale(
+                            (_pop.value * _totalMs - _stepMs * (star - 1)) /
+                                _popMs,
+                          ),
+                          child: KitStar(filled: star <= _chosen, size: 28),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
+            ],
           ),
-        ],
-      ],
+        ),
+      ),
     );
   }
 }
 
+/// The stars of a rated order's card: five small ones, no buttons, read as
+/// one phrase.
 class _RatedStars extends StatelessWidget {
   const _RatedStars({required this.order, required this.stars});
 
@@ -694,14 +818,24 @@ class _RatedStars extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: AppLocalizations.of(context).ratedStarsLabel(stars),
+      key: ValueKey<String>('order-stars-${order.id}'),
+      container: true,
+      label: AppLocalizations.of(context).orderRatedSpoken(stars),
       excludeSemantics: true,
-      child: Row(
-        key: ValueKey<String>('order-stars-${order.id}'),
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          for (int i = 1; i <= 5; i++) KitStar(filled: i <= stars, size: 20),
-        ],
+      child: Align(
+        alignment: Alignment.centerRight,
+        widthFactor: 127 / 130,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            for (int i = 1; i <= 5; i++)
+              SizedBox(
+                width: 26,
+                height: 30,
+                child: Center(child: KitStar(filled: i <= stars, size: 22)),
+              ),
+          ],
+        ),
       ),
     );
   }

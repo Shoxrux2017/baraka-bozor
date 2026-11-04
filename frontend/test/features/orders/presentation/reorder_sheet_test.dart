@@ -90,6 +90,7 @@ void main() {
   Future<void> open(
     WidgetTester tester, {
     bool wide = false,
+    bool outlined = false,
     Size size = const Size(800, 2400),
     double textScale = 1,
     Locale device = const Locale('ru'),
@@ -127,6 +128,7 @@ void main() {
                                   orderId: orderOne,
                                   orderNumber: 1038,
                                   wide: wide,
+                                  outlined: outlined,
                                 ),
                       ),
                     ),
@@ -245,6 +247,26 @@ void main() {
     expect(orders.reorders, hasLength(2));
     expect(orders.reorders[0].$2, orders.reorders[1].$2);
   });
+
+  for (final bool outlined in const <bool>[false, true]) {
+    testWidgets(
+      'the card button is 44 high and names its order (outlined: $outlined)',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        await open(tester, outlined: outlined);
+
+        expect(tester.getSize(byKey('order-repeat-$orderOne')).height, 44);
+        expect(find.bySemanticsLabel('Повторить заказ № 1038'), findsOneWidget);
+        expect(
+          tester.widget(byKey('order-repeat-$orderOne')),
+          outlined ? isA<OutlinedButton>() : isA<FilledButton>(),
+        );
+        await repeat(tester);
+        expect(orders.reorders, hasLength(1));
+        handle.dispose();
+      },
+    );
+  }
 
   testWidgets('the page\'s wide button repeats the order too', (
     WidgetTester tester,
