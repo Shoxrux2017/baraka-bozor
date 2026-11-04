@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/accessibility/announce.dart';
 import '../../../core/formatting/money_format.dart';
 import '../../../core/formatting/order_dates.dart';
 import '../../../core/formatting/phone_format.dart';
@@ -19,6 +21,7 @@ import '../../../core/platform/phone_calls.dart';
 import '../../../core/routing/app_paths.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/deadline_chip.dart';
+import '../../../core/widgets/fold.dart';
 import '../../../core/widgets/kit/kit_star.dart';
 import '../../../core/widgets/product_image.dart';
 import '../domain/customer_orders.dart';
@@ -82,44 +85,180 @@ class OrderStatusChip extends StatelessWidget {
   }
 }
 
+/// Whether the orders list is the route on top and its tickers are on, which
+/// is what `PeriodicRefresh` calls shown: only then does a change speak and
+/// buzz (`DL-131`).
+bool ordersListShown(BuildContext context) =>
+    (ModalRoute.of(context)?.isCurrent ?? true) &&
+    TickerMode.valuesOf(context).enabled;
+
 /// An order still in hand (`DL-131`): its status over the four labelled
 /// stages, the question waiting for the Customer with the minutes left, and
-/// the Courier's phone once it is on the way. [questions] and [deadline] are
-/// what the strip shows: the summary's count and its earliest expiry still
-/// ahead unless the list, which watches the clock, says otherwise.
-class CurrentOrderCard extends ConsumerWidget {
+/// the Courier's phone once it is on the way. The question's strip keeps the
+/// deadlines it saw ahead of the phone's clock: it counts down by that clock,
+/// folds 400 ms after the last one ran out and says so, and stays folded until
+/// a load brings a question (`DL-131` (6)); a deadline already past on the
+/// phone when it loaded keeps the strip, without minutes, until the next load
+/// (`DL-130` (6)). [glow] and [headline] are counters the list raises when the
+/// order changed: the card rings in the brand colour, and the status fades in.
+class CurrentOrderCard extends ConsumerStatefulWidget {
   const CurrentOrderCard({
     required this.order,
-    this.questions,
-    this.deadline,
+    this.glow = 0,
+    this.headline = 0,
     super.key,
   });
 
   final OrderSummary order;
-  final int? questions;
-  final DateTime? deadline;
+  final int glow;
+  final int headline;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CurrentOrderCard> createState() => _CurrentOrderCardState();
+}
+
+class _CurrentOrderCardState extends ConsumerState<CurrentOrderCard>
+    with TickerProviderStateMixin {
+  /// 1 at rest; runs 0 → 1 over 1400 ms while the ring fades.
+  late final AnimationController _glow = AnimationController(
+    vsync: this,
+    value: 1,
+    duration: const Duration(milliseconds: 1400),
+  );
+
+  /// 1 at rest; runs 0 → 1 over 320 ms while the status fades in.
+  late final AnimationController _headline = AnimationController(
+    vsync: this,
+    value: 1,
+    duration: const Duration(milliseconds: 320),
+  );
+
+  /// The deadlines the load brought that were still ahead of the phone's
+  /// clock, earliest first, and how many questions the server counted.
+  List<DateTime> _ahead = <DateTime>[];
+  int _count = 0;
+
+  /// The strip's time ran out and it has folded.
+  bool _expired = false;
+  Timer? _wake;
+  Timer? _expire;
+
+  /// What the strip and the call button last held, to fold away with it.
+  int _stripQuestions = 0;
+  DateTime? _stripDeadline;
+  String? _phone;
+
+  /// The strip is shown now, as the last build decided; read when it has
+  /// folded.
+  bool _stripOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _reset();
+  }
+
+  @override
+  void didUpdateWidget(CurrentOrderCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(widget.order, oldWidget.order)) {
+      _reset();
+    }
+    final bool still = MediaQuery.disableAnimationsOf(context);
+    if (widget.glow != oldWidget.glow && !still) {
+      _glow.forward(from: 0);
+    }
+    if (widget.headline != oldWidget.headline && !still) {
+      _headline.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _wake?.cancel();
+    _expire?.cancel();
+    _glow.dispose();
+    _headline.dispose();
+    super.dispose();
+  }
+
+  /// A load brought this summary: the clock starts over from its deadlines.
+  void _reset() {
+    final DateTime now = ref.read(clockProvider)();
+    _count = widget.order.pendingApprovalCount;
+    _ahead = <DateTime>[
+      for (final DateTime when in widget.order.questionDeadlines)
+        if (when.isAfter(now)) when,
+    ];
+    _expired = false;
+    _expire?.cancel();
+    _expire = null;
+  }
+
+  /// Wakes the card at the earliest deadline still ahead, and when no
+  /// question is open any more folds the strip 400 ms later with a word.
+  void _arm(DateTime now, int open, DateTime? until) {
+    _wake?.cancel();
+    _wake = until == null
+        ? null
+        : Timer(until.difference(now), () {
+            if (mounted) {
+              setState(() {});
+            }
+          });
+    if (_count > 0 && open == 0 && !_expired && _expire == null) {
+      _expire = Timer(const Duration(milliseconds: 400), () {
+        _expire = null;
+        if (!mounted) {
+          return;
+        }
+        setState(() => _expired = true);
+        if (ordersListShown(context)) {
+          announce(
+            context,
+            AppLocalizations.of(context)
+                .orderQuestionsExpiredAnnounced(widget.order.orderNumber),
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
+    final OrderSummary order = widget.order;
     final DateTime now = ref.watch(clockProvider)();
+    final int open = math.max(
+      0,
+      _count - _ahead.where((DateTime when) => !when.isAfter(now)).length,
+    );
+    final DateTime? until = _ahead
+        .where((DateTime when) => when.isAfter(now))
+        .firstOrNull;
+    _arm(now, open, until);
+    // Shown while the server counts questions, until the last one ran out and
+    // the 400 ms after it have passed.
+    final bool stripShown = _count > 0 && !_expired;
+    _stripOpen = stripShown;
+    if (open > 0) {
+      _stripQuestions = open;
+      _stripDeadline = until;
+    }
     final String? phone = order.courierPhone;
-    final int asked = questions ?? order.pendingApprovalCount;
-    final DateTime? until =
-        deadline ??
-        (questions == null
-            ? order.questionDeadlines
-                  .where((DateTime when) => when.isAfter(now))
-                  .firstOrNull
-            : null);
+    if (phone != null) {
+      _phone = phone;
+    }
+    final String? callPhone = _phone;
+    final int asked = _expired ? 0 : open;
     final int? minutes = until == null ? null : minutesLeft(until, now);
-    void open() => context.push(AppPaths.customerOrder(order.id));
+    void openOrder() => context.push(AppPaths.customerOrder(order.id));
 
     return Semantics(
       container: true,
       button: true,
-      onTap: open,
+      onTap: openOrder,
       label: currentOrderSpoken(
         l10n,
         language,
@@ -130,18 +269,31 @@ class CurrentOrderCard extends ConsumerWidget {
       ),
       child: _CardShell(
         cardKey: ValueKey<String>('order-${order.id}'),
-        onTap: open,
+        onTap: openOrder,
+        glow: _glow,
         children: <Widget>[
-          ExcludeSemantics(child: _CurrentTop(order: order)),
-          if (asked > 0) ...<Widget>[
-            const SizedBox(height: 12),
-            _QuestionStrip(
-              order: order,
-              questions: asked,
-              deadline: until,
-              onOpen: open,
-            ),
-          ],
+          ExcludeSemantics(
+            child: _CurrentTop(order: order, fade: _headline),
+          ),
+          Fold(
+            shown: stripShown,
+            onFolded: () {
+              if (!_stripOpen) {
+                setState(() => _stripQuestions = 0);
+              }
+            },
+            child: _stripQuestions == 0
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: _QuestionStrip(
+                      order: order,
+                      questions: _stripQuestions,
+                      deadline: _stripDeadline,
+                      onOpen: openOrder,
+                    ),
+                  ),
+          ),
           const SizedBox(height: 12),
           OrderStageBar(
             stage: orderStage(order.status),
@@ -149,40 +301,50 @@ class CurrentOrderCard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           ExcludeSemantics(child: _Bottom(order: order)),
-          if (phone != null) ...<Widget>[
-            const SizedBox(height: 12),
-            Semantics(
-              container: true,
-              button: true,
-              label: l10n.callCourierSpoken(order.orderNumber),
-              onTap: () => _call(context, ref, phone),
-              excludeSemantics: true,
-              child: OutlinedButton.icon(
-                key: ValueKey<String>('order-call-courier-${order.id}'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(44),
-                  foregroundColor: KitColors.ink,
-                  side: const BorderSide(color: KitColors.line),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+          Fold(
+            shown: phone != null,
+            onFolded: () {
+              if (widget.order.courierPhone == null) {
+                setState(() => _phone = null);
+              }
+            },
+            child: callPhone == null
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Semantics(
+                      container: true,
+                      button: true,
+                      label: l10n.callCourierSpoken(order.orderNumber),
+                      onTap: () => _call(context, ref, callPhone),
+                      excludeSemantics: true,
+                      child: OutlinedButton.icon(
+                        key: ValueKey<String>('order-call-courier-${order.id}'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(44),
+                          foregroundColor: KitColors.ink,
+                          side: const BorderSide(color: KitColors.line),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.call,
+                          size: 18,
+                          color: KitColors.primary,
+                        ),
+                        label: Text(
+                          l10n.callCourier,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: () => _call(context, ref, callPhone),
+                      ),
+                    ),
                   ),
-                ),
-                icon: const Icon(
-                  Icons.call,
-                  size: 18,
-                  color: KitColors.primary,
-                ),
-                label: Text(
-                  l10n.callCourier,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                onPressed: () => _call(context, ref, phone),
-              ),
-            ),
-          ],
+          ),
         ],
       ),
     );
@@ -434,48 +596,69 @@ class _PreviewHead extends StatelessWidget {
   }
 }
 
+/// The card on its shadow. While [glow] runs (0 to 1) a 3 px ring of the brand
+/// colour fades from 0.55 to 0 over the shadow (`DL-131`); at 1 there is none.
 class _CardShell extends StatelessWidget {
   const _CardShell({
     required this.cardKey,
     required this.onTap,
     required this.children,
+    this.glow,
   });
 
   final Key cardKey;
   final VoidCallback onTap;
   final List<Widget> children;
+  final Animation<double>? glow;
 
   @override
   Widget build(BuildContext context) {
     final BorderRadius radius = BorderRadius.circular(16);
 
-    return DecoratedBox(
-      key: cardKey,
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 12,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.white,
-        borderRadius: radius,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: children,
-            ),
+    final Widget card = Material(
+      color: Colors.white,
+      borderRadius: radius,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: children,
           ),
         ),
       ),
+    );
+    const BoxShadow kit = BoxShadow(
+      color: Color(0x14000000),
+      blurRadius: 12,
+      offset: Offset(0, 2),
+    );
+
+    return AnimatedBuilder(
+      animation: glow ?? const AlwaysStoppedAnimation<double>(1),
+      child: card,
+      builder: (BuildContext context, Widget? child) {
+        final double t = glow?.value ?? 1;
+        return DecoratedBox(
+          key: cardKey,
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            boxShadow: <BoxShadow>[
+              kit,
+              if (t < 1)
+                BoxShadow(
+                  color: KitColors.primary.withValues(
+                    alpha: 0.55 * (1 - Curves.easeOut.transform(t)),
+                  ),
+                  spreadRadius: 3,
+                ),
+            ],
+          ),
+          child: child,
+        );
+      },
     );
   }
 }
@@ -484,9 +667,12 @@ class _CardShell extends StatelessWidget {
 /// headline, the order's number with its count and the address under it in
 /// small type.
 class _CurrentTop extends StatelessWidget {
-  const _CurrentTop({required this.order});
+  const _CurrentTop({required this.order, required this.fade});
 
   final OrderSummary order;
+
+  /// 1 at rest; the status fades in while it runs up from 0.
+  final Animation<double> fade;
 
   @override
   Widget build(BuildContext context) {
@@ -513,14 +699,17 @@ class _CurrentTop extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                OrderLabels.customerStatus(l10n, order.status),
-                key: ValueKey<String>('order-status-${order.id}'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  height: 1.3,
-                  fontWeight: FontWeight.w700,
-                  color: KitColors.ink,
+              FadeTransition(
+                opacity: CurvedAnimation(parent: fade, curve: Curves.easeOut),
+                child: Text(
+                  OrderLabels.customerStatus(l10n, order.status),
+                  key: ValueKey<String>('order-status-${order.id}'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.3,
+                    fontWeight: FontWeight.w700,
+                    color: KitColors.ink,
+                  ),
                 ),
               ),
               const SizedBox(height: 2),

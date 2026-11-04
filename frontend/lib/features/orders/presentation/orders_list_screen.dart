@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,12 +10,16 @@ import '../../../core/accessibility/announce.dart';
 import '../../../core/formatting/order_dates.dart';
 import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/generated/app_localizations.dart';
+import '../../../core/localization/order_labels.dart';
 import '../../../core/network/api_failure.dart';
+import '../../../core/orders/order_values.dart';
 import '../../../core/platform/clock.dart';
 import '../../../core/routing/app_paths.dart';
+import '../../../core/session/customer_account.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/customer_tab_bar.dart';
+import '../../../core/widgets/deadline_chip.dart';
 import '../../../core/widgets/fold.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
@@ -20,6 +28,7 @@ import '../../../core/widgets/skeleton_bar.dart';
 import '../../../core/widgets/stale_data_line.dart';
 import '../../cart/presentation/cart_widgets.dart';
 import '../application/customer_orders_controllers.dart';
+import '../application/orders_changes.dart';
 import '../domain/customer_orders.dart';
 import 'order_cards.dart';
 import 'orders_segment.dart';
@@ -27,11 +36,49 @@ import 'orders_segment.dart';
 const Cubic _slide = Cubic(0.2, 0.8, 0.2, 1);
 
 /// The orders each segment counts, in one place (`DL-131`): what its feed
-/// holds, none while it has not answered.
+/// holds, none while it has not answered. An order that is leaving
+/// «Текущие» with its card still shown is counted there ([leaving]) and left
+/// out of «Прошлые» ([held]) until its card has folded.
 ({int current, int past}) ordersCounts(
   AsyncValue<OrdersFeed> current,
-  AsyncValue<OrdersFeed> past,
-) => (current: current.value?.total ?? 0, past: past.value?.total ?? 0);
+  AsyncValue<OrdersFeed> past, {
+  int leaving = 0,
+  int held = 0,
+}) => (
+  current: (current.value?.total ?? 0) + leaving,
+  past: (past.value?.total ?? 0) - held,
+);
+
+/// A card that stays in «Текущие» for a moment after its order left it, with
+/// the summary it shows and the place it had.
+class _Leaving {
+  _Leaving(this.summary, this.index);
+
+  OrderSummary summary;
+  final int index;
+}
+
+/// The words of a question the Shopper asks, said with the minutes left when
+/// a deadline still runs: «Заказ № 1044: сборщик спрашивает про 1 товар.
+/// Осталось 9 минут».
+String _questionAnnounced(
+  AppLocalizations l10n,
+  OrderSummary order,
+  DateTime now,
+) {
+  final DateTime? until = order.questionDeadlines
+      .where((DateTime when) => when.isAfter(now))
+      .firstOrNull;
+  final String said = l10n.orderAnnounced(
+    order.orderNumber,
+    l10n.orderCardQuestion(order.pendingApprovalCount).toLowerCase(),
+  );
+  if (until == null) {
+    return said;
+  }
+  final String left = l10n.deadlineLeftSpoken(minutesLeft(until, now));
+  return '$said. ${left[0].toUpperCase()}${left.substring(1)}';
+}
 
 /// The Customer's orders, newest first, in two tabs: the ones in hand and the
 /// ones that ended (`docs/09` section 20, `DL-92` item 3, `DL-131`). Both
@@ -62,16 +109,234 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   int _pastBumps = 0;
   int? _pastTotal;
 
+  /// The last value of «Текущие» compared, the value of another account that
+  /// is still carried while the new one loads (never compared), and the
+  /// account they belong to (`DL-131`).
+  OrdersFeed? _seen;
+  OrdersFeed? _carried;
+  String? _account;
+
+  /// The list was covered, or its tab hidden, since the last value compared.
+  bool _coveredSinceSeen = false;
+
+  /// Raised for an order when its card is to glow, and when its status is to
+  /// fade in.
+  final Map<String, int> _glows = <String, int>{};
+  final Map<String, int> _headlines = <String, int>{};
+
+  /// The cards of orders that left «Текущие» and are still shown, and the ones
+  /// «Прошлые» holds back from its count until their cards have folded.
+  final Map<String, _Leaving> _leaving = <String, _Leaving>{};
+  final Set<String> _held = <String>{};
+  final Set<Timer> _timers = <Timer>{};
+
+  /// What the build found to say or load, run after its frame.
+  final List<VoidCallback> _effects = <VoidCallback>[];
+
   ScrollController get _pastScroll => _scrolls[OrdersTab.past]!;
 
   @override
   void initState() {
     super.initState();
     _pastScroll.addListener(_loadMoreNearTheEnd);
+    _account = ref.read(customerAccountProvider);
+  }
+
+  /// Compares the value of «Текущие» this build sees with the one before, drop
+  /// states included: what changed between them is drawn softly and, while the
+  /// list is shown, said by the effects the build leaves for after the frame.
+  /// A reload that kept its rows, the first value and a value of another
+  /// account give no changes. It runs in the build, which a covered screen
+  /// does not, so an order page over the list keeps it from loading
+  /// (`DL-131`).
+  void _observe(AsyncValue<OrdersFeed> current, String? account) {
+    final OrdersFeed? feed = current.value;
+    if (feed == null) {
+      return;
+    }
+    if (account != _account) {
+      _account = account;
+      _carried = feed;
+      _seen = null;
+      _forgetLeaving();
+    }
+    final OrdersFeed? before = _seen;
+    if (identical(feed, _carried) || identical(feed, before)) {
+      return;
+    }
+    _seen = feed;
+    final bool covered = _coveredSinceSeen;
+    _coveredSinceSeen = false;
+    if (before != null) {
+      _showChanges(before, feed, covered: covered);
+    }
+  }
+
+  void _forgetLeaving() {
+    for (final Timer timer in _timers) {
+      timer.cancel();
+    }
+    _timers.clear();
+    _leaving.clear();
+    _held.clear();
+  }
+
+  void _later(Duration after, VoidCallback run) {
+    late final Timer timer;
+    timer = Timer(after, () {
+      _timers.remove(timer);
+      if (mounted) {
+        run();
+      }
+    });
+    _timers.add(timer);
+  }
+
+  /// Says [words] to a screen reader, with a light buzz when [buzz], once the
+  /// frame that drew the change is done.
+  void _say(String words, {bool buzz = false}) {
+    _effects.add(() {
+      if (buzz) {
+        unawaited(HapticFeedback.lightImpact());
+      }
+      announce(context, words);
+    });
+  }
+
+  void _glow(String orderId, {bool headline = false}) {
+    _glows[orderId] = (_glows[orderId] ?? 0) + 1;
+    if (headline) {
+      _headlines[orderId] = (_headlines[orderId] ?? 0) + 1;
+    }
+  }
+
+  void _showChanges(
+    OrdersFeed before,
+    OrdersFeed after, {
+    required bool covered,
+  }) {
+    final CurrentChanges changes = currentChanges(
+      before.rows,
+      after.rows,
+      dropped: after.dropped,
+    );
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final DateTime now = ref.read(clockProvider)();
+    // A change found after the list was covered, by an order page or another
+    // tab, is drawn quietly: the Customer was elsewhere when it came.
+    final bool shown = ordersListShown(context) && !covered;
+
+    for (final OrderSummary order in changes.appeared) {
+      _leaving.remove(order.id);
+    }
+    for (final OrderSummary order in changes.questionsArrived) {
+      if (shown) {
+        _say(_questionAnnounced(l10n, order, now), buzz: true);
+      }
+    }
+    for (final OrderSummary order in changes.questionsGrew) {
+      if (shown) {
+        _glow(order.id);
+        _say(_questionAnnounced(l10n, order, now), buzz: true);
+      }
+    }
+    for (final (:OrderSummary order, from: OrderStatus _) in changes.moved) {
+      if (shown) {
+        _glow(order.id, headline: true);
+        _say(
+          order.status == OrderStatus.onTheWay
+              ? l10n.orderOnTheWayAnnounced(order.orderNumber)
+              : l10n.orderAnnounced(
+                  order.orderNumber,
+                  OrderLabels.customerStatus(l10n, order.status).toLowerCase(),
+                ),
+        );
+      }
+    }
+    for (final OrderSummary order in changes.left) {
+      final int index = before.rows.indexWhere(
+        (OrderSummary row) => row.id == order.id,
+      );
+      _leaving[order.id] = _Leaving(order, index);
+      _effects.add(() => unawaited(_settle(order.id)));
+    }
+  }
+
+  /// An order is gone from «Текущие» without the Customer's hand: «Прошлые»
+  /// loads again and says what became of it. Found ended, its card shows the
+  /// end, glows, says so and folds 1.7 s later; not found, or when the load
+  /// fails, the card leaves at once without words.
+  Future<void> _settle(String id) async {
+    OrderSummary? ended;
+    try {
+      final AsyncNotifierProvider<CustomerOrdersFeed, OrdersFeed> past =
+          customerOrdersProvider(OrdersTab.past);
+      if (!ref.read(past).isLoading) {
+        ref.invalidate(past);
+      }
+      final OrdersFeed feed = await ref.read(past.future);
+      ended = feed.rows
+          .where(
+            (OrderSummary row) =>
+                row.id == id &&
+                (row.status == OrderStatus.completed ||
+                    row.status == OrderStatus.cancelled),
+          )
+          .firstOrNull;
+    } on Object {
+      ended = null;
+    }
+    final _Leaving? leaving = _leaving[id];
+    if (!mounted || leaving == null) {
+      return;
+    }
+    if (ended == null) {
+      setState(() => _leaving.remove(id));
+      return;
+    }
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool shown = ordersListShown(context);
+    setState(() {
+      leaving.summary = ended!;
+      _held.add(id);
+      if (shown) {
+        _glow(id, headline: true);
+      }
+    });
+    if (shown) {
+      announce(
+        context,
+        ended.status == OrderStatus.completed
+            ? l10n.orderDeliveredAnnounced(ended.orderNumber)
+            : l10n.orderCancelledAnnounced(ended.orderNumber),
+      );
+    }
+    _later(const Duration(milliseconds: 1700), () {
+      setState(() => _leaving.remove(id));
+      // The count follows once the card has folded (260 ms, at once when
+      // the motion is reduced).
+      _later(
+        MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 260),
+        () => setState(() => _held.remove(id)),
+      );
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!ordersListShown(context)) {
+      _coveredSinceSeen = true;
+    }
   }
 
   @override
   void dispose() {
+    for (final Timer timer in _timers) {
+      timer.cancel();
+    }
     _pastScroll.removeListener(_loadMoreNearTheEnd);
     for (final ScrollController scroll in _scrolls.values) {
       scroll.dispose();
@@ -154,10 +419,32 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final AsyncValue<OrdersFeed> past = ref.watch(
       customerOrdersProvider(OrdersTab.past),
     );
-    final ({int current, int past}) counts = ordersCounts(current, past);
+    _observe(current, ref.watch(customerAccountProvider));
+    if (_effects.isNotEmpty) {
+      final List<VoidCallback> run = List<VoidCallback>.of(_effects);
+      _effects.clear();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          for (final VoidCallback effect in run) {
+            effect();
+          }
+        }
+      });
+    }
+    final int held = _held.isEmpty
+        ? 0
+        : (past.value?.rows ?? const <OrderSummary>[])
+              .where((OrderSummary row) => _held.contains(row.id))
+              .length;
+    final ({int current, int past}) counts = ordersCounts(
+      current,
+      past,
+      leaving: _leaving.length,
+      held: held,
+    );
     // Read here, not by a listener: the build is paused while the screen is
     // covered, and a listener would keep «Прошлые» loading under an order.
-    final int? pastTotal = past.value?.total;
+    final int? pastTotal = past.value == null ? null : counts.past;
     if (pastTotal != null) {
       final int? was = _pastTotal;
       if (was != null && pastTotal > was) {
@@ -246,6 +533,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     AsyncValue<OrdersFeed> past,
   ) {
     final OrdersFeed? feed = current.value;
+    final List<OrderSummary> rows = feed == null
+        ? const <OrderSummary>[]
+        : _withLeaving(feed.rows);
     final Object? error = current.hasError ? current.error : null;
     final ApiFailure? failure = error == null
         ? null
@@ -274,7 +564,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     child: RefreshIndicator(
                       color: KitColors.primary,
                       onRefresh: () => _refresh(OrdersTab.current),
-                      child: feed.rows.isEmpty
+                      child: rows.isEmpty && _held.isEmpty
                           ? _emptyCurrent(past)
                           : CustomScrollView(
                               key: const ValueKey<String>('orders-list'),
@@ -290,7 +580,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                                   ),
                                   sliver: SliverToBoxAdapter(
                                     child: FoldingColumn<OrderSummary>(
-                                      items: feed.rows,
+                                      items: rows,
                                       keyOf: (OrderSummary order) => order.id,
                                       itemBuilder:
                                           (
@@ -302,6 +592,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                                             ),
                                             child: CurrentOrderCard(
                                               order: order,
+                                              glow: _glows[order.id] ?? 0,
+                                              headline:
+                                                  _headlines[order.id] ?? 0,
                                             ),
                                           ),
                                     ),
@@ -315,6 +608,21 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               ),
             ),
     );
+  }
+
+  /// The loaded rows with the cards of leaving orders put back where they
+  /// stood, as they last looked.
+  List<OrderSummary> _withLeaving(List<OrderSummary> rows) {
+    if (_leaving.isEmpty) {
+      return rows;
+    }
+    final List<OrderSummary> shown = <OrderSummary>[...rows];
+    for (final _Leaving leaving in _leaving.values) {
+      if (shown.every((OrderSummary row) => row.id != leaving.summary.id)) {
+        shown.insert(math.min(leaving.index, shown.length), leaving.summary);
+      }
+    }
+    return shown;
   }
 
   /// No orders in hand: the last order when there is one, the invitation to

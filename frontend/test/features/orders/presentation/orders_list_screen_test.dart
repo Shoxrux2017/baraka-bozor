@@ -6,11 +6,14 @@ import 'package:baraka_bozor/core/localization/generated/app_localizations.dart'
 import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/core/widgets/fold.dart';
 import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
 import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
 import 'package:baraka_bozor/features/orders/presentation/orders_segment.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -61,6 +64,7 @@ void main() {
     TextScaler? scaler,
     Completer<void>? hold,
     bool reducedMotion = false,
+    DateTime Function()? clock,
   }) async {
     if (reducedMotion) {
       tester.platformDispatcher.accessibilityFeaturesTestValue =
@@ -80,7 +84,7 @@ void main() {
         cart: FakeCartRepository(),
         device: const Locale('ru'),
         textScaler: scaler,
-        clock: () => DateTime.utc(2026, 10, 28, 8),
+        clock: clock ?? () => DateTime.utc(2026, 10, 28, 8),
       ),
     );
     await tester.pumpAndSettle();
@@ -654,6 +658,566 @@ void main() {
     await tester.tap(byKey('orders-tab-past'));
     await frames(tester);
     expect(shown(tester).pixels, 0);
+  });
+
+  group('changes between two loads of Текущие', () {
+    const String orderTwo = '0192f0a0-0000-7000-8000-00000000c002';
+    const String phone = '+998901234567';
+    late DateTime now;
+    final List<String> haptics = <String>[];
+
+    setUp(() {
+      now = DateTime.utc(2026, 9, 28, 8);
+      haptics.clear();
+    });
+
+    /// Opens the list with the phone's clock at [now] and records the
+    /// haptics.
+    Future<void> start(
+      WidgetTester tester, {
+      bool reducedMotion = false,
+    }) async {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'HapticFeedback.vibrate') {
+            haptics.add(call.arguments as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await open(tester, clock: () => now, reducedMotion: reducedMotion);
+      announced(tester);
+      haptics.clear();
+    }
+
+    /// The phone's clock and the frames move together.
+    Future<void> advance(WidgetTester tester, Duration by) async {
+      now = now.add(by);
+      await tester.pump(by);
+    }
+
+    /// The next refresh of Текущие, [steps] frames of 100 ms after it has
+    /// started.
+    Future<void> reload(WidgetTester tester, {int steps = 8}) async {
+      await advance(tester, const Duration(seconds: 30));
+      await tester.pump();
+      for (int i = 0; i < steps; i++) {
+        await advance(tester, const Duration(milliseconds: 100));
+      }
+    }
+
+    /// Frames of [step] until [done], and how long that took.
+    Future<Duration> until(
+      WidgetTester tester,
+      bool Function() done, {
+      Duration step = const Duration(milliseconds: 50),
+    }) async {
+      Duration elapsed = Duration.zero;
+      while (!done()) {
+        expect(elapsed, lessThan(const Duration(seconds: 6)), reason: 'never');
+        await advance(tester, step);
+        elapsed += step;
+      }
+      return elapsed;
+    }
+
+    /// The shadows of an order's card: the kit's, and the ring while it glows.
+    List<BoxShadow> shadows(WidgetTester tester, String orderId) =>
+        (tester.widget<DecoratedBox>(byKey('order-$orderId')).decoration
+                as BoxDecoration)
+            .boxShadow!;
+
+    /// The height a strip or button is unfolded to.
+    double foldHeight(WidgetTester tester, String key) => tester
+        .getSize(
+          find.ancestor(of: byKey(key), matching: find.byType(Fold)).first,
+        )
+        .height;
+
+    String statusOf(WidgetTester tester, String orderId) =>
+        tester.widget<Text>(byKey('order-status-$orderId')).data!;
+
+    double headlineOpacity(WidgetTester tester, String orderId) => tester
+        .widget<FadeTransition>(
+          find
+              .ancestor(
+                of: byKey('order-status-$orderId'),
+                matching: find.byType(FadeTransition),
+              )
+              .first,
+        )
+        .opacity
+        .value;
+
+    Color? segment(WidgetTester tester, int index) =>
+        (tester.widget<DecoratedBox>(byKey('order-stage-$index')).decoration
+                as BoxDecoration)
+            .color;
+
+    ProviderContainer container(WidgetTester tester) =>
+        ProviderScope.containerOf(anywhere(tester));
+
+    AppLocalizations ru() => lookupAppLocalizations(const Locale('ru'));
+
+    testWidgets(
+      'a new question unfolds its strip, buzzes lightly and is announced',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(status: 'shopping'),
+        ];
+        await start(tester);
+        expect(byKey('order-waiting-$orderOne'), findsNothing);
+
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(
+            status: 'shopping',
+            waiting: 1,
+            deadlines: <String>['2026-09-28T08:09:00Z'],
+          ),
+        ];
+        await advance(tester, const Duration(seconds: 30));
+        await tester.pump();
+        await advance(tester, const Duration(milliseconds: 100));
+        expect(byKey('order-waiting-$orderOne'), findsOneWidget);
+        final double midway = foldHeight(tester, 'order-waiting-$orderOne');
+        await advance(tester, const Duration(milliseconds: 500));
+        final double full = foldHeight(tester, 'order-waiting-$orderOne');
+        expect(midway, greaterThan(0));
+        expect(midway, lessThan(full));
+        expect(haptics, <String>['HapticFeedbackType.lightImpact']);
+        expect(announced(tester), <String>[
+          'Заказ № 1001: сборщик спрашивает про 1 товар. Осталось 9 минут',
+        ]);
+
+        // More questions: the card glows, buzzes and says the same words.
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(
+            status: 'shopping',
+            waiting: 2,
+            deadlines: <String>['2026-09-28T08:09:00Z', '2026-09-28T08:09:00Z'],
+          ),
+        ];
+        await reload(tester, steps: 1);
+        expect(shadows(tester, orderOne), hasLength(2));
+        expect(shadows(tester, orderOne).last.color.a, greaterThan(0.3));
+        expect(haptics, hasLength(2));
+        final List<String> said = announced(tester);
+        expect(said, hasLength(1));
+        expect(
+          said.single,
+          startsWith('Заказ № 1001: сборщик спрашивает про 2 товара. Осталось'),
+        );
+        await advance(tester, const Duration(milliseconds: 1500));
+        expect(shadows(tester, orderOne), hasLength(1));
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'the courier leaving fills the bar, glows, unfolds the call button and is announced',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(status: 'delivery_assigned'),
+        ];
+        await start(tester);
+        expect(byKey('order-call-courier-$orderOne'), findsNothing);
+        final Color? ahead = segment(tester, 2);
+        expect(ahead, isNot(KitColors.primary));
+
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(status: 'on_the_way', courierPhone: phone),
+        ];
+        await advance(tester, const Duration(seconds: 30));
+        await tester.pump();
+        await advance(tester, const Duration(milliseconds: 100));
+        await advance(tester, const Duration(milliseconds: 100));
+
+        expect(statusOf(tester, orderOne), ru().customerStatusOnTheWay);
+        expect(headlineOpacity(tester, orderOne), lessThan(1));
+        expect(shadows(tester, orderOne), hasLength(2));
+        expect(segment(tester, 2), isNot(ahead));
+        expect(segment(tester, 2), isNot(KitColors.primary));
+        expect(byKey('order-call-courier-$orderOne'), findsOneWidget);
+        final double midway = foldHeight(
+          tester,
+          'order-call-courier-$orderOne',
+        );
+
+        await advance(tester, const Duration(milliseconds: 500));
+        expect(segment(tester, 2), KitColors.primary);
+        expect(headlineOpacity(tester, orderOne), 1);
+        expect(
+          foldHeight(tester, 'order-call-courier-$orderOne'),
+          greaterThan(midway),
+        );
+        expect(announced(tester), <String>[
+          'Заказ № 1001 в пути. Курьер выехал',
+        ]);
+        await advance(tester, const Duration(milliseconds: 1500));
+        expect(shadows(tester, orderOne), hasLength(1));
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'a delivered order says Доставлен, then folds into Прошлые, whose count goes up by one',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(status: 'on_the_way', courierPhone: phone),
+          ...past(1),
+        ];
+        await start(tester);
+        expect(segmentText(tester, 'orders-tab-current'), 'Текущие · 1');
+        expect(segmentText(tester, 'orders-tab-past'), 'Прошлые · 1');
+
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(status: 'completed', canRate: true),
+          ...past(1),
+        ];
+        // Just short of the refresh, so the order is seen as it is settled.
+        await advance(tester, const Duration(seconds: 29));
+        await until(
+          tester,
+          () => statusOf(tester, orderOne) == ru().customerStatusCompleted,
+        );
+
+        expect(shadows(tester, orderOne), hasLength(2));
+        expect(announced(tester), <String>[
+          'Заказ № 1001 доставлен. Он в прошлых заказах — там его можно оценить',
+        ]);
+        await advance(tester, const Duration(milliseconds: 600));
+        await tester.pump();
+        expect(
+          segment(tester, 3),
+          KitColors.primary,
+          reason: 'the bar is full',
+        );
+        expect(
+          byKey('order-call-courier-$orderOne'),
+          findsNothing,
+          reason: 'the past summary has no Courier phone',
+        );
+
+        await advance(tester, const Duration(milliseconds: 800));
+        expect(byKey('order-$orderOne'), findsOneWidget, reason: 'it waits');
+        expect(segmentText(tester, 'orders-tab-current'), 'Текущие · 1');
+        expect(segmentText(tester, 'orders-tab-past'), 'Прошлые · 1');
+        expect(
+          tester.widget<ScaleTransition>(kept('orders-past-bump')).scale.value,
+          1,
+        );
+
+        final Duration folded = await until(
+          tester,
+          () => byKey('order-$orderOne').evaluate().isEmpty,
+        );
+        expect(folded, lessThan(const Duration(milliseconds: 700)));
+        await advance(tester, const Duration(milliseconds: 136));
+        expect(segmentText(tester, 'orders-tab-current'), 'Текущие');
+        expect(segmentText(tester, 'orders-tab-past'), 'Прошлые · 2');
+        expect(
+          tester.widget<ScaleTransition>(kept('orders-past-bump')).scale.value,
+          greaterThan(1.1),
+        );
+        expect(announced(tester), isEmpty);
+        handle.dispose();
+      },
+    );
+
+    testWidgets('an order the Customer cancelled leaves without words', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      orders.summaries = <Map<String, Object?>>[orderSummaryJson(), ...past(1)];
+      await start(tester);
+
+      // The order page drops the order, then the lists load again.
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(status: 'cancelled'),
+        ...past(1),
+      ];
+      container(tester)
+          .read(customerOrdersProvider(OrdersTab.current).notifier)
+          .drop(orderOne);
+      await tester.pump();
+      container(tester).invalidate(customerOrdersProvider);
+      await tester.pump();
+      for (int i = 0; i < 8; i++) {
+        await advance(tester, const Duration(milliseconds: 100));
+      }
+
+      expect(byKey('order-$orderOne'), findsNothing, reason: 'no 1.7 s wait');
+      expect(segmentText(tester, 'orders-tab-current'), 'Текущие');
+      expect(announced(tester), isEmpty);
+      expect(haptics, isEmpty);
+      handle.dispose();
+    });
+
+    testWidgets('an order gone and not in Прошлые leaves at once', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      orders.summaries = <Map<String, Object?>>[orderSummaryJson()];
+      await start(tester);
+
+      orders.summaries = <Map<String, Object?>>[];
+      final Completer<void> hold = orders.holdPast = Completer<void>();
+      await reload(tester, steps: 3);
+      expect(
+        byKey('order-$orderOne'),
+        findsOneWidget,
+        reason: 'its card stays while Прошлые loads',
+      );
+      expect(segmentText(tester, 'orders-tab-current'), 'Текущие · 1');
+
+      hold.complete();
+      for (int i = 0; i < 8; i++) {
+        await advance(tester, const Duration(milliseconds: 100));
+      }
+      expect(byKey('order-$orderOne'), findsNothing);
+      expect(segmentText(tester, 'orders-tab-current'), 'Текущие');
+      expect(announced(tester), isEmpty);
+      handle.dispose();
+    });
+
+    testWidgets(
+      'an order gone whose Прошлые reload fails leaves at once without words',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(),
+          ...past(1),
+        ];
+        await start(tester);
+
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(status: 'completed'),
+          ...past(1),
+        ];
+        orders.listFailures[OrdersTab.past] = const NetworkFailure();
+        await reload(tester);
+
+        expect(byKey('order-$orderOne'), findsNothing);
+        expect(announced(tester), isEmpty);
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'the strip counts down and folds at the deadline with an announcement',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(
+            status: 'shopping',
+            waiting: 1,
+            deadlines: <String>['2026-09-28T08:09:00Z'],
+          ),
+        ];
+        await start(tester);
+        orders.holdList = Completer<void>();
+        final String strip = 'order-waiting-$orderOne';
+        expect(find.text('Осталось 9 мин'), findsOneWidget);
+        final double full = foldHeight(tester, strip);
+
+        await advance(tester, const Duration(minutes: 6));
+        final Finder hot = find.text('Осталось 3 мин');
+        expect(hot, findsOneWidget);
+        expect(tester.widget<Text>(hot).style!.color, KitColors.danger);
+
+        await advance(tester, const Duration(minutes: 3));
+        expect(find.textContaining('Осталось'), findsNothing);
+        expect(byKey(strip), findsOneWidget, reason: 'it folds 400 ms later');
+        expect(announced(tester), isEmpty);
+
+        await advance(tester, const Duration(milliseconds: 400));
+        await tester.pump();
+        await advance(tester, const Duration(milliseconds: 100));
+        expect(foldHeight(tester, strip), lessThan(full));
+        expect(announced(tester), <String>[
+          'Время ответа на вопрос по заказу № 1001 вышло',
+        ]);
+        await advance(tester, const Duration(milliseconds: 400));
+        await tester.pump();
+        expect(byKey(strip), findsNothing, reason: 'gone at the deadline');
+        handle.dispose();
+      },
+    );
+
+    testWidgets('with two questions the strip counts down to one, then folds', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(
+          status: 'shopping',
+          waiting: 2,
+          deadlines: <String>['2026-09-28T08:03:00Z', '2026-09-28T08:09:00Z'],
+        ),
+      ];
+      await start(tester);
+      orders.holdList = Completer<void>();
+      final String strip = 'order-waiting-$orderOne';
+      expect(find.text(ru().orderCardQuestion(2)), findsOneWidget);
+      expect(find.text('Осталось 3 мин'), findsOneWidget);
+
+      await advance(tester, const Duration(minutes: 3));
+      await tester.pump();
+      expect(find.text(ru().orderCardQuestion(1)), findsOneWidget);
+      expect(find.text('Осталось 6 мин'), findsOneWidget);
+      expect(announced(tester), isEmpty);
+
+      await advance(tester, const Duration(minutes: 6));
+      await advance(tester, const Duration(milliseconds: 400));
+      await advance(tester, const Duration(milliseconds: 400));
+      await advance(tester, const Duration(milliseconds: 400));
+      expect(byKey(strip), findsNothing);
+      expect(announced(tester), <String>[
+        'Время ответа на вопрос по заказу № 1001 вышло',
+      ]);
+      handle.dispose();
+    });
+
+    testWidgets(
+      'a deadline already past on the phone keeps the strip without a chip until the next load',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(
+            status: 'shopping',
+            waiting: 1,
+            deadlines: <String>['2026-09-28T07:50:00Z'],
+          ),
+        ];
+        await start(tester);
+        final Completer<void> hold = orders.holdList = Completer<void>();
+        final String strip = 'order-waiting-$orderOne';
+        expect(byKey(strip), findsOneWidget);
+        expect(find.textContaining('Осталось'), findsNothing);
+
+        await advance(tester, const Duration(minutes: 1));
+        await advance(tester, const Duration(seconds: 2));
+        expect(byKey(strip), findsOneWidget);
+        expect(announced(tester), isEmpty);
+
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(
+            status: 'shopping',
+            waiting: 1,
+            deadlines: <String>['2026-09-28T08:09:00Z'],
+          ),
+        ];
+        hold.complete();
+        for (int i = 0; i < 4; i++) {
+          await advance(tester, const Duration(milliseconds: 100));
+        }
+        expect(find.text('Осталось 8 мин'), findsOneWidget);
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'changes found while the order page covers the list are not announced',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(status: 'shopping'),
+        ];
+        await start(tester);
+        await tester.tap(byKey('order-$orderOne'));
+        await frames(tester);
+        expect(
+          GoRouter.of(anywhere(tester))
+              .routerDelegate
+              .currentConfiguration
+              .last
+              .matchedLocation,
+          AppPaths.customerOrder(orderOne),
+        );
+
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(
+            status: 'shopping',
+            waiting: 1,
+            deadlines: <String>['2026-09-28T08:09:00Z'],
+          ),
+        ];
+        final int loaded = loadsOf('orders:current:1');
+        container(tester).invalidate(customerOrdersProvider(OrdersTab.current));
+        await frames(tester);
+        expect(
+          loadsOf('orders:current:1'),
+          loaded,
+          reason: 'a covered list loads nothing',
+        );
+        GoRouter.of(anywhere(tester)).pop();
+        await frames(tester);
+
+        expect(byKey('order-waiting-$orderOne'), findsOneWidget);
+        expect(announced(tester), isEmpty);
+        expect(haptics, isEmpty);
+        handle.dispose();
+      },
+    );
+
+    testWidgets('with reduced motion nothing glows and strips appear at once', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(status: 'shopping'),
+        orderSummaryJson(
+          id: orderTwo,
+          number: 1002,
+          status: 'shopping',
+          waiting: 1,
+          deadlines: <String>['2026-09-28T08:09:00Z'],
+        ),
+      ];
+      await start(tester, reducedMotion: true);
+
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(
+          status: 'shopping',
+          waiting: 1,
+          deadlines: <String>['2026-09-28T08:09:00Z'],
+        ),
+        orderSummaryJson(
+          id: orderTwo,
+          number: 1002,
+          status: 'shopping',
+          waiting: 2,
+          deadlines: <String>['2026-09-28T08:09:00Z', '2026-09-28T08:09:00Z'],
+        ),
+      ];
+      await advance(tester, const Duration(seconds: 30));
+      await tester.pump();
+      await advance(tester, const Duration(milliseconds: 16));
+      await advance(tester, const Duration(milliseconds: 16));
+
+      final String strip = 'order-waiting-$orderOne';
+      expect(byKey(strip), findsOneWidget);
+      expect(
+        foldHeight(tester, strip),
+        greaterThanOrEqualTo(tester.getSize(byKey(strip)).height),
+        reason: 'unfolded at once',
+      );
+      expect(shadows(tester, orderOne), hasLength(1));
+      expect(shadows(tester, orderTwo), hasLength(1), reason: 'no glow');
+      expect(haptics, hasLength(2), reason: 'the buzz and words stay');
+      expect(announced(tester), hasLength(2));
+      handle.dispose();
+    });
   });
 
   group('the segment', () {

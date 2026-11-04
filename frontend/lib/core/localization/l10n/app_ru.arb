@@ -2849,5 +2849,10 @@
   "ordersCount": "{count, plural, one{{count} заказ} few{{count} заказа} many{{count} заказов} other{{count} заказа}}",
   "ordersLoading": "Загружаем заказы",
   "monthName": "{month, select, m1{Январь} m2{Февраль} m3{Март} m4{Апрель} m5{Май} m6{Июнь} m7{Июль} m8{Август} m9{Сентябрь} m10{Октябрь} m11{Ноябрь} m12{Декабрь} other{}}",
-  "monthYear": "{month} {year}"
+  "monthYear": "{month} {year}",
+  "orderAnnounced": "Заказ № {number}: {what}",
+  "orderOnTheWayAnnounced": "Заказ № {number} в пути. Курьер выехал",
+  "orderDeliveredAnnounced": "Заказ № {number} доставлен. Он в прошлых заказах — там его можно оценить",
+  "orderCancelledAnnounced": "Заказ № {number} отменён. Он в прошлых заказах",
+  "orderQuestionsExpiredAnnounced": "Время ответа на вопрос по заказу № {number} вышло"
 }

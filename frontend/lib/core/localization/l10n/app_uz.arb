@@ -3508,5 +3508,48 @@
   "ordersCount": "{count, plural, other{{count} ta buyurtma}}",
   "ordersLoading": "Buyurtmalar yuklanmoqda",
   "monthName": "{month, select, m1{Yanvar} m2{Fevral} m3{Mart} m4{Aprel} m5{May} m6{Iyun} m7{Iyul} m8{Avgust} m9{Sentabr} m10{Oktabr} m11{Noyabr} m12{Dekabr} other{}}",
-  "monthYear": "{month} {year}"
+  "monthYear": "{month} {year}",
+  "orderAnnounced": "Buyurtma № {number}: {what}",
+  "@orderAnnounced": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "orderOnTheWayAnnounced": "Buyurtma № {number} yo'lda. Kuryer yo'lga chiqdi",
+  "@orderOnTheWayAnnounced": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "orderDeliveredAnnounced": "Buyurtma № {number} yetkazildi. U o'tgan buyurtmalarda — u yerda baholash mumkin",
+  "@orderDeliveredAnnounced": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "orderCancelledAnnounced": "Buyurtma № {number} bekor qilindi. U o'tgan buyurtmalarda",
+  "@orderCancelledAnnounced": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "orderQuestionsExpiredAnnounced": "Buyurtma № {number} bo'yicha savolga javob vaqti tugadi",
+  "@orderQuestionsExpiredAnnounced": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  }
 }

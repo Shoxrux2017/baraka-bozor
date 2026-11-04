@@ -4800,4 +4800,29 @@ class AppLocalizationsUz extends AppLocalizations {
   String monthYear(Object month, Object year) {
     return '$month $year';
   }
+
+  @override
+  String orderAnnounced(int number, String what) {
+    return 'Buyurtma № $number: $what';
+  }
+
+  @override
+  String orderOnTheWayAnnounced(int number) {
+    return 'Buyurtma № $number yo\'lda. Kuryer yo\'lga chiqdi';
+  }
+
+  @override
+  String orderDeliveredAnnounced(int number) {
+    return 'Buyurtma № $number yetkazildi. U o\'tgan buyurtmalarda — u yerda baholash mumkin';
+  }
+
+  @override
+  String orderCancelledAnnounced(int number) {
+    return 'Buyurtma № $number bekor qilindi. U o\'tgan buyurtmalarda';
+  }
+
+  @override
+  String orderQuestionsExpiredAnnounced(int number) {
+    return 'Buyurtma № $number bo\'yicha savolga javob vaqti tugadi';
+  }
 }

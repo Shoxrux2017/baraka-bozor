@@ -4860,4 +4860,29 @@ class AppLocalizationsRu extends AppLocalizations {
   String monthYear(Object month, Object year) {
     return '$month $year';
   }
+
+  @override
+  String orderAnnounced(int number, String what) {
+    return 'Заказ № $number: $what';
+  }
+
+  @override
+  String orderOnTheWayAnnounced(int number) {
+    return 'Заказ № $number в пути. Курьер выехал';
+  }
+
+  @override
+  String orderDeliveredAnnounced(int number) {
+    return 'Заказ № $number доставлен. Он в прошлых заказах — там его можно оценить';
+  }
+
+  @override
+  String orderCancelledAnnounced(int number) {
+    return 'Заказ № $number отменён. Он в прошлых заказах';
+  }
+
+  @override
+  String orderQuestionsExpiredAnnounced(int number) {
+    return 'Время ответа на вопрос по заказу № $number вышло';
+  }
 }

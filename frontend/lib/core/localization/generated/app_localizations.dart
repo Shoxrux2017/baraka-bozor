@@ -7945,6 +7945,36 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'{month} {year}'**
   String monthYear(Object month, Object year);
+
+  /// No description provided for @orderAnnounced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number}: {what}'**
+  String orderAnnounced(int number, String what);
+
+  /// No description provided for @orderOnTheWayAnnounced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} yo\'lda. Kuryer yo\'lga chiqdi'**
+  String orderOnTheWayAnnounced(int number);
+
+  /// No description provided for @orderDeliveredAnnounced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} yetkazildi. U o\'tgan buyurtmalarda — u yerda baholash mumkin'**
+  String orderDeliveredAnnounced(int number);
+
+  /// No description provided for @orderCancelledAnnounced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} bekor qilindi. U o\'tgan buyurtmalarda'**
+  String orderCancelledAnnounced(int number);
+
+  /// No description provided for @orderQuestionsExpiredAnnounced.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtma № {number} bo\'yicha savolga javob vaqti tugadi'**
+  String orderQuestionsExpiredAnnounced(int number);
 }
 
 class _AppLocalizationsDelegate
