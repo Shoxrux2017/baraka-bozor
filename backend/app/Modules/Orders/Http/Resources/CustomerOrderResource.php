@@ -163,6 +163,9 @@ final class CustomerOrderResource extends JsonResource
                 'name_uz' => $item->fulfilled_product_name_uz_snapshot,
                 'name_ru' => $item->fulfilled_product_name_ru_snapshot,
             ],
+            // What the Customer's yes put in force on a line still to buy
+            // (`DL-130` (2)).
+            'agreed' => self::agreedOf($item),
             'pending_approval' => $question === null ? null : [
                 'id' => $question->id,
                 'type' => $question->type->value,
@@ -179,6 +182,29 @@ final class CustomerOrderResource extends JsonResource
                 'expires_at' => $question->expires_at->toIso8601ZuluString(),
             ],
         ];
+    }
+
+    /**
+     * The price and the quantity the Customer agreed to on a `pending` line,
+     * each `null` when no yes set it; `null` when neither is set or the line
+     * is not `pending`.
+     *
+     * @return array{customer_unit_price_uzs: int|null, quantity: string|null}|null
+     */
+    private static function agreedOf(OrderItem $item): ?array
+    {
+        if ($item->status !== OrderItemStatus::Pending) {
+            return null;
+        }
+
+        $price = OrderTotals::agreedUnitPrice($item);
+        $quantity = $item->approved_quantity_cap === null
+            ? null
+            : QuantityPolicy::format($item->unit_code_snapshot, $item->approved_quantity_cap);
+
+        return $price === null && $quantity === null
+            ? null
+            : ['customer_unit_price_uzs' => $price, 'quantity' => $quantity];
     }
 
     /**

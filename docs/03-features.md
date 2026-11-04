@@ -88,7 +88,7 @@ Rules `allow_similar_substitution`, `contact_before_substitution`, `remove_if_un
 
 Types `price_over_tolerance`, `substitution`, `reduced_quantity`; states `pending`, `approved`, `rejected`, `expired`, and `cancelled` for an approval whose order is cancelled (`DL-54` (8)). Ten minutes: Operator attention. Thirty minutes: expired. Approve applies the persisted proposal and returns the item to `pending` for the Shopper to record the purchase; reject removes the item; an expired approval can only be resolved by an Operator or Admin removing the item.
 
-The Customer answers on the order page, where the open questions stand together above the lines, each with its own buttons (`DL-92` (5)). While a question waits, the home shows a banner for the one that expires first; it is a pointer to the order page (`DL-92` (2)).
+The Customer answers on the order page, where the open questions stand together above the lines, each with its own buttons (`DL-92` (5)). While a question waits, the home shows a banner for the one that expires first; it is a pointer to the order page (`DL-92` (2)). A line the Customer has said yes to is worth what the yes set — the agreed price times the agreed quantity — in the order's estimate and in the list of orders, and says so on the line (`DL-130` (1), (2)); billing is unchanged.
 
 ## 17. Final Amount
 
