@@ -1,11 +1,17 @@
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
+import 'package:baraka_bozor/core/localization/generated/app_localizations.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/deadline_chip.dart';
+import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
+import 'package:baraka_bozor/features/orders/data/customer_orders_api.dart';
+import 'package:baraka_bozor/features/orders/domain/customer_orders.dart';
+import 'package:baraka_bozor/features/orders/presentation/order_sections.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -405,6 +411,302 @@ void main() {
     expect(find.text('Время ответа истекло'), findsOneWidget);
     expect(find.text('Этот товар уберут из заказа'), findsOneWidget);
     expect(find.text('Помидоры'), findsWidgets);
+  });
+
+  group('an answered question folds into its line (DL-130)', () {
+    late List<MethodCall> platformCalls;
+
+    setUp(() {
+      platformCalls = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (
+            MethodCall call,
+          ) async {
+            platformCalls.add(call);
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+    });
+
+    int haptics() => platformCalls
+        .where(
+          (MethodCall c) =>
+              c.method == 'HapticFeedback.vibrate' &&
+              c.arguments == 'HapticFeedbackType.lightImpact',
+        )
+        .length;
+
+    List<String> announced(WidgetTester tester) => tester
+        .takeAnnouncements()
+        .map((CapturedAccessibilityAnnouncement a) => a.message)
+        .toList();
+
+    Map<String, Object?> after(List<Object?> lines) =>
+        customerOrderJson(status: 'shopping', changeable: false, lines: lines);
+
+    Finder agreedLine(String id) => byKey('order-line-agreed-$id');
+
+    Finder flash(String id) => find.descendant(
+      of: byKey('order-line-$id'),
+      matching: byKey('line-flash'),
+    );
+
+    double flashAlpha(WidgetTester tester, String id) =>
+        ((tester.widget<DecoratedBox>(flash(id)).decoration) as BoxDecoration)
+            .color!
+            .a;
+
+    String perKg(int uzs) => '${MoneyFormat.uzs(uzs, AppLanguage.ru)} за кг';
+
+    testWidgets(
+      'a yes folds the card into «Вы согласились: 16 500 сум за кг» on the line',
+      (WidgetTester tester) async {
+        await show(tester, <Object?>[
+          asking(
+            'price_over_tolerance',
+            question: <String, Object?>{
+              'proposed_customer_unit_price_uzs': 16500,
+            },
+          ),
+        ]);
+        orders.afterDecision = after(<Object?>[
+          orderLineJson(
+            patch: <String, Object?>{
+              'agreed': <String, Object?>{
+                'customer_unit_price_uzs': 16500,
+                'quantity': null,
+              },
+            },
+          ),
+        ]);
+
+        await tester.tap(byKey('approve-$approvalOne'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // The card goes on folding, and takes no tap.
+        expect(byKey('question-$approvalOne'), findsOneWidget);
+        expect(
+          tester
+              .widget<IgnorePointer>(
+                find
+                    .ancestor(
+                      of: byKey('question-$approvalOne'),
+                      matching: find.byType(IgnorePointer),
+                    )
+                    .first,
+              )
+              .ignoring,
+          isTrue,
+        );
+        expect(agreedLine(lineTomato), findsOneWidget);
+        expect(flashAlpha(tester, lineTomato), greaterThan(0));
+        expect(haptics(), 1);
+        expect(announced(tester), <String>[
+          'Вы согласились: Помидоры, ${perKg(16500)}',
+        ]);
+
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+        expect(byKey('question-$approvalOne'), findsNothing);
+        expect(
+          find.descendant(
+            of: agreedLine(lineTomato),
+            matching: find.text('Вы согласились: ${perKg(16500)}'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: agreedLine(lineTomato),
+            matching: find.byIcon(Icons.check_circle),
+          ),
+          findsOneWidget,
+        );
+        await tester.pump(const Duration(milliseconds: 1400));
+        expect(flashAlpha(tester, lineTomato), 0);
+        expect(haptics(), 1);
+      },
+    );
+
+    testWidgets('a yes to a substitution says «Вы согласились на замену»', (
+      WidgetTester tester,
+    ) async {
+      await show(tester, <Object?>[asking('substitution')]);
+      orders.afterDecision = after(<Object?>[
+        orderLineJson(
+          patch: <String, Object?>{
+            'replacement': <String, Object?>{
+              'name_uz': 'Olcha pomidor',
+              'name_ru': 'Помидоры черри',
+            },
+            'agreed': <String, Object?>{
+              'customer_unit_price_uzs': 21850,
+              'quantity': null,
+            },
+          },
+        ),
+      ]);
+
+      await tester.tap(byKey('approve-$approvalOne'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: agreedLine(lineTomato),
+          matching: find.text('Вы согласились на замену'),
+        ),
+        findsOneWidget,
+      );
+      expect(announced(tester), <String>[
+        'Вы согласились на замену: Помидоры черри',
+      ]);
+    });
+
+    testWidgets(
+      'a no folds the card and the line moves under «Убрали из заказа»',
+      (WidgetTester tester) async {
+        await show(tester, <Object?>[asking('price_over_tolerance')]);
+        orders.afterDecision = after(<Object?>[
+          orderLineJson(status: 'removed', removedReason: 'customer_rejected'),
+        ]);
+
+        await tester.tap(byKey('reject-$approvalOne'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // The reload has moved the line, and the card still folds: it does
+        // not vanish with the line's move.
+        expect(byKey('order-removed-group'), findsOneWidget);
+        expect(byKey('question-$approvalOne'), findsOneWidget);
+        expect(
+          tester.getSize(byKey('question-$approvalOne')).height,
+          greaterThan(0),
+        );
+        expect(haptics(), 1);
+        expect(announced(tester), <String>[
+          'Вы отказались: Помидоры уберут из заказа',
+        ]);
+
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+        expect(byKey('question-$approvalOne'), findsNothing);
+        expect(find.text('Убрали из заказа · 1'), findsOneWidget);
+        expect(flashAlpha(tester, lineTomato), greaterThan(0));
+        expect(agreedLine(lineTomato), findsNothing);
+      },
+    );
+
+    testWidgets('a sure yes whose reload fails still shows what was agreed', (
+      WidgetTester tester,
+    ) async {
+      await show(tester, <Object?>[
+        asking(
+          'price_over_tolerance',
+          question: <String, Object?>{
+            'proposed_customer_unit_price_uzs': 16500,
+          },
+        ),
+      ]);
+      orders.loadFailure = const NetworkFailure();
+
+      await tester.tap(byKey('approve-$approvalOne'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('stale-line'), findsOneWidget);
+      expect(byKey('question-$approvalOne'), findsNothing);
+      expect(byKey('approve-$approvalOne'), findsNothing);
+      expect(byKey('decide-again-$approvalOne'), findsNothing);
+      expect(
+        find.descendant(
+          of: agreedLine(lineTomato),
+          matching: find.text('Вы согласились: ${perKg(16500)}'),
+        ),
+        findsOneWidget,
+      );
+      expect(orders.decisions, hasLength(1));
+    });
+
+    testWidgets(
+      'with reduced motion the answered card goes at once and nothing flashes',
+      (WidgetTester tester) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue =
+            const FakeAccessibilityFeatures(disableAnimations: true);
+        addTearDown(
+          tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+        );
+        await show(tester, <Object?>[asking('price_over_tolerance')]);
+        orders.afterDecision = after(<Object?>[
+          orderLineJson(
+            patch: <String, Object?>{
+              'agreed': <String, Object?>{
+                'customer_unit_price_uzs': 21850,
+                'quantity': null,
+              },
+            },
+          ),
+        ]);
+
+        await tester.tap(byKey('approve-$approvalOne'));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(byKey('question-$approvalOne'), findsNothing);
+        expect(agreedLine(lineTomato), findsOneWidget);
+        expect(flashAlpha(tester, lineTomato), 0);
+        // The haptic and the announcement stay.
+        expect(haptics(), 1);
+        expect(announced(tester), hasLength(1));
+      },
+    );
+  });
+
+  testWidgets('the amounts fade in when they change, not on the first build', (
+    WidgetTester tester,
+  ) async {
+    CustomerOrder withTotals(int goods, int total) =>
+        CustomerOrdersApi.parseOrder(
+          customerOrderJson(
+            totals: <String, Object?>{
+              'merchandise_subtotal_uzs': goods,
+              'service_fee_uzs': 5000,
+              'delivery_fee_uzs': 15000,
+              'total_uzs': total,
+              'total_kind': 'estimate',
+            },
+          ),
+        );
+    Future<void> pump(CustomerOrder order) => tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: OrderAmounts(order: order)),
+      ),
+    );
+    double opacityOf(String key) => tester
+        .widget<Opacity>(
+          find.ancestor(of: byKey(key), matching: find.byType(Opacity)).first,
+        )
+        .opacity;
+
+    await pump(withTotals(35600, 55600));
+    expect(opacityOf('order-goods'), 1);
+    expect(opacityOf('order-total'), 1);
+
+    await pump(withTotals(41000, 61000));
+    expect(opacityOf('order-goods'), closeTo(0.2, 0.001));
+    await tester.pump(const Duration(milliseconds: 150));
+    final double half = 0.2 + 0.8 * Curves.easeOut.transform(0.5);
+    expect(opacityOf('order-goods'), closeTo(half, 0.01));
+    expect(opacityOf('order-total'), closeTo(half, 0.01));
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(opacityOf('order-goods'), 1);
   });
 
   for (final Locale device in const <Locale>[Locale('uz'), Locale('ru')]) {

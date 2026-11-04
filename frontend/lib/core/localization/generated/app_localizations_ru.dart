@@ -4096,6 +4096,29 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String orderAgreed(String terms) {
+    return 'Вы согласились: $terms';
+  }
+
+  @override
+  String get orderAgreedReplacement => 'Вы согласились на замену';
+
+  @override
+  String orderAgreedSpoken(String name, String terms) {
+    return 'Вы согласились: $name, $terms';
+  }
+
+  @override
+  String orderAgreedReplacementSpoken(String name) {
+    return 'Вы согласились на замену: $name';
+  }
+
+  @override
+  String orderRejectedSpoken(String name) {
+    return 'Вы отказались: $name уберут из заказа';
+  }
+
+  @override
   String get orderCanStillChange =>
       'Пока сборщик не начал, заказ можно изменить или отменить.';
 

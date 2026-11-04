@@ -4048,6 +4048,29 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String orderAgreed(String terms) {
+    return 'Siz rozi bo\'ldingiz: $terms';
+  }
+
+  @override
+  String get orderAgreedReplacement => 'Siz almashtirishga rozi bo\'ldingiz';
+
+  @override
+  String orderAgreedSpoken(String name, String terms) {
+    return 'Siz rozi bo\'ldingiz: $name, $terms';
+  }
+
+  @override
+  String orderAgreedReplacementSpoken(String name) {
+    return 'Siz almashtirishga rozi bo\'ldingiz: $name';
+  }
+
+  @override
+  String orderRejectedSpoken(String name) {
+    return 'Siz rad etdingiz: $name buyurtmadan olib tashlanadi';
+  }
+
+  @override
   String get orderCanStillChange =>
       'Yig\'uvchi boshlamaguncha buyurtmani o\'zgartirish yoki bekor qilish mumkin.';
 

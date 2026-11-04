@@ -23,6 +23,7 @@ import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../cart/presentation/cart_summary.dart';
 import '../domain/customer_orders.dart';
+import 'line_flash.dart';
 import 'order_cards.dart';
 import 'reorder_sheet.dart';
 
@@ -449,17 +450,54 @@ class _StageBar extends StatelessWidget {
   }
 }
 
+/// What the Customer's yes to [question] puts in force: the price proposed
+/// for a price question, the smaller quantity for a reduced-quantity one
+/// (`DL-130`).
+AgreedTerms agreedTermsOf(CustomerQuestion question) => AgreedTerms(
+  customerUnitPriceUzs: question.type == ApprovalType.reducedQuantity
+      ? null
+      : question.proposedCustomerUnitPriceUzs,
+  quantity: question.type == ApprovalType.reducedQuantity
+      ? question.proposedQuantity
+      : null,
+);
+
+/// The terms a yes put in force in words: the quantity «1,5 кг» and the
+/// price «16 500 сум за кг», whichever were set, joined « · » (`DL-130`).
+String agreedText(
+  AppLocalizations l10n,
+  CustomerOrderLine line,
+  AgreedTerms terms,
+  AppLanguage language,
+) {
+  final String unit = CatalogLabels.unit(l10n, line.unit);
+  final String? quantity = terms.quantity;
+  final int? price = terms.customerUnitPriceUzs;
+  return <String>[
+    if (quantity != null) '${QuantityRules.display(quantity)} $unit',
+    if (price != null)
+      l10n.cartUnitPriceExact(unit, MoneyFormat.uzs(price, language)),
+  ].join(' · ');
+}
+
 /// One line of the order (drawings 29 and 29е): the picture, the name, what
 /// was ordered or bought, a tag for its state, and the amount at the right.
+/// Under them it says what the Customer agreed to: from the line's `agreed`,
+/// or, until the order loads again, from [answeredYes], the question the
+/// Customer just said yes to. [flash] washes the row when it changes.
 class OrderLineRow extends StatelessWidget {
   const OrderLineRow({
     required this.line,
     required this.orderStatus,
+    this.flash = 0,
+    this.answeredYes,
     super.key,
   });
 
   final CustomerOrderLine line;
   final OrderStatus orderStatus;
+  final int flash;
+  final CustomerQuestion? answeredYes;
 
   @override
   Widget build(BuildContext context) {
@@ -538,6 +576,14 @@ class OrderLineRow extends StatelessWidget {
     );
     final bool largeText =
         textScaleAt(MediaQuery.textScalerOf(context), 14) > 1.3;
+    final AgreedTerms? agreed =
+        line.agreed ??
+        (answeredYes == null ? null : agreedTermsOf(answeredYes!));
+    final String? agreedWords = removed || agreed == null
+        ? null
+        : (replacement != null || answeredYes?.type == ApprovalType.substitution
+              ? l10n.orderAgreedReplacement
+              : l10n.orderAgreed(agreedText(l10n, line, agreed, language)));
 
     Widget text({required bool sumUnder}) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,6 +613,35 @@ class OrderLineRow extends StatelessWidget {
             style: small,
           ),
         if (open && note != null) Text('«$note»', style: small),
+        if (agreedWords != null)
+          Padding(
+            key: ValueKey<String>('order-line-agreed-${line.id}'),
+            padding: const EdgeInsets.only(top: 2),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Padding(
+                  padding: EdgeInsets.only(top: 1),
+                  child: Icon(
+                    Icons.check_circle,
+                    size: 14,
+                    color: KitColors.primaryDark,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    agreedWords,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: KitColors.primaryDark,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         if (sumUnder && amount != null)
           Padding(
             padding: const EdgeInsets.only(top: 4),
@@ -578,44 +653,47 @@ class OrderLineRow extends StatelessWidget {
     return Padding(
       key: ValueKey<String>('order-line-${line.id}'),
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          // The sum stands beside the name while it fits the 2/5 of the row
-          // left of the picture column, and under the name when it does not
-          // or the text is large; it is never scaled down (`DL-130`).
-          final double beside = (constraints.maxWidth - 60 - 8) * 0.4;
-          final bool sumBeside =
-              amount != null &&
-              !largeText &&
-              textWidth(context, amount, amountStyle) <= beside;
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: KitColors.card,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: SizedBox.square(
-                  dimension: 48,
-                  child: Center(child: picture),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(flex: 3, child: text(sumUnder: !sumBeside)),
-              if (sumBeside) ...<Widget>[
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: Align(
-                    alignment: AlignmentDirectional.topEnd,
-                    child: Text(amount, maxLines: 1, style: amountStyle),
+      child: LineFlash(
+        flash: flash,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            // The sum stands beside the name while it fits the 2/5 of the row
+            // left of the picture column, and under the name when it does not
+            // or the text is large; it is never scaled down (`DL-130`).
+            final double beside = (constraints.maxWidth - 60 - 8) * 0.4;
+            final bool sumBeside =
+                amount != null &&
+                !largeText &&
+                textWidth(context, amount, amountStyle) <= beside;
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: KitColors.card,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: SizedBox.square(
+                    dimension: 48,
+                    child: Center(child: picture),
                   ),
                 ),
+                const SizedBox(width: 12),
+                Expanded(flex: 3, child: text(sumUnder: !sumBeside)),
+                if (sumBeside) ...<Widget>[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: Align(
+                      alignment: AlignmentDirectional.topEnd,
+                      child: Text(amount, maxLines: 1, style: amountStyle),
+                    ),
+                  ),
+                ],
               ],
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -679,6 +757,9 @@ class _Tag extends StatelessWidget {
 class OrderAmounts extends StatelessWidget {
   const OrderAmounts({required this.order, super.key});
 
+  /// The goods and the total fade in when they change (`DL-130`).
+  static const Duration _amountFade = Duration(milliseconds: 300);
+
   final CustomerOrder order;
 
   @override
@@ -705,6 +786,7 @@ class OrderAmounts extends StatelessWidget {
           valueKey: 'order-goods',
           label: l10n.cartGoods(keptLines(order).length),
           value: approx(order.merchandiseSubtotalUzs),
+          fade: _amountFade,
         ),
         SummaryAmountRow(
           valueKey: 'order-delivery',
@@ -725,6 +807,7 @@ class OrderAmounts extends StatelessWidget {
           label: l10n.cartTotal,
           value: approx(order.totalUzs),
           emphasised: true,
+          fade: _amountFade,
         ),
         if (estimate) ...<Widget>[
           const SizedBox(height: 8),

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -477,13 +478,72 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
 /// questions, the lines, the amounts and the facts. While the Courier is on
 /// the way the facts come right after them, for the payment due and the
 /// address to hand.
-class _Order extends ConsumerWidget {
+class _Order extends ConsumerStatefulWidget {
   const _Order({required this.order});
 
   final CustomerOrder order;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Order> createState() => _OrderState();
+}
+
+class _OrderState extends ConsumerState<_Order> {
+  /// How many times each line, by id, was washed by an answer to its
+  /// question (`DL-130`).
+  final Map<String, int> _flash = <String, int>{};
+
+  /// The question the Customer just said yes to, by line, until the order
+  /// loads again and says what was agreed.
+  final Map<String, CustomerQuestion> _yes = <String, CustomerQuestion>{};
+
+  /// Lines whose answer was a no: they are washed again once they stand in
+  /// the removed group, which is built after the answer.
+  final Set<String> _refused = <String>{};
+
+  void _settled(
+    String lineId,
+    ApprovalDecision decision,
+    CustomerQuestion? question,
+  ) {
+    setState(() {
+      _flash[lineId] = (_flash[lineId] ?? 0) + 1;
+      if (decision == ApprovalDecision.reject) {
+        _yes.remove(lineId);
+        _refused.add(lineId);
+      } else if (question != null) {
+        _yes[lineId] = question;
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(_Order oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final Set<String> before = <String>{
+      for (final CustomerOrderLine line in droppedLines(oldWidget.order))
+        line.id,
+    };
+    final List<String> arrived = <String>[
+      for (final CustomerOrderLine line in droppedLines(widget.order))
+        if (!before.contains(line.id) && _refused.remove(line.id)) line.id,
+    ];
+    if (arrived.isNotEmpty) {
+      // After the row's first build, which never flashes.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            for (final String id in arrived) {
+              _flash[id] = (_flash[id] ?? 0) + 1;
+            }
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final CustomerOrder order = widget.order;
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AppLanguage language = interfaceLanguage(context);
     final DateTime now = ref.watch(clockProvider)();
@@ -521,12 +581,18 @@ class _Order extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            for (final CustomerOrderLine line in kept)
+            // The removed lines too: a no moves its line there while its card
+            // still folds (`DL-130`).
+            for (final CustomerOrderLine line in <CustomerOrderLine>[
+              ...kept,
+              ...dropped,
+            ])
               _QuestionBlock(
                 key: ValueKey<String>(line.id),
                 orderId: order.id,
                 line: line,
                 language: language,
+                onSettled: _settled,
               ),
           ],
         ),
@@ -547,7 +613,12 @@ class _Order extends ConsumerWidget {
           items: kept,
           keyOf: (CustomerOrderLine line) => line.id,
           itemBuilder: (BuildContext context, CustomerOrderLine line) =>
-              OrderLineRow(line: line, orderStatus: order.status),
+              OrderLineRow(
+                line: line,
+                orderStatus: order.status,
+                flash: _flash[line.id] ?? 0,
+                answeredYes: _yes[line.id],
+              ),
         ),
         if (dropped.isNotEmpty)
           Column(
@@ -571,7 +642,11 @@ class _Order extends ConsumerWidget {
                 items: dropped,
                 keyOf: (CustomerOrderLine line) => line.id,
                 itemBuilder: (BuildContext context, CustomerOrderLine line) =>
-                    OrderLineRow(line: line, orderStatus: order.status),
+                    OrderLineRow(
+                      line: line,
+                      orderStatus: order.status,
+                      flash: _flash[line.id] ?? 0,
+                    ),
               ),
             ],
           ),
@@ -594,17 +669,32 @@ class _Order extends ConsumerWidget {
 /// `expiresAt`. At that instant the card turns expired at once, is announced
 /// and the order loads again; a question the clock has passed stays expired
 /// whatever a reload says (`DL-130`).
+///
+/// A question the Customer's answer settled, the server answering `200`,
+/// takes no tap and folds away at once, with a haptic and an announcement,
+/// and is not drawn again whatever a reload that fails leaves; the card
+/// being folded stays through the reload that moves its line (`DL-130`).
 class _QuestionBlock extends ConsumerStatefulWidget {
   const _QuestionBlock({
     required this.orderId,
     required this.line,
     required this.language,
+    required this.onSettled,
     super.key,
   });
 
   final String orderId;
   final CustomerOrderLine line;
   final AppLanguage language;
+
+  /// Called once per settled answer, with the question it answered when the
+  /// line still carried it.
+  final void Function(
+    String lineId,
+    ApprovalDecision decision,
+    CustomerQuestion? question,
+  )
+  onSettled;
 
   @override
   ConsumerState<_QuestionBlock> createState() => _QuestionBlockState();
@@ -616,6 +706,12 @@ class _QuestionBlockState extends ConsumerState<_QuestionBlock> {
 
   /// The questions whose deadline passed while this line was shown.
   final Set<String> _expired = <String>{};
+
+  /// The settled answer already handled, by question id.
+  String? _handled;
+
+  /// The card folding away after its answer, as the line stood then.
+  ({CustomerOrderLine line, CustomerQuestion question})? _folding;
 
   @override
   void dispose() {
@@ -653,13 +749,75 @@ class _QuestionBlockState extends ConsumerState<_QuestionBlock> {
     });
   }
 
+  void _answered(({String approvalId, ApprovalDecision decision}) answer) {
+    if (_handled == answer.approvalId) {
+      return;
+    }
+    _handled = answer.approvalId;
+    final CustomerOrderLine line = widget.line;
+    final CustomerQuestion? asked = line.question?.id == answer.approvalId
+        ? line.question
+        : null;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String name = line.name(widget.language);
+    HapticFeedback.lightImpact();
+    if (answer.decision == ApprovalDecision.reject) {
+      announce(context, l10n.orderRejectedSpoken(name));
+    } else if (asked?.type == ApprovalType.substitution) {
+      announce(
+        context,
+        l10n.orderAgreedReplacementSpoken(
+          asked!.replacement!.name(widget.language),
+        ),
+      );
+    } else {
+      final AgreedTerms? terms = asked == null
+          ? line.agreed
+          : agreedTermsOf(asked);
+      if (terms != null) {
+        announce(
+          context,
+          l10n.orderAgreedSpoken(
+            name,
+            agreedText(l10n, line, terms, widget.language),
+          ),
+        );
+      }
+    }
+    widget.onSettled(line.id, answer.decision, asked);
+    if (asked != null) {
+      setState(() => _folding = (line: line, question: asked));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final String orderId = widget.orderId;
     final CustomerOrderLine line = widget.line;
     final AppLanguage language = widget.language;
     final DateTime now = ref.watch(clockProvider)();
-    final CustomerQuestion? sent = line.question;
+    final OrderLineRef lineRef = (orderId: orderId, lineId: line.id);
+    ref.listen<MutationState>(approvalDecisionProvider(lineRef), (
+      MutationState? before,
+      MutationState next,
+    ) {
+      final ({String approvalId, ApprovalDecision decision})? answer = ref
+          .read(approvalDecisionProvider(lineRef).notifier)
+          .settled;
+      if (before != null && before.isBusy && !next.isBusy && answer != null) {
+        _answered(answer);
+      }
+    });
+    // A question the Customer's answer settled is not asked again, whatever
+    // the order shows until it loads again.
+    final bool settled =
+        line.question != null &&
+        ref
+                .read(approvalDecisionProvider(lineRef).notifier)
+                .settled
+                ?.approvalId ==
+            line.question!.id;
+    final CustomerQuestion? sent = settled ? null : line.question;
     final bool pastDeadline =
         sent != null &&
         (_expired.contains(sent.id) || !sent.expiresAt.isAfter(now));
@@ -679,42 +837,57 @@ class _QuestionBlockState extends ConsumerState<_QuestionBlock> {
     final ApiFailure? refusal = question == null || question.id == answered
         ? deciding.failure
         : null;
-    final bool expired = line.questionExpired || pastDeadline;
-    if (question == null && !expired && refusal == null) {
+    final bool expired = !settled && (line.questionExpired || pastDeadline);
+    final ({CustomerOrderLine line, CustomerQuestion question})? folding =
+        _folding;
+    final CustomerQuestion? card = folding?.question ?? question;
+    if (card == null && !expired && refusal == null) {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (question != null)
-            OrderQuestionCard(
-              orderId: orderId,
-              line: line,
-              question: question,
-              deciding: deciding,
-              language: language,
-            )
-          else if (expired)
-            OrderQuestionExpired(line: line)
-          else if (refusal != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                line.name(language),
-                key: ValueKey<String>('question-refusal-name-${line.id}'),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: KitColors.ink2,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (card != null)
+          // One Fold from the card's first draw to its end, so the answer
+          // only turns `shown` off.
+          IgnorePointer(
+            ignoring: folding != null,
+            child: Fold(
+              shown: folding == null,
+              onFolded: () => setState(() => _folding = null),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: OrderQuestionCard(
+                  orderId: orderId,
+                  line: folding?.line ?? line,
+                  question: card,
+                  deciding: deciding,
+                  language: language,
                 ),
               ),
             ),
-          FailureMessage(refusal),
-        ],
-      ),
+          )
+        else if (expired)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: OrderQuestionExpired(line: line),
+          )
+        else if (refusal != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 16, bottom: 4),
+            child: Text(
+              line.name(language),
+              key: ValueKey<String>('question-refusal-name-${line.id}'),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: KitColors.ink2,
+              ),
+            ),
+          ),
+        FailureMessage(refusal),
+      ],
     );
   }
 }

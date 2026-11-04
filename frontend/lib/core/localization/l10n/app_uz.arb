@@ -2735,6 +2735,42 @@
       }
     }
   },
+  "orderAgreed": "Siz rozi bo'ldingiz: {terms}",
+  "@orderAgreed": {
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAgreedReplacement": "Siz almashtirishga rozi bo'ldingiz",
+  "orderAgreedSpoken": "Siz rozi bo'ldingiz: {name}, {terms}",
+  "@orderAgreedSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "terms": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAgreedReplacementSpoken": "Siz almashtirishga rozi bo'ldingiz: {name}",
+  "@orderAgreedReplacementSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderRejectedSpoken": "Siz rad etdingiz: {name} buyurtmadan olib tashlanadi",
+  "@orderRejectedSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "orderCanStillChange": "Yig'uvchi boshlamaguncha buyurtmani o'zgartirish yoki bekor qilish mumkin.",
   "orderLineBoughtKit": "Sotib olindi: {quantity} × {price}",
   "@orderLineBoughtKit": {

@@ -58,6 +58,10 @@ abstract final class KitColors {
   /// its wash.
   static const Color warningSoft = Color(0xFFFCE9BF);
 
+  /// The wash that fades over an order line the Customer's answer changed
+  /// (`DL-130`).
+  static const Color lineFlash = Color(0xFFE3F4E6);
+
   /// The soft shadow of a raised white piece on a grey one, such as the
   /// chosen segment of a switch.
   static const Color shadow = Color(0x1F151D16);

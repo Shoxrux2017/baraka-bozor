@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 /// Lets [child] rise softly when [value] changes: from opacity 0.2 and 4 px
-/// lower, in 240 ms (`DL-119`). [waiting] dims it to 0.45 over 200 ms. It
+/// lower, in [fade] (240 ms unless given, `DL-119`). [waiting] dims it to 0.45 over 200 ms. It
 /// keeps one child, so a finder by the child's key still works. With reduced
 /// motion the new value shows at once.
 class SoftChange extends StatefulWidget {
@@ -9,11 +9,13 @@ class SoftChange extends StatefulWidget {
     required this.value,
     required this.child,
     this.waiting = false,
+    this.fade = const Duration(milliseconds: 240),
     super.key,
   });
 
   final Object value;
   final bool waiting;
+  final Duration fade;
   final Widget child;
 
   @override
@@ -24,7 +26,7 @@ class _SoftChangeState extends State<SoftChange>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 240),
+    duration: widget.fade,
     value: 1,
   );
 
@@ -33,6 +35,7 @@ class _SoftChangeState extends State<SoftChange>
     super.didUpdateWidget(oldWidget);
     if (widget.value != oldWidget.value &&
         !MediaQuery.disableAnimationsOf(context)) {
+      _controller.duration = widget.fade;
       _controller.forward(from: 0);
     }
   }

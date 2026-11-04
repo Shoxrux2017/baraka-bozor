@@ -6848,6 +6848,36 @@ abstract class AppLocalizations {
   /// **'Buyurtmadan olib tashlandi · {count}'**
   String orderRemovedGroup(int count);
 
+  /// No description provided for @orderAgreed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz rozi bo\'ldingiz: {terms}'**
+  String orderAgreed(String terms);
+
+  /// No description provided for @orderAgreedReplacement.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz almashtirishga rozi bo\'ldingiz'**
+  String get orderAgreedReplacement;
+
+  /// No description provided for @orderAgreedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz rozi bo\'ldingiz: {name}, {terms}'**
+  String orderAgreedSpoken(String name, String terms);
+
+  /// No description provided for @orderAgreedReplacementSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz almashtirishga rozi bo\'ldingiz: {name}'**
+  String orderAgreedReplacementSpoken(String name);
+
+  /// No description provided for @orderRejectedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz rad etdingiz: {name} buyurtmadan olib tashlanadi'**
+  String orderRejectedSpoken(String name);
+
   /// No description provided for @orderCanStillChange.
   ///
   /// In uz, this message translates to:
