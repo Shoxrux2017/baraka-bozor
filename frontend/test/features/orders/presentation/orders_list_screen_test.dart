@@ -991,6 +991,77 @@ void main() {
     });
 
     testWidgets(
+      'an order cancelled on its page while the list is covered leaves quietly after the reload',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(),
+          ...past(1),
+        ];
+        await start(tester);
+        await tester.tap(byKey('order-$orderOne'));
+        await frames(tester);
+        announced(tester);
+
+        // Something else keeps the feed loading while the list is covered.
+        container(tester)
+            .listen(customerOrdersProvider(OrdersTab.current), (_, _) {});
+        // The cancel path: drop, then load again, in one frame, under the page.
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(status: 'cancelled'),
+          ...past(1),
+        ];
+        container(tester)
+            .read(customerOrdersProvider(OrdersTab.current).notifier)
+            .drop(orderOne);
+        container(tester).invalidate(customerOrdersProvider);
+        await frames(tester);
+        GoRouter.of(anywhere(tester)).pop();
+        for (int i = 0; i < 8; i++) {
+          await advance(tester, const Duration(milliseconds: 100));
+        }
+
+        expect(byKey('order-$orderOne'), findsNothing, reason: 'no 1.7 s hold');
+        expect(announced(tester), isEmpty);
+        expect(haptics, isEmpty);
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'an order delivered while the list is covered is drawn and folds, but is not announced',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(status: 'on_the_way', courierPhone: phone),
+          ...past(1),
+        ];
+        await start(tester);
+        await tester.tap(byKey('order-$orderOne'));
+        await frames(tester);
+        announced(tester);
+
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(status: 'completed'),
+          ...past(1),
+        ];
+        container(tester).invalidate(customerOrdersProvider);
+        await frames(tester);
+        GoRouter.of(anywhere(tester)).pop();
+        await until(
+          tester,
+          () =>
+              byKey('order-$orderOne').evaluate().isNotEmpty &&
+              statusOf(tester, orderOne) == ru().customerStatusCompleted,
+        );
+        expect(shadows(tester, orderOne), hasLength(1), reason: 'no glow');
+        await until(tester, () => byKey('order-$orderOne').evaluate().isEmpty);
+        expect(announced(tester), isEmpty);
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
       'an order gone whose Прошлые reload fails leaves at once without words',
       (WidgetTester tester) async {
         final SemanticsHandle handle = tester.ensureSemantics();

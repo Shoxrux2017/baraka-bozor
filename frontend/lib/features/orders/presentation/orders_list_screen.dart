@@ -52,10 +52,13 @@ const Cubic _slide = Cubic(0.2, 0.8, 0.2, 1);
 /// A card that stays in «Текущие» for a moment after its order left it, with
 /// the summary it shows and the place it had.
 class _Leaving {
-  _Leaving(this.summary, this.index);
+  _Leaving(this.summary, this.index, {required this.quiet});
 
   OrderSummary summary;
   final int index;
+
+  /// Its change was found while the list was covered: no glow, no words.
+  final bool quiet;
 }
 
 /// The words of a question the Shopper asks, said with the minutes left when
@@ -257,7 +260,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       final int index = before.rows.indexWhere(
         (OrderSummary row) => row.id == order.id,
       );
-      _leaving[order.id] = _Leaving(order, index);
+      _leaving[order.id] = _Leaving(order, index, quiet: !shown);
       _effects.add(() => unawaited(_settle(order.id)));
     }
   }
@@ -295,7 +298,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       return;
     }
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final bool shown = ordersListShown(context);
+    final bool shown = ordersListShown(context) && !leaving.quiet;
     setState(() {
       leaving.summary = ended!;
       _held.add(id);

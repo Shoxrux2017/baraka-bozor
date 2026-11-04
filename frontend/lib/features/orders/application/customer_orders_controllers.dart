@@ -106,6 +106,12 @@ class CustomerOrdersFeed extends AsyncNotifier<OrdersFeed> {
   int _pages = 1;
   String? _account;
 
+  /// The ids dropped, kept across whole loads of one account, and how many
+  /// rows were dropped since the last whole load (the server's total, when
+  /// it comes with the next page, still counts them).
+  Set<String> _dropped = <String>{};
+  int _droppedSinceLoad = 0;
+
   @override
   Future<OrdersFeed> build() async {
     final int generation = ++_generation;
@@ -113,9 +119,13 @@ class CustomerOrdersFeed extends AsyncNotifier<OrdersFeed> {
     if (account == null) {
       _account = null;
       _pages = 1;
+      _dropped = <String>{};
       return Completer<OrdersFeed>().future;
     }
     final int wanted = account == _account ? math.max(1, _pages) : 1;
+    if (account != _account) {
+      _dropped = <String>{};
+    }
     _account = account;
     final CustomerOrdersRepository repository = ref.watch(
       customerOrdersRepositoryProvider,
@@ -141,7 +151,13 @@ class CustomerOrdersFeed extends AsyncNotifier<OrdersFeed> {
       next = page.hasNext ? page.page + 1 : null;
     }
     _pages = loaded;
+    _dropped = <String>{
+      for (final String id in _dropped)
+        if (!seen.contains(id)) id,
+    };
+    _droppedSinceLoad = 0;
     return OrdersFeed(
+      dropped: _dropped,
       rows: rows,
       total: total,
       nextPage: next,
@@ -184,7 +200,7 @@ class CustomerOrdersFeed extends AsyncNotifier<OrdersFeed> {
           for (final OrderSummary row in loaded.items)
             if (shown.add(row.id)) row,
         ],
-        total: loaded.total - current.dropped.length,
+        total: loaded.total - _droppedSinceLoad,
         nextPage: loaded.hasNext ? loaded.page + 1 : null,
         pages: current.pages + 1,
         loadingMore: false,
@@ -224,15 +240,17 @@ class CustomerOrdersFeed extends AsyncNotifier<OrdersFeed> {
     if (removed == 0) {
       return;
     }
+    _droppedSinceLoad += removed;
+    _dropped = <String>{
+      ...current.dropped,
+      for (final OrderSummary row in current.rows)
+        if (row.id.toLowerCase() == wanted) row.id,
+    };
     state = AsyncData<OrdersFeed>(
       current.copyWith(
         rows: kept,
         total: math.max(0, current.total - removed),
-        dropped: <String>{
-          ...current.dropped,
-          for (final OrderSummary row in current.rows)
-            if (row.id.toLowerCase() == wanted) row.id,
-        },
+        dropped: _dropped,
       ),
     );
   }

@@ -346,6 +346,31 @@ void main() {
       },
     );
 
+    test('a dropped order stays named after the reloads that follow', () async {
+      await container.read(pastFeed.future);
+      final String id = idOf(3);
+      container.read(pastFeed.notifier).drop(id);
+
+      orders.summaries = <Map<String, Object?>>[
+        for (final Map<String, Object?> row in past(45))
+          if (row['id'] != id) row,
+      ];
+      container.invalidate(pastFeed);
+      await container.read(pastFeed.future);
+      container.invalidate(pastFeed);
+      await container.read(pastFeed.future);
+
+      final OrdersFeed feed = container.read(pastFeed).requireValue;
+      expect(feed.dropped, <String>{id});
+      expect(feed.total, 44, reason: 'the count of the server, without it');
+      await container.read(pastFeed.notifier).loadMore();
+      expect(
+        container.read(pastFeed).requireValue.total,
+        44,
+        reason: 'the next page does not subtract it twice',
+      );
+    });
+
     test('drop does nothing during a reload', () async {
       await container.read(pastFeed.future);
       final Completer<void> hold = Completer<void>();
