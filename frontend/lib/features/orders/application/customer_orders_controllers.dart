@@ -150,12 +150,15 @@ class CustomerOrdersFeed extends AsyncNotifier<OrdersFeed> {
       loaded++;
       next = page.hasNext ? page.page + 1 : null;
     }
-    _pages = loaded;
-    _dropped = <String>{
-      for (final String id in _dropped)
-        if (!seen.contains(id)) id,
-    };
-    _droppedSinceLoad = 0;
+    // A build that was superseded changes nothing the next one reads.
+    if (generation == _generation) {
+      _pages = loaded;
+      _dropped = <String>{
+        for (final String id in _dropped)
+          if (!seen.contains(id)) id,
+      };
+      _droppedSinceLoad = 0;
+    }
     return OrdersFeed(
       dropped: _dropped,
       rows: rows,
@@ -223,33 +226,38 @@ class CustomerOrdersFeed extends AsyncNotifier<OrdersFeed> {
   }
 
   /// Takes the order [id] off the feed, whatever the case of the id, before
-  /// the feed's own reload answers (`DL-113`). The total goes down by the
-  /// rows removed; before the first answer, during a reload, after a
-  /// failure, or for an id not shown, nothing changes.
+  /// the feed's own reload answers (`DL-113`). The id is always remembered, so
+  /// the load that follows names it dropped even when this came during a
+  /// reload or after a failure; the rows and the total change only when the
+  /// feed holds an answer that is not being replaced, and the total goes down
+  /// by the rows removed.
   void drop(String id) {
-    final OrdersFeed? current = state.value;
-    if (current == null || state.hasError || state.isLoading) {
-      return;
-    }
     final String wanted = id.toLowerCase();
-    final List<OrderSummary> kept = <OrderSummary>[
-      for (final OrderSummary row in current.rows)
-        if (row.id.toLowerCase() != wanted) row,
+    final OrdersFeed? current = state.value;
+    final List<OrderSummary> rows = current?.rows ?? const <OrderSummary>[];
+    final List<OrderSummary> named = <OrderSummary>[
+      for (final OrderSummary row in rows)
+        if (row.id.toLowerCase() == wanted) row,
     ];
-    final int removed = current.rows.length - kept.length;
-    if (removed == 0) {
+    final bool settled = current != null && !state.hasError && !state.isLoading;
+    if (settled && named.isEmpty) {
       return;
     }
-    _droppedSinceLoad += removed;
     _dropped = <String>{
-      ...current.dropped,
-      for (final OrderSummary row in current.rows)
-        if (row.id.toLowerCase() == wanted) row.id,
+      ..._dropped,
+      if (named.isEmpty) id else for (final OrderSummary row in named) row.id,
     };
+    if (!settled) {
+      return;
+    }
+    _droppedSinceLoad += named.length;
     state = AsyncData<OrdersFeed>(
       current.copyWith(
-        rows: kept,
-        total: math.max(0, current.total - removed),
+        rows: <OrderSummary>[
+          for (final OrderSummary row in rows)
+            if (row.id.toLowerCase() != wanted) row,
+        ],
+        total: math.max(0, current.total - named.length),
         dropped: _dropped,
       ),
     );
@@ -383,7 +391,8 @@ class OrderCancelController extends OrderMutation {
     final CustomerOrder? order = await perform(
       () => orders.cancel(orderId, sent, key),
       reload: (CustomerOrder? cancelled) {
-        // The drop comes first: a feed that is reloading ignores it.
+        // The drop comes first: a feed that is reloading, or failed, still
+        // remembers the order as dropped for the load that follows.
         if (cancelled?.status == OrderStatus.cancelled &&
             ref.exists(customerOrdersProvider(OrdersTab.current))) {
           ref

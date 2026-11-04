@@ -440,6 +440,54 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets(
+    'after a failed reload the end of Прошлые offers a retry that loads on',
+    (WidgetTester tester) async {
+      orders.summaries = past(45);
+      await open(tester);
+      await tester.tap(byKey('orders-tab-past'));
+      await frames(tester);
+
+      orders.listFailures[OrdersTab.past] = const NetworkFailure();
+      await tester.fling(kept('orders-past-list'), const Offset(0, 300), 1000);
+      await frames(tester, 12);
+      await toEnd(tester);
+      await frames(tester);
+
+      expect(byKey('orders-more-skeleton'), findsNothing);
+      expect(byKey('orders-more-retry'), findsOneWidget);
+      expect(loadsOf('orders:past:2'), 0, reason: 'it does not try on its own');
+
+      await tester.tap(byKey('orders-more-retry'));
+      await frames(tester);
+      expect(loadsOf('orders:past:1'), 3, reason: 'the retry reloads');
+      expect(byKey('orders-more-retry'), findsNothing);
+
+      await toEnd(tester);
+      await frames(tester);
+      expect(loadsOf('orders:past:2'), 1, reason: 'the end loads on');
+    },
+  );
+
+  testWidgets('a pull while a refresh runs sends no second request', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    final Completer<void> hold = orders.holdList = Completer<void>();
+    await tester.pump(const Duration(seconds: 30));
+    await tester.pump();
+    expect(loadsOf('orders:current:1'), 2);
+
+    await tester.fling(kept('orders-list'), const Offset(0, 300), 1000);
+    await frames(tester, 6);
+    expect(loadsOf('orders:current:1'), 2, reason: 'the pull waits for it');
+
+    hold.complete();
+    await frames(tester, 12);
+    expect(loadsOf('orders:current:1'), 2);
+    expect(byKey('order-$orderOne'), findsOneWidget);
+  });
+
   testWidgets('a reload of a deep past list keeps the offset', (
     WidgetTester tester,
   ) async {
@@ -658,6 +706,26 @@ void main() {
     await tester.tap(byKey('orders-tab-past'));
     await frames(tester);
     expect(shown(tester).pixels, 0);
+  });
+
+  testWidgets('a tap 2 px inside the segment box switches the tab', (
+    WidgetTester tester,
+  ) async {
+    orders.summaries = <Map<String, Object?>>[
+      orderSummaryJson(status: 'shopping'),
+      ...past(3),
+    ];
+    await open(tester);
+
+    final Rect box = tester.getRect(byKey('orders-segment'));
+    expect(box.height, 48);
+    await tester.tapAt(Offset(box.right - 40, box.top + 2));
+    await frames(tester);
+    expect(byKey('order-${id(0)}'), findsOneWidget, reason: 'Прошлые is shown');
+
+    await tester.tapAt(Offset(box.left + 40, box.bottom - 2));
+    await frames(tester);
+    expect(byKey('order-$orderOne'), findsOneWidget, reason: 'Текущие again');
   });
 
   group('changes between two loads of Текущие', () {
@@ -1241,6 +1309,84 @@ void main() {
       },
     );
 
+    testWidgets('the first change after coming back to the list is announced', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(status: 'delivery_assigned'),
+      ];
+      await start(tester);
+      await tester.tap(byKey('order-$orderOne'));
+      await frames(tester);
+      GoRouter.of(anywhere(tester)).pop();
+      await frames(tester);
+      announced(tester);
+      haptics.clear();
+
+      orders.summaries = <Map<String, Object?>>[
+        orderSummaryJson(status: 'on_the_way', courierPhone: phone),
+      ];
+      await reload(tester);
+
+      expect(announced(tester), <String>['Заказ № 1001 в пути. Курьер выехал']);
+      expect(haptics, isEmpty, reason: 'a status change only speaks');
+      handle.dispose();
+    });
+
+    testWidgets(
+      'a change of Текущие is not announced while Прошлые is the shown segment',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(status: 'delivery_assigned'),
+          ...past(1),
+        ];
+        await start(tester);
+        await tester.tap(byKey('orders-tab-past'));
+        await frames(tester);
+        announced(tester);
+        haptics.clear();
+
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(status: 'on_the_way', courierPhone: phone),
+          ...past(1),
+        ];
+        container(tester).invalidate(customerOrdersProvider(OrdersTab.current));
+        await frames(tester);
+
+        expect(announced(tester), isEmpty);
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'the words of a question that ran out are not said while Прошлые is the shown segment',
+      (WidgetTester tester) async {
+        final SemanticsHandle handle = tester.ensureSemantics();
+        orders.summaries = <Map<String, Object?>>[
+          orderSummaryJson(
+            status: 'shopping',
+            waiting: 1,
+            deadlines: <String>['2026-09-28T08:09:00Z'],
+          ),
+          ...past(1),
+        ];
+        await start(tester);
+        orders.holdList = Completer<void>();
+        await tester.tap(byKey('orders-tab-past'));
+        await frames(tester);
+        announced(tester);
+
+        await advance(tester, const Duration(minutes: 9));
+        await advance(tester, const Duration(milliseconds: 500));
+        await advance(tester, const Duration(milliseconds: 500));
+
+        expect(announced(tester), isEmpty);
+        handle.dispose();
+      },
+    );
+
     testWidgets('with reduced motion nothing glows and strips appear at once', (
       WidgetTester tester,
     ) async {
@@ -1295,6 +1441,7 @@ void main() {
     Future<void> show(
       WidgetTester tester, {
       required int pastBumps,
+      int pastCount = 25,
       bool reducedMotion = false,
     }) => tester.pumpWidget(
       MaterialApp(
@@ -1310,7 +1457,7 @@ void main() {
           body: OrdersSegment(
             tab: OrdersTab.current,
             currentCount: 2,
-            pastCount: 25,
+            pastCount: pastCount,
             pastBumps: pastBumps,
             onTab: (OrdersTab _) {},
           ),
@@ -1337,6 +1484,18 @@ void main() {
       await show(tester, pastBumps: 1);
       await tester.pump(const Duration(milliseconds: 136));
       expect(scale(tester), 1, reason: 'no new rise, no bump');
+    });
+
+    testWidgets('the first past order bumps the count', (
+      WidgetTester tester,
+    ) async {
+      await show(tester, pastBumps: 0, pastCount: 0);
+      expect(scale(tester), 1);
+
+      await show(tester, pastBumps: 1, pastCount: 1);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 136));
+      expect(scale(tester), closeTo(1.3, 0.02));
     });
 
     testWidgets('with reduced motion the count does not move', (

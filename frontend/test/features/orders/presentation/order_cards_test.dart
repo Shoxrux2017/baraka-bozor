@@ -9,6 +9,7 @@ import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/theme/kit_colors.dart';
 import 'package:baraka_bozor/core/widgets/kit/kit_star.dart';
 import 'package:baraka_bozor/features/orders/data/customer_orders_api.dart';
+import 'package:baraka_bozor/features/orders/presentation/order_card_words.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_cards.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_stage_bar.dart';
 import 'package:baraka_bozor/features/orders/presentation/rate_order_screen.dart';
@@ -419,6 +420,18 @@ void main() {
     handle.dispose();
   });
 
+  test('a cancelled card names no stage', () {
+    final String said = currentOrderSpoken(
+      lookupAppLocalizations(const Locale('ru')),
+      AppLanguage.ru,
+      CustomerOrdersApi.parseSummary(orderSummaryJson(status: 'cancelled')),
+      DateTime.utc(2026, 9, 28, 8),
+    );
+
+    expect(said, startsWith('Заказ № 1001. Отменён. '));
+    expect(said, isNot(contains('этап')));
+  });
+
   testWidgets('Ответить and Позвонить курьеру name their order', (
     WidgetTester tester,
   ) async {
@@ -707,6 +720,27 @@ void main() {
         fullLocation(tester),
         AppPaths.customerOrderRate(orderOne, stars: 1),
       );
+    });
+
+    testWidgets("a tab switch during the stars' pop opens no rating screen", (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      GoRouter.of(anywhere(tester)).go(AppPaths.customer);
+      await tester.pumpAndSettle();
+      await tapAndSettle(tester, byKey('open-orders'));
+      await tapAndSettle(tester, byKey('orders-tab-past'));
+      await tester.ensureVisible(byKey('order-rate-$orderOne-3'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(byKey('order-rate-$orderOne-3'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(byKey('open-home'));
+      await tester.pumpAndSettle();
+      await tapAndSettle(tester, byKey('open-orders'));
+
+      expect(fullLocation(tester), isNull);
+      expect(lit(tester), <bool>[false, false, false, false, false]);
     });
 
     testWidgets('with reduced motion the rating screen opens at once', (

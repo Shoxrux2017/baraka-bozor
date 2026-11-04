@@ -27,10 +27,12 @@ String currentOrderSpoken(
 
   return <String>[
     l10n.customerOrderTitle(order.orderNumber),
-    l10n.orderCardStageSpoken(
-      OrderLabels.customerStatus(l10n, order.status),
-      orderStage(order.status),
-    ),
+    orderStage(order.status) == 0
+        ? OrderLabels.customerStatus(l10n, order.status)
+        : l10n.orderCardStageSpoken(
+            OrderLabels.customerStatus(l10n, order.status),
+            orderStage(order.status),
+          ),
     if (asked > 0)
       minutesLeft == null
           ? l10n.orderCardQuestion(asked)

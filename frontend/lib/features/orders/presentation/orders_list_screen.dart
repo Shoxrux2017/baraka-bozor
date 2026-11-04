@@ -112,6 +112,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   int _pastBumps = 0;
   int? _pastTotal;
 
+  /// The account the past count belongs to, and whether its first answer is
+  /// still to come (a count carried from another account is not compared).
+  String? _countAccount;
+  bool _awaitingPast = false;
+
   /// The last value of «Текущие» compared, the value of another account that
   /// is still carried while the new one loads (never compared), and the
   /// account they belong to (`DL-131`).
@@ -143,6 +148,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     super.initState();
     _pastScroll.addListener(_loadMoreNearTheEnd);
     _account = ref.read(customerAccountProvider);
+    _countAccount = _account;
   }
 
   /// Compares the value of «Текущие» this build sees with the one before, drop
@@ -164,7 +170,16 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       _forgetLeaving();
     }
     final OrdersFeed? before = _seen;
-    if (identical(feed, _carried) || identical(feed, before)) {
+    if (identical(feed, _carried)) {
+      return;
+    }
+    if (identical(feed, before)) {
+      // Back in front with no new value: what comes next is found while the
+      // Customer looks, unless a reload is already on its way, whose value
+      // was found under the cover.
+      if (!current.isLoading && ordersListShown(context)) {
+        _coveredSinceSeen = false;
+      }
       return;
     }
     _seen = feed;
@@ -174,6 +189,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       _showChanges(before, feed, covered: covered);
     }
   }
+
+  /// Whether changes of «Текущие» are spoken now: the list is shown and
+  /// «Текущие» is its shown segment (`DL-131`).
+  bool _speaks(BuildContext context) =>
+      _tab == OrdersTab.current && ordersListShown(context);
 
   void _forgetLeaving() {
     for (final Timer timer in _timers) {
@@ -226,8 +246,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final DateTime now = ref.read(clockProvider)();
     // A change found after the list was covered, by an order page or another
-    // tab, is drawn quietly: the Customer was elsewhere when it came.
-    final bool shown = ordersListShown(context) && !covered;
+    // tab, is drawn quietly: the Customer was elsewhere when it came. So is
+    // one found while «Прошлые» is the shown segment.
+    final bool shown = _speaks(context) && !covered;
 
     for (final OrderSummary order in changes.appeared) {
       _leaving.remove(order.id);
@@ -298,7 +319,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       return;
     }
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final bool shown = ordersListShown(context) && !leaving.quiet;
+    final bool shown = _speaks(context) && !leaving.quiet;
     setState(() {
       leaving.summary = ended!;
       _held.add(id);
@@ -392,8 +413,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     String message;
     try {
-      ref.invalidate(customerOrdersProvider(tab));
-      await ref.read(customerOrdersProvider(tab).future);
+      final AsyncNotifierProvider<CustomerOrdersFeed, OrdersFeed> feed =
+          customerOrdersProvider(tab);
+      if (!ref.read(feed).isLoading) {
+        ref.invalidate(feed);
+      }
+      await ref.read(feed.future);
       message = l10n.refreshDone;
     } on Object catch (error) {
       // The Customer may have left while the load was on its way.
@@ -422,7 +447,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final AsyncValue<OrdersFeed> past = ref.watch(
       customerOrdersProvider(OrdersTab.past),
     );
-    _observe(current, ref.watch(customerAccountProvider));
+    final String? account = ref.watch(customerAccountProvider);
+    _observe(current, account);
     if (_effects.isNotEmpty) {
       final List<VoidCallback> run = List<VoidCallback>.of(_effects);
       _effects.clear();
@@ -447,7 +473,20 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     );
     // Read here, not by a listener: the build is paused while the screen is
     // covered, and a listener would keep «Прошлые» loading under an order.
-    final int? pastTotal = past.value == null ? null : counts.past;
+    if (account != _countAccount) {
+      // Another account's count is not a rise; its first one is just there.
+      _countAccount = account;
+      _pastTotal = null;
+      _awaitingPast = true;
+    }
+    if (_awaitingPast && past.isLoading) {
+      // The count still carried from the other account.
+    } else {
+      _awaitingPast = false;
+    }
+    final int? pastTotal = past.value == null || _awaitingPast
+        ? null
+        : counts.past;
     if (pastTotal != null) {
       final int? was = _pastTotal;
       if (was != null && pastTotal > was) {
@@ -598,6 +637,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                                               glow: _glows[order.id] ?? 0,
                                               headline:
                                                   _headlines[order.id] ?? 0,
+                                              speaks: _speaks(context),
                                             ),
                                           ),
                                     ),
@@ -675,9 +715,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             : _PastList(
                 feed: feed,
                 controller: _scrolls[OrdersTab.past]!,
-                onRetryMore: () => ref
-                    .read(customerOrdersProvider(OrdersTab.past).notifier)
-                    .loadMore(),
+                reloadFailed: past.hasError && !past.isLoading,
+                onRetryMore: () => past.hasError
+                    ? unawaited(_refresh(OrdersTab.past))
+                    : ref
+                          .read(customerOrdersProvider(OrdersTab.past).notifier)
+                          .loadMore(),
               ),
       ),
     );
@@ -900,16 +943,22 @@ final class _MoreFailed extends _PastItem {
 
 /// The past orders under month headings, laid out lazily. A page that comes
 /// in at the end fades in over 250 ms; below the last order stand two
-/// skeletons while more is to come, or «Нет связи · Повторить».
+/// skeletons while more is to come, or «Нет связи · Повторить» when a page or
+/// the last reload failed.
 class _PastList extends ConsumerStatefulWidget {
   const _PastList({
     required this.feed,
     required this.controller,
+    required this.reloadFailed,
     required this.onRetryMore,
   });
 
   final OrdersFeed feed;
   final ScrollController controller;
+
+  /// The last reload failed and the rows are from before it: the end cannot
+  /// load on, so it offers the retry that reloads.
+  final bool reloadFailed;
   final VoidCallback onRetryMore;
 
   @override
@@ -935,7 +984,7 @@ class _PastListState extends ConsumerState<_PastList> {
       }
       items.add(_Order(order));
     }
-    if (feed.moreFailure != null) {
+    if (feed.moreFailure != null || (widget.reloadFailed && feed.hasMore)) {
       items.add(const _MoreFailed());
     } else if (feed.hasMore) {
       items

@@ -143,39 +143,49 @@ class _Segment extends StatelessWidget {
       excludeSemantics: true,
       onTap: onTap,
       label: count > 0 ? '$label, ${l10n.ordersCount(count)}' : label,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 48),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: InkWell(
-            key: ValueKey<String>(itemKey),
-            borderRadius: BorderRadius.circular(10),
-            onTap: onTap,
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: large ? 6 : 0,
-                ),
-                child: AnimatedDefaultTextStyle(
-                  duration: still
-                      ? Duration.zero
-                      : const Duration(milliseconds: 250),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: chosen ? Colors.white : KitColors.muted,
+      child: GestureDetector(
+        // The whole 48 px half takes the tap, the 4 px bands over and under
+        // the ink too.
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: InkWell(
+              key: ValueKey<String>(itemKey),
+              borderRadius: BorderRadius.circular(10),
+              onTap: onTap,
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: large ? 6 : 0,
                   ),
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: <Widget>[
-                      Text(label),
-                      if (count > 0)
-                        bumps == null
-                            ? number
-                            : _CountBump(bumps: bumps!, child: number),
-                    ],
+                  child: AnimatedDefaultTextStyle(
+                    duration: still
+                        ? Duration.zero
+                        : const Duration(milliseconds: 250),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: chosen ? Colors.white : KitColors.muted,
+                    ),
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: <Widget>[
+                        Text(label),
+                        // The bump stays mounted at 0, so the first order bumps.
+                        if (bumps != null)
+                          _CountBump(
+                            bumps: bumps!,
+                            child: count > 0 ? number : const SizedBox.shrink(),
+                          )
+                        else if (count > 0)
+                          number,
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -34,7 +34,7 @@ import 'order_rating_card.dart';
 import 'order_sections.dart';
 import 'question_pill.dart';
 
-/// One of the Customer's orders (`docs/09` section 20, drawings 29 to 29Ð·):
+/// One of the Customer's orders (`docs/09` section 20, drawings 29 to 29з):
 /// where it stands, the questions waiting for their answer, the lines with
 /// what was bought or replaced, the amounts and their kind, the payment, the
 /// address and the wish, the Courier once it is on the way; and, while the

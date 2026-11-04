@@ -385,6 +385,76 @@ void main() {
 
       expect(ids(), contains(idOf(3)));
     });
+
+    test(
+      'a drop while the feed reloads still leaves the order quiet',
+      () async {
+        await container.read(pastFeed.future);
+        final String id = idOf(3);
+        final Completer<void> hold = Completer<void>();
+        orders.holdList = hold;
+        container.invalidate(pastFeed);
+        await container.pump();
+
+        container.read(pastFeed.notifier).drop(id);
+        orders
+          ..holdList = null
+          ..summaries = <Map<String, Object?>>[
+            for (final Map<String, Object?> row in past(45))
+              if (row['id'] != id) row,
+          ];
+        hold.complete();
+        await container.read(pastFeed.future);
+
+        final OrdersFeed feed = container.read(pastFeed).requireValue;
+        expect(ids(), isNot(contains(id)));
+        expect(feed.dropped, <String>{id});
+      },
+    );
+
+    test('a drop after a failed reload still leaves the order quiet', () async {
+      await container.read(pastFeed.future);
+      final String id = idOf(3);
+      orders.listFailures[OrdersTab.past] = const NetworkFailure();
+      container.invalidate(pastFeed);
+      await expectLater(
+        container.read(pastFeed.future),
+        throwsA(isA<NetworkFailure>()),
+      );
+
+      container.read(pastFeed.notifier).drop(id);
+      orders.summaries = <Map<String, Object?>>[
+        for (final Map<String, Object?> row in past(45))
+          if (row['id'] != id) row,
+      ];
+      container.invalidate(pastFeed);
+      await container.read(pastFeed.future);
+
+      expect(container.read(pastFeed).requireValue.dropped, <String>{id});
+    });
+
+    test('a superseded reload that answers late changes nothing', () async {
+      await container.read(pastFeed.future);
+      await container.read(pastFeed.notifier).loadMore();
+      final Completer<void> hold = Completer<void>();
+      orders.holdList = hold;
+      container.invalidate(pastFeed);
+      await container.pump();
+
+      orders.holdList = null;
+      container.invalidate(pastFeed);
+      await container.read(pastFeed.future);
+      expect(container.read(pastFeed).requireValue.pages, 2);
+
+      hold.complete();
+      await Future<void>.delayed(Duration.zero);
+      orders.loads.clear();
+      container.invalidate(pastFeed);
+      await container.read(pastFeed.future);
+
+      expect(orders.loads, <String>['orders:past:1', 'orders:past:2']);
+      expect(container.read(pastFeed).requireValue.pages, 2);
+    });
   });
 
   test('a sure cancellation drops the order from Текущие', () async {

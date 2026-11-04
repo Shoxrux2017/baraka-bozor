@@ -104,6 +104,7 @@ bool ordersListShown(BuildContext context) =>
 class CurrentOrderCard extends ConsumerStatefulWidget {
   const CurrentOrderCard({
     required this.order,
+    required this.speaks,
     this.glow = 0,
     this.headline = 0,
     super.key,
@@ -112,6 +113,11 @@ class CurrentOrderCard extends ConsumerStatefulWidget {
   final OrderSummary order;
   final int glow;
   final int headline;
+
+  /// Whether the list speaks for «Текущие» now: shown, with «Текущие» its
+  /// shown segment. The words of a question that ran out follow it, as the
+  /// list's own announcements do.
+  final bool speaks;
 
   @override
   ConsumerState<CurrentOrderCard> createState() => _CurrentOrderCardState();
@@ -213,7 +219,7 @@ class _CurrentOrderCardState extends ConsumerState<CurrentOrderCard>
           return;
         }
         setState(() => _expired = true);
-        if (ordersListShown(context)) {
+        if (widget.speaks) {
           announce(
             context,
             AppLocalizations.of(context)
@@ -940,6 +946,23 @@ class _OrderRateStarsState extends State<OrderRateStars>
   int _chosen = 0;
   int _totalMs = _popMs;
 
+  /// Raised when the list was left during the pop, so the pop that ends
+  /// later opens nothing; and whether the rating screen is the one on top.
+  int _attempt = 0;
+  bool _opened = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Read first, so a change of the route or the tickers always calls this.
+    final bool shown = ordersListShown(context);
+    if (_chosen != 0 && !_opened && !shown) {
+      _attempt++;
+      _pop.reset();
+      _chosen = 0;
+    }
+  }
+
   @override
   void dispose() {
     _pop.dispose();
@@ -964,19 +987,28 @@ class _OrderRateStarsState extends State<OrderRateStars>
     if (_chosen != 0) {
       return;
     }
+    final int attempt = ++_attempt;
     setState(() => _chosen = stars);
     unawaited(HapticFeedback.lightImpact());
     if (!MediaQuery.disableAnimationsOf(context)) {
       _totalMs = _stepMs * (stars - 1) + _popMs;
       _pop.duration = Duration(milliseconds: _totalMs);
       await _pop.forward(from: 0);
-      if (!mounted) {
+      if (!mounted || attempt != _attempt) {
         return;
       }
     }
+    // The list was left meanwhile (another tab, another page): no rating
+    // screen opens over what the Customer looks at now (`DL-131`).
+    if (!ordersListShown(context)) {
+      setState(() => _chosen = 0);
+      return;
+    }
+    _opened = true;
     await context.push(
       AppPaths.customerOrderRate(widget.order.id, stars: stars),
     );
+    _opened = false;
     if (mounted) {
       setState(() => _chosen = 0);
     }
