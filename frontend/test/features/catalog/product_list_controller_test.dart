@@ -603,6 +603,98 @@ void main() {
       expect(favorites.requests, <String>['default|1']);
     });
 
+    test(
+      'withdraw, withdrawNotSold and put refuse while the list reloads',
+      () async {
+        await container.read(productListProvider(mine).future);
+        final Completer<void> gate = Completer<void>();
+        favorites.listHold = gate;
+        container.invalidate(productListProvider(mine));
+        await Future<void>.delayed(Duration.zero);
+        expect(container.read(productListProvider(mine)).isLoading, isTrue);
+
+        expect(listOf().withdraw(<String>{'f-2'}), isNull);
+        expect(listOf().withdrawNotSold(), isNull);
+        listOf().put(catalogProduct(id: 'f-new', isFavorite: true));
+
+        favorites.listHold = null;
+        gate.complete();
+        await container.read(productListProvider(mine).future);
+        expect(favState().items, hasLength(20));
+        expect(favState().total, 25);
+      },
+    );
+
+    test(
+      'every in-place edit counts, a later page and a refresh do not',
+      () async {
+        await container.read(productListProvider(mine).future);
+        expect(favState().edits, 0);
+
+        final ListWithdrawal w = listOf().withdraw(<String>{'f-2'})!;
+        expect(favState().edits, 1);
+        listOf().restore(w);
+        expect(favState().edits, 2);
+        listOf().put(catalogProduct(id: 'f-new', isFavorite: true));
+        expect(favState().edits, 3);
+        final ListWithdrawal v = listOf().withdraw(<String>{'f-3'})!;
+        listOf().settle(v);
+        expect(favState().edits, 5);
+
+        await listOf().loadMore();
+        expect(favState().edits, 5);
+        await listOf().quietRefresh();
+        expect(favState().edits, 5);
+      },
+    );
+
+    test('offline removals in a row come back in their order', () async {
+      favorites.rows = <CatalogProduct>[
+        for (final String id in <String>['a', 'b', 'c', 'd'])
+          catalogProduct(id: id, isFavorite: true),
+      ];
+      container.invalidate(productListProvider(mine));
+      await container.read(productListProvider(mine).future);
+      List<String> ids() => <String>[
+        for (final CatalogProduct p in favState().items) p.id,
+      ];
+
+      final ListWithdrawal b = listOf().withdraw(<String>{'b'})!;
+      final ListWithdrawal d = listOf().withdraw(<String>{'d'})!;
+      expect(ids(), <String>['a', 'c']);
+      listOf().restore(b);
+      listOf().restore(d);
+
+      expect(ids(), <String>['a', 'b', 'c', 'd']);
+    });
+
+    test('«Убрать все» restored after another removal settled loads every favourite', () async {
+      favorites.rows = <CatalogProduct>[
+        for (int i = 1; i <= 45; i++)
+          catalogProduct(id: 'f-$i', isFavorite: true, isAvailable: i <= 20),
+      ];
+      container.invalidate(productListProvider(mine));
+      await container.read(productListProvider(mine).future);
+      await listOf().loadMore();
+
+      final ListWithdrawal one = listOf().withdraw(<String>{'f-1'})!;
+      final ListWithdrawal all = listOf().withdrawNotSold()!;
+      await favorites.remove('f-1');
+      listOf().settle(one);
+      listOf().restore(all);
+      while (favState().hasMore) {
+        await listOf().loadMore();
+      }
+
+      final Set<String> ids = <String>{
+        for (final CatalogProduct p in favState().items) p.id,
+      };
+      expect(ids, <String>{
+        for (final CatalogProduct p in favorites.rows) p.id,
+      });
+      expect(favState().items, hasLength(44));
+    });
+
     test('two held withdrawals both stay out of a later page', () async {
       favorites.pageSize = 5;
       favorites.rows = <CatalogProduct>[

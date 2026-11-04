@@ -11,12 +11,12 @@ import '../../../core/network/paged.dart';
 import '../../../core/platform/clock.dart';
 import '../../../core/session/customer_account.dart';
 import '../../../core/state/loaded.dart';
+import '../../favorites/application/favorites_controllers.dart';
+import '../../favorites/domain/favorites_repository.dart';
 import '../data/catalog_api.dart';
 import '../data/catalog_repository_impl.dart';
 import '../domain/catalog.dart';
 import '../domain/catalog_repository.dart';
-import '../../favorites/application/favorites_controllers.dart';
-import '../../favorites/domain/favorites_repository.dart';
 
 final Provider<CatalogRepository> catalogRepositoryProvider =
     Provider<CatalogRepository>(
@@ -60,6 +60,7 @@ final class ProductListState {
     required this.at,
     this.unavailable = 0,
     this.perPage = 20,
+    this.edits = 0,
     this.loadingMore = false,
     this.moreFailure,
   });
@@ -73,6 +74,11 @@ final class ProductListState {
 
   /// How many products a page holds, as the server answered.
   final int perPage;
+
+  /// How many in-place edits (withdraw, restore, settle, put) the list has
+  /// had: a screen tells a change by an edit from a later page by it
+  /// (`DL-129`).
+  final int edits;
 
   /// The page to load next, or `null` at the end of the list.
   final int? nextPage;
@@ -101,7 +107,13 @@ final class ListWithdrawal {
   });
 
   final int generation;
-  final List<({int index, CatalogProduct product})> removed;
+
+  /// Each product with its place: the index it had, the product that stood
+  /// after it among those staying and the one before it.
+  final List<
+    ({int index, CatalogProduct product, String? before, String? after})
+  >
+  removed;
 
   /// True for the removal of every not-sold product, which ends the list.
   final bool endsList;
@@ -212,6 +224,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         at: current.at,
         unavailable: current.unavailable,
         perPage: current.perPage,
+        edits: current.edits,
         loadingMore: true,
       ),
     );
@@ -241,6 +254,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         at: current.at,
         unavailable: answer.unavailable - _heldNotSold,
         perPage: loaded.perPage,
+        edits: current.edits,
       );
     } on ApiFailure catch (failure) {
       next = ProductListState(
@@ -250,6 +264,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         at: current.at,
         unavailable: current.unavailable,
         perPage: current.perPage,
+        edits: current.edits,
         moreFailure: failure,
       );
     } catch (error, stackTrace) {
@@ -261,6 +276,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         at: current.at,
         unavailable: current.unavailable,
         perPage: current.perPage,
+        edits: current.edits,
         moreFailure: const UnexpectedFailure(),
       );
     }
@@ -308,8 +324,18 @@ class ProductListController extends AsyncNotifier<ProductListState> {
       at: s.at,
       unavailable: unavailable ?? s.unavailable,
       perPage: s.perPage,
+      edits: s.edits + 1,
       moreFailure: s.moreFailure,
     );
+  }
+
+  String? _firstStaying(List<CatalogProduct> items, Set<int> gone, int from) {
+    for (int i = from; i < items.length; i++) {
+      if (!gone.contains(i)) {
+        return items[i].id;
+      }
+    }
+    return null;
   }
 
   ListWithdrawal? _take(
@@ -317,16 +343,28 @@ class ProductListController extends AsyncNotifier<ProductListState> {
     bool Function(CatalogProduct) takes, {
     required bool endsList,
   }) {
-    final List<({int index, CatalogProduct product})> removed =
-        <({int index, CatalogProduct product})>[
-          for (int i = 0; i < current.items.length; i++)
-            if (takes(current.items[i])) (index: i, product: current.items[i]),
-        ];
-    if (removed.isEmpty) {
+    final List<int> taken = <int>[
+      for (int i = 0; i < current.items.length; i++)
+        if (takes(current.items[i])) i,
+    ];
+    if (taken.isEmpty) {
       return null;
     }
+    final Set<int> gone = taken.toSet();
+    final List<
+      ({int index, CatalogProduct product, String? before, String? after})
+    >
+    removed =
+        <({int index, CatalogProduct product, String? before, String? after})>[
+          for (final int i in taken)
+            (
+              index: i,
+              product: current.items[i],
+              before: _firstStaying(current.items, gone, i + 1),
+              after: i > 0 ? current.items[i - 1].id : null,
+            ),
+        ];
     final int notSold = removed.where((r) => !r.product.isAvailable).length;
-    final Set<int> gone = <int>{for (final r in removed) r.index};
     _dropInFlight();
     state = AsyncData<ProductListState>(
       _copy(
@@ -360,7 +398,8 @@ class ProductListController extends AsyncNotifier<ProductListState> {
   /// `null` when none of them is loaded (`DL-129`).
   ListWithdrawal? withdraw(Set<String> ids) {
     final ProductListState? current = state.value;
-    if (current == null) {
+    // A list being rebuilt answers a newer ask: the edit would be lost in it.
+    if (current == null || state.isLoading) {
       return null;
     }
     return _take(
@@ -374,7 +413,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
   /// them gone nothing is left to load (`DL-129`).
   ListWithdrawal? withdrawNotSold() {
     final ProductListState? current = state.value;
-    if (current == null || current.unavailable == 0) {
+    if (current == null || state.isLoading || current.unavailable == 0) {
       return null;
     }
     return _take(current, (CatalogProduct p) => !p.isAvailable, endsList: true);
@@ -389,16 +428,38 @@ class ProductListController extends AsyncNotifier<ProductListState> {
     }
     _dropInFlight();
     final List<CatalogProduct> items = <CatalogProduct>[...current.items];
+    final List<CatalogProduct> back = <CatalogProduct>[];
+    int indexOf(String? id) =>
+        id == null ? -1 : items.indexWhere((CatalogProduct p) => p.id == id);
     for (final r in w.removed) {
-      items.insert(r.index.clamp(0, items.length), r.product);
+      // A product the list holds again (hearted anew meanwhile) stays as is.
+      if (indexOf(r.product.id) >= 0) {
+        continue;
+      }
+      // Before the product that followed it, else after the one before it,
+      // else where it was: removals undone in any order keep their places.
+      final int beforeAt = indexOf(r.before);
+      final int afterAt = indexOf(r.after);
+      final int at = beforeAt >= 0
+          ? beforeAt
+          : afterAt >= 0
+          ? afterAt + 1
+          : r.index.clamp(0, items.length);
+      items.insert(at, r.product);
+      back.add(r.product);
     }
+    final int nextPage = items.length ~/ current.perPage + 1;
     state = AsyncData<ProductListState>(
       _copy(
         current,
         items: items,
-        total: current.total + w.productCount,
-        unavailable: current.unavailable + w.notSoldCount,
-        nextPage: w.endsList ? w.nextPage : _keep,
+        total: current.total + (w.endsList ? w.productCount : back.length),
+        unavailable:
+            current.unavailable +
+            (w.endsList
+                ? w.notSoldCount
+                : back.where((CatalogProduct p) => !p.isAvailable).length),
+        nextPage: w.endsList && w.nextPage != null ? nextPage : _keep,
       ),
     );
   }
@@ -426,6 +487,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
   void put(CatalogProduct product) {
     final ProductListState? current = state.value;
     if (current == null ||
+        state.isLoading ||
         current.items.any((CatalogProduct p) => p.id == product.id)) {
       return;
     }
@@ -490,6 +552,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
           at: ref.read(clockProvider)(),
           unavailable: last.unavailable,
           perPage: last.products.perPage,
+          edits: current.edits,
         ),
       );
     } on ApiFailure catch (failure, stackTrace) {
