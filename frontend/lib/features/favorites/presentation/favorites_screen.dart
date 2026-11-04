@@ -9,6 +9,7 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/routing/app_paths.dart';
+import '../../../core/session/customer_account.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/kit_app_bar.dart';
@@ -52,6 +53,9 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   /// The screen's route is the top one and its tickers are on, as
   /// `PeriodicRefresh` reads it.
   bool _shown = false;
+
+  /// A favourites list has been drawn on this screen for this account.
+  bool _drawn = false;
 
   @override
   void didChangeDependencies() {
@@ -301,13 +305,21 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     // A removal waiting for its bar is dropped when the account changes; the
     // provider is listened to while the screen stands so that it is, at once.
     ref.listen(favoriteRemovalsProvider, (_, _) {});
-    // The first page of a list comes while the screen is shown: it is read
-    // out (a list that comes while the tab is hidden waits for the tab).
+    // The first list this screen draws is read out when its first page comes
+    // while the screen is shown (one that comes while the tab is hidden waits
+    // for the tab). Another order of a list already drawn is announced by the
+    // grid, so it is not read out twice.
+    ref.listen(customerAccountProvider, (_, _) => _drawn = false);
     ref.listen(productListProvider(query), (
       AsyncValue<ProductListState>? before,
       AsyncValue<ProductListState> after,
     ) {
-      if (before?.value == null && after.value != null && _isShown) {
+      if (before?.value != null || after.value == null) {
+        return;
+      }
+      final bool first = !_drawn;
+      _drawn = true;
+      if (first && _isShown) {
         _announceList(query);
       }
     });

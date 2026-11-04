@@ -618,6 +618,29 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('a new order is read out once', (WidgetTester tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(accessibleNavigation: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      final SemanticsHandle handle = tester.ensureSemantics();
+      favorites.rows = <CatalogProduct>[
+        for (int i = 0; i < 24; i++) favorite('s-$i', 'Товар $i'),
+      ];
+      favorites.pageSize = 30;
+      await open(tester, locale: const Locale('ru'));
+      announced(tester);
+
+      await tester.tap(byKey('list-sort'));
+      await tester.pumpAndSettle();
+      await tester.tap(byKey('sort-price-asc'));
+      await tester.pumpAndSettle();
+
+      expect(announced(tester), <String>['Сначала дешевле: 24 товара']);
+      handle.dispose();
+    });
+
     testWidgets('with every product sold the announcement has no not-sold '
         'part', (WidgetTester tester) async {
       tester.platformDispatcher.accessibilityFeaturesTestValue =
