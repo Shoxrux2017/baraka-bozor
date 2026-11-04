@@ -81,9 +81,15 @@ void main() {
     double textScale = 1,
     Locale device = const Locale('ru'),
     TextScaler? scaler,
+    Map<String, Object?>? totals,
   }) async {
     orders.rows = <Map<String, Object?>>[
-      customerOrderJson(status: 'shopping', changeable: false, lines: lines),
+      customerOrderJson(
+        status: 'shopping',
+        changeable: false,
+        lines: lines,
+        totals: totals,
+      ),
     ];
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -124,6 +130,8 @@ void main() {
   }
 
   const String nbsp = '\u00A0';
+
+  Finder agreedLine(String id) => byKey('order-line-agreed-$id');
 
   bool bold(TextStyle? style) => style?.fontWeight == FontWeight.w700;
 
@@ -262,6 +270,44 @@ void main() {
     expect(richStarting('Согласитесь: 1 кг — '), findsOneWidget);
   });
 
+  testWidgets(
+    'after a reduced-quantity yes a price question names the quantity in force',
+    (WidgetTester tester) async {
+      await show(tester, <Object?>[
+        <String, Object?>{
+          ...asking(
+            'price_over_tolerance',
+            quantity: '2.000',
+            question: <String, Object?>{
+              'estimate_if_approved_uzs': 24750,
+              'change_if_approved_uzs': 9750,
+            },
+          ),
+          'agreed': <String, Object?>{
+            'customer_unit_price_uzs': null,
+            'quantity': '1.500',
+          },
+        },
+      ]);
+
+      expect(
+        tester
+            .widget<RichText>(richStarting('Согласитесь: '))
+            .text
+            .toPlainText(),
+        'Согласитесь: 1,5 кг — ≈$nbsp${MoneyFormat.uzs(24750, AppLanguage.ru)} '
+        '(${MoneyFormat.signed(9750)})',
+      );
+      expect(
+        find.descendant(
+          of: agreedLine(lineTomato),
+          matching: find.text('Вы согласились: 1,5 кг'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
   testWidgets('a change of zero leaves the bracket out', (
     WidgetTester tester,
   ) async {
@@ -356,17 +402,32 @@ void main() {
     },
   );
 
+  testWidgets('a card shown past the phone deadline still speaks its title', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    now = DateTime.utc(2026, 9, 28, 8, 30);
+    await show(tester, <Object?>[asking('price_over_tolerance')]);
+
+    // No chip, so the title alone is the header.
+    expect(find.bySemanticsLabel('Вопрос от сборщика'), findsOneWidget);
+    semantics.dispose();
+  });
+
   testWidgets(
-    'a question past its deadline on the phone stays expired after a reload',
+    'a question that ran out on the phone screen stays expired after a reload',
     (WidgetTester tester) async {
-      now = DateTime.utc(2026, 9, 28, 7, 56);
       await show(tester, <Object?>[asking('price_over_tolerance')]);
 
-      // The server still sends the question; the phone's clock says it is
-      // over.
+      // The Customer watches the card run out on the phone's clock.
+      await tester.pump(const Duration(minutes: 8, seconds: 59));
+      now = DateTime.utc(2026, 9, 28, 7, 55);
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
       expect(byKey('question-expired-$lineTomato'), findsOneWidget);
       expect(byKey('approve-$approvalOne'), findsNothing);
 
+      // The server still sends the question; the card does not come back.
       ProviderScope.containerOf(anywhere(tester))
           .invalidate(customerOrderProvider(orderOne));
       await tester.pumpAndSettle();
@@ -446,8 +507,6 @@ void main() {
 
     Map<String, Object?> after(List<Object?> lines) =>
         customerOrderJson(status: 'shopping', changeable: false, lines: lines);
-
-    Finder agreedLine(String id) => byKey('order-line-agreed-$id');
 
     Finder flash(String id) => find.descendant(
       of: byKey('order-line-$id'),
@@ -628,8 +687,195 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The question is settled, so the line no longer waits for an answer.
+      expect(find.text('Ждёт вашего ответа'), findsNothing);
       expect(orders.decisions, hasLength(1));
     });
+
+    Map<String, Object?> totalsOf(int goods, int total) => <String, Object?>{
+      'merchandise_subtotal_uzs': goods,
+      'service_fee_uzs': 5000,
+      'delivery_fee_uzs': 15000,
+      'total_uzs': total,
+      'total_kind': 'estimate',
+    };
+
+    double opacityOf(WidgetTester tester, String key) => tester
+        .widget<Opacity>(
+          find.ancestor(of: byKey(key), matching: find.byType(Opacity)).first,
+        )
+        .opacity;
+
+    testWidgets('the first no still fades the amounts', (
+      WidgetTester tester,
+    ) async {
+      await show(tester, <Object?>[
+        asking('price_over_tolerance'),
+      ], totals: totalsOf(27600, 47600));
+      orders.afterDecision = customerOrderJson(
+        status: 'shopping',
+        changeable: false,
+        lines: <Object?>[
+          orderLineJson(status: 'removed', removedReason: 'customer_rejected'),
+        ],
+        totals: totalsOf(0, 20000),
+      );
+
+      await tester.tap(byKey('reject-$approvalOne'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // The removed group now stands before the amounts; they keep their
+      // State and so fade from the old figure to the new one.
+      expect(byKey('order-removed-group'), findsOneWidget);
+      expect(opacityOf(tester, 'order-goods'), lessThan(1));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+      'a cancellation request appearing does not cut a folding card',
+      (WidgetTester tester) async {
+        await show(tester, <Object?>[asking('price_over_tolerance')]);
+        orders.afterDecision = customerOrderJson(
+          status: 'shopping',
+          changeable: false,
+          cancellationRequest: 'pending',
+          lines: <Object?>[
+            orderLineJson(
+              patch: <String, Object?>{
+                'agreed': <String, Object?>{
+                  'customer_unit_price_uzs': 21850,
+                  'quantity': null,
+                },
+              },
+            ),
+          ],
+        );
+
+        await tester.tap(byKey('approve-$approvalOne'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // The request card stands above the questions now, and the card still
+        // folds instead of vanishing.
+        expect(byKey('order-cancellation-request'), findsOneWidget);
+        expect(byKey('question-$approvalOne'), findsOneWidget);
+        expect(
+          tester.getSize(byKey('question-$approvalOne')).height,
+          greaterThan(0),
+        );
+        await tester.pumpAndSettle();
+        expect(byKey('question-$approvalOne'), findsNothing);
+      },
+    );
+
+    testWidgets('a refused card does not jump below the other open card', (
+      WidgetTester tester,
+    ) async {
+      const String lineTwo = '0192f0a0-0000-7000-8000-00000000c015';
+      final Map<String, Object?> second = asking(
+        'price_over_tolerance',
+        id: lineTwo,
+        approval: approvalTwo,
+      );
+      await show(tester, <Object?>[asking('price_over_tolerance'), second]);
+      orders.afterDecision = after(<Object?>[
+        orderLineJson(status: 'removed', removedReason: 'customer_rejected'),
+        second,
+      ]);
+
+      await tester.tap(byKey('reject-$approvalOne'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // The reload came inside the 260 ms fold: the refused card still folds
+      // above the other one, which does not move up past it.
+      expect(byKey('question-$approvalOne'), findsOneWidget);
+      expect(
+        tester.getTopLeft(byKey('question-$approvalTwo')).dy,
+        greaterThan(tester.getTopLeft(byKey('question-$approvalOne')).dy),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a sure no whose reload fails says the line was refused', (
+      WidgetTester tester,
+    ) async {
+      await show(tester, <Object?>[asking('price_over_tolerance')]);
+      orders.loadFailure = const NetworkFailure();
+
+      await tester.tap(byKey('reject-$approvalOne'));
+      await tester.pumpAndSettle();
+
+      expect(byKey('stale-line'), findsOneWidget);
+      expect(byKey('question-$approvalOne'), findsNothing);
+      expect(find.text('Ждёт вашего ответа'), findsNothing);
+      expect(
+        find.descendant(
+          of: byKey('order-line-$lineTomato'),
+          matching: find.text('Вы отказались — убрали'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'a yes no longer shows once its line is bought at another price',
+      (WidgetTester tester) async {
+        await show(tester, <Object?>[
+          asking(
+            'price_over_tolerance',
+            question: <String, Object?>{
+              'proposed_customer_unit_price_uzs': 16500,
+            },
+          ),
+        ]);
+        orders.afterDecision = after(<Object?>[
+          orderLineJson(status: 'purchased'),
+        ]);
+
+        await tester.tap(byKey('approve-$approvalOne'));
+        await tester.pumpAndSettle();
+
+        expect(byKey('question-$approvalOne'), findsNothing);
+        expect(agreedLine(lineTomato), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a cap yes then an automatic replacement says the quantity, not a replacement',
+      (WidgetTester tester) async {
+        await show(tester, <Object?>[asking('reduced_quantity')]);
+        orders.afterDecision = after(<Object?>[
+          orderLineJson(
+            patch: <String, Object?>{
+              'replacement': <String, Object?>{
+                'name_uz': 'Olcha pomidor',
+                'name_ru': 'Помидоры черри',
+              },
+              'agreed': <String, Object?>{
+                'customer_unit_price_uzs': null,
+                'quantity': '1.000',
+              },
+            },
+          ),
+        ]);
+
+        await tester.tap(byKey('approve-$approvalOne'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.descendant(
+            of: agreedLine(lineTomato),
+            matching: find.text('Вы согласились: 1 кг'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Вы согласились на замену'), findsNothing);
+      },
+    );
 
     testWidgets(
       'with reduced motion the answered card goes at once and nothing flashes',

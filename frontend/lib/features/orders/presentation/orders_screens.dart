@@ -347,6 +347,10 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       await ref.read(customerOrderProvider(orderId).future);
       message = l10n.refreshDone;
     } on Object catch (error) {
+      // The Customer may have left while the load was on its way.
+      if (!mounted) {
+        return;
+      }
       final String reason = error is NetworkFailure
           ? l10n.staleOffline
           : l10n.staleFailed;
@@ -511,7 +515,11 @@ class _OrderState extends ConsumerState<_Order> {
   final Map<String, GlobalKey> _keptKeys = <String, GlobalKey>{};
   final Map<String, GlobalKey> _droppedKeys = <String, GlobalKey>{};
 
-  final ScrollController _scroll = ScrollController();
+  /// The route's primary controller, so iOS's tap on the status bar still
+  /// scrolls the order to the top. Not created here, not disposed here.
+  ScrollController? _primary;
+
+  ScrollController get _scroll => _primary!;
 
   /// The questions that arrived while the order was open, by question id.
   final Map<String, _Arrival> _arrivals = <String, _Arrival>{};
@@ -531,6 +539,10 @@ class _OrderState extends ConsumerState<_Order> {
   /// the removed group, which is built after the answer.
   final Set<String> _refused = <String>{};
 
+  /// The question a settled no answered, by line, until the order loads again
+  /// and the line no longer carries it.
+  final Map<String, String> _no = <String, String>{};
+
   void _settled(
     String lineId,
     ApprovalDecision decision,
@@ -541,6 +553,9 @@ class _OrderState extends ConsumerState<_Order> {
       if (decision == ApprovalDecision.reject) {
         _yes.remove(lineId);
         _refused.add(lineId);
+        if (question != null) {
+          _no[lineId] = question.id;
+        }
       } else if (question != null) {
         _yes[lineId] = question;
       }
@@ -548,14 +563,18 @@ class _OrderState extends ConsumerState<_Order> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _scroll.addListener(_watchPill);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final ScrollController primary = PrimaryScrollController.of(context);
+    if (!identical(primary, _primary)) {
+      _primary?.removeListener(_watchPill);
+      _primary = primary..addListener(_watchPill);
+    }
   }
 
   @override
   void dispose() {
-    _scroll.dispose();
+    _primary?.removeListener(_watchPill);
     super.dispose();
   }
 
@@ -752,7 +771,6 @@ class _OrderState extends ConsumerState<_Order> {
   void _watchNews(CustomerOrder before) {
     final CustomerOrder order = widget.order;
     final _Anchor? anchor = identical(before, order) ? null : _anchorOf(before);
-    final DateTime now = ref.read(clockProvider)();
     final Set<String> known = <String>{
       for (final CustomerOrderLine line in before.lines)
         if (line.question != null) line.question!.id,
@@ -765,10 +783,8 @@ class _OrderState extends ConsumerState<_Order> {
         ...keptLines(order),
         ...droppedLines(order),
       ])
-        if (line.question != null &&
-            !known.contains(line.question!.id) &&
-            line.question!.expiresAt.isAfter(now))
-          line,
+        // The phone's clock takes nothing away: the server sends it open.
+        if (line.question != null && !known.contains(line.question!.id)) line,
     ];
     final List<CustomerOrderLine> bought = <CustomerOrderLine>[
       for (final CustomerOrderLine line in order.lines)
@@ -796,6 +812,16 @@ class _OrderState extends ConsumerState<_Order> {
   @override
   void didUpdateWidget(_Order oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // An answer shown until the order loads again goes once the line no
+    // longer carries the question it answered.
+    final Map<String, String?> carried = <String, String?>{
+      for (final CustomerOrderLine line in widget.order.lines)
+        line.id: line.question?.id,
+    };
+    _yes.removeWhere(
+      (String id, CustomerQuestion question) => carried[id] != question.id,
+    );
+    _no.removeWhere((String id, String question) => carried[id] != question);
     _watchNews(oldWidget.order);
     final Set<String> before = <String>{
       for (final CustomerOrderLine line in droppedLines(oldWidget.order))
@@ -832,117 +858,149 @@ class _OrderState extends ConsumerState<_Order> {
     final Widget info = OrderInfoSection(order: order, now: now);
     final bool onTheWay = order.status == OrderStatus.onTheWay;
 
+    // Every child has a key of its own, so one that comes or goes (the
+    // request card, the Courier, the removed group) never rebuilds those after
+    // it: their folds and their fades go on (`DL-130`).
+    Widget slot(String name, Widget child) =>
+        KeyedSubtree(key: ValueKey<String>('order-slot-$name'), child: child);
+    // The questions of the lines kept and dropped, in the order's own order,
+    // so a card that moves with its line does not jump past the others.
+    final Set<String> shown = <String>{
+      for (final CustomerOrderLine line in kept) line.id,
+      for (final CustomerOrderLine line in dropped) line.id,
+    };
+
     final Widget list = ListView(
       key: const ValueKey<String>('order'),
       controller: _scroll,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: <Widget>[
-        OrderStatusCard(order: order, now: now),
+        slot('status', OrderStatusCard(order: order, now: now)),
         if (request != null) ...<Widget>[
-          const SizedBox(height: 16),
-          CancellationRequestCard(request: request),
+          slot('request-gap', const SizedBox(height: 16)),
+          slot('request', CancellationRequestCard(request: request)),
         ],
         if (courier != null) ...<Widget>[
-          const SizedBox(height: 16),
-          CourierCard(courier: courier),
+          slot('courier-gap', const SizedBox(height: 16)),
+          slot('courier', CourierCard(courier: courier)),
         ],
         if (order.canRate) ...<Widget>[
-          const SizedBox(height: 16),
-          RateOrderCard(order: order),
+          slot('rating-gap', const SizedBox(height: 16)),
+          slot('rating', RateOrderCard(order: order)),
         ] else if (order.rating != null) ...<Widget>[
-          const SizedBox(height: 16),
-          RatedOrderCard(rating: order.rating!),
+          slot('rating-gap', const SizedBox(height: 16)),
+          slot('rating', RatedOrderCard(rating: order.rating!)),
         ],
-        if (onTheWay) ...<Widget>[const SizedBox(height: 16), info],
+        if (onTheWay) ...<Widget>[
+          slot('info-gap', const SizedBox(height: 16)),
+          slot('info', info),
+        ],
         // One child, so a line coming or going moves nothing below it and the
         // lines that follow keep their state while they fold (`DL-130`).
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            // The removed lines too: a no moves its line there while its card
-            // still folds (`DL-130`).
-            for (final CustomerOrderLine line in <CustomerOrderLine>[
-              ...kept,
-              ...dropped,
-            ])
-              _QuestionBlock(
-                key: ValueKey<String>(line.id),
-                orderId: order.id,
-                line: line,
-                language: language,
-                arrival: line.question == null
-                    ? null
-                    : _arrivals[line.question!.id],
-                onSettled: _settled,
-              ),
-          ],
+        slot(
+          'questions',
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              // The removed lines too: a no moves its line there while its
+              // card still folds (`DL-130`).
+              for (final CustomerOrderLine line in order.lines)
+                if (shown.contains(line.id))
+                  _QuestionBlock(
+                    key: ValueKey<String>(line.id),
+                    orderId: order.id,
+                    line: line,
+                    language: language,
+                    arrival: line.question == null
+                        ? null
+                        : _arrivals[line.question!.id],
+                    onSettled: _settled,
+                  ),
+            ],
+          ),
         ),
-        const SizedBox(height: 20),
-        Semantics(
-          header: true,
-          child: Text(
-            l10n.checkoutItems(kept.length),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: KitColors.ink,
+        slot('header-gap', const SizedBox(height: 20)),
+        slot(
+          'header',
+          Semantics(
+            header: true,
+            child: Text(
+              l10n.checkoutItems(kept.length),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: KitColors.ink,
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 4),
-        FoldingColumn<CustomerOrderLine>(
-          items: kept,
-          keyOf: (CustomerOrderLine line) => line.id,
-          itemBuilder: (BuildContext context, CustomerOrderLine line) =>
-              KeyedSubtree(
-                key: _rowKey(line.id, dropped: false),
-                child: OrderLineRow(
-                  line: line,
-                  orderStatus: order.status,
-                  flash: _flash[line.id] ?? 0,
-                  answeredYes: _yes[line.id],
-                ),
-              ),
-        ),
-        if (dropped.isNotEmpty)
-          Column(
-            key: const ValueKey<String>('order-removed-group'),
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              const SizedBox(height: 14),
-              Semantics(
-                header: true,
-                child: Text(
-                  l10n.orderRemovedGroup(dropped.length),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: KitColors.ink2,
+        slot('header-space', const SizedBox(height: 4)),
+        slot(
+          'kept',
+          FoldingColumn<CustomerOrderLine>(
+            items: kept,
+            keyOf: (CustomerOrderLine line) => line.id,
+            itemBuilder: (BuildContext context, CustomerOrderLine line) =>
+                KeyedSubtree(
+                  key: _rowKey(line.id, dropped: false),
+                  child: OrderLineRow(
+                    line: line,
+                    orderStatus: order.status,
+                    flash: _flash[line.id] ?? 0,
+                    answeredYes: _yes[line.id],
+                    refused: _no.containsKey(line.id),
                   ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              FoldingColumn<CustomerOrderLine>(
-                items: dropped,
-                keyOf: (CustomerOrderLine line) => line.id,
-                itemBuilder: (BuildContext context, CustomerOrderLine line) =>
-                    KeyedSubtree(
-                      key: _rowKey(line.id, dropped: true),
-                      child: OrderLineRow(
-                        line: line,
-                        orderStatus: order.status,
-                        flash: _flash[line.id] ?? 0,
-                      ),
-                    ),
-              ),
-            ],
           ),
-        const SizedBox(height: 12),
-        const Divider(height: 1, thickness: 1, color: KitColors.line),
-        const SizedBox(height: 12),
-        OrderAmounts(order: order),
-        if (!onTheWay) ...<Widget>[const SizedBox(height: 20), info],
+        ),
+        if (dropped.isNotEmpty)
+          slot(
+            'removed',
+            Column(
+              key: const ValueKey<String>('order-removed-group'),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                const SizedBox(height: 14),
+                Semantics(
+                  header: true,
+                  child: Text(
+                    l10n.orderRemovedGroup(dropped.length),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: KitColors.ink2,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                FoldingColumn<CustomerOrderLine>(
+                  items: dropped,
+                  keyOf: (CustomerOrderLine line) => line.id,
+                  itemBuilder: (BuildContext context, CustomerOrderLine line) =>
+                      KeyedSubtree(
+                        key: _rowKey(line.id, dropped: true),
+                        child: OrderLineRow(
+                          line: line,
+                          orderStatus: order.status,
+                          flash: _flash[line.id] ?? 0,
+                        ),
+                      ),
+                ),
+              ],
+            ),
+          ),
+        slot('divider-gap', const SizedBox(height: 12)),
+        slot(
+          'divider',
+          const Divider(height: 1, thickness: 1, color: KitColors.line),
+        ),
+        slot('amounts-gap', const SizedBox(height: 12)),
+        slot('amounts', OrderAmounts(order: order)),
+        if (!onTheWay) ...<Widget>[
+          slot('info-gap', const SizedBox(height: 20)),
+          slot('info', info),
+        ],
       ],
     );
     return Stack(
@@ -969,10 +1027,11 @@ class _OrderState extends ConsumerState<_Order> {
 /// answered: it is said while that question, or none, is on the line, and
 /// not under a question asked since.
 ///
-/// A question is answerable only while the phone's clock is before its
-/// `expiresAt`. At that instant the card turns expired at once, is announced
-/// and the order loads again; a question the clock has passed stays expired
-/// whatever a reload says (`DL-130`).
+/// The phone's clock expires only a card it showed running: at the card's
+/// `expiresAt` it turns expired at once, is announced and the order loads
+/// again, and stays expired whatever a reload says. A question first seen past
+/// that time while the server sends it open stays answerable, and the server
+/// judges (`DL-130` (6), `DL-59` (3)).
 ///
 /// A question the Customer's answer settled, the server answering `200`,
 /// takes no tap and folds away at once, with a haptic and an announcement,
@@ -1131,9 +1190,7 @@ class _QuestionBlockState extends ConsumerState<_QuestionBlock> {
                 ?.approvalId ==
             line.question!.id;
     final CustomerQuestion? sent = settled ? null : line.question;
-    final bool pastDeadline =
-        sent != null &&
-        (_expired.contains(sent.id) || !sent.expiresAt.isAfter(now));
+    final bool pastDeadline = sent != null && _expired.contains(sent.id);
     final CustomerQuestion? question = pastDeadline ? null : sent;
     _watchDeadline(question, now);
     final MutationState deciding = ref.watch(

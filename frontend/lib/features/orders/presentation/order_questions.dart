@@ -8,6 +8,7 @@ import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/network/idempotency_key.dart';
 import '../../../core/orders/order_values.dart';
 import '../../../core/orders/quantity_rules.dart';
+import '../../../core/platform/clock.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
@@ -15,6 +16,15 @@ import '../../../core/widgets/deadline_chip.dart';
 import '../../../core/widgets/product_image.dart';
 import '../application/customer_orders_controllers.dart';
 import '../domain/customer_orders.dart';
+
+Widget _title(String text) => Text(
+  text,
+  style: const TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w700,
+    color: KitColors.warningDark,
+  ),
+);
 
 /// A question about a line in the Customer's words, with its answers
 /// (`docs/09` section 23). After an answer that did not say what it did, it
@@ -38,6 +48,7 @@ class OrderQuestionCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final DateTime now = ref.watch(clockProvider)();
     final String unit = CatalogLabels.unit(l10n, line.unit);
     final String name = line.name(language);
     final QuestionReplacement? replacement = question.replacement;
@@ -134,16 +145,13 @@ class OrderQuestionCard extends ConsumerWidget {
               spacing: 8,
               runSpacing: 6,
               children: <Widget>[
-                ExcludeSemantics(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: KitColors.warningDark,
-                    ),
-                  ),
-                ),
+                // The chip speaks the header; with no chip beside it (the
+                // phone's clock is past the deadline) the title is the
+                // header's one node.
+                if (minutesLeft(question.expiresAt, now) > 0)
+                  ExcludeSemantics(child: _title(title))
+                else
+                  Semantics(container: true, child: _title(title)),
                 DeadlineChip(
                   deadline: question.expiresAt,
                   onCard: true,

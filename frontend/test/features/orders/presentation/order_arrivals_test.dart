@@ -1,5 +1,9 @@
 import 'package:baraka_bozor/core/formatting/money_format.dart';
 import 'package:baraka_bozor/core/localization/app_language.dart';
+
+import 'dart:async';
+
+import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
@@ -196,6 +200,28 @@ void main() {
     },
   );
 
+  testWidgets('a phone 40 minutes ahead can still answer a new question', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    await show(tester, <Object?>[orderLineJson(), ...breads(1)]);
+
+    // The phone says 08:35 UTC; the question's deadline, 07:55, is past on it.
+    now = DateTime.utc(2026, 9, 28, 8, 35);
+    await reload(tester, <Object?>[asking('substitution'), ...breads(1)]);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
+
+    // The server sends it open: it is answerable, arrives like any other and
+    // its header still speaks the title (no chip stands beside it).
+    expect(byKey('approve-$approvalOne'), findsOneWidget);
+    expect(byKey('reject-$approvalOne'), findsOneWidget);
+    expect(byKey('question-expired-$lineTomato'), findsNothing);
+    expect(announced(tester), <String>[arrived]);
+    expect(find.bySemanticsLabel('Замена'), findsOneWidget);
+    semantics.dispose();
+  });
+
   testWidgets(
     'a question above what is read keeps it in place and shows the pill',
     (WidgetTester tester) async {
@@ -360,6 +386,47 @@ void main() {
       expect(flashAlpha(tester, breadId(0)), greaterThan(0));
       expect(announced(tester), <String>['Сборщик купил товаров: 2']);
     });
+  });
+
+  testWidgets('leaving the screen before a failed pull ends raises nothing', (
+    WidgetTester tester,
+  ) async {
+    await show(tester, <Object?>[orderLineJson(), ...breads(1)]);
+    orders.loadHold = Completer<void>();
+    orders.loadFailure = const NetworkFailure();
+
+    await tester.fling(byKey('order'), const Offset(0, 400), 1000);
+    await tester.pump(const Duration(seconds: 1));
+    GoRouter.of(anywhere(tester)).pop();
+    await tester.pumpAndSettle();
+    orders.loadHold!.complete();
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the list scrolls with the primary controller of its route', (
+    WidgetTester tester,
+  ) async {
+    await show(tester, baseLines());
+    await tester.drag(byKey('order'), const Offset(0, -900));
+    await tester.pumpAndSettle();
+    expect(pixels(tester), greaterThan(0));
+
+    // What iOS's tap on the status bar drives.
+    final ScrollController primary = PrimaryScrollController.of(
+      tester.element(byKey('order')),
+    );
+    expect(primary.hasClients, isTrue);
+    unawaited(
+      primary.animateTo(
+        0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(pixels(tester), 0);
   });
 
   testWidgets('the first load is not news', (WidgetTester tester) async {

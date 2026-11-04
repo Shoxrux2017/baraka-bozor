@@ -484,13 +484,16 @@ String agreedText(
 /// was ordered or bought, a tag for its state, and the amount at the right.
 /// Under them it says what the Customer agreed to: from the line's `agreed`,
 /// or, until the order loads again, from [answeredYes], the question the
-/// Customer just said yes to. [flash] washes the row when it changes.
+/// Customer just said yes to; a [refused] line, whose no is settled but not
+/// yet loaded, wears the refused tag and no waiting one. [flash] washes the
+/// row when it changes.
 class OrderLineRow extends StatelessWidget {
   const OrderLineRow({
     required this.line,
     required this.orderStatus,
     this.flash = 0,
     this.answeredYes,
+    this.refused = false,
     super.key,
   });
 
@@ -498,6 +501,7 @@ class OrderLineRow extends StatelessWidget {
   final OrderStatus orderStatus;
   final int flash;
   final CustomerQuestion? answeredYes;
+  final bool refused;
 
   @override
   Widget build(BuildContext context) {
@@ -545,7 +549,10 @@ class OrderLineRow extends StatelessWidget {
       amount = estimate
           ? l10n.cartLineEstimate(sum(line.lineTotalUzs))
           : sum(line.lineTotalUzs);
-      if (line.question != null) {
+      if (refused) {
+        tag = _removedTag(l10n, ItemRemovedReason.customerRejected);
+      } else if (line.question != null && answeredYes == null) {
+        // A settled question is no longer waiting for an answer.
         tag = _Tag(
           text: l10n.lineTagWaiting,
           color: KitColors.warningDark,
@@ -576,12 +583,22 @@ class OrderLineRow extends StatelessWidget {
     );
     final bool largeText =
         textScaleAt(MediaQuery.textScalerOf(context), 14) > 1.3;
-    final AgreedTerms? agreed =
-        line.agreed ??
-        (answeredYes == null ? null : agreedTermsOf(answeredYes!));
-    final String? agreedWords = removed || agreed == null
+    // The yes just given on top of what an earlier one put in force.
+    final AgreedTerms? held = line.agreed;
+    final AgreedTerms? given = answeredYes == null
         ? null
-        : (replacement != null || answeredYes?.type == ApprovalType.substitution
+        : agreedTermsOf(answeredYes!);
+    final AgreedTerms? agreed = given == null
+        ? held
+        : AgreedTerms(
+            customerUnitPriceUzs:
+                given.customerUnitPriceUzs ?? held?.customerUnitPriceUzs,
+            quantity: given.quantity ?? held?.quantity,
+          );
+    final String? agreedWords = removed || refused || agreed == null
+        ? null
+        : (answeredYes?.type == ApprovalType.substitution ||
+                  (replacement != null && agreed.customerUnitPriceUzs != null)
               ? l10n.orderAgreedReplacement
               : l10n.orderAgreed(agreedText(l10n, line, agreed, language)));
 
@@ -1347,7 +1364,10 @@ class OrderFooter extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+          // Not the route's primary: that is the order's list's, which a tap
+          // on iOS's status bar scrolls (`DL-130`).
           child: SingleChildScrollView(
+            primary: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
