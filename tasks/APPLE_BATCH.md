@@ -403,3 +403,5 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stage 12, minor: the read-only rated stars start at the text edge (the drawing shifts them 3 px left), like the tappable ones (`DL-131` (11)). Ruling: cosmetic.
 - Stage 12, minor: the covered-cancel test keeps the feed loading under the cover with a `container.listen`; without it the paused feed reloads on return, a path the drop also keeps quiet. Ruling: both paths covered.
 - Stage 12, minor: the past count's bump is counted in `build` from rises of the total, guarded by the last total. Ruling: deterministic; kept.
+- Stage 12 re-review, out of scope: a drop while the feed reloads or failed keeps the id as given, and the reload's filter compares ids case-sensitively. Ruling: the server sends lower-case UUIDs and the order page drops the id it was opened with; harmless today.
+- Stage 12 re-review, minor: the reset of the past count on another account has no test, and a first build before the new account's «Прошлые» starts loading may compare the carried count once. Ruling: at most one false bump right after an account switch; cosmetic.
