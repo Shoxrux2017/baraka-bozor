@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/accessibility/announce.dart';
 import '../../../core/formatting/server_text.dart';
+import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
 import '../../../core/localization/interface_language.dart';
@@ -22,6 +23,7 @@ import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/periodic_refresh.dart';
+import '../../../core/widgets/stale_data_line.dart';
 import '../../cart/presentation/cart_widgets.dart';
 import '../application/customer_orders_controllers.dart';
 import '../domain/customer_orders.dart';
@@ -287,11 +289,36 @@ class _Empty extends StatelessWidget {
 /// address and the wish, the Courier once it is on the way; and, while the
 /// server allows it, the way to edit the order, to cancel it, or to ask an
 /// Operator to cancel it. An open order is kept current while shown
-/// (`DL-54` (15)).
-class OrderScreen extends ConsumerWidget {
+/// (`DL-54` (15)). Pulling refreshes; a refresh that fails keeps the order
+/// under a line that says when it is from (`DL-130`).
+class OrderScreen extends ConsumerStatefulWidget {
   const OrderScreen({required this.orderId, super.key});
 
   final String orderId;
+
+  @override
+  ConsumerState<OrderScreen> createState() => _OrderScreenState();
+}
+
+class _OrderScreenState extends ConsumerState<OrderScreen> {
+  String get orderId => widget.orderId;
+
+  /// When the order on screen was loaded, by the phone's clock.
+  DateTime? _shownAt;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual<AsyncValue<CustomerOrder>>(
+      customerOrderProvider(orderId),
+      (AsyncValue<CustomerOrder>? _, AsyncValue<CustomerOrder> next) {
+        if (next.hasValue && !next.hasError && !next.isLoading) {
+          _shownAt = ref.read(clockProvider)();
+        }
+      },
+      fireImmediately: true,
+    );
+  }
 
   static const Set<OrderStatus> _ended = <OrderStatus>{
     OrderStatus.completed,
@@ -305,9 +332,32 @@ class OrderScreen extends ConsumerWidget {
       !order.isLoading &&
       !_ended.contains(order.value!.status);
 
+  Future<void> _refresh() async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    String message;
+    try {
+      ref
+        ..invalidate(customerOrderProvider(orderId))
+        ..invalidate(customerOrdersProvider);
+      await ref.read(customerOrderProvider(orderId).future);
+      message = l10n.refreshDone;
+    } on Object catch (error) {
+      final String reason = error is NetworkFailure
+          ? l10n.staleOffline
+          : l10n.staleFailed;
+      final DateTime? at = _shownAt;
+      message =
+          ref.read(customerOrderProvider(orderId)).value == null || at == null
+          ? reason
+          : l10n.staleSpoken(reason, TashkentTime.time(at));
+    }
+    if (mounted) {
+      announce(context, message);
+    }
+  }
+
   Future<void> _cancel(
-    BuildContext context,
-    WidgetRef ref, {
+    BuildContext context, {
     required int orderNumber,
     required bool request,
   }) async {
@@ -329,11 +379,16 @@ class OrderScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<CustomerOrder> order = ref.watch(
       customerOrderProvider(orderId),
     );
+    final CustomerOrder? shown = order.value;
+    final Object? error = order.hasError ? order.error : null;
+    final ApiFailure? failure = error == null
+        ? null
+        : (error is ApiFailure ? error : const UnexpectedFailure());
     final MutationState cancelling = ref.watch(orderCancelProvider(orderId));
     // The decisions sent without a sure answer last while the order is shown.
     ref.watch(unansweredDecisionsProvider(orderId));
@@ -345,31 +400,23 @@ class OrderScreen extends ConsumerWidget {
             ? ''
             : l10n.customerOrderTitle(order.value!.orderNumber),
       ),
-      bottomNavigationBar: order.when<Widget?>(
-        skipLoadingOnRefresh: !order.hasError,
-        data: (CustomerOrder order) => OrderFooter.shows(order, cancelling)
-            ? OrderFooter(
-                order: order,
-                cancelling: cancelling,
-                onEdit: () =>
-                    context.push(AppPaths.customerOrderEdit(order.id)),
-                onCancel: () => _cancel(
-                  context,
-                  ref,
-                  orderNumber: order.orderNumber,
-                  request: false,
-                ),
-                onRequestCancel: () => _cancel(
-                  context,
-                  ref,
-                  orderNumber: order.orderNumber,
-                  request: true,
-                ),
-              )
-            : null,
-        error: (Object error, StackTrace _) => null,
-        loading: () => null,
-      ),
+      bottomNavigationBar: shown != null && OrderFooter.shows(shown, cancelling)
+          ? OrderFooter(
+              order: shown,
+              cancelling: cancelling,
+              onEdit: () => context.push(AppPaths.customerOrderEdit(shown.id)),
+              onCancel: () => _cancel(
+                context,
+                orderNumber: shown.orderNumber,
+                request: false,
+              ),
+              onRequestCancel: () => _cancel(
+                context,
+                orderNumber: shown.orderNumber,
+                request: true,
+              ),
+            )
+          : null,
       body: SafeArea(
         child: Column(
           children: <Widget>[
@@ -382,20 +429,40 @@ class OrderScreen extends ConsumerWidget {
                 onRefresh: () => ref
                   ..invalidate(customerOrderProvider(orderId))
                   ..invalidate(customerOrdersProvider),
-                child: order.when(
-                  skipLoadingOnRefresh: !order.hasError,
-                  data: (CustomerOrder order) => _Order(order: order),
-                  error: (Object error, StackTrace _) => Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: LoadFailure(
-                      error: error,
-                      onRetry: () =>
-                          ref.invalidate(customerOrderProvider(orderId)),
-                    ),
-                  ),
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                ),
+                child: shown == null
+                    ? (error == null
+                          ? const Center(child: CircularProgressIndicator())
+                          : Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: LoadFailure(
+                                error: error,
+                                onRetry: () => ref.invalidate(
+                                  customerOrderProvider(orderId),
+                                ),
+                              ),
+                            ))
+                    : Column(
+                        children: <Widget>[
+                          if (failure != null)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                              child: StaleDataLine(
+                                key: const ValueKey<String>('stale-line'),
+                                failure: failure,
+                                shownAt: _shownAt,
+                                onRetry: _refresh,
+                                busy: order.isLoading,
+                              ),
+                            ),
+                          Expanded(
+                            child: RefreshIndicator(
+                              color: KitColors.primary,
+                              onRefresh: _refresh,
+                              child: _Order(order: shown),
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ),
           ],
@@ -427,6 +494,7 @@ class _Order extends ConsumerWidget {
 
     return ListView(
       key: const ValueKey<String>('order'),
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: <Widget>[
         OrderStatusCard(order: order, now: now),
