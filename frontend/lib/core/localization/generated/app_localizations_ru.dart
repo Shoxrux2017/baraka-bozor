@@ -4091,6 +4091,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String orderRemovedGroup(int count) {
+    return 'Убрали из заказа · $count';
+  }
+
+  @override
   String get orderCanStillChange =>
       'Пока сборщик не начал, заказ можно изменить или отменить.';
 

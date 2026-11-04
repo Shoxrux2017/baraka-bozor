@@ -37,12 +37,27 @@ const ColorFilter _grey = ColorFilter.matrix(<double>[
   0, 0, 0, 1, 0,
 ]);
 
-/// The lines the Customer still orders: their own removals are gone from
-/// what they see.
-List<CustomerOrderLine> shownLines(CustomerOrder order) => <CustomerOrderLine>[
+/// The lines the Customer still orders: those not removed, and those an
+/// order's cancellation took (`DL-130`). The header and the amounts count
+/// these.
+List<CustomerOrderLine> keptLines(CustomerOrder order) => <CustomerOrderLine>[
   for (final CustomerOrderLine line in order.lines)
-    if (line.removedReason != ItemRemovedReason.customerRemoved) line,
+    if (!line.removed || line.removedReason == ItemRemovedReason.orderCancelled)
+      line,
 ];
+
+/// The lines taken out of a living order: not in the shop, refused, not
+/// answered in time, or removed by the operator. The Customer's own removals
+/// are in neither list.
+List<CustomerOrderLine> droppedLines(CustomerOrder order) =>
+    <CustomerOrderLine>[
+      for (final CustomerOrderLine line in order.lines)
+        if (line.removedReason == ItemRemovedReason.unavailable ||
+            line.removedReason == ItemRemovedReason.customerRejected ||
+            line.removedReason == ItemRemovedReason.approvalExpired ||
+            line.removedReason == ItemRemovedReason.operatorRemoved)
+          line,
+    ];
 
 /// A white card with the kit's shadow.
 class _Card extends StatelessWidget {
@@ -466,11 +481,12 @@ class OrderLineRow extends StatelessWidget {
     }
 
     final String subtitle;
-    final String amount;
+    // A removed line has no amount to show.
+    final String? amount;
     _Tag? tag;
     if (removed) {
       subtitle = '${QuantityRules.display(line.quantity)} $unit';
-      amount = sum(0);
+      amount = null;
       tag = _removedTag(l10n, removedReason);
     } else if (billedPrice != null) {
       final String billed =
@@ -515,77 +531,91 @@ class OrderLineRow extends StatelessWidget {
       );
     }
 
+    const TextStyle amountStyle = TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w700,
+      color: KitColors.ink,
+    );
+    final bool largeText =
+        textScaleAt(MediaQuery.textScalerOf(context), 14) > 1.3;
+
+    Widget text({required bool sumUnder}) => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          line.name(language),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: removed ? KitColors.muted : KitColors.ink,
+            decoration: removed ? TextDecoration.lineThrough : null,
+          ),
+        ),
+        Text(subtitle, style: small),
+        ?tag,
+        if (replacement != null)
+          Text(
+            l10n.itemReplacedWith(replacement.name(language)),
+            key: ValueKey<String>('order-line-replacement-${line.id}'),
+            style: small,
+          ),
+        if (open && line.substitutionPolicy != SubstitutionPolicy.allowSimilar)
+          Text(
+            OrderLabels.substitution(l10n, line.substitutionPolicy),
+            style: small,
+          ),
+        if (open && note != null) Text('«$note»', style: small),
+        if (sumUnder && amount != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(amount, maxLines: 1, style: amountStyle),
+          ),
+      ],
+    );
+
     return Padding(
       key: ValueKey<String>('order-line-${line.id}'),
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: KitColors.card,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: SizedBox.square(
-              dimension: 48,
-              child: Center(child: picture),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  line.name(language),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: removed ? KitColors.muted : KitColors.ink,
-                    decoration: removed ? TextDecoration.lineThrough : null,
-                  ),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          // The sum stands beside the name while it fits the 2/5 of the row
+          // left of the picture column, and under the name when it does not
+          // or the text is large; it is never scaled down (`DL-130`).
+          final double beside = (constraints.maxWidth - 60 - 8) * 0.4;
+          final bool sumBeside =
+              amount != null &&
+              !largeText &&
+              textWidth(context, amount, amountStyle) <= beside;
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: KitColors.card,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                Text(subtitle, style: small),
-                ?tag,
-                if (replacement != null)
-                  Text(
-                    l10n.itemReplacedWith(replacement.name(language)),
-                    key: ValueKey<String>('order-line-replacement-${line.id}'),
-                    style: small,
-                  ),
-                if (open &&
-                    line.substitutionPolicy != SubstitutionPolicy.allowSimilar)
-                  Text(
-                    OrderLabels.substitution(l10n, line.substitutionPolicy),
-                    style: small,
-                  ),
-                if (open && note != null) Text('«$note»', style: small),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            flex: 2,
-            child: Align(
-              alignment: AlignmentDirectional.topEnd,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  amount,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: removed ? KitColors.muted : KitColors.ink,
-                  ),
+                child: SizedBox.square(
+                  dimension: 48,
+                  child: Center(child: picture),
                 ),
               ),
-            ),
-          ),
-        ],
+              const SizedBox(width: 12),
+              Expanded(flex: 3, child: text(sumUnder: !sumBeside)),
+              if (sumBeside) ...<Widget>[
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: Align(
+                    alignment: AlignmentDirectional.topEnd,
+                    child: Text(amount, maxLines: 1, style: amountStyle),
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -673,9 +703,7 @@ class OrderAmounts extends StatelessWidget {
       children: <Widget>[
         SummaryAmountRow(
           valueKey: 'order-goods',
-          label: l10n.cartGoods(
-            order.lines.where((CustomerOrderLine line) => !line.removed).length,
-          ),
+          label: l10n.cartGoods(keptLines(order).length),
           value: approx(order.merchandiseSubtotalUzs),
         ),
         SummaryAmountRow(

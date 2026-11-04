@@ -20,6 +20,7 @@ import '../../../core/widgets/active_mode_bar.dart';
 import '../../../core/widgets/customer_tab_bar.dart';
 import '../../../core/theme/kit_colors.dart';
 import '../../../core/widgets/failure_message.dart';
+import '../../../core/widgets/fold.dart';
 import '../../../core/widgets/kit_app_bar.dart';
 import '../../../core/widgets/list_widgets.dart';
 import '../../../core/widgets/periodic_refresh.dart';
@@ -488,7 +489,8 @@ class _Order extends ConsumerWidget {
     final DateTime now = ref.watch(clockProvider)();
     final CustomerCancellationRequest? request = order.cancellationRequest;
     final OrderCourier? courier = order.courier;
-    final List<CustomerOrderLine> lines = shownLines(order);
+    final List<CustomerOrderLine> kept = keptLines(order);
+    final List<CustomerOrderLine> dropped = droppedLines(order);
     final Widget info = OrderInfoSection(order: order, now: now);
     final bool onTheWay = order.status == OrderStatus.onTheWay;
 
@@ -514,13 +516,25 @@ class _Order extends ConsumerWidget {
           RatedOrderCard(rating: order.rating!),
         ],
         if (onTheWay) ...<Widget>[const SizedBox(height: 16), info],
-        for (final CustomerOrderLine line in lines)
-          _QuestionBlock(orderId: order.id, line: line, language: language),
+        // One child, so a line coming or going moves nothing below it and the
+        // lines that follow keep their state while they fold (`DL-130`).
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            for (final CustomerOrderLine line in kept)
+              _QuestionBlock(
+                key: ValueKey<String>(line.id),
+                orderId: order.id,
+                line: line,
+                language: language,
+              ),
+          ],
+        ),
         const SizedBox(height: 20),
         Semantics(
           header: true,
           child: Text(
-            l10n.checkoutItems(lines.length),
+            l10n.checkoutItems(kept.length),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -529,8 +543,38 @@ class _Order extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 4),
-        for (final CustomerOrderLine line in lines)
-          OrderLineRow(line: line, orderStatus: order.status),
+        FoldingColumn<CustomerOrderLine>(
+          items: kept,
+          keyOf: (CustomerOrderLine line) => line.id,
+          itemBuilder: (BuildContext context, CustomerOrderLine line) =>
+              OrderLineRow(line: line, orderStatus: order.status),
+        ),
+        if (dropped.isNotEmpty)
+          Column(
+            key: const ValueKey<String>('order-removed-group'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const SizedBox(height: 14),
+              Semantics(
+                header: true,
+                child: Text(
+                  l10n.orderRemovedGroup(dropped.length),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: KitColors.ink2,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              FoldingColumn<CustomerOrderLine>(
+                items: dropped,
+                keyOf: (CustomerOrderLine line) => line.id,
+                itemBuilder: (BuildContext context, CustomerOrderLine line) =>
+                    OrderLineRow(line: line, orderStatus: order.status),
+              ),
+            ],
+          ),
         const SizedBox(height: 12),
         const Divider(height: 1, thickness: 1, color: KitColors.line),
         const SizedBox(height: 12),
@@ -555,6 +599,7 @@ class _QuestionBlock extends ConsumerStatefulWidget {
     required this.orderId,
     required this.line,
     required this.language,
+    super.key,
   });
 
   final String orderId;

@@ -6842,6 +6842,12 @@ abstract class AppLocalizations {
   /// **'{stage}-bosqich, 4 tadan: {label}'**
   String orderStageOf(int stage, String label);
 
+  /// No description provided for @orderRemovedGroup.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmadan olib tashlandi · {count}'**
+  String orderRemovedGroup(int count);
+
   /// No description provided for @orderCanStillChange.
   ///
   /// In uz, this message translates to:

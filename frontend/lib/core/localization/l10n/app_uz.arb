@@ -2727,6 +2727,14 @@
       }
     }
   },
+  "orderRemovedGroup": "Buyurtmadan olib tashlandi · {count}",
+  "@orderRemovedGroup": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "orderCanStillChange": "Yig'uvchi boshlamaguncha buyurtmani o'zgartirish yoki bekor qilish mumkin.",
   "orderLineBoughtKit": "Sotib olindi: {quantity} × {price}",
   "@orderLineBoughtKit": {

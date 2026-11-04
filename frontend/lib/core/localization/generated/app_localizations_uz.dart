@@ -4043,6 +4043,11 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String orderRemovedGroup(int count) {
+    return 'Buyurtmadan olib tashlandi · $count';
+  }
+
+  @override
   String get orderCanStillChange =>
       'Yig\'uvchi boshlamaguncha buyurtmani o\'zgartirish yoki bekor qilish mumkin.';
 
