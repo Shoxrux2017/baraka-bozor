@@ -27,14 +27,15 @@ final class FavoriteController extends Controller
     public function index(ListFavoritesRequest $request): JsonResponse
     {
         $prices = CustomerPriceCalculator::current();
-        $query = CustomerFavorites::own($this->customer($request))
+        $customer = $this->customer($request);
+        $query = CustomerFavorites::own($customer)
             ->with(['product.image', 'product.category'])
-            ->orderByDesc('created_at')
-            ->orderByDesc('id');
+            ->tap(static fn ($q) => CustomerFavorites::ordered($q, $request->sort()));
 
         return PaginatedResponse::of(
             $query->paginate($request->perPage(), ['*'], 'page', $request->page()),
             static fn (CustomerFavorite $favorite): array => (new FavoriteProductResource($favorite->product, $prices))->resolve($request),
+            ['unavailable_count' => CustomerFavorites::unavailable($customer)->count()],
         );
     }
 
@@ -48,6 +49,13 @@ final class FavoriteController extends Controller
     public function destroy(EmptyBodyRequest $request, string $product, ChangeFavorites $change): Response
     {
         $change->remove($this->customer($request), $product);
+
+        return response()->noContent();
+    }
+
+    public function destroyUnavailable(EmptyBodyRequest $request, ChangeFavorites $change): Response
+    {
+        $change->removeUnavailable($this->customer($request));
 
         return response()->noContent();
     }

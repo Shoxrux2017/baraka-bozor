@@ -1939,3 +1939,18 @@ Stages 8 and 9 of `tasks/APPLE_BATCH.md` code the fifteen items of «Реком�
 13. **The reader** (`search-8`). Sections, ×, «Очистить» and the field's clear button have their own names; found and nothing-found are announced once.
 
 Deviations from the batch's wording that follow the test pages: the tile in two lines (5), headings without «·» (6), × without undo and only «Очистить» undoable (11). The order options of «Все товары» already read «выбрано» since stage 7, so `all-5` needed no change there.
+
+## DL-129 — The Apple batch, stage 10: favourites (2026-11-04, agent)
+
+Stage 10 of `tasks/APPLE_BATCH.md` codes the favourites test page (`fav-*`). The decisions as the plan states them:
+
+1. **The server orders the list.** `GET /customer/favorites` takes `sort` (`default`, `price_asc`, `price_desc`, the catalog's `ProductSort`). The sold favourites come first and the not sold last, so that one heading groups them; inside each group `default` is newest first, which is this list's own "default", and a price order uses the product's `market_price_uzs`, as the catalog does. "Sold" is one rule for the flag, the order, the count and the removal: the product is among `CustomerCatalogListing::visibleProducts()`. The order uses subqueries on `product_id`, never a join that could repeat a row.
+2. **`meta.unavailable_count`** beside `pagination`, for this list only: the number of not sold favourites over the whole list, so the heading is right on every page.
+3. **One bulk removal**, `DELETE /customer/favorites/unavailable`. It also takes the not sold favourites not yet loaded; a product that stops being sold during the 5 s undo bar goes with them. It is registered before `{product}`.
+4. **The client list is a `ProductListQuery`**, like the other product lists, so paging, the failed page and the end rows are the ones already built.
+5. **The grid's motion rule.** A card leaving melts and then leaves the list; a card whose place changed glides; a card not drawn before arrives; with reduced motion nothing glides (the exact times are in the stage plan).
+6. **The removal is sent when its undo bar closes**, and first when the list is asked for again, so the server never answers a list that still holds a row the Customer removed.
+7. **A quiet refresh when the tab shows**: the list is asked again without a skeleton, so a product that stopped being sold shows as such.
+8. **The haptic stays with reduced motion**: it is not motion.
+9. **The empty state's row is the home's `RecommendedRow`**: its cards with «+», wider than the test page's, so the cart stepper works as everywhere else.
+10. **Reproduction.** The emulator had too little free memory (3.7 GB commit free), so the first red tests of Task 5 and Task 6 on main's code stand as the reproduction of `fav-1` and `fav-3`.

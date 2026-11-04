@@ -364,13 +364,15 @@ Never expose raw provider errors, signatures, secrets, SQL, traces or card data.
 
 A Customer session only (`DL-79` (5), `BR-CAT-007`).
 
-`GET /customer/favorites?page=&per_page=` lists the Customer's own favourites, newest first (ties by `id`), paginated as in Section 2. Each entry is a Customer product object (Section 14) with `"is_favorite": true` and `"is_available": bool`, which is `false` when the product or its category is inactive or archived; the market price is never shown.
+`GET /customer/favorites?sort=&page=&per_page=` lists the Customer's own favourites, paginated as in Section 2. The ones sold now come first, then the ones not sold (`DL-129`); inside each group `sort=default` (the default) is newest first (ties by `id`), and `sort=price_asc` / `price_desc` order by the product's market price (one markup orders the customer prices too), ties newest first, then `id`. An unknown `sort` is `422 validation_failed`. `meta` carries `unavailable_count` beside `pagination`: how many of the Customer's favourites are not sold now, over the whole list, not the page. Each entry is a Customer product object (Section 14) with `"is_favorite": true` and `"is_available": bool`, which is `false` when the product or its category is inactive or archived (the product is not among those Section 14 lists); the market price is never shown.
 
 `PUT /customer/favorites/{product}` (no body) adds a favourite and answers `204`; repeating it answers `204` and changes nothing. A product the Customer cannot see (inactive, archived, in an inactive or archived category, unknown, or not a UUID) is the scope-safe `404 resource_not_found`. The 501st favourite is `409 favorites_full` with `details.limit = 500`; a product already a favourite is still `204`.
 
 `DELETE /customer/favorites/{product}` (no body) removes the Customer's own favourite and answers `204` for any well-formed product id, whatever the product, so it tells nothing about it.
 
-Both routes refuse any body field with `422 validation_failed`. Another Customer's favourites are never listed or touched.
+`DELETE /customer/favorites/unavailable` (no body) removes every one of the Customer's own favourites that is not sold now, loaded or not, and answers `204`, also when there are none. It is registered before `{product}`, so `unavailable` is never read as a product id.
+
+All the mutation routes refuse any body field with `422 validation_failed`. Another Customer's favourites are never listed or touched.
 
 # Ratings
 
