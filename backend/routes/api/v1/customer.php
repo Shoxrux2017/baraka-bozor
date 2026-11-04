@@ -39,6 +39,7 @@ Route::middleware([AuthServiceProvider::PROTECTED, RequireRole::of(Role::Custome
         Route::post('address-search', [AddressSearchController::class, 'store'])->name('customer.address-search');
 
         Route::get('favorites', [FavoriteController::class, 'index'])->name('customer.favorites.index');
+        Route::delete('favorites/unavailable', [FavoriteController::class, 'destroyUnavailable'])->name('customer.favorites.destroy-unavailable');
         Route::put('favorites/{product}', [FavoriteController::class, 'store'])->name('customer.favorites.store');
         Route::delete('favorites/{product}', [FavoriteController::class, 'destroy'])->name('customer.favorites.destroy');
     });

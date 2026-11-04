@@ -34,6 +34,7 @@ CatalogProduct catalogProduct({
   PriceMode priceMode = PriceMode.estimate,
   int customerUnitPriceUzs = 18400,
   bool isFavorite = false,
+  bool isAvailable = true,
 }) => CatalogProduct(
   id: id,
   categoryId: categoryId,
@@ -46,6 +47,7 @@ CatalogProduct catalogProduct({
   customerUnitPriceUzs: customerUnitPriceUzs,
   imageUrl: null,
   isFavorite: isFavorite,
+  isAvailable: isAvailable,
 );
 
 /// The Customer catalog in memory, paginated and searched like the API. A

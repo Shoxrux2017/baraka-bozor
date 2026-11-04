@@ -380,7 +380,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 /// (`DL-128`).
 bool searchKeepsCards(ProductListQuery drawn, ProductListQuery next) =>
     drawn.categoryId == next.categoryId &&
-    drawn.featuredOnly == next.featuredOnly;
+    drawn.featuredOnly == next.featuredOnly &&
+    drawn.favorites == next.favorites;
 
 /// The 2 px line along the field's bottom edge while [query] loads with the
 /// cards of another query dimmed under it (`DL-128`): a bar 40 % wide runs

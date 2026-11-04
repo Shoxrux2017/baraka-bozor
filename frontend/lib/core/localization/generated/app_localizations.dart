@@ -6044,6 +6044,12 @@ abstract class AppLocalizations {
   /// **'Avval qimmatlari'**
   String get sortPriceDesc;
 
+  /// No description provided for @sortNewest.
+  ///
+  /// In uz, this message translates to:
+  /// **'Avval yangilari'**
+  String get sortNewest;
+
   /// No description provided for @sortSpoken.
   ///
   /// In uz, this message translates to:
@@ -7598,16 +7604,22 @@ abstract class AppLocalizations {
   /// **'{name} savatda'**
   String cardStepperSpoken(String name);
 
+  /// No description provided for @cardNotSoldSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{name}, sotuvda yo\'q'**
+  String cardNotSoldSpoken(String name);
+
   /// No description provided for @favoriteAddSpoken.
   ///
   /// In uz, this message translates to:
-  /// **'Sevimlilarga qo\'shish: {name}'**
+  /// **'{name}: sevimlilarga qo\'shish'**
   String favoriteAddSpoken(String name);
 
   /// No description provided for @favoriteRemoveSpoken.
   ///
   /// In uz, this message translates to:
-  /// **'Sevimlilardan olib tashlash: {name}'**
+  /// **'{name}: sevimlilardan olib tashlash'**
   String favoriteRemoveSpoken(String name);
 
   /// No description provided for @questionBannerUntil.
@@ -7651,6 +7663,60 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtmani hozir qabul qilamiz, soat {time} dan yig\'ib, yetkazib beramiz'**
   String homeClosedBody(String time);
+
+  /// No description provided for @favoritesNotSoldSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotuvda yo\'q, {count}'**
+  String favoritesNotSoldSpoken(String count);
+
+  /// No description provided for @favoritesRemoveAll.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hammasini olib tashlash'**
+  String get favoritesRemoveAll;
+
+  /// No description provided for @favoritesRemoveAllSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sotuvdan olinganlarni olib tashlash: {count}'**
+  String favoritesRemoveAllSpoken(String count);
+
+  /// No description provided for @favoriteRemoved.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilardan olib tashlandi: {name}'**
+  String favoriteRemoved(String name);
+
+  /// No description provided for @favoriteRestoredSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yana sevimlilarda: {name}'**
+  String favoriteRestoredSpoken(String name);
+
+  /// No description provided for @favoriteRemoveOffline.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib tashlab bo\'lmadi: aloqa yo\'q'**
+  String get favoriteRemoveOffline;
+
+  /// No description provided for @favoriteRemoveFailed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Olib tashlab bo\'lmadi. Qaytadan urinib ko\'ring'**
+  String get favoriteRemoveFailed;
+
+  /// No description provided for @favoritesEntrySpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilar: {count}'**
+  String favoritesEntrySpoken(String count);
+
+  /// No description provided for @favoritesEntryNotSoldSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Sevimlilar: {count}, {notSold} tasi sotuvda yo\'q'**
+  String favoritesEntryNotSoldSpoken(String count, int notSold);
 }
 
 class _AppLocalizationsDelegate

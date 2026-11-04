@@ -208,6 +208,127 @@ final class FavoritesApiTest extends TestCase
         $this->assertSame(0, CustomerFavorite::query()->count());
     }
 
+    public function test_favorites_list_the_available_first_newest_first(): void
+    {
+        $old = Product::factory()->create();
+        $middleGone = Product::factory()->create(['is_active' => false]);
+        $new = Product::factory()->create();
+        $newestGone = Product::factory()->archived()->create();
+        foreach ([$old, $middleGone, $new, $newestGone] as $i => $product) {
+            CustomerFavorite::factory()->create([
+                'customer_id' => $this->customer->id,
+                'product_id' => $product->id,
+                'created_at' => now()->startOfSecond()->addMinutes($i),
+            ]);
+        }
+
+        $this->as($this->customer)->getJson(self::URL.'?sort=default')->assertOk()
+            ->assertJsonPath('data.*.id', [$new->id, $old->id, $newestGone->id, $middleGone->id])
+            ->assertJsonPath('data.*.is_available', [true, true, false, false]);
+    }
+
+    public function test_favorites_sort_by_price_both_ways_ties_newest_first(): void
+    {
+        $cheapOld = Product::factory()->create(['market_price_uzs' => 1_000]);
+        $cheapNew = Product::factory()->create(['market_price_uzs' => 1_000]);
+        $dear = Product::factory()->create(['market_price_uzs' => 9_000]);
+        $gone = Product::factory()->create(['market_price_uzs' => 500, 'is_active' => false]);
+        foreach ([$cheapOld, $dear, $cheapNew, $gone] as $i => $product) {
+            CustomerFavorite::factory()->create([
+                'customer_id' => $this->customer->id,
+                'product_id' => $product->id,
+                'created_at' => now()->startOfSecond()->addMinutes($i),
+            ]);
+        }
+
+        $this->as($this->customer)->getJson(self::URL.'?sort=price_asc')->assertOk()
+            ->assertJsonPath('data.*.id', [$cheapNew->id, $cheapOld->id, $dear->id, $gone->id]);
+        $this->as($this->customer)->getJson(self::URL.'?sort=price_desc')->assertOk()
+            ->assertJsonPath('data.*.id', [$dear->id, $cheapNew->id, $cheapOld->id, $gone->id]);
+    }
+
+    public function test_an_unknown_sort_is_refused(): void
+    {
+        $this->as($this->customer)->getJson(self::URL.'?sort=popular')
+            ->assertStatus(422)->assertJsonPath('code', 'validation_failed');
+    }
+
+    public function test_the_list_counts_the_not_sold_favourites_over_every_page(): void
+    {
+        $category = Category::factory()->create();
+        $sold = Product::factory()->count(22)->for($category)->create();
+        $gone = [
+            Product::factory()->for($category)->create(['is_active' => false]),
+            Product::factory()->for($category)->archived()->create(),
+            Product::factory()->for(Category::factory()->create(['is_active' => false]))->create(),
+        ];
+        foreach ($sold->concat($gone) as $i => $product) {
+            CustomerFavorite::factory()->create([
+                'customer_id' => $this->customer->id,
+                'product_id' => $product->id,
+                'created_at' => now()->startOfSecond()->addSeconds($i),
+            ]);
+        }
+        // Another Customer's not-sold favourite is no part of this one's count.
+        CustomerFavorite::factory()->create([
+            'customer_id' => User::factory()->customer()->create()->id,
+            'product_id' => Product::factory()->for($category)->create(['is_active' => false])->id,
+        ]);
+
+        foreach ([1, 3] as $page) {
+            $this->as($this->customer)->getJson(self::URL.'?per_page=10&page='.$page)->assertOk()
+                ->assertJsonPath('meta.unavailable_count', 3)
+                ->assertJsonPath('meta.pagination.total', 25);
+        }
+    }
+
+    public function test_removing_the_not_sold_favourites_keeps_the_available_and_other_customers_rows(): void
+    {
+        $other = User::factory()->customer()->create();
+        $sold = Product::factory()->create();
+        $inactive = Product::factory()->create(['is_active' => false]);
+        $archived = Product::factory()->archived()->create();
+        $inInactiveCategory = Product::factory()->for(Category::factory()->create(['is_active' => false]))->create();
+        foreach ([$sold, $inactive, $archived, $inInactiveCategory] as $product) {
+            CustomerFavorite::factory()->create(['customer_id' => $this->customer->id, 'product_id' => $product->id]);
+        }
+        CustomerFavorite::factory()->create(['customer_id' => $other->id, 'product_id' => $inactive->id]);
+
+        $this->as($this->customer)->deleteJson(self::URL.'/unavailable')->assertNoContent();
+
+        $this->assertSame([$sold->id], CustomerFavorite::query()->where('customer_id', $this->customer->id)->pluck('product_id')->all());
+        $this->assertSame(1, CustomerFavorite::query()->where('customer_id', $other->id)->count());
+        $this->as($this->customer)->deleteJson(self::URL.'/unavailable')->assertNoContent();
+        $this->assertSame(1, CustomerFavorite::query()->where('customer_id', $this->customer->id)->count());
+    }
+
+    public function test_removing_the_not_sold_favourites_refuses_a_body(): void
+    {
+        $this->as($this->customer)->deleteJson(self::URL.'/unavailable', ['reason' => 'x'])
+            ->assertStatus(422)->assertJsonPath('code', 'validation_failed');
+    }
+
+    public function test_removing_the_not_sold_favourites_needs_a_customer(): void
+    {
+        $operator = User::factory()->role(Role::Operator)->create();
+
+        $this->deleteJson(self::URL.'/unavailable')->assertStatus(401);
+        $this->as($operator)->deleteJson(self::URL.'/unavailable')->assertStatus(403);
+    }
+
+    public function test_the_unavailable_route_is_not_read_as_a_product(): void
+    {
+        $product = Product::factory()->create();
+        CustomerFavorite::factory()->create(['customer_id' => $this->customer->id, 'product_id' => $product->id]);
+
+        // `unavailable` is not a product id: were it read as one, the removal
+        // of a product would answer 204 and leave this row; the bulk route
+        // keeps the sold row too, so only the route itself can tell.
+        $this->as($this->customer)->putJson(self::URL.'/unavailable')->assertStatus(404);
+        $this->as($this->customer)->deleteJson(self::URL.'/unavailable')->assertNoContent();
+        $this->assertSame(1, CustomerFavorite::query()->count());
+    }
+
     private function as(User $user): self
     {
         return $this->withToken($user->createToken('t')->plainTextToken);

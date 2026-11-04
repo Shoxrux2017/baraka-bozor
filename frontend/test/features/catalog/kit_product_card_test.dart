@@ -825,6 +825,33 @@ void main() {
     expect(byKey('add-0192f0a0-0000-7000-8000-0000000000a1'), findsNothing);
   });
 
+  testWidgets('a not-sold card is no link and reads «Черешня, нет в продаже»', (
+    WidgetTester tester,
+  ) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    final CatalogProduct cherry = catalogProduct(
+      id: '0192f0a0-0000-7000-8000-0000000000c1',
+      nameRu: 'Черешня',
+      nameUz: 'Gilos',
+      isAvailable: false,
+    );
+    await show(tester, cherry, available: false);
+    final String id = cherry.id;
+
+    final SemanticsNode card = tester.getSemantics(byKey('card-semantics-$id'));
+    expect(card.label, 'Черешня, нет в продаже');
+    expect(card.getSemanticsData().flagsCollection.isButton, isFalse);
+
+    await tester.tap(byKey('product-card-$id'));
+    await tester.pumpAndSettle();
+    expect(opened, isNull, reason: 'a card no longer sold opens nothing');
+    expect(byKey('heart-$id'), findsOneWidget);
+    await tester.tap(byKey('heart-$id'));
+    await tester.pumpAndSettle();
+    expect(favorites.changes, <String>['add:$id']);
+    handle.dispose();
+  });
+
   testWidgets('the not sold label of a compact card keeps 8 off the edge', (
     WidgetTester tester,
   ) async {
@@ -1075,7 +1102,7 @@ void main() {
 
       expect(
         tester.getSemantics(byKey('card-semantics-${priced.id}')).label,
-        '$spoken. Нет в продаже',
+        'Помидор, нет в продаже',
       );
       handle.dispose();
     });
@@ -1092,19 +1119,29 @@ void main() {
       );
       expect(
         tester.getSemantics(byKey('heart-${priced.id}')).tooltip,
-        'Добавить в избранное: Помидор',
+        'Помидор: добавить в избранное',
       );
       expect(
         tester.widget<IconButton>(byKey('heart-${priced.id}')).tooltip,
-        'Добавить в избранное: Помидор',
+        'Помидор: добавить в избранное',
       );
       await tester.tap(byKey('heart-${priced.id}'));
       await tester.pumpAndSettle();
       expect(
         tester.getSemantics(byKey('heart-${priced.id}')).tooltip,
-        'Убрать из избранного: Помидор',
+        'Помидор: убрать из избранного',
       );
       handle.dispose();
+    });
+
+    testWidgets('a heart reads «Помидор: убрать из избранного»', (
+      WidgetTester tester,
+    ) async {
+      await show(tester, catalogProduct(id: 'h-1', isFavorite: true));
+      expect(
+        tester.widget<IconButton>(byKey('heart-h-1')).tooltip,
+        'Помидор: убрать из избранного',
+      );
     });
 
     testWidgets('the stepper is one adjustable node', (
@@ -1169,7 +1206,7 @@ void main() {
       );
       expect(
         tester.getSemantics(byKey('heart-${priced.id}')).tooltip,
-        "Sevimlilarga qo'shish: Pomidor",
+        "Pomidor: sevimlilarga qo'shish",
       );
       handle.dispose();
     });
@@ -1330,6 +1367,93 @@ void main() {
     expect(
       productColumns(343, const NonlinearTextScaler(2), KitCardSize.regular),
       2,
+    );
+  });
+
+  group('a heart answers (DL-129)', () {
+    final List<String> haptics = <String>[];
+
+    setUp(() {
+      haptics.clear();
+    });
+
+    Future<void> record(WidgetTester tester) async {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'HapticFeedback.vibrate') {
+            haptics.add(call.arguments as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+    }
+
+    double popScale(WidgetTester tester, String id) =>
+        tester.widget<ScaleTransition>(byKey('heart-pop-$id')).scale.value;
+
+    int added(WidgetTester tester) =>
+        ProviderScope.containerOf(tester.element(find.byType(KitProductCard)))
+            .read(favoriteAddedProvider);
+
+    testWidgets(
+      'a heart set pops, taps a light haptic and counts one more heart',
+      (WidgetTester tester) async {
+        await record(tester);
+        await show(tester, catalogProduct(id: 'h-1'));
+        expect(popScale(tester, 'h-1'), 1);
+
+        await tester.tap(byKey('heart-h-1'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 119));
+        expect(popScale(tester, 'h-1'), greaterThan(1.2));
+        expect(haptics, <String>['HapticFeedbackType.lightImpact']);
+        expect(added(tester), 1);
+
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(popScale(tester, 'h-1'), 1);
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets('a heart taken off neither pops nor counts', (
+      WidgetTester tester,
+    ) async {
+      await record(tester);
+      await show(tester, catalogProduct(id: 'h-1', isFavorite: true));
+
+      await tester.tap(byKey('heart-h-1'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 119));
+      expect(popScale(tester, 'h-1'), 1);
+      expect(haptics, isEmpty);
+      expect(added(tester), 0);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+      'with reduced motion a heart set only changes colour, the haptic stays',
+      (WidgetTester tester) async {
+        await record(tester);
+        await show(tester, catalogProduct(id: 'h-1'), reduced: true);
+
+        await tester.tap(byKey('heart-h-1'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 119));
+        expect(popScale(tester, 'h-1'), 1);
+        expect(haptics, <String>['HapticFeedbackType.lightImpact']);
+        expect(
+          tester.widget<IconButton>(byKey('heart-h-1')).color,
+          KitColors.danger,
+        );
+        await tester.pumpAndSettle();
+      },
     );
   });
 }

@@ -8,9 +8,14 @@ import '../../../core/widgets/swap_in.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 
-/// The words of a sort, as the menu and the count row show them.
-String sortLabel(AppLocalizations l10n, ProductSort sort) => switch (sort) {
-  ProductSort.shop => l10n.sortShop,
+/// The words of a sort, as the menu and the count row show them. The
+/// favourites' own order reads «Сначала новые» ([newestFirst], `DL-129`).
+String sortLabel(
+  AppLocalizations l10n,
+  ProductSort sort, {
+  bool newestFirst = false,
+}) => switch (sort) {
+  ProductSort.shop => newestFirst ? l10n.sortNewest : l10n.sortShop,
   ProductSort.priceAsc => l10n.sortPriceAsc,
   ProductSort.priceDesc => l10n.sortPriceDesc,
 };
@@ -23,7 +28,11 @@ const Map<ProductSort, String> _keys = <ProductSort, String>{
 
 /// Asks the Customer for the order of the product lists with a menu that
 /// opens under [anchor] (`DL-127`); `null` when it is dismissed.
-Future<ProductSort?> showSortMenu(BuildContext anchor, ProductSort current) {
+Future<ProductSort?> showSortMenu(
+  BuildContext anchor,
+  ProductSort current, {
+  bool newestFirst = false,
+}) {
   final NavigatorState navigator = Navigator.of(anchor);
   final RenderBox box = anchor.findRenderObject()! as RenderBox;
   final RenderBox overlay =
@@ -35,6 +44,7 @@ Future<ProductSort?> showSortMenu(BuildContext anchor, ProductSort current) {
     _SortMenuRoute(
       anchor: from,
       current: current,
+      newestFirst: newestFirst,
       title: AppLocalizations.of(anchor).sortTitle,
       barrierLabel: MaterialLocalizations.of(anchor).modalBarrierDismissLabel,
       reducedMotion: MediaQuery.disableAnimationsOf(anchor),
@@ -49,6 +59,7 @@ class _SortMenuRoute extends PopupRoute<ProductSort> {
   _SortMenuRoute({
     required this.anchor,
     required this.current,
+    required this.newestFirst,
     required this.title,
     required this.barrierLabel,
     required this.reducedMotion,
@@ -56,6 +67,7 @@ class _SortMenuRoute extends PopupRoute<ProductSort> {
 
   final Rect anchor;
   final ProductSort current;
+  final bool newestFirst;
   final String title;
   final bool reducedMotion;
 
@@ -92,7 +104,7 @@ class _SortMenuRoute extends PopupRoute<ProductSort> {
           inset: MediaQuery.paddingOf(context),
           textDirection: Directionality.of(context),
         ),
-        child: _SortMenu(current: current),
+        child: _SortMenu(current: current, newestFirst: newestFirst),
       ),
     );
   }
@@ -177,9 +189,10 @@ class _MenuLayout extends SingleChildLayoutDelegate {
 }
 
 class _SortMenu extends StatelessWidget {
-  const _SortMenu({required this.current});
+  const _SortMenu({required this.current, required this.newestFirst});
 
   final ProductSort current;
+  final bool newestFirst;
 
   @override
   Widget build(BuildContext context) {
@@ -214,7 +227,7 @@ class _SortMenu extends StatelessWidget {
                   for (final ProductSort sort in ProductSort.values)
                     _SortItem(
                       key: ValueKey<String>(_keys[sort]!),
-                      label: sortLabel(l10n, sort),
+                      label: sortLabel(l10n, sort, newestFirst: newestFirst),
                       chosen: sort == current,
                       last: sort == ProductSort.values.last,
                       onTap: () => Navigator.of(context).pop(sort),
@@ -336,7 +349,11 @@ class ProductListCountRow extends ConsumerWidget {
   final ListTotalMemo? memo;
 
   Future<void> _open(BuildContext anchor) async {
-    final ProductSort? chosen = await showSortMenu(anchor, sort);
+    final ProductSort? chosen = await showSortMenu(
+      anchor,
+      sort,
+      newestFirst: query.favorites,
+    );
     if (chosen != null && chosen != sort) {
       onSort(chosen);
     }
@@ -353,6 +370,7 @@ class ProductListCountRow extends ConsumerWidget {
               categoryId: query.categoryId,
               search: keepAcrossSearch ? '' : query.search,
               featuredOnly: query.featuredOnly,
+              favorites: query.favorites,
             ),
           ),
         );
@@ -366,7 +384,7 @@ class ProductListCountRow extends ConsumerWidget {
       memo.total = null;
     }
     final int? count = known ?? memo.total;
-    final String label = sortLabel(l10n, sort);
+    final String label = sortLabel(l10n, sort, newestFirst: query.favorites);
     final String Function(int count) words =
         countText ?? l10n.catalogProductCount;
 

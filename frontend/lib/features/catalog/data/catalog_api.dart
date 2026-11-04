@@ -92,7 +92,7 @@ class CatalogApi {
 
   /// A product, held to its contract: UUID ids, and a customer price above
   /// zero, as the market price it is computed from must be (`DL-20` (6)).
-  static CatalogProduct parseProduct(Object? raw) {
+  static CatalogProduct parseProduct(Object? raw, {bool isAvailable = true}) {
     final JsonFields json = JsonFields.of(raw, 'product');
     final int price = json.integer('customer_unit_price_uzs');
     if (price <= 0) {
@@ -110,6 +110,7 @@ class CatalogApi {
       customerUnitPriceUzs: price,
       imageUrl: json.nullableString('image_url'),
       isFavorite: json.boolean('is_favorite'),
+      isAvailable: isAvailable,
     );
   }
 }

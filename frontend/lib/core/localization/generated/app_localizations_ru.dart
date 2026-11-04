@@ -3525,6 +3525,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get sortPriceDesc => 'Сначала дороже';
 
   @override
+  String get sortNewest => 'Сначала новые';
+
+  @override
   String sortSpoken(String sort) {
     return 'Порядок: $sort';
   }
@@ -4578,13 +4581,18 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String cardNotSoldSpoken(String name) {
+    return '$name, нет в продаже';
+  }
+
+  @override
   String favoriteAddSpoken(String name) {
-    return 'Добавить в избранное: $name';
+    return '$name: добавить в избранное';
   }
 
   @override
   String favoriteRemoveSpoken(String name) {
-    return 'Убрать из избранного: $name';
+    return '$name: убрать из избранного';
   }
 
   @override
@@ -4616,5 +4624,44 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String homeClosedBody(String time) {
     return 'Заказ примем сейчас, соберём и привезём с $time';
+  }
+
+  @override
+  String favoritesNotSoldSpoken(String count) {
+    return 'Нет в продаже, $count';
+  }
+
+  @override
+  String get favoritesRemoveAll => 'Убрать все';
+
+  @override
+  String favoritesRemoveAllSpoken(String count) {
+    return 'Убрать все снятые с продажи: $count';
+  }
+
+  @override
+  String favoriteRemoved(String name) {
+    return 'Убрали из избранного: $name';
+  }
+
+  @override
+  String favoriteRestoredSpoken(String name) {
+    return 'Снова в избранном: $name';
+  }
+
+  @override
+  String get favoriteRemoveOffline => 'Не удалось убрать: нет связи';
+
+  @override
+  String get favoriteRemoveFailed => 'Не удалось убрать. Попробуйте ещё раз';
+
+  @override
+  String favoritesEntrySpoken(String count) {
+    return 'Избранное: $count';
+  }
+
+  @override
+  String favoritesEntryNotSoldSpoken(String count, int notSold) {
+    return 'Избранное: $count, $notSold нет в продаже';
   }
 }

@@ -5,7 +5,6 @@ import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
-import 'package:baraka_bozor/features/favorites/domain/favorites.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -37,6 +36,7 @@ void main() {
     );
     addTearDown(container.dispose);
     container.listen(favoriteOverridesProvider, (_, _) {});
+    container.listen(favoritesSortProvider, (_, _) {});
   });
 
   Map<String, bool> overrides() => container.read(favoriteOverridesProvider);
@@ -143,57 +143,47 @@ void main() {
     expect(favoriteOf(<String, bool>{'p-2': true}, plain), isTrue);
   });
 
-  test('the list loads pages and is refreshed after a toggle', () async {
-    favorites
-      ..pageSize = 1
-      ..rows = <FavoriteProduct>[
-        FavoriteProduct(
-          product: catalogProduct(id: 'p-1', isFavorite: true),
-          isAvailable: true,
-        ),
-        FavoriteProduct(
-          product: catalogProduct(id: 'p-2', isFavorite: true),
-          isAvailable: false,
-        ),
-      ];
-    container.listen(favoritesListProvider, (_, _) {});
-
-    final FavoritesListState first = await container.read(
-      favoritesListProvider.future,
-    );
-    expect(first.items.single.product.id, 'p-1');
-    expect(first.hasMore, isTrue);
-
-    await container.read(favoritesListProvider.notifier).loadMore();
-    final FavoritesListState both = container
-        .read(favoritesListProvider)
-        .requireValue;
-    expect(both.items.map((FavoriteProduct f) => f.product.id), <String>[
-      'p-1',
-      'p-2',
-    ]);
-    expect(both.hasMore, isFalse);
-
+  test('a toggle leaves the favourites lists as they are', () async {
+    favorites.rows = <CatalogProduct>[
+      catalogProduct(id: 'p-1', isFavorite: true),
+      catalogProduct(id: 'p-2', isFavorite: true, isAvailable: false),
+    ];
+    const ProductListQuery list = ProductListQuery.favorites();
+    container.listen(productListProvider(list), (_, _) {});
+    await container.read(productListProvider(list).future);
     final int loads = favorites.listLoads;
-    await notifier().change('p-1', current: true);
-    await container.read(favoritesListProvider.future);
 
-    expect(favorites.listLoads, greaterThan(loads));
+    await notifier().change('p-1', current: true);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(favorites.listLoads, loads, reason: 'the screen refreshes them');
     expect(
       container
-          .read(favoritesListProvider)
+          .read(productListProvider(list))
           .requireValue
           .items
-          .map((FavoriteProduct f) => f.product.id),
-      <String>['p-2'],
+          .map((CatalogProduct p) => p.id),
+      <String>['p-1', 'p-2'],
     );
   });
 
-  test('the sort starts as the shop order and is kept', () {
-    expect(container.read(productSortProvider), ProductSort.shop);
+  test(
+    'the favourites order starts as the shop order, is kept, and is its own',
+    () {
+      expect(container.read(favoritesSortProvider), ProductSort.shop);
 
-    container.read(productSortProvider.notifier).set(ProductSort.priceDesc);
+      container.read(favoritesSortProvider.notifier).set(ProductSort.priceDesc);
 
-    expect(container.read(productSortProvider), ProductSort.priceDesc);
+      expect(container.read(favoritesSortProvider), ProductSort.priceDesc);
+      expect(container.read(productSortProvider), ProductSort.shop);
+    },
+  );
+
+  test('another account starts with the shop order', () {
+    container.read(favoritesSortProvider.notifier).set(ProductSort.priceDesc);
+
+    container.read(_account.notifier).signIn('customer-b');
+
+    expect(container.read(favoritesSortProvider), ProductSort.shop);
   });
 }

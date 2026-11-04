@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/favorites/application/favorites_controllers.dart';
 import '../../features/orders/application/customer_orders_controllers.dart';
 import '../localization/generated/app_localizations.dart';
 import '../routing/app_paths.dart';
@@ -105,6 +106,7 @@ class CustomerTabBar extends ConsumerWidget {
       IconData outlined,
       String label, {
       int badge = 0,
+      bool bumps = false,
     }) => Expanded(
       child: _TabButton(
         key: ValueKey<String>(key),
@@ -112,6 +114,7 @@ class CustomerTabBar extends ConsumerWidget {
         label: label,
         selected: tab == current,
         badge: badge,
+        bumps: bumps,
         onTap: () => _open(context, tab),
       ),
     );
@@ -150,6 +153,7 @@ class CustomerTabBar extends ConsumerWidget {
                     Icons.favorite,
                     Icons.favorite_border,
                     l10n.favoritesTitle,
+                    bumps: true,
                   ),
                   tab(
                     CustomerTab.orders,
@@ -183,8 +187,12 @@ class _TabButton extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.badge = 0,
+    this.bumps = false,
     super.key,
   });
+
+  /// Whether the icon bumps when a heart is set (`DL-129`).
+  final bool bumps;
 
   /// How many questions wait on the tab; none draws nothing (`DL-125`).
   final int badge;
@@ -192,6 +200,15 @@ class _TabButton extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
+
+  Widget _icon() {
+    final Icon glyph = Icon(
+      icon,
+      size: 26,
+      color: selected ? KitColors.primary : KitColors.muted,
+    );
+    return bumps ? _BumpingIcon(child: glyph) : glyph;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -255,11 +272,7 @@ class _TabButton extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Icon(
-                      icon,
-                      size: 26,
-                      color: selected ? KitColors.primary : KitColors.muted,
-                    ),
+                    _icon(),
                     const SizedBox(height: 2),
                     MediaQuery.withClampedTextScaling(
                       maxScaleFactor: 15 / 11,
@@ -287,6 +300,69 @@ class _TabButton extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The favourites icon, which bumps for 340 ms on each new heart set: up 3
+/// and scaled to 1.24 at 40 %, and back, on the kit curve (`DL-129`). With
+/// reduced motion it stays still.
+class _BumpingIcon extends ConsumerStatefulWidget {
+  const _BumpingIcon({required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<_BumpingIcon> createState() => _BumpingIconState();
+}
+
+class _BumpingIconState extends ConsumerState<_BumpingIcon>
+    with SingleTickerProviderStateMixin {
+  static const Cubic _curve = Cubic(0.2, 0.8, 0.2, 1);
+
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 340),
+  );
+
+  /// 0 → 1 → 0 across the bump, 40 % up and 60 % back.
+  late final Animation<double> _lift = TweenSequence<double>(
+    <TweenSequenceItem<double>>[
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: 0, end: 1).chain(CurveTween(curve: _curve)),
+        weight: 40,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(begin: 1, end: 0).chain(CurveTween(curve: _curve)),
+        weight: 60,
+      ),
+    ],
+  ).animate(_controller);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<int>(favoriteAddedProvider, (int? before, int now) {
+      if (now > (before ?? 0) && !MediaQuery.disableAnimationsOf(context)) {
+        _controller.forward(from: 0);
+      }
+    });
+    return AnimatedBuilder(
+      animation: _lift,
+      child: widget.child,
+      builder: (BuildContext context, Widget? child) => Transform(
+        key: const ValueKey<String>('favorites-bump'),
+        alignment: Alignment.center,
+        transform: Matrix4.identity()
+          ..translateByDouble(0, -3 * _lift.value, 0, 1)
+          ..scaleByDouble(1 + 0.24 * _lift.value, 1 + 0.24 * _lift.value, 1, 1),
+        child: child,
       ),
     );
   }

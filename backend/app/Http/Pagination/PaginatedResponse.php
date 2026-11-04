@@ -21,8 +21,9 @@ final class PaginatedResponse
      *
      * @param  LengthAwarePaginator<array-key, TItem>  $page
      * @param  Closure(TItem): array<string, mixed>  $present
+     * @param  array<string, mixed>  $meta  further `meta` keys beside `pagination`
      */
-    public static function of(LengthAwarePaginator $page, Closure $present): JsonResponse
+    public static function of(LengthAwarePaginator $page, Closure $present, array $meta = []): JsonResponse
     {
         $data = [];
 
@@ -32,12 +33,15 @@ final class PaginatedResponse
 
         return new JsonResponse([
             'data' => $data,
-            'meta' => ['pagination' => [
-                'page' => $page->currentPage(),
-                'per_page' => $page->perPage(),
-                'total' => $page->total(),
-                'last_page' => $page->lastPage(),
-            ]],
+            'meta' => [
+                'pagination' => [
+                    'page' => $page->currentPage(),
+                    'per_page' => $page->perPage(),
+                    'total' => $page->total(),
+                    'last_page' => $page->lastPage(),
+                ],
+                ...$meta,
+            ],
         ]);
     }
 }

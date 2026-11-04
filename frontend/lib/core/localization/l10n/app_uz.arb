@@ -2271,6 +2271,7 @@
   "sortShop": "Do'kondagidek",
   "sortPriceAsc": "Avval arzonlari",
   "sortPriceDesc": "Avval qimmatlari",
+  "sortNewest": "Avval yangilari",
   "sortSpoken": "Tartib: {sort}",
   "@sortSpoken": {
     "placeholders": {
@@ -3143,7 +3144,15 @@
       }
     }
   },
-  "favoriteAddSpoken": "Sevimlilarga qo'shish: {name}",
+  "cardNotSoldSpoken": "{name}, sotuvda yo'q",
+  "@cardNotSoldSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "favoriteAddSpoken": "{name}: sevimlilarga qo'shish",
   "@favoriteAddSpoken": {
     "placeholders": {
       "name": {
@@ -3151,7 +3160,7 @@
       }
     }
   },
-  "favoriteRemoveSpoken": "Sevimlilardan olib tashlash: {name}",
+  "favoriteRemoveSpoken": "{name}: sevimlilardan olib tashlash",
   "@favoriteRemoveSpoken": {
     "placeholders": {
       "name": {
@@ -3207,6 +3216,60 @@
     "placeholders": {
       "time": {
         "type": "String"
+      }
+    }
+  },
+  "favoritesNotSoldSpoken": "Sotuvda yo'q, {count}",
+  "@favoritesNotSoldSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "favoritesRemoveAll": "Hammasini olib tashlash",
+  "favoritesRemoveAllSpoken": "Sotuvdan olinganlarni olib tashlash: {count}",
+  "@favoritesRemoveAllSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "favoriteRemoved": "Sevimlilardan olib tashlandi: {name}",
+  "@favoriteRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "favoriteRestoredSpoken": "Yana sevimlilarda: {name}",
+  "@favoriteRestoredSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "favoriteRemoveOffline": "Olib tashlab bo'lmadi: aloqa yo'q",
+  "favoriteRemoveFailed": "Olib tashlab bo'lmadi. Qaytadan urinib ko'ring",
+  "favoritesEntrySpoken": "Sevimlilar: {count}",
+  "@favoritesEntrySpoken": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "favoritesEntryNotSoldSpoken": "Sevimlilar: {count}, {notSold} tasi sotuvda yo'q",
+  "@favoritesEntryNotSoldSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "notSold": {
+        "type": "int"
       }
     }
   }

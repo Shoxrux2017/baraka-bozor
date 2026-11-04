@@ -41,4 +41,12 @@ final class ChangeFavorites
     {
         CustomerFavorites::own($customer)->where('product_id', $productId)->delete();
     }
+
+    /**
+     * Removes every favourite that is not sold now, loaded or not (`DL-129`).
+     */
+    public function removeUnavailable(User $customer): void
+    {
+        CustomerFavorites::unavailable($customer)->delete();
+    }
 }

@@ -92,6 +92,10 @@ class KitProductCard extends ConsumerStatefulWidget {
     this.size = KitCardSize.regular,
     this.imageHeight,
     this.available = true,
+    this.onHeartOff,
+    this.onHearted,
+    this.photoKey,
+    this.photoHidden = false,
     super.key,
   });
 
@@ -105,15 +109,41 @@ class KitProductCard extends ConsumerStatefulWidget {
   /// sold shows "not sold" instead of the add button.
   final bool available;
 
+  /// Called for a tap on a red heart instead of changing the favourite.
+  final ValueChanged<CatalogProduct>? onHeartOff;
+
+  /// Called as a heart is set, with the photo well's global rect and the
+  /// answer of the server (`DL-129`).
+  final void Function(
+    CatalogProduct product,
+    Rect photo,
+    Future<ApiFailure?> answer,
+  )?
+  onHearted;
+
+  /// Marks the photo well, so a flight can measure where it lands.
+  final GlobalKey? photoKey;
+
+  /// Whether the photo is not drawn, while a copy of it flies in (`DL-129`).
+  final bool photoHidden;
+
+  /// A copy of the photo well of [product] that fills the room it is given,
+  /// for a flight to a card (`DL-129`).
+  static Widget photoGhost(CatalogProduct product) =>
+      _KitProductCardState.photoGhost(product);
+
   @override
   ConsumerState<KitProductCard> createState() => _KitProductCardState();
 }
 
 class _KitProductCardState extends ConsumerState<KitProductCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // One heart change at a time per card: a second tap while one is on its
   // way is ignored, so a double tap never sends two requests.
   bool _heartBusy = false;
+
+  /// The photo well's own key, when the parent gave none.
+  final GlobalKey _wellKey = GlobalKey();
 
   /// The tag of this card's photo (`DL-122`): one per card, so one product
   /// twice on a screen never shares a tag, and the photo flies to and from
@@ -125,6 +155,10 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
   /// (`DL-119`).
   late final AnimationController _reveal;
   late final Animation<double> _revealCurve;
+
+  /// The pop of a heart just set: 340 ms, 1 → 1.34 → 0.94 → 1 (`DL-129`).
+  late final AnimationController _pop;
+  late final Animation<double> _popScale;
 
   /// Whether the stepper, not the "+" row, is in the tree; it stays until the
   /// shrink ends.
@@ -151,6 +185,34 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
       curve: const Cubic(0.2, 0.8, 0.2, 1),
       reverseCurve: const Cubic(0.4, 0, 0.2, 1),
     );
+    _pop = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 340),
+    );
+    const Cubic curve = Cubic(0.2, 0.8, 0.2, 1);
+    _popScale = TweenSequence<double>(<TweenSequenceItem<double>>[
+      TweenSequenceItem<double>(
+        tween: Tween<double>(
+          begin: 1,
+          end: 1.34,
+        ).chain(CurveTween(curve: curve)),
+        weight: 35,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(
+          begin: 1.34,
+          end: 0.94,
+        ).chain(CurveTween(curve: curve)),
+        weight: 35,
+      ),
+      TweenSequenceItem<double>(
+        tween: Tween<double>(
+          begin: 0.94,
+          end: 1,
+        ).chain(CurveTween(curve: curve)),
+        weight: 30,
+      ),
+    ]).animate(_pop);
     final CartLine? line = _lineOfCart();
     if (line != null) {
       _stepperShown = true;
@@ -161,6 +223,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
   @override
   void dispose() {
     _reveal.dispose();
+    _pop.dispose();
     super.dispose();
   }
 
@@ -206,10 +269,34 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
       ref.read(favoriteOverridesProvider),
       product,
     );
+    final ValueChanged<CatalogProduct>? off = widget.onHeartOff;
+    if (current && off != null) {
+      off(product);
+      return;
+    }
+    if (!current) {
+      // A heart set answers at once: a light tap, the pop (not with reduced
+      // motion) and one more for the tab to bump on (`DL-129`).
+      unawaited(HapticFeedback.lightImpact());
+      if (!MediaQuery.disableAnimationsOf(context)) {
+        unawaited(_pop.forward(from: 0));
+      }
+      ref.read(favoriteAddedProvider.notifier).bump();
+    }
     setState(() => _heartBusy = true);
-    final ApiFailure? failure = await ref
+    final Future<ApiFailure?> answer = ref
         .read(favoriteOverridesProvider.notifier)
         .change(product.id, current: current);
+    final Object? well = (widget.photoKey ?? _wellKey).currentContext
+        ?.findRenderObject();
+    if (!current && widget.onHearted != null && well is RenderBox) {
+      widget.onHearted!(
+        product,
+        well.localToGlobal(Offset.zero) & well.size,
+        answer,
+      );
+    }
+    final ApiFailure? failure = await answer;
     if (mounted) {
       setState(() => _heartBusy = false);
     }
@@ -312,7 +399,7 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
     // The card reads as one stop: the product, its price and what is in the
     // cart, or that it is no longer sold (`DL-125`).
     final String cardLabel = !widget.available
-        ? '$spoken. ${l10n.catalogUnavailable}'
+        ? l10n.cardNotSoldSpoken(name)
         : shown == null
         ? spoken
         : l10n.cardInCartSpoken(spoken, _quantityText(l10n, shown));
@@ -349,14 +436,17 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
         child: Semantics(
           key: ValueKey<String>('card-semantics-$id'),
           container: true,
-          button: true,
+          // A product no longer sold has no page to open (`DL-129`).
+          button: widget.available,
           label: cardLabel,
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: () => context.push(
-              CatalogPaths.product(id),
-              extra: ProductOpening(product: product, heroTag: _heroTag),
-            ),
+            onTap: !widget.available
+                ? null
+                : () => context.push(
+                    CatalogPaths.product(id),
+                    extra: ProductOpening(product: product, heroTag: _heroTag),
+                  ),
             child: Stack(
               fit: StackFit.passthrough,
               children: <Widget>[
@@ -379,48 +469,55 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
                           children: <Widget>[
                             _sidePadded(
                               ExcludeSemantics(
-                                child: Hero(
-                                  tag: _heroTag,
-                                  flightShuttleBuilder: productPhotoFlight(
-                                    product.imageUrl,
-                                  ),
-                                  child: SizedBox(
-                                    height: imageHeight,
-                                    child: DecoratedBox(
-                                      decoration: BoxDecoration(
-                                        color: KitColors.card,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: LayoutBuilder(
-                                        builder:
-                                            (
-                                              BuildContext context,
-                                              BoxConstraints constraints,
-                                            ) {
-                                              final Rect rect = _pictureRect(
-                                                constraints.maxWidth,
-                                                imageHeight,
-                                              );
-                                              return Stack(
-                                                children: <Widget>[
-                                                  Positioned.fromRect(
-                                                    rect: rect,
-                                                    child: Opacity(
-                                                      key: ValueKey<String>(
-                                                        'picture-$id',
-                                                      ),
-                                                      opacity: available
-                                                          ? 1
-                                                          : 0.45,
-                                                      child: ProductImage(
-                                                        url: product.imageUrl,
-                                                        size: rect.width,
+                                child: Opacity(
+                                  key: ValueKey<String>('photo-veil-$id'),
+                                  opacity: widget.photoHidden ? 0 : 1,
+                                  child: Hero(
+                                    tag: _heroTag,
+                                    flightShuttleBuilder: productPhotoFlight(
+                                      product.imageUrl,
+                                    ),
+                                    child: SizedBox(
+                                      key: widget.photoKey ?? _wellKey,
+                                      height: imageHeight,
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: KitColors.card,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: LayoutBuilder(
+                                          builder:
+                                              (
+                                                BuildContext context,
+                                                BoxConstraints constraints,
+                                              ) {
+                                                final Rect rect = _pictureRect(
+                                                  constraints.maxWidth,
+                                                  imageHeight,
+                                                );
+                                                return Stack(
+                                                  children: <Widget>[
+                                                    Positioned.fromRect(
+                                                      rect: rect,
+                                                      child: Opacity(
+                                                        key: ValueKey<String>(
+                                                          'picture-$id',
+                                                        ),
+                                                        opacity: available
+                                                            ? 1
+                                                            : 0.45,
+                                                        child: ProductImage(
+                                                          url: product.imageUrl,
+                                                          size: rect.width,
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
-                                              );
-                                            },
+                                                  ],
+                                                );
+                                              },
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -500,8 +597,12 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
                         ),
                         iconSize: 18,
                         color: favorite ? KitColors.danger : KitColors.ink,
-                        icon: Icon(
-                          favorite ? Icons.favorite : Icons.favorite_border,
+                        icon: ScaleTransition(
+                          key: ValueKey<String>('heart-pop-$id'),
+                          scale: _popScale,
+                          child: Icon(
+                            favorite ? Icons.favorite : Icons.favorite_border,
+                          ),
                         ),
                         onPressed: _toggleHeart,
                       ),
@@ -521,6 +622,31 @@ class _KitProductCardState extends ConsumerState<KitProductCard>
   static Widget _sidePadded(Widget child) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: KitCardType.padding),
     child: child,
+  );
+
+  /// A copy of the photo well of [product] that fills the room it is given,
+  /// for a flight to a card (`DL-129`).
+  static Widget photoGhost(CatalogProduct product) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: KitColors.card,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final Rect rect = _pictureRect(
+          constraints.maxWidth,
+          constraints.maxHeight,
+        );
+        return Stack(
+          children: <Widget>[
+            Positioned.fromRect(
+              rect: rect,
+              child: ProductImage(url: product.imageUrl, size: rect.width),
+            ),
+          ],
+        );
+      },
+    ),
   );
 
   /// Where the picture sits in a well of [width] by [height]: centred, 0.7 of

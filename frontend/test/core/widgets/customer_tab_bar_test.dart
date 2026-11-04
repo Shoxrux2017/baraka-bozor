@@ -4,12 +4,21 @@ import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/core/platform/clock.dart';
 import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
+import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
+import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
+import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
+import 'package:baraka_bozor/features/catalog/presentation/kit_product_grid.dart';
+import 'package:baraka_bozor/features/catalog/presentation/recommended_row.dart';
+import 'package:baraka_bozor/features/favorites/application/favorites_controllers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/fake_cart_repository.dart';
+import '../../support/fake_catalog_repository.dart';
 import '../../support/fake_customer_orders_repository.dart';
+import '../../support/fake_favorites_repository.dart';
 
 /// The tab bar's look on a stand-in screen. How a tab is reached is tested on
 /// the real app in `features/shells/presentation/customer_tabs_test.dart`.
@@ -274,5 +283,109 @@ void main() {
     expect(byKey('orders-badge'), findsNothing);
     expect(find.bySemanticsLabel('Заказы'), findsOneWidget);
     semantics.dispose();
+  });
+
+  group('the «Избранное» icon bumps for a heart set (DL-129)', () {
+    Transform bump(WidgetTester tester) => tester.widget<Transform>(
+      find.byKey(const ValueKey<String>('favorites-bump')),
+    );
+
+    Future<void> openWith(
+      WidgetTester tester,
+      Widget surface, {
+      bool reduced = false,
+    }) async {
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final FakeCatalogRepository catalog = FakeCatalogRepository(
+        products: <CatalogProduct>[catalogProduct(id: 'h-1')],
+      )..featuredIds = <String>{'h-1'};
+      await tester.pumpWidget(
+        ProviderScope(
+          retry: (int count, Object error) => null,
+          overrides: [
+            customerAccountProvider.overrideWithValue('c'),
+            customerOrdersRepositoryProvider.overrideWithValue(orders),
+            clockProvider.overrideWithValue(() => now),
+            catalogRepositoryProvider.overrideWithValue(catalog),
+            cartRepositoryProvider.overrideWithValue(FakeCartRepository()),
+            favoritesRepositoryProvider.overrideWithValue(
+              FakeFavoritesRepository(),
+            ),
+          ],
+          child: MaterialApp(
+            locale: const Locale('ru'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (BuildContext context, Widget? child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: reduced),
+              child: child!,
+            ),
+            home: Scaffold(
+              body: surface,
+              bottomNavigationBar: const CustomerTabBar(
+                current: CustomerTab.home,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> heartAndBump(WidgetTester tester) async {
+      expect(bump(tester).transform.getMaxScaleOnAxis(), 1);
+      await tester.tap(find.byKey(const ValueKey<String>('heart-h-1')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 136));
+      final Transform midway = bump(tester);
+      expect(midway.transform.getTranslation().y, closeTo(-3, 0.01));
+      expect(midway.transform.getMaxScaleOnAxis(), closeTo(1.24, 0.001));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(bump(tester).transform.getMaxScaleOnAxis(), 1);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a heart on the home row bumps the tab', (
+      WidgetTester tester,
+    ) async {
+      await openWith(
+        tester,
+        const SingleChildScrollView(child: RecommendedRow()),
+      );
+      await heartAndBump(tester);
+    });
+
+    testWidgets('a heart in a grid bumps the tab', (WidgetTester tester) async {
+      await openWith(tester, const KitProductGrid(query: ProductListQuery()));
+      await heartAndBump(tester);
+    });
+
+    testWidgets('a heart in a search bumps the tab', (
+      WidgetTester tester,
+    ) async {
+      await openWith(
+        tester,
+        const KitProductGrid(query: ProductListQuery(search: 'Помидор')),
+      );
+      await heartAndBump(tester);
+    });
+
+    testWidgets('with reduced motion the tab does not move', (
+      WidgetTester tester,
+    ) async {
+      await openWith(
+        tester,
+        const KitProductGrid(query: ProductListQuery()),
+        reduced: true,
+      );
+      await tester.tap(find.byKey(const ValueKey<String>('heart-h-1')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 136));
+      expect(bump(tester).transform.getMaxScaleOnAxis(), 1);
+      expect(bump(tester).transform.getTranslation().y, 0);
+      await tester.pumpAndSettle();
+    });
   });
 }

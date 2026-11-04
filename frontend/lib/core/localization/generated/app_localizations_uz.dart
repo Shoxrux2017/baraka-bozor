@@ -3489,6 +3489,9 @@ class AppLocalizationsUz extends AppLocalizations {
   String get sortPriceDesc => 'Avval qimmatlari';
 
   @override
+  String get sortNewest => 'Avval yangilari';
+
+  @override
   String sortSpoken(String sort) {
     return 'Tartib: $sort';
   }
@@ -4520,13 +4523,18 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
+  String cardNotSoldSpoken(String name) {
+    return '$name, sotuvda yo\'q';
+  }
+
+  @override
   String favoriteAddSpoken(String name) {
-    return 'Sevimlilarga qo\'shish: $name';
+    return '$name: sevimlilarga qo\'shish';
   }
 
   @override
   String favoriteRemoveSpoken(String name) {
-    return 'Sevimlilardan olib tashlash: $name';
+    return '$name: sevimlilardan olib tashlash';
   }
 
   @override
@@ -4558,5 +4566,45 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String homeClosedBody(String time) {
     return 'Buyurtmani hozir qabul qilamiz, soat $time dan yig\'ib, yetkazib beramiz';
+  }
+
+  @override
+  String favoritesNotSoldSpoken(String count) {
+    return 'Sotuvda yo\'q, $count';
+  }
+
+  @override
+  String get favoritesRemoveAll => 'Hammasini olib tashlash';
+
+  @override
+  String favoritesRemoveAllSpoken(String count) {
+    return 'Sotuvdan olinganlarni olib tashlash: $count';
+  }
+
+  @override
+  String favoriteRemoved(String name) {
+    return 'Sevimlilardan olib tashlandi: $name';
+  }
+
+  @override
+  String favoriteRestoredSpoken(String name) {
+    return 'Yana sevimlilarda: $name';
+  }
+
+  @override
+  String get favoriteRemoveOffline => 'Olib tashlab bo\'lmadi: aloqa yo\'q';
+
+  @override
+  String get favoriteRemoveFailed =>
+      'Olib tashlab bo\'lmadi. Qaytadan urinib ko\'ring';
+
+  @override
+  String favoritesEntrySpoken(String count) {
+    return 'Sevimlilar: $count';
+  }
+
+  @override
+  String favoritesEntryNotSoldSpoken(String count, int notSold) {
+    return 'Sevimlilar: $count, $notSold tasi sotuvda yo\'q';
   }
 }

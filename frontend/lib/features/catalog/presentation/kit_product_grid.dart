@@ -21,6 +21,7 @@ import '../../../core/widgets/stale_data_line.dart';
 import '../application/catalog_controllers.dart';
 import '../domain/catalog.dart';
 import 'aisles.dart';
+import 'grid_glide.dart';
 import 'kit_product_card.dart';
 import 'sort_menu.dart';
 
@@ -94,6 +95,11 @@ class KitProductGrid extends ConsumerStatefulWidget {
     this.aisles,
     this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
     this.keepCardsOf,
+    this.leaving = const <String>{},
+    this.notSoldHeading,
+    this.onHeartOff,
+    this.landing = const <String, GlobalKey>{},
+    this.beforeRefresh,
     super.key,
   });
 
@@ -138,6 +144,25 @@ class KitProductGrid extends ConsumerStatefulWidget {
   final bool Function(ProductListQuery drawn, ProductListQuery next)?
   keepCardsOf;
 
+  /// The cards that melt away and take no taps, until the list drops them
+  /// (`DL-129`).
+  final Set<String> leaving;
+
+  /// Builds the full-width heading the not-sold cards stand under, from how
+  /// many there are; drawn from the first not-sold card loaded on (`DL-129`).
+  final Widget Function(int count)? notSoldHeading;
+
+  /// Called for a tap on a red heart of a card, instead of the card changing
+  /// the favourite (`DL-129`).
+  final ValueChanged<CatalogProduct>? onHeartOff;
+
+  /// The cards whose photo is hidden while a copy of it flies in, with the key
+  /// each marks its photo with (`DL-129`).
+  final Map<String, GlobalKey> landing;
+
+  /// Awaited before a pull or «Повторить» asks the list again (`DL-129`).
+  final Future<void> Function()? beforeRefresh;
+
   @override
   ConsumerState<KitProductGrid> createState() => _KitProductGridState();
 }
@@ -169,6 +194,33 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
   /// same products comes.
   ProductListQuery? _drawnQuery;
   List<CatalogProduct> _drawnItems = const <CatalogProduct>[];
+
+  /// The edit count of the list last drawn: a change of products with another
+  /// count is an edit in place, never a later page (`DL-129`).
+  int _drawnEdits = 0;
+
+  /// The layout last drawn with data, the basis of where a card was when the
+  /// list changes under it (`DL-129`).
+  ({
+    int columns,
+    double pitch,
+    double rowExtent,
+    int? tailStart,
+    double headingHeight,
+  })?
+  _layout;
+
+  /// How high the not-sold heading stood when last laid out, with the 10 px
+  /// above it; until then the height of its button row.
+  double _headingHeight = 54;
+  final GlobalKey _headingKey = GlobalKey();
+  bool _headingMeasureScheduled = false;
+
+  /// Set at each build for the cards built from it: where a moved card was
+  /// and the cards that arrive (`DL-129`).
+  Map<String, Offset> _glides = const <String, Offset>{};
+  Map<String, double> _arrivals = const <String, double>{};
+  final GridMotionRegistry _motion = GridMotionRegistry();
 
   /// Whether the end of the list now drawn has faded in: it does so once per
   /// list, however often its row is built again (`DL-128`).
@@ -203,6 +255,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
   Future<void> _refresh() async {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final ProductListQuery query = widget.query;
+    await _beforeRefresh();
     final Future<void> also = _alsoRefresh();
     String message;
     try {
@@ -221,6 +274,14 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
     await also;
     if (mounted) {
       announce(context, message);
+    }
+  }
+
+  Future<void> _beforeRefresh() async {
+    try {
+      await widget.beforeRefresh?.call();
+    } on Object {
+      // The pull asks again whatever it could not finish.
     }
   }
 
@@ -260,6 +321,56 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
       SchedulerBinding.instance.scheduleFrame();
     }
     return false;
+  }
+
+  /// Keeps the heading's laid-out height for the next change of the list.
+  void _measureHeading() {
+    if (_headingMeasureScheduled) {
+      return;
+    }
+    _headingMeasureScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _headingMeasureScheduled = false;
+      final Object? box = _headingKey.currentContext?.findRenderObject();
+      if (mounted && box is RenderBox && box.hasSize) {
+        _headingHeight = box.size.height;
+      }
+    });
+  }
+
+  /// Where the not-sold cards start: the first one, as the server puts the
+  /// sold ones first; none without a heading to stand under.
+  int? _tailStart(List<CatalogProduct> items) {
+    if (widget.notSoldHeading == null) {
+      return null;
+    }
+    final int first = items.indexWhere((CatalogProduct p) => !p.isAvailable);
+    return first < 0 ? null : first;
+  }
+
+  /// Whether [after] is [before] with products added at its end: a later page.
+  bool _appended(List<CatalogProduct> before, List<CatalogProduct> after) {
+    if (before.isEmpty || after.length <= before.length) {
+      return false;
+    }
+    for (int i = 0; i < before.length; i++) {
+      if (before[i].id != after[i].id) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _sameProducts(List<CatalogProduct> a, List<CatalogProduct> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (int i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// Tells [ProductAisles] where each heading stands once the frame is laid
@@ -303,21 +414,35 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
     if (state == null || state.items.isEmpty) {
       return laid;
     }
-    final int toCome =
-        (state.total + columns - 1) ~/ columns -
-        (state.items.length + columns - 1) ~/ columns;
+    int rows(int count) => (count + columns - 1) ~/ columns;
+    // With the not-sold group the sold and the not-sold cards fill rows of
+    // their own, and the heading stands between them once the first not-sold
+    // card is loaded.
+    final bool grouped = widget.notSoldHeading != null && state.unavailable > 0;
+    final int? tail = _tailStart(state.items);
+    final int toCome = grouped
+        ? rows(state.total - state.unavailable) +
+              rows(state.unavailable) -
+              rows(tail ?? state.items.length) -
+              rows(tail == null ? 0 : state.items.length - tail)
+        : rows(state.total) - rows(state.items.length);
+    final double heading = grouped && tail == null ? _headingHeight : 0;
     final double end = !state.hasMore
         ? 0
         : state.moreFailure == null
         ? extent + _gap
         : _failureRow;
-    return laid + (aisleToCome ?? math.max(0, toCome) * (extent + _gap)) - end;
+    return laid +
+        heading +
+        (aisleToCome ?? math.max(0, toCome) * (extent + _gap)) -
+        end;
   }
 
   bool _onlySortDiffers(ProductListQuery a, ProductListQuery b) =>
       a.categoryId == b.categoryId &&
       a.search == b.search &&
       a.featuredOnly == b.featuredOnly &&
+      a.favorites == b.favorites &&
       a.sort != b.sort;
 
   @override
@@ -402,15 +527,27 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
               product: items[index],
               size: widget.size,
               imageHeight: widget.imageHeight,
+              available: items[index].isAvailable,
+              onHeartOff: widget.onHeartOff,
+              photoKey: widget.landing[id],
+              photoHidden: widget.landing.containsKey(id),
             ),
           );
-          return _paged.contains(id)
-              ? _PageFade(
-                  key: ValueKey<String>('card-fade-$id'),
-                  animate: _faded.add(id),
-                  child: card,
-                )
-              : card;
+          return GridCardMotion(
+            key: ValueKey<String>('card-motion-$id'),
+            id: id,
+            registry: _motion,
+            glideFrom: _glides[id],
+            arriveFrom: _arrivals[id],
+            leaving: widget.leaving.contains(id),
+            child: _paged.contains(id)
+                ? _PageFade(
+                    key: ValueKey<String>('card-fade-$id'),
+                    animate: _faded.add(id),
+                    child: card,
+                  )
+                : card,
+          );
         }
 
         Widget cardsOf(List<CatalogProduct> items, {Widget? end}) => cardRows(
@@ -536,6 +673,10 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
         );
 
         _askBelow = 3 * (extent + _gap);
+        final double pitch =
+            (constraints.maxWidth - padding.horizontal - (columns - 1) * _gap) /
+                columns +
+            _gap;
         final ProductListQuery? drawn = _drawnQuery;
         final List<CatalogProduct> drawnItems = _drawnItems;
         if (state != null) {
@@ -548,13 +689,16 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
             final String count = l10n.catalogProductCount(state.total);
             if (drawn != null && _onlySortDiffers(drawn, query)) {
               _announceAfterFrame(
-                l10n.categoryShownSpoken(sortLabel(l10n, query.sort), count),
+                l10n.categoryShownSpoken(
+                  sortLabel(l10n, query.sort, newestFirst: query.favorites),
+                  count,
+                ),
               );
             } else if (spoken != null) {
               _announceAfterFrame(spoken(query, state.total));
             }
-          } else if (state.items.length > drawnItems.length &&
-              drawnItems.isNotEmpty) {
+          } else if (state.edits == _drawnEdits &&
+              _appended(drawnItems, state.items)) {
             _paged.addAll(
               state.items
                   .skip(drawnItems.length)
@@ -567,6 +711,63 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
                 ),
               ),
             );
+          } else if (!_sawSkeleton &&
+              !_sawDimmed &&
+              !_sameProducts(drawnItems, state.items)) {
+            // The same list edited in place: the cards that stay but changed
+            // place glide, the ones not drawn before arrive (`DL-129`).
+            final ({
+              int columns,
+              double pitch,
+              double rowExtent,
+              int? tailStart,
+              double headingHeight,
+            })?
+            was = _layout;
+            final GridCellPlace placeAfter = gridCellPlace(
+              columns: columns,
+              cellWidth: pitch,
+              rowExtent: extent + _gap,
+              tailStart: _tailStart(state.items),
+              tailTop: _headingHeight,
+            );
+            // A list by aisles has its own geometry: its cards only arrive.
+            final Map<String, Offset> glides = was == null || aisleMode
+                ? const <String, Offset>{}
+                : glideOffsets(
+                    before: <String>[for (final p in drawnItems) p.id],
+                    after: <String>[for (final p in state.items) p.id],
+                    placeBefore: gridCellPlace(
+                      columns: was.columns,
+                      cellWidth: was.pitch,
+                      rowExtent: was.rowExtent,
+                      tailStart: was.tailStart,
+                      tailTop: was.headingHeight,
+                    ),
+                    placeAfter: placeAfter,
+                  );
+            final Set<String> drawnIds = <String>{
+              for (final CatalogProduct p in drawnItems) p.id,
+            };
+            // A card still on its way goes on from where it is drawn, whether
+            // it glides or arrives.
+            _glides = <String, Offset>{
+              for (final MapEntry<String, Offset> e in glides.entries)
+                e.key: e.value + _motion.remaining(e.key),
+            };
+            _arrivals = <String, double>{
+              for (final CatalogProduct p in state.items)
+                if (!drawnIds.contains(p.id))
+                  p.id: 0
+                else if (glides.containsKey(p.id) && _motion.arrived(p.id) < 1)
+                  p.id: _motion.arrived(p.id),
+            };
+            // Only the cards built in this frame move; one built later, as it
+            // scrolls into view, stands where it is.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _glides = const <String, Offset>{};
+              _arrivals = const <String, double>{};
+            });
           }
           final ApiFailure? moreFailure = state.moreFailure;
           if (moreFailure == null) {
@@ -581,6 +782,14 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
           }
           _drawnQuery = query;
           _drawnItems = state.items;
+          _drawnEdits = state.edits;
+          _layout = (
+            columns: columns,
+            pitch: pitch,
+            rowExtent: extent + _gap,
+            tailStart: _tailStart(state.items),
+            headingHeight: _headingHeight,
+          );
           if (state.items.isEmpty) {
             slivers.add(
               SliverFillRemaining(
@@ -643,6 +852,10 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
                 ),
               ]);
             } else {
+              final int? tail = _tailStart(state.items);
+              if (tail != null) {
+                _measureHeading();
+              }
               slivers.add(
                 FadeInSliver(
                   key: const ValueKey<String>('product-cards'),
@@ -650,7 +863,30 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
                   from: fadeFrom,
                   sliver: SliverPadding(
                     padding: body,
-                    sliver: cardsOf(state.items, end: end),
+                    sliver: tail == null
+                        ? cardsOf(state.items, end: end)
+                        : SliverMainAxisGroup(
+                            slivers: <Widget>[
+                              cardRows(
+                                tail,
+                                (int index) => cardAt(state.items, index),
+                              ),
+                              SliverToBoxAdapter(
+                                child: SizedBox(
+                                  key: _headingKey,
+                                  child: widget.notSoldHeading!(
+                                    state.unavailable,
+                                  ),
+                                ),
+                              ),
+                              cardRows(
+                                state.items.length - tail,
+                                (int index) =>
+                                    cardAt(state.items, tail + index),
+                                end: end,
+                              ),
+                            ],
+                          ),
                   ),
                 ),
               );

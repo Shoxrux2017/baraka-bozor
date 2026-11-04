@@ -24,8 +24,8 @@ Rules for every stage:
 | 5 | Product | 9 | — | Merged (PR #126) |
 | 6 | Home and categories | 14 | working hours | Merged (PR #128) |
 | 7 | Category screen and product lists | 10 | — | Merged (PR #130) |
-| 8 | «Рекомендуем» and «Все товары» | 7 | list order | Planned |
-| 9 | Search | 8 | — | Planned |
+| 8 | «Рекомендуем» and «Все товары» | 7 | list order | Merged (PR #131) |
+| 9 | Search | 8 | — | Merged (PR #131) |
 | 10 | Favourites | 7 | favourites order | Planned |
 | 11 | Order | 9 | approval amounts and picture | Planned |
 | 12 | My orders | 10 | list summary fields | Planned |
@@ -386,3 +386,8 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stages 8 and 9, minor: a product whose category is missing from the loaded categories stands in its run without an aisle heading and is not counted in the scroll indicator's length. Ruling: only with stale categories; a pull refreshes them.
 - Stages 8 and 9 re-review, P3: any finger down on «Все товары» during a jump's settle skips the settle, so a tap on a card then may leave the glide a few pixels short of the heading. Ruling: harmless; the aisle is in view and lit.
 - Stages 8 and 9 re-review, P3: the flight page ends Android's back gesture before it pops, so a pop vetoed by a `PopScope` would leave the page open with the gesture over. Ruling: none of the three flight screens has a `PopScope`; add a guard with the first one that does.
+- Stage 10 final review, P3: `FavoriteProductResource` computes `is_available` inline while the order, the count and the removal use `CustomerCatalogListing::visibleProducts()`. Ruling: the per-kind `is_available` test pins them equal; selecting the EXISTS as a column changes the resource's eager loading for no behaviour change. Revisit if `visibleProducts()` gains a condition.
+- Stage 10 final review, P3: the quiet refresh asks for every loaded page one after another on each showing of the tab (up to 25 requests at 500 favourites). Ruling: lists are short today (2 requests at 40); a larger `per_page` changes `perPage`, which `settle` uses. Revisit after the pilot.
+- Stage 10 re-review, P3: the favourites screen's dispose path and the unmounted branch of `_leave` mark hearts red with no account check, so an account change inside the 200 ms melt could put `{id: true}` into the new account's overrides. Ruling: the window needs a sign-out inside the melt, which also disposes the screen; the smallest fix is to capture the account in `_begin` and skip the mark when it differs, taken with the next stage that touches favourites.
+- Stage 10 re-review, P3: `clearSnackBars()` before the undo bar also drops a foreign bar standing at that moment (e.g. a failed removal's message). Ruling: harmless — the card that failed is already back at its place.
+- Stage 10 re-review, P3: a heart set again while the removal's DELETE is already on its way can race it (the PUT may reach the server first). Ruling: the same gap every heart change had before this stage; the fix is to serialise one product's favourite requests, as `CartQuantityQueue` does for the cart, in a later stage.

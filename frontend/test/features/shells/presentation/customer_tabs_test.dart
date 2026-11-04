@@ -1,12 +1,13 @@
+import 'package:baraka_bozor/core/network/api_failure.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
 import 'package:baraka_bozor/core/widgets/customer_tab_bar.dart';
 import 'package:baraka_bozor/features/addresses/domain/addresses.dart';
 import 'package:baraka_bozor/features/addresses/presentation/map/address_map.dart';
 import 'package:baraka_bozor/features/auth/domain/app_user.dart';
+import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
-import 'package:baraka_bozor/features/favorites/domain/favorites.dart';
 import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_cards.dart';
 import 'package:baraka_bozor/features/orders/presentation/orders_screens.dart';
@@ -14,6 +15,7 @@ import 'package:baraka_bozor/features/profile/domain/profile.dart';
 import 'package:baraka_bozor/features/profile/presentation/edit_profile_screen.dart';
 import 'package:baraka_bozor/features/profile/presentation/profile_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -39,14 +41,11 @@ void main() {
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
-  FavoriteProduct favorite(int i) => FavoriteProduct(
-    product: catalogProduct(
-      id: 'f-$i',
-      nameUz: 'Mahsulot $i',
-      nameRu: 'Товар $i',
-      isFavorite: true,
-    ),
-    isAvailable: true,
+  CatalogProduct favorite(int i) => catalogProduct(
+    id: 'f-$i',
+    nameUz: 'Mahsulot $i',
+    nameRu: 'Товар $i',
+    isFavorite: true,
   );
 
   setUp(() {
@@ -56,8 +55,8 @@ void main() {
       products: <CatalogProduct>[catalogProduct()],
     )..featuredIds = <String>{'p-1'};
     favorites = FakeFavoritesRepository(
-      favorites: <FavoriteProduct>[for (int i = 0; i < 30; i++) favorite(i)],
-    );
+      favorites: <CatalogProduct>[for (int i = 0; i < 30; i++) favorite(i)],
+    )..pageSize = 30;
     orders = FakeCustomerOrdersRepository();
     profile = FakeProfileRepository()
       ..current = const CustomerProfile(
@@ -130,8 +129,113 @@ void main() {
     await tab(tester, 'open-favorites');
 
     expect(gridPixels(tester), 400);
-    expect(favorites.listLoads, 1);
+    expect(favorites.listLoads, 2, reason: 'refreshed quietly on return');
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  ProductListState favoritesList(WidgetTester tester) =>
+      ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
+          .read(
+            productListProvider(
+              ProductListQuery.favorites(sort: ProductSort.shop),
+            ),
+          )
+          .value!;
+
+  group('the favourites tab shown again', () {
+    setUp(() {
+      favorites
+        ..rows = <CatalogProduct>[for (int i = 0; i < 40; i++) favorite(i)]
+        ..pageSize = 20;
+    });
+
+    /// Scrolls the favourites past their first page.
+    Future<double> scrolled(WidgetTester tester) async {
+      await open(tester);
+      await tab(tester, 'open-favorites');
+      await tester.drag(byKey('favorites-grid'), const Offset(0, -1000));
+      await tester.pumpAndSettle();
+      await tester.drag(byKey('favorites-grid'), const Offset(0, -1000));
+      await tester.pumpAndSettle();
+      expect(favoritesList(tester).items.length, 40);
+      return gridPixels(tester);
+    }
+
+    testWidgets('a heart set on the home keeps the favourites place and '
+        'pages', (WidgetTester tester) async {
+      final double place = await scrolled(tester);
+      expect(place, greaterThan(1000));
+
+      await tab(tester, 'open-home');
+      await tester.tap(byKey('heart-p-1'));
+      await tester.pumpAndSettle();
+      await tab(tester, 'open-favorites');
+
+      expect(
+        favoritesList(tester).items.length,
+        greaterThanOrEqualTo(40),
+        reason: 'the pages that were in; the end of the list may load more',
+      );
+      expect(gridPixels(tester), place);
+      expect(byKey('product-skeletons'), findsNothing);
+    });
+
+    testWidgets('returning offline keeps the list under the stale line', (
+      WidgetTester tester,
+    ) async {
+      final double place = await scrolled(tester);
+      await tab(tester, 'open-home');
+      favorites.listFailure = const NetworkFailure();
+
+      await tab(tester, 'open-favorites');
+
+      expect(favoritesList(tester).items.length, 40);
+      expect(gridPixels(tester), place);
+      expect(byKey('product-skeletons'), findsNothing);
+      tester
+          .state<ScrollableState>(
+            find.descendant(
+              of: byKey('favorites-grid'),
+              matching: find.byType(Scrollable),
+            ),
+          )
+          .position
+          .jumpTo(0);
+      await tester.pump();
+      expect(byKey('stale-line'), findsOneWidget);
+      expect(byKey('product-card-f-0'), findsOneWidget);
+    });
+
+    testWidgets('a heart set elsewhere fades in at the top when the tab '
+        'shows', (WidgetTester tester) async {
+      await open(tester);
+      await tab(tester, 'open-favorites');
+      await tab(tester, 'open-home');
+      favorites.rows = <CatalogProduct>[favorite(99), ...favorites.rows];
+
+      await tab(tester, 'open-favorites');
+
+      expect(byKey('product-card-f-99'), findsOneWidget);
+      expect(
+        tester.getTopLeft(byKey('product-card-f-99')).dx,
+        lessThan(tester.getTopLeft(byKey('product-card-f-0')).dx),
+        reason: 'before the others, at the first place',
+      );
+    });
+
+    testWidgets('a heart taken off elsewhere leaves the list when the tab '
+        'shows', (WidgetTester tester) async {
+      await open(tester);
+      await tab(tester, 'open-favorites');
+      expect(byKey('product-card-f-0'), findsOneWidget);
+      await tab(tester, 'open-home');
+      favorites.rows = favorites.rows.skip(1).toList();
+
+      await tab(tester, 'open-favorites');
+
+      expect(byKey('product-card-f-0'), findsNothing);
+      expect(byKey('product-card-f-1'), findsOneWidget);
+    });
   });
 
   testWidgets('a switch is instant', (WidgetTester tester) async {
