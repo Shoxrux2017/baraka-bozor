@@ -6,8 +6,11 @@ import 'package:baraka_bozor/core/localization/order_labels.dart';
 import 'package:baraka_bozor/core/orders/order_values.dart';
 import 'package:baraka_bozor/core/routing/app_paths.dart';
 import 'package:baraka_bozor/core/storage/token_store.dart';
+import 'package:baraka_bozor/core/theme/kit_colors.dart';
+import 'package:baraka_bozor/features/orders/application/customer_orders_controllers.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_sections.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,6 +20,7 @@ import '../../../support/fake_cart_repository.dart';
 import '../../../support/fake_customer_orders_repository.dart';
 import '../../../support/fake_shopper_orders_repository.dart';
 import '../../../support/in_memory_stores.dart';
+import '../../../support/nonlinear_text_scaler.dart';
 import '../../../support/paragraphs.dart';
 
 const String _phone = '+998901112233';
@@ -58,6 +62,7 @@ void main() {
     Size size = const Size(800, 2400),
     double textScale = 1,
     Locale device = const Locale('ru'),
+    TextScaler? scaler,
   }) async {
     // A fresh app each time, so a test may show several orders.
     await tester.pumpWidget(const SizedBox());
@@ -75,6 +80,7 @@ void main() {
         cart: FakeCartRepository(),
         phoneCalls: phone,
         device: device,
+        textScaler: scaler,
         clock: () => now ?? DateTime.utc(2026, 9, 28, 9),
       ),
     );
@@ -250,6 +256,141 @@ void main() {
       }
     });
 
+    testWidgets(
+      'past stages carry a check, the current is bold, the track shows what is ahead',
+      (WidgetTester tester) async {
+        await show(
+          tester,
+          customerOrderJson(status: 'shopping', changeable: false),
+        );
+
+        final Finder checks = find.descendant(
+          of: byKey('order-status'),
+          matching: find.byWidgetPredicate(
+            (Widget w) => w is Icon && w.icon == Icons.check && w.size == 13,
+          ),
+        );
+        expect(checks, findsOneWidget);
+        expect(tester.widget<Icon>(checks).color, KitColors.primary);
+        // The check leads the first stage, 2 px before its word.
+        expect(
+          tester.getTopLeft(byKey('order-stage-label-0')).dx -
+              tester.getTopRight(checks).dx,
+          2,
+        );
+
+        TextStyle label(int i) =>
+            tester.widget<Text>(byKey('order-stage-label-$i')).style!;
+        expect(textOf(tester, 'order-stage-label-1'), 'Покупаем');
+        expect(label(1).fontWeight, FontWeight.w700);
+        expect(label(0).fontWeight, FontWeight.w500);
+        for (int i = 0; i < 4; i++) {
+          expect(label(i).fontSize, 12);
+          expect(label(i).height, 1.3);
+        }
+        expect(label(0).color, KitColors.ink);
+        expect(label(2).color, KitColors.muted);
+
+        Color? segment(int i) =>
+            ((tester.widget<DecoratedBox>(byKey('order-stage-$i'))).decoration
+                    as BoxDecoration)
+                .color;
+        expect(segment(0), KitColors.primary);
+        expect(segment(1), KitColors.primary);
+        expect(segment(2), KitColors.primary.withValues(alpha: 0.22));
+        expect(
+          find.descendant(
+            of: byKey('order-status'),
+            matching: find.byType(FittedBox),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('a delivered order checks every stage', (
+      WidgetTester tester,
+    ) async {
+      await show(
+        tester,
+        customerOrderJson(
+          status: 'completed',
+          changeable: false,
+          timestamps: <String, Object?>{'completed_at': '2026-09-28T08:30:00Z'},
+        ),
+      );
+
+      expect(
+        find.byWidgetPredicate(
+          (Widget w) => w is Icon && w.icon == Icons.check && w.size == 13,
+        ),
+        findsNWidgets(4),
+      );
+    });
+
+    testWidgets('the stages say «Этап 2 из 4» and the heading', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await show(
+        tester,
+        customerOrderJson(status: 'shopping', changeable: false),
+      );
+
+      expect(
+        find.bySemanticsLabel(ru().orderStageOf(2, 'Покупаем на базаре')),
+        findsOneWidget,
+      );
+      expect(
+        ru().orderStageOf(2, 'Покупаем на базаре'),
+        'Этап 2 из 4: Покупаем на базаре',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('at large text the stages stand as a list', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await show(
+        tester,
+        customerOrderJson(
+          status: 'shopping',
+          changeable: false,
+          timestamps: <String, Object?>{
+            'created_at': '2026-09-28T07:10:00Z',
+            'shopping_started_at': '2026-09-28T07:25:00Z',
+          },
+        ),
+        size: const Size(360, 2400),
+        scaler: const NonlinearTextScaler(2),
+      );
+
+      expect(byKey('order-stages-list'), findsOneWidget);
+      expect(byKey('order-stage-0'), findsNothing, reason: 'no segments');
+      IconData icon(int i) =>
+          tester.widget<Icon>(byKey('order-stage-icon-$i')).icon!;
+      expect(icon(0), Icons.check_circle);
+      expect(icon(1), Icons.radio_button_checked);
+      expect(icon(2), Icons.radio_button_unchecked);
+      expect(icon(3), Icons.radio_button_unchecked);
+      expect(textOf(tester, 'order-stage-label-1'), 'Покупаем на базаре');
+      expect(
+        tester.widget<Text>(byKey('order-stage-label-1')).style!.fontWeight,
+        FontWeight.w700,
+      );
+      expect(textOf(tester, 'order-stage-time-1'), '12:25');
+      expect(
+        tester.getTopRight(byKey('order-stage-time-1')).dx,
+        greaterThan(tester.getTopRight(byKey('order-stage-label-1')).dx),
+      );
+      expect(
+        find.bySemanticsLabel(ru().orderStageOf(2, 'Покупаем на базаре')),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
     testWidgets('an order that may still change says so', (
       WidgetTester tester,
     ) async {
@@ -308,7 +449,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Товары · 3'), findsOneWidget);
+      expect(find.text('Товары · 2'), findsOneWidget);
       expect(
         find.text('2 кг · ${ru().cartLineEstimate('${m(14000)} / кг')}'),
         findsOneWidget,
@@ -318,12 +459,293 @@ void main() {
       expect(find.text('Куплено'), findsOneWidget);
       expect(find.text(m(9000)), findsOneWidget);
       expect(find.text('Не было на базаре — убрали'), findsOneWidget);
-      expect(find.text(m(0)), findsOneWidget);
+      expect(find.text(m(0)), findsNothing);
       expect(
         byKey('order-line-0192f0a0-0000-7000-8000-00000000c014'),
         findsNothing,
       );
     });
+
+    testWidgets(
+      'removed lines stand under «Убрали из заказа · 2» without a sum',
+      (WidgetTester tester) async {
+        await show(
+          tester,
+          customerOrderJson(
+            status: 'shopping',
+            changeable: false,
+            lines: <Object?>[
+              orderLineJson(),
+              orderLineJson(
+                id: lineBread,
+                productId: productBread,
+                status: 'removed',
+                removedReason: 'unavailable',
+              ),
+              orderLineJson(
+                id: lineMilk,
+                productId: productMilk,
+                status: 'removed',
+                removedReason: 'customer_rejected',
+              ),
+            ],
+          ),
+        );
+
+        final Finder header = find.text('Убрали из заказа · 2');
+        expect(header, findsOneWidget);
+        final TextStyle style = tester.widget<Text>(header).style!;
+        expect(style.fontSize, 14);
+        expect(style.fontWeight, FontWeight.w600);
+        expect(style.color, KitColors.ink2);
+        final Finder group = byKey('order-removed-group');
+        for (final String id in <String>[lineBread, lineMilk]) {
+          final Finder row = find.descendant(
+            of: group,
+            matching: byKey('order-line-$id'),
+          );
+          expect(row, findsOneWidget, reason: id);
+          expect(
+            find.descendant(of: row, matching: find.textContaining('сум')),
+            findsNothing,
+            reason: id,
+          );
+        }
+        expect(
+          find.descendant(of: group, matching: byKey('order-line-$lineTomato')),
+          findsNothing,
+        );
+        expect(find.text('Товары · 1'), findsOneWidget);
+      },
+    );
+
+    testWidgets('no removed lines, no group', (WidgetTester tester) async {
+      await show(tester, customerOrderJson());
+
+      expect(byKey('order-removed-group'), findsNothing);
+      expect(find.textContaining('Убрали из заказа'), findsNothing);
+    });
+
+    testWidgets('the header and the amounts count the same lines', (
+      WidgetTester tester,
+    ) async {
+      await show(
+        tester,
+        customerOrderJson(
+          lines: <Object?>[
+            orderLineJson(),
+            orderLineJson(
+              id: lineBread,
+              productId: productBread,
+              unit: 'piece',
+              quantity: '2',
+            ),
+            orderLineJson(
+              id: lineMilk,
+              productId: productMilk,
+              unit: 'piece',
+              status: 'removed',
+              removedReason: 'unavailable',
+            ),
+            orderLineJson(id: '0192f0a0-0000-7000-8000-00000000c015'),
+          ],
+        ),
+      );
+
+      expect(find.text('Товары · 3'), findsOneWidget);
+      expect(find.text('Товары (3)'), findsOneWidget);
+    });
+
+    testWidgets('a cancelled order keeps its lines in the list', (
+      WidgetTester tester,
+    ) async {
+      await show(
+        tester,
+        customerOrderJson(
+          status: 'cancelled',
+          changeable: false,
+          lines: <Object?>[
+            orderLineJson(status: 'removed', removedReason: 'order_cancelled'),
+            orderLineJson(
+              id: lineBread,
+              productId: productBread,
+              status: 'removed',
+              removedReason: 'order_cancelled',
+            ),
+          ],
+        ),
+      );
+
+      expect(byKey('order-removed-group'), findsNothing);
+      expect(find.text('Товары · 2'), findsOneWidget);
+      expect(byKey('order-line-$lineTomato'), findsOneWidget);
+      expect(byKey('order-line-$lineBread'), findsOneWidget);
+    });
+
+    testWidgets(
+      'a line removed meanwhile folds out of the lines and into the group',
+      (WidgetTester tester) async {
+        Map<String, Object?> json({required bool removed}) => customerOrderJson(
+          status: 'shopping',
+          changeable: false,
+          lines: <Object?>[
+            orderLineJson(),
+            orderLineJson(
+              id: lineBread,
+              productId: productBread,
+              status: removed ? 'removed' : 'pending',
+              removedReason: removed ? 'unavailable' : null,
+            ),
+          ],
+        );
+        await show(tester, json(removed: false));
+        expect(byKey('order-removed-group'), findsNothing);
+        expect(find.text('Товары · 2'), findsOneWidget);
+
+        orders.rows = <Map<String, Object?>>[json(removed: true)];
+        ProviderScope.containerOf(anywhere(tester))
+            .invalidate(customerOrderProvider(orderOne));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        // Mid-way the line still folds in the lines and already stands in the
+        // group.
+        expect(byKey('order-line-$lineBread'), findsNWidgets(2));
+        await tester.pumpAndSettle();
+
+        expect(byKey('order-line-$lineBread'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: byKey('order-removed-group'),
+            matching: byKey('order-line-$lineBread'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Убрали из заказа · 1'), findsOneWidget);
+        expect(find.text('Товары · 1'), findsOneWidget);
+      },
+    );
+
+    testWidgets('at 100 % the sum stands beside the name', (
+      WidgetTester tester,
+    ) async {
+      await show(tester, customerOrderJson());
+
+      final Finder row = byKey('order-line-$lineTomato');
+      final Rect name = tester.getRect(
+        find.descendant(of: row, matching: find.textContaining('Помидоры')),
+      );
+      final Rect amount = tester.getRect(
+        find.descendant(
+          of: row,
+          matching: find.text(ru().cartLineEstimate(m(27600))),
+        ),
+      );
+      expect(amount.left, greaterThan(name.right));
+      expect(amount.top, lessThan(name.bottom));
+    });
+
+    testWidgets('at large text the sum stands under the name', (
+      WidgetTester tester,
+    ) async {
+      await show(
+        tester,
+        customerOrderJson(),
+        size: const Size(360, 3000),
+        scaler: const NonlinearTextScaler(2),
+      );
+
+      final Finder row = byKey('order-line-$lineTomato');
+      final Finder sum = find.descendant(
+        of: row,
+        matching: find.text(ru().cartLineEstimate(m(27600))),
+      );
+      final Rect name = tester.getRect(
+        find.descendant(of: row, matching: find.textContaining('Помидоры')),
+      );
+      final Rect amount = tester.getRect(sum);
+      expect(amount.top, greaterThanOrEqualTo(name.bottom));
+      expect(amount.left, tester.getRect(row).left + 60);
+      final TextStyle style = tester.widget<Text>(sum).style!;
+      expect(style.fontSize, 14);
+      expect(style.fontWeight, FontWeight.w700);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a six-digit sum on a 320 dp phone stands whole', (
+      WidgetTester tester,
+    ) async {
+      await loadMontserrat();
+      await show(
+        tester,
+        customerOrderJson(
+          status: 'shopping',
+          changeable: false,
+          lines: <Object?>[
+            orderLineJson(
+              id: lineBread,
+              productId: productBread,
+              quantity: '1.500',
+              status: 'purchased',
+              patch: <String, Object?>{
+                'billable_unit_price_uzs': 188975,
+                'line_total_uzs': 283463,
+              },
+            ),
+          ],
+        ),
+        size: const Size(320, 3000),
+      );
+
+      final Finder row = byKey('order-line-$lineBread');
+      final Finder sum = find.descendant(
+        of: row,
+        matching: find.text(m(283463)),
+      );
+      expect(sum, findsOneWidget);
+      expect(
+        find.descendant(of: row, matching: find.byType(FittedBox)),
+        findsNothing,
+      );
+      expect(cutParagraphs(tester, sum), isEmpty);
+      expect(linesOf(paragraphsIn(tester, sum).single), 1);
+      expect(
+        tester.getRect(sum).right,
+        lessThanOrEqualTo(tester.getRect(row).right),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    for (final (String, TextScaler) scale in const <(String, TextScaler)>[
+      ('100 %', TextScaler.noScaling),
+      ('200 %', NonlinearTextScaler(2)),
+    ]) {
+      testWidgets(
+        'the lines and the removed group meet the guideline at ${scale.$1}',
+        (WidgetTester tester) async {
+          await show(
+            tester,
+            customerOrderJson(
+              status: 'shopping',
+              changeable: false,
+              lines: <Object?>[
+                orderLineJson(),
+                orderLineJson(
+                  id: lineBread,
+                  productId: productBread,
+                  status: 'removed',
+                  removedReason: 'unavailable',
+                ),
+              ],
+            ),
+            size: const Size(360, 800),
+            scaler: scale.$2,
+          );
+
+          expect(byKey('order-removed-group'), findsOneWidget);
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        },
+      );
+    }
 
     testWidgets('only an estimate price carries "≈"', (
       WidgetTester tester,
@@ -388,6 +810,8 @@ void main() {
           changeable: false,
           lines: <Object?>[questionLineJson('price_over_tolerance')],
         ),
+        // Before the question's 13:00, or the phone's clock calls it over.
+        now: DateTime.utc(2026, 9, 28, 7, 30),
       );
 
       expect(find.text('Ждёт вашего ответа'), findsOneWidget);
@@ -463,35 +887,6 @@ void main() {
 
       expect(find.text(m(48463)), findsOneWidget);
       expect(find.text(ru().cartEstimateNote), findsNothing);
-    });
-
-    testWidgets('the goods count leaves the removed lines out', (
-      WidgetTester tester,
-    ) async {
-      await show(
-        tester,
-        customerOrderJson(
-          lines: <Object?>[
-            orderLineJson(),
-            orderLineJson(
-              id: lineBread,
-              productId: productBread,
-              unit: 'piece',
-              quantity: '2',
-            ),
-            orderLineJson(
-              id: lineMilk,
-              productId: productMilk,
-              unit: 'piece',
-              status: 'removed',
-              removedReason: 'unavailable',
-            ),
-          ],
-        ),
-      );
-
-      expect(find.text('Товары (2)'), findsOneWidget);
-      expect(find.text('Товары · 3'), findsOneWidget);
     });
 
     testWidgets('nothing due reads "К оплате нет"', (
@@ -948,7 +1343,10 @@ void main() {
                         'proposed_quantity': null,
                         'replacement': null,
                         'request_note': 'Qizili qolmadi',
-                        'expires_at': '2026-09-28T08:00:00Z',
+                        'expires_at': '2026-09-28T09:30:00Z',
+                        'estimate_if_approved_uzs': 99999999,
+                        'change_if_approved_uzs': 99999999,
+                        'change_if_rejected_uzs': -99999999,
                       },
                       'customer_note': 'n' * 160,
                       'line_total_uzs': 99999999,

@@ -21,7 +21,9 @@ use App\Models\OrderCancellationRequest;
 use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\User;
+use App\Modules\Catalog\ProductImages;
 use App\Modules\Orders\Http\Resources\CustomerOrderResource;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,6 +31,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -361,10 +364,190 @@ final class CustomerApprovalsApiTest extends TestCase
                 'name_uz' => $substitution->replacement_name_uz_snapshot,
                 'name_ru' => $substitution->replacement_name_ru_snapshot,
                 'customer_unit_price_uzs' => 12650,
+                'image_url' => null,
             ],
             'request_note' => null,
             'expires_at' => $substitution->expires_at->toIso8601ZuluString(),
+            'estimate_if_approved_uzs' => 25300,
+            'change_if_approved_uzs' => 25300 - $line['line_total_uzs'],
+            'change_if_rejected_uzs' => -$line['line_total_uzs'],
         ], $line['pending_approval']);
+    }
+
+    /**
+     * @return array<string, array{0: string|null, 1: string|null, 2: int, 3: int, 4: int}>
+     */
+    public static function whatEachAnswerDoes(): array
+    {
+        return [
+            'a price question' => [null, null, 25300, 5300, -20000],
+            'a reduced quantity' => ['reducedQuantity', null, 15000, -5000, -20000],
+            'a substitution' => ['substitution', null, 25300, 5300, -20000],
+            'a reduced quantity after an earlier price yes' => ['reducedQuantity', '11000', 16500, -5500, -22000],
+        ];
+    }
+
+    #[DataProvider('whatEachAnswerDoes')]
+    public function test_a_question_says_what_each_answer_does_to_the_line(?string $state, ?string $earlierCeiling, int $estimate, int $change, int $rejected): void
+    {
+        $approval = $this->yesOn($state);
+        if ($earlierCeiling !== null) {
+            $approval->item->forceFill(['approved_unit_price_ceiling_uzs' => (int) $earlierCeiling])->save();
+        }
+
+        $question = $this->as($this->customer)->getJson("/api/v1/customer/orders/{$this->order->id}")->assertOk()->json('data.items.0.pending_approval');
+
+        $this->assertSame($estimate, $question['estimate_if_approved_uzs']);
+        $this->assertSame($change, $question['change_if_approved_uzs']);
+        $this->assertSame($rejected, $question['change_if_rejected_uzs']);
+        $this->assertSame(OrderItemStatus::AwaitingCustomer, $approval->item->fresh()->status, 'A read writes nothing.');
+        $this->assertNull($approval->item->fresh()->approved_quantity_cap);
+    }
+
+    #[DataProvider('kindsOfQuestion')]
+    public function test_the_money_effect_is_what_the_answer_then_shows(?string $state): void
+    {
+        $approval = $this->yesOn($state);
+        $read = fn (): array => $this->as($this->customer)->getJson("/api/v1/customer/orders/{$this->order->id}")->assertOk()->json('data.items.0');
+        $before = $read();
+
+        $this->decide($approval, 'approve')->assertOk();
+
+        $after = $read();
+        $this->assertSame($before['pending_approval']['change_if_approved_uzs'], $after['line_total_uzs'] - $before['line_total_uzs']);
+        $this->assertSame($before['pending_approval']['estimate_if_approved_uzs'], $after['line_total_uzs']);
+    }
+
+    public function test_the_replacement_shows_its_picture(): void
+    {
+        $with = $this->yesOn('substitution');
+        $image = ProductImage::factory()->create(['product_id' => $with->replacement_product_id]);
+
+        $url = $this->as($this->customer)->getJson("/api/v1/customer/orders/{$this->order->id}")->assertOk()->json('data.items.0.pending_approval.replacement.image_url');
+        $this->assertSame(ProductImages::url($image), $url);
+
+        $image->delete();
+        $url = $this->as($this->customer)->getJson("/api/v1/customer/orders/{$this->order->id}")->assertOk()->json('data.items.0.pending_approval.replacement.image_url');
+        $this->assertNull($url);
+    }
+
+    /**
+     * @return array<string, array{0: string|null, 1: int, 2: array{customer_unit_price_uzs: int|null, quantity: string|null}}>
+     */
+    public static function kindsOfYes(): array
+    {
+        return [
+            'a price question' => [null, 25300, ['customer_unit_price_uzs' => 12650, 'quantity' => null]],
+            'a reduced quantity' => ['reducedQuantity', 15000, ['customer_unit_price_uzs' => null, 'quantity' => '1.500']],
+            'a substitution' => ['substitution', 25300, ['customer_unit_price_uzs' => 12650, 'quantity' => null]],
+        ];
+    }
+
+    /**
+     * @return array<string, array{0: string|null}>
+     */
+    public static function kindsOfQuestion(): array
+    {
+        return [
+            'a price question' => [null],
+            'a reduced quantity' => ['reducedQuantity'],
+            'a substitution' => ['substitution'],
+        ];
+    }
+
+    /**
+     * @param  array{customer_unit_price_uzs: int|null, quantity: string|null}  $agreed
+     */
+    #[DataProvider('kindsOfYes')]
+    public function test_a_yes_moves_the_line_to_what_was_agreed(?string $state, int $lineTotal, array $agreed): void
+    {
+        $approval = $this->yesOn($state);
+
+        $this->decide($approval, 'approve')->assertOk();
+
+        $data = $this->as($this->customer)->getJson("/api/v1/customer/orders/{$this->order->id}")->assertOk()->json('data');
+        $line = $data['items'][0];
+        $this->assertSame($lineTotal, $line['line_total_uzs']);
+        $this->assertSame($agreed, $line['agreed']);
+        $this->assertSame($lineTotal, $data['totals']['merchandise_subtotal_uzs']);
+        if ($state === 'substitution') {
+            $this->assertSame($approval->replacement_name_ru_snapshot, $line['replacement']['name_ru']);
+        }
+    }
+
+    #[DataProvider('kindsOfQuestion')]
+    public function test_the_list_and_the_order_agree_on_the_estimate_in_force(?string $state): void
+    {
+        $this->decide($this->yesOn($state), 'approve')->assertOk();
+
+        $detail = $this->as($this->customer)->getJson("/api/v1/customer/orders/{$this->order->id}")->assertOk()->json('data.totals.total_uzs');
+        $listed = $this->as($this->customer)->getJson('/api/v1/customer/orders')->assertOk()->json('data.0.total_uzs');
+
+        $this->assertSame($detail, $listed);
+    }
+
+    public function test_an_automatic_replacement_keeps_the_snapshot_estimate(): void
+    {
+        $line = $this->twoKilosAtTenThousand();
+        $line->forceFill(['approved_unit_price_ceiling_uzs' => 12650])->save();
+        $replacement = Product::factory()->create();
+        $line->forceFill([
+            'fulfilled_product_id' => $replacement->id,
+            'fulfilled_product_name_uz_snapshot' => $replacement->name_uz,
+            'fulfilled_product_name_ru_snapshot' => $replacement->name_ru,
+            'fulfilled_unit_code_snapshot' => $line->unit_code_snapshot,
+            'substitution_resolution' => SubstitutionResolution::Automatic,
+        ])->save();
+
+        $item = $this->as($this->customer)->getJson("/api/v1/customer/orders/{$this->order->id}")->assertOk()->json('data.items.0');
+
+        $this->assertSame(20000, $item['line_total_uzs']);
+        $this->assertNull($item['agreed']);
+    }
+
+    public function test_agreed_is_shown_on_an_open_line_and_not_on_a_bought_one(): void
+    {
+        $bought = OrderItem::factory()->for($this->order)->purchased()->create([
+            'approved_quantity_cap' => '1.500',
+            'purchased_quantity' => '1.500',
+            'billable_quantity' => '1.500',
+            'line_total_uzs' => fn (array $attributes): int => intdiv($attributes['customer_unit_price_uzs_snapshot'] * 3, 2),
+        ]);
+        $awaiting = OrderItem::factory()->for($this->order)->awaitingCustomer()->create(['approved_quantity_cap' => '1.500']);
+
+        $items = collect($this->as($this->customer)->getJson("/api/v1/customer/orders/{$this->order->id}")->assertOk()->json('data.items'));
+
+        $this->assertNull($items->firstWhere('id', $bought->id)['agreed']);
+        $this->assertSame(
+            ['customer_unit_price_uzs' => null, 'quantity' => '1.500'],
+            $items->firstWhere('id', $awaiting->id)['agreed'],
+        );
+    }
+
+    /**
+     * An open question on a line of 2 kg at 10 000, and the line.
+     */
+    private function yesOn(?string $state): CustomerApproval
+    {
+        $line = $this->twoKilosAtTenThousand();
+
+        $factory = match ($state) {
+            'reducedQuantity' => CustomerApproval::factory()->reducedQuantity('1.500'),
+            'substitution' => CustomerApproval::factory()->substitution(),
+            default => CustomerApproval::factory()->state(['proposed_customer_unit_price_uzs' => 12650]),
+        };
+
+        return $factory->create(['order_item_id' => $line->id]);
+    }
+
+    private function twoKilosAtTenThousand(): OrderItem
+    {
+        return OrderItem::factory()->for($this->order)->awaitingCustomer()->create([
+            'unit_code_snapshot' => 'kg',
+            'price_mode_snapshot' => 'estimate',
+            'customer_unit_price_uzs_snapshot' => 10000,
+            'ordered_quantity' => '2.000',
+        ]);
     }
 
     /**

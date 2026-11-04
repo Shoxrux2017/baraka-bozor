@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Modules\Catalog\ProductImages;
 use App\Modules\Orders\ApprovalExpiry;
+use App\Modules\Orders\ApprovalTerms;
 use App\Modules\Orders\CourierContact;
 use App\Modules\Orders\OrderPermissions;
 use App\Modules\Orders\OrderRatings;
@@ -31,14 +32,25 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * (`DL-64` (4)), and the Customer's rating of it with whether it can still be
  * rated (`DL-91` (4)). Refunds arrive with Wave 5; until then the list is empty.
  *
- * Expects `items.product.image`, `currentShopperAssignment`,
- * `currentCourierAssignment.courier`, `approvals`, `livePayment` and
- * `latestCancellationRequest` and `rating` loaded.
+ * Expects `self::RELATIONS` loaded.
  *
  * @property-read Order $resource
  */
 final class CustomerOrderResource extends JsonResource
 {
+    /**
+     * What an order is loaded with for this resource.
+     */
+    public const RELATIONS = [
+        'items.product.image',
+        'currentShopperAssignment',
+        'currentCourierAssignment.courier',
+        'approvals.replacementProduct.image',
+        'livePayment',
+        'latestCancellationRequest',
+        'rating',
+    ];
+
     public function __construct(Order $order)
     {
         parent::__construct($order);
@@ -163,6 +175,9 @@ final class CustomerOrderResource extends JsonResource
                 'name_uz' => $item->fulfilled_product_name_uz_snapshot,
                 'name_ru' => $item->fulfilled_product_name_ru_snapshot,
             ],
+            // What the Customer's yes put in force on a line still to buy,
+            // also while a new question on it is open (`DL-130` (2)).
+            'agreed' => ApprovalTerms::agreedOf($item),
             'pending_approval' => $question === null ? null : [
                 'id' => $question->id,
                 'type' => $question->type->value,
@@ -174,9 +189,13 @@ final class CustomerOrderResource extends JsonResource
                     'name_uz' => $question->replacement_name_uz_snapshot,
                     'name_ru' => $question->replacement_name_ru_snapshot,
                     'customer_unit_price_uzs' => $question->proposed_customer_unit_price_uzs,
+                    'image_url' => ProductImages::url($question->replacementProduct?->image),
                 ],
                 'request_note' => $question->request_note,
                 'expires_at' => $question->expires_at->toIso8601ZuluString(),
+                // What each answer does to the line, so the Customer decides
+                // knowing it (`DL-130` (3)).
+                ...ApprovalTerms::effectsOf($question, $item),
             ],
         ];
     }

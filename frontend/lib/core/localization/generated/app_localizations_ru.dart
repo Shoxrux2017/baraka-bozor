@@ -3047,11 +3047,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String questionExpires(String time) {
-    return 'Ответьте до $time';
-  }
-
-  @override
   String get questionApprove => 'Согласиться';
 
   @override
@@ -3117,10 +3112,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get errorApprovalExpired => 'Время ответа на вопрос истекло.';
-
-  @override
-  String get questionRejectRemoves =>
-      'Если откажетесь, этот товар уберут из заказа.';
 
   @override
   String get questionDropsReplacement =>
@@ -4095,6 +4086,39 @@ class AppLocalizationsRu extends AppLocalizations {
   String get progressDelivered => 'Доставлен';
 
   @override
+  String orderStageOf(int stage, String label) {
+    return 'Этап $stage из 4: $label';
+  }
+
+  @override
+  String orderRemovedGroup(int count) {
+    return 'Убрали из заказа · $count';
+  }
+
+  @override
+  String orderAgreed(String terms) {
+    return 'Вы согласились: $terms';
+  }
+
+  @override
+  String get orderAgreedReplacement => 'Вы согласились на замену';
+
+  @override
+  String orderAgreedSpoken(String name, String terms) {
+    return 'Вы согласились: $name, $terms';
+  }
+
+  @override
+  String orderAgreedReplacementSpoken(String name) {
+    return 'Вы согласились на замену: $name';
+  }
+
+  @override
+  String orderRejectedSpoken(String name) {
+    return 'Вы отказались: $name уберут из заказа';
+  }
+
+  @override
   String get orderCanStillChange =>
       'Пока сборщик не начал, заказ можно изменить или отменить.';
 
@@ -4512,6 +4536,62 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return 'осталось $_temp0';
   }
+
+  @override
+  String questionEffectApprove(String what) {
+    return 'Согласитесь: $what —';
+  }
+
+  @override
+  String questionEffectReject(String name) {
+    return 'Откажетесь: «$name» уберут из заказа,';
+  }
+
+  @override
+  String deadlineLeftUntil(int minutes, String time) {
+    return 'Осталось $minutes мин · до $time';
+  }
+
+  @override
+  String questionHeaderSpoken(String title, String left) {
+    return '$title, $left';
+  }
+
+  @override
+  String questionExpiredSpoken(String name) {
+    return 'Время ответа истекло: $name уберут из заказа';
+  }
+
+  @override
+  String questionArrivedPrice(String name) {
+    return 'Новый вопрос от сборщика: цена на «$name»';
+  }
+
+  @override
+  String questionArrivedSubstitution(String name) {
+    return 'Новый вопрос от сборщика: замена для «$name»';
+  }
+
+  @override
+  String questionArrivedQuantity(String name) {
+    return 'Новый вопрос от сборщика: количество «$name»';
+  }
+
+  @override
+  String lineBoughtSpoken(String name, String amount) {
+    return 'Сборщик купил: $name, $amount';
+  }
+
+  @override
+  String linesBoughtSpoken(int count) {
+    return 'Сборщик купил товаров: $count';
+  }
+
+  @override
+  String get questionPill => 'Сборщик спрашивает';
+
+  @override
+  String get questionPillSpoken => 'Показать вопрос сборщика';
 
   @override
   String get refreshDone => 'Обновлено';

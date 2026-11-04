@@ -13,8 +13,9 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 /**
  * Per-order sums of the lines not removed, computed in SQL so a page of
  * orders does not load its lines (`DL-42` (5)): `item_count`,
- * `lines_subtotal_uzs` — each line's stored total, or its price times the
- * ordered quantity, half-up (`round()` on a non-negative numeric, as
+ * `lines_subtotal_uzs` — each line's stored total, or its price in force
+ * times the quantity in force (`OrderTotals::lineEstimate`, `DL-130` (1)),
+ * half-up (`round()` on a non-negative numeric, as
  * `order_items_line_total_check`) — and `has_estimate_line`. `OrderTotals`
  * turns them into the order's totals.
  */
@@ -35,7 +36,7 @@ final class OrderLineSums
                 ->whereColumn('order_items.order_id', 'orders.id')
                 ->where('order_items.status', '<>', $removed), 'item_count')
             ->selectSub(static fn (QueryBuilder $lines) => $lines->from('order_items')
-                ->selectRaw('coalesce(sum(coalesce(line_total_uzs, round(customer_unit_price_uzs_snapshot * ordered_quantity))), 0)')
+                ->selectRaw('coalesce(sum(coalesce(line_total_uzs, round((case when fulfilled_product_id is not null and approved_replacement_price_uzs is not null then approved_replacement_price_uzs when fulfilled_product_id is null and approved_unit_price_ceiling_uzs is not null then approved_unit_price_ceiling_uzs else customer_unit_price_uzs_snapshot end) * coalesce(approved_quantity_cap, ordered_quantity)))), 0)')
                 ->whereColumn('order_items.order_id', 'orders.id')
                 ->where('order_items.status', '<>', $removed), 'lines_subtotal_uzs')
             ->selectSub(static fn (QueryBuilder $lines) => $lines->from('order_items')

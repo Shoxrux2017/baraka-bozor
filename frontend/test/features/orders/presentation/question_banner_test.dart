@@ -27,6 +27,19 @@ Map<String, Object?> _pending(
   'expires_at': expiresAt,
 };
 
+/// The tomato line's price question, answerable until [expiresAt]: the
+/// device clock must be before it for the card to ask (`DL-130`).
+Map<String, Object?> _askedUntil(String expiresAt) {
+  final Map<String, Object?> line = questionLineJson('price_over_tolerance');
+  return <String, Object?>{
+    ...line,
+    'pending_approval': <String, Object?>{
+      ...line['pending_approval']! as Map<String, Object?>,
+      'expires_at': expiresAt,
+    },
+  };
+}
+
 /// The home's question banner (`DL-92` item 2) through the real router and
 /// screens, with the repositories faked.
 void main() {
@@ -63,7 +76,7 @@ void main() {
           id: _orderTwo,
           status: 'shopping',
           changeable: false,
-          lines: <Object?>[questionLineJson('price_over_tolerance')],
+          lines: <Object?>[_askedUntil('2026-10-19T07:55:00Z')],
         ),
       ],
     );

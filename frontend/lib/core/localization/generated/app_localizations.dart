@@ -5228,12 +5228,6 @@ abstract class AppLocalizations {
   /// **'{name}: topilmadi. O\'rniga — {replacement}, {price}. Rozimisiz?'**
   String questionSubstitution(String name, String replacement, String price);
 
-  /// No description provided for @questionExpires.
-  ///
-  /// In uz, this message translates to:
-  /// **'Javob berish muddati: {time}gacha'**
-  String questionExpires(String time);
-
   /// No description provided for @questionApprove.
   ///
   /// In uz, this message translates to:
@@ -5347,12 +5341,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Savolga javob berish vaqti o\'tgan.'**
   String get errorApprovalExpired;
-
-  /// No description provided for @questionRejectRemoves.
-  ///
-  /// In uz, this message translates to:
-  /// **'Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.'**
-  String get questionRejectRemoves;
 
   /// No description provided for @questionDropsReplacement.
   ///
@@ -6848,6 +6836,48 @@ abstract class AppLocalizations {
   /// **'Yetkazildi'**
   String get progressDelivered;
 
+  /// No description provided for @orderStageOf.
+  ///
+  /// In uz, this message translates to:
+  /// **'{stage}-bosqich, 4 tadan: {label}'**
+  String orderStageOf(int stage, String label);
+
+  /// No description provided for @orderRemovedGroup.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmadan olib tashlandi · {count}'**
+  String orderRemovedGroup(int count);
+
+  /// No description provided for @orderAgreed.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz rozi bo\'ldingiz: {terms}'**
+  String orderAgreed(String terms);
+
+  /// No description provided for @orderAgreedReplacement.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz almashtirishga rozi bo\'ldingiz'**
+  String get orderAgreedReplacement;
+
+  /// No description provided for @orderAgreedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz rozi bo\'ldingiz: {name}, {terms}'**
+  String orderAgreedSpoken(String name, String terms);
+
+  /// No description provided for @orderAgreedReplacementSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz almashtirishga rozi bo\'ldingiz: {name}'**
+  String orderAgreedReplacementSpoken(String name);
+
+  /// No description provided for @orderRejectedSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Siz rad etdingiz: {name} buyurtmadan olib tashlanadi'**
+  String orderRejectedSpoken(String name);
+
   /// No description provided for @orderCanStillChange.
   ///
   /// In uz, this message translates to:
@@ -7537,6 +7567,78 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'{minutes} daqiqa qoldi'**
   String deadlineLeftSpoken(int minutes);
+
+  /// No description provided for @questionEffectApprove.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rozi bo\'lsangiz: {what} —'**
+  String questionEffectApprove(String what);
+
+  /// No description provided for @questionEffectReject.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rad etsangiz: «{name}» buyurtmadan olib tashlanadi,'**
+  String questionEffectReject(String name);
+
+  /// No description provided for @deadlineLeftUntil.
+  ///
+  /// In uz, this message translates to:
+  /// **'{minutes} daqiqa qoldi · {time} gacha'**
+  String deadlineLeftUntil(int minutes, String time);
+
+  /// No description provided for @questionHeaderSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{title}, {left}'**
+  String questionHeaderSpoken(String title, String left);
+
+  /// No description provided for @questionExpiredSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob vaqti tugadi: {name} buyurtmadan olib tashlanadi'**
+  String questionExpiredSpoken(String name);
+
+  /// No description provided for @questionArrivedPrice.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchidan yangi savol: «{name}» narxi'**
+  String questionArrivedPrice(String name);
+
+  /// No description provided for @questionArrivedSubstitution.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchidan yangi savol: «{name}» o\'rniga boshqa mahsulot'**
+  String questionArrivedSubstitution(String name);
+
+  /// No description provided for @questionArrivedQuantity.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchidan yangi savol: «{name}» miqdori'**
+  String questionArrivedQuantity(String name);
+
+  /// No description provided for @lineBoughtSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi sotib oldi: {name}, {amount}'**
+  String lineBoughtSpoken(String name, String amount);
+
+  /// No description provided for @linesBoughtSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi {count} ta mahsulot sotib oldi'**
+  String linesBoughtSpoken(int count);
+
+  /// No description provided for @questionPill.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi so\'ramoqda'**
+  String get questionPill;
+
+  /// No description provided for @questionPillSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Yig\'uvchi savolini ko\'rsatish'**
+  String get questionPillSpoken;
 
   /// No description provided for @refreshDone.
   ///

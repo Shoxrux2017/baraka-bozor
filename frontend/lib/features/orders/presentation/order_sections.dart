@@ -7,6 +7,7 @@ import '../../../core/formatting/money_format.dart';
 import '../../../core/formatting/order_dates.dart';
 import '../../../core/formatting/phone_format.dart';
 import '../../../core/formatting/tashkent_time.dart';
+import '../../../core/layout/text_width.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
@@ -22,6 +23,7 @@ import '../../../core/widgets/failure_message.dart';
 import '../../../core/widgets/product_image.dart';
 import '../../cart/presentation/cart_summary.dart';
 import '../domain/customer_orders.dart';
+import 'line_flash.dart';
 import 'order_cards.dart';
 import 'reorder_sheet.dart';
 
@@ -36,12 +38,27 @@ const ColorFilter _grey = ColorFilter.matrix(<double>[
   0, 0, 0, 1, 0,
 ]);
 
-/// The lines the Customer still orders: their own removals are gone from
-/// what they see.
-List<CustomerOrderLine> shownLines(CustomerOrder order) => <CustomerOrderLine>[
+/// The lines the Customer still orders: those not removed, and those an
+/// order's cancellation took (`DL-130`). The header and the amounts count
+/// these.
+List<CustomerOrderLine> keptLines(CustomerOrder order) => <CustomerOrderLine>[
   for (final CustomerOrderLine line in order.lines)
-    if (line.removedReason != ItemRemovedReason.customerRemoved) line,
+    if (!line.removed || line.removedReason == ItemRemovedReason.orderCancelled)
+      line,
 ];
+
+/// The lines taken out of a living order: not in the shop, refused, not
+/// answered in time, or removed by the operator. The Customer's own removals
+/// are in neither list.
+List<CustomerOrderLine> droppedLines(CustomerOrder order) =>
+    <CustomerOrderLine>[
+      for (final CustomerOrderLine line in order.lines)
+        if (line.removedReason == ItemRemovedReason.unavailable ||
+            line.removedReason == ItemRemovedReason.customerRejected ||
+            line.removedReason == ItemRemovedReason.approvalExpired ||
+            line.removedReason == ItemRemovedReason.operatorRemoved)
+          line,
+    ];
 
 /// A white card with the kit's shadow.
 class _Card extends StatelessWidget {
@@ -161,10 +178,7 @@ class OrderStatusCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (!cancelled) ...<Widget>[
-              const SizedBox(height: 16),
-              _StageBar(order: order),
-            ],
+            if (!cancelled) _StageBar(order: order, heading: title),
             if (order.canEdit) ...<Widget>[
               const SizedBox(height: 12),
               Text(
@@ -249,16 +263,23 @@ class OrderStatusCard extends StatelessWidget {
   }
 }
 
-/// Accepted, shopping, on the way, delivered: the stages reached in the
-/// brand colour, each with the time it was reached when the server knows it.
+/// Accepted, shopping, on the way, delivered (`DL-130`): four 4 px segments
+/// on a visible track, the stages reached in the brand colour, a check before
+/// each stage already passed, the current one bold, and the time a stage was
+/// reached when the server knows it. At large text the bar stands up as a
+/// list. Either way it reads as one node, «Этап 2 из 4: …», worded with the
+/// status card's [heading].
 class _StageBar extends StatelessWidget {
-  const _StageBar({required this.order});
+  const _StageBar({required this.order, required this.heading});
 
   final CustomerOrder order;
+  final String heading;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final TextScaler scaler = MediaQuery.textScalerOf(context);
+    final bool vertical = textScaleAt(scaler, 12) > 1.3;
     final int stage = orderStage(order.status);
     final List<String> labels = <String>[
       l10n.progressAccepted,
@@ -272,7 +293,29 @@ class _StageBar extends StatelessWidget {
       order.onTheWayAt,
       order.completedAt,
     ];
+    // A stage is past once the order has moved on from it; every one is,
+    // once delivered.
+    bool past(int i) => stage == 4 || i < stage - 1;
 
+    return Semantics(
+      container: true,
+      excludeSemantics: true,
+      label: l10n.orderStageOf(stage, heading),
+      child: Padding(
+        padding: EdgeInsets.only(top: vertical ? 14 : 16),
+        child: vertical
+            ? _stageList(scaler, stage, labels, times, past)
+            : _stageSegments(stage, labels, times, past),
+      ),
+    );
+  }
+
+  Widget _stageSegments(
+    int stage,
+    List<String> labels,
+    List<DateTime?> times,
+    bool Function(int) past,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -288,37 +331,53 @@ class _StageBar extends StatelessWidget {
                   child: DecoratedBox(
                     key: ValueKey<String>('order-stage-$i'),
                     decoration: BoxDecoration(
-                      color: i < stage ? KitColors.primary : KitColors.line,
+                      color: i < stage
+                          ? KitColors.primary
+                          : KitColors.primary.withValues(alpha: 0.22),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
                 const SizedBox(height: 6),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text(
-                    labels[i],
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: i < stage ? KitColors.ink : KitColors.muted,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    if (past(i)) ...<Widget>[
+                      const Padding(
+                        padding: EdgeInsets.only(top: 1),
+                        child: Icon(
+                          Icons.check,
+                          size: 13,
+                          color: KitColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                    ],
+                    Flexible(
+                      child: Text(
+                        labels[i],
+                        key: ValueKey<String>('order-stage-label-$i'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.3,
+                          fontWeight: i == stage - 1
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: i < stage ? KitColors.ink : KitColors.muted,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
                 if (i < stage && times[i] != null)
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      TashkentTime.time(times[i]!),
-                      key: ValueKey<String>('order-stage-time-$i'),
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: KitColors.muted,
-                      ),
+                  Text(
+                    TashkentTime.time(times[i]!),
+                    key: ValueKey<String>('order-stage-time-$i'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.3,
+                      fontWeight: FontWeight.w400,
+                      color: KitColors.muted,
                     ),
                   ),
               ],
@@ -328,19 +387,121 @@ class _StageBar extends StatelessWidget {
       ],
     );
   }
+
+  Widget _stageList(
+    TextScaler scaler,
+    int stage,
+    List<String> labels,
+    List<DateTime?> times,
+    bool Function(int) past,
+  ) {
+    return Column(
+      key: const ValueKey<String>('order-stages-list'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (int i = 0; i < 4; i++) ...<Widget>[
+          if (i > 0) const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(
+                past(i)
+                    ? Icons.check_circle
+                    : i == stage - 1
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                key: ValueKey<String>('order-stage-icon-$i'),
+                size: scaler.scale(18),
+                color: i < stage ? KitColors.primary : KitColors.muted,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  i == stage - 1 ? heading : labels[i],
+                  key: ValueKey<String>('order-stage-label-$i'),
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.3,
+                    fontWeight: i == stage - 1
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                    color: i < stage ? KitColors.ink : KitColors.muted,
+                  ),
+                ),
+              ),
+              if (i < stage && times[i] != null) ...<Widget>[
+                const SizedBox(width: 8),
+                Text(
+                  TashkentTime.time(times[i]!),
+                  key: ValueKey<String>('order-stage-time-$i'),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.3,
+                    fontWeight: FontWeight.w400,
+                    color: KitColors.muted,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// What the Customer's yes to [question] puts in force: the price proposed
+/// for a price question, the smaller quantity for a reduced-quantity one
+/// (`DL-130`).
+AgreedTerms agreedTermsOf(CustomerQuestion question) => AgreedTerms(
+  customerUnitPriceUzs: question.type == ApprovalType.reducedQuantity
+      ? null
+      : question.proposedCustomerUnitPriceUzs,
+  quantity: question.type == ApprovalType.reducedQuantity
+      ? question.proposedQuantity
+      : null,
+);
+
+/// The terms a yes put in force in words: the quantity «1,5 кг» and the
+/// price «16 500 сум за кг», whichever were set, joined « · » (`DL-130`).
+String agreedText(
+  AppLocalizations l10n,
+  CustomerOrderLine line,
+  AgreedTerms terms,
+  AppLanguage language,
+) {
+  final String unit = CatalogLabels.unit(l10n, line.unit);
+  final String? quantity = terms.quantity;
+  final int? price = terms.customerUnitPriceUzs;
+  return <String>[
+    if (quantity != null) '${QuantityRules.display(quantity)} $unit',
+    if (price != null)
+      l10n.cartUnitPriceExact(unit, MoneyFormat.uzs(price, language)),
+  ].join(' · ');
 }
 
 /// One line of the order (drawings 29 and 29е): the picture, the name, what
 /// was ordered or bought, a tag for its state, and the amount at the right.
+/// Under them it says what the Customer agreed to: from the line's `agreed`,
+/// or, until the order loads again, from [answeredYes], the question the
+/// Customer just said yes to; a [refused] line, whose no is settled but not
+/// yet loaded, wears the refused tag and no waiting one. [flash] washes the
+/// row when it changes.
 class OrderLineRow extends StatelessWidget {
   const OrderLineRow({
     required this.line,
     required this.orderStatus,
+    this.flash = 0,
+    this.answeredYes,
+    this.refused = false,
     super.key,
   });
 
   final CustomerOrderLine line;
   final OrderStatus orderStatus;
+  final int flash;
+  final CustomerQuestion? answeredYes;
+  final bool refused;
 
   @override
   Widget build(BuildContext context) {
@@ -362,11 +523,12 @@ class OrderLineRow extends StatelessWidget {
     }
 
     final String subtitle;
-    final String amount;
+    // A removed line has no amount to show.
+    final String? amount;
     _Tag? tag;
     if (removed) {
       subtitle = '${QuantityRules.display(line.quantity)} $unit';
-      amount = sum(0);
+      amount = null;
       tag = _removedTag(l10n, removedReason);
     } else if (billedPrice != null) {
       final String billed =
@@ -387,7 +549,10 @@ class OrderLineRow extends StatelessWidget {
       amount = estimate
           ? l10n.cartLineEstimate(sum(line.lineTotalUzs))
           : sum(line.lineTotalUzs);
-      if (line.question != null) {
+      if (refused) {
+        tag = _removedTag(l10n, ItemRemovedReason.customerRejected);
+      } else if (line.question != null && answeredYes == null) {
+        // A settled question is no longer waiting for an answer.
         tag = _Tag(
           text: l10n.lineTagWaiting,
           color: KitColors.warningDark,
@@ -411,77 +576,141 @@ class OrderLineRow extends StatelessWidget {
       );
     }
 
-    return Padding(
-      key: ValueKey<String>('order-line-${line.id}'),
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: KitColors.card,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: SizedBox.square(
-              dimension: 48,
-              child: Center(child: picture),
-            ),
+    const TextStyle amountStyle = TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w700,
+      color: KitColors.ink,
+    );
+    final bool largeText =
+        textScaleAt(MediaQuery.textScalerOf(context), 14) > 1.3;
+    // The yes just given on top of what an earlier one put in force.
+    final AgreedTerms? held = line.agreed;
+    final AgreedTerms? given = answeredYes == null
+        ? null
+        : agreedTermsOf(answeredYes!);
+    final AgreedTerms? agreed = given == null
+        ? held
+        : AgreedTerms(
+            customerUnitPriceUzs:
+                given.customerUnitPriceUzs ?? held?.customerUnitPriceUzs,
+            quantity: given.quantity ?? held?.quantity,
+          );
+    final String? agreedWords = removed || refused || agreed == null
+        ? null
+        : (answeredYes?.type == ApprovalType.substitution ||
+                  (replacement != null && agreed.customerUnitPriceUzs != null)
+              ? l10n.orderAgreedReplacement
+              : l10n.orderAgreed(agreedText(l10n, line, agreed, language)));
+
+    Widget text({required bool sumUnder}) => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          line.name(language),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: removed ? KitColors.muted : KitColors.ink,
+            decoration: removed ? TextDecoration.lineThrough : null,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 3,
-            child: Column(
+        ),
+        Text(subtitle, style: small),
+        ?tag,
+        if (replacement != null)
+          Text(
+            l10n.itemReplacedWith(replacement.name(language)),
+            key: ValueKey<String>('order-line-replacement-${line.id}'),
+            style: small,
+          ),
+        if (open && line.substitutionPolicy != SubstitutionPolicy.allowSimilar)
+          Text(
+            OrderLabels.substitution(l10n, line.substitutionPolicy),
+            style: small,
+          ),
+        if (open && note != null) Text('«$note»', style: small),
+        if (agreedWords != null)
+          Padding(
+            key: ValueKey<String>('order-line-agreed-${line.id}'),
+            padding: const EdgeInsets.only(top: 2),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  line.name(language),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: removed ? KitColors.muted : KitColors.ink,
-                    decoration: removed ? TextDecoration.lineThrough : null,
+                const Padding(
+                  padding: EdgeInsets.only(top: 1),
+                  child: Icon(
+                    Icons.check_circle,
+                    size: 14,
+                    color: KitColors.primaryDark,
                   ),
                 ),
-                Text(subtitle, style: small),
-                ?tag,
-                if (replacement != null)
-                  Text(
-                    l10n.itemReplacedWith(replacement.name(language)),
-                    key: ValueKey<String>('order-line-replacement-${line.id}'),
-                    style: small,
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    agreedWords,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: KitColors.primaryDark,
+                    ),
                   ),
-                if (open &&
-                    line.substitutionPolicy != SubstitutionPolicy.allowSimilar)
-                  Text(
-                    OrderLabels.substitution(l10n, line.substitutionPolicy),
-                    style: small,
-                  ),
-                if (open && note != null) Text('«$note»', style: small),
+                ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          Flexible(
-            flex: 2,
-            child: Align(
-              alignment: AlignmentDirectional.topEnd,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  amount,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: removed ? KitColors.muted : KitColors.ink,
+        if (sumUnder && amount != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(amount, maxLines: 1, style: amountStyle),
+          ),
+      ],
+    );
+
+    return Padding(
+      key: ValueKey<String>('order-line-${line.id}'),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: LineFlash(
+        flash: flash,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            // The sum stands beside the name while it fits the 2/5 of the row
+            // left of the picture column, and under the name when it does not
+            // or the text is large; it is never scaled down (`DL-130`).
+            final double beside = (constraints.maxWidth - 60 - 8) * 0.4;
+            final bool sumBeside =
+                amount != null &&
+                !largeText &&
+                textWidth(context, amount, amountStyle) <= beside;
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: KitColors.card,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: SizedBox.square(
+                    dimension: 48,
+                    child: Center(child: picture),
                   ),
                 ),
-              ),
-            ),
-          ),
-        ],
+                const SizedBox(width: 12),
+                Expanded(flex: 3, child: text(sumUnder: !sumBeside)),
+                if (sumBeside) ...<Widget>[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: Align(
+                      alignment: AlignmentDirectional.topEnd,
+                      child: Text(amount, maxLines: 1, style: amountStyle),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -545,6 +774,9 @@ class _Tag extends StatelessWidget {
 class OrderAmounts extends StatelessWidget {
   const OrderAmounts({required this.order, super.key});
 
+  /// The goods and the total fade in when they change (`DL-130`).
+  static const Duration _amountFade = Duration(milliseconds: 300);
+
   final CustomerOrder order;
 
   @override
@@ -569,10 +801,9 @@ class OrderAmounts extends StatelessWidget {
       children: <Widget>[
         SummaryAmountRow(
           valueKey: 'order-goods',
-          label: l10n.cartGoods(
-            order.lines.where((CustomerOrderLine line) => !line.removed).length,
-          ),
+          label: l10n.cartGoods(keptLines(order).length),
           value: approx(order.merchandiseSubtotalUzs),
+          fade: _amountFade,
         ),
         SummaryAmountRow(
           valueKey: 'order-delivery',
@@ -593,6 +824,7 @@ class OrderAmounts extends StatelessWidget {
           label: l10n.cartTotal,
           value: approx(order.totalUzs),
           emphasised: true,
+          fade: _amountFade,
         ),
         if (estimate) ...<Widget>[
           const SizedBox(height: 8),
@@ -1132,7 +1364,10 @@ class OrderFooter extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+          // Not the route's primary: that is the order's list's, which a tap
+          // on iOS's status bar scrolls (`DL-130`).
           child: SingleChildScrollView(
+            primary: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,

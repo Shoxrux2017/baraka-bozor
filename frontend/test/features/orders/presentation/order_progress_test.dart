@@ -63,6 +63,7 @@ Map<String, Object?> asked(String type, {bool aboutReplacement = false}) {
       'replacement': <String, Object?>{
         ...cherry,
         'customer_unit_price_uzs': 21850,
+        'image_url': null,
       },
     },
   };
@@ -103,6 +104,18 @@ void main() {
   AppLocalizations l10n(WidgetTester tester) =>
       AppLocalizations.of(anywhere(tester));
 
+  Finder orderLines() => find.byWidgetPredicate((Widget w) {
+    final Key? key = w.key;
+    return key is ValueKey<String> && key.value.startsWith('order-line-');
+  });
+
+  Future<void> pull(WidgetTester tester) async {
+    await tester.drag(byKey('order'), const Offset(0, 300));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+  }
+
   setUp(() {
     tokens = InMemoryTokenStore()..tokens[SessionSlot.customer] = 'c';
     auth = FakeAuthRepository()
@@ -130,7 +143,7 @@ void main() {
         orders: orders,
         cart: cart,
         device: device,
-        clock: () => DateTime.utc(2026, 9, 28, 12),
+        clock: () => DateTime.utc(2026, 9, 28, 7, 30),
       ),
     );
     await tester.pumpAndSettle();
@@ -221,8 +234,10 @@ void main() {
             find.text(words.questionNoteKit('Qizili qolmadi')),
             findsOneWidget,
           );
-          expect(find.text(words.questionExpires('13:00')), findsOneWidget);
-          expect(find.text(words.questionRejectRemoves), findsOneWidget);
+          expect(
+            find.text(words.deadlineLeftUntil(30, '13:00')),
+            findsOneWidget,
+          );
           expect(byKey('approve-$approvalOne'), findsOneWidget);
           expect(byKey('reject-$approvalOne'), findsOneWidget);
 
@@ -432,8 +447,8 @@ void main() {
         ..loadFailure = const NetworkFailure();
 
       await tapAndSettle(tester, byKey('approve-$approvalOne'));
-      expect(byKey('question-$approvalOne'), findsNothing);
-      await tapAndSettle(tester, byKey('retry-load'));
+      expect(byKey('stale-line'), findsOneWidget);
+      await tapAndSettle(tester, byKey('stale-retry'));
 
       expect(byKey('decide-again-$approvalOne'), findsOneWidget);
       expect(byKey('approve-$approvalOne'), findsNothing);
@@ -840,26 +855,121 @@ void main() {
       expect(orders.loads.length, loads);
     });
 
-    testWidgets('a refresh that failed stops, and says so with a retry', (
+    testWidgets('a failed refresh keeps the order under the stale line', (
       WidgetTester tester,
     ) async {
       orders.rows = <Map<String, Object?>>[
         shopping(<Object?>[orderLineJson()]),
       ];
-      await open(tester, at: AppPaths.customerOrder(orderOne));
+      await open(
+        tester,
+        at: AppPaths.customerOrder(orderOne),
+        device: const Locale('ru'),
+      );
+      expect(byKey('stale-line'), findsNothing);
       orders.loadFailure = const NetworkFailure();
       await tester.pump(const Duration(seconds: 15));
       await tester.pumpAndSettle();
-      expect(byKey('retry-load'), findsOneWidget);
+
+      expect(byKey('order-status'), findsOneWidget);
+      expect(orderLines(), findsOneWidget);
+      expect(byKey('order-request-cancel'), findsOneWidget);
+      expect(byKey('retry-load'), findsNothing);
+      // 12:30 in Tashkent, when the order was last loaded.
+      expect(find.text('Нет связи · данные на 12:30'), findsOneWidget);
+      expect(
+        tester.getBottomLeft(byKey('stale-line')).dy,
+        lessThanOrEqualTo(tester.getTopLeft(byKey('order-status')).dy),
+      );
 
       final int loads = orders.loads.length;
       await tester.pump(const Duration(seconds: 45));
       await tester.pumpAndSettle();
       expect(orders.loads.length, loads, reason: 'a refresh is not a retry');
 
-      await tapAndSettle(tester, byKey('retry-load'));
+      await tapAndSettle(tester, byKey('stale-retry'));
+      expect(orders.loads.length, loads + 1);
+      expect(byKey('stale-line'), findsNothing);
       expect(byKey('order-status'), findsOneWidget);
     });
+
+    testWidgets('pull to refresh loads the order again and says so', (
+      WidgetTester tester,
+    ) async {
+      orders.rows = <Map<String, Object?>>[
+        shopping(<Object?>[orderLineJson()]),
+      ];
+      await open(
+        tester,
+        at: AppPaths.customerOrder(orderOne),
+        size: const Size(360, 800),
+        device: const Locale('ru'),
+      );
+      tester.takeAnnouncements();
+      final int loads = orders.loads.length;
+
+      await pull(tester);
+
+      expect(orders.loads.skip(loads), contains('order:$orderOne'));
+      expect(
+        tester.takeAnnouncements().map(
+          (CapturedAccessibilityAnnouncement a) => a.message,
+        ),
+        contains('Обновлено'),
+      );
+    });
+
+    testWidgets('a pull that fails keeps the order and says why', (
+      WidgetTester tester,
+    ) async {
+      orders.rows = <Map<String, Object?>>[
+        shopping(<Object?>[orderLineJson()]),
+      ];
+      await open(
+        tester,
+        at: AppPaths.customerOrder(orderOne),
+        size: const Size(360, 800),
+        device: const Locale('ru'),
+      );
+      tester.takeAnnouncements();
+
+      orders.loadFailure = const NetworkFailure();
+      await pull(tester);
+
+      expect(byKey('order-status'), findsOneWidget);
+      expect(orderLines(), findsOneWidget);
+      expect(find.text('Нет связи · данные на 12:30'), findsOneWidget);
+      expect(
+        tester.takeAnnouncements().map(
+          (CapturedAccessibilityAnnouncement a) => a.message,
+        ),
+        contains('Нет связи. Показаны данные на 12:30'),
+      );
+    });
+
+    for (final double textScale in const <double>[1, 2]) {
+      testWidgets(
+        'the stale order meets the tap-target guideline (text x$textScale)',
+        (WidgetTester tester) async {
+          orders.rows = <Map<String, Object?>>[
+            shopping(<Object?>[orderLineJson()]),
+          ];
+          await open(
+            tester,
+            at: AppPaths.customerOrder(orderOne),
+            size: const Size(360, 800),
+            textScale: textScale,
+            device: const Locale('ru'),
+          );
+          orders.loadFailure = const NetworkFailure();
+          await tester.pump(const Duration(seconds: 15));
+          await tester.pumpAndSettle();
+          expect(byKey('stale-line'), findsOneWidget);
+
+          await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        },
+      );
+    }
   });
 
   testWidgets('My orders marks the orders waiting for the Customer', (

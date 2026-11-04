@@ -347,10 +347,16 @@ class ApprovalDecisionController extends OrderMutation {
 
   String? _approvalId;
   ApprovalDecision? _sending;
+  ({String approvalId, ApprovalDecision decision})? _settled;
 
   /// The question the latest decision answered: its refusal is said while
   /// that question, or none, is on the line, never under one asked since.
   String? get approvalId => _approvalId;
+
+  /// The decision the server answered `200`, kept until another decision on
+  /// the line starts: the screen folds the question it answered, and says
+  /// what was agreed while the order loads again (`DL-130`).
+  ({String approvalId, ApprovalDecision decision})? get settled => _settled;
 
   /// The decision on its way, while one runs.
   ApprovalDecision? get sending => state.isBusy ? _sending : null;
@@ -370,9 +376,15 @@ class ApprovalDecisionController extends OrderMutation {
     final ApprovalDecision sent = unanswered?.sent ?? decision;
     _approvalId = approvalId;
     _sending = sent;
+    _settled = null;
     final CustomerApproval? answer = await perform(
       () => orders.decide(orderId, approvalId, sent, key),
-      reload: reload,
+      reload: (CustomerApproval? answered) {
+        if (answered != null) {
+          _settled = (approvalId: approvalId, decision: sent);
+        }
+        reload(answered);
+      },
     );
     if (ref.mounted) {
       ref

@@ -54,6 +54,7 @@ Map<String, Object?> orderLineJson({
       ? (unit == 'kg' ? 18975 : 4000)
       : null,
   'replacement': null,
+  'agreed': null,
   'pending_approval': null,
   ...?patch,
 };
@@ -75,10 +76,14 @@ Map<String, Object?> questionLineJson(String type) => orderLineJson(
               'name_uz': 'Olcha pomidor',
               'name_ru': 'Помидоры черри',
               'customer_unit_price_uzs': 21850,
+              'image_url': 'https://cdn.example/cherry.webp',
             }
           : null,
       'request_note': 'Qizili qolmadi',
       'expires_at': '2026-09-28T08:00:00Z',
+      'estimate_if_approved_uzs': 25300,
+      'change_if_approved_uzs': 5300,
+      'change_if_rejected_uzs': -20000,
     },
   },
 );

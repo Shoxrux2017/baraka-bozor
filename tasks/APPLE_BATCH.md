@@ -26,7 +26,7 @@ Rules for every stage:
 | 7 | Category screen and product lists | 10 | — | Merged (PR #130) |
 | 8 | «Рекомендуем» and «Все товары» | 7 | list order | Merged (PR #131) |
 | 9 | Search | 8 | — | Merged (PR #131) |
-| 10 | Favourites | 7 | favourites order | Planned |
+| 10 | Favourites | 7 | favourites order | Merged (PR #132) |
 | 11 | Order | 9 | approval amounts and picture | Planned |
 | 12 | My orders | 10 | list summary fields | Planned |
 | 13 | Order editing | 12 | edit preview, minimum | Planned |
@@ -352,6 +352,7 @@ Noticed in the reviews and left out; each needs its own decision before any code
 
 - The app reads the cart's `working_hours` as a required key (`DL-125` (7)), so a build of stage 6 or later refuses the cart answer of an older server. Deploy the backend before any such build reaches a phone (W4-5).
 - The app now also reads each category's `product_count` as a required key (`DL-128` (1)), like `working_hours` (`DL-125` (7)): deploy the backend first.
+- The app reads the order screen's new keys as required (`estimate_if_approved_uzs`, `change_if_approved_uzs`, `change_if_rejected_uzs`, `replacement.image_url`, and each line's `agreed`), like `working_hours` (`DL-130`): deploy the backend before any build of stage 11 reaches a phone.
 
 ## Review findings not acted on
 
@@ -391,3 +392,9 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - Stage 10 re-review, P3: the favourites screen's dispose path and the unmounted branch of `_leave` mark hearts red with no account check, so an account change inside the 200 ms melt could put `{id: true}` into the new account's overrides. Ruling: the window needs a sign-out inside the melt, which also disposes the screen; the smallest fix is to capture the account in `_begin` and skip the mark when it differs, taken with the next stage that touches favourites.
 - Stage 10 re-review, P3: `clearSnackBars()` before the undo bar also drops a foreign bar standing at that moment (e.g. a failed removal's message). Ruling: harmless — the card that failed is already back at its place.
 - Stage 10 re-review, P3: a heart set again while the removal's DELETE is already on its way can race it (the PUT may reach the server first). Ruling: the same gap every heart change had before this stage; the fix is to serialise one product's favourite requests, as `CartQuantityQueue` does for the cart, in a later stage.
+- Stage 11 final review, P2-1 (ruling, `DL-130` (6)): the phone's clock expires only a card it showed running; a question first seen past the phone's deadline stays answerable and the server judges. Later remedy: a server-clock offset from the response `Date` header, so a phone ahead by δ does not lose up to δ of a watched card's window.
+- Stage 11 final review, P3-4: the anchor that holds the reading is corrected after the frame, so a change above the reading other than an arriving card (the asking line's tag, a bought row) shows shifted for one frame and is back in place the next. Ruling: correct within a frame; a layout-time correction (a sliver returning `scrollOffsetCorrection`) is a deeper rewrite, taken if the walk shows the twitch.
+- Stage 11 final review, P3-9: a «no» to the last line still to buy cancels the whole order (`NothingLeftToBuy`), and the question card says only that the product goes and its sum. Ruling: not new on this stage (main's wording said no more); saying it needs a server flag and wording that tells the Customer what they are promised, which may be the Owner's call (`AGENTS.md` §3).
+- Stage 11 final review, P3-12: a correction mid-fling restarts the fling with the old maximum extent, so near the list's end Android's clamping springs back and the fling stops early. Ruling: needs an arrival mid-fling at the end of the list; the reading still holds.
+- Stage 11, minor: the line flash's 6 px reach past the row is clipped sideways by `Fold`'s `ClipRect`; the wash is as wide as the row. Ruling: cosmetic.
+- Stage 11, minor: restarting a fling after `correctBy` reads the protected `ScrollPosition.activity` (two lints suppressed), and an arrival during the pill's own scroll to the top turns that scroll into a fling. Ruling: contained and tested; recheck the suppression on a Flutter upgrade.

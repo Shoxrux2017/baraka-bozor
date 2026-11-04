@@ -3006,11 +3006,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String questionExpires(String time) {
-    return 'Javob berish muddati: ${time}gacha';
-  }
-
-  @override
   String get questionApprove => 'Rozi bo\'lish';
 
   @override
@@ -3076,10 +3071,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get errorApprovalExpired => 'Savolga javob berish vaqti o\'tgan.';
-
-  @override
-  String get questionRejectRemoves =>
-      'Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.';
 
   @override
   String get questionDropsReplacement =>
@@ -4047,6 +4038,39 @@ class AppLocalizationsUz extends AppLocalizations {
   String get progressDelivered => 'Yetkazildi';
 
   @override
+  String orderStageOf(int stage, String label) {
+    return '$stage-bosqich, 4 tadan: $label';
+  }
+
+  @override
+  String orderRemovedGroup(int count) {
+    return 'Buyurtmadan olib tashlandi · $count';
+  }
+
+  @override
+  String orderAgreed(String terms) {
+    return 'Siz rozi bo\'ldingiz: $terms';
+  }
+
+  @override
+  String get orderAgreedReplacement => 'Siz almashtirishga rozi bo\'ldingiz';
+
+  @override
+  String orderAgreedSpoken(String name, String terms) {
+    return 'Siz rozi bo\'ldingiz: $name, $terms';
+  }
+
+  @override
+  String orderAgreedReplacementSpoken(String name) {
+    return 'Siz almashtirishga rozi bo\'ldingiz: $name';
+  }
+
+  @override
+  String orderRejectedSpoken(String name) {
+    return 'Siz rad etdingiz: $name buyurtmadan olib tashlanadi';
+  }
+
+  @override
   String get orderCanStillChange =>
       'Yig\'uvchi boshlamaguncha buyurtmani o\'zgartirish yoki bekor qilish mumkin.';
 
@@ -4461,6 +4485,62 @@ class AppLocalizationsUz extends AppLocalizations {
   String deadlineLeftSpoken(int minutes) {
     return '$minutes daqiqa qoldi';
   }
+
+  @override
+  String questionEffectApprove(String what) {
+    return 'Rozi bo\'lsangiz: $what —';
+  }
+
+  @override
+  String questionEffectReject(String name) {
+    return 'Rad etsangiz: «$name» buyurtmadan olib tashlanadi,';
+  }
+
+  @override
+  String deadlineLeftUntil(int minutes, String time) {
+    return '$minutes daqiqa qoldi · $time gacha';
+  }
+
+  @override
+  String questionHeaderSpoken(String title, String left) {
+    return '$title, $left';
+  }
+
+  @override
+  String questionExpiredSpoken(String name) {
+    return 'Javob vaqti tugadi: $name buyurtmadan olib tashlanadi';
+  }
+
+  @override
+  String questionArrivedPrice(String name) {
+    return 'Yig\'uvchidan yangi savol: «$name» narxi';
+  }
+
+  @override
+  String questionArrivedSubstitution(String name) {
+    return 'Yig\'uvchidan yangi savol: «$name» o\'rniga boshqa mahsulot';
+  }
+
+  @override
+  String questionArrivedQuantity(String name) {
+    return 'Yig\'uvchidan yangi savol: «$name» miqdori';
+  }
+
+  @override
+  String lineBoughtSpoken(String name, String amount) {
+    return 'Yig\'uvchi sotib oldi: $name, $amount';
+  }
+
+  @override
+  String linesBoughtSpoken(int count) {
+    return 'Yig\'uvchi $count ta mahsulot sotib oldi';
+  }
+
+  @override
+  String get questionPill => 'Yig\'uvchi so\'ramoqda';
+
+  @override
+  String get questionPillSpoken => 'Yig\'uvchi savolini ko\'rsatish';
 
   @override
   String get refreshDone => 'Yangilandi';

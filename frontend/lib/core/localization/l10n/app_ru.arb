@@ -1821,14 +1821,6 @@
       }
     }
   },
-  "questionExpires": "Ответьте до {time}",
-  "@questionExpires": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "questionApprove": "Согласиться",
   "questionReject": "Отказаться",
   "questionFromShopper": "Вопрос от сборщика",
@@ -1892,7 +1884,6 @@
   "orderRequestCancel": "Попросить отменить",
   "orderRequestCancelReason": "Причина",
   "errorApprovalExpired": "Время ответа на вопрос истекло.",
-  "questionRejectRemoves": "Если откажетесь, этот товар уберут из заказа.",
   "questionDropsReplacement": "Если согласитесь, купят заказанный товар, а не замену.",
   "decisionSending": "Отправляем ответ",
   "myDeliveries": "Мои доставки",
@@ -2435,6 +2426,13 @@
   "progressShopping": "Покупаем",
   "progressDelivering": "Везём",
   "progressDelivered": "Доставлен",
+  "orderStageOf": "Этап {stage} из 4: {label}",
+  "orderRemovedGroup": "Убрали из заказа · {count}",
+  "orderAgreed": "Вы согласились: {terms}",
+  "orderAgreedReplacement": "Вы согласились на замену",
+  "orderAgreedSpoken": "Вы согласились: {name}, {terms}",
+  "orderAgreedReplacementSpoken": "Вы согласились на замену: {name}",
+  "orderRejectedSpoken": "Вы отказались: {name} уберут из заказа",
   "orderCanStillChange": "Пока сборщик не начал, заказ можно изменить или отменить.",
   "orderLineBoughtKit": "Куплено {quantity} × {price}",
   "lineTagBought": "Куплено",
@@ -2696,6 +2694,97 @@
   "staleSpoken": "{reason}. Показаны данные на {time}",
   "deadlineLeft": "Осталось {minutes} мин",
   "deadlineLeftSpoken": "осталось {minutes, plural, one{{minutes} минута} few{{minutes} минуты} many{{minutes} минут} other{{minutes} минуты}}",
+  "questionEffectApprove": "Согласитесь: {what} —",
+  "@questionEffectApprove": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "questionEffectReject": "Откажетесь: «{name}» уберут из заказа,",
+  "@questionEffectReject": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deadlineLeftUntil": "Осталось {minutes} мин · до {time}",
+  "@deadlineLeftUntil": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "questionHeaderSpoken": "{title}, {left}",
+  "@questionHeaderSpoken": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "questionExpiredSpoken": "Время ответа истекло: {name} уберут из заказа",
+  "@questionExpiredSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "questionArrivedPrice": "Новый вопрос от сборщика: цена на «{name}»",
+  "@questionArrivedPrice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "questionArrivedSubstitution": "Новый вопрос от сборщика: замена для «{name}»",
+  "@questionArrivedSubstitution": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "questionArrivedQuantity": "Новый вопрос от сборщика: количество «{name}»",
+  "@questionArrivedQuantity": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "lineBoughtSpoken": "Сборщик купил: {name}, {amount}",
+  "@lineBoughtSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "linesBoughtSpoken": "Сборщик купил товаров: {count}",
+  "@linesBoughtSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "questionPill": "Сборщик спрашивает",
+  "questionPillSpoken": "Показать вопрос сборщика",
   "refreshDone": "Обновлено",
   "cartSummarySpoken": "Корзина: {count}, примерно {sum}. В корзину",
   "deliveryAddressSpoken": "Адрес доставки: {address}. Изменить",

@@ -1921,14 +1921,6 @@
       }
     }
   },
-  "questionExpires": "Javob berish muddati: {time}gacha",
-  "@questionExpires": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "questionApprove": "Rozi bo'lish",
   "questionReject": "Rad etish",
   "questionFromShopper": "Yig'uvchidan savol",
@@ -1992,7 +1984,6 @@
   "orderRequestCancel": "Bekor qilishni so'rash",
   "orderRequestCancelReason": "Sabab",
   "errorApprovalExpired": "Savolga javob berish vaqti o'tgan.",
-  "questionRejectRemoves": "Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.",
   "questionDropsReplacement": "Rozi bo'lsangiz, o'rniga boshqasi emas, buyurtma qilingan mahsulotning o'zi olinadi.",
   "decisionSending": "Javob yuborilmoqda",
   "myDeliveries": "Mening yetkazishlarim",
@@ -2725,6 +2716,61 @@
   "progressShopping": "Xarid",
   "progressDelivering": "Yo'lda",
   "progressDelivered": "Yetkazildi",
+  "orderStageOf": "{stage}-bosqich, 4 tadan: {label}",
+  "@orderStageOf": {
+    "placeholders": {
+      "stage": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "orderRemovedGroup": "Buyurtmadan olib tashlandi · {count}",
+  "@orderRemovedGroup": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "orderAgreed": "Siz rozi bo'ldingiz: {terms}",
+  "@orderAgreed": {
+    "placeholders": {
+      "terms": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAgreedReplacement": "Siz almashtirishga rozi bo'ldingiz",
+  "orderAgreedSpoken": "Siz rozi bo'ldingiz: {name}, {terms}",
+  "@orderAgreedSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "terms": {
+        "type": "String"
+      }
+    }
+  },
+  "orderAgreedReplacementSpoken": "Siz almashtirishga rozi bo'ldingiz: {name}",
+  "@orderAgreedReplacementSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "orderRejectedSpoken": "Siz rad etdingiz: {name} buyurtmadan olib tashlanadi",
+  "@orderRejectedSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "orderCanStillChange": "Yig'uvchi boshlamaguncha buyurtmani o'zgartirish yoki bekor qilish mumkin.",
   "orderLineBoughtKit": "Sotib olindi: {quantity} × {price}",
   "@orderLineBoughtKit": {
@@ -3065,6 +3111,97 @@
       }
     }
   },
+  "questionEffectApprove": "Rozi bo'lsangiz: {what} —",
+  "@questionEffectApprove": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "questionEffectReject": "Rad etsangiz: «{name}» buyurtmadan olib tashlanadi,",
+  "@questionEffectReject": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deadlineLeftUntil": "{minutes} daqiqa qoldi · {time} gacha",
+  "@deadlineLeftUntil": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "questionHeaderSpoken": "{title}, {left}",
+  "@questionHeaderSpoken": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "questionExpiredSpoken": "Javob vaqti tugadi: {name} buyurtmadan olib tashlanadi",
+  "@questionExpiredSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "questionArrivedPrice": "Yig'uvchidan yangi savol: «{name}» narxi",
+  "@questionArrivedPrice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "questionArrivedSubstitution": "Yig'uvchidan yangi savol: «{name}» o'rniga boshqa mahsulot",
+  "@questionArrivedSubstitution": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "questionArrivedQuantity": "Yig'uvchidan yangi savol: «{name}» miqdori",
+  "@questionArrivedQuantity": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "lineBoughtSpoken": "Yig'uvchi sotib oldi: {name}, {amount}",
+  "@lineBoughtSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "linesBoughtSpoken": "Yig'uvchi {count} ta mahsulot sotib oldi",
+  "@linesBoughtSpoken": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "questionPill": "Yig'uvchi so'ramoqda",
+  "questionPillSpoken": "Yig'uvchi savolini ko'rsatish",
   "refreshDone": "Yangilandi",
   "cartSummarySpoken": "Savat: {count}, taxminan {sum}. Savatga",
   "@cartSummarySpoken": {

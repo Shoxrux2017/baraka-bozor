@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../formatting/tashkent_time.dart';
 import '../localization/generated/app_localizations.dart';
 import '../platform/clock.dart';
 import '../theme/kit_colors.dart';
@@ -21,11 +22,23 @@ int minutesLeft(DateTime deadline, DateTime now) {
 /// "Осталось N мин" in a white pill, red from three minutes on. It counts
 /// down on `clockProvider`, redrawing at each change of N, and is gone at the
 /// deadline. It says nothing to a screen reader: its parent speaks
-/// `deadlineLeftSpoken` (`DL-125`).
+/// `deadlineLeftSpoken` (`DL-125`). On a question card ([onCard]) it sits on
+/// a wash of the card's colour, red from three minutes on, and also says the
+/// time it ends; with a [spokenTitle] it is the one node the card's header
+/// reads as, `questionHeaderSpoken` (`DL-130`).
 class DeadlineChip extends ConsumerStatefulWidget {
-  const DeadlineChip({required this.deadline, super.key});
+  const DeadlineChip({
+    required this.deadline,
+    this.onCard = false,
+    this.spokenTitle,
+    super.key,
+  });
 
   final DateTime deadline;
+  final bool onCard;
+
+  /// The title the card's header speaks before the minutes left.
+  final String? spokenTitle;
 
   @override
   ConsumerState<DeadlineChip> createState() => _DeadlineChipState();
@@ -64,34 +77,54 @@ class _DeadlineChipState extends ConsumerState<DeadlineChip> {
     if (minutes == 0) {
       return const SizedBox.shrink();
     }
-    final Color color = minutes <= 3 ? KitColors.danger : KitColors.warningDark;
-    return ExcludeSemantics(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(Icons.timer, size: 16, color: color),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  AppLocalizations.of(context).deadlineLeft(minutes),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
+    final bool urgent = minutes <= 3;
+    final Color color = urgent ? KitColors.danger : KitColors.warningDark;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String? spokenTitle = widget.spokenTitle;
+    final Widget chip = DecoratedBox(
+      decoration: BoxDecoration(
+        color: widget.onCard
+            ? (urgent ? KitColors.dangerWash : KitColors.warningWash)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(Icons.timer, size: 16, color: color),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                widget.onCard
+                    ? l10n.deadlineLeftUntil(
+                        minutes,
+                        TashkentTime.time(widget.deadline),
+                      )
+                    : l10n.deadlineLeft(minutes),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: color,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+    if (spokenTitle != null) {
+      return Semantics(
+        container: true,
+        label: l10n.questionHeaderSpoken(
+          spokenTitle,
+          l10n.deadlineLeftSpoken(minutes),
+        ),
+        excludeSemantics: true,
+        child: chip,
+      );
+    }
+    return ExcludeSemantics(child: chip);
   }
 }

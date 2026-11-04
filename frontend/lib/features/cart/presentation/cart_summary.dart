@@ -139,6 +139,7 @@ class SummaryAmountRow extends StatelessWidget {
     this.waiting = false,
     this.pendingWidth,
     this.pulsing = false,
+    this.fade = const Duration(milliseconds: 240),
     super.key,
   });
 
@@ -150,6 +151,9 @@ class SummaryAmountRow extends StatelessWidget {
   final bool waiting;
   final double? pendingWidth;
   final bool pulsing;
+
+  /// How long a changed [value] takes to fade in.
+  final Duration fade;
 
   static const TextStyle _replacedStyle = TextStyle(
     fontSize: 13,
@@ -174,6 +178,7 @@ class SummaryAmountRow extends StatelessWidget {
     final Widget valueText = SoftChange(
       value: value,
       waiting: waiting,
+      fade: fade,
       child: Text(
         value,
         key: ValueKey<String>(valueKey),

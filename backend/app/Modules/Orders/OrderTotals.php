@@ -16,8 +16,8 @@ use App\Support\Money\Quantity;
 /**
  * An order's totals as `DL-37` (10) defines them. Until shopping completes
  * they are computed from the order's snapshots over the lines not removed —
- * the merchandise as the sum of each line's snapshotted price times its
- * ordered quantity, the service fee by the snapshotted rule, the delivery fee
+ * the merchandise as the sum of each line's price in force times its quantity
+ * in force (`DL-130` (1)), the service fee by the snapshotted rule, the delivery fee
  * snapshot — and labelled like the preview: `estimate` when any line is an
  * estimate, `final` when every line has a guaranteed price. From completion
  * they are the stored final amounts. A cancelled order owes nothing: every
@@ -113,12 +113,43 @@ final readonly class OrderTotals
 
     /**
      * A line's amount as the Customer sees it: the stored total once it is
-     * bought or removed, otherwise its snapshotted price times the quantity
-     * ordered.
+     * bought or removed, otherwise the price in force times the quantity in
+     * force (`DL-130` (1)).
      */
     public static function lineEstimate(OrderItem $item): int
     {
         return $item->line_total_uzs
-            ?? MoneyCalculator::lineTotal($item->customer_unit_price_uzs_snapshot, Quantity::fromString($item->ordered_quantity));
+            ?? MoneyCalculator::lineTotal(self::unitPriceInForce($item), Quantity::fromString(self::quantityInForce($item)));
+    }
+
+    /**
+     * The unit price the Customer's yes put in force (`DL-130` (1)): the
+     * approved replacement price while a replacement is on the line, the
+     * approved ceiling while none is, else the snapshotted price. SQL twin:
+     * `OrderLineSums`.
+     */
+    public static function unitPriceInForce(OrderItem $item): int
+    {
+        return self::agreedUnitPrice($item) ?? $item->customer_unit_price_uzs_snapshot;
+    }
+
+    /**
+     * The quantity the Customer's yes put in force: the approved cap, else the
+     * quantity ordered.
+     */
+    public static function quantityInForce(OrderItem $item): string
+    {
+        return $item->approved_quantity_cap ?? $item->ordered_quantity;
+    }
+
+    /**
+     * The approved price `unitPriceInForce` takes, or `null` when it falls
+     * back to the snapshot (`DL-130` (2)).
+     */
+    public static function agreedUnitPrice(OrderItem $item): ?int
+    {
+        return $item->fulfilled_product_id !== null
+            ? $item->approved_replacement_price_uzs
+            : $item->approved_unit_price_ceiling_uzs;
     }
 }

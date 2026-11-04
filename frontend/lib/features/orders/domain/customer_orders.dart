@@ -82,6 +82,7 @@ final class CustomerOrderLine {
     required this.billableQuantity,
     required this.billableUnitPriceUzs,
     required this.replacement,
+    required this.agreed,
     required this.question,
     required this.imageUrl,
   });
@@ -115,6 +116,10 @@ final class CustomerOrderLine {
   /// The product authorized or bought instead of the line's own.
   final ProductNames? replacement;
 
+  /// What the Customer's yes put in force on this line, or `null` when the
+  /// line stands as ordered (`DL-130`).
+  final AgreedTerms? agreed;
+
   /// The line's question waiting for the Customer's answer.
   final CustomerQuestion? question;
 
@@ -143,6 +148,38 @@ final class ProductNames {
       language == AppLanguage.ru ? nameRu : nameUz;
 }
 
+/// The price and the quantity the Customer's yes set on a line; each is
+/// `null` when that term was not changed (`DL-130`).
+final class AgreedTerms {
+  const AgreedTerms({
+    required this.customerUnitPriceUzs,
+    required this.quantity,
+  });
+
+  final int? customerUnitPriceUzs;
+
+  /// The approved quantity, a decimal string.
+  final String? quantity;
+}
+
+/// The replacement a question proposes, with its picture (`DL-130`).
+final class QuestionReplacement {
+  const QuestionReplacement({
+    required this.nameUz,
+    required this.nameRu,
+    required this.imageUrl,
+  });
+
+  final String nameUz;
+  final String nameRu;
+
+  /// The replacement product's current picture, else `null`.
+  final String? imageUrl;
+
+  String name(AppLanguage language) =>
+      language == AppLanguage.ru ? nameRu : nameUz;
+}
+
 /// A question put to the Customer about a line, as they read it
 /// (`docs/09` section 20): what is proposed, in their prices only.
 final class CustomerQuestion {
@@ -154,6 +191,9 @@ final class CustomerQuestion {
     required this.replacement,
     required this.requestNote,
     required this.expiresAt,
+    required this.estimateIfApprovedUzs,
+    required this.changeIfApprovedUzs,
+    required this.changeIfRejectedUzs,
   });
 
   final String id;
@@ -167,9 +207,16 @@ final class CustomerQuestion {
 
   /// The replacement a substitution proposes, or the one a price question
   /// is about.
-  final ProductNames? replacement;
+  final QuestionReplacement? replacement;
   final String? requestNote;
   final DateTime expiresAt;
+
+  /// The line's estimate once a yes is applied, and what a yes and a no
+  /// change in the bill; the server's, signed, never computed here
+  /// (`DL-130`).
+  final int estimateIfApprovedUzs;
+  final int changeIfApprovedUzs;
+  final int changeIfRejectedUzs;
 }
 
 /// The order's latest cancellation request, as the Customer sees it; the
