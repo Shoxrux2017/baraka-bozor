@@ -92,6 +92,9 @@ final class ListWithdrawal {
   const ListWithdrawal._({
     required this.generation,
     required this.removed,
+    required this.endsList,
+    required this.productCount,
+    required this.notSoldCount,
     required this.total,
     required this.unavailable,
     required this.nextPage,
@@ -99,6 +102,14 @@ final class ListWithdrawal {
 
   final int generation;
   final List<({int index, CatalogProduct product})> removed;
+
+  /// True for the removal of every not-sold product, which ends the list.
+  final bool endsList;
+
+  /// How many products the server still counts for it, and how many of
+  /// those are not sold.
+  final int productCount;
+  final int notSoldCount;
   final int total;
   final int unavailable;
   final int? nextPage;
@@ -127,10 +138,18 @@ class ProductListController extends AsyncNotifier<ProductListState> {
   /// True while [quietRefresh] reloads the pages.
   bool _refreshing = false;
 
+  /// Bumped by every edit; a page asked for before it is dropped when it
+  /// lands.
+  int _epoch = 0;
+
+  /// Withdrawals not yet restored or settled: the server still counts them.
+  final List<ListWithdrawal> _held = <ListWithdrawal>[];
+
   @override
   Future<ProductListState> build() async {
     _generation++;
     _refreshing = false;
+    _held.clear();
     if (ref.watch(customerAccountProvider) == null) {
       return Completer<ProductListState>().future;
     }
@@ -183,6 +202,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
     }
 
     final int generation = _generation;
+    final int epoch = _epoch;
     final Completer<void> done = _pending = Completer<void>();
     state = AsyncData<ProductListState>(
       ProductListState(
@@ -206,16 +226,20 @@ class ProductListController extends AsyncNotifier<ProductListState> {
       final Set<String> shown = <String>{
         for (final CatalogProduct p in current.items) p.id,
       };
+      final Set<String> heldIds = <String>{
+        for (final ListWithdrawal w in _held)
+          for (final r in w.removed) r.product.id,
+      };
       next = ProductListState(
         items: <CatalogProduct>[
           ...current.items,
           for (final CatalogProduct p in loaded.items)
-            if (!shown.contains(p.id)) p,
+            if (!shown.contains(p.id) && !heldIds.contains(p.id)) p,
         ],
-        total: loaded.total,
+        total: loaded.total - _heldProducts,
         nextPage: loaded.hasNext ? loaded.page + 1 : null,
         at: current.at,
-        unavailable: answer.unavailable,
+        unavailable: answer.unavailable - _heldNotSold,
         perPage: loaded.perPage,
       );
     } on ApiFailure catch (failure) {
@@ -241,13 +265,33 @@ class ProductListController extends AsyncNotifier<ProductListState> {
       );
     }
 
-    if (ref.mounted && generation == _generation) {
+    if (ref.mounted && generation == _generation && epoch == _epoch) {
       state = AsyncData<ProductListState>(next);
     }
     if (identical(_pending, done)) {
       _pending = null;
     }
-    done.complete();
+    if (!done.isCompleted) {
+      done.complete();
+    }
+  }
+
+  int get _heldProducts =>
+      _held.fold(0, (int sum, ListWithdrawal w) => sum + w.productCount);
+
+  int get _heldNotSold =>
+      _held.fold(0, (int sum, ListWithdrawal w) => sum + w.notSoldCount);
+
+  /// Every edit drops what is on its way: a page of [loadMore] or a running
+  /// [quietRefresh] answers a list that is no longer this one (`DL-129`).
+  void _dropInFlight() {
+    _epoch++;
+    _refreshing = false;
+    final Completer<void>? running = _pending;
+    _pending = null;
+    if (running != null && !running.isCompleted) {
+      running.complete();
+    }
   }
 
   ProductListState _copy(
@@ -264,7 +308,6 @@ class ProductListController extends AsyncNotifier<ProductListState> {
       at: s.at,
       unavailable: unavailable ?? s.unavailable,
       perPage: s.perPage,
-      loadingMore: s.loadingMore,
       moreFailure: s.moreFailure,
     );
   }
@@ -284,6 +327,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
     }
     final int notSold = removed.where((r) => !r.product.isAvailable).length;
     final Set<int> gone = <int>{for (final r in removed) r.index};
+    _dropInFlight();
     state = AsyncData<ProductListState>(
       _copy(
         current,
@@ -298,13 +342,18 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         nextPage: endsList ? null : _keep,
       ),
     );
-    return ListWithdrawal._(
+    final ListWithdrawal withdrawal = ListWithdrawal._(
       generation: _generation,
       removed: removed,
+      endsList: endsList,
+      productCount: endsList ? current.unavailable : removed.length,
+      notSoldCount: endsList ? current.unavailable : notSold,
       total: current.total,
       unavailable: current.unavailable,
       nextPage: current.nextPage,
     );
+    _held.add(withdrawal);
+    return withdrawal;
   }
 
   /// Takes the loaded products with these ids out of the list at once;
@@ -335,9 +384,10 @@ class ProductListController extends AsyncNotifier<ProductListState> {
   /// as they were; nothing on a list rebuilt since (`DL-129`).
   void restore(ListWithdrawal w) {
     final ProductListState? current = state.value;
-    if (current == null || w.generation != _generation) {
+    if (current == null || w.generation != _generation || !_held.remove(w)) {
       return;
     }
+    _dropInFlight();
     final List<CatalogProduct> items = <CatalogProduct>[...current.items];
     for (final r in w.removed) {
       items.insert(r.index.clamp(0, items.length), r.product);
@@ -346,9 +396,9 @@ class ProductListController extends AsyncNotifier<ProductListState> {
       _copy(
         current,
         items: items,
-        total: w.total,
-        unavailable: w.unavailable,
-        nextPage: w.nextPage,
+        total: current.total + w.productCount,
+        unavailable: current.unavailable + w.notSoldCount,
+        nextPage: w.endsList ? w.nextPage : _keep,
       ),
     );
   }
@@ -358,7 +408,13 @@ class ProductListController extends AsyncNotifier<ProductListState> {
   /// [loadMore] drops what repeats (`DL-129`).
   void settle(ListWithdrawal w) {
     final ProductListState? current = state.value;
-    if (current == null || w.generation != _generation || !current.hasMore) {
+    if (current == null || w.generation != _generation) {
+      return;
+    }
+    _held.remove(w);
+    _dropInFlight();
+    if (!current.hasMore) {
+      state = AsyncData<ProductListState>(_copy(current));
       return;
     }
     state = AsyncData<ProductListState>(
@@ -373,6 +429,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         current.items.any((CatalogProduct p) => p.id == product.id)) {
       return;
     }
+    _dropInFlight();
     state = AsyncData<ProductListState>(
       _copy(
         current,
@@ -393,6 +450,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
     final ProductListState? current = state.value;
     if (!ref.mounted ||
         current == null ||
+        _held.isNotEmpty ||
         state.isLoading ||
         ref.read(customerAccountProvider) == null) {
       return;
@@ -400,6 +458,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
     // While it runs, no further page is started: it would land before the
     // replaced list and repeat it.
     final int generation = _generation;
+    final int epoch = _epoch;
     _refreshing = true;
     final int pages = (current.items.length / current.perPage).ceil().clamp(
       1,
@@ -411,7 +470,7 @@ class ProductListController extends AsyncNotifier<ProductListState> {
       late ({Paged<CatalogProduct> products, int unavailable}) last;
       for (int page = 1; page <= pages; page++) {
         last = await _ask(page);
-        if (!ref.mounted || generation != _generation) {
+        if (!ref.mounted || generation != _generation || epoch != _epoch) {
           return;
         }
         for (final CatalogProduct p in last.products.items) {
@@ -434,19 +493,24 @@ class ProductListController extends AsyncNotifier<ProductListState> {
         ),
       );
     } on ApiFailure catch (failure, stackTrace) {
-      _failQuietly(generation, failure, stackTrace);
+      _failQuietly(generation, epoch, failure, stackTrace);
     } catch (error, stackTrace) {
       reportUnexpectedError(error, stackTrace, 'while refreshing products');
-      _failQuietly(generation, const UnexpectedFailure(), stackTrace);
+      _failQuietly(generation, epoch, const UnexpectedFailure(), stackTrace);
     } finally {
-      if (generation == _generation) {
+      if (generation == _generation && epoch == _epoch) {
         _refreshing = false;
       }
     }
   }
 
-  void _failQuietly(int generation, ApiFailure failure, StackTrace stack) {
-    if (ref.mounted && generation == _generation) {
+  void _failQuietly(
+    int generation,
+    int epoch,
+    ApiFailure failure,
+    StackTrace stack,
+  ) {
+    if (ref.mounted && generation == _generation && epoch == _epoch) {
       state = AsyncError<ProductListState>(failure, stack);
     }
   }

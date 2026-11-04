@@ -507,5 +507,125 @@ void main() {
       expect(favState().loadingMore, isFalse);
       expect(favState().nextPage, 2);
     });
+
+    test('a page on its way when a product is withdrawn is dropped and asked again', () async {
+      await container.read(productListProvider(mine).future);
+      final Completer<void> gate = Completer<void>();
+      favorites.listHold = gate;
+
+      final Future<void> more = listOf().loadMore();
+      expect(favState().loadingMore, isTrue);
+      listOf().withdraw(<String>{'f-2'});
+      expect(favState().loadingMore, isFalse);
+      favorites.listHold = null;
+      gate.complete();
+      await more;
+
+      expect(favState().items, hasLength(19));
+      await listOf().loadMore();
+      expect(favorites.requests, <String>[
+        'default|1',
+        'default|2',
+        'default|2',
+      ]);
+      expect(favState().items, hasLength(24));
+    });
+
+    test(
+      'a page that lands while a withdrawal is held keeps it out of the count',
+      () async {
+        await container.read(productListProvider(mine).future);
+        listOf().withdraw(<String>{'f-20'});
+        // A new favourite ahead shifts f-20 onto the next page.
+        favorites.rows = <CatalogProduct>[
+          catalogProduct(id: 'f-0', isFavorite: true),
+          ...favorites.rows,
+        ];
+
+        await listOf().loadMore();
+
+        expect(
+          favState().items.map((CatalogProduct p) => p.id),
+          isNot(contains('f-20')),
+        );
+        expect(favState().total, 25);
+        expect(favState().unavailable, 3);
+      },
+    );
+
+    test(
+      'restore after a later page counts back from the current total',
+      () async {
+        await container.read(productListProvider(mine).future);
+        final ListWithdrawal w = listOf().withdraw(<String>{'f-2'})!;
+        favorites.rows = <CatalogProduct>[
+          catalogProduct(id: 'f-0', isFavorite: true),
+          ...favorites.rows,
+        ];
+        await listOf().loadMore();
+        expect(favState().total, 25);
+
+        listOf().restore(w);
+
+        expect(favState().total, 26);
+        expect(
+          favState().items.map((CatalogProduct p) => p.id),
+          contains('f-2'),
+        );
+      },
+    );
+
+    test('a withdrawal during a quietRefresh drops the refresh', () async {
+      await container.read(productListProvider(mine).future);
+      final Completer<void> gate = Completer<void>();
+      favorites.listHold = gate;
+
+      final Future<void> refresh = listOf().quietRefresh();
+      listOf().withdraw(<String>{'f-2'});
+      favorites.listHold = null;
+      gate.complete();
+      await refresh;
+
+      expect(favState().items, hasLength(19));
+      expect(favState().total, 24);
+    });
+
+    test('quietRefresh does nothing while a withdrawal is held', () async {
+      await container.read(productListProvider(mine).future);
+      final ListWithdrawal w = listOf().withdraw(<String>{'f-2'})!;
+      favorites.requests.clear();
+
+      await listOf().quietRefresh();
+      expect(favorites.requests, isEmpty);
+
+      listOf().settle(w);
+      await listOf().quietRefresh();
+      expect(favorites.requests, <String>['default|1']);
+    });
+
+    test('two held withdrawals both stay out of a later page', () async {
+      favorites.pageSize = 5;
+      favorites.rows = <CatalogProduct>[
+        for (int i = 1; i <= 12; i++)
+          catalogProduct(id: 'f-$i', isFavorite: true, isAvailable: i <= 9),
+      ];
+      container.invalidate(productListProvider(mine));
+      await container.read(productListProvider(mine).future);
+      await listOf().loadMore();
+      listOf().withdraw(<String>{'f-10'});
+      listOf().withdraw(<String>{'f-1'});
+      expect(favState().total, 10);
+
+      await listOf().loadMore();
+
+      expect(favState().items, hasLength(10));
+      expect(favState().total, 10);
+      expect(favState().unavailable, 2);
+      final List<String> ids = <String>[
+        for (final CatalogProduct p in favState().items) p.id,
+      ];
+      expect(ids, isNot(contains('f-10')));
+      expect(ids, isNot(contains('f-1')));
+    });
   });
 }
