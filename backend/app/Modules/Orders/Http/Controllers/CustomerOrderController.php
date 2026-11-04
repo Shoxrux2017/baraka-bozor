@@ -23,6 +23,7 @@ use App\Modules\Orders\Http\Resources\CustomerOrderResource;
 use App\Modules\Orders\Http\Resources\CustomerOrderSummaryResource;
 use App\Modules\Orders\OrderLineSums;
 use App\Support\Scope\ScopedLookup;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -38,10 +39,20 @@ final class CustomerOrderController extends Controller
 {
     public function index(ListCustomerOrdersRequest $request): JsonResponse
     {
-        $orders = CustomerOrders::withPictureKey(CustomerOrders::withPendingApprovalCount(OrderLineSums::add(
+        $at = now();
+        $orders = CustomerOrders::withPreviewLineCount(CustomerOrders::withPictureKey(CustomerOrders::withPendingApprovalCount(OrderLineSums::add(
             CustomerOrders::inState(CustomerOrders::own($this->customer($request)), $request->state())
-        )))
-            ->with(['currentCourierAssignment.courier', 'rating'])
+        ), $at)))
+            ->with([
+                'currentCourierAssignment.courier',
+                'rating',
+                'openApprovals' => static fn (Relation $approvals) => $approvals
+                    ->select(['id', 'order_id', 'expires_at'])
+                    ->where('expires_at', '>', $at),
+                'previewItems' => static fn (Relation $lines) => $lines->limit(CustomerOrderSummaryResource::PREVIEW_LINES),
+                'previewItems.product:id',
+                'previewItems.product.image',
+            ])
             ->orderByDesc('created_at')
             ->orderByDesc('order_number')
             ->paginate($request->perPage(), ['*'], 'page', $request->page());

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Orders;
 
+use App\Models\CustomerApproval;
+use App\Models\Enums\ApprovalStatus;
 use App\Models\Enums\ItemRemovedReason;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -11,6 +13,8 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -109,6 +113,113 @@ final class CustomerOrdersListApiTest extends TestCase
             $this->assertNotContains($theirs->id, $ids);
             $this->assertNotContains($theirsDone->id, $ids);
         }
+    }
+
+    public function test_the_summary_lists_the_open_questions_expiries_earliest_first(): void
+    {
+        $this->freezeTime();
+        $order = Order::factory()->shopping()->create();
+        $this->question($order, now()->addMinutes(9));
+        $this->question($order, now()->addMinutes(4));
+        $this->question($order, now()->subMinute());
+        $this->question($order, now()->addMinutes(6), ApprovalStatus::Approved);
+        $this->question(Order::factory()->shopping()->create(), now()->addMinutes(2));
+        $quiet = Order::factory()->create(['customer_id' => $order->customer_id, 'created_at' => now()->subHour()]);
+
+        $byId = array_column($this->as($order->customer)->getJson('/api/v1/customer/orders')->assertOk()->json('data'), null, 'id');
+
+        $this->assertSame(
+            [now()->addMinutes(4)->toIso8601ZuluString(), now()->addMinutes(9)->toIso8601ZuluString()],
+            $byId[$order->id]['pending_approval_expires_at'],
+        );
+        $this->assertSame(2, $byId[$order->id]['pending_approval_count']);
+        $this->assertSame([], $byId[$quiet->id]['pending_approval_expires_at']);
+    }
+
+    public function test_the_preview_names_the_first_lines_and_counts_them(): void
+    {
+        $order = Order::factory()->create();
+        $lines = [];
+        foreach (range(1, 10) as $n) {
+            $removed = match ($n) {
+                3 => ItemRemovedReason::Unavailable,
+                5 => ItemRemovedReason::CustomerRemoved,
+                default => null,
+            };
+            $lines[$n] = $this->line($order, $n === 2 ? null : "products/p{$n}.webp", now()->subMinutes(20 - $n), $removed);
+        }
+
+        $preview = $this->as($order->customer)->getJson('/api/v1/customer/orders')->assertOk()->json('data.0.preview');
+
+        $this->assertSame(8, $preview['line_count']);
+        $this->assertCount(4, $preview['lines']);
+        foreach ([1, 2, 4, 6] as $i => $n) {
+            $this->assertSame($lines[$n]->product_name_uz_snapshot, $preview['lines'][$i]['name_uz']);
+            $this->assertSame($lines[$n]->product_name_ru_snapshot, $preview['lines'][$i]['name_ru']);
+        }
+        $this->assertNull($preview['lines'][1]['image_url']);
+        foreach ([0 => 1, 2 => 4, 3 => 6] as $i => $n) {
+            $this->assertStringEndsWith("products/p{$n}.webp", $preview['lines'][$i]['image_url']);
+        }
+    }
+
+    public function test_a_cancelled_order_previews_its_lines_but_the_customers_own_removals(): void
+    {
+        $order = Order::factory()->cancelled()->create();
+        $this->line($order, null, now()->subMinutes(3), ItemRemovedReason::CustomerRemoved);
+        $this->line($order, null, now()->subMinutes(2), ItemRemovedReason::OrderCancelled);
+        $this->line($order, null, now()->subMinute(), ItemRemovedReason::OrderCancelled);
+
+        $preview = $this->as($order->customer)->getJson('/api/v1/customer/orders')->assertOk()->json('data.0.preview');
+
+        $this->assertSame(2, $preview['line_count']);
+        $this->assertCount(2, $preview['lines']);
+    }
+
+    public function test_the_list_queries_do_not_grow_with_its_orders(): void
+    {
+        $small = Order::factory()->create();
+        $this->line($small, 'products/a.webp', now());
+        $this->line($small, null, now());
+        $this->question($small, now()->addMinutes(5));
+        $few = $this->queriesOfTheList($small->customer);
+
+        $big = User::factory()->customer()->create();
+        foreach (range(1, 20) as $n) {
+            $order = Order::factory()->shopping()->create(['customer_id' => $big->id]);
+            foreach (range(1, 12) as $m) {
+                $this->line($order, $m % 2 === 0 ? "products/{$n}-{$m}.webp" : null, now()->subSeconds(60 - $m));
+            }
+            $this->question($order, now()->addMinutes($n));
+        }
+
+        $this->assertSame($few, $this->queriesOfTheList($big));
+    }
+
+    private function queriesOfTheList(User $customer): int
+    {
+        $this->as($customer)->getJson('/api/v1/customer/orders')->assertOk();
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->as($customer)->getJson('/api/v1/customer/orders')->assertOk();
+        $count = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        return $count;
+    }
+
+    private function question(Order $order, \DateTimeInterface $expires, ApprovalStatus $status = ApprovalStatus::Pending): CustomerApproval
+    {
+        $item = OrderItem::factory()->awaitingCustomer()->create(['order_id' => $order->id]);
+
+        $factory = $status === ApprovalStatus::Approved ? CustomerApproval::factory()->approved() : CustomerApproval::factory();
+
+        return $factory->create([
+            'order_item_id' => $item->id,
+            'order_id' => $order->id,
+            'attention_at' => Carbon::instance($expires)->subMinutes(10),
+            'expires_at' => $expires,
+        ]);
     }
 
     private function line(Order $order, ?string $key, \DateTimeInterface $at, ?ItemRemovedReason $removed = null): OrderItem

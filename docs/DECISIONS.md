@@ -1973,3 +1973,18 @@ Stage 11 of `tasks/APPLE_BATCH.md` codes the order test page (`order-*`). The de
 10. **A question card arrives folded and measured.** In view it unfolds; above the view it shows still and the scroll is corrected by its height in the same frame. A line bought since the last load flashes and is announced. An arrival has no haptic; an answer has one.
 11. **An answered card folds at the sure answer,** not at the reload.
 12. **Reproduction of `order-2`.** On 2026-11-04 the machine had 3.6 GB commit free (under 4 GB), so the emulator was not run. The first test of Task 4, run red at `3c6b190` (whose `OrderScreen` is main's) before its fix, is the reproduction.
+
+## DL-131 — The Apple batch, stage 12: my orders (2026-11-05, agent)
+
+1. **`pending_approval_expires_at`** carries every open question's expiry, not only the earliest (`orders-5`), so the strip can count down each and fold at the last.
+2. **`preview`** is `{line_count, lines[{name_uz, name_ru, image_url}]}`: the lines not removed, or, for an order whose every line is removed, those the Customer did not remove themselves; `lines` holds the first four in line order. The names are the lines' snapshots and the pictures current (`DL-91` (1)); a cancelled order previews what was ordered, as a reorder takes it (§26).
+3. **Each tab is an endless feed;** a reload asks again for every page it had; «Прошлые» loads with the screen, for its count and the empty «Текущие»; past orders stand under Tashkent month headings («Октябрь», another year «Декабрь 2025»); «Текущие» has none.
+4. **On the list the 30 s refresh keeps trying after a failure** while the list is shown (the page: «обновление пробует дальше само»), unlike the order page (`DL-130` (7)); the stale line is on «Текущие» only; a failed pull on «Прошлые» is announced and keeps the list.
+5. **The list card's stages read «Принят · Сборка · В пути · Доставлен»** (its page) and the order page's keep «Принят · Покупаем · Везём · Доставлен» (its page): one stage bar, two label sets, each as approved.
+6. **The phone's clock counts down only a question it saw running** (`DL-130` (6)); one whose deadline already passed on the phone when it arrived counts, without a chip, until the next load.
+7. **An order that leaves «Текущие» with a past status shows it** (the bar fills), is announced, and folds into «Прошлые» 1.7 s later, whose count then goes up; one the Customer cancelled on its page (`DL-113`) leaves quietly; one not found in «Прошлые» folds at once without words. Changes found while the list is covered or hidden are drawn but not announced and do not buzz.
+8. **A new question buzzes lightly on the list** (its page), unlike an arrival on the order page (`DL-130` (10)).
+9. **`Fold`'s built 300/260 ms stand for the page's 320/280.**
+10. **How `orders-2`, `orders-3`, `orders-5` were reproduced:** filled in by the lead.
+11. **The stars are 44 × 44, not the drawn 40 × 44:** the batch's 44 rule (`DL-117`) stands; at 360–430 dp the row wraps «Повторить» under the stars either way.
+12. **A rating tap lights the stars up to it** with a pop and a haptic and opens the rating screen when the last pop ends (45 × (stars − 1) + 340 ms; at once with reduced motion); back from it the stars are unlit.

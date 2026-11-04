@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Orders;
 
 use App\Models\Enums\ApprovalStatus;
+use App\Models\Enums\ItemRemovedReason;
 use App\Models\Enums\OrderItemStatus;
 use App\Models\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 
@@ -29,18 +31,43 @@ final class CustomerOrders
     /**
      * Adds `pending_approval_count`: the questions still waiting for the
      * Customer, those past their expiry left out as a read leaves them
-     * (`DL-54` (8)), counted in SQL so a page does not load them.
+     * (`DL-54` (8)), counted in SQL so a page does not load them. `$at` is the
+     * instant of the request, the one `Order::openApprovals` is asked with.
      *
      * @param  Builder<Order>  $orders
      * @return Builder<Order>
      */
-    public static function withPendingApprovalCount(Builder $orders): Builder
+    public static function withPendingApprovalCount(Builder $orders, ?CarbonInterface $at = null): Builder
     {
+        $at ??= now();
+
         return $orders->addSelect(['pending_approval_count' => static fn (QueryBuilder $approvals) => $approvals->from('customer_approvals')
             ->selectRaw('count(*)')
             ->whereColumn('customer_approvals.order_id', 'orders.id')
             ->where('customer_approvals.status', ApprovalStatus::Pending->value)
-            ->where('customer_approvals.expires_at', '>', now())]);
+            ->where('customer_approvals.expires_at', '>', $at)]);
+    }
+
+    /**
+     * Adds `preview_line_count`: the lines not removed, or, when every line is
+     * removed, those the Customer did not remove themselves, which is what
+     * `Order::previewItems` lists (`DL-131` (2)).
+     *
+     * @param  Builder<Order>  $orders
+     * @return Builder<Order>
+     */
+    public static function withPreviewLineCount(Builder $orders): Builder
+    {
+        $removed = OrderItemStatus::Removed->value;
+        $own = ItemRemovedReason::CustomerRemoved->value;
+
+        return $orders->addSelect(['preview_line_count' => static fn (QueryBuilder $lines) => $lines->from('order_items')
+            ->selectRaw(
+                'case when count(*) filter (where status <> ?) > 0 then count(*) filter (where status <> ?)'
+                .' else count(*) filter (where removed_reason_code is distinct from ?) end',
+                [$removed, $removed, $own],
+            )
+            ->whereColumn('order_items.order_id', 'orders.id')]);
     }
 
     /**

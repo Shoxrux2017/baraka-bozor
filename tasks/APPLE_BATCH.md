@@ -27,7 +27,7 @@ Rules for every stage:
 | 8 | «Рекомендуем» and «Все товары» | 7 | list order | Merged (PR #131) |
 | 9 | Search | 8 | — | Merged (PR #131) |
 | 10 | Favourites | 7 | favourites order | Merged (PR #132) |
-| 11 | Order | 9 | approval amounts and picture | Planned |
+| 11 | Order | 9 | approval amounts and picture | Merged (PR #133) |
 | 12 | My orders | 10 | list summary fields | Planned |
 | 13 | Order editing | 12 | edit preview, minimum | Planned |
 | 14 | Cancellation | 12 | cancel reason | Planned |
@@ -353,6 +353,7 @@ Noticed in the reviews and left out; each needs its own decision before any code
 - The app reads the cart's `working_hours` as a required key (`DL-125` (7)), so a build of stage 6 or later refuses the cart answer of an older server. Deploy the backend before any such build reaches a phone (W4-5).
 - The app now also reads each category's `product_count` as a required key (`DL-128` (1)), like `working_hours` (`DL-125` (7)): deploy the backend first.
 - The app reads the order screen's new keys as required (`estimate_if_approved_uzs`, `change_if_approved_uzs`, `change_if_rejected_uzs`, `replacement.image_url`, and each line's `agreed`), like `working_hours` (`DL-130`): deploy the backend before any build of stage 11 reaches a phone.
+- The app reads the list summary's new keys as required (`pending_approval_expires_at`, `preview`), like `working_hours` (`DL-125` (7)) and the order screen's keys (`DL-130`): deploy the backend before any build of stage 12 reaches a phone (`DL-131`).
 
 ## Review findings not acted on
 
