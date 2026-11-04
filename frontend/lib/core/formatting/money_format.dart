@@ -6,9 +6,23 @@ import '../localization/app_language.dart';
 /// non-breaking so an amount never wraps across lines.
 abstract final class MoneyFormat {
   static const String _space = '\u00A0';
+  static const String _minus = '\u2212';
 
   static String uzs(int amount, AppLanguage language) =>
       '${grouped(amount)}$_space${currency(language)}';
+
+  /// A change the server computed, signed: `+5 300`, `-5 000` with the true
+  /// minus sign (U+2212), and a bare `0` at zero (`DL-130`). Never computed here.
+  static String signed(int change) {
+    if (change == 0) {
+      return '0';
+    }
+    return '${change > 0 ? '+' : _minus}${grouped(change.abs())}';
+  }
+
+  /// [signed] with the currency: `-20 000 сум`.
+  static String signedUzs(int change, AppLanguage language) =>
+      '${signed(change)}$_space${currency(language)}';
 
   /// The currency word alone, for an input field's suffix.
   static String currency(AppLanguage language) => switch (language) {

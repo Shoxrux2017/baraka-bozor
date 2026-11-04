@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/accessibility/announce.dart';
 import '../../../core/formatting/server_text.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/generated/app_localizations.dart';
@@ -474,7 +477,12 @@ class _Order extends ConsumerWidget {
 /// a refusal of their answer. The refusal belongs to the question it
 /// answered: it is said while that question, or none, is on the line, and
 /// not under a question asked since.
-class _QuestionBlock extends ConsumerWidget {
+///
+/// A question is answerable only while the phone's clock is before its
+/// `expiresAt`. At that instant the card turns expired at once, is announced
+/// and the order loads again; a question the clock has passed stays expired
+/// whatever a reload says (`DL-130`).
+class _QuestionBlock extends ConsumerStatefulWidget {
   const _QuestionBlock({
     required this.orderId,
     required this.line,
@@ -486,8 +494,64 @@ class _QuestionBlock extends ConsumerWidget {
   final AppLanguage language;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final CustomerQuestion? question = line.question;
+  ConsumerState<_QuestionBlock> createState() => _QuestionBlockState();
+}
+
+class _QuestionBlockState extends ConsumerState<_QuestionBlock> {
+  Timer? _timer;
+  String? _timerFor;
+
+  /// The questions whose deadline passed while this line was shown.
+  final Set<String> _expired = <String>{};
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _watchDeadline(CustomerQuestion? question, DateTime now) {
+    final String? key = question == null || _expired.contains(question.id)
+        ? null
+        : '${question.id}@${question.expiresAt.toIso8601String()}';
+    if (key == _timerFor) {
+      return;
+    }
+    _timer?.cancel();
+    _timerFor = key;
+    if (question == null || key == null) {
+      return;
+    }
+    final Duration wait = question.expiresAt.difference(now);
+    if (wait <= Duration.zero) {
+      return;
+    }
+    _timer = Timer(wait, () {
+      if (!mounted) {
+        return;
+      }
+      final AppLocalizations l10n = AppLocalizations.of(context);
+      setState(() => _expired.add(question.id));
+      announce(
+        context,
+        l10n.questionExpiredSpoken(widget.line.name(widget.language)),
+      );
+      ref.invalidate(customerOrderProvider(widget.orderId));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String orderId = widget.orderId;
+    final CustomerOrderLine line = widget.line;
+    final AppLanguage language = widget.language;
+    final DateTime now = ref.watch(clockProvider)();
+    final CustomerQuestion? sent = line.question;
+    final bool pastDeadline =
+        sent != null &&
+        (_expired.contains(sent.id) || !sent.expiresAt.isAfter(now));
+    final CustomerQuestion? question = pastDeadline ? null : sent;
+    _watchDeadline(question, now);
     final MutationState deciding = ref.watch(
       approvalDecisionProvider((orderId: orderId, lineId: line.id)),
     );
@@ -502,7 +566,8 @@ class _QuestionBlock extends ConsumerWidget {
     final ApiFailure? refusal = question == null || question.id == answered
         ? deciding.failure
         : null;
-    if (question == null && !line.questionExpired && refusal == null) {
+    final bool expired = line.questionExpired || pastDeadline;
+    if (question == null && !expired && refusal == null) {
       return const SizedBox.shrink();
     }
 
@@ -519,7 +584,7 @@ class _QuestionBlock extends ConsumerWidget {
               deciding: deciding,
               language: language,
             )
-          else if (line.questionExpired)
+          else if (expired)
             OrderQuestionExpired(line: line)
           else if (refusal != null)
             Padding(

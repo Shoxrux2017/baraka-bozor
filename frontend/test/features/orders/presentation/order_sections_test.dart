@@ -388,6 +388,8 @@ void main() {
           changeable: false,
           lines: <Object?>[questionLineJson('price_over_tolerance')],
         ),
+        // Before the question's 13:00, or the phone's clock calls it over.
+        now: DateTime.utc(2026, 9, 28, 7, 30),
       );
 
       expect(find.text('Ждёт вашего ответа'), findsOneWidget);
@@ -948,7 +950,10 @@ void main() {
                         'proposed_quantity': null,
                         'replacement': null,
                         'request_note': 'Qizili qolmadi',
-                        'expires_at': '2026-09-28T08:00:00Z',
+                        'expires_at': '2026-09-28T09:30:00Z',
+                        'estimate_if_approved_uzs': 99999999,
+                        'change_if_approved_uzs': 99999999,
+                        'change_if_rejected_uzs': -99999999,
                       },
                       'customer_note': 'n' * 160,
                       'line_total_uzs': 99999999,

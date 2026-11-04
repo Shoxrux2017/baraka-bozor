@@ -63,6 +63,7 @@ Map<String, Object?> asked(String type, {bool aboutReplacement = false}) {
       'replacement': <String, Object?>{
         ...cherry,
         'customer_unit_price_uzs': 21850,
+        'image_url': null,
       },
     },
   };
@@ -130,7 +131,7 @@ void main() {
         orders: orders,
         cart: cart,
         device: device,
-        clock: () => DateTime.utc(2026, 9, 28, 12),
+        clock: () => DateTime.utc(2026, 9, 28, 7, 30),
       ),
     );
     await tester.pumpAndSettle();
@@ -221,8 +222,10 @@ void main() {
             find.text(words.questionNoteKit('Qizili qolmadi')),
             findsOneWidget,
           );
-          expect(find.text(words.questionExpires('13:00')), findsOneWidget);
-          expect(find.text(words.questionRejectRemoves), findsOneWidget);
+          expect(
+            find.text(words.deadlineLeftUntil(30, '13:00')),
+            findsOneWidget,
+          );
           expect(byKey('approve-$approvalOne'), findsOneWidget);
           expect(byKey('reject-$approvalOne'), findsOneWidget);
 

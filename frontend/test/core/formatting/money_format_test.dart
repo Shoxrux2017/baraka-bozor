@@ -21,4 +21,21 @@ void main() {
     expect(MoneyFormat.grouped(1000000000), '1${nbsp}000${nbsp}000${nbsp}000');
     expect(MoneyFormat.grouped(-15000), '-15${nbsp}000');
   });
+
+  test('a change is signed: plus, the true minus sign, or a bare zero', () {
+    final String minus = String.fromCharCode(0x2212);
+    expect(MoneyFormat.signed(5300), '+5${nbsp}300');
+    expect(MoneyFormat.signed(-5000), '${minus}5${nbsp}000');
+    expect(MoneyFormat.signed(0), '0');
+    expect(
+      MoneyFormat.signedUzs(-20000, AppLanguage.ru),
+      '${minus}20${nbsp}000$nbspсум',
+    );
+    expect(MoneyFormat.signedUzs(5300, AppLanguage.ru), '+5${nbsp}300$nbspсум');
+    expect(
+      MoneyFormat.signedUzs(-20000, AppLanguage.uz),
+      "${minus}20${nbsp}000${nbsp}so'm",
+    );
+    expect(MoneyFormat.signedUzs(0, AppLanguage.uz), "0${nbsp}so'm");
+  });
 }

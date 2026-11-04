@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/formatting/money_format.dart';
-import '../../../core/formatting/tashkent_time.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/localization/catalog_labels.dart';
 import '../../../core/localization/generated/app_localizations.dart';
@@ -12,6 +11,7 @@ import '../../../core/orders/quantity_rules.dart';
 import '../../../core/localization/interface_language.dart';
 import '../../../core/state/mutation_state.dart';
 import '../../../core/theme/kit_colors.dart';
+import '../../../core/widgets/deadline_chip.dart';
 import '../../../core/widgets/product_image.dart';
 import '../application/customer_orders_controllers.dart';
 import '../domain/customer_orders.dart';
@@ -40,10 +40,12 @@ class OrderQuestionCard extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final String unit = CatalogLabels.unit(l10n, line.unit);
     final String name = line.name(language);
-    final ProductNames? replacement = question.replacement;
+    final QuestionReplacement? replacement = question.replacement;
     String perUnit(int? price) =>
         l10n.catalogPricePerUnit(MoneyFormat.uzs(price!, language), unit);
     String quantity(String? value) => '${QuantityRules.display(value!)} $unit';
+    // The quantity in force: the one the Customer's yes set, else as ordered.
+    final String inForce = quantity(line.agreed?.quantity ?? line.quantity);
     String word(ApprovalDecision decision) => switch (decision) {
       ApprovalDecision.approve => l10n.questionApprove,
       ApprovalDecision.reject => l10n.questionReject,
@@ -105,6 +107,12 @@ class OrderQuestionCard extends ConsumerWidget {
           )
         : Text(text);
 
+    // What a yes leaves on the line, in the words of the question's type.
+    final String what = switch (question.type) {
+      ApprovalType.priceOverTolerance => inForce,
+      ApprovalType.substitution => '${replacement!.name(language)}, $inForce',
+      ApprovalType.reducedQuantity => quantity(question.proposedQuantity),
+    };
     final String? note = question.requestNote;
     const TextStyle body = TextStyle(fontSize: 13, color: KitColors.ink2);
 
@@ -120,10 +128,13 @@ class OrderQuestionCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 6,
               children: <Widget>[
-                Expanded(
+                ExcludeSemantics(
                   child: Text(
                     title,
                     style: const TextStyle(
@@ -133,16 +144,10 @@ class OrderQuestionCard extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    l10n.questionExpires(TashkentTime.time(question.expiresAt)),
-                    textAlign: TextAlign.end,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: KitColors.muted,
-                    ),
-                  ),
+                DeadlineChip(
+                  deadline: question.expiresAt,
+                  onCard: true,
+                  spokenTitle: title,
                 ),
               ],
             ),
@@ -160,7 +165,19 @@ class OrderQuestionCard extends ConsumerWidget {
                       color: KitColors.muted,
                     ),
                   ),
-                  const _Picture(url: null),
+                  Semantics(
+                    container: true,
+                    image: true,
+                    label: l10n.approvalReplacement(
+                      replacement!.name(language),
+                    ),
+                    excludeSemantics: true,
+                    child: _Picture(
+                      url: replacement.imageUrl,
+                      imageSize: 34,
+                      placeholder: true,
+                    ),
+                  ),
                 ],
                 const SizedBox(width: 12),
                 Expanded(
@@ -229,6 +246,45 @@ class OrderQuestionCard extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 12),
+            _Effect(
+              icon: Icons.check,
+              color: KitColors.primary,
+              text: TextSpan(
+                text: '${l10n.questionEffectApprove(what)} ',
+                children: <InlineSpan>[
+                  // The estimate's words hold their spaces non-breaking.
+                  TextSpan(
+                    text: l10n.cartLineEstimate(
+                      MoneyFormat.uzs(question.estimateIfApprovedUzs, language),
+                    ),
+                    style: _bold,
+                  ),
+                  if (question.changeIfApprovedUzs != 0)
+                    TextSpan(
+                      text:
+                          ' (${MoneyFormat.signed(question.changeIfApprovedUzs)})',
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            _Effect(
+              icon: Icons.close,
+              color: KitColors.danger,
+              text: TextSpan(
+                text: '${l10n.questionEffectReject(name)} ',
+                children: <InlineSpan>[
+                  TextSpan(
+                    text: MoneyFormat.signedUzs(
+                      question.changeIfRejectedUzs,
+                      language,
+                    ),
+                    style: _bold,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             if (unanswered != null) ...<Widget>[
               Text(
                 l10n.decisionUnanswered(word(unanswered.sent)),
@@ -273,14 +329,53 @@ class OrderQuestionCard extends ConsumerWidget {
                   ),
                 ],
               ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.questionRejectRemoves,
-              style: const TextStyle(fontSize: 11, color: KitColors.muted),
-            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+const TextStyle _bold = TextStyle(
+  fontSize: 13,
+  height: 1.4,
+  fontWeight: FontWeight.w700,
+  color: KitColors.ink,
+);
+
+/// One of the two lines saying what an answer does to the bill: a 17 px icon
+/// and the words (`DL-130`).
+class _Effect extends StatelessWidget {
+  const _Effect({required this.icon, required this.color, required this.text});
+
+  final IconData icon;
+  final Color color;
+  final TextSpan text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        ExcludeSemantics(
+          child: Padding(
+            // Centres the icon on the first line of 13 px text at height 1.4.
+            padding: const EdgeInsets.only(top: 0.6),
+            child: Icon(icon, size: 17, color: color),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text.rich(
+            text,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: KitColors.ink2,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -302,17 +397,29 @@ const ColorFilter _grey = ColorFilter.matrix(<double>[
 /// A product picture on the kit's `card` square; without a [url], an empty
 /// well.
 class _Picture extends StatelessWidget {
-  const _Picture({required this.url, this.size = 48, this.greyed = false});
+  const _Picture({
+    required this.url,
+    this.size = 48,
+    this.imageSize,
+    this.placeholder = false,
+    this.greyed = false,
+  });
 
   final String? url;
   final double size;
+
+  /// The picture's own size inside the box, [size] when not set.
+  final double? imageSize;
+
+  /// Draws the product placeholder when there is no [url].
+  final bool placeholder;
   final bool greyed;
 
   @override
   Widget build(BuildContext context) {
-    Widget picture = url == null
+    Widget picture = url == null && !placeholder
         ? const SizedBox.shrink()
-        : ProductImage(url: url, size: size);
+        : ProductImage(url: url, size: imageSize ?? size);
     if (greyed) {
       picture = Opacity(
         opacity: 0.4,

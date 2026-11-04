@@ -3047,11 +3047,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String questionExpires(String time) {
-    return 'Ответьте до $time';
-  }
-
-  @override
   String get questionApprove => 'Согласиться';
 
   @override
@@ -3117,10 +3112,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get errorApprovalExpired => 'Время ответа на вопрос истекло.';
-
-  @override
-  String get questionRejectRemoves =>
-      'Если откажетесь, этот товар уберут из заказа.';
 
   @override
   String get questionDropsReplacement =>
@@ -4511,6 +4502,31 @@ class AppLocalizationsRu extends AppLocalizations {
       one: '$minutes минута',
     );
     return 'осталось $_temp0';
+  }
+
+  @override
+  String questionEffectApprove(String what) {
+    return 'Согласитесь: $what —';
+  }
+
+  @override
+  String questionEffectReject(String name) {
+    return 'Откажетесь: «$name» уберут из заказа,';
+  }
+
+  @override
+  String deadlineLeftUntil(int minutes, String time) {
+    return 'Осталось $minutes мин · до $time';
+  }
+
+  @override
+  String questionHeaderSpoken(String title, String left) {
+    return '$title, $left';
+  }
+
+  @override
+  String questionExpiredSpoken(String name) {
+    return 'Время ответа истекло: $name уберут из заказа';
   }
 
   @override

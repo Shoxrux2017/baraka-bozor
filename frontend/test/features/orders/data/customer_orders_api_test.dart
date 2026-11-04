@@ -169,6 +169,136 @@ void main() {
       );
     });
 
+    test('a question carries what each answer does to the bill', () {
+      final CustomerQuestion price = CustomerOrdersApi.parseOrder(
+        orderWith(questionLineJson('price_over_tolerance')),
+      ).lines.single.question!;
+      expect(price.estimateIfApprovedUzs, 25300);
+      expect(price.changeIfApprovedUzs, 5300);
+      expect(price.changeIfRejectedUzs, -20000);
+
+      final CustomerQuestion substitution = CustomerOrdersApi.parseOrder(
+        orderWith(questionLineJson('substitution')),
+      ).lines.single.question!;
+      expect(
+        substitution.replacement!.imageUrl,
+        'https://cdn.example/cherry.webp',
+      );
+      expect(substitution.replacement!.name(AppLanguage.ru), 'Помидоры черри');
+
+      final Map<String, Object?> noPicture = questionWith(
+        questionLineJson('substitution'),
+        <String, Object?>{
+          'replacement': <String, Object?>{
+            'name_uz': 'Olcha pomidor',
+            'name_ru': 'Помидоры черри',
+            'customer_unit_price_uzs': 21850,
+            'image_url': null,
+          },
+        },
+      );
+      expect(
+        CustomerOrdersApi.parseOrder(orderWith(noPicture))
+            .lines
+            .single
+            .question!
+            .replacement!
+            .imageUrl,
+        isNull,
+      );
+    });
+
+    test('a line says what the Customer agreed, or null', () {
+      expect(
+        CustomerOrdersApi.parseOrder(orderWith(orderLineJson()))
+            .lines
+            .single
+            .agreed,
+        isNull,
+      );
+      final AgreedTerms agreed = CustomerOrdersApi.parseOrder(
+        orderWith(
+          orderLineJson(
+            patch: <String, Object?>{
+              'agreed': <String, Object?>{
+                'customer_unit_price_uzs': 21850,
+                'quantity': '1.000',
+              },
+            },
+          ),
+        ),
+      ).lines.single.agreed!;
+      expect(agreed.customerUnitPriceUzs, 21850);
+      expect(agreed.quantity, '1.000');
+      final AgreedTerms priceOnly = CustomerOrdersApi.parseOrder(
+        orderWith(
+          orderLineJson(
+            patch: <String, Object?>{
+              'agreed': <String, Object?>{
+                'customer_unit_price_uzs': 21850,
+                'quantity': null,
+              },
+            },
+          ),
+        ),
+      ).lines.single.agreed!;
+      expect(priceOnly.quantity, isNull);
+    });
+
+    test('the keys the question and the line now carry are required', () {
+      final Map<String, Object?> substitution = questionLineJson(
+        'substitution',
+      );
+      Map<String, Object?> without(String key) {
+        final Map<String, Object?> question = <String, Object?>{
+          ...substitution['pending_approval']! as Map<String, Object?>,
+        }..remove(key);
+        return <String, Object?>{...substitution, 'pending_approval': question};
+      }
+
+      final Map<String, Map<String, Object?>> broken =
+          <String, Map<String, Object?>>{
+            for (final String key in <String>[
+              'estimate_if_approved_uzs',
+              'change_if_approved_uzs',
+              'change_if_rejected_uzs',
+            ])
+              'a question without $key': without(key),
+            'a replacement without image_url': questionWith(
+              substitution,
+              <String, Object?>{
+                'replacement': <String, Object?>{
+                  'name_uz': 'Olcha pomidor',
+                  'name_ru': 'Помидоры черри',
+                  'customer_unit_price_uzs': 21850,
+                },
+              },
+            ),
+            'a line without agreed': <String, Object?>{...orderLineJson()}
+              ..remove('agreed'),
+            'an agreement without its quantity': orderLineJson(
+              patch: <String, Object?>{
+                'agreed': <String, Object?>{'customer_unit_price_uzs': 1},
+              },
+            ),
+            'an agreement of a text price': orderLineJson(
+              patch: <String, Object?>{
+                'agreed': <String, Object?>{
+                  'customer_unit_price_uzs': '1',
+                  'quantity': null,
+                },
+              },
+            ),
+          };
+      broken.forEach((String what, Map<String, Object?> line) {
+        expect(
+          () => CustomerOrdersApi.parseOrder(orderWith(line)),
+          throwsFormatException,
+          reason: what,
+        );
+      });
+    });
+
     test('a line, a question, a request or a payment off the contract', () {
       final Map<String, Object?> price = questionLineJson(
         'price_over_tolerance',

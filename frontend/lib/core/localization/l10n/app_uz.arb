@@ -1921,14 +1921,6 @@
       }
     }
   },
-  "questionExpires": "Javob berish muddati: {time}gacha",
-  "@questionExpires": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "questionApprove": "Rozi bo'lish",
   "questionReject": "Rad etish",
   "questionFromShopper": "Yig'uvchidan savol",
@@ -1992,7 +1984,6 @@
   "orderRequestCancel": "Bekor qilishni so'rash",
   "orderRequestCancelReason": "Sabab",
   "errorApprovalExpired": "Savolga javob berish vaqti o'tgan.",
-  "questionRejectRemoves": "Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.",
   "questionDropsReplacement": "Rozi bo'lsangiz, o'rniga boshqasi emas, buyurtma qilingan mahsulotning o'zi olinadi.",
   "decisionSending": "Javob yuborilmoqda",
   "myDeliveries": "Mening yetkazishlarim",
@@ -3062,6 +3053,52 @@
     "placeholders": {
       "minutes": {
         "type": "int"
+      }
+    }
+  },
+  "questionEffectApprove": "Rozi bo'lsangiz: {what} —",
+  "@questionEffectApprove": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "questionEffectReject": "Rad etsangiz: «{name}» buyurtmadan olib tashlanadi,",
+  "@questionEffectReject": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deadlineLeftUntil": "{minutes} daqiqa qoldi · {time} gacha",
+  "@deadlineLeftUntil": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "questionHeaderSpoken": "{title}, {left}",
+  "@questionHeaderSpoken": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "questionExpiredSpoken": "Javob vaqti tugadi: {name} buyurtmadan olib tashlanadi",
+  "@questionExpiredSpoken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   },

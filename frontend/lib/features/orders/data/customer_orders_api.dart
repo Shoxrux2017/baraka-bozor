@@ -486,6 +486,35 @@ class CustomerOrdersApi {
     );
   }
 
+  static QuestionReplacement? _questionReplacement(Object? raw) {
+    if (raw == null) {
+      return null;
+    }
+    final JsonFields json = JsonFields.of(raw, 'replacement');
+    return QuestionReplacement(
+      nameUz: json.string('name_uz'),
+      nameRu: json.string('name_ru'),
+      imageUrl: json.nullableString('image_url'),
+    );
+  }
+
+  static AgreedTerms? _agreed(Object? raw) {
+    if (raw == null) {
+      return null;
+    }
+    final JsonFields json = JsonFields.of(raw, 'agreed');
+    final String? quantity = json.nullableString('quantity');
+    if (quantity != null &&
+        (!_quantity.hasMatch(quantity) ||
+            QuantityRules.thousandths(quantity) == 0)) {
+      throw FormatException('agreed quantity is not in its form: $quantity');
+    }
+    return AgreedTerms(
+      customerUnitPriceUzs: _nullableAmount(json, 'customer_unit_price_uzs'),
+      quantity: quantity,
+    );
+  }
+
   static CustomerQuestion _question(Object? raw) {
     final JsonFields json = JsonFields.of(raw, 'pending approval');
     final String? proposed = json.nullableString('proposed_quantity');
@@ -503,9 +532,12 @@ class CustomerOrdersApi {
         'proposed_customer_unit_price_uzs',
       ),
       proposedQuantity: proposed,
-      replacement: _names(replacement, 'replacement'),
+      replacement: _questionReplacement(replacement),
       requestNote: json.nullableString('request_note'),
       expiresAt: json.instant('expires_at'),
+      estimateIfApprovedUzs: _amount(json, 'estimate_if_approved_uzs'),
+      changeIfApprovedUzs: json.integer('change_if_approved_uzs'),
+      changeIfRejectedUzs: json.integer('change_if_rejected_uzs'),
     );
     // The proposal each type carries, as the table holds it (`docs/08`
     // section 15); a replacement carries the proposed price as its own, so
@@ -570,6 +602,7 @@ class CustomerOrdersApi {
       billableQuantity: billed,
       billableUnitPriceUzs: _nullableAmount(json, 'billable_unit_price_uzs'),
       replacement: _names(json.member('replacement'), 'replacement'),
+      agreed: _agreed(json.member('agreed')),
       question: question == null ? null : _question(question),
       imageUrl: json.nullableString('image_url'),
     );

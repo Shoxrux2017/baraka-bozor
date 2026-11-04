@@ -5228,12 +5228,6 @@ abstract class AppLocalizations {
   /// **'{name}: topilmadi. O\'rniga — {replacement}, {price}. Rozimisiz?'**
   String questionSubstitution(String name, String replacement, String price);
 
-  /// No description provided for @questionExpires.
-  ///
-  /// In uz, this message translates to:
-  /// **'Javob berish muddati: {time}gacha'**
-  String questionExpires(String time);
-
   /// No description provided for @questionApprove.
   ///
   /// In uz, this message translates to:
@@ -5347,12 +5341,6 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Savolga javob berish vaqti o\'tgan.'**
   String get errorApprovalExpired;
-
-  /// No description provided for @questionRejectRemoves.
-  ///
-  /// In uz, this message translates to:
-  /// **'Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.'**
-  String get questionRejectRemoves;
 
   /// No description provided for @questionDropsReplacement.
   ///
@@ -7537,6 +7525,36 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'{minutes} daqiqa qoldi'**
   String deadlineLeftSpoken(int minutes);
+
+  /// No description provided for @questionEffectApprove.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rozi bo\'lsangiz: {what} —'**
+  String questionEffectApprove(String what);
+
+  /// No description provided for @questionEffectReject.
+  ///
+  /// In uz, this message translates to:
+  /// **'Rad etsangiz: «{name}» buyurtmadan olib tashlanadi,'**
+  String questionEffectReject(String name);
+
+  /// No description provided for @deadlineLeftUntil.
+  ///
+  /// In uz, this message translates to:
+  /// **'{minutes} daqiqa qoldi · {time} gacha'**
+  String deadlineLeftUntil(int minutes, String time);
+
+  /// No description provided for @questionHeaderSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'{title}, {left}'**
+  String questionHeaderSpoken(String title, String left);
+
+  /// No description provided for @questionExpiredSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Javob vaqti tugadi: {name} buyurtmadan olib tashlanadi'**
+  String questionExpiredSpoken(String name);
 
   /// No description provided for @refreshDone.
   ///

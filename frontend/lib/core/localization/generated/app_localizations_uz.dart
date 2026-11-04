@@ -3006,11 +3006,6 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String questionExpires(String time) {
-    return 'Javob berish muddati: ${time}gacha';
-  }
-
-  @override
   String get questionApprove => 'Rozi bo\'lish';
 
   @override
@@ -3076,10 +3071,6 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get errorApprovalExpired => 'Savolga javob berish vaqti o\'tgan.';
-
-  @override
-  String get questionRejectRemoves =>
-      'Rad etsangiz, bu mahsulot buyurtmadan olib tashlanadi.';
 
   @override
   String get questionDropsReplacement =>
@@ -4460,6 +4451,31 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String deadlineLeftSpoken(int minutes) {
     return '$minutes daqiqa qoldi';
+  }
+
+  @override
+  String questionEffectApprove(String what) {
+    return 'Rozi bo\'lsangiz: $what —';
+  }
+
+  @override
+  String questionEffectReject(String name) {
+    return 'Rad etsangiz: «$name» buyurtmadan olib tashlanadi,';
+  }
+
+  @override
+  String deadlineLeftUntil(int minutes, String time) {
+    return '$minutes daqiqa qoldi · $time gacha';
+  }
+
+  @override
+  String questionHeaderSpoken(String title, String left) {
+    return '$title, $left';
+  }
+
+  @override
+  String questionExpiredSpoken(String name) {
+    return 'Javob vaqti tugadi: $name buyurtmadan olib tashlanadi';
   }
 
   @override

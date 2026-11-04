@@ -12,6 +12,7 @@ Future<void> _open(
   WidgetTester tester, {
   required Duration left,
   required DateTime Function() clock,
+  bool onCard = false,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -24,6 +25,7 @@ Future<void> _open(
           body: DeadlineChip(
             key: const ValueKey<String>('deadline-chip'),
             deadline: _start.add(left),
+            onCard: onCard,
           ),
         ),
       ),
@@ -89,5 +91,39 @@ void main() {
     await tester.pump(const Duration(minutes: 1));
     expect(find.byIcon(Icons.timer), findsNothing);
     expect(find.textContaining('Осталось'), findsNothing);
+  });
+
+  testWidgets('on a card it says the minutes and the time, on a wash', (
+    WidgetTester tester,
+  ) async {
+    // 12:55 in Tashkent is 07:55 UTC.
+    final DateTime deadline = DateTime.utc(2026, 11, 2, 7, 55);
+    DateTime now = DateTime.utc(2026, 11, 2, 7, 46);
+    await _open(
+      tester,
+      left: deadline.difference(_start),
+      clock: () => now,
+      onCard: true,
+    );
+    Color? wash() =>
+        (tester
+                    .widget<DecoratedBox>(
+                      find.descendant(
+                        of: find.byKey(const ValueKey<String>('deadline-chip')),
+                        matching: find.byType(DecoratedBox),
+                      ),
+                    )
+                    .decoration
+                as BoxDecoration)
+            .color;
+    expect(find.text('Осталось 9 мин · до 12:55'), findsOneWidget);
+    expect(wash(), KitColors.warningWash);
+    expect(_color(tester), KitColors.warningDark);
+
+    now = DateTime.utc(2026, 11, 2, 7, 52);
+    await tester.pump(const Duration(minutes: 6));
+    expect(find.text('Осталось 3 мин · до 12:55'), findsOneWidget);
+    expect(wash(), KitColors.dangerWash);
+    expect(_color(tester), KitColors.danger);
   });
 }
