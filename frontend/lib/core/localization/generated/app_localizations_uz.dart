@@ -4744,4 +4744,60 @@ class AppLocalizationsUz extends AppLocalizations {
   String reorderRepeatSpoken(int number) {
     return 'Buyurtma № $number ni takrorlash';
   }
+
+  @override
+  String get ordersCurrentEmptyTitle => 'Hozir jarayondagi buyurtma yo\'q';
+
+  @override
+  String ordersLastOrderText(Object day) {
+    return 'Oxirgi buyurtma — $day. Uni takrorlash yoki yangi savat yig\'ish mumkin.';
+  }
+
+  @override
+  String ordersAllPast(Object count) {
+    return 'Barcha o\'tgan buyurtmalar · $count';
+  }
+
+  @override
+  String ordersAllPastSpoken(Object count) {
+    return 'Barcha o\'tgan buyurtmalar, $count';
+  }
+
+  @override
+  String ordersCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ta buyurtma',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ordersLoading => 'Buyurtmalar yuklanmoqda';
+
+  @override
+  String monthName(String month) {
+    String _temp0 = intl.Intl.selectLogic(month, {
+      'm1': 'Yanvar',
+      'm2': 'Fevral',
+      'm3': 'Mart',
+      'm4': 'Aprel',
+      'm5': 'May',
+      'm6': 'Iyun',
+      'm7': 'Iyul',
+      'm8': 'Avgust',
+      'm9': 'Sentabr',
+      'm10': 'Oktabr',
+      'm11': 'Noyabr',
+      'm12': 'Dekabr',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String monthYear(Object month, Object year) {
+    return '$month $year';
+  }
 }

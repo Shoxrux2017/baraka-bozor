@@ -1054,26 +1054,6 @@ void main() {
     );
   }
 
-  testWidgets('the tabs ask for their state', (WidgetTester tester) async {
-    orders.summaries = <Map<String, Object?>>[
-      orderSummaryJson(status: 'shopping'),
-      orderSummaryJson(id: _orderTwo, status: 'completed'),
-    ];
-    await open(tester);
-    expect(orders.loads, contains('orders:current:1'));
-    expect(byKey('order-$orderOne'), findsOneWidget);
-    expect(byKey('order-$_orderTwo'), findsNothing);
-
-    await tapAndSettle(tester, byKey('orders-tab-past'));
-    expect(orders.loads.last, 'orders:past:1');
-    expect(byKey('order-$_orderTwo'), findsOneWidget);
-    expect(byKey('order-$orderOne'), findsNothing);
-
-    await tapAndSettle(tester, byKey('orders-tab-current'));
-    expect(orders.loads.last, 'orders:current:1');
-    expect(byKey('order-$orderOne'), findsOneWidget);
-  });
-
   testWidgets('an empty current tab leads to shopping', (
     WidgetTester tester,
   ) async {

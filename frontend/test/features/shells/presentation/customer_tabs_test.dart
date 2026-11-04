@@ -10,7 +10,7 @@ import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
 import 'package:baraka_bozor/features/catalog/presentation/home_screen.dart';
 import 'package:baraka_bozor/features/favorites/presentation/favorites_screen.dart';
 import 'package:baraka_bozor/features/orders/presentation/order_cards.dart';
-import 'package:baraka_bozor/features/orders/presentation/orders_screens.dart';
+import 'package:baraka_bozor/features/orders/presentation/orders_list_screen.dart';
 import 'package:baraka_bozor/features/profile/domain/profile.dart';
 import 'package:baraka_bozor/features/profile/presentation/edit_profile_screen.dart';
 import 'package:baraka_bozor/features/profile/presentation/profile_screen.dart';
@@ -430,7 +430,7 @@ void main() {
     final List<(String, String, String)> cases = <(String, String, String)>[
       ('open-home', 'home-scroll', 'home'),
       ('open-favorites', 'favorites-grid', 'favorites'),
-      ('open-orders', 'orders-list', 'orders'),
+      ('open-orders', 'orders-past-list', 'orders'),
       ('open-profile', 'profile-list', 'profile'),
     ];
     for (final (String tabKey, String listKey, String name) in cases) {

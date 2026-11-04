@@ -7897,6 +7897,54 @@ abstract class AppLocalizations {
   /// In uz, this message translates to:
   /// **'Buyurtma № {number} ni takrorlash'**
   String reorderRepeatSpoken(int number);
+
+  /// No description provided for @ordersCurrentEmptyTitle.
+  ///
+  /// In uz, this message translates to:
+  /// **'Hozir jarayondagi buyurtma yo\'q'**
+  String get ordersCurrentEmptyTitle;
+
+  /// No description provided for @ordersLastOrderText.
+  ///
+  /// In uz, this message translates to:
+  /// **'Oxirgi buyurtma — {day}. Uni takrorlash yoki yangi savat yig\'ish mumkin.'**
+  String ordersLastOrderText(Object day);
+
+  /// No description provided for @ordersAllPast.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha o\'tgan buyurtmalar · {count}'**
+  String ordersAllPast(Object count);
+
+  /// No description provided for @ordersAllPastSpoken.
+  ///
+  /// In uz, this message translates to:
+  /// **'Barcha o\'tgan buyurtmalar, {count}'**
+  String ordersAllPastSpoken(Object count);
+
+  /// No description provided for @ordersCount.
+  ///
+  /// In uz, this message translates to:
+  /// **'{count, plural, other{{count} ta buyurtma}}'**
+  String ordersCount(num count);
+
+  /// No description provided for @ordersLoading.
+  ///
+  /// In uz, this message translates to:
+  /// **'Buyurtmalar yuklanmoqda'**
+  String get ordersLoading;
+
+  /// No description provided for @monthName.
+  ///
+  /// In uz, this message translates to:
+  /// **'{month, select, m1{Yanvar} m2{Fevral} m3{Mart} m4{Aprel} m5{May} m6{Iyun} m7{Iyul} m8{Avgust} m9{Sentabr} m10{Oktabr} m11{Noyabr} m12{Dekabr} other{}}'**
+  String monthName(String month);
+
+  /// No description provided for @monthYear.
+  ///
+  /// In uz, this message translates to:
+  /// **'{month} {year}'**
+  String monthYear(Object month, Object year);
 }
 
 class _AppLocalizationsDelegate

@@ -3500,5 +3500,13 @@
         "type": "int"
       }
     }
-  }
+  },
+  "ordersCurrentEmptyTitle": "Hozir jarayondagi buyurtma yo'q",
+  "ordersLastOrderText": "Oxirgi buyurtma — {day}. Uni takrorlash yoki yangi savat yig'ish mumkin.",
+  "ordersAllPast": "Barcha o'tgan buyurtmalar · {count}",
+  "ordersAllPastSpoken": "Barcha o'tgan buyurtmalar, {count}",
+  "ordersCount": "{count, plural, other{{count} ta buyurtma}}",
+  "ordersLoading": "Buyurtmalar yuklanmoqda",
+  "monthName": "{month, select, m1{Yanvar} m2{Fevral} m3{Mart} m4{Aprel} m5{May} m6{Iyun} m7{Iyul} m8{Avgust} m9{Sentabr} m10{Oktabr} m11{Noyabr} m12{Dekabr} other{}}",
+  "monthYear": "{month} {year}"
 }

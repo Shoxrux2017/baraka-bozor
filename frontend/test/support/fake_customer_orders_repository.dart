@@ -278,6 +278,9 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   /// Holds the list's loads only, until the test completes it.
   Completer<void>? holdList;
 
+  /// Holds the past tab's loads only, until the test completes it.
+  Completer<void>? holdPast;
+
   final List<String> loads = <String>[];
   final List<(String, List<OrderEditLine>, String?)> edits =
       <(String, List<OrderEditLine>, String?)>[];
@@ -336,6 +339,9 @@ class FakeCustomerOrdersRepository implements CustomerOrdersRepository {
   Future<Paged<OrderSummary>> orders(OrdersTab tab, int page) async {
     loads.add('orders:${tab.code}:$page');
     await holdList?.future;
+    if (tab == OrdersTab.past) {
+      await holdPast?.future;
+    }
     final ApiFailure? listFailure = listFailures.remove(tab);
     if (listFailure != null) {
       throw listFailure;

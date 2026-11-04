@@ -4801,4 +4801,63 @@ class AppLocalizationsRu extends AppLocalizations {
   String reorderRepeatSpoken(int number) {
     return 'Повторить заказ № $number';
   }
+
+  @override
+  String get ordersCurrentEmptyTitle => 'Сейчас заказов в работе нет';
+
+  @override
+  String ordersLastOrderText(Object day) {
+    return 'Последний заказ — $day. Его можно повторить или собрать новую корзину.';
+  }
+
+  @override
+  String ordersAllPast(Object count) {
+    return 'Все прошлые заказы · $count';
+  }
+
+  @override
+  String ordersAllPastSpoken(Object count) {
+    return 'Все прошлые заказы, $count';
+  }
+
+  @override
+  String ordersCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count заказа',
+      many: '$count заказов',
+      few: '$count заказа',
+      one: '$count заказ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ordersLoading => 'Загружаем заказы';
+
+  @override
+  String monthName(String month) {
+    String _temp0 = intl.Intl.selectLogic(month, {
+      'm1': 'Январь',
+      'm2': 'Февраль',
+      'm3': 'Март',
+      'm4': 'Апрель',
+      'm5': 'Май',
+      'm6': 'Июнь',
+      'm7': 'Июль',
+      'm8': 'Август',
+      'm9': 'Сентябрь',
+      'm10': 'Октябрь',
+      'm11': 'Ноябрь',
+      'm12': 'Декабрь',
+      'other': '',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String monthYear(Object month, Object year) {
+    return '$month $year';
+  }
 }
