@@ -195,6 +195,10 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
   ProductListQuery? _drawnQuery;
   List<CatalogProduct> _drawnItems = const <CatalogProduct>[];
 
+  /// The edit count of the list last drawn: a change of products with another
+  /// count is an edit in place, never a later page (`DL-129`).
+  int _drawnEdits = 0;
+
   /// The layout last drawn with data, the basis of where a card was when the
   /// list changes under it (`DL-129`).
   ({
@@ -693,7 +697,8 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
             } else if (spoken != null) {
               _announceAfterFrame(spoken(query, state.total));
             }
-          } else if (_appended(drawnItems, state.items)) {
+          } else if (state.edits == _drawnEdits &&
+              _appended(drawnItems, state.items)) {
             _paged.addAll(
               state.items
                   .skip(drawnItems.length)
@@ -726,7 +731,8 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
               tailStart: _tailStart(state.items),
               tailTop: _headingHeight,
             );
-            final Map<String, Offset> glides = was == null
+            // A list by aisles has its own geometry: its cards only arrive.
+            final Map<String, Offset> glides = was == null || aisleMode
                 ? const <String, Offset>{}
                 : glideOffsets(
                     before: <String>[for (final p in drawnItems) p.id],
@@ -776,6 +782,7 @@ class _KitProductGridState extends ConsumerState<KitProductGrid> {
           }
           _drawnQuery = query;
           _drawnItems = state.items;
+          _drawnEdits = state.edits;
           _layout = (
             columns: columns,
             pitch: pitch,

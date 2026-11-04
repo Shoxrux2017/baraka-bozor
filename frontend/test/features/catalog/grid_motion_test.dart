@@ -5,6 +5,7 @@ import 'package:baraka_bozor/core/session/customer_account.dart';
 import 'package:baraka_bozor/features/cart/application/cart_controllers.dart';
 import 'package:baraka_bozor/features/catalog/application/catalog_controllers.dart';
 import 'package:baraka_bozor/features/catalog/domain/catalog.dart';
+import 'package:baraka_bozor/features/catalog/presentation/aisles.dart';
 import 'package:baraka_bozor/features/catalog/presentation/catalog_paths.dart';
 import 'package:baraka_bozor/features/catalog/presentation/kit_product_card.dart';
 import 'package:baraka_bozor/features/catalog/presentation/kit_product_grid.dart';
@@ -31,6 +32,7 @@ void main() {
   Future<void> Function()? beforeRefresh;
   bool withHeading = false;
   VoidCallback? removeAll;
+  ProductAisles? aisles;
 
   Finder byKey(String key) => find.byKey(ValueKey<String>(key));
 
@@ -69,6 +71,7 @@ void main() {
     beforeRefresh = null;
     withHeading = false;
     removeAll = null;
+    aisles = null;
   });
 
   Future<void> open(WidgetTester tester, {bool reduced = false}) async {
@@ -87,6 +90,7 @@ void main() {
                     query: query,
                     leaving: gone,
                     onHeartOff: heartOff,
+                    aisles: aisles,
                     beforeRefresh: beforeRefresh,
                     notSoldHeading: withHeading
                         ? (int count) => NotSoldHeading(
@@ -165,6 +169,18 @@ void main() {
     expect(middle.dy, lessThan(third.dy));
     expect(middle.dy, greaterThan(second.dy));
     await tester.pump(const Duration(milliseconds: 140));
+    expect(at(tester, 'p-3').dx, closeTo(second.dx, 0.5));
+    expect(at(tester, 'p-3').dy, closeTo(second.dy, 0.5));
+  });
+
+  testWidgets('aisle lists do not glide', (WidgetTester tester) async {
+    aisles = ProductAisles(<CatalogCategory>[catalogCategory()]);
+    await open(tester);
+    final Offset second = at(tester, 'p-2');
+    list().withdraw(<String>{'p-1'});
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 140));
+
     expect(at(tester, 'p-3').dx, closeTo(second.dx, 0.5));
     expect(at(tester, 'p-3').dy, closeTo(second.dy, 0.5));
   });
