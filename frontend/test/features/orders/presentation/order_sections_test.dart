@@ -1215,10 +1215,10 @@ void main() {
       await tester.tap(byKey('order-request-cancel'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Попросить отменить?'), findsOneWidget);
+      expect(find.text('Попросить отменить заказ № 1001?'), findsOneWidget);
       expect(find.text(ru().requestSheetHint), findsOneWidget);
       expect(find.text('Отправить'), findsOneWidget);
-      expect(find.text('Не отменять'), findsOneWidget);
+      expect(find.text('Оставить заказ'), findsOneWidget);
     });
   });
 

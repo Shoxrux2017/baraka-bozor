@@ -4338,7 +4338,9 @@ class AppLocalizationsUz extends AppLocalizations {
       'Yig\'uvchi hali xarid qilishni boshlamadi — darhol bekor qilamiz.';
 
   @override
-  String get requestSheetTitle => 'Bekor qilishni so\'raysizmi?';
+  String requestSheetTitle(int number) {
+    return 'Buyurtma № $number ni bekor qilishni so\'raysizmi?';
+  }
 
   @override
   String get requestSheetHint =>
@@ -4348,7 +4350,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get cancelReasonHint => 'Masalan: noto\'g\'ri buyurtma berdim';
 
   @override
-  String get orderCancelKeepKit => 'Bekor qilmaslik';
+  String get orderCancelKeepKit => 'Buyurtmani qoldirish';
 
   @override
   String get requestSend => 'Yuborish';
@@ -5062,4 +5064,181 @@ class AppLocalizationsUz extends AppLocalizations {
   String orderPickAddedSpoken(String name, String quantity, int count) {
     return 'Qo\'shildi: $name, $quantity. Qo\'shilgan mahsulotlar: $count';
   }
+
+  @override
+  String get cancelSheetConfirm => 'Buyurtmani bekor qilish';
+
+  @override
+  String get cancelSheetSendRequest => 'So\'rovni yuborish';
+
+  @override
+  String get cancelSheetCancelling => 'Bekor qilinmoqda…';
+
+  @override
+  String get cancelSheetSending => 'Yuborilmoqda…';
+
+  @override
+  String get cancelSheetRequested => 'So\'rov yuborildi';
+
+  @override
+  String get cancelSheetNeedReason => 'Sababni tanlang yoki yozing';
+
+  @override
+  String cancelSheetTooLong(int max) {
+    return 'Sababni $max belgigacha qisqartiring';
+  }
+
+  @override
+  String get cancelSheetRaced =>
+      'Yig\'uvchi xarid qilishni boshladi — darhol bekor qilib bo\'lmaydi. Sababini yozing — operator hal qilib, sizga xabar beradi.';
+
+  @override
+  String get cancelSheetUnsureTitle => 'Bekor qilish tasdiqlanmadi';
+
+  @override
+  String get requestSheetUnsureTitle => 'So\'rov tasdiqlanmadi';
+
+  @override
+  String get cancelSheetSendAgain => 'Yana yuborish';
+
+  @override
+  String cancelUnsureNow(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'request': 'Aloqa yo\'q — so\'rov yetib bordimi, bilmaymiz. Uni yana o\'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.',
+      'other': 'Aloqa yo\'q — bekor qilish yetib bordimi, bilmaymiz. Uni yana o\'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String cancelUnsureLater(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'request': 'O\'tgan safar aloqa uzildi — so\'rov yetib bordimi, bilmaymiz. Uni yana o\'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.',
+      'other': 'O\'tgan safar aloqa uzildi — bekor qilish yetib bordimi, bilmaymiz. Uni yana o\'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String cancelUnsureServer(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'request': 'Javob kelmadi — so\'rov yetib bordimi, bilmaymiz. Uni yana o\'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.',
+      'other': 'Javob kelmadi — bekor qilish yetib bordimi, bilmaymiz. Uni yana o\'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String cancelSheetQuote(String reason) {
+    return '«$reason»';
+  }
+
+  @override
+  String get cancelSheetNoReason => 'Sababsiz';
+
+  @override
+  String get cancelAlreadyAsked =>
+      'Siz bu buyurtmani bekor qilishni so\'ragansiz — operator hal qiladi.';
+
+  @override
+  String get cancelChipsDirect => 'Nega bekor qilyapsiz?';
+
+  @override
+  String get cancelChipsRequest => 'Nega bekor qilish kerak?';
+
+  @override
+  String get cancelChipsOptional => 'Ko\'rsatmasangiz ham bo\'ladi';
+
+  @override
+  String get cancelChipsForOperator => 'Buni operator o\'qiydi';
+
+  @override
+  String get cancelChipWrongItems => 'Noto\'g\'ri buyurtma berdim';
+
+  @override
+  String get cancelChipChangedMind => 'Fikrimdan qaytdim';
+
+  @override
+  String get cancelChipTooSlow => 'Uzoq kutish kerak';
+
+  @override
+  String get cancelChipOtherAddress => 'Boshqa manzil kerak';
+
+  @override
+  String get cancelChipOther => 'Boshqa';
+
+  @override
+  String cancelChipPosition(int index, int count) {
+    return '$count tadan $index';
+  }
+
+  @override
+  String cancelChipSpokenOn(String chip) {
+    return '$chip, tanlandi';
+  }
+
+  @override
+  String cancelChipSpokenOff(String chip) {
+    return '$chip, tanlanmadi';
+  }
+
+  @override
+  String get cancelAddDetails => 'Tafsilot qo\'shish';
+
+  @override
+  String get cancelFieldOwn => 'O\'z sababingiz';
+
+  @override
+  String get cancelFieldOwnHint => 'Nega bekor qilayotganingizni yozing';
+
+  @override
+  String get cancelFieldDetails => 'Tafsilotlar (ixtiyoriy)';
+
+  @override
+  String get cancelFieldDetailsHint => 'Yana nima yetkazaylik?';
+
+  @override
+  String get cancelFieldDirectSpoken => 'Bekor qilish sababi, ixtiyoriy';
+
+  @override
+  String get cancelFieldRequestSpoken => 'Operator uchun sabab, majburiy';
+
+  @override
+  String cancelLeft(int count) {
+    return '$count ta belgi qoldi';
+  }
+
+  @override
+  String cancelOver(int count) {
+    return '$count ta belgi ortiqcha';
+  }
+
+  @override
+  String get cancelTipEdit =>
+      'Bekor qilish shart emas: yig\'uvchi boshlamaguncha mahsulotlarni o\'zgartirish mumkin.';
+
+  @override
+  String get cancelTipEditButton => 'Buyurtmani o\'zgartirish';
+
+  @override
+  String get cancelTipAddress =>
+      'Buyurtmadagi manzil o\'zgarmaydi. Bekor qilgandan keyin «Buyurtmani takrorlash» tugmasini bosing — mahsulotlar savatga qaytadi, manzilni qaytadan tanlaysiz.';
+
+  @override
+  String get cancelSendingSpoken => 'Buyurtma bekor qilinmoqda…';
+
+  @override
+  String get requestSendingSpoken => 'So\'rov yuborilmoqda…';
+
+  @override
+  String cancelBannerTitle(int number) {
+    return 'Buyurtma № $number bekor qilindi';
+  }
+
+  @override
+  String get cancelBannerHint =>
+      'Qayta buyurtma berish — pastdagi «Buyurtmani takrorlash»';
+
+  @override
+  String get requestBannerHint => 'Operator hal qiladi — sizga xabar beramiz';
 }

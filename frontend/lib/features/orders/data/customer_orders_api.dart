@@ -488,6 +488,7 @@ class CustomerOrdersApi {
               'cancellation_reason_code',
               CancellationReason.tryParse,
             ),
+      cancellationNote: json.nullableString('cancellation_note'),
       cancellationRequest: request == null ? null : _request(request),
       payment: payment == null ? null : _payment(payment),
       createdAt: timestamps.instant('created_at'),

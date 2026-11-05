@@ -2723,10 +2723,10 @@
   "requestPendingHint": "Решит оператор — мы сообщим. Пока заказ в работе.",
   "cancelSheetTitle": "Отменить заказ № {number}?",
   "cancelSheetHint": "Сборщик ещё не начал покупать — отменим сразу.",
-  "requestSheetTitle": "Попросить отменить?",
+  "requestSheetTitle": "Попросить отменить заказ № {number}?",
   "requestSheetHint": "Сборщик уже покупает. Напишите причину — решит оператор и сообщит вам.",
   "cancelReasonHint": "Например: заказал не то",
-  "orderCancelKeepKit": "Не отменять",
+  "orderCancelKeepKit": "Оставить заказ",
   "requestSend": "Отправить",
   "rateTitle": "Оценка заказа",
   "rateQuestion": "Как вам заказ № {number}?",
@@ -3208,5 +3208,131 @@
         "type": "int"
       }
     }
-  }
+  },
+  "cancelSheetConfirm": "Отменить заказ",
+  "cancelSheetSendRequest": "Отправить просьбу",
+  "cancelSheetCancelling": "Отменяем…",
+  "cancelSheetSending": "Отправляем…",
+  "cancelSheetRequested": "Просьба отправлена",
+  "cancelSheetNeedReason": "Выберите или напишите причину",
+  "cancelSheetTooLong": "Сократите причину до {max} знаков",
+  "@cancelSheetTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "cancelSheetRaced": "Сборщик уже начал покупать — сразу отменить нельзя. Напишите, почему, — решит оператор и сообщит вам.",
+  "cancelSheetUnsureTitle": "Отмена не подтвердилась",
+  "requestSheetUnsureTitle": "Просьба не подтвердилась",
+  "cancelSheetSendAgain": "Отправить ещё раз",
+  "cancelUnsureNow": "{kind, select, request{Нет связи — мы не знаем, дошла ли просьба. Отправим её ещё раз — с той же причиной; дважды заказ не отменится.} other{Нет связи — мы не знаем, дошла ли отмена. Отправим её ещё раз — с той же причиной; дважды заказ не отменится.}}",
+  "@cancelUnsureNow": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelUnsureLater": "{kind, select, request{Мы не знаем, дошла ли просьба: в прошлый раз пропала связь. Отправим её ещё раз — с той же причиной; дважды заказ не отменится.} other{Мы не знаем, дошла ли отмена: в прошлый раз пропала связь. Отправим её ещё раз — с той же причиной; дважды заказ не отменится.}}",
+  "@cancelUnsureLater": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelUnsureServer": "{kind, select, request{Ответ не пришёл — мы не знаем, дошла ли просьба. Отправим её ещё раз — с той же причиной; дважды заказ не отменится.} other{Ответ не пришёл — мы не знаем, дошла ли отмена. Отправим её ещё раз — с той же причиной; дважды заказ не отменится.}}",
+  "@cancelUnsureServer": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelSheetQuote": "«{reason}»",
+  "@cancelSheetQuote": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelSheetNoReason": "Без причины",
+  "cancelAlreadyAsked": "Вы уже попросили отменить этот заказ — решит оператор.",
+  "cancelChipsDirect": "Почему отменяете?",
+  "cancelChipsRequest": "Почему отменить?",
+  "cancelChipsOptional": "Можно не указывать",
+  "cancelChipsForOperator": "Это прочтёт оператор",
+  "cancelChipWrongItems": "Заказал не то",
+  "cancelChipChangedMind": "Передумал",
+  "cancelChipTooSlow": "Долго ждать",
+  "cancelChipOtherAddress": "Нужен другой адрес",
+  "cancelChipOther": "Другое",
+  "cancelChipPosition": "{index} из {count}",
+  "@cancelChipPosition": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cancelChipSpokenOn": "{chip}, выбрано",
+  "@cancelChipSpokenOn": {
+    "placeholders": {
+      "chip": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelChipSpokenOff": "{chip}, не выбрано",
+  "@cancelChipSpokenOff": {
+    "placeholders": {
+      "chip": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelAddDetails": "Добавить подробности",
+  "cancelFieldOwn": "Своя причина",
+  "cancelFieldOwnHint": "Напишите, почему отменяете",
+  "cancelFieldDetails": "Подробности (необязательно)",
+  "cancelFieldDetailsHint": "Что ещё передать?",
+  "cancelFieldDirectSpoken": "Причина отмены, необязательно",
+  "cancelFieldRequestSpoken": "Причина для оператора, обязательно",
+  "cancelLeft": "{count, plural, one{Осталось {count} знак} few{Осталось {count} знака} many{Осталось {count} знаков} other{Осталось {count} знака}}",
+  "@cancelLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cancelOver": "{count, plural, one{Длиннее на {count} знак} few{Длиннее на {count} знака} many{Длиннее на {count} знаков} other{Длиннее на {count} знака}}",
+  "@cancelOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cancelTipEdit": "Не обязательно отменять: пока сборщик не начал, товары можно поменять.",
+  "cancelTipEditButton": "Изменить заказ",
+  "cancelTipAddress": "Адрес в заказе не меняется. После отмены нажмите «Повторить заказ» — товары вернутся в корзину, адрес выберете заново.",
+  "cancelSendingSpoken": "Отменяем заказ…",
+  "requestSendingSpoken": "Отправляем просьбу…",
+  "cancelBannerTitle": "Заказ № {number} отменён",
+  "@cancelBannerTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "cancelBannerHint": "Заказать снова — «Повторить заказ» внизу",
+  "requestBannerHint": "Решит оператор — мы сообщим"
 }

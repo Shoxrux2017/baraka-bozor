@@ -96,6 +96,7 @@ Map<String, Object?> customerOrderJson({
   List<Object?>? lines,
   String? note = 'Kechqurun',
   String? cancellationReason,
+  String? cancellationNote,
   String? cancellationRequest,
   bool canRequestCancellation = false,
   Map<String, Object?>? payment,
@@ -181,6 +182,7 @@ Map<String, Object?> customerOrderJson({
     'cancellation_reason_code': cancelled
         ? (cancellationReason ?? 'customer_cancelled')
         : null,
+    'cancellation_note': cancellationNote,
     'payment': payment,
     'refunds': <Object?>[],
     'timestamps': <String, Object?>{

@@ -148,7 +148,7 @@ class _CancelSheetState extends State<_CancelSheet> {
                       header: true,
                       child: Text(
                         widget.request
-                            ? l10n.requestSheetTitle
+                            ? l10n.requestSheetTitle(widget.orderNumber)
                             : l10n.cancelSheetTitle(widget.orderNumber),
                         style: const TextStyle(
                           fontSize: 17,

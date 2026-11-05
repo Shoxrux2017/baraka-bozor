@@ -150,7 +150,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       return;
     }
     final String trimmed = trimLikeServer(reason);
-    await cancelling.cancel(trimmed.isEmpty ? null : trimmed);
+    await cancelling.cancel(trimmed.isEmpty ? null : trimmed, request: request);
   }
 
   @override

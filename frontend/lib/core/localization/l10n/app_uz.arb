@@ -3126,10 +3126,17 @@
     }
   },
   "cancelSheetHint": "Yig'uvchi hali xarid qilishni boshlamadi — darhol bekor qilamiz.",
-  "requestSheetTitle": "Bekor qilishni so'raysizmi?",
+  "requestSheetTitle": "Buyurtma № {number} ni bekor qilishni so'raysizmi?",
+  "@requestSheetTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "requestSheetHint": "Yig'uvchi allaqachon xarid qilmoqda. Sababini yozing — operator hal qilib, sizga xabar beradi.",
   "cancelReasonHint": "Masalan: noto'g'ri buyurtma berdim",
-  "orderCancelKeepKit": "Bekor qilmaslik",
+  "orderCancelKeepKit": "Buyurtmani qoldirish",
   "requestSend": "Yuborish",
   "rateTitle": "Buyurtmani baholash",
   "rateQuestion": "Buyurtma № {number} sizga yoqdimi?",
@@ -3905,5 +3912,131 @@
         "type": "int"
       }
     }
-  }
+  },
+  "cancelSheetConfirm": "Buyurtmani bekor qilish",
+  "cancelSheetSendRequest": "So'rovni yuborish",
+  "cancelSheetCancelling": "Bekor qilinmoqda…",
+  "cancelSheetSending": "Yuborilmoqda…",
+  "cancelSheetRequested": "So'rov yuborildi",
+  "cancelSheetNeedReason": "Sababni tanlang yoki yozing",
+  "cancelSheetTooLong": "Sababni {max} belgigacha qisqartiring",
+  "@cancelSheetTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "cancelSheetRaced": "Yig'uvchi xarid qilishni boshladi — darhol bekor qilib bo'lmaydi. Sababini yozing — operator hal qilib, sizga xabar beradi.",
+  "cancelSheetUnsureTitle": "Bekor qilish tasdiqlanmadi",
+  "requestSheetUnsureTitle": "So'rov tasdiqlanmadi",
+  "cancelSheetSendAgain": "Yana yuborish",
+  "cancelUnsureNow": "{kind, select, request{Aloqa yo'q — so'rov yetib bordimi, bilmaymiz. Uni yana o'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.} other{Aloqa yo'q — bekor qilish yetib bordimi, bilmaymiz. Uni yana o'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.}}",
+  "@cancelUnsureNow": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelUnsureLater": "{kind, select, request{O'tgan safar aloqa uzildi — so'rov yetib bordimi, bilmaymiz. Uni yana o'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.} other{O'tgan safar aloqa uzildi — bekor qilish yetib bordimi, bilmaymiz. Uni yana o'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.}}",
+  "@cancelUnsureLater": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelUnsureServer": "{kind, select, request{Javob kelmadi — so'rov yetib bordimi, bilmaymiz. Uni yana o'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.} other{Javob kelmadi — bekor qilish yetib bordimi, bilmaymiz. Uni yana o'sha sabab bilan yuboramiz; buyurtma ikki marta bekor qilinmaydi.}}",
+  "@cancelUnsureServer": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelSheetQuote": "«{reason}»",
+  "@cancelSheetQuote": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelSheetNoReason": "Sababsiz",
+  "cancelAlreadyAsked": "Siz bu buyurtmani bekor qilishni so'ragansiz — operator hal qiladi.",
+  "cancelChipsDirect": "Nega bekor qilyapsiz?",
+  "cancelChipsRequest": "Nega bekor qilish kerak?",
+  "cancelChipsOptional": "Ko'rsatmasangiz ham bo'ladi",
+  "cancelChipsForOperator": "Buni operator o'qiydi",
+  "cancelChipWrongItems": "Noto'g'ri buyurtma berdim",
+  "cancelChipChangedMind": "Fikrimdan qaytdim",
+  "cancelChipTooSlow": "Uzoq kutish kerak",
+  "cancelChipOtherAddress": "Boshqa manzil kerak",
+  "cancelChipOther": "Boshqa",
+  "cancelChipPosition": "{count} tadan {index}",
+  "@cancelChipPosition": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cancelChipSpokenOn": "{chip}, tanlandi",
+  "@cancelChipSpokenOn": {
+    "placeholders": {
+      "chip": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelChipSpokenOff": "{chip}, tanlanmadi",
+  "@cancelChipSpokenOff": {
+    "placeholders": {
+      "chip": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelAddDetails": "Tafsilot qo'shish",
+  "cancelFieldOwn": "O'z sababingiz",
+  "cancelFieldOwnHint": "Nega bekor qilayotganingizni yozing",
+  "cancelFieldDetails": "Tafsilotlar (ixtiyoriy)",
+  "cancelFieldDetailsHint": "Yana nima yetkazaylik?",
+  "cancelFieldDirectSpoken": "Bekor qilish sababi, ixtiyoriy",
+  "cancelFieldRequestSpoken": "Operator uchun sabab, majburiy",
+  "cancelLeft": "{count} ta belgi qoldi",
+  "@cancelLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cancelOver": "{count} ta belgi ortiqcha",
+  "@cancelOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cancelTipEdit": "Bekor qilish shart emas: yig'uvchi boshlamaguncha mahsulotlarni o'zgartirish mumkin.",
+  "cancelTipEditButton": "Buyurtmani o'zgartirish",
+  "cancelTipAddress": "Buyurtmadagi manzil o'zgarmaydi. Bekor qilgandan keyin «Buyurtmani takrorlash» tugmasini bosing — mahsulotlar savatga qaytadi, manzilni qaytadan tanlaysiz.",
+  "cancelSendingSpoken": "Buyurtma bekor qilinmoqda…",
+  "requestSendingSpoken": "So'rov yuborilmoqda…",
+  "cancelBannerTitle": "Buyurtma № {number} bekor qilindi",
+  "@cancelBannerTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "cancelBannerHint": "Qayta buyurtma berish — pastdagi «Buyurtmani takrorlash»",
+  "requestBannerHint": "Operator hal qiladi — sizga xabar beramiz"
 }
